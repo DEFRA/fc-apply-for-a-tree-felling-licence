@@ -1,0 +1,73 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.Compartment.CompartmentModel
+@{
+    ViewBag.Title = "Compartment details";
+    Layout = "_Layout";
+    ViewData.ShowBackLink();
+}
+<div class="govuk-grid-column-two-thirds">
+
+    <partial name="Partials/_PageErrors" />
+    
+    <form method="post">
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    Name or number your compartment
+                </h1>
+            </legend>
+            
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="PropertyProfileId" />
+            <input type="hidden" asp-for="PropertyProfileName" />
+            <input type="hidden" asp-for="ApplicationId" />
+            <input type="hidden" asp-for="WoodlandOwnerId" />
+            <input type="hidden" asp-for="AgencyId" />
+            <input type="hidden" asp-for="IsForRestockingCompartmentSelection" />
+            <input type="hidden" asp-for="ProposedFellingDetailsId" />
+            <input type="hidden" asp-for="FellingOperationType" />
+            <input type="hidden" asp-for="FellingCompartmentId" />
+            <input type="hidden" asp-for="FellingCompartmentName" />
+
+            <p class="govuk-body govuk-hint">Use a name or number that clearly identifies this compartment.</p>
+            <div class="govuk-form-group">
+                <label asp-for="CompartmentNumber" class="@GdsConstants.GdsLabelCssClass">Compartment</label>
+                <validation asp-for="CompartmentNumber"></validation>
+                <details class="govuk-details" data-module="govuk-details" style="margin-bottom: 3px;">
+                    <summary class="govuk-details__summary">
+                        <span class="govuk-details__summary-text">
+                            What is a compartment?
+                        </span>
+                    </summary>
+                    <div class="govuk-details__text">
+                        A compartment is a small farm woodland or part of a larger woodland.  
+                        It can have specific features, such as roads, watercourses, or tracks.
+                    </div>
+                </details>
+
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="CompartmentNumber" />
+            </div>
+            
+            <input type="hidden" asp-for="Designation"/>
+            <input type="hidden" asp-for="GISData" />
+            <input type="hidden" asp-for="TotalHectares" />
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Save and Continue
+                    </button>
+                    
+                    @if (Model.ApplicationId is null || Model.ApplicationId  == Guid.Empty)
+                    {
+                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="Edit" asp-route-id="@Model.PropertyProfileId" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" asp-route-agencyId="@Model.AgencyId" title="Cancel">Cancel</a>
+                    }
+                    else
+                    {
+                        <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="SelectCompartments" asp-route-applicationId="@Model.ApplicationId" title="Cancel">Cancel</a>
+                    }
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>

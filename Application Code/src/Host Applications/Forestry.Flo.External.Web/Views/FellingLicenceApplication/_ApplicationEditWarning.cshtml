@@ -1,0 +1,53 @@
+﻿@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common.User
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ApplicationStepBase
+
+@{
+    FellingLicenceStatus[] finalStatuses = 
+    [
+        FellingLicenceStatus.Approved,
+        FellingLicenceStatus.ReferredToLocalAuthority,
+        FellingLicenceStatus.Refused,
+        FellingLicenceStatus.Withdrawn
+    ];
+}
+
+@if (!Model.AllowEditing)
+{
+    <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            @if (ViewBag.ApplicationSummary is not null && finalStatuses.Any(x => ViewBag.ApplicationSummary.Status == x))
+            {
+                <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+                    Application @(((FellingLicenceStatus)ViewBag.ApplicationSummary.Status).GetDisplayNameByActorType(ActorType.ExternalApplicant))
+                </h2>    
+            }
+            else
+            {
+            <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+                Application Submitted
+            </h2>
+            }
+        </div>
+        <div class="govuk-notification-banner__content">
+            @if (ViewBag.ApplicationSummary is not null && finalStatuses.Any(x => ViewBag.ApplicationSummary.Status == x))
+            {
+                var currentStatus = (FellingLicenceStatus)ViewBag.ApplicationSummary.Status;
+                var text = currentStatus == FellingLicenceStatus.ReferredToLocalAuthority
+                    ? "is in consultation with your local authority"
+                    : $"has been {currentStatus.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}";
+
+                <p class="govuk-notification-banner__heading">
+                    This application @text and can no longer be edited.
+                </p>
+            }
+            else
+            {
+                <p class="govuk-notification-banner__heading">
+                    This application has been submitted and can no longer be edited.
+                </p>
+            }
+        </div>
+    </div>
+}

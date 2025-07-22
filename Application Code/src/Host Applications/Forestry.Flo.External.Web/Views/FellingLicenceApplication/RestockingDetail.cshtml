@@ -1,0 +1,181 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.External.Web.Infrastructure.Display
+@using Forestry.Flo.External.Web.Models.FellingLicenceApplication
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedRestockingDetailModel
+
+@{
+    double? compartmentTotalHectares = Model.CompartmentTotalHectares.HasValue
+        ? Math.Truncate(Model.CompartmentTotalHectares.Value * 100) / 100
+        : null;
+
+    ViewData["Title"] = "Restocking details for " + @Model.CompartmentName;
+
+    ViewData.ManuallySetBackLink(Url.Action(
+        Model.ReturnToPlayback
+            ? "FellingAndRestockingPlayback"
+            : "ApplicationSummary",
+        "FellingLicenceApplication",
+        new
+        {
+            applicationId = Model.ApplicationId
+        }));
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+    <partial name="Partials/_PageErrors" />
+
+    <form id="restocking-detail-form" method="post" asp-controller="FellingLicenceApplication" asp-action="RestockingDetail">
+        <div class="govuk-body">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ApplicationId" />
+            <input type="hidden" asp-for="CompartmentTotalHectares" />
+            <input type="hidden" asp-for="FellingCompartmentId" />
+            <input type="hidden" asp-for="RestockingCompartmentId" />
+            <input type="hidden" asp-for="OperationType" />
+            <input type="hidden" asp-for="ProposedFellingDetailsId" />
+            <input type="hidden" asp-for="CompartmentName" />
+            <input type="hidden" asp-for="RestockingProposal" />
+
+            <fieldset class="govuk-fieldset" id="restocking-detail-fields">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-fieldset__heading">
+                        Restocking details for @Model.CompartmentName
+                    </h1>
+                </legend>
+                
+                <partial name="_ApplicationEditWarning.cshtml" model="@Model" />
+
+                <p class="govuk-body">Add more information about the <b>@Model.RestockingProposal.GetDisplayName()</b> you have planned for <b>@Model.CompartmentName</b>.</p>
+
+                <div class="govuk-form-group">
+					<label class="govuk-heading-m" asp-for="Area" id="@nameof(Model.Area)Label">
+                        Estimated area to be restocked
+                    </label>
+                    <p hidden="hidden" aria-hidden="True" id="Restocking-Compartment-Total-Hectares-hidden">@compartmentTotalHectares</p>
+                    <div id="area-hint" class="govuk-hint">
+                        Add an estimation of the total area to be restocked in hectares. 
+                        @if (compartmentTotalHectares != null)
+                        {
+                            <div id="size-hint" class="govuk-hint">
+                                The property profile has @($"{compartmentTotalHectares:0.00}") Ha as the gross size for this compartment.
+                            </div>
+                        }
+                    </div>
+                    <validation asp-for="Area"></validation>
+                    <div class="govuk-input__wrapper">
+                        <input class="govuk-input govuk-input--width-5" asp-for="@Model.Area" type="number" step="0.01" aria-describedby="area-hint">
+                        <div class="govuk-input__suffix" aria-hidden="true">ha</div>
+                    </div>
+                </div>
+
+                <div class="govuk-form-group">
+                    <label class="govuk-heading-m" for="Percentage-Of-Restock-Area" id="@nameof(Model.PercentageOfRestockArea)Label">
+                        Estimated percentage of the area that will be restocked
+                    </label>
+                    <div id="percentage-hint" class="govuk-hint">
+                        A calculated estimation of the percentage of the total area you will restock.
+                    </div>
+                    <div class="govuk-input__wrapper">
+                        <input id="Percentage-Of-Restock-Area" readonly="readonly" aria-readonly="true" class="govuk-input govuk-input--width-10 input-readonly" asp-for="PercentageOfRestockArea" step="0.01" type="number">
+                        <div class="govuk-input__suffix" aria-hidden="true">%</div>
+                    </div>
+                </div>
+
+                <div condition="@(Model.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround && Model.RestockingProposal != TypeOfProposal.RestockWithIndividualTrees && Model.RestockingProposal != TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)" class="govuk-form-group">
+					<label class="govuk-heading-m" asp-for="@Model.RestockingDensity" id="@nameof(Model.RestockingDensity)Label">
+                        Estimate of the restocking density
+                    </label>
+                    <div id="density-hint" class="govuk-hint">
+                        Add an estimation of the restocking density in stems per hectare.
+                    </div>
+                    <validation asp-for="RestockingDensity"></validation>
+                    <div class="govuk-input__wrapper">
+                        <input class="govuk-input govuk-input govuk-input--width-10" asp-for="RestockingDensity" type="number" value="@(Model.RestockingDensity == 0 ? "" : Model.RestockingDensity)">
+                        <div class="govuk-input__suffix" aria-hidden="true">Stems per Ha</div>
+                    </div>
+                </div>
+
+                <div condition="@(Model.RestockingProposal == TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees || Model.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees)" class="govuk-form-group">
+					<label class="govuk-heading-m" asp-for="NumberOfTrees" id="@nameof(Model.NumberOfTrees)Label">
+                        Estimated number of trees to be restocked
+                    </label>
+
+                    <div id="no-of-trees-hint" class="govuk-hint">
+                        An estimate of the total number of trees to be restocked within this compartment.
+                    </div>
+
+                    <validation asp-for="NumberOfTrees"></validation>
+                    <div class="govuk-input__wrapper">
+                        <input class="govuk-input govuk-input--width-10" asp-for="NumberOfTrees" type="number" aria-describedby="no-of-trees-hint">
+                        <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
+                    </div>
+                </div>
+			</fieldset>
+            @{
+                var viewData = new ViewDataDictionary(ViewData)
+                {
+                    TemplateInfo =
+                    {
+                        HtmlFieldPrefix = "Species"
+                    },
+                    ["FormPrefix"] = "restocking"
+                };
+            }
+
+            <input type="hidden" aria-hidden="true" asp-for="Species" condition="@(Model.RestockingProposal == TypeOfProposal.CreateDesignedOpenGround)" />
+
+            <div id="restocking-tree-species-group" class="govuk-form-group" condition="@(Model.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)">
+                <input type="hidden" aria-hidden="true" asp-for="Species"/>
+				<label class="govuk-heading-m" for="restocking-tree-species-select" id="restocking-tree-species-selectLabel">
+                    What species of trees will be restocked?
+                </label>
+                <div id="species-hint" class="govuk-hint">
+                    Start typing to search, then select a species from the list.
+                </div>
+                <validation id="restocking-tree-species-error" asp-for="Species"></validation>
+                <partial name="_TreeSpeciesSelection" model="@Model.Species" view-data="viewData" />
+            </div>
+
+            <button type="submit" class="govuk-button" data-module="govuk-button">
+                Save and continue
+            </button>
+        </div>
+    </form>
+</div>
+
+@* Scripts to support _TreeSpeciesSelection control *@
+@section Scripts
+{
+    <script src="/js/accessible-autocomplete.min.js"></script>
+    <script src="/js/tree-species-selection.js" asp-append-version="true"></script>
+    <script src="/js/restocking-details.js" asp-append-version="true"></script>
+    <script src="~/js/supporting-documentation.js" asp-append-version="true"></script>
+    <script src="~/js/focus-input-from-hash.js"></script>
+
+    @if (!Model.AllowEditing)
+    {
+        <script src="/js/disable-form-elements.js"></script>
+
+        <script>
+
+            $(function () {
+
+                disableFormElements('#restocking-detail-form');
+            });
+
+        </script>
+    }
+}
+
+@section Css {
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
+}

@@ -1,0 +1,440 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Infrastructure.Display;
+@using Forestry.Flo.Services.Common;
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common.User
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingLicenceApplicationSummaryViewModel
+@{
+    ViewData["Title"] = "Felling Licence Application Summary";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+    
+    <h1 class="govuk-heading-l">
+        Check your answers
+    </h1>
+    
+    @if (Model.Agency != null)
+    {
+        <div class="govuk-summary-card">
+            <div class="govuk-summary-card__title-wrapper">
+                <h2 class="govuk-summary-card__title">Your details</h2>
+            </div>
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Name
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.Agency.ContactName
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Email
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.Agency.ContactEmail
+                        </dd>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Agency.OrganisationName))
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Agency name
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @Model.Agency.OrganisationName
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <div class="govuk-summary-card">
+            <div class="govuk-summary-card__title-wrapper">
+                <h2 class="govuk-summary-card__title">Woodland owner details</h2>
+            </div>
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Name
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.WoodlandOwner.ContactName
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Email
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.WoodlandOwner.ContactEmail
+                        </dd>
+                    </div>
+                    @if (Model.WoodlandOwner.IsOrganisation)
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Organisation
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @Model.WoodlandOwner.OrganisationName
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="govuk-summary-card">
+            <div class="govuk-summary-card__title-wrapper">
+                <h2 class="govuk-summary-card__title">Your details</h2>
+            </div>
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Name
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.WoodlandOwner.ContactName
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Email
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.WoodlandOwner.ContactEmail
+                        </dd>
+                    </div>
+                    @if (Model.WoodlandOwner.IsOrganisation)
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Organisation
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @Model.WoodlandOwner.OrganisationName
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        </div> 
+    }
+    
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Woodland details</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Name
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.PropertyProfile.Name
+                    </dd>
+                </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Nearest town
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.PropertyProfile.NearestTown
+                    </dd>
+                </div>
+                @if (Model.PropertyProfile.HasWoodlandManagementPlan)
+                {
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Woodland Management Plan
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.PropertyProfile.WoodlandManagementPlanReference
+                        </dd>
+                    </div>
+                }
+                @if (Model.PropertyProfile.IsWoodlandCertificationScheme)
+                {
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Woodland Certification Scheme
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.PropertyProfile.WoodlandCertificationSchemeReference
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Felling schedule</h2>
+            <ul class="govuk-summary-card__actions">
+                <li class="govuk-summary-card__action">
+                    <a class="govuk-link" href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true})">
+                        Change<span class="govuk-visually-hidden">&nbsp;the felling schedule</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Felling start date
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @DateTimeDisplay.GetDateDisplayString(Model.Application.OperationDetails.ProposedFellingStart.CalculateDate())
+                    </dd>
+                </div>
+            </dl>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Felling completion date
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @DateTimeDisplay.GetDateDisplayString(Model.Application.OperationDetails.ProposedFellingEnd.CalculateDate())
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+    
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Felling and restocking details</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Felling compartments
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @foreach (var comp in Model.FellingAndRestocking.FellingCompartmentDetails)
+                        {
+                            <div>
+                                @comp.CompartmentName <br />
+                            </div>
+                        }
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                        <a class="govuk-link" href="@Url.Action(Model.FellingAndRestocking.FellingCompartmentsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+
+            @foreach (var compartmentDetails in Model.FellingAndRestocking.FellingCompartmentDetails)
+            {
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Felling operations in compartment @compartmentDetails.CompartmentName
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @compartmentDetails.OperationsString
+                        </dd>
+                        <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling operations in compartment @compartmentDetails.CompartmentName</span></a>
+                        </dd>
+                    </div>
+                </dl>
+            }
+        </div>
+    </div>
+
+    <input type="hidden" id="GIS" asp-for="@Model.FellingAndRestocking.GIS" />
+    <div class="govuk-!-margin-bottom-6" id="viewDiv" aria-label="Map of compartments within this application"></div>
+
+    @foreach (var compartment in Model.FellingAndRestocking.FellingCompartmentDetails)
+    {
+        <div>
+            <partial name="_FellingCompartmentPlayback" model="@compartment" />
+        </div>
+    }
+
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Constraint check</h2>
+            <ul class="govuk-summary-card__actions">
+                <li class="govuk-summary-card__action">
+                    <a class="govuk-link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true})">
+                        Change<span class="govuk-visually-hidden">&nbsp;the constraints check</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Constraint check complete
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Application.ConstraintCheck.ExternalLisReportRun is true ? "Yes" : "No")
+                    </dd>
+                </div>
+            </dl>
+        </div>
+        @if (Model.Application.ConstraintCheck.ExternalLisReportRun is true)
+        {
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Constraint check run date
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @DateTimeDisplay.GetDateTimeDisplayString(Model.Application.ConstraintCheck.ExternalLisAccessedTimestamp)
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        }
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Opted out of constraint check
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Application.ConstraintCheck.NotRunningExternalLisReport == true ? "Yes" : "No")
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+    
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Supporting documentation</h2>
+            <ul class="govuk-summary-card__actions">
+                <li class="govuk-summary-card__action">
+                    <a class="govuk-link" href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true  })">
+                        Change<span class="govuk-visually-hidden">&nbsp;the supporting documentation</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Supporting documents
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @if (Model.Application.SupportingDocumentation.Documents.Any())
+                        {
+                            foreach (var document in Model.Application.SupportingDocumentation.Documents)
+                            {
+                                <div>
+                                    @document.FileName
+                                </div>
+                                <br/>
+                            }
+                        }
+                        else
+                        {
+                            <div>
+                                No documents uploaded
+                            </div>
+                        }
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link">Return to your application</a>
+    <br>
+    <br>
+    
+    @{
+        var enabledStatuses = new[]
+        {
+            FellingLicenceStatus.Draft,
+            FellingLicenceStatus.WithApplicant,
+            FellingLicenceStatus.ReturnedToApplicant
+        };
+
+        var finalStatuses = new[]
+        {
+            FellingLicenceStatus.Approved,
+            FellingLicenceStatus.Refused,
+            FellingLicenceStatus.ReferredToLocalAuthority,
+            FellingLicenceStatus.Withdrawn
+        };
+
+        if (enabledStatuses.Contains(Model.Application.ApplicationSummary.Status))
+        {
+            if (Model.Application.IsComplete)
+            {
+                <a class="govuk-button" data-module="govuk-button" asp-action="ConfirmSubmitFellingLicenceApplication" asp-route-applicationId="@Model.Application.ApplicationId"> Submit application</a>
+            }
+            else
+            {
+                <button class="govuk-button" data-module="govuk-button" disabled="disabled">Submit application</button>
+            }
+        }
+        else if (finalStatuses.Contains(Model.Application.ApplicationSummary.Status))
+        {
+            var text = Model.Application.ApplicationSummary.Status == FellingLicenceStatus.ReferredToLocalAuthority
+            ? "is in consultation with your local authority."
+            : $"has been {Model.Application.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
+
+            <p class="govuk-body">This application @text</p>
+        }
+        else
+        {
+            <p class="govuk-body">This application has been submitted.</p>
+        }
+    }
+
+</div>
+
+@section Css {
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="/css/govuk-frontend-4.2.0.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+
+    <style>
+        #viewDiv {
+            border-color: black;
+            border-style: solid;
+            border-width: 1px;
+            padding: 0;
+            margin: 0;
+            height: 85vh !important;
+        }
+    </style>
+}
+
+@* Scripts to support the compartments map *@
+@section Scripts {
+    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+
+    <script>
+        require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {
+            var mapObj = new MapCompartmentSelection("viewDiv");
+        })
+    </script>
+}

@@ -1,0 +1,9 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 11.6.14
+- name: external-web-app
+  repository: https://fsflo.azurecr.io/helm/v1/repo
+  version: 1.0.4
+digest: sha256:7647832b209212fdc7bee2109eb8d16ef93db9eabcd0941c6f11a3dd812f8523
+generated: "2022-07-06T12:51:13.2837145+01:00"

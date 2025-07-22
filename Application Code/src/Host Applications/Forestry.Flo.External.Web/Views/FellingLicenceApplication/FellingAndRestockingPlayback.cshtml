@@ -1,0 +1,125 @@
+﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingAndRestockingPlaybackViewModel
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Infrastructure.Display
+@{
+    ViewData["Title"] = "Check your felling and restocking answers";
+    ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", new { applicationId = Model.ApplicationId }));
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+    <partial name="Partials/_PageErrors" />
+
+    <form id="felling-and-restocking-playback-form" asp-controller="FellingLicenceApplication" asp-action="FellingAndRestockingPlayback">
+        
+        <div class="govuk-body">
+            <fieldset class="govuk-fieldset" id="felling-playback-fields">
+
+                <input type="hidden" asp-for="ApplicationId" />
+
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h2 class="govuk-fieldset__heading">
+                        Check your felling and restocking answers
+                    </h2>
+                </legend>
+                <br />
+                
+                <partial name="_ApplicationEditWarning.cshtml" model="@Model" />
+
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Felling compartments
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @foreach (var comp in Model.FellingCompartmentDetails)
+                            {
+                                <div>
+                                    @comp.CompartmentName <br />
+                                </div>
+                            }
+                        </dd>
+                        <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+                            <a class="govuk-link" href="@Url.Action(Model.FellingCompartmentsChangeLink)">Change<span class="govuk-visually-hidden"> compartments with felling operations</span></a>
+                        </dd>
+                    </div>
+                </dl>
+
+                @foreach (var compartmentDetails in Model.FellingCompartmentDetails)
+                {
+                    <dl class="govuk-summary-list">
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Felling operations in compartment @compartmentDetails.CompartmentName
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @compartmentDetails.OperationsString
+                            </dd>
+                            <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+                                <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)">Change<span class="govuk-visually-hidden"> felling operations in @compartmentDetails.CompartmentName</span></a>
+                            </dd>
+                        </div>
+                    </dl>
+                }
+
+                <input type="hidden" asp-for="@Model.GIS" />
+                <div class="govuk-!-margin-bottom-6" id="viewDiv" aria-label="Map of compartments within this application"></div>
+
+                @foreach (var compartment in Model.FellingCompartmentDetails)
+                {
+                    <div>
+                        <partial name="_FellingCompartmentPlayback" model="@compartment" />
+                    </div>
+                }
+            
+            </fieldset>
+
+            <div class="govuk-button-group">
+                <a condition-disabled="@(Model.AllowEditing is false)" class="govuk-button" asp-controller="FellingLicenceApplication" asp-action="ConstraintsCheck" asp-route-applicationId="@Model.ApplicationId">Save and continue</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Css {
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+
+    <style>
+        #viewDiv {
+            border-color: black;
+            border-style: solid;
+            border-width: 1px;
+            padding: 0;
+            margin: 0;
+            height: 85vh !important;
+        }
+    </style>
+}
+@section Scripts {
+
+    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script>
+        require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {
+            var mapObj = new MapCompartmentSelection("viewDiv");
+        })
+    </script>
+    
+    
+    @if (!Model.AllowEditing)
+    {
+        <script src="/js/disable-form-elements.js"></script>
+
+        <script>
+
+            $(function() {
+
+                disableFormElements('#felling-and-restocking-playback-form');
+            });
+
+        </script>
+    }
+}

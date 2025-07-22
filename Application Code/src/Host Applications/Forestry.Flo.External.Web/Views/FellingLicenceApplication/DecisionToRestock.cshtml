@@ -1,0 +1,96 @@
+﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.DecisionToRestockViewModel
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData.ManuallySetBackLink(Url.Action(
+        Model.ReturnToPlayback
+            ? "FellingAndRestockingPlayback"
+            : "ApplicationSummary",
+        "FellingLicenceApplication",
+        new
+        {
+            applicationId = Model.ApplicationId
+        }));
+    ViewData.ShowBackLink();
+    ViewData["Title"] = "Do you want to restock";
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+    <partial name="Partials/_PageErrors" />
+
+    <form id="decision-to-restock" method="post">
+
+        <input type="hidden" asp-for="ApplicationId" />
+        <input type="hidden" asp-for="FellingCompartmentId" />
+        <input type="hidden" asp-for="FellingCompartmentName" />
+        <input type="hidden" asp-for="OperationType" />
+        <input type="hidden" asp-for="ProposedFellingDetailsId" />
+        
+        <partial name="_ApplicationEditWarning.cshtml" model="@Model" />
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-fieldset__heading">
+                        Do you want to restock for the @Model.OperationType.GetDisplayName()?
+                    </h1>
+                </legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input id="is-restock-selected-yes" type="radio" class="govuk-radios__input" asp-for="IsRestockSelected" value="@true">
+                        <label class="govuk-label govuk-radios__label" for="is-restock-selected-yes">
+                            Yes
+                        </label>
+                    </div>
+
+                    <div class="govuk-radios__item">
+                        <input id="is-restock-selected-no" type="radio" class="govuk-radios__input" asp-for="IsRestockSelected" value="@false" data-aria-controls="conditional-@Html.NameFor(x => !x.IsRestockSelected)">
+                        <label class="govuk-label govuk-radios__label" for="is-restock-selected-no">
+                            No
+                        </label>
+                    </div>
+
+                    <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => !x.IsRestockSelected)">
+                        <div class="govuk-form-group">
+                            <label asp-for="Reason" class="@GdsConstants.GdsLabelCssClass">
+                                Please tell us why you don't want to restock
+                            </label>
+                            <validation asp-for="@Model.Reason"></validation>
+                            <input class="@GdsConstants.GdsInputCssClass" asp-for="Reason"/>
+                        </div>
+                    </div>
+
+
+                </div>
+            </fieldset>
+        </div>
+
+        <button type="submit" class="govuk-button" data-module="govuk-button">
+            Save and continue
+        </button>
+    </form>
+
+</div>
+
+@section Scripts
+{
+    @if (!Model.AllowEditing)
+    {
+        <script src="/js/disable-form-elements.js"></script>
+
+        <script>
+
+            $(function() {
+
+                disableFormElements('#decision-to-restock');
+            });
+
+        </script>
+    }
+}

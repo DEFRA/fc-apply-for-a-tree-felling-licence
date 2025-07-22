@@ -1,0 +1,228 @@
+﻿@{
+    ViewData["Title"] = "Woodland officer review";
+}
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Internal.Web.Infrastructure
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Configuration
+@using Microsoft.Extensions.Options
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.WoodlandOfficerReviewModel
+@inject IOptions<WoodlandOfficerReviewOptions> Settings
+
+@{
+    var user = new InternalUser(User);
+}
+
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+    <h1 class="govuk-heading-l">Woodland officer review</h1>
+    
+    <partial name="Partials/_PageErrors"/>
+    
+    <input id="steps-complete" type="hidden" value="@Model.WoodlandOfficerReviewTaskListStates.IsCompletable().ToString()" />
+    
+    <div>
+        <ul class="app-task-list__items">
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("SiteVisit", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="site-visit">
+                        Site comments
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus.GetStatusStyleName() app-task-list__tag" id="site-visit">@Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("Pw14Checks", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="pw14-checks">
+                        Woodland officer checks
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus.GetStatusStyleName() app-task-list__tag" id="pw14-checks">@Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("FellingAndRestocking", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="felling-and-restocking">
+                        Confirm Felling and Restocking
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetStatusStyleName() app-task-list__tag" id="felling-and-restocking">@Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item" condition="@Settings.Value.UseNewConfirmedFellingRestocking">
+                <span class="app-task-list__task-name">
+					<a href="@Url.Action("ConfirmedFellingAndRestocking", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="felling-and-restocking">
+						New Confirmed Felling and Restocking
+					</a>
+				</span>
+				<strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetStatusStyleName() app-task-list__tag" id="felling-and-restocking">@Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetDisplayName()</strong>
+			</li>
+			<li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("Conditions", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="conditions">
+                        Conditions and remarks
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetStatusStyleName() app-task-list__tag" id="conditions">@Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="consultation">
+                        Consultation
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetStatusStyleName() app-task-list__tag" id="consultation">@Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("PublicRegister", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="public-register">
+                        Public register
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus.GetStatusStyleName() app-task-list__tag" id="public-register">@Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus.GetDisplayName()</strong>
+            </li>
+			<li class="app-task-list__item">
+				<span class="app-task-list__task-name">
+					@if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired || Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.CannotStartYet)
+					{
+						<a aria-describedby="larch-check">
+							Larch check
+						</a>
+						@if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired)
+						{
+							<a class="govuk-hint">
+								<br>(No larch species in the application)
+							</a>
+						}
+                        else
+                        {
+                            <a class="govuk-hint">
+                                <br>(Confirmed felling and restocking must be completed)
+                            </a>
+                        }
+					}
+					else
+					{
+						<a href="@Url.Action("LarchCheck", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
+							Larch check
+						</a>
+					}
+				</span>
+				<strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
+			</li>
+			<li class="app-task-list__item">
+				<span class="app-task-list__task-name">
+                    @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired || Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.CannotStartYet)
+					{
+						<a aria-describedby="larch-check">
+                            Larch flyover update
+						</a>
+                        @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired)
+						{
+							<a class="govuk-hint">
+								<br>(No larch species in the application)
+							</a>
+						}
+					}
+					else
+					{
+                        <a href="@Url.Action("LarchFlyover", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
+                            Larch flyover update
+						</a>
+					}
+				</span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
+			</li>
+			<li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="final-checks">
+                        Final checks
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetStatusStyleName() app-task-list__tag" id="final-checks">@Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()</strong>
+            </li>
+        </ul>
+        
+        <div class="govuk-form-group" condition="@(Model.FellingLicenceApplicationSummary.MostRecentFcLisReport.HasValue)">
+            <partial name="Partials/_ConstraintReportDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
+        </div>
+
+        <form method="post" asp-action="ConfirmWoodlandOfficerReview">
+            <input asp-for="ApplicationId"/>
+            <input type="hidden" asp-for="AssignedFieldManager"/>
+
+            <div class="govuk-form-group">
+                <h2 class="govuk-heading-s">Review actions</h2>
+
+                <fieldset class="govuk-fieldset" condition="@Model.Editable(user)">
+                    <div id="consultee-hint" class="govuk-hint">
+                        If you wish to invite an external stakeholder to comment on this application, click here.
+                    </div>
+                    <a id="invite-external-consultee" class="govuk-button" data-module="govuk-button" asp-controller="ExternalConsulteeInvite" asp-action="Index" asp-route-applicationId="@Model.FellingLicenceApplicationSummary.Id" asp-route-returnUrl="@Url.Action("Index", "WoodlandOfficerReview", new { Model.FellingLicenceApplicationSummary.Id })">Invite external consultee</a>
+                </fieldset>
+
+                <fieldset class="govuk-fieldset">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label" asp-for="RecommendedLicenceDuration">Recommended licence duration</label>
+                        <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
+                    </div>
+                    <br/>
+                </fieldset>
+                
+                <fieldset class="govuk-fieldset">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label" asp-for="RecommendationForDecisionPublicRegister">Recommend to decision public register</label>
+                        
+                        <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
+                            <div class="govuk-radios__item">
+                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-yes" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
+                                <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes, publish to the register</label>
+                            </div>
+                            <div class="govuk-radios__item">
+                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-no" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="false"/>
+                                <label class="govuk-label govuk-radios__label" for="dpr-no">No, do not publish to the register</label>
+                            </div>
+                        </div>
+                    </div>
+                    <br />
+                </fieldset>
+
+                <fieldset class="govuk-fieldset">
+                    <div class="govuk-form-group">
+                        <div condition="@Model.Editable(user)" class="govuk-hint">
+                            When you’ve completed all your checks,
+                            submit your review to move the application to the next stage.
+                        </div>
+                        <div class="govuk-button-group">
+                            <button condition="@Model.Editable(user)" id="submit-review-btn" class="govuk-button" data-module="govuk-button">Submit review</button>
+                            <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary.Id">Return to application summary</a>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+        </form>
+        
+        <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+        <partial name="Partials/_ActivityFeed" model="@Model.WoodlandOfficerReviewCommentsFeed"/>
+
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/add-case-note.js" asp-append-version="true"></script>
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/woodland-officer-review.js" asp-append-version="true"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

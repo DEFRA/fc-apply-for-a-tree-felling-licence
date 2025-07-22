@@ -1,0 +1,58 @@
+﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ConfirmDeleteFellingLicenceApplicationModel
+@{
+    ViewData["Title"] = "Confirm Felling Licence Application Deletion";
+}
+
+<div class="govuk-grid-column-full">
+    
+    <h1 class="govuk-heading-l">
+        Are you sure you want to delete this application?
+    </h1>
+    
+    <p class="govuk-body">
+        Your reference number is
+        <strong>@Model.ApplicationReference</strong>
+    </p>
+
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive govuk-visually-hidden">Information</span>
+            Please note that whilst the application will be deleted and non-recoverable, you will still be able to modify and re-use the woodland information in any future applications.
+        </strong>
+    </div>
+
+    <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.ApplicationId" class="govuk-link">Return to your application</a>
+
+    <div class="govuk-!-margin-top-6">
+
+        <form id="deleteApp" method="POST" asp-action="DeleteFellingLicenceApplication">
+            @Html.HiddenFor(x => x.ApplicationId)
+            @Html.HiddenFor(x => x.ApplicationReference)
+            <button id="submitDeleteButton" data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">
+                Delete application
+            </button>
+        </form>
+
+    </div>
+
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}
+@section Scripts
+{
+    <script>
+        $(document).ready(function () {
+
+            $("#deleteApp").submit(function (e) {
+
+                $("#submitDeleteButton").attr("disabled", true);
+
+                return true;
+            });
+        });
+    </script>
+}

@@ -1,0 +1,865 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "internal-web-app.fullname" . }}
+  labels:
+    {{- include "internal-web-app.labels" . | nindent 4 }}
+    floAppHelmVersion: {{ .Values.floAppVersion }}
+    appVersion: {{ .Values.appVersion }}
+    helmVersion: {{ .Values.helmVersion }}
+    databaseVersion: {{ .Values.databaseVersion }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "internal-web-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "internal-web-app.selectorLabels" . | nindent 8 }}
+        floAppHelmVersion: {{ .Values.floAppVersion }}
+        appVersion: {{ .Values.appVersion }}
+        helmVersion: {{ .Values.helmVersion }}
+        databaseVersion: {{ .Values.databaseVersion }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "internal-web-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: environment
+                  operator: In
+                  values:
+                  - {{ .Values.global.environment }}
+      initContainers:
+        {{- if .Values.global.postgresql.enabled }}
+        - name: init-db
+          image: busybox:1.28
+          command: ['sh', '-c', 'for i in $(seq 1 300); do nc -zvw1 {{ print .Release.Name "-postgresql" }} 5432 && exit 0 || sleep 3; done; exit 1']  
+        {{- end }}
+        {{- if .Values.global.postgresql.enabled }}
+        - name: init-install-postgis
+          image: postgres:11.1
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.postgresql.existingSecret }}
+                  key: {{ .Values.global.postgresql.auth.postgresPassword }}
+          command:
+            - sh
+            - -c
+            - >
+              psql -h {{ .Release.Name }}-postgresql --username=postgres -d flo -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+        {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            # ------------------- Environment Variables Start -------------------
+            # ------------------- Database start -------------------
+            {{- if .Values.config.connectionStrings.defaultConnection }}
+            - name: ConnectionStrings__DefaultConnection
+              {{- if .Values.config.connectionStrings.defaultConnection.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.connectionStrings.defaultConnection.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.connectionStrings.defaultConnection }}
+              {{- end }}
+            {{- end }}
+            # ------------------- Azure B2C start -------------------
+            {{- if .Values.config.azureADB2C.instance }}
+            - name: AzureADB2C__Instance
+              value: {{ .Values.config.azureADB2C.instance }}
+            {{- end }}
+            {{- if .Values.config.azureADB2C.clientId }}
+            {{- if .Values.config.azureADB2C.clientId.secret_key }}
+            - name: AzureADB2C__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.azureADB2C.clientId.secret_key }}
+            {{- else if .Values.config.azureADB2C.clientId }}
+            - name: AzureADB2C__ClientId
+              value: {{ .Values.config.azureADB2C.clientId }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.azureADB2C.clientSecret }}
+            {{- if .Values.config.azureADB2C.clientSecret.secret_key }}
+            - name: AzureADB2C__ClientSecret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.azureADB2C.clientSecret.secret_key }}
+            {{- else if .Values.config.azureADB2C.clientSecret }}
+            - name: AzureADB2C__ClientSecret
+              value: {{ .Values.config.azureADB2C.clientSecret }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.azureADB2C.domain }}
+            - name: AzureADB2C__Domain
+              value: {{ .Values.config.azureADB2C.domain }}
+            {{- end }}
+            {{- if .Values.config.azureADB2C.signedOutCallbackPath }}
+            - name: AzureADB2C__SignedOutCallbackPath
+              value: {{ .Values.config.azureADB2C.signedOutCallbackPath }}
+            {{- end }}
+            {{- if .Values.config.azureADB2C.signUpSignInPolicyId }}
+            - name: AzureADB2C__SignUpSignInPolicyId
+              value: {{ .Values.config.azureADB2C.signUpSignInPolicyId }}
+            {{- end }}
+            # ------------------- AzureAd start -------------------
+            {{- if .Values.config.azureAD.instance }}
+            - name: AzureAd__Instance
+              value: {{ .Values.config.azureAD.instance }}
+            {{- end }}
+            {{- if .Values.config.azureAD.apiUrl }}
+            - name: AzureAd__ApiUrl
+              value: {{ .Values.config.azureAD.apiUrl }}
+            {{- end }}
+            {{- if .Values.config.azureAD.tenantId }}
+            {{- if .Values.config.azureAD.tenantId.secret_key }}
+            - name: AzureAd__TenantId
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.azureAD.tenantId.secret_key }}
+            {{- else if .Values.config.azureAD.tenantId }}
+            - name: AzureAd__TenantId
+              value: {{ .Values.config.azureAD.tenantId }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.azureAD.clientId }}
+            {{- if .Values.config.azureAD.clientId.secret_key }}
+            - name: AzureAd__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.azureAD.clientId.secret_key }}
+            {{- else if .Values.config.azureAD.clientId }}
+            - name: AzureAd__ClientId
+              value: {{ .Values.config.azureAD.clientId }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.azureAD.clientSecret }}
+            {{- if .Values.config.azureAD.clientSecret.secret_key }}
+            - name: AzureAd__ClientSecret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.azureAD.clientSecret.secret_key }}
+            {{- else if .Values.config.azureAD.clientSecret }}
+            - name: AzureAd__ClientSecret
+              value: {{ .Values.config.azureAD.clientSecret }}
+            {{- end }}
+            {{- end }}
+            # ------------------- Notifications start -------------------
+            {{- if .Values.config.notifications.defaultFromAddress }}
+            - name: Notifications__DefaultFromAddress
+              value: {{ .Values.config.notifications.defaultFromAddress }}
+            {{- end }}
+            {{- if .Values.config.notifications.defaultFromName }}
+            - name: Notifications__DefaultFromName
+              value: {{ .Values.config.notifications.defaultFromName }}
+            {{- end }}
+            {{- if .Values.config.notifications.smtp.host }}
+            - name: Notifications__Smtp__Host
+              value: {{ .Values.config.notifications.smtp.host }}
+            {{- end }}
+            {{- if .Values.config.notifications.smtp.port }}
+            - name: Notifications__Smtp__Port
+              value: {{ .Values.config.notifications.smtp.port | quote }}
+            {{- end }}
+            {{- if .Values.config.notifications.smtp.username }}
+            - name: Notifications__Smtp__Username
+              {{- if .Values.config.notifications.smtp.username.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.notifications.smtp.username.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.notifications.smtp.username }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.config.notifications.smtp.password }}
+            - name: Notifications__Smtp__Password
+              {{- if .Values.config.notifications.smtp.password.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.notifications.smtp.password.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.notifications.smtp.password }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ASP.Net Core start -------------------
+            {{- if .Values.config.environment }}
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.config.environment }}
+            {{- end }}
+            # ------------------- Data Protection Keys Directory start -------------------
+            {{- if .Values.config.dataProtectionKeysDirectory }}
+            - name: DataProtectionKeysDirectory
+              value: {{ .Values.config.dataProtectionKeysDirectory }}
+            {{- end }}
+            # ------------------- Quicksilva Virus Scanner Service start -------------------
+            {{- if .Values.config.quicksilvaVirusScannerService.isEnabled }}
+            - name: QuicksilvaVirusScannerService__IsEnabled
+              value: {{ .Values.config.quicksilvaVirusScannerService.isEnabled | quote }}
+            {{- end }}
+            {{- if .Values.config.quicksilvaVirusScannerService.avEndpoint }}
+            - name: QuicksilvaVirusScannerService__AvEndpoint
+              value: {{ .Values.config.quicksilvaVirusScannerService.avEndpoint }}
+            {{- end }}
+            # ------------------- File Storage start -------------------
+            {{- if .Values.config.fileStorage.storageRootPath }}
+            - name: FileStorage__StorageRootPath
+              value: {{ .Values.config.fileStorage.storageRootPath }}
+            {{- end }}
+            {{- if .Values.config.fileStorage.connectionString }}
+            - name: FileStorage__ConnectionString
+              {{- if .Values.config.fileStorage.connectionString.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.fileStorage.connectionString.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.fileStorage.connectionString }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.config.fileStorage.container }}
+            - name: FileStorage__Container
+              value: {{ .Values.config.fileStorage.container }}
+            {{- end }}
+            # ------------------- User Invite start -------------------
+            {{- if .Values.config.userInvite.inviteLinkExpiryDays }}
+            - name: UserInvite__InviteLinkExpiryDays
+              value: {{ .Values.config.userInvite.inviteLinkExpiryDays | quote }}
+            {{- end }}
+            # ------------------- External Applicnts start -------------------
+            {{- if .Values.config.externalApplicantSite.baseUrl }}
+            - name: ExternalApplicantSite__BaseUrl
+              value: {{ .Values.config.externalApplicantSite.baseUrl }}
+            {{- end }}
+            # ------------------- PDF Generator API start -------------------
+            {{- if .Values.config.pdfGeneratorApi.templateName }}
+            - name: PDFGeneratorAPI__TemplateName
+              value: {{ .Values.config.pdfGeneratorApi.templateName }}
+            {{- end }}
+            {{- if .Values.config.pdfGeneratorApi.version }}
+            - name: PDFGeneratorAPI__Version
+              value: "{{ .Values.config.pdfGeneratorApi.version }}"
+            {{- end }}
+            # ------------------- Felling Licence Application start -------------------
+            {{- if .Values.config.FellingLicenceApplication.FinalActionDateDaysFromSubmission }}
+            - name: FellingLicenceApplication__FinalActionDateDaysFromSubmission
+              value: "{{ .Values.config.FellingLicenceApplication.FinalActionDateDaysFromSubmission }}"
+            {{- end }}
+            {{- if .Values.config.FellingLicenceApplication.CitizensCharterDateLength }}
+            - name: FellingLicenceApplication__CitizensCharterDateLength
+              value: "{{ .Values.config.FellingLicenceApplication.CitizensCharterDateLength }}"
+            {{- end }}
+            # ------------------- LarchOptions start -------------------
+            {{- if .Values.config.LarchOptions.EarlyFadDay }}
+            - name: LarchOptions__EarlyFadDay
+              value: "{{ .Values.config.LarchOptions.EarlyFadDay }}"
+            {{- end }}
+            {{- if .Values.config.LarchOptions.EarlyFadMonth }}
+            - name: LarchOptions__EarlyFadMonth
+              value: "{{ .Values.config.LarchOptions.EarlyFadMonth }}"
+            {{- end }}
+            {{- if .Values.config.LarchOptions.LateFadDay }}
+            - name: LarchOptions__LateFadDay
+              value: "{{ .Values.config.LarchOptions.LateFadDay }}"
+            {{- end }}
+            {{- if .Values.config.LarchOptions.LateFadMonth }}
+            - name: LarchOptions__LateFadMonth
+              value: "{{ .Values.config.LarchOptions.LateFadMonth }}"
+            {{- end }}
+            {{- if .Values.config.LarchOptions.FlyoverPeriodStartDay }}
+            - name: LarchOptions__FlyoverPeriodStartDay
+              value: "{{ .Values.config.LarchOptions.FlyoverPeriodStartDay }}"
+            {{- end }}
+            {{- if .Values.config.LarchOptions.FlyoverPeriodStartMonth }}
+            - name: LarchOptions__FlyoverPeriodStartMonth
+              value: "{{ .Values.config.LarchOptions.FlyoverPeriodStartMonth }}"
+            {{- end }}
+            {{- if .Values.config.LarchOptions.FlyoverPeriodEndDay }}
+            - name: LarchOptions__FlyoverPeriodEndDay
+              value: "{{ .Values.config.LarchOptions.FlyoverPeriodEndDay }}"
+            {{- end }}
+            {{- if .Values.config.LarchOptions.FlyoverPeriodEndMonth }}
+            - name: LarchOptions__FlyoverPeriodEndMonth
+              value: "{{ .Values.config.LarchOptions.FlyoverPeriodEndMonth }}"
+            {{- end }}
+            # ------------------- admin Officer Review start -------------------
+            {{- if .Values.config.adminOfficerReview.citizensCharterDateLength }}
+            - name: AdminOfficerReview__CitizensCharterDateLength
+              value: {{ .Values.config.adminOfficerReview.citizensCharterDateLength }}
+            {{- end }}
+            # ------------------- Woodland Officer Review start -------------------
+            {{- if .Values.config.woodlandOfficerReview.useNewConfirmedFellingRestocking }}
+            - name: WoodlandOfficerReview__UseNewConfirmedFellingRestocking
+              value: {{ .Values.config.woodlandOfficerReview.useNewConfirmedFellingRestocking | quote }}
+            {{- end }}
+            # ------------------- public register expiry start -------------------
+            {{- if .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
+            - name: PublicRegisterExpiry__ThresholdBeforePublicRegisterPeriodEnd
+              value: {{ .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
+            {{- end }}
+            # ------------------- voluntary Withdraw Application start -------------------
+            {{- if .Values.config.voluntaryWithdrawApplication.thresholdAfterWithApplicantStatusDate }}
+            - name: VoluntaryWithdrawApplication__ThresholdAfterWithApplicantStatusDate
+              value: {{ .Values.config.voluntaryWithdrawApplication.thresholdAfterWithApplicantStatusDate }}
+            {{- end }}
+            {{- if .Values.config.voluntaryWithdrawApplication.thresholdAutomaticWithdrawal }}
+            - name: VoluntaryWithdrawApplication__ThresholdAutomaticWithdrawal
+              value: {{ .Values.config.voluntaryWithdrawApplication.thresholdAutomaticWithdrawal }}
+            {{- end }}
+            # ------------------- Application Extension start -------------------
+            {{- if .Values.config.applicationExtension.extensionLength }}
+            - name: ApplicationExtension__ExtensionLength
+              value: {{ .Values.config.applicationExtension.extensionLength }}
+            {{- end }}
+            {{- if .Values.config.applicationExtension.thresholdBeforeFinalActionDate }}
+            - name: ApplicationExtension__ThresholdBeforeFinalActionDate
+              value: {{ .Values.config.applicationExtension.thresholdBeforeFinalActionDate }}
+            {{- end }}
+            # ------------------- PDF Generator API start -------------------
+            {{- if .Values.config.pdfGeneratorApi.baseUrl }}
+            - name: PDFGeneratorAPI__BaseUrl
+              value: {{ .Values.config.pdfGeneratorApi.baseUrl }}
+            {{- end }}
+            # ------------------- Land information Search start -------------------
+            {{- if .Values.config.landInformationSearch.deepLinkUrlAndPath }}
+            - name: LandInformationSearch__DeepLinkUrlAndPath
+              value: {{ .Values.config.landInformationSearch.deepLinkUrlAndPath }}
+            {{- end }}
+            {{- if .Values.config.landInformationSearch.lisConfig }}
+            - name: LandInformationSearch__LisConfig
+              value: {{ .Values.config.landInformationSearch.lisConfig }}
+            {{- end }}
+            {{- if .Values.config.landInformationSearch.baseUrl }}
+            - name: LandInformationSearch__BaseUrl
+              value: {{ .Values.config.landInformationSearch.baseUrl }}
+            {{- end }}
+            {{- if .Values.config.landInformationSearch.featurePath }}
+            - name: LandInformationSearch__FeaturePath
+              value: {{ .Values.config.landInformationSearch.featurePath }}
+            {{- end }}
+            {{- if .Values.config.landInformationSearch.tokenUrl }}
+            - name: LandInformationSearch__TokenUrl
+              value: {{ .Values.config.landInformationSearch.tokenUrl }}
+            {{- end }}
+            {{- if .Values.config.landInformationSearch.tokenPath }}
+            - name: LandInformationSearch__TokenPath
+              value: {{ .Values.config.landInformationSearch.tokenPath }}
+            {{- end }}
+            # ------------------- Land information - Auth -------------------
+            {{- if .Values.config.landInformationSearch.clientID }}
+            - name: LandInformationSearch__ClientID
+              {{- if .Values.config.landInformationSearch.clientID.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.landInformationSearch.clientID.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.landInformationSearch.clientID }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.config.landInformationSearch.clientSecret }}
+            - name: LandInformationSearch__ClientSecret
+              {{- if .Values.config.landInformationSearch.clientSecret.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.landInformationSearch.clientSecret.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.landInformationSearch.clientSecret }}
+              {{- end }}
+            {{- end }}
+            # ------------------- Rabbit MQ start -------------------
+            {{- if .Values.global.rabbitmq.enabled }}
+            - name: RabbitMqOptions__Url
+              value: rabbitmq://rabbitmq:5672/
+
+            {{- end }}
+            {{- if .Values.config.rabbitMqOptions.username }}
+            - name: RabbitMqOptions__Username
+              {{- if .Values.config.rabbitMqOptions.username.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.rabbitMqOptions.username.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.rabbitMqOptions.username }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.config.rabbitMqOptions.password }}
+            - name: RabbitMqOptions__Password
+              {{- if .Values.config.rabbitMqOptions.password.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.rabbitMqOptions.password.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.rabbitMqOptions.password }}
+              {{- end }}
+            {{- end }}
+            # ------------------- Google Analytics start -------------------
+            {{- if .Values.config.siteAnalytics.googleAnalytics.enabled }}
+            - name: SiteAnalytics__GoogleAnalytics__Enabled
+              value: {{ .Values.config.siteAnalytics.googleAnalytics.enabled | quote }}
+            {{- end }}
+            {{- if .Values.config.siteAnalytics.googleAnalytics.trackingId }}
+            - name: SiteAnalytics__GoogleAnalytics__TrackingId
+              value: {{ .Values.config.siteAnalytics.googleAnalytics.trackingId | quote }}
+            {{- end }}
+            # ------------------- Microsoft clarity start -------------------
+            {{- if .Values.config.siteAnalytics.microsoftClarity.enabled }}
+            - name: SiteAnalytics__MicrosoftClarity__Enabled
+              value: {{ .Values.config.siteAnalytics.microsoftClarity.enabled | quote }}
+            {{- end }}
+            {{- if .Values.config.siteAnalytics.microsoftClarity.trackingId }}
+            - name: SiteAnalytics__MicrosoftClarity__TrackingId
+              value: {{ .Values.config.siteAnalytics.microsoftClarity.trackingId | quote }}
+            {{- end }}
+            # ------------------- Permitted Registered User Email Domains start -------------------
+            {{- if .Values.config.permittedRegisteredUser.enabled }}
+            {{- with .Values.config.permittedRegisteredUser }}
+            {{- if .permittedEmailDomainsForRegisteredUser }}
+            - name: permittedRegisteredUser_permittedEmailDomainsForRegisteredUser
+              value: '{{ .permittedEmailDomainsForRegisteredUser | toJson }}'
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            # ------------------- Logging start -------------------
+            - name: Logging__LogLevel__Default
+              value: {{ .Values.config.logging.LogLevel.Default }}
+            - name: Logging__LogLevel__Microsoft__AspNetCore
+              value: {{ .Values.config.logging.LogLevel.Microsoft.AspNetCore }}
+            # ------------------- Gov notify start -------------------
+            {{- if .Values.config.GovUkNotifyOptions.enabled }}
+            {{- if .Values.config.GovUkNotifyOptions.ApiKey }}
+            - name: GovUkNotifyOptions__ApiKey
+              {{- if .Values.config.GovUkNotifyOptions.ApiKey.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.GovUkNotifyOptions.ApiKey.secret_key }}
+              {{- else }}
+              value: {{ .Values.config.GovUkNotifyOptions.ApiKey }}
+              {{- end }}
+            {{- end }}
+            - name: GovUkNotifyOptions__ReplyToId
+              value: {{ .Values.config.GovUkNotifyOptions.ReplyToId }}
+            - name: GovUkNotifyOptions__TemplateIds__ApplicationResubmitted
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicationResubmitted }}
+            - name: GovUkNotifyOptions__TemplateIds__ApplicationSubmissionConfirmation
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicationSubmissionConfirmation }}
+            - name: GovUkNotifyOptions__TemplateIds__ApplicationWithdrawnConfirmation
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicationWithdrawnConfirmation }}
+            - name: GovUkNotifyOptions__TemplateIds__ApplicationWithdrawn
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicationWithdrawn }}
+            - name: GovUkNotifyOptions__TemplateIds__ConditionsToApplicant
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ConditionsToApplicant }}
+            - name: GovUkNotifyOptions__TemplateIds__ExternalConsulteeInvite
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ExternalConsulteeInvite }}
+            - name: GovUkNotifyOptions__TemplateIds__ExternalConsulteeInviteWithPublicRegisterInfo
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ExternalConsulteeInviteWithPublicRegisterInfo }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationApproval
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationApproval }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationReferredToLocalAuthority
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationReferredToLocalAuthority }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationRefusal
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationRefusal }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationVoluntaryWithdrawOption
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationVoluntaryWithdrawOption }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfReturnedApplication
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplication }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationExtension
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationExtension }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationAddedToConsultationPublicRegister
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfApplicationAddedToConsultationPublicRegister }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationAddedToDecisionPublicRegister
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfApplicationAddedToDecisionPublicRegister }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFieldManagerOfWoodlandOfficerReviewCompletion
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFieldManagerOfWoodlandOfficerReviewCompletion }}
+            - name: GovUkNotifyOptions__TemplateIds__InformWoodlandOfficerOfAdminOfficerReviewCompletion
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformWoodlandOfficerOfAdminOfficerReviewCompletion }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFCStaffOfReturnedApplication
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFCStaffOfReturnedApplication }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFCStaffOfFinalActionDateReached
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFCStaffOfFinalActionDateReached }}
+            - name: GovUkNotifyOptions__TemplateIds__UserAssignedToApplication
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.UserAssignedToApplication }}
+            - name: GovUkNotifyOptions__TemplateIds__InformAdminOfNewAccountSignup
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformAdminOfNewAccountSignup }}
+            - name: GovUkNotifyOptions__TemplateIds__InformInternalUserOfAccountApproval
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformInternalUserOfAccountApproval }}
+            - name: GovUkNotifyOptions__TemplateIds__InviteWoodlandOwnerUserToOrganisation
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InviteWoodlandOwnerUserToOrganisation }}
+            - name: GovUkNotifyOptions__TemplateIds__InviteAgentUserToOrganisation
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InviteAgentUserToOrganisation }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfLarchOnlyApplicationFADextension
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfLarchOnlyApplicationFADextension }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfReturnedApplicationMixLarchZone1
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationMixLarchZone1 }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfReturnedApplicationMixLarchMixZone
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationMixLarchMixZone }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfReturnedApplicationLarchOnlyMixZone
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationLarchOnlyMixZone }}
+            {{- end }}
+            # ------------------- ESRI Config start -------------------
+            {{- if .Values.config.esriConfig.enabled }}
+            # ------------------- ESRI Forestry -------------------
+            {{- with .Values.config.esriConfig.Forestry }}
+            {{- if .BaseUrl }}
+            - name: ESRI_FORESTRY_BASEURL
+              value: {{ .BaseUrl | quote }}
+            {{- end }}
+            {{- if .CountryCode }}
+            - name: ESRI_FORESTRY_COUNTRYCODE
+              value: {{ .CountryCode | quote }}
+            {{- end }}
+            {{- if .ApiKey }}
+            - name: ESRI_FORESTRY_APIKEY
+              {{- if .ApiKey.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .ApiKey.secret_key }}
+              {{- else }}
+              value: {{ .ApiKey | quote }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI Forestry - GenerateTokenService -------------------
+            {{- with .GenerateTokenService }}
+              {{- if .Path }}
+            - name: ESRI_FORESTRY_GENERATETOKEN_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+              {{- if .ClientID }}
+            - name: ESRI_FORESTRY_GENERATETOKEN_CLIENTID
+              {{- if .ClientID.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .ClientID.secret_key }}
+              {{- else }}
+              value: {{ .ClientID | quote }}
+              {{- end }}
+              {{- end }}
+              {{- if .ClientSecret }}
+            - name: ESRI_FORESTRY_GENERATETOKEN_CLIENTSECRET
+              {{- if .ClientSecret.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .ClientSecret.secret_key }}
+              {{- else }}
+              value: {{ .ClientSecret | quote }}
+              {{- end }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI Forestry - FeaturesService -------------------
+            {{- with .FeaturesService }}
+              {{- if .IsPublic }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_ISPUBLIC
+              value: {{ .IsPublic | quote }}
+              {{- end }}
+              {{- if .NeedsToken }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_NEEDSTOKEN
+              value: {{ .NeedsToken | quote }}
+              {{- end }}
+              {{- if .Path }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+              {{- with .GenerateService }}
+                {{- if .Path }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_PATH
+              value: {{ .Path | quote }}
+                {{- end }}
+                {{- if .SupportedFileImports }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_SUPPORTEDFILEIMPORTS
+              value: '{{ .SupportedFileImports | toJson }}'
+                {{- end }}
+                {{- if .MaxRecords }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_MAXRECORDS
+              value: {{ .MaxRecords | quote }}
+                {{- end }}
+                {{- if .EnforceInputFileSizeLimit }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_ENFORCEINPUTFILESIZELIMIT
+              value: {{ .EnforceInputFileSizeLimit | quote }}
+                {{- end }}
+                {{- if .EnforceOutputJsonSizeLimit }}
+            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_ENFORCEOUTPUTJSONSIZELIMIT
+              value: {{ .EnforceOutputJsonSizeLimit | quote }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI Forestry - GeometryService -------------------
+            {{- with .GeometryService }}
+              {{- if .Path }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+              {{- if .NeedsToken }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_NEEDSTOKEN
+              value: {{ .NeedsToken | quote }}
+              {{- end }}
+              {{- if .IsPublic }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_ISPUBLIC
+              value: {{ .IsPublic | quote }}
+              {{- end }}
+              {{- with .IntersectService }}
+                {{- if .Path }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_INTERSECTSERVICE_PATH
+              value: {{ .Path | quote }}
+                {{- end }}
+              {{- end }}
+              {{- with .ProjectService }}
+                {{- if .Path }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_PATH
+              value: {{ .Path | quote }}
+                {{- end }}
+                {{- if .OutSR }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_OUTSR
+              value: {{ .OutSR | quote }}
+                {{- end }}
+                {{- if .GridLength }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_GRIDLENGTH
+              value: {{ .GridLength | quote }}
+                {{- end }}
+                {{- if .IncludeSpaces }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_INCLUDESPACES
+              value: {{ .IncludeSpaces | quote }}
+                {{- end }}
+              {{- end }}
+              {{- with .UnionService }}
+                {{- if .Path }}
+            - name: ESRI_FORESTRY_GEOMETRYSERVICE_UNIONSERVICE_PATH
+              value: {{ .Path | quote }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI Forestry - LayerServices -------------------
+            {{- if .LayerServices }}
+            - name: ESRI_FORESTRY_LAYERSERVICES
+              value: '{{ .LayerServices | toJson }}'
+            {{- end }}
+            {{- end }}
+            # ------------------- ESRI Forester -------------------
+            {{- with .Values.config.esriConfig.Forester }}
+            {{- if .BaseUrl }}
+            - name: ESRI_FORESTER_BASEURL
+              value: {{ .BaseUrl | quote }}
+            {{- end }}
+            {{- if .CountryCode }}
+            - name: ESRI_FORESTER_COUNTRYCODE
+              value: {{ .CountryCode | quote}}
+            {{- end }}
+            {{- if .ApiKey }}
+            - name: ESRI_FORESTER_APIKEY
+              {{- if .ApiKey.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .ApiKey.secret_key }}
+              {{- else }}
+              value: {{ .ApiKey | quote }}
+              {{- end }}
+            {{- end }}
+            {{- if .NeedsToken }}
+            - name: ESRI_FORESTER_NEEDSTOKEN
+              value: {{ .NeedsToken | quote }}
+            {{- end }}
+            # ------------------- ESRI Forester - GenerateTokenService -------------------
+            {{- with .GenerateTokenService }}
+              {{- if .Path }}
+            - name: ESRI_FORESTER_GENERATETOKEN_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+              {{- if .Username }}
+            - name: ESRI_FORESTER_GENERATETOKEN_USERNAME
+              {{- if .Username.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .Username.secret_key }}
+              {{- else }}
+              value: {{ .Username | quote }}
+              {{- end }}
+              {{- end }}
+              {{- if .Password }}
+            - name: ESRI_FORESTER_GENERATETOKEN_PASSWORD
+              {{- if .Password.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .Password.secret_key }}
+              {{- else }}
+              value: {{ .Password | quote }}
+              {{- end }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI Forester - LayerServices -------------------
+            {{- if .LayerServices }}
+            - name: ESRI_FORESTER_LAYERSERVICES
+              value: '{{ .LayerServices | toJson }}'
+            {{- end }}
+            {{- end }}
+
+            # ------------------- ESRI PublicRegister -------------------
+            {{- with .Values.config.esriConfig.PublicRegister }}
+            {{- if .BaseUrl }}
+            - name: ESRI_PUBLICREGISTER_BASEURL
+              value: {{ .BaseUrl | quote }}
+            {{- end }}
+            {{- if .NeedsToken }}
+            - name: ESRI_PUBLICREGISTER_NEEDSTOKEN
+              value: {{ .NeedsToken | quote }}
+            {{- end }}
+            # ------------------- ESRI PublicRegister - GenerateTokenService -------------------
+            {{- with .GenerateTokenService }}
+              {{- if .Path }}
+            - name: ESRI_PUBLICREGISTER_GENERATETOKEN_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+              {{- if .Username }}
+            - name: ESRI_PUBLICREGISTER_GENERATETOKEN_USERNAME
+              {{- if .Username.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .Username.secret_key }}
+              {{- else }}
+              value: {{ .Username | quote }}
+              {{- end }}
+              {{- end }}
+              {{- if .Password }}
+            - name: ESRI_PUBLICREGISTER_GENERATETOKEN_PASSWORD
+              {{- if .Password.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ .Password.secret_key }}
+              {{- else }}
+              value: {{ .Password | quote }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            # ------------------- ESRI PublicRegister - Boundaries -------------------
+            {{- with .Boundaries }}
+              {{- if .Path }}
+            - name: ESRI_PUBLICREGISTER_BOUNDARIES_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI PublicRegister - Compartments -------------------
+            {{- with .Compartments }}
+              {{- if .Path }}
+            - name: ESRI_PUBLICREGISTER_COMPARTMENTS_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI PublicRegister - Comments -------------------
+            {{- with .Comments }}
+              {{- if .Path }}
+            - name: ESRI_PUBLICREGISTER_COMMENTS_PATH
+              value: {{ .Path | quote }}
+              {{- end }}
+            {{- end }}
+            # ------------------- ESRI PublicRegister - LookUps -------------------
+            {{- with .LookUps }}
+              {{- if .Status }}
+            - name: ESRI_PUBLICREGISTER_LOOKUPS_STATUS
+              value: '{{ .Status | toJson }}'
+              {{- end }}
+            {{- end }}
+            {{- end }}
+            # ------------------- ESRI Common Fields -------------------
+            {{- if .Values.config.esriConfig.SpatialReference }}
+            - name: ESRI_SPATIALREFERENCE
+              value: {{ .Values.config.esriConfig.SpatialReference | quote }}
+            {{- end }}
+            {{- if .Values.config.esriConfig.RequestFormat }}
+            - name: ESRI_REQUESTFORMAT
+              value: {{ .Values.config.esriConfig.RequestFormat | quote }}
+            {{- end }}
+            {{- if .Values.config.esriConfig.LayoutTemplate }}
+            - name: ESRI_LAYOUTTEMPLATE
+              value: {{ .Values.config.esriConfig.LayoutTemplate | quote }}
+            {{- end }}
+            {{- end }}
+            # ------------------- Environment Variables End -------------------
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+          {{- if .Values.config.dataProtectionKeysDirectory }}
+            - name: data-protection-keys
+              mountPath: {{ .Values.config.dataProtectionKeysDirectory }}
+          {{- end }}
+            - name: tmp
+              mountPath: /tmp
+          {{- if .Values.config.fileStorage.storageRootPath }}
+            - name: docs
+              mountPath: {{ .Values.config.fileStorage.storageRootPath }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+      {{- if .Values.config.dataProtectionKeysDirectory }}
+        - name: data-protection-keys
+          persistentVolumeClaim:
+            claimName: {{ include "internal-web-app.fullname" . }}-dataprotectionkeys
+      {{- end }}
+        - name: tmp
+          emptyDir: {}
+      {{- if .Values.config.fileStorage.storageRootPath }}
+        - name: docs
+          emptyDir: {}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

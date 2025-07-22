@@ -1,0 +1,75 @@
+﻿@using Forestry.Flo.Services.Common.User
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.Home.WoodlandOwnerHomePageModel
+
+@{
+    ViewData["Title"] = "Woodland owner home page";
+    var breadcrumbs = new BreadcrumbsModel { Breadcrumbs = new List<BreadCrumb>(0), CurrentPage = "Home" };
+
+    var user = new ExternalApplicant(User);
+
+    //hide the data import until it can be updated for multiple felling/restocking per cpt - FLOV2-1659
+    const bool showDataImport = false;
+
+    //hide the link to manage other users at this WO - FLOV2-2154
+    const bool showManageUsers = false;
+
+    var title = user.AccountType == AccountTypeExternal.Agent || user.AccountType == AccountTypeExternal.AgentAdministrator ? "Your client's licence applications" : "Your licence applications";
+    ViewData.ManuallySetBackLink(Url.Action("ManageWoodlandOwnerDetails", "WoodlandOwner", new
+    {
+        agencyId = Model.WoodlandOwnerId
+    }));
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_PageErrors" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+
+    <h1 class="govuk-heading-xl">@title</h1>
+    <p class="govuk-body">Start or make changes to a new application or view submitted applications.</p>
+
+    <a asp-controller="FellingLicenceApplication" asp-action="Index" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" draggable="false" class="govuk-button" data-module="govuk-button">
+        Start a new licence application
+    </a>
+
+    <partial name="Partials/_FellingLicenceApplicationList" model="Model.FellingLicenceApplications" />
+    
+    <User-Is-In-Role-Multiple role-names="new[] { AccountTypeExternal.FcUser, AccountTypeExternal.WoodlandOwnerAdministrator }">
+        <br />
+        <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@user.WoodlandOwnerId">
+            Manage contact details for @user.WoodlandOwnerName
+        </a>
+        @{
+            ViewBag.BackLinkShow = false;
+        }
+    </User-Is-In-Role-Multiple>
+
+    <user-is-in-role role-name="WoodlandOwnerAdministrator" condition="@showManageUsers">
+        <br />
+        <a class="govuk-link" asp-controller="AccountAdministration" asp-action="WoodlandOwnerList">
+            Manage user accounts associated with @user.WoodlandOwnerName
+        </a>
+    </user-is-in-role>
+    
+    <br />
+    <a class="govuk-link" asp-controller="DataImport" asp-action="Index" condition="@showDataImport">
+        Import property/application data using CSV templates for @user.WoodlandOwnerName
+    </a>
+
+</div>
+
+@section Scripts
+{
+    <partial name="Partials/_DataTablesJs" />
+    <script src="~/js/application-list.js" asp-append-version="true"></script>
+    <script src="~/js/property-profile-list.js" asp-append-version="true"></script>
+}
+
+@section Css
+{
+    <partial name="Partials/_DataTablesCss" />
+}

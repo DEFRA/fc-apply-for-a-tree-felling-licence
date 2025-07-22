@@ -1,0 +1,50 @@
+﻿@{
+    ViewData["Title"] = "Amend User Account";
+}
+@model Forestry.Flo.Internal.Web.Models.UserAccount.UpdateUserRegistrationDetailsModel
+
+
+@{
+    var user = new InternalUser(User);
+}
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">Account Management</h1>
+
+    <partial name="Partials/_PageErrors" />
+
+    <form method="post">
+        <input type="hidden" asp-for="Id"/>
+        <partial name="Partials/_UserAccountDetails"/>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+
+                <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                    Confirm
+                </button>
+                
+                <button condition="@(Model.Id != user.UserAccountId)" id="close-submit" asp-action="CloseInternalUserAccount" data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">
+                    Close Account
+                </button>
+
+                <a class="govuk-link" asp-action="FcStaffList" title="Abandon changes and go to the user list">Cancel</a>
+
+            </div>
+        </div>
+
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}
+
+@section Scripts
+{
+    <script src="~/js/amend-internal-user.js" asp-append-version="true"></script>
+}
+
+
+

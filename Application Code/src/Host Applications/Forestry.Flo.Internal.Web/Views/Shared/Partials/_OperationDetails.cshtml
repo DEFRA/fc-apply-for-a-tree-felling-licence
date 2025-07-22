@@ -1,0 +1,17 @@
+﻿@using Forestry.Flo.Services.Common
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.OperationDetailsModel
+<div id = "application-summary">
+    <h2 class="govuk-heading-m">Proposed felling schedule</h2>
+    <table class="govuk-table" id="application-list-table">
+        <tbody class="govuk-table__body">
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header govuk-!-width-one-third">Proposed start date</th>
+                <td class="govuk-table__cell">@($"{DateTimeDisplay.GetDateDisplayString(Model.ProposedFellingStart?.CalculateDate())}")</td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header govuk-!-width-one-third">Proposed completion date</th>
+                <td class="govuk-table__cell">@($"{DateTimeDisplay.GetDateDisplayString(Model.ProposedFellingEnd?.CalculateDate())}")</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

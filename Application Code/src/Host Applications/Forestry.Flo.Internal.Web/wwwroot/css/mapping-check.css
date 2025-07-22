@@ -1,0 +1,12 @@
+#viewDiv {
+    border-color: black;
+    border-style: solid;
+    border-width: 1px;
+    padding: 0;
+    margin: 0;
+    height: 50vh !important;
+}
+
+.map-check-containter .profileMap{
+    margin-bottom: 20px !important;
+}

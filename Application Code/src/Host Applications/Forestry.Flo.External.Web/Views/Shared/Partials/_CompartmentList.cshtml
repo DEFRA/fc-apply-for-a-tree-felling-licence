@@ -1,0 +1,47 @@
+﻿@model Forestry.Flo.External.Web.Models.PropertyProfile.PropertyProfileDetails
+@{
+    var selectedWoodlandOwnerId = ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] as Guid? ?? null;
+}
+<table class="govuk-table govuk-!-padding-bottom-4" id="compartment-list-table" style="border-collapse: collapse">
+    <caption class="govuk-table__caption govuk-table__caption--m">Compartments</caption>
+    <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Compartment</th>
+        <th scope="col" class="govuk-table__header" id="compartment-list-table-actions-header">Actions</th>
+    </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    @foreach (var compartment in Model.Compartments)
+    {
+        <tr data-id="@compartment.Id" class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">@compartment.DisplayName</th>
+            <td class="govuk-table__cell">
+                    <a class="govuk-link" asp-controller="Compartment" asp-action="EditDetails" asp-route-id="@compartment.Id" asp-route-woodlandOwnerId="@selectedWoodlandOwnerId">
+                    Edit<span class="govuk-visually-hidden"> @compartment.CompartmentNumber</span>
+                </a> &nbsp;
+            </td>
+        </tr>
+    }
+    </tbody>
+    <tfoot>
+    <tr>
+        <th>
+            <a class="site_max_width" style="flex:auto">Add Compartments</a>
+                <div class="site_max_width">
+                    <div class="site_two_thirds float-left">
+                        <a class="govuk-link" asp-controller="Compartment" asp-action="CreateDetails" asp-route-propertyProfileId="@Model.Id" asp-route-woodlandOwnerId="@selectedWoodlandOwnerId" title="Add compartment">Create</a>
+                </div>
+                <div class="overflow-hidden">
+                    <a class="govuk-link" asp-controller="Compartment" asp-action="BulkImport" asp-route-propertyProfileId="@Model.Id" asp-route-woodlandOwnerId="@selectedWoodlandOwnerId" title="Import compartment">Import</a>
+                </div>
+            </div>
+            
+        </th>
+    </tr>
+    <tr>
+        <th>
+            
+        </th>
+    </tr>
+    </tfoot>
+</table>

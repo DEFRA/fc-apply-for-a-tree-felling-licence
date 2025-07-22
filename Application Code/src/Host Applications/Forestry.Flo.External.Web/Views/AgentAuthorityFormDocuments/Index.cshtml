@@ -1,0 +1,126 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common
+@model Forestry.Flo.External.Web.Models.AgentAuthorityForm.AgentAuthorityFormDocumentModel
+
+@{
+    ViewData["Title"] = "Agent Authority Forms";
+    ViewData.ManuallySetBackLink(Url.Action("ManagedClientSummary", "WoodlandOwner", new { woodlandOwnerId = Model.WoodlandOwnerId, agencyId = Model.AgencyId }));
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_PageErrors" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    
+    <h1 class="govuk-heading-xl">Agent authority forms for @Model.WoodlandOwnerOrOrganisationName</h1>
+        
+    <div condition="@(Model.HasCurrentAuthorityForm is false)" class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            There are no current authority forms for this Woodland owner.
+        </strong>
+    </div>
+    
+    @if (Model.HasCurrentAuthorityForm)
+    {
+        <h2 class="govuk-heading-l">Current authority form</h2>
+
+        <form method="post" asp-action="RemoveCurrentAgentAuthorityForm" id="documentListForm">
+            <input type="hidden" name="agentAuthorityFormId"/>
+            @Html.HiddenFor(m => m.AgentAuthorityId)
+            <table class="govuk-table" id="agent-authorities-list-table">
+                <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Valid From</th>
+                    <th scope="col" class="govuk-table__header">Agent Authority Files</th>
+                    <th scope="col" colspan="2" class="govuk-table__header">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                <tr data-id="@Model.CurrentAuthorityForm!.Id" class="govuk-table__row">
+                    <td class="govuk-table__cell" data-sort-value="@Model.CurrentAuthorityForm.ValidFromDate"> @DateTimeDisplay.GetDateDisplayString(@Model.CurrentAuthorityForm.ValidFromDate)
+                    <td class="govuk-table__cell">
+                        @Model.CurrentAuthorityForm.AafDocumentFileNamesList
+                    </td>
+                    <td class="govuk-table__cell wrapped-text">
+                        <a
+                            class="hidden-download-supporting-document"
+                            asp-controller="AgentAuthorityFormDocuments"
+                            asp-action="Download"
+                            asp-route-id="@Model.AgentAuthorityId"
+                            asp-route-agentAuthorityFormId="@Model.CurrentAuthorityForm.Id">
+                            Download agent authority document
+                        </a>
+                    </td>
+                    <td class="govuk-table__cell wrapped-text">
+                        <input type="submit" class="govuk-button govuk-button--warning" data-prevent-double-click="true" data-id="@Model.CurrentAuthorityForm.Id" data-module="govuk-button" name="remove-agent-authority-form" value="Remove"/>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </form>
+    }
+
+    @if (Model.HistoricAuthorityForms.Any())
+    {
+        <h2 class="govuk-heading-l">Historic agent authority forms</h2>
+        <table class="govuk-table" id="agent-authorities-list-table">
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Valid From</th>
+                    <th scope="col" class="govuk-table__header">Valid To</th>
+                    <th scope="col" class="govuk-table__header">Agent Authority Files</th>
+                    <th scope="col" class="govuk-table__header">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var form in Model.HistoricAuthorityForms)
+                {
+                    <tr data-id="@form.Id" class="govuk-table__row">
+                        <td class="govuk-table__cell" data-sort-value="@form.ValidFromDate"> @DateTimeDisplay.GetDateDisplayString(@form.ValidFromDate)
+                        <td class="govuk-table__cell" data-sort-value="@form.ValidToDate"> @DateTimeDisplay.GetDateDisplayString(@form.ValidToDate)
+                        <td class="govuk-table__cell">
+                            @form.AafDocumentFileNamesList
+                        </td>
+                        <td class="govuk-table__cell wrapped-text">
+                            <a
+                                class="hidden-download-supporting-document"
+                                asp-controller="AgentAuthorityFormDocuments"
+                                asp-action="Download"
+                                asp-route-id="@Model.AgentAuthorityId"
+                                asp-route-agentAuthorityFormId="@form.Id">
+                                Download agent authority document<span class="govuk-visually-hidden"> valid from @DateTimeDisplay.GetDateDisplayString(@form.ValidFromDate) to @DateTimeDisplay.GetDateDisplayString(@form.ValidToDate)</span>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    
+    <h2 class="govuk-heading-l">Add new agent authority form</h2>
+    
+    <div class="govuk-inset-text">
+        You must <a target="_blank" href="https://www.gov.uk/government/publications/forestry-commission-agent-authority-form" class="govuk-link">download and complete the latest agent authority form from GOV.UK</a> (opens in a new window)
+    </div>
+
+    <p condition="@Model.HasAuthorityForms" class="govuk-body">
+        Adding a new agent authority form will make it the current agent authority form.
+        The form it replaces will then become an historic agent authority form.
+    </p>
+
+    <form asp-action="AddAgentAuthorityFormFiles" asp-route-id="@Model.AgentAuthorityId">
+        <button class="govuk-button" type="submit" data-module="govuk-button">
+            Add new agent authority form
+        </button>
+    </form>
+
+</div>
+@section Scripts
+{
+    <script src="~/js/agent-authority-form-documents.js" asp-append-version="true"></script>
+
+}

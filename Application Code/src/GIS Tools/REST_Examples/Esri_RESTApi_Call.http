@@ -1,0 +1,58 @@
+
+@baseUrl = https://www.forestergis.com/geostore/
+
+
+# Run GetToken add put value here
+@token = replaceMe
+
+// Each of the varibes below are the layerID of the request
+@compartments = 0
+@boundaries=1
+//NOTE: QS isn't expected to write to the Comments
+@comments = 2 
+
+
+###
+# @name GetToken
+POST {{baseUrl}}tokens/
+content-type: application/x-www-form-urlencoded
+
+username=FLOv2_PubRegUser
+&Password=f0pB68yuQFp8
+&f=json
+
+###
+# @name Query
+# The Example below is the "SELECT * FROM [Table]"
+post {{baseUrl}}/rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/{{comments}}/query
+content-type: application/x-www-form-urlencoded
+
+f=json
+&token={{token}}
+&where=1=1
+&outfields=*
+&returnGeometry=false
+
+###
+# @name Add
+# The tables ESRI have set up are basic!! All fields except the ID's are null fields. 
+# So you only need to send the values you want to add.
+# The Features field is a JSON object. 
+# Update works in the same way..... But you need to makesure that you include the objectID in the request.
+# Note: Esri is fairly good with error messages however its possible to 
+# "Break the api". For example if you send the message below as is then the API won't be able to parse it and return a 302
+# and an empty Json object
+post {{baseUrl}}/rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/{{boundaries}}/addFeatures
+
+features=[{"geometery":{"rings":[[[]]]}, "attributes":{}}]
+&token={{token}}
+&rollbackOnFailure=true
+&f=json
+
+###
+# @name Delete
+# Just pass the id of the object you want to delete
+post {{baseUrl}}/rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/{{boundaries}}/deleteFeatures
+token={{token}}
+&objectIDs=er
+&f=json

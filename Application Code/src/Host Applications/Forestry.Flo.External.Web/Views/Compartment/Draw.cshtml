@@ -1,0 +1,184 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Infrastructure.Display
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.External.Web.Models.Compartment.CompartmentDrawModel;
+
+@{
+    ViewBag.Title = "Define compartment - " + Model.CompartmentModelOfInterest.DisplayName;
+    Layout = "_Layout";
+    var creating = Model.CompartmentModelOfInterest.Id == Guid.Empty;
+    var action = creating ? "Create" : "Edit";
+    ViewData.ShowBackLink();
+}
+<div class="govuk-grid-column-full">
+    <form method="post" id="postBack">
+        <h1 class="govuk-heading-m">@action a compartment for @Model.CompartmentModelOfInterest.PropertyProfileName </h1>
+
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.Id" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.PropertyProfileId" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.PropertyProfileName" />
+        <input type="hidden" asp-for="@Model.NearestTown" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.DisplayName" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.Designation" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.SubCompartmentName" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.GISData" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.TotalHectares" />
+        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.WoodlandOwnerId" />
+        <input type="hidden" asp-for="@Model.AllOtherPropertyCompartmentJson" />
+        <input type="hidden" asp-for="@Model.ApplicationId" />
+        <input type="hidden" asp-for="@Model.IsForRestockingCompartmentSelection" />
+        <input type="hidden" asp-for="@Model.FellingOperationType" />
+        <input type="hidden" asp-for="@Model.ProposedFellingDetailsId" />
+        <input type="hidden" asp-for="@Model.FellingCompartmentId" />
+        <input type="hidden" asp-for="@Model.FellingCompartmentName" />
+        <partial name="Partials/_PageErrors" />
+
+        <div class="govuk-form-group">
+            <h2 class="govuk-label-wrapper">
+                <label asp-for="CompartmentModelOfInterest.CompartmentNumber" class="@GdsConstants.GdsLabelCssClass">Compartment name</label>
+            </h2>
+            <validation asp-for="CompartmentModelOfInterest.CompartmentNumber"></validation>
+            <input class="@GdsConstants.GdsInputCssClass" asp-for="CompartmentModelOfInterest.CompartmentNumber"/>
+        </div>
+
+        <div class="component-sample-container" aria-label="Draw a compartment map">
+
+            <div class="component-sample-wrapper">
+                <calcite-shell id="shell" content-behind>
+                    <h2 id="header-title" slot="header">
+                        Draw Compartment
+                    </h2>
+                    <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached>
+                        <calcite-action-bar slot="action-bar" expanded>
+                            <calcite-action 
+                                data-action-id="basemaps" 
+                                icon="basemap" 
+                                text="Basemaps" 
+                                scale="l"></calcite-action>
+                            <calcite-action
+                                data-action-id="drawing"
+                                icon="annotate-tool" 
+                                text="Draw" 
+                                scale="l"></calcite-action>
+                            <calcite-action
+                                data-action-id="coordinates"
+                                icon="cursor-plus" 
+                                text="Coordinate Viewer" 
+                                scale="l"></calcite-action>
+                        </calcite-action-bar>
+
+                        <calcite-panel description="Please select a tool to draw a shape" heading="Drawing Tools" data-panel-id="drawing" hidden>
+                            <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-geometry-button" scale="s"></calcite-action>
+                            <calcite-action icon="x" text="close" slot="header-actions-end" id="close-geometry-button" scale="s"></calcite-action>
+                            <calcite-action-bar expand-disabled expanded overflow-actions-disabled>
+                                <calcite-action text="Polygon" 
+                                                icon="polygon"
+                                                id="polygon-geometry-button"
+                                                value="polygon" scale="l"
+                                ></calcite-action>
+                                <calcite-action text="cut out polygon" 
+                                                icon="scissors"
+                                                id="cut-geometry-button"
+                                                value="cut" scale="l"
+                                                disabled></calcite-action>
+                                <calcite-action text="Delete" 
+                                                icon="trash"
+                                                id="delete-geometry-button"
+                                                value="delete" scale="l"
+                                                disabled></calcite-action>
+                            </calcite-action-bar>
+   
+                        </calcite-panel>
+
+                        <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden>
+                            <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-basemap-button" scale="s"></calcite-action>
+                            <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
+                            <div id="basemaps-container"></div>
+                        </calcite-panel>
+
+                        <calcite-panel heading="Coordinate Viewer" description="Coordinate Details" height-scale="s" data-panel-id="coordinates" hidden>
+                            <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-coordinate-button" scale="s"></calcite-action>
+                            <calcite-action icon="x" text="close" slot="header-actions-end" id="close-coordinate-button" scale="s"></calcite-action>
+                            <div id="coordinate-container"></div>
+                        </calcite-panel>
+                    </calcite-shell-panel>
+                    <div id="viewDivDraw"></div>
+
+                </calcite-shell>
+            </div>
+            <div id="hoverLabel"></div>
+        </div>
+
+        <div class="govuk-!-padding-bottom-3"></div>
+
+        <div>
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+                    <button type="submit" id="submit" name="submit" class="govuk-button" data-module="govuk-button" disabled="disabled" formaction="Draw">
+                        Save Compartment
+                    </button>
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button" formaction="SaveNoMap">
+                        Save without map
+                    </button>
+
+                    @if (Model.ApplicationId.HasNoValue() || Model.ApplicationId == Guid.Empty)
+                    {
+                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="Edit" asp-route-id="@Model.CompartmentModelOfInterest.PropertyProfileId" asp-route-woodlandOwnerId="@Model.CompartmentModelOfInterest.WoodlandOwnerId" asp-route-agencyID="@Model.CompartmentModelOfInterest.AgencyId" title="Cancel">Cancel</a>
+                    }
+                    else
+                    {
+                        <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="SelectNewCompartment" asp-route-applicationId="@Model.ApplicationId">Cancel</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Css {
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")" />
+    <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+}
+
+<style>
+    .esri-search .esri-widget--button {
+    box-shadow: none;
+    display: none;
+}
+.esri-widget--button.esri-widget span {
+    font-size: 20px !important;
+}
+
+.esri-widget--button.esri-widget {
+    width: 35px !important;
+    height: 35px !important;
+}
+
+.esri-icon, .esri-icon-dial {
+    color: blue !important;
+    font-weight: bold !important;
+}
+
+.esri-search__container .esri-search__input, .esri-search__container .esri-widget--button {
+    border: 5px solid white !important;
+    height: 40px !important;
+}
+</style>
+
+@section Scripts{
+    <script type="module" src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js")"></script>
+    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script type="module">
+
+
+        require(["../../js/mapping/maps/map-draw-compartment.js?v=" + Date.now()], function (ProfileMap) {
+
+            var mapObj = new ProfileMap("viewDivDraw");
+
+        })
+
+    </script>
+}

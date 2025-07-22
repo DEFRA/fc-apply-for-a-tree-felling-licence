@@ -1,0 +1,82 @@
+﻿@using Forestry.Flo.Services.Common.User
+@using Forestry.Flo.Services.Common.Extensions
+@model Forestry.Flo.Internal.Web.Models.AdminHub.ViewAdminHubModel
+
+@{
+    var adminOfficers = Model.AdminHubs
+        .Where(x => x.AdminOfficers.Count > 0)
+        .Select(x => new { x.AdminOfficers, x.Name }).ToList();
+}
+
+<h1 class="govuk-heading-m">Please manage the officers for @Model.Name</h1>
+
+@*Make into a partial view*@
+<fieldset class="govuk-fieldset">
+    <div class="govuk-form-group govuk-body-s">
+        @*ToDo Filter for Admin hub manager*@
+        Filter
+        @foreach (var adminHub in Model.AdminHubs)
+        {
+            <button id="@adminHub.Name" data-id="@adminHub.Name" class="filter unselected">@adminHub.Name</button>
+        }
+        <button id="Not-Assigned" data-id="Not Assigned" class="filter unselected">Not Assigned</button>
+
+    </div>
+    <table class="govuk-table" id="user-list-table">
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" style="width: 10%;" class="govuk-table__header">Name</th>
+                <th scope="col" style="width: 10%;" class="govuk-table__header">Email</th>
+                <th scope="col" style="width: 10%;" class="govuk-table__header">Account Type</th>
+                <th scope="col" style="width: 10%;" class="govuk-table__header">Admin hub assigned</th>
+                <th scope="col" style="width: 10%;" class="govuk-table__header">Action</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var user in Model.AllAdminOfficers)
+            {
+                if (user.AccountType != AccountTypeInternal.AdminHubManager)
+                {
+                    var username = $"{user.FirstName} {user.LastName}";
+
+                    <form method="post">
+                        <input asp-for="@Model.Id"/>
+                        <input asp-for="@Model.SelectedOfficerId" value="@user.Id">
+
+                        <tr data-id="@user.Id" id="@user.Id" class="govuk-table__row">
+                            <td class="govuk-table__cell" data-order="@username">@username</td>
+                            <td class="govuk-table__cell" data-order="@user.Email">@user.Email</td>
+                            <td class="govuk-table__cell" data-order="@user.AccountType.GetDisplayName()">@user.AccountType.GetDisplayName()</td>
+                            @if (adminOfficers.Any(x => x.AdminOfficers.Any(x => x.UserAccountId == user.Id)))
+                            {
+                                var adminHubName = adminOfficers.Where(x => x.AdminOfficers.Any(x => x.UserAccountId == user.Id)).Select(x => x.Name).First();
+                                <td class="govuk-table__cell" data-id="@adminHubName" data-order="@adminHubName">@adminHubName</td>
+                                @if (adminHubName == Model.Name && user.AccountType != AccountTypeInternal.AdminHubManager)
+                                {
+                                    <td class="govuk-table__cell" data-order="">
+                                        <button data-prevent-double-click="true" type="submit" style="margin-bottom: 0px; width: 150px" class="govuk-button" data-module="govuk-button" formaction="RemoveAdminOfficer">
+                                            Unassign
+                                        </button>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="govuk-table__cell" data-order="">No action possible</td>
+                                }
+                            }
+                            else
+                            {
+                                <td class="govuk-table__cell" data-id="Not Assigned">Not Assigned</td>
+                                <td class="govuk-table__cell" data-order="">
+                                    <button data-prevent-double-click="true" type="submit" style="margin-bottom: 0px; width: 150px" class="govuk-button" data-module="govuk-button" formaction="AddAdminOfficer">
+                                        Assign here
+                                    </button>
+                                </td>
+                            }
+                        </tr>
+                    </form>
+                }
+            }
+        </tbody>
+    </table>
+</fieldset>
