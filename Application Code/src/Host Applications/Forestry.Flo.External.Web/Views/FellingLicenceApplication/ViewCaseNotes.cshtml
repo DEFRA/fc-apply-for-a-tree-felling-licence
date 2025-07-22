@@ -1,0 +1,23 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ViewCaseNotesViewModel
+@{
+    ViewData["Title"] = "Felling and restocking details";
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}
+
+<partial name="Partials/_ActivityFeed" model="@Model.ActivityFeedViewModel"/>
+
+
+@section Scripts
+{
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section Css{
+    <link rel="stylesheet" href="~/css/activity-feed-filters.css" aria-busyasp-append-version="true" />
+}

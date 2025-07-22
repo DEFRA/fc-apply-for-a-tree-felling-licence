@@ -1,0 +1,33 @@
+﻿@model Forestry.Flo.External.Web.Models.Compartment.UploadMapModel
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_PageErrors" />
+
+    <form asp-action="UploadMap" asp-controller="Compartment"
+          method="post"
+          enctype="multipart/form-data"
+          id="uploadMap">
+
+        <input type="hidden" asp-for="ApplicationId" />
+
+
+        <h1 class="govuk-heading-l">Upload a map showing your compartments</h1>
+
+        <div>
+            <p class="govuk-body">Upload a paper map</p>
+            <div id="hint" class="govuk-hint">
+                You can upload your paper map using PDF, PNG and JPEG file formats.
+            </div>
+
+            <partial name="_AddImageDocuments" model="@Model" />
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/supporting-documentation.js" asp-append-version="true"></script>
+}

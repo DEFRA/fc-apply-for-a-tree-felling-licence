@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik-web-crt
+  namespace: traefik
+spec:
+  secretName: traefik-web-secret
+  subject:
+    organizations:
+      - "Quicksilva"
+  dnsNames:
+    - ps.conneqt.cloud
+    - "*.ps.conneqt.cloud"
+    - tree-felling.forestrycommission.gov.uk
+    - "*.tree-felling.forestrycommission.gov.uk"
+  issuerRef:
+    name: letsencrypt-prod-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

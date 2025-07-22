@@ -1,0 +1,37 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview.ExternalConsulteeReviewViewModel
+@{
+    ViewData["Title"] = "Application Summary";
+}
+
+<div class="govuk-grid-column-full" id="summary-container">
+    <table class="govuk-table" id="application-list-table">
+        <tbody class="govuk-table__body">
+        <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">Application Reference</th>
+            <td class="govuk-table__cell">@Model.ApplicationReference</td>
+        </tr>
+        <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">Property</th>
+            <td class="govuk-table__cell">@Model.PropertyName</td>
+        </tr>
+        </tbody>
+    </table> 
+</div>
+
+<partial name="Partials/_AddConsulteeComment" model="@Model.AddConsulteeComment"/>
+
+<partial name="Partials/_ActivityFeed" model="@Model.ActivityFeed" />
+
+
+@section Scripts
+{
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section Css{
+    <link rel="stylesheet" href="~/css/assign-fla-select-user.css" aria-busyasp-append-version="true" />
+    <link rel="stylesheet" href="~/css/application-summary.css" aria-busyasp-append-version="true" />
+}

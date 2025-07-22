@@ -1,0 +1,107 @@
+﻿@{
+    ViewBag.Title = "Drawing Help";
+    Layout = "_Layout";
+
+}
+<div class="govuk-grid-column-full">
+
+    <p class="govuk-body" id="drawinghelp">
+        <strong>How to draw a compartment</strong><br />
+    </p>
+    <p class="govuk-body" id="uploadfilehelp">
+        <strong>How to upload a file</strong><br />
+    </p>
+    <p class="govuk-body" id="basemapHelp">
+        <strong>Base Map Help</strong><br />
+        Base Maps Control the imagery used in the map.
+        <br />
+        <ul>
+            <li>OS Map - Shows boundaries, roads, natural spaces and place names; useful for locating and drawing compartments accurately.</li>
+            <li>Aerial photography ('Satellite' view in Google Maps) Shows real-world features the OS Map may not, like buildingds or track; helpful for checking whats on the ground.</li>
+        </ul>
+    </p>
+    <p class="govuk-body" id="searchHelp">
+        <strong>Search Help</strong><br />
+    </p>
+    <p class="govuk-body" id="coordinateHelp">
+        <strong>Coordinate Help</strong><br />
+        The coordinate Viewer shows the current coordinates in the selected formats.
+        <ol>
+            <li>
+                OS Grid
+                <ul>
+                    <li>
+                        The Ordnance Survey National Grid reference system used in Great Britain.
+                    </li>
+                    <li>
+                        Example: SU 12345 67890.
+                    </li>
+                </ul>
+            </li>
+            <li>
+                BASEMAP
+                <ul>
+                    <li>
+                        Refers to the base map's internal coordinate system.
+                    </li>
+                    <li>Typically used for internal calculations or rendering.</li>
+                </ul>
+            </li>
+            <li>
+                DD
+                <ul>
+                    <li>A geographic coordinate format that represents latitude and longitude as decimal fractions.</li>
+                    <li>Example: 51.5074, -0.1278.</li>
+                </ul>
+            </li>
+            <li>
+                DDM
+                <ul>
+                    <li>A coordinate format that combines degrees and decimal minutes.</li>
+                    <li>Example: 51°30.444'N, 0°7.668'W.</li>
+                </ul>
+            </li>
+            <li>
+                DMS
+                <ul>
+                    <li>A traditional coordinate format that represents latitude and longitude in degrees, minutes, and seconds.</li>
+                    <li>Example: 51°30'26.64"N, 0°7'40.08"W.</li>
+                </ul>
+            </li>
+            <li>
+                XY
+                <ul>
+                    <li>A Cartesian coordinate system used in map projections, typically representing easting (X) and northing (Y).</li>
+                    <li>Example: X: 400000, Y: 500000.</li>
+                </ul>
+            </li>
+            <li>
+                MGRS
+                <ul>
+                    <li>A coordinate system similar to MGRS, used primarily in the United States for emergency response and mapping.</li>
+                    <li>Example: 30U WB 12345 67890.</li>
+                </ul>
+            </li>
+            <li>
+                USNG
+                <ul>
+                    <li>A coordinate system similar to MGRS, used primarily in the United States for emergency response and mapping.</li>
+                    <li>18SUJ1234567890.</li>
+                </ul>
+            </li>
+            <li>
+                UTM
+                <ul>
+                    <li>A global coordinate system that divides the Earth into zones, each with its own Cartesian grid.</li>
+                    <li>Example: Zone 30U, Easting: 500000, Northing: 4649776.</li>
+                </ul>
+            </li>
+        </ol>
+    </p>
+    <p class="govuk-body" id="importHelp">
+        <strong>Import Help</strong><br />
+    </p>
+    <p class="govuk-body" id="compartmentEditHelp">
+        <strong>Edit compartment Help</strong><br />
+    </p>
+</div>

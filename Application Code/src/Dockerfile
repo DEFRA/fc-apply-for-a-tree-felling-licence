@@ -1,0 +1,32 @@
+#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://*:8080 \
+    COMPlus_EnableDiagnostics=0
+
+RUN addgroup --group aspnetgroup --gid 2000 \
+    && adduser \
+        --uid 1000 \
+        --gid 2000 \
+        "aspnetuser" \
+    && chown aspnetuser:aspnetgroup /app
+USER aspnetuser:aspnetgroup
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY ["Host Applications//Forestry.Flo.External.Web//Forestry.Flo.External.Web.csproj", "Host Applications//Forestry.Flo.External.Web//Forestry.Flo.External.Web.csproj"]
+COPY /Services /Services
+RUN dotnet restore "Host Applications//Forestry.Flo.External.Web//Forestry.Flo.External.Web.csproj"
+COPY . .
+RUN dotnet build "Host Applications//Forestry.Flo.External.Web//Forestry.Flo.External.Web.csproj" -c Release -o /app/build
+
+FROM build AS publish
+ARG version
+RUN dotnet publish "Host Applications//Forestry.Flo.External.Web//Forestry.Flo.External.Web.csproj" -c Release -o /app/publish /p:Version=$version
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Forestry.Flo.External.Web.dll"]

@@ -1,0 +1,7 @@
+persistence:
+  enabled: false
+
+config:
+  general:
+    RELAYHOST: mailhog.mailhog.svc.cluster.local:1025
+    ALLOWED_SENDER_DOMAINS: "qxlva.com"

@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  forestry.flo.external.web:
+    image: ${DOCKER_REGISTRY-}forestryfloexternalweb
+    build:
+      context: .
+      dockerfile: Host Applications/Forestry.Flo.External.Web/Dockerfile

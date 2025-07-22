@@ -1,0 +1,36 @@
+﻿namespace Forestry.Flo.Services.Notifications.Entities;
+
+public enum NotificationType
+{
+    InviteWoodlandOwnerUserToOrganisation,
+    InviteAgentUserToOrganisation,
+    ApplicationSubmissionConfirmation,
+    ApplicationWithdrawnConfirmation,
+    UserAssignedToApplication,
+    InformWoodlandOfficerOfAdminOfficerReviewCompletion,
+    InformFieldManagerOfWoodlandOfficerReviewCompletion,
+    InformApplicantOfApplicationVoluntaryWithdrawOption,
+    ApplicationResubmitted,
+    ApplicationWithdrawn,
+    InformApplicantOfReturnedApplication,
+    InformFCStaffOfReturnedApplication,
+    ExternalConsulteeInvite,
+    ExternalConsulteeInviteWithPublicRegisterInfo,
+    ConditionsToApplicant,
+    InformApplicantOfApplicationExtension,
+    InformFCStaffOfFinalActionDateReached,
+    InformApplicantOfApplicationApproval,
+    InformApplicantOfApplicationRefusal,
+    InformInternalUserOfAccountApproval,
+    InformAdminOfNewAccountSignup,
+    //this notification type is only received by FLO, not sent
+    PublicRegisterComment,
+    InformApplicantOfApplicationReferredToLocalAuthority,
+    InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure,
+    InformFcStaffOfApplicationAddedToConsultationPublicRegister,
+    InformFcStaffOfApplicationAddedToDecisionPublicRegister,
+    InformApplicantOfLarchOnlyApplicationFADextension,
+    InformApplicantOfReturnedApplicationMixLarchZone1,
+    InformApplicantOfReturnedApplicationMixLarchMixZone,
+    InformApplicantOfReturnedApplicationLarchOnlyMixZone,
+}

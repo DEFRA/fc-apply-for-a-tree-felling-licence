@@ -1,0 +1,119 @@
+﻿@{
+    ViewData["Title"] = "External User Account List";
+    Layout = "_Layout";
+
+    var externalAccountTypes = new List<AccountTypeExternal>
+    {
+        AccountTypeExternal.Agent,
+        AccountTypeExternal.FcUser,
+        AccountTypeExternal.WoodlandOwner
+    };
+}
+
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common.User
+@model Forestry.Flo.Internal.Web.Models.AccountAdministration.ExternalUserListModel;
+
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+
+    <h1 class="govuk-heading-m">Select an applicant or FC user account to amend or close</h1>
+
+    <partial name="Partials/_PageErrors"/>
+    
+    <fieldset class="govuk-fieldset">
+        <div class="govuk-form-group govuk-body-s">
+            Filter:
+            @foreach (var accountType in externalAccountTypes.Select(x => x.GetDisplayName()))
+            {
+                var cssClass = "filter unselected";
+
+                <button id="@accountType" data-id="@accountType" class="@cssClass">@accountType</button>
+            }
+        </div>
+        <table class="govuk-table" id="external-user-table">
+            <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Name</th>
+                <th scope="col" class="govuk-table__header">Email</th>
+                <th scope="col" class="govuk-table__header">Agency Name</th>
+                    <th scope="col" class="govuk-table__header">Account Type</th>
+            </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+            @foreach (var user in Model.ExternalUserList)
+            {
+                var username = $"{user.ExternalUser.FirstName} {user.ExternalUser.LastName}";
+
+                <tr data-id="@user.ExternalUser.Id" id="@user.ExternalUser.Id" class="govuk-table__row">
+                    <td class="govuk-table__cell" data-order="@username">@username</td>
+                    <td class="govuk-table__cell" data-order="@user.ExternalUser.Email">@user.ExternalUser.Email</td>
+                    
+                    @if (user.AgencyModel is not null)
+                    {
+                        var organisationName = user.AgencyModel.IsFcAgency
+                            ? $"{user.AgencyModel.OrganisationName} (FC Agency)"
+                            : user.AgencyModel.OrganisationName;
+
+                        <td class="govuk-table__cell" data-order="@user.AgencyModel.OrganisationName">
+                            @organisationName
+                        </td>
+                    }
+                    else
+                    {
+                        <td class="govuk-table__cell">
+                            N/A
+                        </td>
+                    }
+                    
+                    <td class="govuk-table__cell" data-order="@user.ExternalUser.AccountType.GetDisplayName()">@user.ExternalUser.AccountType.GetDisplayName()</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+        <form method="post">
+            <div class="govuk-form-group govuk-visually-hidden">
+                <input asp-for="@Model.ReturnUrl"/>
+                <input id="selected-user-id" asp-for="@Model.SelectedUserAccountId">
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+
+                    <button id="amend-submit" asp-action="AmendUserAccount" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Amend
+                    </button>
+                    
+                    <button id="close-submit" asp-action="CloseUserAccount" data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">
+                        Close
+                    </button>
+
+                    <a class="govuk-link" href="@Model.ReturnUrl" title="Cancel">Cancel</a>
+
+                </div>
+            </div>
+        </form>
+    </fieldset>
+
+</div>
+
+@section Scripts
+{
+    <partial name="Partials/_DataTablesJs" />
+    <script src="~/js/external-user-list.js" asp-append-version="true"></script>
+}
+
+@section Css
+{
+    <partial name="Partials/_DataTablesCss" />
+    <link rel="stylesheet" href="~/css/user-account-selectable-list.css" aria-busyasp-append-version="true" />
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

@@ -1,0 +1,88 @@
+﻿@using Forestry.Flo.External.Web.Models.UserAccount
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Applicants.Configuration
+@using Forestry.Flo.Services.Common
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Microsoft.Extensions.Options
+@model Forestry.Flo.External.Web.Models.UserAccount.AgencyUserModel
+@inject IOptions<FcAgencyOptions> _fcAgencyOptions;
+
+@{
+    ViewBag.Title = "Invite agent user to organisation";
+    Layout = "_Layout";
+}
+
+@{
+    var user = new ExternalApplicant(User);
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">Invite a new user to manage applications for your agency</h1>
+
+    <partial name="Partials/_PageErrors" />
+    
+    @if (user.IsFcUser)
+    {
+        var domains = string.Join(", ", _fcAgencyOptions.Value.PermittedEmailDomainsForFcAgent.Distinct());
+
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Note</span>
+                Only users with email addresses in the following domains may be invited: @domains
+            </strong>
+        </div>
+    }
+
+    <form method="post">
+        <fieldset class="govuk-fieldset">
+            <input type="hidden" asp-for="AgencyId"/>
+            <input type="hidden" asp-for="AgencyName"/>
+            <div class="govuk-form-group">
+                <label asp-for="Name" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="Name"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="Name"/>
+            </div>
+            <div class="govuk-form-group">
+                <label asp-for="Email" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="Email"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="Email"/>
+            </div>
+            <div class="govuk-form-group">
+                <legend class="govuk-fieldset__legend">
+                    Agent user role
+                </legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <validation asp-for="@Model.AgencyUserRole"></validation>
+                    @foreach (AgencyUserRole value in Enum.GetValues(typeof(AgencyUserRole)))
+                    {
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="@Model.AgencyUserRole" type="radio" value="@value">
+                            <label class="govuk-label govuk-radios__label" asp-for="@Model.AgencyUserRole">
+                                @value.GetDescription()
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Continue
+                    </button>
+
+                    <a class="govuk-link" asp-controller="Home" asp-action="Index" title="Abandon changes and go to the home page">Cancel</a>
+
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

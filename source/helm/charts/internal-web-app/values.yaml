@@ -1,0 +1,413 @@
+# Default values for internal-web-app.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  environment:
+  networkpolicy:
+    enabled: true
+
+replicaCount: 1
+
+image:
+  repository: fsflo.azurecr.io/flov2/internal-web-app
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+floAppVersion: "1.0.0" # default
+appVersion: "1.0.0" # default
+helmVersion: "1.0.0" # default
+databaseVersion: "1.0.0" # default
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 2000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingressRoute:
+  app:
+    enabled: true
+    # Additional ingressRoute annotations (e.g. for kubernetes.io/ingress.class)
+    annotations: {}
+    # Additional ingressRoute labels (e.g. for filtering IngressRoute by custom labels)
+    labels: {}
+    entryPoints:
+      - websecure
+    hostname:
+    path: /
+    certificate:
+      existingSecretName:
+      issuer: "ca-issuer"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+config:
+  connectionStrings:
+    # -- The Postgres connection string to the main FLO database including server location, schema, username, and password.
+    defaultConnection:
+  azureADB2C:
+    # -- The URL of the Azure AD B2C instance for user registration
+    instance:
+    # -- The client ID of the Azure AD B2C instance for user registration
+    clientId:
+    # -- The Client Secret of the Azure AD B2C instance
+    clientSecret:
+    # -- The domain URL of the Azure AD B2C instance for user registration
+    domain:
+    # -- The URL for the sign-out callback
+    signedOutCallbackPath:
+    # -- The sign-up sign-in policy id of the Azure AD B2C instance for user registration
+    signUpSignInPolicyId:
+  azureAD:
+    # -- The URL of the Azure AD instance
+    instance: "https://login.microsoftonline.com/"
+    # -- The API URL to use for Azure AD
+    apiUrl: "https://graph.microsoft.com/"
+    # -- The tenant ID of Azure AD
+    tenantId:
+    # -- The client ID of the Azure AD instance
+    clientId:
+    # -- The client secret of the Azure AD instance
+    clientSecret:
+  # -- The aspnetcore environment you would like to set
+  environment:
+  # -- Persist and configure the path for data protection keys
+  dataProtectionKeysDirectory: 
+  notifications:
+    # -- The default email address for notifcations to come from
+    defaultFromAddress:
+    # -- The default name for email notifications to come from
+    defaultFromName:
+    smtp:
+      # -- The hostname of the SMTP server
+      host:
+      # -- The port of the SMTP server
+      port:
+      # -- The username for the SMTP server
+      username:
+      # -- The password for the SMTP server
+      password:
+  fileStorage:
+    # -- The location where all files will be saved under
+    storageRootPath:
+    # -- Connection string to use if using Azure File Storage
+    connectionString:
+    # -- Container name to use if using Azure File Storage
+    container:
+  quicksilvaVirusScannerService:
+    # -- Enable the virus scanning service functionality
+    isEnabled: true
+    # -- The url for the anti virus scanner endpoint 
+    avEndpoint: http://file-scan-file-scan-web-app.file-scan/scan
+  userInvite:
+    # -- number of days that an invite link is valid for
+    inviteLinkExpiryDays: 7
+  externalApplicantSite:
+    # -- The url for the external applicant site (to provide links in notifications)
+    baseUrl: 
+  adminOfficerReview:
+    # -- the timespan to calculate the citizens charter date
+    citizensCharterDateLength: "77.00:00:00"
+  woodlandOfficerReview:
+    # -- flag to enable the new confirmed f&r UI
+    useNewConfirmedFellingRestocking: false
+  cronJobs:
+    # -- API Key for the cron job endpoints
+    apiKey:
+  publicRegisterExpiry:
+    # -- Threshold before public register period expiry to notify assigned users
+    thresholdBeforePublicRegisterPeriodEnd:
+  voluntaryWithdrawApplication:
+    # -- Threshold after with applicant status date to notify applicant
+    thresholdAfterWithApplicantStatusDate:
+    # -- Threshold before Authomatic withdrawal
+    thresholdAutomaticWithdrawal:
+  applicationExtension:
+    # -- Threshold before final action date to notify assigned users
+    thresholdBeforeFinalActionDate:
+    # -- The length of an automatic application extension
+    extensionLength:
+  pdfGeneratorApi:
+    # -- the Url for the Pdf Generator service
+    baseUrl: 
+    # -- the template name to use for the pdf generation
+    templateName: "FellingLicence.html"
+    # -- the version of the environment to use for the pdf generation, O.0 for Dev/Test, 0 for staging and migrate, and 1 for live 
+    version: "0.0"
+  FellingLicenceApplication:
+    # -- The amount of days for final action from submission
+    FinalActionDateDaysFromSubmission: 
+    # -- Citizens Charter Date Length "77.00:00.00"
+    CitizensCharterDateLength: 
+    # -- Post Fix the environement
+  LarchOptions:
+    EarlyFadDay: 
+    EarlyFadMonth: 
+    LateFadDay: 
+    LateFadMonth: 
+    FlyoverPeriodStartDay: 
+    FlyoverPeriodStartMonth: 
+    FlyoverPeriodEndDay: 
+    FlyoverPeriodEndMonth: 
+  landInformationSearch:
+    # -- the deeplink into the esri, forester land information search app
+    deepLinkUrlAndPath: 
+    # -- config as specified by esri, to pass to the land information search app
+    lisConfig: 
+    # -- the baseUrl for the arcgis endpoint
+    baseUrl: 
+    # -- the path to and including the feature layer for where compartment poly geometries are being sent
+    featurePath: 
+    # -- the url part of where to send token requests to
+    tokenUrl:
+    # -- the path part of where to send token requests to
+    tokenPath: 
+    # -- the client id to use when making token requests
+    clientID: 
+    # -- the client secret to use when making token requests
+    clientSecret: 
+  rabbitMqOptions:
+    # -- The username for authenticating with the RabbitMQ messaging service
+    username:
+    # -- The password for authenticating with the RabbitMQ messaging service
+    password:
+    # -- The time in seconds for queue expiration
+    queueExpiration:
+    # -- The retry limit for consuming messages
+    retryCount:
+    # -- The fixed interval between retries in milliseconds
+    retryIntervalMilliseconds:
+    # -- The amount of messages to prefetch from the RabbitMQ message broker
+    prefetchCount:
+  siteAnalytics:
+    googleAnalytics:
+      # -- Whether Google Analytics is enabled
+      enabled:
+      # -- The tracking id for Google Analytics
+      trackingId:
+    microsoftClarity:
+      # -- Whether Microsoft Clarity is enabled
+      enabled:
+      # -- The tracking id for Microsoft Clarity
+      trackingId:
+  GovUkNotifyOptions:
+    enabled: false
+    ApiKey:
+    ReplyToId:
+    TemplateIds:
+      # -- Application Resubmitted – Applicant and all named internal users; AO, WO and Approver
+      ApplicationResubmitted:
+      # -- Application Submission Confirmation Notification
+      ApplicationSubmissionConfirmation:
+      # -- Application Withdrawn external - Email to Applicant to confirm application withdrawal
+      ApplicationWithdrawnConfirmation:
+      # -- Application Withdrawn internal - Email to AO, WO and Approver linked to an application
+      ApplicationWithdrawn:
+      # -- Felling and Restocking Conditions Notification - Email to Applicant
+      ConditionsToApplicant:
+      # -- External formal consultation with stakeholders - Application exempt from publishing to the public register
+      ExternalConsulteeInvite:
+      # -- External formal consultation with stakeholders - Email to consultees
+      ExternalConsulteeInviteWithPublicRegisterInfo:
+      # -- Application Approved Notification - Email to Applicant
+      InformApplicantOfApplicationApproval:
+      # -- Application Referred to Local Authority Notification - Email to Applicant
+      InformApplicantOfApplicationReferredToLocalAuthority:
+      # -- Application Refused Notification - Email to applicant
+      InformApplicantOfApplicationRefusal:
+      # -- Application Withdrawal Action Pending Notification - Email to external Applicant
+      InformApplicantOfApplicationVoluntaryWithdrawOption:
+      # -- Application Returned to Applicant Notification Letter
+      InformApplicantOfReturnedApplication:
+      # -- Inform Applicant of Application FAD extension - Email to applicant
+      InformApplicantOfApplicationExtension:
+      # -- Inform FC staff of application published to Consultation public register - Email to AO/WO/FM to inform application published and removal dates
+      InformFcStaffOfApplicationAddedToConsultationPublicRegister:
+      # -- Inform FC staff of application published to Decision public register date - Email to nominated AO/WO/FM to inform application published and removal date
+      InformFcStaffOfApplicationAddedToDecisionPublicRegister:
+      # -- Inform FC Staff of failure to remove publication from Consultation OR Decision Public Register
+      InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure:
+      # -- Inform Approver (FM) of Woodland Officer review completion and assignment - Email to nominated Approver
+      InformFieldManagerOfWoodlandOfficerReviewCompletion:
+      # -- Inform Woodland Officer of Admin Officer review completion and assignment - Email to nominated WO
+      InformWoodlandOfficerOfAdminOfficerReviewCompletion:
+      # -- InformFCStaffOfReturnedApplication
+      InformFCStaffOfReturnedApplication:
+      # -- Inform FC Staff of returned Application - Email to AO, WO and Approver
+      InformFCStaffOfFinalActionDateReached:
+      # -- Inform internal staff that Application has been assigned - Email to <role>
+      UserAssignedToApplication:
+      # -- Inform admin of new account signup - internal email to System Administrator
+      InformAdminOfNewAccountSignup:
+      # -- Inform internal user of account Approval - email to FC Staff
+      InformInternalUserOfAccountApproval:
+      # -- Invite Woodland Owner user to Organisation - external email to Woodland Owner
+      InviteWoodlandOwnerUserToOrganisation:
+      # -- Invite Agent user to Organisation - external email to Agent
+      InviteAgentUserToOrganisation:
+      # -- Inform Applicant of Larch only application process and FAD extension
+      InformApplicantOfLarchOnlyApplicationFADextension: 
+      # -- Inform Applicant of Mixed Larch application process
+      InformApplicantOfReturnedApplicationMixLarchZone1: 
+      # -- Inform Applicant of mixed larch and non-larch species in mixed high risk zones
+      InformApplicantOfReturnedApplicationMixLarchMixZone: 
+      # --Inform Applicant of Larch in mixed Zones
+      InformApplicantOfReturnedApplicationLarchOnlyMixZone: 
+  # -- Allowed Email Domains for Internal Users
+  permittedRegisteredUser:
+    enabled: false
+    # -- Allowed Email Domains
+    permittedEmailDomainsForRegisteredUser:
+      - "qxlva.com"
+      - "forestrycommission.gov.uk"
+      - "harriscomputer.com"
+  logging:
+    LogLevel:
+      # -- Default logging level for the application.
+      Default:
+      Microsoft:
+        # -- Logging level for Microsoft.AspNetCore components.
+        AspNetCore:
+  # -- ESRI Config
+  esriConfig:
+    # -- If diabled will use appsettings.json config instead
+    enabled: false
+    Forestry:
+      BaseUrl: ""
+      CountryCode: ""
+      ApiKey: 
+      GenerateTokenService:
+        Path: ""
+        ClientID: 
+        ClientSecret: 
+      FeaturesService:
+        IsPublic: false
+        NeedsToken: false
+        Path: ""
+        GenerateService:
+          Path: ""
+          SupportedFileImports: []
+          MaxRecords: 0
+          EnforceInputFileSizeLimit: false
+          EnforceOutputJsonSizeLimit: false
+      GeometryService:
+        Path: ""
+        NeedsToken: false
+        IsPublic: true
+        IntersectService:
+          Path: ""
+        ProjectService:
+          Path: ""
+          OutSR: 0
+          GridLength: 0
+          IncludeSpaces: false
+        UnionService:
+          Path: ""
+      LayerServices: []
+    Forester:
+      BaseUrl: ""
+      CountryCode: ""
+      ApiKey: 
+      NeedsToken: false
+      GenerateTokenService:
+        Path: ""
+        Username: 
+        Password: 
+      LayerServices: []
+      GeometryService:
+        Path: ""
+        NeedsToken: false
+        IsPublic: true
+        IntersectService:
+          Path: ""
+        ProjectService:
+          Path: ""
+          OutSR: 0
+          GridLength: 0
+          IncludeSpaces: false
+        UnionService:
+          Path: ""
+      UtilitiesService:
+        Path: ""
+        NeedsToken: false
+        IsPublic: false
+        ExportService:
+          Path: ""
+          DefaultFormat: ""
+          BaseMap: ""
+          BaseMapID: ""
+          TextOverrides: {}
+        JobStatusService:
+          Path: ""
+          Status:
+            FailedStates: []
+            SuccessStates: []
+            PendingStates: []
+    PublicRegister:
+      BaseUrl: ""
+      NeedsToken: false
+      GenerateTokenService:
+        Path: ""
+        Username: 
+        Password: 
+      Boundaries:
+        Path: ""
+      Compartments:
+        Path: ""
+      Comments:
+        Path: ""
+      LookUps:
+        Status: {}
+    SpatialReference: 0
+    RequestFormat: ""
+    LayoutTemplate: ""

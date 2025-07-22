@@ -1,0 +1,21 @@
+installCRDs: true
+
+prometheus:
+  enabled: false
+  servicemonitor:
+    enabled: false
+
+nodeSelector:
+  "environment": "system"
+
+webhook:
+  nodeSelector:
+    "environment": "system"
+
+cainjector:
+  nodeSelector:
+    "environment": "system"
+    
+startupapicheck:
+  nodeSelector:
+    "environment": "system"

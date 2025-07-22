@@ -1,0 +1,517 @@
+﻿@using Forestry.Flo.External.Web.Controllers
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Infrastructure.Display
+<body>
+    <div id="api" class="govuk-form-group"></div>
+</body>
+
+@{
+    ViewData.ShowBackLink();
+    ViewData.ManuallySetBackLink(Url.AbsoluteAction(nameof(HomeController.AccountJustification), "Home"));
+}
+
+@section scripts {
+    <script defer>
+
+        const submitButton = "continue";
+        const verifyButton = "emailVerificationControl_but_verify_code";
+        const emailInputButton = "emailVerificationControl_but_send_code";
+        const emailInputField = 'email';
+        
+        var currentButton = emailInputButton;
+
+        $.fn.bindFirst = function (name, fn) {
+            var elem, handlers, i, _len;
+            this.bind(name, fn);
+            for (i = 0, _len = this.length; i < _len; i++) {
+                elem = this[i];
+                handlers = jQuery._data(elem).events[name.split('.')[0]];
+                handlers.unshift(handlers.pop());
+            }
+        };
+
+        $(function() {
+            $("body").addClass("govuk-template__body");
+            $("html").addClass("govuk-template");
+            $("html").addClass("govuk-template--rebranded");
+            $(".localAccount").addClass("govuk-grid-column-two-thirds");
+            $("#attributeVerification").addClass("govuk-grid-column-two-thirds");
+            $(".heading h1").addClass("govuk-heading-l");
+            $(".intro h2").addClass("govuk-hint");
+            $(".intro p").addClass("govuk-hint");
+            $(".intro").addClass("govuk-grid-column-two-thirds");
+            $(".divider h2").addClass("govuk-hint");
+            $(".entry-item").addClass("govuk-form-group");
+            $(".entry label").addClass("govuk-label");
+            $(".error").addClass("govuk-error-message");
+            $(".entry-item input").addClass("govuk-input");
+            $(".entry-item a").addClass("govuk-link govuk-body");
+            $(".entry-item input[type='password']").addClass("govuk-password-input__input");
+            $(".entry-item input[type='password']").addClass("govuk-js-password-input-input");
+            $(".create").addClass("govuk-form-group");
+            $(".create a").addClass("govuk-link sign-up-link govuk-body");
+            $(".create p").addClass("govuk-body");
+            $(".buttons").addClass("govuk-button-group");
+            $(".buttons").wrap('<div class="govuk-form-group"></div>')
+            $(".buttons button").addClass("govuk-button");
+            $(".buttons button#cancel").addClass("govuk-button--secondary");
+            $(".attrEntry").addClass("govuk-form-group");
+            $(".attrEntry label").addClass("govuk-label");
+            $(".attrEntry input").addClass("govuk-input");
+            $(".attrEntry input[type='password']").addClass("govuk-password-input__input");
+            $(".attrEntry input[type='password']").addClass("govuk-js-password-input-input");
+            $('#emailVerificationCode').addClass("govuk-input--width-5");
+
+            $(".intro").hide();
+            $(".divider").hide();
+            $(".govuk-cookie-banner").hide();
+            $("#continue").hide();
+        });
+        
+        $(document).ready(function() {
+            homepageStyling();
+            setupPwdTogglers();
+
+            function homepageStyling() {
+                $('.govuk-heading-l').text("Sign up for an account");
+                
+                $(".govuk-input[type='email']").prop("title", "Enter an email address in the correct format, like name@example.com");
+                
+                $("label:contains('Email Address')").text("Email");
+                $("label:contains('Email')").after('<div class="govuk-hint"> You’ll need this to sign in. We’ll send you a security code to verify it. </div>');
+
+                $("#emailVerificationControl_but_send_code").text("Continue");
+                $("#emailVerificationControl_but_send_code").attr("aria-label", "Continue");
+
+
+                $(".govuk-label[for='email']").text("Email");
+                $("#emailVerificationCode_label").text("Security code");
+                $("#emailVerificationCode_label").after('<div class="govuk-hint"> Enter the 6-digit security code. </div>');
+                $("#newPassword_label").text("Password");
+                $("#newPassword_label").after('<div class="govuk-hint"> Create a password using the guide provided. </div>');
+                $("#reenterPassword_label").text("Confirm password");
+
+                $('#emailVerificationControl_but_verify_code').text("Verify your email address");
+
+                removePlaceholderText();
+
+                overrideEnterBehaviour(emailInputButton);
+
+                $(".EmailBox").closest('ul').wrap("<div class='govuk-form-group'></div>");
+            }
+            
+            $('.newPassword_li').hide();
+            $('.reenterPassword_li').hide();
+
+            function createErrorSummary() {
+                if ($(".govuk-error-summary").length === 0) {
+                    $('#api').before('<div class="govuk-error-summary" data-module="govuk-error-summary"> <div role="alert"> <h2 class="govuk-error-summary__title"> There is a problem </h2> <div class="govuk-error-summary__body"> <ul class="govuk-list govuk-error-summary__list">  </ul> </div></div></div>');
+                }
+            }
+
+            $(`#${emailInputField}`).on("change", function () {
+                currentButton = emailInputButton;
+                removeErrorSummary();
+                hideValidationMessages(emailInputButton);
+            });
+
+            $(`#${emailInputButton}`).on("change", function () {
+                currentButton = emailInputButton;
+            });
+
+            function removeErrorSummary() {
+                $('.govuk-error-summary').remove();
+                $('.govuk-form-group--error').removeClass("govuk-form-group--error");
+            }
+
+            // Function to observe changes using MutationObserver
+            function observeMutations(selector, callback) {
+                const targetNode = document.querySelector(selector);
+                if (targetNode) {
+                    const config = { characterData: true, childList: true, subtree: true };
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                                callback(mutation.target);
+                            }
+                        });
+                    });
+                    observer.observe(targetNode, config);
+                }
+            }
+
+            // Observe changes in verification error text
+            observeMutations('.verificationErrorText div', (target) => {
+                makeErrorsMoreDescriptive();
+                const errorText = $(target).text();
+                removeErrorSummary();
+
+                switch(errorText){
+                    case "The verification has failed, please try again." :
+                        createErrorSummary();
+                        addError("The verification has failed, try again.", "#emailVerificationCode");
+                        break;
+                    case "You have exceeded maximum number of verification attempts." :
+                        createErrorSummary();
+                        addError("You have exceeded maximum number of verification attempts.", "#emailVerificationCode");
+                        break;
+                    case "The verification code you have entered does not match our records. Please try again, or request a new code.":
+                        createErrorSummary();
+                        addError("The verification code you have entered does not match our records. Please try again, or request a new code.", "#emailVerificationCode");
+                        break;
+                    default:
+                        createErrorSummary();
+                        addError(errorText, "#emailVerificationCode");
+                        break;
+                        
+                }
+
+                hideValidationMessages(verifyButton);
+            });
+
+            // Observe changes in email verification success
+            observeMutations('.verificationSuccessText div', (target) => {
+                const successText = $(target).text();
+
+                if (successText === "Verification code has been sent to your inbox. Please copy it to the input box below.") {
+                    $('#emailVerificationControl_success_message').text("");
+                    if (currentButton === emailInputButton) {
+                        $(`#${emailInputButton}`).off("click");
+                        currentButton = verifyButton;
+                        overrideEnterBehaviour(currentButton);
+                    }
+                }
+
+                if (successText === "E-mail address verified. You can now continue.") {
+                    if (~$(location).attr('href').indexOf("ForgotPassword")) {
+                        $('#continue').click();
+                    }
+                    $('.emailVerificationControl_li').hide();
+
+                    $('#emailVerificationControl_success_message').addClass("govuk-body");
+
+                    $('.intro').html('<p class="govuk-body" style="padding-left:0px !important">Passwords must be between 8 and 64 characters and have at least 3 of the following:</p><ol class="govuk-list govuk-list--bullet"><li>lowercase letters (for example x, y, z)</li><li>uppercase letters (for example A, B, C)</li><li>digits (for example 1, 2, 3)</li><li>symbols (for example &amp;?!)</li></ol>');
+                    $('.intro').show();
+
+                    $('.newPassword_li').show();
+                    $('.reenterPassword_li').show();
+
+                    $('#continue').show();
+
+                    if (currentButton === verifyButton) {
+                        currentButton = submitButton;
+                        overrideEnterBehaviour(currentButton);
+                    }
+                }
+            });
+
+            $(`#${emailInputButton}`).bindFirst("click", function (e) {
+                if (currentButton !== emailInputButton) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            });
+
+            if (~$(location).attr('href').indexOf("confirmed")) {
+                $('#continue').show();
+            }
+
+            function clearCurrentErrors() {
+                $('.error p').each(function() {
+                    $(this).text("");
+                });
+            }
+
+            function addError(errorText, causedBy) {
+                if ($('.govuk-list.govuk-error-summary__list li').length === 0) {
+                    if ($(causedBy).is(":visible")) {
+                        $(causedBy).parent().addClass("govuk-form-group--error");
+                        $(causedBy).parent().children('.error').text(errorText);
+                        $(causedBy).parent().children('.error').removeAttr('role');
+                        $('.govuk-error-summary__list').append('<li> <a href="' + causedBy + '">' + errorText + '</a> </li>');
+                    }
+                }
+                else {
+                    let found = false;
+
+                    $('.govuk-error-summary__list li').each(function(id, elem) {
+                        if ($(elem).innerText === errorText) {
+                            found = true;
+                        }
+                    });
+
+                    if (found) {
+                        return;
+                    }
+                    else {
+                        if($(causedBy).is(":visible")) {
+                            $(causedBy).parent().addClass("govuk-form-group--error");
+                            $(causedBy).parent().children('.error').text(errorText);
+                            $(causedBy).parent().children('.error').removeAttr('role');
+                            $('.govuk-error-summary__list').append('<li> <a href="' + causedBy + '">' + errorText + '</a> </li>');
+                        }
+                    }
+                }
+            }
+            
+            function makeErrorsMoreDescriptive() {
+                const requiredMessage = "This information is required.";
+                const parentSelector = "div > div.error";
+
+                if ($(parentSelector, ".email_li").text() === requiredMessage) {
+                    $(parentSelector, ".email_li").text("Enter your email address in the correct format, like name@example.com");
+                }
+
+                if ($(parentSelector, ".emailVerificationCode_li").text() === requiredMessage) {
+                    $(parentSelector, ".emailVerificationCode_li").text("Enter the verification code sent to the email address you have specified");
+                }
+                
+                if ($(parentSelector, ".newPassword_li").text() === requiredMessage) {
+                    $(parentSelector, ".newPassword_li").text("Enter a new password");
+                }
+
+                if ($(parentSelector, ".newPassword_li").text() === "The password must not begin or end with a whitespace character.") {
+                    $(parentSelector, ".newPassword_li").text("The password must not begin or end with a space/spaces");
+                }
+
+                if ($(parentSelector, ".reenterPassword_li").text() === requiredMessage) {
+                    $(parentSelector, ".reenterPassword_li").text("Enter a confirm new password");
+                }
+
+                if ($(parentSelector, ".reenterPassword_li").text() === "The password must not begin or end with a whitespace character.") {
+                    $(parentSelector, ".reenterPassword_li").text("The password must not begin or end with a space/spaces");
+                }
+            }
+
+            $('.govuk-button:not(#cancel)').click(function() {
+                removeErrorSummary();
+                makeErrorsMoreDescriptive();
+
+                if ($('#email').val().length === 0) {
+                    createErrorSummary();
+                    addError("Enter your email address", "#email");
+                } else if (!validateEmail($('#email').val())) {
+                    createErrorSummary();
+                    addError("Enter an email address in the correct format", "#email");
+                }
+                
+                if ($("div > div.error", ".emailVerificationCode_li").text() === "Enter the verification code sent to the email address you have specified" ||
+                    $('#emailVerificationCode').val().trim().length === 0) {
+                    createErrorSummary();
+                    addError("Enter the verification code sent to the email address you have specified", "#emailVerificationCode");
+                }
+
+                if ($('#password').length) {
+                    if ($('#password').val().length === 0) {
+                        createErrorSummary();
+                        addError("Enter your password", "#password");
+                    }
+                }
+
+                if ($(this).is('#continue')) {
+                    if ($('#newPassword').length) {
+                        if ($('#newPassword').val().length === 0) {
+                            createErrorSummary();
+                            addError("Enter your new password", "#newPassword");
+                        } else if ($('#newPassword').val().length < 8 || $('#newPassword').val().length > 64) {
+                            createErrorSummary();
+                            addError("The new password must be between 8 and 64 characters", "#newPassword");
+                        }
+                        if (!pwCheck($('#newPassword').val())) {
+                            createErrorSummary();
+                            addError("The new password must meet complexity requirements", "#newPassword");
+                        }
+                        if ($('#newPassword').val().startsWith(' ') || $('#newPassword').val().endsWith(' ')) {
+                            createErrorSummary();
+                            addError("The new password must not begin or end with a space/spaces", "#newPassword");
+                        }
+                    }
+                
+                    if ($('#reenterPassword').length) {
+                        if ($('#reenterPassword').val().length === 0) {
+                            createErrorSummary();
+                            addError("Enter your confirm new password", "#reenterPassword");
+                        } else if ($('#reenterPassword').val().length < 8 || $('#reenterPassword').val().length > 64) {
+                            createErrorSummary();
+                            addError("The confirm new password must be between 8 and 64 characters", "#reenterPassword");
+                        }
+                        if (!pwCheck($('#reenterPassword').val())) {
+                            createErrorSummary();
+                            addError("The confirm new password must meet complexity requirements", "#reenterPassword");
+                        }
+                        if ($('#reenterPassword').val().startsWith(' ') || $('#reenterPassword').val().endsWith(' ')) {
+                            createErrorSummary();
+                            addError("The confirm new password must not begin or end with a space/spaces", "#reenterPassword");
+                        }
+                    }
+                }
+
+                if ($('#newPassword').val() !== $('#reenterPassword').val()) {
+                    createErrorSummary();
+                    addError("The password entry fields do not match. Enter the same password in both fields and try again.", "#newPassword");
+                }
+
+                hideValidationMessages(currentButton);
+            });
+
+            function validateEmail(email) {
+                var emailReg = /^([a-zA-Z0-9_.+-])+\@@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+                return emailReg.test(email);
+            }
+
+            function pwCheck(pw) {
+                var criteria = 0;
+                if (pw.toUpperCase() !== pw) {
+                    // has lower case letters
+                    criteria++;
+                }
+                if (pw.toLowerCase() !== pw) {
+                    // has upper case letters
+                    criteria++;
+                }
+                if (/^[a-zA-Z0-9]*$/.test(pw) === false) {
+                    // has special characters
+                    criteria++;
+                }
+                if (/\d/.test(pw) === true) {
+                    // has numbers
+                    criteria++;
+                }
+                // returns true if 3 or more criteria was met and length is appropriate
+                return (criteria >= 3);
+            }
+            
+            function removePlaceholderText(){
+                $('form').find("input[type=text], input[type=email], input[type=password]").each(function (ev) {
+                    if (!$(this).val()) {
+                        $(this).attr("placeholder", "");
+                    }
+                });
+            }
+            
+            function overrideEnterBehaviour(buttonName){
+                var button = $(`#${buttonName}`);
+
+                $('form').off('keypress');
+
+                makeErrorsMoreDescriptive();
+                hideValidationMessages(buttonName);
+
+                $('form').on('keypress', function (e) {
+                    if (e.which === 13) {
+                        if (button !== undefined && button !== null) {
+                            button.trigger('click');
+                        }
+                    }
+                });
+
+                if (buttonName !== "continue") {
+                    return;
+                }
+
+                $("div > div.error", ".newPassword_li").html("");
+                $("div > div.error", ".reenterPassword_li").html("");
+                $("#requiredFieldMissing").hide();
+                removeErrorSummary();
+            }
+
+            function makePwdToggler(pwd){
+                const button = document.createElement('button');
+                button.setAttribute('type', 'button');
+                button.setAttribute('class', 'govuk-button govuk-button--secondary govuk-password-input__toggle govuk-js-password-input-toggle');
+                button.setAttribute('data-module', 'govuk-button');
+                button.setAttribute('aria-label', 'Show password');
+                button.setAttribute('aria-controls', 'password-input');
+                button.textContent = 'Show';
+
+                const id = pwd.id + 'toggler';
+                button.setAttribute('id', id);
+                
+                const wrapper = $(pwd).wrap('<div class="govuk-input__wrapper govuk-password-input__wrapper"></div>');
+                const parentWrapper = wrapper.parent();
+                parentWrapper.append(button);
+                parentWrapper.addClass('govuk-password-input');
+                parentWrapper.attr('data-module', 'govuk-password-input');
+            }
+
+            function setupPwdTogglers(){
+                const pwdInputs = document.querySelectorAll('input[type=password]');
+                for (let i = 0; i < pwdInputs.length; i++) {
+                    makePwdToggler(pwdInputs[i]);
+                }
+            }
+            
+            // the current active button dictates which fields are currently visible
+            function hideValidationMessages(buttonName){
+                const requiredMessage = "This information is required.";
+                const parentSelector = "div > div.error";
+                const topError = $("#requiredFieldMissing");
+                const validationError = $("#emailVerificationControl_error_message");
+
+                var emailError = $(parentSelector, ".email_li");
+                var emailVisible = emailError.html() !== "";
+                emailError.hide();
+
+                var emailVerificationCodeError = $(parentSelector, ".emailVerificationCode_li");
+                var emailVerificationCodeVisible = emailVerificationCodeError.html() !== "";
+                emailVerificationCodeError.hide();
+
+                var newPasswordError = $(parentSelector, ".newPassword_li");
+                var newPasswordVisible = newPasswordError.html() !== "";
+                newPasswordError.hide();
+
+                var reenterPasswordError = $(parentSelector, ".reenterPassword_li");
+                var reenterPasswordVisible = reenterPasswordError.html() !== "";
+                reenterPasswordError.hide();
+                
+                topError.hide();
+                $("#emailVerificationControl_error_message").hide();
+                $("#emailVerificationControl_error_message").css("opacity", "0%");
+                $("#emailVerificationControl_error_message").css("display", "none");
+
+                switch(buttonName) {
+                    case emailInputButton:
+                        // only the email field is visible
+                        if(emailVisible) {
+                            emailError.show();
+                        } else {
+                            topError.hide();
+                            validationError.hide();
+                            removeErrorSummary();
+                        }
+                        break;
+                    case verifyButton:
+                        if (emailVerificationCodeVisible) {
+                            emailVerificationCodeError.show();
+                            emailVerificationCodeError.removeAttr("style");
+                        } else {
+                            topError.hide();
+                            validationError.hide();
+                            removeErrorSummary();
+                        }
+                        break;
+                    case submitButton:
+                        if (!newPasswordVisible && !reenterPasswordVisible) {
+                            topError.hide();
+                            validationError.hide();
+                            removeErrorSummary();
+                            break;
+                        }
+
+                        if (newPasswordVisible) {
+                            newPasswordError.show();
+                            newPasswordError.removeAttr("style");
+                        } 
+                        
+                        if (reenterPasswordVisible) {
+                            reenterPasswordError.show();
+                            reenterPasswordError.removeAttr("style");
+                        } 
+                        break;
+                }
+            }
+        });
+    </script>
+}
+

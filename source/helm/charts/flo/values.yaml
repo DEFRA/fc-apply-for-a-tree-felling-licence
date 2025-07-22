@@ -1,0 +1,62 @@
+global:
+  secret_key_ref_name:
+  networkpolicy:
+    enabled: true
+    localnetworks:
+      - ipBlock:
+          cidr: 192.168.176.0/22
+      - ipBlock:
+          cidr: 10.242.3.0/24
+  postgresql:
+    enabled: false
+    auth:
+      username:
+      password:
+      database: flo
+  rabbitmq:
+    enabled: false
+  environment:
+
+external-web-app:
+  enabled: false
+
+internal-web-app:
+  enabled: false
+
+pdf-generation-service:
+  enabled: false
+
+postgresql:
+  image:
+    tag: 14.4.0-debian-11-r4
+  networkPolicy:
+    enabled: true
+    allowExternal: true  
+  primary:
+    podAnnotations: {}
+    extendedConfiguration: |
+     log_timezone = 'Europe/London'
+     timezone = 'Europe/London'
+    initdb:
+      scripts:
+    extraEnvVars:  
+    persistence:
+      enabled: false
+      storageClass: rook-ceph-block
+      accessModes:
+        - ReadWriteOnce
+      size: 10Gi
+    extraVolumeMounts: 
+      - name: init-db-scripts
+        mountPath: /docker-entrypoint-initdb.d/dbscripts/
+    extraVolumes:
+      - name: init-db-scripts
+        emptyDir: {} 
+
+rabbitmq:
+  fullnameOverride: rabbitmq
+
+  auth:
+    username:
+    password:
+    erlangCookie: secretcookie
