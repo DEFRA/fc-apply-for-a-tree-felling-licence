@@ -1,0 +1,24 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: internal-csp-header
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- with .Values.ingressRoute.app.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "internal-web-app.labels" . | nindent 4 }}
+    {{- with .Values.ingressRoute.app.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  headers:
+    contentSecurityPolicy: >
+      default-src 'self';
+      script-src 'self' https://{{ .Values.ingressRoute.app.hostname }} https://*.datatables.net https://*.usersnap.com https://*.jsdelivr.net https://www.googletagmanager.com https://*.clarity.ms 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' https://{{ .Values.ingressRoute.app.hostname }} https://*.datatables.net https://fonts.googleapis.com 'unsafe-inline';
+      font-src https://{{ .Values.ingressRoute.app.hostname }} https://fonts.gstatic.com;
+      worker-src blob: https://{{ .Values.ingressRoute.app.hostname }};
+      connect-src https://*.qxlva.io https://*.ps.conneqt.cloud https://*.tree-felling.forestrycommission.gov.uk/ https://*.arcgis.com https://*.arcgisonline.com https://*.usersnap.com https://*.google-analytics.com https://*.clarity.ms;
+      img-src 'self' https://*.qxlva.io https://*.ps.conneqt.cloud https://*.tree-felling.forestrycommission.gov.uk https://*.arcgis.com https://*.arcgisonline.com https://*.clarity.ms data:;

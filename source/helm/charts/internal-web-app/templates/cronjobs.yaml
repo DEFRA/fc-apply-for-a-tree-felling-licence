@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: voluntary-withdrawal-notification
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: voluntary-withdrawal-notification
+            image: fsflo.azurecr.io/docker/qtools:1.2.1
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/VoluntaryWithdrawNotification/VoluntaryWithdrawalNotificationFla"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: extend-applications
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: extend-applications
+            image: fsflo.azurecr.io/docker/qtools:1.2.1
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/ApplicationExtension/ExtendApplications"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: public-register-expiry-notification
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: publicy-register-expiry
+            image: fsflo.azurecr.io/docker/qtools:1.2.1
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterExpiry/PublicRegisterExpiryNotification"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: remove-applications-from-decision-public-register
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: remove-applications-from-decision-public-register
+            image: fsflo.azurecr.io/docker/qtools:1.2.1
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterExpiry/RemoveApplicationsFromDecisionPublicRegisterWhenEndDateReached"
+          restartPolicy: OnFailure

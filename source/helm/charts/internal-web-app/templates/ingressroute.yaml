@@ -1,0 +1,37 @@
+{{- $ingress := .Values.ingressRoute -}}
+{{- if $ingress.app.enabled -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "internal-web-app.fullname" . }}-app
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- with .Values.ingressRoute.app.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "internal-web-app.labels" . | nindent 4 }}
+    {{- with .Values.ingressRoute.app.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  entryPoints:
+     {{- with .Values.ingressRoute.app.entryPoints }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  tls:
+    {{- if .Values.ingressRoute.app.existingSecretName }}
+    secretName: {{ .Values.ingressRoute.app.certificate.existingSecretName }}
+    {{- else }}
+    secretName: {{ include "internal-web-app.fullname" . }}-cert
+    {{- end }}
+  routes:
+    - kind: Rule
+      match: Host(`{{ .Values.ingressRoute.app.hostname }}`)
+      middlewares:
+       - name: internal-csp-header
+      services:
+      - name: {{ include "internal-web-app.fullname" . }}
+        port: http
+        scheme: http
+{{- end }}

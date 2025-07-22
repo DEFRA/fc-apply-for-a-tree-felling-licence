@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en-gb" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="author" content="Forestry Commission" />
+    <meta name="description" content="Felling licence to fell growing trees" />
+    <title>Felling Licence</title>
+
+    <style>
+        @page {
+            margin: 30px 50px 20px 50px;
+            size: A4 portrait;
+
+            @bottom-center {
+                content: element(footer);
+                font-weight: normal;
+                font-family: 'Inter-Regular';
+            }
+        }
+
+        @page tblpage {
+            size: A4 landscape;
+        }
+
+        .new-page {
+            break-after: page;
+            page-break-after: always;
+        }
+
+        @media print {
+            .table-breaked {
+                page-break-before: auto;
+            }
+
+            .no-border {
+                border: none !important;
+                background-color: white;
+            }
+
+            .footer-repeat {
+                display: table-footer-group;
+            }
+
+        }
+
+        @font-face {
+            font-family: 'Inter-Regular';
+            font-style: normal;
+            font-weight: 400;
+            src: local(static/fonts/Inter-Regular.ttf);
+            -fs-font-subset: complete-font;
+        }
+
+        @font-face {
+            font-family: 'Inter-Bold';
+            font-style: normal;
+            font-weight: 400;
+            src: local(static/fonts/Inter-Bold.ttf);
+            -fs-font-subset: complete-font;
+        }
+
+        h4 {
+            page: tblpage;
+        }
+
+        #footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            font-size: 13px;
+            font-weight: normal;
+            font-family: 'Inter-Regular';
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .footer {
+            font-weight: normal;
+            font-family: 'Inter-Regular';
+        }
+
+        .footer-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            /* Center horizontally */
+            text-align: center;
+            width: 33%;
+            /* set a width to help with centering */
+            min-width: 180px;
+            max-width: 40%;
+            box-sizing: border-box;
+        }
+
+        .footer-pages {
+            position: absolute;
+            right: 0;
+            text-align: right;
+            width: 33%;
+            /* set a width to help with alignment */
+            min-width: 120px;
+            max-width: 40%;
+            box-sizing: border-box;
+        }
+
+        hr.footer {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        span.footer {
+            font-weight: normal;
+            font-family: 'Inter-Regular';
+            padding-top: 0px;
+            margin-top: 0px;
+        }
+
+        span.footer-pages {
+            text-align: right;
+        }
+
+
+        span.footer-pages:after {
+            content: "Page " counter(page) " of " counter(pages);
+            font-weight: normal;
+            font-family: 'Inter-Regular';
+            padding-top: 0px;
+            margin-top: 0px;
+        }
+
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0;
+            padding-top: 0;
+            font-size: 1.75em;
+            text-align: left;
+            font-weight: normal;
+            font-family: 'Inter-Regular';
+        }
+
+        p,
+        ul,
+        ol,
+        dl,
+        address {
+            margin-top: 0;
+            margin-bottom: 0.95em;
+            font-size: 13px;
+        }
+
+        table {
+            font-size: 13px;
+        }
+
+        .logo {
+            margin: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 280px;
+        }
+
+        .contact-info {
+            font-size: 12px;
+            color: #77af49;
+            font-family: 'Inter-Regular';
+            padding-bottom: 0;
+            text-align: right;
+            white-space: pre-wrap;
+            width: 100%;
+        }
+
+        .application-information {
+            margin-top: 150px;
+            margin-bottom: 0;
+            font-size: 1em;
+            text-align: left;
+            font-family: 'Inter-Bold';
+            line-height: 1.7;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .introduction {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 0;
+            break-inside: avoid;
+        }
+
+        .introduction-cont {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 3.5em;
+        }
+
+        .title-2 {
+            padding-left: 2em;
+            font-size: 1.5em;
+            text-align: left;
+            font-weight: normal;
+            font-family: 'Inter-Regular';
+        }
+
+        .licencee-address {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 2em;
+        }
+
+        .licence-text {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 2em;
+            padding-top: 0;
+        }
+
+        .licence-text-cont {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .part-x-title {
+            align-self: left;
+            font-family: 'Inter-Regular';
+            font-weight: normal;
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 0;
+            padding-bottom: 0.5em;
+        }
+
+        .description-of-trees-key {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 0;
+            width: content-box;
+        }
+
+        .description-of-trees-value {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 0;
+            padding-left: 2em;
+        }
+
+        .description-of-trees-value:after {
+            clear: both;
+        }
+
+        .description-of-trees-table {
+            width: 100%;
+            overflow-wrap: break-word;
+            font-family: 'Inter-Regular';
+            font-size: 0.90em;
+
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tr:nth-child(odd) {
+            background-color: #f2f2f2;
+        }
+
+        table.description-of-trees-table {
+            width: 100%;
+            table-layout: fixed;
+            border-spacing: 0;
+            break-inside: auto;
+            -fs-table-paginate: paginate;
+        }
+
+        table.description-of-trees-table :after {
+            clear: both;
+        }
+
+        tr.description-of-trees-table {
+            break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        td.description-of-trees-table {
+            padding-bottom: 1.25em;
+            padding-top: 1.25em;
+            padding-left: 0.5em;
+            padding-right: 0.5em;
+            border-top: 2px solid #bababa;
+        }
+
+        th.description-of-trees-table {
+            background-color: #FFFFFF;
+            padding-bottom: 1.5em;
+            padding-top: 1.5em;
+            padding-left: 0.5em;
+            padding-right: 0.5em;
+            border-bottom: 1px solid #bababa;
+            break-inside: avoid;
+            font-weight: normal;
+            font-family: Inter-Bold;
+        }
+
+        .restocking-conditions-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        .restocking-conditions {
+            font-family: 'Inter-Regular';
+            line-height: 1.4;
+            margin-top: 0;
+            padding-top: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 0.5em;
+            max-width: 100%;
+            max-height: 120mm;
+            overflow: auto;
+            flex: 1;
+        }
+
+        p.restocking-conditions {
+            padding-top: 0;
+            margin-top: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 0.5em;
+            max-width: 100%;
+            max-height: 120mm;
+            overflow: auto;
+        }
+
+        /* Restocking conditions page break fixes */
+        .restocking-conditions-section {
+            page-break-before: always;
+            break-before: page;
+        }
+
+        #restocking-conditions-container {
+            break-inside: avoid;
+        }
+
+        .restocking-conditions {
+            break-inside: auto;
+            page-break-after: always;
+        }
+
+        /*================================================
+        1) dedicated landscape @page
+        ================================================*/
+        @page map-landscape {
+            size: A4 landscape;
+            margin-left: 50px;
+            margin-right: 0px;
+            margin-top: 0px;
+            margin-bottom: 0px;
+        }
+
+        /*================================================
+        2) apply that page to .map-page always
+        ================================================*/
+        .map-page {
+            page: map-landscape;
+            /* stretch to fill */
+            width: 297mm;
+            height: 210mm;
+            position: relative;
+            overflow: hidden;
+            max-width: none;
+        }
+
+        /* waterfall .map-page children */
+        .map-page .watermark {
+            position: absolute;
+            top: 10mm;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .map-page .map-title {
+            page: map-landscape;
+            /*alignment: center;*/
+            text-align: center;
+            font-family: 'Inter-Regular';
+            font-size: 1.5em;
+            line-height: 1.25;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0em;
+        }
+
+        .map-page .map-image {
+            position: absolute;
+            align-content: center;
+            top: 20mm;
+            width: 90%;
+            height: 85%;
+            object-fit: contain;
+        }
+
+        .map-page .map-logo {
+            margin: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div style="position: absolute;width:100%;height:100%">
+        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+            style="width:100%;height:100%;position: absolute;" />
+    </div>
+
+    <section class="new-page">
+        <h1>Felling Licence to<br />fell growing trees</h1>
+
+        <img class="logo" th:src="@{FcLogo.png}" alt="FC Logo" />
+
+        <p th:utext="${data.get('fcContactName')}" class="contact-info"
+            style="font-family: 'Inter-Bold'; padding-bottom: 0; margin-bottom: 0;"></p>
+        <p th:utext="${data.get('fcContactAddress')}" class="contact-info"></p>
+
+        <div class="licencee-address">
+            <p style="white-space: pre;"
+                th:utext="${data.get('ownerNameWithTitle')}+'<br />'+${data.get('ownerAddress')}"></p>
+        </div>
+
+        <br />
+
+        <div class="application-information">
+            <p th:utext="${data.get('approveDate')}+
+    '<br />Application ref: '+${data.get('applicationRef')}+
+    '<br />Management Plan Ref:'+${data.get('managementPlan')}+
+    '<br />Felling Licence (Forestry Act 1967)'+
+    '<br />Property Profile Name: '+${data.get('woodName')}"></p>
+        </div>
+
+        <div class="introduction">
+            <p>Please find your approved Felling Licence and associated work area map(s) enclosed. If you are a
+                managing agent receiving this Licence on behalf of the owner / tenant, you must forward a copy of the
+                Licence to the owner / tenant for their attention.</p>
+
+            <p>Please note the expiry date for completion of the work.</p>
+
+            <p>If this Licence contains conditions for restocking, it is the responsibility of the owner / leaseholder /
+                tenant
+                of the land to ensure that the conditions are met by the required date(s) specified in this Licence. The
+                Forestry
+                Commission may visit the site at any time to inspect compliance of this Licence and its conditions.
+            </p>
+
+            <p><u>Non-compliance with Conditions of the Licence</u><br />
+                Failure to comply with the conditions of this Licence may result in an Enforcement Notice being served
+                upon
+                you or any successive owner of the land. Subsequently, failure to comply with an Enforcement Notice may
+                constitute an offence under section 24(4) of the Forestry Act 1967, involving a summary conviction and
+                an
+                unlimited fine. Where an Enforcement Notice is served due to non-compliance with this licence, the
+                Forestry
+                Commission may publish the map attached to this licence (so far as it is replicated within the
+                subsequent
+                Enforcement Notice) upon its publicly facing digital map browser or elsewhere.
+            </p>
+
+            <p><u>Plant Health Regulations</u><br />
+                You must use plant passports if you commission the movement of timber, wood products or bark of certain
+                tree species
+                within Great Britain or to the Channel Islands or the Isle of Man.
+            </p>
+
+            <ul style="list-style-position: inside; padding-left: 0">
+                <li>all conifers with bark and the isolated bark of conifer
+                </li>
+                <li>Castanea (sweet chestnut) with bark and the isolated bark of sweet chestnut
+                </li>
+                <li>Platanus (plane) with or without bark - except the isolated bark of Platanus
+                </li>
+                <li>Juglans (walnut) with or without bark and the isolated bark of Juglans
+                </li>
+                <li>Pterocarya (wingnut) with or without bark and the isolated bark of Pterocarya
+                </li>
+                <li>Christmas trees over 3 metres tall
+                </li>
+            </ul>
+
+            <p>You must be registered and authorised with the Forestry Commission if you want to issue plant passports
+                for the
+                regulated species.</p>
+
+            <p>Guidance on how to <b>Register as a Professional Operator to issue Plant Passports</b> is available on
+                GOV.UK,
+                here: <a
+                    href="https://www.gov.uk/guidance/register-as-a-professional-operator-to-issue-plant-passports">Register
+                    as a professional operator to trade in wood, issue plant passports and apply ISPM15 marking -
+                    GOV.UK</a></p>
+
+            <p>Separate authorisation is required for felling, stacking of timber and movement of spruce trees that are
+                3m or
+                greater in height originating from the Ips typographus demarcated area, more information is available on
+                GOV.UK, here: <a
+                    href="https://www.gov.uk/guidance/eight-toothed-european-spruce-bark-beetle-ips-typographus#map">
+                    Eight-toothed spruces dark beetle (Ips typographus) - GOV.UK</a></p>
+
+            <p><u>Timber Regulations</u><br />
+                UK legislation governing timber legality prohibits trade of illegally harvested timber and timber
+                products. It requires
+                those responsible for placing UK grown timber onto the market for the first time, the ‘Operator’,
+                whether they are an
+                owner, contractor or timber merchant, to maintain documentation to prove that the timber is harvested
+                from a
+                legally authorised resource. A timber regulations Due Diligence checklist for this felling licence is
+                required when
+                placing the timber on the market for the first time, the parties involved will need to complete and
+                retain the Due
+                Diligence checklist (along with any other documents that demonstrate the timber has been felled in
+                conjunction with
+                all other relevant legislation e.g. Health and Safety). More information on timber regulation is
+                available on GOV.UK,
+                here: <a href="https://www.gov.uk/guidance/regulations-timber-and-flegt-licences"> Regulations: timber
+                    and FLEGT licences
+                    - GOV.UK</a>
+            </p>
+
+            <p><u>Protected sites - Sites of Special Scientific interest or Scheduled Monuments</u><br />
+                This Licence only gives you permission to fell the trees specified in the Licence. It does not give you
+                the
+                additional consents that you require in order to conduct works (including felling) within Sites of
+                Special
+                Scientific interest or Scheduled Monuments (protected sites). These consents may be enclosed with this
+                felling
+                licence, but if they are not, you should not fell trees on protected sites without the formal consent
+                from Natural
+                England or Historic England respectively
+            </p>
+
+            <p><u>Planning permission</u><br />
+                If, after felling trees authorised to be cut down in this Licence, you seek planning permission for any
+                form of
+                development on the felled area, you should be aware that the granting of planning permission will not
+                override the
+                conditions of this Licence or any subsequent Enforcement Notice issued under section 24 of the Forestry
+                Act 1967.
+            </p>
+
+            <p><u>Environmental Information Regulations</u><br />
+                Felling Licences are disclosed on request and may be published under the Environmental Information
+                Regulations.
+                Disclosure and publication will take into account the requirements of the Data Protection Act 2018 in
+                respect to
+                any personal information included in the licence.
+            </p>
+
+            <p>Yours sincerely</p>
+
+            <p th:text="${data.get('approverName')}"
+                style="padding-top: 0; margin-top: 0; padding-bottom: 0; margin-bottom: 0;"></p>
+            <br />
+            <br />
+            <br />
+            <br />
+
+            <p>For the Forestry Commission</p>
+        </div>
+
+        <div style="clear: both"></div>
+        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+            style="width:100%;height:100%;position: absolute;" />
+    </section>
+
+    <section class="new-page">
+        <div class="title-2">
+            <h2>Licence to Fell Growing Trees</h2>
+        </div>
+
+        <div style="padding-right: 1em" class="licencee-address">
+            <p>To:</p>
+        </div>
+
+        <div class="licencee-address">
+            <p style="white-space: pre;"
+                th:utext="${data.get('ownerNameWithTitle')}+'<br />'+${data.get('ownerAddress')}">
+            </p>
+        </div>
+
+        <div class="licence-text">
+            <p>This Licence gives you permission under section 10 of the Forestry Act 1967 as amended to fell the trees
+                described in Part 1 of this licence and in the areas shown on the appended map(s).</p>
+
+            <p>Tree felling under this Licence has been approved by the Forestry Commission as being in accordance with
+                government policy for the sound management of a renewable resource, based on the application made.
+                The Licence issued is intended for use by the person with an interest in the land that enabled them to
+                apply
+                for the licence in the first instance.</p>
+
+            <p style="font-family:Inter-Bold;"
+                th:text="'The felling permissions in this Licence expire on: ' + ${data.get('expiryDate')}"></p>
+
+            <p>Prior to felling, all parties (agents, contractors, stakeholders) who are involved or affected by the
+                felling
+                must be made aware of this licence and provided with a copy of the Licence and map(s) on request. After
+                enacting any part of this licence, if you sell the land you should also tell the new owner about this
+                Licence.</p>
+
+            <p>If a Tree Preservation Order (TPO) is placed on these trees after this Licence was applied for or issued,
+                you
+                must contact the Forestry Commission as you will need a new Licence if you wish to fell the protected
+                trees.
+                Without a new felling Licence, you may potentially be committing an offence under the Town and Country
+                Planning Act 1990 in relation to the TPO. The local planning authority is not empowered to grant you
+                permission to fell protected trees if that felling would ordinarily require a felling Licence.
+            </p>
+
+            <p>Tree felling operations must be carried out in a manner that reflects good forestry practice, as set out
+                in
+                the
+                current UK Forestry Standard (UKFS). When preparing tree felling operations, appropriate consideration
+                should always be given for possible impacts on habitats and species, these will include but not limited
+                to:
+            </p>
+            <ul style="list-style-position: inside; padding-left: 0">
+                <li>Ensuring operations are in compliance with the Conservation of Habitats and Species Regulations 2017
+                    relating to European Protected Species (EPS); and
+                </li>
+                <li>Ensuring timing of operations (such as in the bird nesting season) are in compliance with the
+                    protection
+                    of
+                    birds under the Wildlife and Countryside Act 1981.
+                </li>
+            </ul>
+
+            <p>Any felling operations for ‘thinning’ approved by this Licence must be implemented evenly across the
+                felling
+                site(s) for thinning identified under Part 1 of this licence. The felling operation for thinning will
+                not
+                exceed
+                30% of the total number of trees or remove more than 30% of the original canopy cover per operation,
+                unless otherwise agreed by the FC and confirmed in this licence. Note: tree felling operations for
+                ‘thinning’
+                that occur at a greater intensity than 30% of the number of trees or area of canopy (in all or part of
+                an
+                operational area) may constitute a breach of the Licence.</p>
+
+            <p>Where conditions of the Licence state that restocking is by natural regeneration or by using coppice
+                regrowth, ground conditions must be maintained to facilitate and secure natural regeneration, and
+                coppiced
+                stumps must be retained in situ and be adequately protected to allow site native natural regeneration to
+                occur.</p>
+        </div>
+
+        <div style="clear: both"></div>
+        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+            style="width:100%;height:100%;position: absolute;" />
+    </section>
+
+    <section class="new-page">
+        <div class="licence-text-cont">
+            <p><u>Tree Health</u><br />
+                If you have any reason to suspect the presence of tree pests or disease, e.g. Phytophthora ramorum, you
+                are obliged to inform the Forestry Commission at the earliest possible opportunity, as per your
+                obligation
+                under article 14 of The Plant Health Regulation (EU) 2016/2031 (PHR).
+            </p>
+
+            <p>
+                If larch or other tree species susceptible to Phytophthora ramorum included in this licence display
+                symptoms of this disease you must not fell those trees until the FC have had the opportunity to assess
+                their
+                health. If Phytophthora ramorum presence is suspected or confirmed, the area will become subject to a
+                Statutory Plant Health Notice (SPHN), the conditions of which will override those contained within this
+                licence.
+            </p>
+
+            <p>Separate authorisation is required for felling, stacking of timber and movement of spruce trees that are
+                3m
+                or
+                greater in height originating from the Ips typographus demarcated area, more information is available on
+                GOV.UK, here: <a
+                    href="https://www.gov.uk/guidance/eight-toothed-european-spruce-bark-beetle-ips-typographus#map">
+                    Eight-toothed spruces dark beetle (Ips typographus) - GOV.UK</a>
+            </p>
+
+            <br />
+            <br />
+            <br />
+
+            <p th:text="${data.get('approverName')}" style="padding-bottom: 0; float: left; margin-bottom: 0;"></p>
+
+            <p th:text="${'Date: ' + data.get('approveDate')}" style="float:right;padding-bottom: 0; margin-bottom: 0;">
+            </p>
+
+            <hr style="clear: both;" />
+            <p>Signed for and on behalf of the Forestry Commissioners</p>
+        </div>
+
+        <div style="clear: both"></div>
+        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+            style="width:100%;height:100%;position: absolute;" />
+    </section>
+
+    <section class="new-page">
+        <div class="part-x-title">
+            <h3>Part 1 - Description of the trees to be felled</h3>
+        </div>
+        <div class="description-of-trees-key">
+            <p>Property:</p>
+            <p>Name of wood:</p>
+            <p>Local Authority:</p>
+            <p>Approved Felling<br />Details:</p>
+        </div>
+
+        <div class="description-of-trees-value">
+            <p th:text="${data.get('propertyName')}"></p>
+            <p th:text="${data.get('woodName')}"></p>
+            <p th:text="${data.get('localAuthority')}"></p>
+        </div>
+
+        <div style="float: left;">
+            <table class="description-of-trees-table">
+                <thead>
+                    <tr class="description-of-trees-table">
+                        <th class="description-of-trees-table">Compartment</th>
+                        <th class="description-of-trees-table">Type of operation</th>
+                        <th class="description-of-trees-table">Marking of trees</th>
+                        <th class="description-of-trees-table">Digitised Area (ha)</th>
+                        <th class="description-of-trees-table">Total number of trees</th>
+                        <th class="description-of-trees-table">Estimated volume (m³)</th>
+                        <th class="description-of-trees-table">Species</th>
+                    </tr>
+                </thead>
+                <tr class="description-of-trees-table" th:each="entry : ${data.get('approvedFellingDetails')}">
+                    <td class="description-of-trees-table" th:text="${entry.get('fellingSiteSubcompartment')}"></td>
+                    <td class="description-of-trees-table" th:text="${entry.get('typeOfOperation')}"></td>
+                    <td class="description-of-trees-table" th:text="${entry.get('markingOfTrees')}"></td>
+                    <td class="description-of-trees-table" th:text="${entry.get('digitisedArea')}"></td>
+                    <td class="description-of-trees-table" th:text="${entry.get('totalNumberOfTrees')}"></td>
+                    <td class="description-of-trees-table" th:text="${entry.get('estimatedVolume')}"></td>
+                    <td class="description-of-trees-table" th:text="${entry.get('species')}"></td>
+                    <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+                        style="width:100%;height:100%;position: absolute;" />
+                </tr>
+                <tfoot class="footer-repeat">
+                    <!-- add repeated tfoot for extra space -->
+                    <tr class="no-border">
+                        <td class="no-border">&#xA0;</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    
+    <div style="clear: both; page-break-after: always; break-after: page;"></div>
+
+    <section class="new-page">
+        <div class="part-x-title">
+            <h3>Part 2 - Restocking Conditions</h3>
+        </div>
+
+        <div id="restocking-conditions-container" style="break-inside: avoid-page;">
+            <div class="restocking-conditions" th:each="condition : ${data.get('restockingConditions')}" style="break-inside: avoid-page;">
+                <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+                        style="width:100%;height:100%;position: absolute;" />
+                <p class="restocking-conditions" th:utext="${condition}" style="break-inside: auto;"></p>
+            </div>
+        </div>
+
+        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+            style="width:100%;height:100%;position: absolute;" />
+    </section>
+
+    <section class="new-page">
+        <div class="part-x-title">
+            <h3>Part 3 - Supplementary points</h3>
+        </div>
+        <div>
+            <p class="introduction" th:text="${data.get('restockingAdvisoryDetails')}"></p>
+        </div>
+        
+        <div style="clear: both"></div>
+        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
+            style="width:100%;height:100%;position: absolute;" />
+    </section>
+
+    <!-- OPERATIONS MAPS -->
+    <div th:each="img : ${data.operationsMaps}" class="map-page">
+        <object class="watermark" type="pdf/background" pdfsrc="FellingLicenceWatermarkLandscape.pdf" />
+
+        <!-- header: title (centre) + logo (right) -->
+        <div class="map-header">
+            <h2 class="map-title">Felling Operations Map</h2>
+            <img class="map-logo" src="FC_Logo_No_Text.png" />
+        </div>
+
+        <!-- the map itself -->
+        <img class="map-image" th:src="'data:image/png;base64,' + ${img.replaceAll('\\r?\\n','')}"
+            alt="Operations Map" />
+    </div>
+
+    <!-- RESTOCKING MAPS -->
+    <div th:each="img : ${data.restockingMaps}" class="map-page">
+        <object class="watermark" type="pdf/background" pdfsrc="FellingLicenceWatermarkLandscape.pdf" />
+
+        <!-- header: title (centre) + logo (right) -->
+        <div class="map-header">
+            <h2 class="map-title">Restocking Operations Map</h2>
+            <img class="map-logo" src="FC_Logo_No_Text.png" />
+        </div>
+
+        <!-- the map itself -->
+        <img class="map-image" th:src="'data:image/png;base64,' + ${img.replaceAll('\\r?\\n','')}"
+            alt="Restocking Map" />
+    </div>
+
+</body>
+
+<div class="footer" id="footer">
+    <hr class="footer" />
+
+    <!-- Left-aligned part: Application ref -->
+    <span class="footer" th:text="'Application ref: ' + ${data.get('applicationRef')}" />
+
+    <!-- Center-aligned part: FC-FL-V0.01: dd.MM.yy -->
+    <span class="footer-center"
+        th:text="'FC-FL-V' + ${data.get('version')} + ': ' + ${#dates.format(data.get('date'), 'dd.MM.yyyy')}" />
+
+    <!-- Right-aligned part: Footer pages -->
+    <span class="footer-pages" />
+</div>
+
+</html>
