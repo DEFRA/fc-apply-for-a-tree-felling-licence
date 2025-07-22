@@ -8,7 +8,7 @@ namespace Forestry.Flo.Services.FileStorage.Configuration
         /// Gets and sets the storage account connection string
         /// </summary>
         [Required]
-        public string ConnectionString { get; set; } = "DefaultEndpointsProtocol=https;AccountName=devflo;AccountKey=eguoxpoIbUH6PSc4X9QNWFsdi5F3A+jlH09iVoB8/RV1yXz6LTBv2s3AxON2qsPXVuF6OZMxtTZz+AStqZhfjw==;EndpointSuffix=core.windows.net";
+        public string ConnectionString { get; set; }
 
         /// <summary>
         /// Gets and sets the container to use for file storage
