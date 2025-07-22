@@ -1,0 +1,209 @@
+/*html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+*/
+
+.flo-navigation{
+    display: flex;
+    justify-content: space-between;
+}
+
+.margin-right-seperate a {
+    margin-right: 15px;
+}
+
+.sign-up-link {
+    margin-left: 20px;
+}
+
+.helpLink {
+    visibility: hidden;
+}
+
+.heading {
+    padding-left: 15px;
+}
+
+.attr ul {
+    list-style-type: none;
+    padding-left: 0 !important;
+}
+
+.blue-border {
+    border-color: #2b8cc4;
+    background-color: #eaf4f9
+}
+
+.green-border {
+    border-color: #4e9f51;
+    background-color: #eaf4f9
+}
+
+#forgotPassword {
+    text-decoration: none;
+}
+
+#forgotPassword:hover {
+    text-decoration: underline;
+}
+
+#createAccount {
+    text-decoration: none;
+}
+
+#createAccount:hover {
+    text-decoration: underline;
+}
+
+.bordered-panel {
+
+    border: 2px solid #ccc !important;
+}
+
+.profileMap {
+    width: 100%;
+    max-width: 620px;
+    border: 1px solid black;
+    border-width: 1px;
+    padding: 0;
+    margin: 0;
+    height: 85vh !important;
+}
+
+.user-\!-icon {
+    width: 100% !important;
+}
+
+@media (min-width:40.0625em) {
+    .user-\!-icon {
+        width: 2em !important;
+    }
+}
+
+
+.no-\!-bottom-margin {
+    margin-bottom: 0px !important;
+}
+
+.activity-avatar-button {
+    vertical-align: middle;
+}
+
+.activity-avatar-button {
+    background-color: transparent;
+    border: none;
+}
+
+.no-activity-items {
+    padding-left: 10px;
+}
+
+.no-activity-items::before {
+    background-color: #1d70b8;
+    content: "";
+    height: 100%;
+    left: 0;
+    position: absolute;
+    width: 5px;
+}
+
+.vertical-align-middle-moz {
+    vertical-align: -moz-middle-with-baseline;
+}
+
+.vertical-align-middle-webkit {
+    vertical-align: -webkit-baseline-middle;
+}
+
+p.show-line-breaks {
+    white-space: pre-line;
+}
+
+.supporting-document-options {
+    display: flex;
+}
+
+.site_max_width {
+    width: 100%
+}
+
+.site_one_third {
+    width: 33%
+}
+
+.site_two_thirds {
+    width: 66%
+}
+
+.width_one_half {
+    width: 50%
+}
+
+.padding-bottom-5 {
+    padding-bottom: 5px
+}
+
+.float-left {
+    float: left
+}
+
+.signature-box {
+    box-shadow: 2px 2px 7px 1px #000000;
+    width: 300px;
+    height: 125px;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.wrapped-text {
+    word-wrap: anywhere;
+}
+
+.govuk-summary-list__row {
+    border-bottom: 1px solid #b1b4b6 !important;
+}
+
+table#application-list-table > tbody > tr#no-applications-found > td {
+    text-align: center;
+}
+
+.autocomplete-wrapper {
+        max-width: 20em;
+        margin-bottom: 1rem;
+}
+
+table#application-list-table{
+    table-layout: fixed;
+}
+
+.species-selection-container .govuk-visually-hidden{
+    display: none;
+}
+
+/* Style for readonly textboxes */
+.input-readonly {
+    background-color: #f0f0f0; /* Light grey background */
+    color: #555; /* Slightly darker text color */
+    cursor: not-allowed; /* Indicate it's not editable */
+}
+
+.long-link {
+    overflow-wrap: break-word;
+}

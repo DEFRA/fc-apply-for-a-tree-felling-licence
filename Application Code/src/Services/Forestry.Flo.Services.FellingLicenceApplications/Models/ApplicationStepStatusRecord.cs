@@ -1,0 +1,18 @@
+﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+
+namespace Forestry.Flo.Services.FellingLicenceApplications.Models;
+
+public record ApplicationStepStatusRecord
+{
+    public bool? SelectedCompartmentsComplete { get; init; } = null;
+
+    public bool? OperationDetailsComplete { get; init; } = null;
+
+    public IEnumerable<CompartmentFellingRestockingStatus> FellingAndRestockingDetailsComplete { get; init; } = Array.Empty<CompartmentFellingRestockingStatus>();
+
+    public bool? ConstraintsCheckComplete { get; init; } = null;
+
+    public bool? TermsAndConditionsComplete { get; init; } = null;
+
+    public bool? SupportingDocumentationComplete { get; init; } = null;
+}

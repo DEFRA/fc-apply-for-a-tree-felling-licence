@@ -1,0 +1,200 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Models.FellingLicenceApplication
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common.User
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingLicenceApplicationModel
+
+@{
+    ViewData["Title"] = "Felling licence application";
+    ViewData.ManuallySetBackLink(Url.Action("WoodlandOwner", "Home", new { woodlandOwnerId = Model.WoodlandOwnerId }));
+    ViewData.ShowBackLink();
+}
+
+@functions 
+{
+    public string GetStatusStyleName(ApplicationStepStatus status)
+    {
+        return status switch
+        {
+            ApplicationStepStatus.NotStarted => "govuk-tag--grey",
+            ApplicationStepStatus.InProgress => "govuk-tag--blue",
+            ApplicationStepStatus.AmendmentRequired => "govuk-tag--yellow",
+            _ => string.Empty
+        };
+    }
+}
+
+<div class="govuk-grid-column-full">
+    <partial name="Partials/_PageErrors"/>
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+
+    <h1 class="govuk-heading-xl">Your application</h1>
+
+    <partial name="_ApplicationSummaryNotes" model="@Model.ApplicationSummary"/>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-2">Application @(Model.IsComplete ? "complete" : "incomplete")</h2>
+    <p class="govuk-body">You have completed @(Model.CompletedStepsCount) of @(Model.StepsCount) tasks.</p>
+
+    @if (Model.HasCaseNotes)
+    {
+        <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">
+                    Case notes have been added to this application: <a asp-action="ViewCaseNotes" asp-controller="FellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId">View case notes</a>
+                </p>
+            </div>
+        </div>
+    }
+
+    <div>
+        <ul class="app-task-list__items">
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("SelectCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="select-compartments">
+                        Select compartments
+                    </a>
+                </span>
+                <strong class="govuk-tag @GetStatusStyleName(Model.SelectedCompartments.Status) app-task-list__tag" id="select-compartments">@(Model.SelectedCompartments.Status.GetDescription())</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="operations">
+                        Proposed felling schedule
+                    </a>
+                </span>
+                <strong class="govuk-tag @GetStatusStyleName(Model.OperationDetails.Status) app-task-list__tag" id="operations">@(Model.OperationDetails.Status.GetDescription())</strong>
+            </li>
+
+            <!-- temp -->
+
+            <li class="app-task-list__item">
+                @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted || Model.FellingAndRestockingDetails.DetailsList.Count < 1)
+                {
+                    <span class="app-task-list__task-name">
+                        <a aria-describedby="felling-and-restocking-details">
+                            Felling and restocking details 
+                        </a>
+                    </span>
+                    <strong class="govuk-tag @GetStatusStyleName(Model.FellingAndRestockingDetails.Status) app-task-list__tag" id="felling-and-restocking-details-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</strong>
+                    <div>
+                        @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted)
+                        {
+                            <a class="govuk-hint">
+                                <br>(Select compartments must be IN PROGRESS or COMPLETED)
+                            </a>
+                        }
+                        else if (Model.FellingAndRestockingDetails.DetailsList.Count < 1)
+                        {
+                            <a class="govuk-hint">
+                                (At least one compartment must be selected)
+                            </a>
+                        }
+                    </div>
+
+                }
+                else
+                {
+                    <span class="app-task-list__task-name">
+                        <a href="@Url.Action("ContinueFellingAndRestocking", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="felling-and-restocking-details">
+                            Felling and restocking details
+                        </a>
+                        <span>
+                            (@Model.FellingAndRestockingDetails.CompletedCount / @Model.FellingAndRestockingDetails.DetailsList.Count completed)
+                        </span>
+                    </span>
+                    <strong class="govuk-tag @GetStatusStyleName(Model.FellingAndRestockingDetails.Status) app-task-list__tag" id="felling-and-restocking-details-status">@(Model.FellingAndRestockingDetails.Status.GetDescription())</strong>
+                }
+            </li>
+            <li class="app-task-list__item">
+                @if (Model.SelectedCompartments.Status != ApplicationStepStatus.Completed && Model.ConstraintCheck.Status == ApplicationStepStatus.NotStarted)
+                {
+                    <span class="app-task-list__task-name">
+                        <a aria-describedby="Check for Contraints">
+                            Check for constraints
+                        </a>
+                    </span>
+                    <strong class="govuk-tag @GetStatusStyleName(ApplicationStepStatus.NotStarted) app-task-list__tag" id="felling-and-restocking-details-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</strong>
+                    <span class="govuk-hint">
+                        <br />(Select compartments must be COMPLETED)
+                    </span>
+                }
+                else
+                {
+                    <span class="app-task-list__task-name">
+                        <a href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="felling-and-restocking-details">
+                            Check for constraints
+                        </a>
+                    </span>
+                    <strong class="govuk-tag @GetStatusStyleName(Model.ConstraintCheck.Status) app-task-list__tag" id="felling-and-restocking-details-status">@(Model.ConstraintCheck.Status.GetDescription())</strong>
+                }
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="shared-application-details">
+                        Supporting documentation
+                    </a>
+                </span>
+                <strong class="govuk-tag @GetStatusStyleName(Model.SupportingDocumentation.Status) app-task-list__tag" id="shared-application-details">@(Model.SupportingDocumentation.Status.GetDescription())</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("TermsAndConditions", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="terms-and-conditions">
+                        Declaration and confirmation
+                    </a>
+                </span>
+                <strong class="govuk-tag @GetStatusStyleName(Model.FlaTermsAndConditionsViewModel.Status) app-task-list__tag" id="fla-terms-and-conditions-status">@(Model.FlaTermsAndConditionsViewModel.Status.GetDescription())</strong>
+            </li>
+        </ul>
+    </div>
+
+    <div>
+        @{
+            FellingLicenceStatus[] enabledStatuses =
+            [
+                FellingLicenceStatus.Draft,
+                ..FellingLicenceStatusConstants.WithdrawalStatuses
+            ];
+
+            if (FellingLicenceStatusConstants.SubmitStatuses.Contains(Model.ApplicationSummary.Status))
+            {
+                if (Model.IsComplete)
+                {
+                    <a class="govuk-button" data-module="govuk-button" asp-action="ConfirmSubmitFellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId"> Submit application</a>
+                }
+                else
+                {
+                    <button class="govuk-button" data-module="govuk-button" disabled="disabled">Submit application</button>
+                }
+            }
+
+            if (enabledStatuses.Contains(Model.ApplicationSummary.Status))
+            {
+                if (Model.ApplicationSummary.Status is FellingLicenceStatus.Draft)
+                {
+                    <a class="govuk-button govuk-button--warning" data-module="govuk-button" asp-action="ConfirmDeleteFellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId"> Delete application</a>
+                }
+                else
+                {
+                    <a class="govuk-button govuk-button--warning" data-module="govuk-button" asp-action="ConfirmWithdrawFellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId"> Withdraw application</a>
+                }
+
+                if (!Model.IsComplete)
+                {
+                    <p class="govuk-body">Complete all sections above to submit this application.</p>
+                }
+            }
+            else
+            {
+                var text = Model.ApplicationSummary.Status == FellingLicenceStatus.ReferredToLocalAuthority
+                    ? "is in consultation with your local authority."
+                    : $"has been {Model.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
+
+                <p class="govuk-body">This application @text</p>
+            }
+        }
+    </div>
+</div>

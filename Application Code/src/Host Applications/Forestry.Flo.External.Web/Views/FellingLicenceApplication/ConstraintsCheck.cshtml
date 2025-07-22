@@ -1,0 +1,89 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ConstraintCheckModel
+@{
+    ViewData["Title"] = "Check Constraint";
+    ViewData.ManuallySetBackLink(Url.Action(
+        Model.ReturnToApplicationSummary
+            ? "ApplicationSummary"
+            : "ApplicationTaskList",
+        "FellingLicenceApplication", new
+        {
+            applicationId = Model.ApplicationId
+        }));
+
+    ViewData.ShowBackLink();
+
+    IDictionary<string, object> attributes = new Dictionary<string, object>
+    {
+        { "class", "govuk-checkboxes__input" }, 
+        { "id", "not-running-lis" }, 
+        { "aria-describedby", "not-running-lis-hint" }
+    };
+}
+
+<div class="govuk-grid-column-full">
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+    <partial name="Partials/_PageErrors"/>
+
+    <h1 class="govuk-heading-l">Check For Constraints</h1>
+    <div id="constraint-hint" class="govuk-hint">
+        You can perform a check to compare compartments against the data stored in the Land Information Search system. This will generate a report that identifies any constraints that could impact your application.<br /><br />
+    </div>
+
+    <h2 class="govuk-heading-m">Running the constraints check</h2>
+    <ol class="govuk-list govuk-list--number">
+        <li>The Run the constraints check button opens Forestry Commission's map browser in a new tab.</li>
+        <li>Select 'Upload Case Report'. This will open a new tab.</li>
+        <li>Select 'Save to Felling Licence Online'</li>
+        <li>Return to this page and refresh.</li>
+    </ol>
+
+    <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+    
+    <div class="govuk-body govuk-!-margin-bottom-7">
+        <partial name="Partials/_RunConstraintCheckerPartial" model="@Model" />
+        <partial name="Partials/_ConstraintReportDownloadLink" model="@Model" />
+    </div>
+    <form id="constraint-check-form" method="post" asp-action="ConstraintsCheck">
+        <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
+        <input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary" />
+        <div>
+            <div class="govuk-checkboxes govuk-!-margin-top-4 govuk-!-margin-bottom-4" data-module="govuk-checkboxes">
+                <div class="govuk-checkboxes__item">
+                    @Html.CheckBox(Html.NameFor(x => x.NotRunningExternalLisReport), Model.NotRunningExternalLisReport ?? false, attributes)
+                    <label class="govuk-label govuk-checkboxes__label" for="not-running-lis">
+                        I do not wish to run the Land Information Search
+                    </label>
+                    <div id="not-running-lis-hint" class="govuk-hint govuk-checkboxes__hint">
+                        Check this box to mark this section as complete. This will allow you to continue with your application without running the Land Information Search.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
+                Continue
+            </button>
+        </div>
+    </form>
+
+</div>
+
+@section Scripts
+{
+    @if (!Model.AllowEditing)
+    {
+        <script src="/js/disable-form-elements.js"></script>
+
+        <script>
+
+            $(function () {
+
+                disableFormElements('#constraint-check-form');
+            });
+
+        </script>
+    }
+}

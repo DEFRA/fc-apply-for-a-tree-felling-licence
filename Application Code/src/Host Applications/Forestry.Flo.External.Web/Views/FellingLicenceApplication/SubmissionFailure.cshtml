@@ -1,0 +1,27 @@
+﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.SubmissionFailureModel
+@{
+    ViewData["Title"] = "Failed Application Submission";
+}
+
+<div class="govuk-grid-column-full">
+    <div class="govuk-panel">
+        <h1 class="govuk-panel__title">
+            Error
+        </h1>
+        <div class="govuk-panel__body">
+            We have been unable to submit your application
+        </div>
+    </div>
+    
+    <p class="govuk-body">Please try again later</p>
+
+    <p class="govuk-body">If you continue to get this message please contact the Forestry Commission.</p>
+
+    @*ToDo: embed link to feedback page once supplied by GDS*@
+    <p class="govuk-body"> <a href="https://forms.office.com/e/3jqkczV1Am" target="_blank" class="govuk-link">What did you think of this service?</a>  (takes 30 seconds)</p>
+   
+</div>
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

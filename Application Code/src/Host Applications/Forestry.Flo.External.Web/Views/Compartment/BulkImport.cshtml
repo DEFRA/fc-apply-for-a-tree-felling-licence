@@ -1,0 +1,247 @@
+﻿@model Forestry.Flo.External.Web.Models.Compartment.CompartmentModel;
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Infrastructure.Display
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewBag.Title = "Spatial Data Import - " + Model.PropertyProfileName;
+    Layout = "_Layout";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+
+    <p class="govuk-heading-m">Spatial Data Import for : @Model.PropertyProfileName</p>
+
+    <partial name="Partials/_PageErrors" />
+
+    <div>
+        <p class="govuk-body">You can upload any of these spatial data format types; Keyhole Markup Language (.KML), Geojson (.JSON) or zipped ESRI shapefiles.</p>
+        <p class="govuk-body">The spatial data created within your GIS system should comply with the following guidance:</p>
+        <ul class="govuk-list govuk-list--bullet">
+            <li>must be within the boundary of England</li>
+            <li>must be captured against the British National Grid (BNG) coordinate system</li>
+            <li>must have unique IDs for each polygon compartment, each compartment should be labelled uniquely, preferably with short names (e.g. 1a, 2b, 3c)</li>
+            <li>polygon compartments must not overlap within the each data file</li>
+        </ul>
+    </div>
+
+    <div class="component-sample-container" aria-label="Import compartments into this property">
+
+        <div class="component-sample-wrapper">
+            <calcite-shell id="shell" content-behind>
+                <h2 id="header-title" slot="header">
+                    Spatial Data Import for:  @Model.PropertyProfileName
+                </h2>
+                <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached>
+                    <calcite-action-bar slot="action-bar" expanded>
+                        <calcite-action data-action-id="importer"
+                                        icon="upload"
+                                        scale="m"
+                                        text="Import tool"></calcite-action>
+                        <calcite-action data-action-id="basemaps"
+                                        icon="basemap"
+                                        scale="m"
+                                        text="Basemaps"></calcite-action>
+                        <calcite-action data-action-id="coordinates"
+                                        icon="cursor-plus"
+                                        scale="m"
+                                        text="Coordinate Viewer"></calcite-action>
+                    </calcite-action-bar>
+
+                    <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="l" data-panel-id="basemaps" hidden>
+                        <calcite-action icon="question"
+                                        text="Help"
+                                        slot="header-actions-start"
+                                        id="help-basemap-button"
+                                        scale="m"></calcite-action>
+                        <calcite-action icon="x"
+                                        text="close"
+                                        slot="header-actions-end"
+                                        id="close-basemap-button"
+                                        scale="m"></calcite-action>
+                        <div id="basemaps-container"></div>
+                    </calcite-panel>
+
+                    <calcite-panel heading="Import File" description="Import file" height-scale="l" data-panel-id="import" hidden>
+                        <calcite-action icon="x"
+                                        text="close"
+                                        slot="header-actions-end"
+                                        id="close-import-button"
+                                        scale="m"></calcite-action>
+                        <calcite-action icon="question"
+                                        text="Help"
+                                        slot="header-actions-start"
+                                        id="help-import-button"
+                                        scale="m"></calcite-action>
+                        <div id="import-container"></div>
+                    </calcite-panel>
+                    <calcite-panel heading="Compartment Details" description="Set or update compartment details" height-scale="s" data-panel-id="coordinates" id="editCompartment" hidden>
+                        <calcite-action icon="question"
+                                        text="Help"
+                                        slot="header-actions-start"
+                                        id="help-compartment-button"
+                                        scale="m"></calcite-action>
+                        <calcite-action icon="x"
+                                        text="close"
+                                        slot="header-actions-end"
+                                        id="close-compartment-button"
+                                        scale="m"></calcite-action>
+                        <div id="compartment-container"></div>
+                    </calcite-panel>
+                    <calcite-panel heading="Coordinate Viewer"
+                                   description="Coordinate Details"
+                                   height-scale="m"
+                                   data-panel-id="coordinates" hidden>
+                        <calcite-action icon="question"
+                                        text="Help" slot="header-actions-start"
+                                        id="help-coordinate-button"
+                                        scale="m"></calcite-action>
+                        <calcite-action icon="x"
+                                        text="close"
+                                        slot="header-actions-end"
+                                        id="close-coordinate-button"
+                                        scale="m"></calcite-action>
+                        <div id="coordinate-container"></div>
+                    </calcite-panel>
+                    <calcite-panel dheading="Shape Importer"
+                                   description="Use the tool to import shapes"
+                                   height-scale="m"
+                                   data-panel-id="importer"
+                                   hidden>
+                        <calcite-block heading="Select File" open icon-start="speech-bubble">
+                            <form enctype="multipart/form-data" method="post" id="uploadForm">
+                                <input type="file" name="file" id="importFileControl" />
+                            </form>
+                        </calcite-block>
+                        <calcite-block heading="Select Area" id="SelectArea" hidden open>
+                            <div hidden>
+                                <label for="snapTo">Snap to Shape</label>
+                                <input type="checkbox" id="snapTo" />
+                            </div>
+                            <br />
+                            <div class="Height">
+                            <ul id="selection"></ul>
+                            </div>
+                        </calcite-block>
+                        <calcite-block heading="Select Field" id="SelectField" hidden open>
+                            <select id="group"></select>
+                        </calcite-block>
+                    </calcite-panel>
+
+                </calcite-shell-panel>
+
+
+                <div id="viewDivDraw"></div>
+
+            </calcite-shell>
+            <div id="hoverLabel"></div>
+        </div>
+    </div>
+    <p></p>
+    <div>
+        <form method="post" id="postBack">
+            <input type="hidden" asp-for="@Model.Id" />
+            <input type="hidden" asp-for="@Model.PropertyProfileId" />
+            <input type="hidden" asp-for="@Model.PropertyProfileName" />
+            <input type="hidden" asp-for="@Model.ApplicationId" />
+            <input type="hidden" asp-for="@Model.WoodlandOwnerId" />
+            <input type="hidden" asp-for="@Model.AgencyId" />
+
+            <fieldset class="govuk-fieldset">
+                <div class="govuk-form-group">
+                    <div class="govuk-button-group">
+                        <button data-prevent-double-click="true" type="button" id="submit" name="submit" class="govuk-button" data-module="govuk-button" disabled>
+                            Save and Continue
+                        </button>
+
+                        @if (Model.ApplicationId == Guid.Empty)
+                        {
+                            <a class="govuk-link" asp-controller="PropertyProfile" asp-action="Index" asp-route-id="@Model.PropertyProfileId" title="Cancel">Cancel</a>
+                        }
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</div>
+
+@section Css {
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")" />
+    <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+}
+
+<style>
+    .esri-search .esri-widget--button {
+        box-shadow: none;
+        display: none;
+    }
+
+    .esri-widget--button.esri-widget span {
+        font-size: 20px !important;
+    }
+
+    .esri-widget--button.esri-widget {
+        width: 35px !important;
+        height: 35px !important;
+    }
+
+    .esri-icon, .esri-icon-dial {
+        color: blue !important;
+        font-weight: bold !important;
+    }
+
+    .esri-search__container .esri-search__input, .esri-search__container .esri-widget--button {
+        border: 5px solid white !important;
+        height: 40px !important;
+    }
+
+    ul {
+        list-style-type: none;
+    }
+
+    .Height{
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 0;
+        margin: 0; 
+    }
+
+    #selection {
+        padding: 0;
+        margin: 0;
+    }
+
+    #Main-Selection li {
+        display: grid;
+        grid-template-columns: max-content 1fr max-content;
+        margin: 2px;
+        padding: 2px;
+    }
+
+    #Main-Selection input[type="checkbox"] {
+        height: max-content;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+</style>
+
+@section Scripts {
+    <script type="module" src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js")"></script>
+    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script type="module">
+
+         //require(["/js/mapping/maps/map-bulk-import.js"], function (ProfileMap) {
+         require(["/js/mapping/maps/map-bulk-import.js?v=" + Date.now()], function (ProfileMap) {
+
+            var mapObj = new ProfileMap("viewDivDraw");
+
+        })
+
+    </script>
+    <style>
+        .component-sample-wrapper calcite-panel calcite-action-bar {
+            width: 100%;
+        }
+    </style>
+}

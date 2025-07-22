@@ -1,0 +1,65 @@
+﻿@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.FileStorage.Configuration
+@using Microsoft.Extensions.Options
+@inject IOptions<UserFileUploadOptions> Settings
+@model Forestry.Flo.External.Web.Models.AgentAuthorityForm.AddAgentAuthorityDocumentFilesModel
+
+@{
+    ViewData["Title"] = "Agent Authority Forms";
+    var allowedTypes = (Settings?.Value ?? new UserFileUploadOptions()).AllowedFileTypes
+        .Where(x => x.FileUploadReasons.Contains(FileUploadReason.AgentAuthorityForm))
+        .ToList();
+    var allowedExtensions = allowedTypes.SelectMany(x => x.Extensions).Select(x => x.ToLower()).ToArray();
+    var maxFileSize = (Settings?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
+    var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
+}
+
+<p class="govuk-body">You can only upload documents in one of the following formats:</p>
+<ul class="govuk-list govuk-list--bullet">
+    @foreach (var allowedType in allowedTypes)
+    {
+        <li>@allowedType.Description: @string.Join(", ", allowedType.Extensions.Select(x => $".{x.ToLower()}"))</li>
+    }
+</ul>
+<p class="govuk-body">Each document must be less than @FileSizeToStringConverter.SizeSuffix(maxFileSize) in size and 
+    a maximum of @maxNumberDocs documents may be uploaded as your agent authority form.</p>
+
+<form id="attach-agent-authority-document-files-form" method="post" enctype="multipart/form-data" asp-controller="AgentAuthorityFormDocuments" asp-action="AttachAgentAuthorityFiles">
+    
+    <input asp-for="@Model.AgentAuthorityId">
+
+    <input id="allowed-extensions" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@string.Join(", ", allowedExtensions)" />
+    <input id="allowed-max-size" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxFileSize" />
+    <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)" />
+    <input id="allowed-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxNumberDocs" />
+ 
+    <div class="govuk-form-group" id="file-select-group">
+        <label for="agent-authority-document-files" class="govuk-label">Select file(s)</label>
+        <p id="agent-authority-document-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
+            <span class="govuk-visually-hidden">Error:</span><span id="file-upload-error-text"></span>
+        </p>
+        <input type="file" multiple class="custom-file-input govuk-file-upload" id="agent-authority-document-files" name="agentAuthorityDocumentFiles" runat="server" />
+    </div>
+       
+    <div class="govuk-visually-hidden" aria-hidden="true" id="aaf-selected-files-list">
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-two-thirds">
+                <h2 class="govuk-heading-m">Files selected to upload</h2>
+
+                <dl class="govuk-summary-list" id="aaf-selected-files" name="aaf-selected-files">
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="govuk-hint">You must select at least one file before you can submit this as the completed agent authority.</div>
+    <button id="submit-agent-authority-document-forms-files-button"
+            type="submit" class="govuk-button" data-module="govuk-button"
+            data-prevent-double-click="true"
+            name="submit-agent-authority-document-forms-files-button"
+            value="Upload"
+            disabled="disabled">
+        Submit selected documents to complete agent authority
+    </button>
+
+</form>

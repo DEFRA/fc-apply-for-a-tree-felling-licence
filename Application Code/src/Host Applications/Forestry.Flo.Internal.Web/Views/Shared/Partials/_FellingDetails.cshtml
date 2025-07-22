@@ -1,0 +1,118 @@
+﻿@using Forestry.Flo.Services.Common.Extensions;
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingAndRestockingDetails
+
+@{
+    var user = new InternalUser(User);
+    var treeSpeciesValues = TreeSpeciesFactory.SpeciesDictionary.Values;
+}
+
+<div id = "felling-restocking-summary">
+    <h2 class="govuk-heading-m">Proposed felling details</h2>
+
+    <table class="govuk-table" id ="fellingDetailsTable">
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Compartment</th>
+            <th scope="col" class="govuk-table__header">Type</th>
+            <th scope="col" class="govuk-table__header">Area (Ha)</th>
+                <th scope="col" class="govuk-table__header">Est. Vol (m<sup>3</sup>)</th>
+            <th scope="col" class="govuk-table__header">No. trees</th>
+            <th scope="col" class="govuk-table__header">Tree marking</th>
+            <th scope="col" class="govuk-table__header">TPO</th>
+            <th scope="col" class="govuk-table__header">TPO reference</th>
+            <th scope="col" class="govuk-table__header">CA</th>
+            <th scope="col" class="govuk-table__header">CA reference</th>
+            <th scope="col" class="govuk-table__header">Species</th>
+        </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+
+        @foreach (var fellingDetails in Model.DetailsList.DistinctBy(x => x.FellingDetail.Id).OrderBy(x=>x.CompartmentName))
+        {
+                string outputSpecies = string.Empty;
+                @foreach (var speciesDetails in fellingDetails.FellingDetail.Species)
+                {
+                    outputSpecies += treeSpeciesValues.FirstOrDefault(x => x.Code == speciesDetails.Value.Species)?.Name ?? speciesDetails.Value.Species;
+                    if (speciesDetails.Key != fellingDetails.FellingDetail.Species.Last().Key)
+                    {
+                        outputSpecies += "<br />";
+                    }
+                }
+
+                <tr class="govuk-table__row">
+                <td class="govuk-table__cell">@fellingDetails.CompartmentName</td>
+                <td class="govuk-table__cell">@fellingDetails.FellingDetail.OperationType.GetDisplayName()</td>
+                <td class="govuk-table__cell">@(fellingDetails.FellingDetail.AreaToBeFelled)ha</td>
+                <td class="govuk-table__cell">@(fellingDetails.FellingDetail.EstimatedTotalFellingVolume)m<sup>3</sup></td>
+                <td class="govuk-table__cell">@fellingDetails.FellingDetail.NumberOfTrees</td>
+                <td class="govuk-table__cell">@fellingDetails.FellingDetail.TreeMarking</td>
+                <td class="govuk-table__cell">@(fellingDetails.FellingDetail.IsPartOfTreePreservationOrder == true ? "Yes" : "No")</td>
+                <td class="govuk-table__cell">@(fellingDetails.FellingDetail.IsPartOfTreePreservationOrder == true ? fellingDetails.FellingDetail.TreePreservationOrderReference : "")</td>
+                <td class="govuk-table__cell">@(fellingDetails.FellingDetail.IsWithinConservationArea == true ? "Yes" : "No")</td>
+                <td class="govuk-table__cell">@(fellingDetails.FellingDetail.IsWithinConservationArea == true ? fellingDetails.FellingDetail.ConservationAreaReference : "")</td>
+                <td class="govuk-table__cell">
+                    @Html.Raw(outputSpecies)
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    
+    <h2 class="govuk-heading-m">Proposed restocking details</h2>
+    
+    <table class="govuk-table">
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Felling</th>
+            <th scope="col" class="govuk-table__header">Compartment</th>
+            <th scope="col" class="govuk-table__header">Type</th>
+            <th scope="col" class="govuk-table__header">Area (Ha)</th>
+            <th scope="col" class="govuk-table__header">Density (stems per Ha)</th>
+            <th scope="col" class="govuk-table__header">No. trees</th>
+            <th scope="col" class="govuk-table__header">% of restock area</th>
+            <th scope="col" class="govuk-table__header">Species</th>
+                <th scope="col" class="govuk-table__header">% of restock species</th>
+        </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+        @foreach (var restockingDetails in Model.DetailsList.Where(x => x.Felling != string.Empty).OrderBy(x=>x.CompartmentName))
+        {
+                string outputSpecies = string.Empty;
+                string outputPercentage = string.Empty;
+                @foreach (var speciesDetails in restockingDetails.RestockingDetail.Species)
+                {
+                    outputSpecies += treeSpeciesValues.FirstOrDefault(x => x.Code == speciesDetails.Value.Species)?.Name ?? speciesDetails.Value.Species;
+                    outputPercentage += speciesDetails.Value.Percentage;
+                    if (speciesDetails.Key != restockingDetails.RestockingDetail.Species.Last().Key)
+                    {
+                        outputSpecies += "<br />";
+                        outputPercentage += "<br />";
+                    }
+                }
+            <tr class="govuk-table__row">
+                <td class="govuk-table__cell">@restockingDetails.Felling</td>
+                <td class="govuk-table__cell">@restockingDetails.RestockingCompartment</td>
+                <td class="govuk-table__cell">@restockingDetails.RestockingDetail.RestockingProposal.GetDisplayName()</td>
+                <td class="govuk-table__cell">@restockingDetails.RestockingDetail.Area</td>
+                <td class="govuk-table__cell">
+                        @(restockingDetails.RestockingDetail.RestockingDensity > 0 ?
+                            restockingDetails.RestockingDetail.RestockingDensity.ToString() : string.Empty)
+                    </td>
+                <td class="govuk-table__cell">@restockingDetails.RestockingDetail.NumberOfTrees</td>
+                <td class="govuk-table__cell">@restockingDetails.RestockingDetail.PercentageOfRestockArea</td>
+                <td class="govuk-table__cell">
+                    @Html.Raw(outputSpecies)
+                </td>
+                <td class="govuk-table__cell">
+                    @Html.Raw(outputPercentage)
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <a condition="@(Model.ConfirmedFellingAndRestockingCompleted == true)" aria-describedby="felling-and-restocking" asp-controller="WoodlandOfficerReview" asp-action="FellingAndRestocking" asp-route-id="@Model.ApplicationId">
+        Confirmed Felling and Restocking details
+    </a>
+</div>

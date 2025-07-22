@@ -1,0 +1,68 @@
+﻿@using Forestry.Flo.External.Web.Models.UserAccount
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.External.Web.Models.UserAccount.OrganisationWoodlandOwnerUserModel
+
+@{
+    ViewBag.Title = "Invite a new user to manage applications for you/your organisation";
+    Layout = "_Layout";
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">Invite a new user to manage applications for you/your organisation</h1>
+
+    <partial name="Partials/_PageErrors" />
+
+    <form method="post">
+        <fieldset class="govuk-fieldset">
+            <input type="hidden" asp-for="WoodlandOwnerId"/>
+            <input type="hidden" asp-for="WoodlandOwnerName"/>
+            <div class="govuk-form-group">
+                <label asp-for="Name" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="Name"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="Name"/>
+            </div>
+            <div class="govuk-form-group">
+                <label asp-for="Email" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="Email"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="Email"/>
+            </div>
+            <div class="govuk-form-group">
+                <legend class="govuk-fieldset__legend">
+                    What level of access would you like to give them?
+                </legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <validation asp-for="@Model.WoodlandOwnerUserRole"></validation>
+                    @foreach (WoodlandOwnerUserRole value in Enum.GetValues(typeof(WoodlandOwnerUserRole)))
+                    {
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="@Model.WoodlandOwnerUserRole" type="radio" value="@value">
+                            <label class="govuk-label govuk-radios__label" asp-for="@Model.WoodlandOwnerUserRole">
+                                @value.GetDescription()
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Continue
+                    </button>
+
+                    <a class="govuk-link" asp-controller="Home" asp-action="Index" title="Abandon changes and go to the home page">Cancel</a>
+
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

@@ -1,0 +1,23 @@
+@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.UserAccount.InvitedUserModel
+@{
+    ViewBag.Title = "Accept invited user";
+    Layout = "_Layout";
+}
+<div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-l">Thank you for accepting the invitation to join @Model.OrganisationName</h1>
+    <p class="govuk-body">
+        Click the button below to create an account and start the registration process.
+    </p>
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+            <a asp-controller="Account" asp-action="RegisterAccountType" asp-route-token="@Model.InviteToken" role="button" draggable="false" class="govuk-button govuk-button--start" data-module="govuk-button">
+                Continue
+                <svg class="govuk-button__start-icon" xmlns="http://www.w3.org/2000/svg" width="17.5" height="19" viewBox="0 0 33 40" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M0 0h13l20 20-20 20H0l20-20z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+</div>

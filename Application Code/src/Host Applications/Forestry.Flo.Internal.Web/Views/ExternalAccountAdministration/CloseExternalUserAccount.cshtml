@@ -1,0 +1,103 @@
+﻿@{
+    ViewData["Title"] = "Close External User Account";
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.AccountAdministration.CloseExternalUserModel
+
+@{
+    var warningText = "Closed accounts will be unable to manage applications.";
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">Deactivate agent user account</h1>
+
+    <form method="post">
+        <input type="hidden" asp-for="AccountToClose.ExternalUser.Id"/>
+        <input type="hidden" asp-for="AccountToClose.ExternalUser.Email"/>
+        <input type="hidden" asp-for="AccountToClose.ExternalUser.AccountType"/>
+
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Name
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.AccountToClose.ExternalUser.FullName
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Account type
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.AccountToClose.ExternalUser.AccountType.GetDisplayName()
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Email address
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.AccountToClose.ExternalUser.Email
+                </dd>
+            </div>
+            
+            @if (Model.AccountToClose.AgencyModel is not null)
+            {
+                var organisationName = Model.AccountToClose.AgencyModel.IsFcAgency
+                    ? $"{Model.AccountToClose.AgencyModel.OrganisationName} (FC Agency)"
+                    : Model.AccountToClose.AgencyModel.OrganisationName;
+
+                if (Model.AccountToClose.AgencyModel.IsFcAgency)
+                {
+                    warningText = "This agent user is part of the FC agency. Closed agent accounts will be unable to manage applications.";
+                }
+                
+                <input type="hidden" asp-for="AccountToClose.AgencyModel!.AgencyId"/>
+
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Agency
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @organisationName
+                    </dd>
+                </div>
+            }
+        </dl>
+        
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                @warningText
+            </strong>
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+
+                <button id="hidden-submit" type="submit" aria-hidden="true" class="govuk-visually-hidden" data-module="govuk-button">
+                </button>
+
+                <input id="visible-submit" type ="button" data-prevent-double-click="true" class="govuk-button govuk-button--warning" data-module="govuk-button" value="Close Account">
+
+                <a class="govuk-link" asp-action="ExternalUserList" title="Abandon changes and go to the user list">Cancel</a>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}
+
+@section Scripts
+{
+    <script src="~/js/close-user-account.js" asp-append-version="true"></script>
+}

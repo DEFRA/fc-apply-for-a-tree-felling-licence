@@ -1,0 +1,52 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.PropertyProfile.PropertyProfileImportQuestion
+
+@{
+    ViewBag.Title = "Import Shapes";
+    Layout = "_Layout";
+}
+<div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-xl">Do you want to import shapefiles?</h1>
+
+    <partial name="Partials/_PageErrors" />
+
+    <form method="post">
+        <fieldset class="govuk-fieldset">
+            
+            <input type="hidden" asp-for="AgencyId" />
+
+            <div class="govuk-form-group">
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <validation asp-for="@Model.ImportShapes"></validation>
+                    <legend class="govuk-fieldset__legend">
+                    </legend>
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="@Model.ImportShapes" id="true" type="radio" value="true">
+                        <label class="govuk-label govuk-radios__label" asp-for="@Model.ImportShapes" for="true">
+                            Yes, I want to import shapefiles
+                        </label>
+                    </div>
+
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="@Model.ImportShapes" id="false" type="radio" value="false">
+                        <label class="govuk-label govuk-radios__label" asp-for="@Model.ImportShapes" for="false">
+                            No, I do not want to import shapefiles
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+@section breadcrumbs
+    {
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

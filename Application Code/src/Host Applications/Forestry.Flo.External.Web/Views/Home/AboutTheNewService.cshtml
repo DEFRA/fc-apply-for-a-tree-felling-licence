@@ -1,0 +1,47 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+
+@{
+    ViewData["Title"] = "More about the new service";
+    ViewData.ShowBackLink(BackLinkType.Close);
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
+
+
+    <h2 class="govuk-heading-l">What the new service does</h2>
+
+    <p class="govuk-body">The service has been modernised to meet accessibility and usability standards.</p>
+    <p class="govuk-body">The new service allows you to:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>create an account</li>
+        <li>save and return to your application</li>
+        <li>map and manage properties</li>
+        <li>upload supporting documents</li>
+        <li>view all of your licences created in the new service in one place</li>
+    </ul>
+
+    <h2 class="govuk-heading-l">Need help?</h2>
+
+    <p class="govuk-body">If you have an account with the old Felling Licence Online (FLO) service, you will have to create a new account to use this new service.</p>
+
+    <h3 class="govuk-heading-m">Why you need a new account</h3>
+    
+    <p class="govuk-body">The new account system is built using updated technology and does not support importing FLO data.</p>
+    <p class="govuk-body">Your old FLO login details will not work in the new service.</p>
+    
+    <h3 class="govuk-heading-m">How to access your old data</h3>
+    
+    <p class="govuk-body">To access previous applications and data, contact the FLO transition team. They can help you retrieve your historic records.</p>
+    <h4 class="govuk-heading-s">Contact the FLO transition team</h4>
+    <p class="govuk-body"><a href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a></p>
+    
+    <br/>
+    <div class="govuk-button-group">
+        <a asp-controller="Home" asp-action="AccountHolderConfirmation" role="button" draggable="false" class="govuk-button" data-module="govuk-button">
+            Continue
+        </a>
+    </div>
+
+</div>

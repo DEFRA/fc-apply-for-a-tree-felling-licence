@@ -1,0 +1,89 @@
+﻿@{
+    ViewData["Title"] = "Close User Account";
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common.User
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure
+@model Forestry.Flo.Internal.Web.Models.AccountAdministration.CloseUserAccountModel
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">Close internal user account</h1>
+
+    <form method="post">
+        <input type="hidden" asp-for="AccountToClose.Id"/>
+        
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Name
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.AccountToClose.FullName
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Job title
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.AccountToClose.AccountType.GetDisplayName()
+                </dd>
+            </div>
+            <div condition="@(Model.AccountToClose.AccountType == AccountTypeInternal.Other)" class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Job title other
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.AccountToClose.AccountTypeOther?.GetDisplayName()
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Email address
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.AccountToClose.Email
+                </dd>
+            </div>
+        </dl>
+        
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                Are you sure you want to close this account?  Closed accounts will no longer be able to access this system.
+            </strong>
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+
+                <button id="hidden-submit" type="submit" aria-hidden="true" class="govuk-visually-hidden" data-module="govuk-button">
+                </button>
+
+                <input id="visible-submit" type ="button" data-prevent-double-click="true" class="govuk-button govuk-button--warning" data-module="govuk-button" value="Close Account">
+
+                <a class="govuk-link" asp-action="FcStaffList" title="Abandon changes and go to the user list">Cancel</a>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}
+
+@section Scripts
+{
+    <script src="~/js/close-user-account.js" asp-append-version="true"></script>
+}
+
+
+
+
+

@@ -1,0 +1,13 @@
+button.filter {
+    border-radius: 12px;
+    margin-bottom: 5px;
+}
+
+button.selected {
+    background-color: #00703c;
+    color: white;
+}
+
+button.unselected {
+    background-color: gainsboro;
+}

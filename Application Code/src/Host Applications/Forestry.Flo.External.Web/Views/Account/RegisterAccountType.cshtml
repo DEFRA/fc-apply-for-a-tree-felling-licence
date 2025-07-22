@@ -1,0 +1,82 @@
+﻿@using Forestry.Flo.External.Web.Models.UserAccount
+@using Forestry.Flo.External.Web.Infrastructure;
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+
+@model UserAccountModel
+
+@{
+    ViewData["Title"] = "What type of account would you like to create?";
+    ViewData.ShowBackLink();
+}
+
+
+<div class="govuk-grid-column-two-thirds">
+
+    <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+        <h1 class="govuk-fieldset__heading">
+            @ViewData["Title"]
+        </h1>
+    </legend>
+        
+    <partial name="Partials/_PageErrors" />
+
+    <form method="post">
+
+        <fieldset class="govuk-fieldset">
+
+            <div class="govuk-form-group">
+
+                <div class="govuk-radios" data-module="govuk-radios">
+
+                    <validation asp-for="@Model.UserTypeModel.AccountType"></validation>
+
+                    @foreach (AccountType value in Enum.GetValues(typeof(AccountType)))
+                    {
+                        @if (value == AccountType.FcUser)
+                        {
+                            continue;
+                        }
+
+                        <div class="govuk-radios__item">
+
+                            <input class="govuk-radios__input" asp-for="@Model.UserTypeModel.AccountType" id="@value" type="radio" value="@value" condition-disabled="@Model.PageIsDisabled">
+
+                            <label class="govuk-label govuk-radios__label" asp-for="@Model.UserTypeModel.AccountType" for="@value">
+                                @value.GetDisplayName()
+                            </label>
+
+                            <div class="govuk-hint govuk-radios__hint">
+                                @value.GetDescription()
+                            </div>
+
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+            <div class="govuk-form-group">
+
+                <div class="govuk-button-group">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button" condition-disabled="@Model.PageIsDisabled">
+                        Continue
+                    </button>
+
+                </div>
+
+            </div>
+
+        </fieldset>
+
+    </form>
+
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

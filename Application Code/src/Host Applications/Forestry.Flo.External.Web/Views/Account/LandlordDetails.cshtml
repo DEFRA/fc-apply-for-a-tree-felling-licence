@@ -1,0 +1,57 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+
+@model Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels.LandlordDetailsViewModel
+
+@{
+    ViewData["Title"] = "What is the name of your landlord?";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">
+        @ViewData["Title"]
+    </h1>
+        
+    <partial name="Partials/_PageErrors" />
+
+    <form method="post">
+
+        <fieldset class="govuk-fieldset">
+
+            <div class="govuk-form-group">
+
+                <label asp-for="FirstName" class="@GdsConstants.GdsLabelCssClass"></label>
+
+                <validation asp-for="FirstName"></validation>
+
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="FirstName"/>
+
+            </div>
+
+            <div class="govuk-form-group">
+
+                <label asp-for="LastName" class="@GdsConstants.GdsLabelCssClass"></label>
+
+                <validation asp-for="LastName"></validation>
+
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="LastName"/>
+
+            </div>
+
+            <div class="govuk-form-group">
+
+                <div class="govuk-button-group">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        @(new ExternalApplicant(User).HasCompletedAccountRegistration == false ? "Continue" : "Save changes")
+                    </button>
+
+                </div>
+
+            </div>
+
+        </fieldset>
+    </form>
+</div>
