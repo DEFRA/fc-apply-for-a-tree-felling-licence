@@ -1,0 +1,101 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Internal.Web.Infrastructure
+@using Forestry.Flo.Services.Common.Extensions
+@model Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite.ExternalConsulteeInviteConfirmationModel
+
+@{
+    ViewBag.Title = "Confirm and send external consultee email";
+    var returnAction = Model.ApplicationDocumentCount > 0 ? "EmailDocuments" : "EmailText";
+}
+
+<div class="govuk-grid-column-full">
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+    <h1 class="govuk-heading-xl">Confirm and send external consultee email</h1>
+
+    <partial name="Partials/_PageErrors"/>
+    <form method="post">
+        <input type="hidden" asp-for="Id"/>
+        <input type="hidden" asp-for="ApplicationId"/>
+        <input type="hidden" asp-for="ReturnUrl"/>
+        <input type="hidden" asp-for="ConsulteeName"/>
+        <input type="hidden" asp-for="Email"/>
+        <input type="hidden" asp-for="EmailContent"/>
+        <input type="hidden" asp-for="PreviewEmailContent"/>
+        <fieldset class="govuk-fieldset">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Consultee name
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.ConsulteeName
+                    </dd>
+                </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Email
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.Email
+                    </dd>
+                </div>
+            </dl>
+
+            @if (Model.AttachedDocuments.Any())
+            {
+                <div class="govuk-form-group">
+                    <table class="govuk-table" id="documentation-list-table">
+                        <thead class="govuk-table__head">
+                        <tr class="govuk-table__row">
+                            <th scope="col" class="govuk-table__header">Document</th>
+                            <th scope="col" class="govuk-table__header">Purpose</th>
+                            <th scope="col" class="govuk-table__header">Upload Date</th>
+                        </tr>
+                        </thead>
+                        <tbody class="govuk-table__body">
+                        @for (var i = 0; i < Model.AttachedDocuments.Count; i++)
+                        {
+                            <tr class="govuk-table__row" data-id="@Model.AttachedDocuments[i].Id">
+                                <td class="govuk-table__cell">@Model.AttachedDocuments[i].FileName</td>
+                                <td class="govuk-table__cell">@Model.AttachedDocuments[i].Purpose.GetDisplayName()</td>
+                                <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(Model.AttachedDocuments[i].CreatedTimestamp)</td>
+                            </tr>
+                            <input type="hidden" asp-for="AttachedDocuments[i].Id"/>
+                            <input type="hidden" asp-for="AttachedDocuments[i].Location"/>
+                            <input type="hidden" asp-for="AttachedDocuments[i].Purpose"/>
+                            <input type="hidden" asp-for="AttachedDocuments[i].CreatedTimestamp"/>
+                            <input type="hidden" asp-for="AttachedDocuments[i].FileName"/>
+                            <input type="hidden" asp-for="AttachedDocuments[i].MimeType"/>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            <div class="govuk-table">
+                @Html.Raw(Model.PreviewEmailContent)
+            </div>
+                
+            <div class="govuk-form-group">
+                <label asp-for="ConfirmedEmail" class="@GdsConstants.GdsLabelCssClass">Confirm email</label>
+                <validation asp-for="ConfirmedEmail"></validation>
+                <input autocomplete="off" class="@GdsConstants.GdsInputCssClass" asp-for="ConfirmedEmail"/>
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+                    
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Send email
+                    </button>
+                    <a class="govuk-link" asp-controller="ExternalConsulteeInvite" asp-action="@returnAction" asp-route-id="@Model.Id" asp-route-applicationId="@Model.ApplicationId" asp-route-returnUrl="@Model.ReturnUrl" title="Abandon changes and go to the previous page">Cancel</a>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

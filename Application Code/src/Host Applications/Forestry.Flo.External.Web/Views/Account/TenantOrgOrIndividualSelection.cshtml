@@ -1,0 +1,69 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels.TenantIndividualOrOrganisationViewModel
+
+@{
+    ViewData["Title"] = "What type of tenant are you?";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <form method="post">
+
+        <fieldset class="govuk-fieldset">
+
+            <div class="govuk-form-group">
+
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-fieldset__heading">
+                        @ViewData["Title"]
+                    </h1>
+                </legend>
+
+                <div class="govuk-radios" data-module="govuk-radios">
+
+                    <validation asp-for="@Model.OrganisationStatus"></validation>
+
+                    <div class="govuk-radios__item">
+
+                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input", @id = "individual-tenant" })
+
+                        <label class="govuk-label govuk-radios__label" for="individual-tenant">
+                            Individual
+                        </label>
+
+                    </div>
+
+                    <div class="govuk-radios__item">
+
+                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Organisation, new { @class = "govuk-radios__input", @id = "organisation-tenant" })
+
+                        <label class="govuk-label govuk-radios__label" for="organisation-tenant">
+                            Organisation
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="govuk-form-group">
+
+                <div class="govuk-button-group">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Continue
+                    </button>
+
+                </div>
+
+            </div>
+
+        </fieldset>
+
+    </form>
+
+</div>

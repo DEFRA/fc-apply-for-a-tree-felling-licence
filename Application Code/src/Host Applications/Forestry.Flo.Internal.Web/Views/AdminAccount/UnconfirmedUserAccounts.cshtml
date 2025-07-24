@@ -1,0 +1,51 @@
+﻿@{
+    ViewData["Title"] = "Unconfirmed user accounts";
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model IEnumerable<Forestry.Flo.Internal.Web.Models.UserAccount.UserAccountModel>
+
+<div class="govuk-grid-column-full">
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_PageErrors"/>
+
+    <p class="govuk-body">A list of unconfirmed user accounts pending review and confirmation.</p>
+    
+    <table class="govuk-table">
+        <caption class="govuk-table__caption govuk-table__caption--m">Dates and amounts</caption>
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Name</th>
+            <th scope="col" class="govuk-table__header">Email</th>
+            <th scope="col" class="govuk-table__header">Requested Account Type</th>
+            <th scope="col" class="govuk-table__header"></th>
+        </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+        @foreach (var unconfirmedUserAccount in Model)
+        {
+            <tr class="govuk-table__row">
+                <th class="govuk-table__cell">@unconfirmedUserAccount.FirstName @unconfirmedUserAccount.LastName</th>
+                <td class="govuk-table__cell">@unconfirmedUserAccount.Email</td>
+                <td class="govuk-table__cell">@unconfirmedUserAccount.AccountType.GetDisplayName()</td>
+                <td class="govuk-table__cell">
+                    <a asp-action="ReviewUnconfirmedUserAccount" asp-route-userAccountId="@unconfirmedUserAccount.Id" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" data-module="govuk-button">
+                        Review
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@ViewBag.Breadcrumbs" />
+}
+
+
+

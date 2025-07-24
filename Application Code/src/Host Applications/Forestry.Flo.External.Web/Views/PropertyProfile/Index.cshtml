@@ -1,0 +1,57 @@
+﻿@model Forestry.Flo.External.Web.Models.PropertyProfile.PropertyProfileDetails
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Infrastructure.Display
+
+@{
+    ViewData["Title"] = @Model.Name;
+    var selectedWoodlandOwnerId = ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] as Guid? ?? null;
+    ViewData.ShowBackLink();
+}
+<div class="govuk-grid-column-full">
+    <main class="govuk-main-wrapper" id="main-content" role="main">
+        <div class="govuk-grid-row">
+            <h2 class="govuk-heading-l">@Model.Name</H2>
+            <partial name="Partials/_PropertyDetails" model="Model"/>
+            <div class="govuk-grid-column-two-thirds">
+                <partial name="Partials/_PageErrors"/>
+                <div>
+                    <input type="hidden" asp-for="@Model.NearestTown"/>
+                    @foreach (var item in Model.Compartments)
+                    {
+                        <input type="hidden" id="@item.Id" value="@item.GISData" data-label="@item.DisplayName" data-group="compartments_GIS"/>
+                    }
+                    <div class="profileMap" id="viewDiv" aria-label="Map of compartments within this property"></div>
+                </div>
+            </div>
+            <div class="govuk-grid-column-one-third">
+                <partial name="Partials/_CompartmentList" model="Model"/>
+            </div>
+        </div>
+    </main>
+    <div class="govuk-button-group">
+        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="BackToWoodlands" asp-route-woodlandOwnerId="@selectedWoodlandOwnerId" asp-route-agencyId="@Model.AgencyId" title="Cancel">Back To Woodlands</a>
+    </div>
+</div>
+@section Scripts
+{
+    <partial name="Partials/_DataTablesJs" />
+    <script src="~/js/compartment-list.js" asp-append-version="true"></script>
+        <script type="module" src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js")"></script>
+    <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
+   <script type="module">
+
+        require(["/js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
+
+            var mapObj = new ProfileMap("viewDiv");
+
+        })
+
+    </script>
+}
+
+@section Css
+{
+<link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+    <partial name="Partials/_DataTablesCss" />
+}

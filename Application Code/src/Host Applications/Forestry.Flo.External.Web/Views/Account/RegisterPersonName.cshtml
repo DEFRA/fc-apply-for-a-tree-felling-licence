@@ -1,0 +1,53 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+
+@model Forestry.Flo.External.Web.Models.UserAccount.UserAccountModel
+
+@{
+    ViewData["Title"] = "What's your name?";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <partial name="Partials/_PageErrors" />
+
+    <form method="post">
+        
+        <input type="hidden" class="govuk-visually-hidden" aria-hidden="true" asp-for="UserTypeModel.AccountType"/>
+        <input type="hidden" class="govuk-visually-hidden" aria-hidden="true" asp-for="UserTypeModel.IsOrganisation" />
+
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
+        
+            <div class="govuk-form-group">
+                <label asp-for="PersonName.FirstName" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="PersonName.FirstName"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonName.FirstName" autocomplete="given-name"/>
+            </div>
+            <div class="govuk-form-group">
+                <label asp-for="PersonName.LastName" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="PersonName.LastName"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonName.LastName" autocomplete="family-name"/>
+            </div>
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        @(new ExternalApplicant(User).HasCompletedAccountRegistration == false ? "Continue" : "Save changes")
+                    </button>
+
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

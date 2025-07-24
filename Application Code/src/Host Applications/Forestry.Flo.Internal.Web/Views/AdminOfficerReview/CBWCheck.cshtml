@@ -1,0 +1,115 @@
+﻿@{
+    ViewData["Title"] = "Cricket bat willow check";
+
+    var user = new InternalUser(User);
+}
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Internal.Web.Infrastructure
+@model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.CBWCheckModel
+
+<div class="govuk-grid-column-full govuk-body">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <partial name="Partials/_PageErrors" />
+
+    <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title"
+         data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+                Information
+            </h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">
+                The system has identified this application may qualify for an expedited application process based on the application details provided:
+                <ul>
+                    <li>There are only Cricket bat willow species in this application</li>
+                    <li>The felling operation type is felling of individual trees</li>
+                    <li>The restocking operation type is restocking of individual trees</li>
+                    <li>The estimated number of  trees to be restocked is not less than the number of trees to be felled</li>
+                </ul>
+            </p>
+        </div>
+    </div>
+
+    <form id="admin-officer-review" method="post">
+        <input asp-for="ApplicationId" />
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset" role="group" aria-describedby="DateReceived-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
+                    <h3 class="govuk-fieldset__heading">
+						Do compartments in this application fall into any sensitive areas
+                    </h3>
+                    <p class="govuk-body">
+                        Sensitive areas may include sites of special scientific interest (SSSI), areas of outstanding natural beauty and conservation areas. Applications that fall into sensitive areas will need to be reviewed by Woodland Officers.
+                </legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios" data-module="govuk-radios">
+                        <validation asp-for="@Model.CheckPassed"></validation>
+                        <div class="govuk-radios__item">
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-passed" asp-for="CheckPassed" type="radio" value="true" />
+                            <label class="govuk-label govuk-radios__label" for="check-passed">
+                                Yes
+                            </label>
+                            <div class="govuk-hint govuk-radios__hint">
+                                The application will need to be reviewed by a Woodland Officer
+                            </div>
+                        </div>
+                        <div class="govuk-radios__item">
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-failed" asp-for="CheckPassed" type="radio" value="false" />
+                            <label class="govuk-label govuk-radios__label" for="check-failed">
+                                No
+                            </label>
+                            <div class="govuk-hint govuk-radios__hint">
+                                The application can be assigned to the Approver
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
+            <fieldset class="govuk-fieldset">
+                <label class="govuk-label--m" for="add-case-note-text">Case Note</label>
+                <div class="govuk-hint">
+                    Case notes may be subject to Freedom of Information (FOI) requests and could be accessed by the public. Please ensure all information is recorded in line with privacy and policy guidelines.
+                </div>
+                <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="CaseNote" id="add-case-note-text"></textarea>
+                <div id="add-case-note-text-info" class="govuk-hint govuk-character-count__message">
+                    You can enter up to 65,535 characters
+                </div>
+                <div class="govuk-grid-row">
+                    <div class="govuk-grid-column-one-third">
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
+                        </div>
+                    </div>
+                    <div class="govuk-grid-column-one-third">
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div>
+
+            <button condition="@Model.Editable(user)" type="submit" class="govuk-button" data-module="govuk-button">
+                Continue
+            </button>
+
+            <a class="govuk-button govuk-button--secondary" asp-action="Index" asp-route-id="@Model.ApplicationId" title="Back to admin officer review">Back to Admin Officer Review</a>
+
+        </div>
+    </form>
+</div>

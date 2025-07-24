@@ -1,0 +1,184 @@
+@using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Services.Common;
+@using Forestry.Flo.Services.Common.Infrastructure
+@using Forestry.Flo.Services.Common.Models
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ActivityFeedModel;
+
+<div class="govuk-form-group" id="activity-feed">
+
+    <h2 class="govuk-heading-m">@Model.ActivityFeedTitle</h2>
+
+    @if (Model.ShowFilters)
+    {
+        var types = (ActivityFeedItemType[]) Enum.GetValues(typeof(ActivityFeedItemType));
+        types = types.Where(x => x.GetActivityFeedItemTypeAttribute() != ActivityFeedItemCategory.OutgoingNotification).ToArray();
+
+        <input type="hidden" asp-for="DefaultCaseNoteFilter" value="@Model.DefaultCaseNoteFilter.ToString()" />
+        <div class="govuk-form-group govuk-body-s">
+            Presets:
+            <button id="AllTypes" class ="filter unselected" data-id="AllTypes">All</button>
+            <button id="AllCaseNotes" class="activity-item-category filter unselected" data-id="AllCaseNotes">All case notes</button>
+            <button id="AllNotifications" class ="activity-item-category filter unselected" data-id="AllNotifications">All notifications</button>
+        </div>
+
+        <div class="govuk-form-group govuk-body-s">
+            Filter:
+            @foreach (var itemType in types)
+            {
+                <button id="@itemType" class ="activity-item-type filter unselected" data-id="@itemType" data-type = "@itemType" data-category = "@itemType.GetActivityFeedItemTypeAttribute()">@itemType.GetDisplayName()</button>
+            }
+        </div>
+
+        <div class="govuk-form-group govuk-body-s">
+            Include:
+            <button id="AllOutgoingNotifications" class="activity-item-inclusion filter unselected" data-id="AllOutgoingNotifications" data-category="OutgoingNotification">Outgoing notifications</button>
+        </div>
+    }
+    
+    @if (Model.ShowAddCaseNote)
+    {
+        var addCaseNoteModel = new AddCaseNoteModel
+        {
+            CaseNoteType = Model.NewCaseNoteType,
+            FellingLicenceApplicationId = Model.ApplicationId,
+            ReturnUrl = Model.HostingPage
+        };
+        <partial name="Partials/_AddCaseNote" model="@addCaseNoteModel" />
+    }
+    
+    <div class="moj-timeline">
+        @foreach (var activityFeedItem in Model.ActivityFeedItemModels)
+        {
+            ActivityFeedItemCategory activityFeedItemCategory = activityFeedItem.ActivityFeedItemType.GetActivityFeedItemTypeAttribute().Value;
+            switch (activityFeedItemCategory)
+            {
+                case ActivityFeedItemCategory.CaseNote:
+                    <div class="moj-timeline__item flo-timeline_item-casenote" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
+
+                        <div class="moj-timeline__header">
+                            <img class="activity-avatar" data-forename="@activityFeedItem.CreatedByUser?.FirstName" data-surname="@activityFeedItem.CreatedByUser?.LastName" data-role="@activityFeedItem.CreatedByUser?.AccountType" alt="Avatar">
+                            <h2 class="moj-timeline__title">@activityFeedItem.ActivityFeedItemType.GetDisplayName()</h2>
+                            <p class="moj-timeline__byline">by @activityFeedItem.CreatedByUser?.FullName</p>
+                        </div>
+
+                        <p class="moj-timeline__date">
+                            @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
+                        </p>
+
+                        <div class="moj-timeline__description">
+                            <p class="show-line-breaks">@activityFeedItem.Text</p>
+                            <p>
+                                This case note is visible to:
+                                <div class="status-row">
+                                    @if (activityFeedItem.VisibleToApplicant)
+                                    {
+                                        <strong class="govuk-tag govuk-tag--grey">
+                                            Applicant
+                                        </strong>
+                                    }
+                                    @if (activityFeedItem.VisibleToConsultee)
+                                    {
+                                        <strong class="govuk-tag govuk-tag--grey">
+                                            Consultee
+                                        </strong>
+                                    }
+                                    <strong class="govuk-tag govuk-tag--grey">
+                                        FOI
+                                    </strong>
+                                </div>
+                            </p>
+                        </div>
+
+                    </div>
+
+                    break;
+
+                case ActivityFeedItemCategory.Notification:
+                    switch (activityFeedItem.ActivityFeedItemType)
+                    {
+                        @*consultee comment formatted same as public register comment*@
+                        case ActivityFeedItemType.ConsulteeComment:
+                        case ActivityFeedItemType.PublicRegisterComment:
+                            <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
+
+                                <div class="moj-timeline__header">
+                                    <h2 class="moj-timeline__title">@activityFeedItem.ActivityFeedItemType.GetDisplayName()</h2>
+
+                                    <p class="moj-timeline__byline"> from @activityFeedItem.Source</p>
+
+                                </div>
+
+                                <p class="moj-timeline__date">
+                                    @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
+                                </p>
+
+                                <div class="moj-timeline__description">
+                                    <p class="show-line-breaks">@activityFeedItem.Text</p>
+                                </div>
+
+                            </div>
+                            break;
+                        default:
+                            <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
+
+                                <div class="moj-timeline__header">
+                                    <h2 class="moj-timeline__title">@activityFeedItem.Text</h2>
+                                    <p class="moj-timeline__byline">by System</p>
+                                </div>
+
+                                <p class="moj-timeline__date">
+                                    @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
+                                </p>
+
+                            </div>
+                            break;
+                    }
+
+                    break;
+
+                    case ActivityFeedItemCategory.OutgoingNotification:
+                        <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
+
+                            <div class="moj-timeline__header">
+                                <h2 class="moj-timeline__title">@activityFeedItem.Text</h2>
+
+
+                                @if (activityFeedItem.Recipients != null)
+                                {
+                                    <p class="moj-timeline__byline">
+                                        sent to:
+
+                                        @foreach (var recipient in activityFeedItem.Recipients)
+                                        {
+                                            <b> @recipient </b>
+                                        }
+                                    </p>
+                                }
+                            </div>
+
+                            <p class="moj-timeline__date">
+                                @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
+                            </p>
+
+                        </div>
+                    break;
+            }
+        }
+
+        <div style="display: none" id="empty-activity-feed-item">
+            <h2 id = "empty-activity-feed-text" class="moj-timeline__title no-activity-items">No activity to display.</h2>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts 
+    {
+    <script src="~/js/add-case-note.js" asp-append-version="true"></script>
+}
+
+@section Css{
+    <link rel="stylesheet" href="~/css/assign-fla-select-user.css" aria-busyasp-append-version="true" />
+}

@@ -1,0 +1,34 @@
+﻿@model Forestry.Flo.Internal.Web.Models.AdminHub.ViewAdminHubModel
+
+<h1 class="govuk-heading-m">
+    Please see below list of Admin Hubs:
+</h1>
+<table class="govuk-table" id="admin-hub-list-table">
+    <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Admin Hub</th>
+        <th scope="col" class="govuk-table__header">Manager</th>
+        <th scope="col" class="govuk-table__header">Manager Email</th>
+    </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    @foreach (var adminHub in Model.AdminHubs)
+    {
+        var manager = Model.AllAdminOfficers.FirstOrDefault(x => x.Id == adminHub.AdminManagerUserAccountId);
+
+        <tr data-id="adminHub.Name" id="adminHub.Name" class="govuk-table__row">
+            <td class="govuk-table__cell" data-order="@adminHub.Name">@adminHub.Name</td>
+            @if (manager == null)
+            {
+                <td class="govuk-table__cell">No manager</td>
+                <td class="govuk-table__cell"> </td>
+            }
+            else
+            {
+                <td class="govuk-table__cell" data-order="@manager.FullName">@manager.FullName</td>
+                <td class="govuk-table__cell" data-order="@manager.Email">@manager.Email</td>
+            }
+        </tr>
+    }
+    </tbody>
+</table>

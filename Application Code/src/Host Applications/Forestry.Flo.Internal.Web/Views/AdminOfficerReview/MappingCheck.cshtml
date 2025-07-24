@@ -1,0 +1,136 @@
+﻿@{
+    ViewData["Title"] = "Mapping check";
+
+    var user = new InternalUser(User);
+}
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Internal.Web.Infrastructure
+@model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.MappingCheckModel
+
+<div class="govuk-grid-column-full map-check-containter">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <partial name="Partials/_PageErrors" />
+
+    <p class="govuk-body">
+        The mapping must be clear and include all compartments in the application. It must only cover the area to be felled or restocked.
+        <br />
+        It cannot be a generic shape on the map, as it needs to specify precisely where the felling and restocking will take place.
+        <br />
+        It cannot include any feature that is too large for the tree canopy to close over if trees were planted around it – a few examples would be:
+    </p>
+    <ul>
+        <li>A small shed could be included as the canopy could close over the top, whereas a large barn would likely be too wide for the canopy to cover.</li>
+        <li>A farm track would be fine, but a 2-carriageway tarmac road would be too wide.</li>
+        <li>A layby for a car to pull off the road would be fine, but a large parking area for several cars or agricultural vehicles would be too big.</li>
+        <li>A small pond would be acceptable, but a large fishing lake would be too big.</li>
+    </ul>
+
+
+    @foreach (var item in Model.FellingAndRestockingDetails)
+    {
+        <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" />
+    }
+
+    <div class="profileMap" id="viewDiv"></div>
+
+    <form id="admin-officer-review" method="post">
+        <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
+
+        <div class="govuk-form-group">
+
+            <fieldset class="govuk-fieldset">
+
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+
+                    <h1 class="govuk-fieldset__heading">
+                        Is the mapping for this application correct?
+                    </h1>
+
+                </legend>
+
+                <validation asp-for="@Model.CheckPassed"></validation>
+
+                <div class="govuk-radios" data-module="govuk-radios">
+
+                    <div class="govuk-radios__item">
+
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-passed" asp-for="CheckPassed" type="radio" value="true"/>
+
+                        <label class="govuk-label govuk-radios__label" for="check-passed">
+                            Yes, the mapping is correct
+                        </label>
+
+                    </div>
+
+                    <div class="govuk-radios__item">
+
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-failed" asp-for="CheckPassed" type="radio" value="false"/>
+
+                        <label class="govuk-label govuk-radios__label" for="check-failed">
+                            No, the mapping is not correct
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </fieldset>
+
+        </div>
+
+        <div class="govuk-form-group" id="failure-reason-input">
+
+            <label class="govuk-label" asp-for="CheckFailedReason">
+                Reason for failure
+            </label>
+
+            <validation asp-for="CheckFailedReason"></validation>
+
+            <textarea condition-disabled="@(!Model.Editable(user))" class="govuk-textarea" maxlength="400" asp-for="CheckFailedReason" rows="5"></textarea>
+
+        </div>
+
+        <div>
+
+            <button condition="@Model.Editable(user)" type="submit" class="govuk-button" data-module="govuk-button">
+                Continue
+            </button>
+
+            <a class="govuk-button govuk-button--secondary" asp-action="Index" asp-route-id="@Model.ApplicationId" title="Back to admin officer review">
+                Back to admin officer review
+            </a>
+
+        </div>
+    </form>
+</div>
+
+<link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+<link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+
+<script type="module">
+    require(["../../js/mapping/maps/map-printer.js?v=" + Date.now()], function (PrinterMap) {
+        var mapObj = new PrinterMap("printerDiv");
+    });
+
+    require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
+        var mapObj = new ProfileMap("viewDiv", true);
+    });
+</script>
+
+@section Scripts
+{
+    <script src="~/js/agent-authority-form-check.js" asp-append-version="true"></script>
+    <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
+    <script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
+}
+
+@section Css
+{
+    <link rel="stylesheet" href="~/css/mapping-check.css" aria-busyasp-append-version="true" />
+}

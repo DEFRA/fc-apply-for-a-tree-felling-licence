@@ -1,0 +1,199 @@
+﻿@{
+    ViewData["Title"] = "Application conditions";
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure
+@using Forestry.Flo.Internal.Web.Extensions
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.ConditionsViewModel
+
+@{
+    var user = new InternalUser(User);
+}
+
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    <partial name="Partials/_PageErrors"/>
+            
+    <div class="govuk-warning-text" condition="@(Model.ConfirmedFellingAndRestockingComplete == false)">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            The confirmed felling and restocking details are not yet complete.  Conditions should be regenerated once the felling and restocking is confirmed.
+        </strong>
+    </div>
+    
+    <div class="govuk-warning-text" condition="@Model.ConditionsStatus.ConditionsToApplicantDate.HasValue">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            The conditions were sent to the applicant on @Model.ConditionsStatus.ConditionsToApplicantDate.Value.ToLocalTime().ToString("F")
+        </strong>
+    </div>
+
+    <form method="post" asp-action="SaveConditionalStatus" id="save-conditional-form">
+        
+        <input asp-for="ApplicationId"/>
+        <input type="hidden" id="is-editable" value="@((Model.Editable(user) && Model.ConditionsStatus.ConditionsToApplicantDate.HasNoValue()).ToString())"/>
+        <input type="hidden" id="number-of-conditions" value="@Model.Conditions.Count"/>
+        <input type="hidden" id="previously-not-conditional" value="@((Model.ConditionsStatus.IsConditional is false).ToString())"/>
+
+        <div class="govuk-form-group">
+            <div class="govuk-hint" condition="@(Model.Editable(user) && Model.Conditions.Any())"> 
+                Indicate whether or not the application is conditional and then click <b>Save</b>. 
+                Conditions have been generated for this application. Updating the application to <b>unconditional</b> will clear these conditions. 
+            </div> 
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                    <h2 class="govuk-fieldset__heading">Is the application conditional?</h2>
+                </legend>
+                <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@(!Model.Editable(user) || Model.ConditionsStatus.ConditionsToApplicantDate.HasValue)" class="govuk-radios__input" id="conditional-yes" asp-for="ConditionsStatus.IsConditional" type="radio" value="true"/>
+                        <label class="govuk-label govuk-radios__label" for="conditional-yes">Yes</label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@(!Model.Editable(user) || Model.ConditionsStatus.ConditionsToApplicantDate.HasValue)" class="govuk-radios__input" id="conditional-no" asp-for="ConditionsStatus.IsConditional" type="radio" value="false"/>
+                        <label class="govuk-label govuk-radios__label" for="conditional-no">No</label>
+                    </div>
+                </div>
+                <br/>
+                <div class="govuk-button-group">
+                    <button type="button" condition="@Model.Editable(user)" condition-disabled="@Model.ConditionsStatus.ConditionsToApplicantDate.HasValue" id="save-conditional-btn" class="govuk-button" data-module="govuk-button" data-prevent-double-click="true">Save</button>
+                </div>
+            </fieldset>
+        </div>
+    </form>
+    
+    <div condition="@(Model.ConditionsStatus.IsConditional is true && Model.Editable(user) && Model.Conditions.NotAny() && Model.ConditionsStatus.ConditionsToApplicantDate.HasNoValue())" class="govuk-hint">
+        To create application conditions, click
+        <b>Generate conditions</b> below.
+        Conditions will be based on the
+        current confirmed felling and
+        restocking details. If you make any
+        changes, click <b>Save changes</b> to
+        confirm. Note that regenerating the
+        conditions will reset any changes to
+        the default values.
+    </div>
+    <div condition="@(Model.ConditionsStatus.IsConditional is true && Model.Editable(user) && Model.Conditions.Any() && Model.ConditionsStatus.ConditionsToApplicantDate.HasNoValue())" class="govuk-hint">
+        The current conditions for the application are shown below. If the confirmed felling and restocking details are changed, you can regenerate the
+        conditions by clicking the <b>Regenerate conditions</b> button. Some text values within the conditions can be modified, to confirm these changes click
+        the <b>Save changes</b> button. However please note that regenerating the conditions will overwrite these changes back to default values.
+    </div>
+    
+    <form id="generate-conditions-form" method="post" asp-action="GenerateConditions">
+        
+        <input asp-for="ApplicationId"/>
+
+        <button type="button" id="confirm-generate-conditions-button" condition-disabled="@(Model.ConditionsStatus.ConditionsToApplicantDate.HasValue)" condition="@(Model.Editable(user) && Model.Conditions.Any())" class="govuk-button" data-module="govuk-button" data-prevent-double-click="true">
+            Regenerate conditions
+        </button>
+        <button type="submit" condition-disabled="@(Model.ConditionsStatus.IsConditional.HasNoValue() || Model.ConditionsStatus.IsConditional.Value == false || Model.ConditionsStatus.ConditionsToApplicantDate.HasValue)" condition="@(Model.Editable(user) && Model.Conditions.NotAny())" class="govuk-button" data-module="govuk-button" data-prevent-double-click="true" >
+            Generate conditions
+        </button>
+
+    </form>
+
+    <form method="post" asp-action="SaveConditions">
+
+        <input asp-for="ApplicationId"/>
+        
+        <div class="govuk-form-group">
+            <h2 class="govuk-heading-m">Conditions</h2>
+            
+            @if (Model.Conditions.NotAny())
+            {
+                <div class="govuk-hint">
+                    No conditions have been generated yet.
+                </div>
+            }
+            else if (Model.Editable(user))
+            {
+                <div class="govuk-hint">
+                    The calculated application conditions are as follows.  Enter the required parameters in the available inputs.
+                    Each input has a hint that can be seen by hovering the mouse cursor over it, describing its purpose.
+                </div>
+            }
+            
+            @for (int i = 0; i < Model.Conditions.Count; i++)
+            {
+                <fieldset class="govuk-fieldset">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                        <h3 class="govuk-fieldset__heading">Condition @(i+1)</h3>
+                    </legend>
+                    <div class="govuk-form-group">
+                        <p class="govuk-body">
+                            @Html.Raw(Model.Conditions[i].ToHtml(i))
+                        </p>
+                    </div>
+                </fieldset>
+
+                @for (int ct = 0; ct < Model.Conditions[i].ConditionsText.Length; ct++)
+                {
+                    <input type="hidden" asp-for="Conditions[i].ConditionsText[ct]"/>
+                }
+                @for (int ac = 0; ac < Model.Conditions[i].AppliesToSubmittedCompartmentIds.Count; ac++)
+                {
+                    <input type="hidden" asp-for="Conditions[i].AppliesToSubmittedCompartmentIds[ac]"/>
+                }
+                @for (int cp = 0; cp < Model.Conditions[i].Parameters.Count; cp++)
+                {
+                    <input type="hidden" asp-for="Conditions[i].Parameters[cp].Index"/>
+                    <input type="hidden" asp-for="Conditions[i].Parameters[cp].Description"/>
+                }
+            }
+
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+
+                <button condition-disabled="@(Model.Conditions.NotAny() || Model.ConditionsStatus.ConditionsToApplicantDate.HasValue)" condition="@Model.Editable(user)" id="save-btn" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                    Save changes
+                </button>
+            </div>
+        </div>
+    </form>
+    
+    @if (Model.ConditionsStatus.ConditionsToApplicantDate.HasNoValue() && Model.ConditionsStatus.IsConditional is true)
+    {
+        <form method="post" asp-action="SendConditionsNotification">
+            
+            <input asp-for="ApplicationId"/>
+            <input type="hidden" asp-for="ConfirmedFellingAndRestockingComplete"/>
+
+            <div condition="@(Model.Editable(user))" class="govuk-hint">
+				Click <b>Send conditions to applicant</b>
+                to send the conditions to the
+                applicant. The confirmed felling and
+                restocking details must be complete
+                before sending.
+            </div>
+        
+            <button condition="@Model.Editable(user)" condition-disabled="@Model.ConfirmedFellingAndRestockingComplete == false" id="send-notification-button" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                Send conditions to applicant
+            </button>
+        </form>
+    }
+    
+    <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to Woodland Officer Review</a>
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/conditions.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

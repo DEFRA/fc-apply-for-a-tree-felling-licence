@@ -1,0 +1,105 @@
+﻿@model Forestry.Flo.External.Web.Models.AgentAuthorityForm.ContactDetailsFormModel
+
+<div class="govuk-grid-column-full">
+
+    <h1 class="govuk-heading-l">Who will you be managing applications for?</h1>
+        
+    <partial name="Partials/_PageErrors" />
+
+    <form method="post">
+
+        <fieldset class="govuk-fieldset">
+                       
+            <input type="hidden" asp-for="FromSummary">
+
+            <div class="govuk-form-group">
+                <label asp-for="ContactName" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactName"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactName" />
+
+                <div id="contact-name-guidance" class="govuk-hint">
+                    If the applicant is an organisation, enter the name of the main point of contact within the organisation. Otherwise, enter the full name of the applicant.
+                </div>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="ContactEmail" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactEmail"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactEmail" />
+            </div>
+            
+            <div class="govuk-form-group">
+                <label asp-for="ContactTelephoneNumber" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactTelephoneNumber"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactTelephoneNumber" autocomplete="tel" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="ContactAddress.Line1" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactAddress.Line1"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactAddress.Line1" autocomplete="address-line1" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="ContactAddress.Line2" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactAddress.Line2"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactAddress.Line2" autocomplete="address-line2" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="ContactAddress.Line3" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactAddress.Line3"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactAddress.Line3" autocomplete="address-level2" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="ContactAddress.Line4" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactAddress.Line4"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactAddress.Line4" autocomplete="address-level1"/>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="ContactAddress.PostalCode" class="@GdsConstants.GdsLabelCssClass"></label>
+                <validation asp-for="ContactAddress.PostalCode"></validation>
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactAddress.PostalCode" autocomplete="postal-code" />
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <validation asp-for="IsOrganisation"></validation>
+                    <legend class="govuk-fieldset__legend">
+                        Is the applicant an organisation?
+                    </legend>
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="IsOrganisation" id="true" type="radio" value="true">
+                        <label class="govuk-label govuk-radios__label" asp-for="IsOrganisation" for="true">
+                            Yes
+                        </label>
+                    </div>
+                    
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="IsOrganisation" id="false" type="radio" value="false">
+                        <label class="govuk-label govuk-radios__label" asp-for="IsOrganisation" for="false">
+                            No
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Continue
+                    </button>
+
+                    <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" title="Abandon changes and go to the agent authority forms page">Cancel</a>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+</div>    
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

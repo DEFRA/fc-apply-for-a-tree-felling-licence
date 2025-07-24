@@ -1,0 +1,57 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+
+@{
+    ViewData["Title"] = "You’ll need an account to use this service";
+    ViewData.ShowBackLink(BackLinkType.Close);
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    
+    <div class="govuk-form-group">
+
+        <p class="govuk-body">Having an account comes with several benefits.</p>
+
+        <h2 class="govuk-heading-m">Managing applications</h2>
+        
+        <p class="govuk-body">You can manage your applications by checking their progress, resuming saved applications, and adding any additional information needed to complete them.</p>
+
+        <h2 class="govuk-heading-m">Managing properties</h2>
+
+        <p class="govuk-body">You can manage your properties by saving their information for future applications and making changes to them as necessary.</p>
+
+        <h2 class="govuk-heading-m">Account management</h2>
+
+        <p class="govuk-body">You can manage your account information by saving your contact information for future applications and using a secure sign-in to access your stored information.</p>
+
+        <h2 class="govuk-heading-m">Managing licences</h2>
+
+        <p class="govuk-body">You can view and download all of your licenses through your account.</p>
+        
+        <br/>
+
+        <p class="govuk-body">
+            
+            Find out
+
+            <a target="_blank" class="govuk-link" rel="noreferrer noopener" aria-label="Open the Privacy Policy" href="/Home/Privacy">
+                how we manage your data (Privacy policy)
+            </a>
+
+        </p>
+        
+        <br/>
+
+    </div>    
+        
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+            <a asp-controller="Home" asp-action="SignUp" role="button" draggable="false" class="govuk-button" data-module="govuk-button">
+                Create an account
+            </a>
+        </div>
+    </div>
+
+</div>

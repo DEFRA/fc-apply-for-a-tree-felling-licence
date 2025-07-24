@@ -1,0 +1,9 @@
+div#filter-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#keywords-container{
+    min-width: 30%;
+}

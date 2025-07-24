@@ -1,0 +1,131 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@{
+    ViewData["Title"] = "Apply for a felling licence: Accessibility statement";
+    ViewData.ShowBackLink(BackLinkType.Close);
+}
+
+<div class="govuk-grid-column-full">
+
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
+
+    <p class="govuk-body">This accessibility statement applies to the 'Apply for  a felling licence' service.</p>
+
+    <p class="govuk-body">This website is run by the Forestry Commission. We want as many people as possible to be able to use this website. </p>
+    <p class="govuk-body">For example, that means you should be able to:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>change colours, contrast levels and fonts</li>
+        <li>navigate most of the website using just a keyboard</li>
+        <li>navigate most of the website using speech recognition software</li>
+    </ul>
+
+    <p class="govuk-body">We’ve also made the website text as simple as possible to understand.</p>
+    <p class="govuk-body"><a class="govuk-link" href="https://mcmw.abilitynet.org.uk/">AbilityNet</a> has advice on making your device easier to use if you have a disability.</p>
+
+    <h2 class="govuk-heading-l">How accessible this website is</h2>
+    <p class="govuk-body">We know some parts of this website are not fully accessible for:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>users who need to zoom in or increase the size of the text, the content will not reflow in a single column</li>
+        <li>users who use screen-readers, most older PDF documents are not fully accessible</li>
+    </ul>
+    
+    <h2 class="govuk-heading-l">Known issues with this website</h2>
+    <p class="govuk-body">We are aware of the following accessibility issues within the service:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>
+            On some pages (such as ‘Create a Property’ and ‘Felling Details’), we use radio buttons to reveal additional content. 
+            These buttons use the aria-expanded attribute but do not include an ARIA role such as menuitemradio, which is required for screen reader support.
+        </li>
+        <li>
+            This means the component may not be interpreted correctly by some assistive technologies and does not meet 
+			<a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">
+				WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.
+                We have followed the 
+            <a class="govuk-link" href="https://design-system.service.gov.uk/components/radios/#conditionally-revealing-radios">
+                GOV.UK Design System guidance for radios with conditionally revealing content</a>, 
+                but recognise that this approach may result in invalid HTML. 
+                We are monitoring guidance and exploring alternatives to improve compliance.
+        </li>
+		<li>
+            On the ‘Create a Compartment’ page, users cannot interact with the map using a keyboard. This does not meet
+            <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">
+                WCAG 2.2 success criterion 2.1.1: Keyboard</a>.
+		</li>
+        <li>
+            Also on the ‘Create a Compartment’ page, the tab order of the map controls is not logical. 
+            When users reveal new options, the keyboard focus does not move to them in a usable order. This does not meet 
+            <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">
+                WCAG 2.2 success criterion 2.4.3: Focus Order</a>.
+        </li>
+        <li>
+            This site uses a third-party component for user registration. On some pages in the user sign up/sign in flows there is use of
+            HTML list elements to represent a form. This may affect how some assistive technologies interpret the content, and does not meet 
+            <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html">
+                WCAG 2.2 success criterion 1.3.1: Info and relationships
+            </a>.
+        </li>
+	</ul>
+    <p class="govuk-body">We will continue to update this accessibility statement as we fix these issues.</p>
+
+    <h2 class="govuk-heading-l">Feedback and contact information</h2>
+    <p class="govuk-body">If you need information on this website in a different format like accessible PDF, large print, easy read, audio recording or braille:</p>
+
+    <h3 class="govuk-heading-m">Email</h3>
+    <p class="govuk-body long-link">
+        <a class="govuk-link" href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a>
+    </p>
+
+    <h3 class="govuk-heading-m">Telephone</h3>
+    <p class="govuk-body">
+        Phone: 0300 067 5155 <br />
+        Textphone: 020 234 4567 <br />
+        Monday to Friday, 9am to 5pm (except public holidays) <br />
+        <br />
+        <a class="govuk-link" href="https://www.gov.uk/call-charges">Find out about call charges</a>
+    </p>
+
+    <h3 class="govuk-heading-m">Address</h3>
+    <p class="govuk-body">
+        49 to 53 Cherry Street <br />
+        London <br />
+        AB1 2DC <br />
+	</p>
+
+	<p class="govuk-body">We'll consider your request and get back to you in <span style="color: #CC0000">5 working days.</span></p>
+
+    <h2 class="govuk-heading-l">Reporting accessibility problems with this website</h2>
+    <p class="govuk-body long-link">
+        We’re always looking to improve the accessibility of this website. If you find any problems not listed on this page or think we’re not meeting accessibility requirements, emailing <br />
+        <a class="govuk-link" href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a>
+    </p>
+
+    <h2 class="govuk-heading-l">Enforcement procedure</h2>
+    <p class="govuk-body">
+        The Equality and Human Rights Commission (EHRC) is responsible for enforcing the Public Sector Bodies (Websites and Mobile Applications) (No. 2) Accessibility Regulations 2018 (the 'accessibility regulations').
+        If you're not happy with how we respond to your complaint, 
+        <a target="_blank" rel="noreferrer noopener" href="https://www.equalityadvisoryservice.com/" class="govuk-link">contact the Equality Advisory and Support Service (EASS) (opens in new tab)</a>.
+    </p>
+
+    <h2 class="govuk-heading-l">Technical information about this website’s accessibility</h2>
+    <p class="govuk-body">The Forestry Commission is committed to making its websites and applications accessible, in accordance with the Public Sector Bodies (Websites and Mobile Applications) (No. 2) Accessibility Regulations 2018.</p>
+
+    <h2 class="govuk-heading-l">Content that’s not within the scope of the accessibility regulations</h2>
+    <p class="govuk-body">PDFs, documents and attachments to email notifications published before 23 September 2018 may not meet accessibility standards. For example, they may not be structured so they’re accessible to a screen reader.</p>
+    
+    <h3 class="govuk-heading-m">Third party content that’s under someone else’s control</h3>
+    <p class="govuk-body">Pages and websites that are linked to and from the probate service may not be fully accessible.</p>
+    <p class="govuk-body">These include:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>external pages hosting PDF documents</li>
+        <li>login pages</li>
+        <li>emails sent by gov.uk notify</li>
+        <li>instruction pages on gov.uk</li>
+	</ul>
+
+    <h2 class="govuk-heading-l">What we’re doing to improve accessibility</h2>
+    <p class="govuk-body long-link">
+        We are keen to engage with users of this service and to continue to develop this application to meet the needs of our users. Performance of this application will be regularly assessed, and accessibility reviewed every 12 months in September.
+		If you have any experience or information relating to the use of this, or a similar service, which would help us better meet the needs of our users, please email us at  <br />
+        <a class="govuk-link" href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a>
+    </p>
+
+</div>

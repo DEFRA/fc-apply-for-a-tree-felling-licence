@@ -1,0 +1,33 @@
+﻿@model Forestry.Flo.External.Web.Models.PropertyProfile.PropertyProfileDetailsListViewModel
+@using Forestry.Flo.External.Web.Infrastructure
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData["Title"] = "Your properties";
+    ViewData.ManuallySetBackLink(Url.Action("Index", "Home"));
+    ViewData.ShowBackLink();
+    var selectedWoodlandOwnerId = ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] as Guid? ?? null;
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_PageErrors" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+
+    <h1 class="govuk-heading-xl">Your properties</h1>
+
+    <partial name="Partials/_PropertyProfileList" model="Model.PropertyProfileDetailsList" />
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-action="Create" asp-controller="PropertyProfile" asp-route-isApplication="False" asp-route-woodlandOwnerId="@selectedWoodlandOwnerId">
+                Add new property
+            </a>
+        </div>
+    </div>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

@@ -1,0 +1,42 @@
+﻿@{
+	ViewData["Title"] = "Larch flyover update";
+	var user = new InternalUser(User);
+}
+@using Forestry.Flo.Internal.Web.Models.AdminOfficerReview
+@using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Internal.Web.Infrastructure
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.LarchFlyoverModel
+
+<partial name="../Shared/Partials/_LarchFlyover.cshtml" model="@Model" />
+
+@{
+	var activityFeed = new ActivityFeedModel
+			{
+				ApplicationId = Model.ApplicationId,
+				NewCaseNoteType = CaseNoteType.LarchCheckComment,
+				DefaultCaseNoteFilter = CaseNoteType.LarchCheckComment,
+				ActivityFeedTitle = "Case notes",
+
+				ShowFilters = false,
+				ActivityFeedItemModels = Model.ActivityFeedItems!,
+				HostingPage = Url.Action("LarchFlyover", new { id = Model.ApplicationId })!,
+				ShowAddCaseNote = false
+			};
+
+}
+<partial name="Partials/_ActivityFeed" model="activityFeed" />
+
+<link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+<link rel="stylesheet" type="text/css"
+	  href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+
+@section Scripts
+{
+	<script src="~/js/add-case-note.js" asp-append-version="true"></script>
+	<script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+	<script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}

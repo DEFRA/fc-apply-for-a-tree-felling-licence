@@ -1,0 +1,82 @@
+﻿@{
+    ViewData["Title"] = "Agent Authority Form check";
+
+    var user = new InternalUser(User);
+}
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.AgentAuthorityFormCheckModel
+
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    <partial name="Partials/_PageErrors"/>
+
+    <p class="govuk-body">Guidance text about AAF</p>
+    
+    <partial name="Partials/_WoodlandOwnerDetails" model="@Model.ApplicationOwner" />
+
+    <form id="admin-officer-review" method="post">
+        <input asp-for="ApplicationId" />
+
+        <div class="govuk-form-group">
+
+            <div class="govuk-radios" data-module="govuk-radios">
+
+                <validation asp-for="@Model.CheckPassed"></validation>
+
+                <div class="govuk-radios__item">
+                    
+                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-passed" asp-for="CheckPassed" type="radio" value="true" />
+
+                    <label class="govuk-label govuk-radios__label" for="check-passed">
+                        Check passed: Valid AAF
+                    </label>
+
+                </div>
+
+                <div class="govuk-radios__item">
+                    
+                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-failed" asp-for="CheckPassed" type="radio" value="false" />
+
+                    <label class="govuk-label govuk-radios__label" for="check-failed">
+                        Check failed: Invalid AAF
+                    </label>
+
+                </div>
+
+            </div>
+        
+        </div>
+        
+        <div class="govuk-form-group" id="failure-reason-input">
+
+            <label class="govuk-label" asp-for="CheckFailedReason">
+                Reason for failure
+            </label>
+
+            <validation asp-for="CheckFailedReason"></validation>
+
+            <textarea condition-disabled="@(!Model.Editable(user))" class="govuk-textarea" maxlength="400" asp-for="CheckFailedReason" rows="5" aria-describedby="measures-hint"></textarea>
+
+        </div>
+        
+        <div>
+            <button condition="@Model.Editable(user)" type="submit" class="govuk-button" data-module="govuk-button">
+                Continue
+            </button>
+            
+            <a class="govuk-button govuk-button--secondary" asp-action="Index" asp-route-id="@Model.ApplicationId" title="Back to operations admin officer review">Back to operations admin officer review</a>
+
+        </div>
+    </form>
+</div>
+
+            
+@section Scripts
+{
+    <script src="~/js/agent-authority-form-check.js" asp-append-version="true"></script>
+}

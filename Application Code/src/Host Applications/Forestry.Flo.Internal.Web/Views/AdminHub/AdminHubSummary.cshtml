@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Admin hub summary ";
+}
+
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.AdminHub.ViewAdminHubModel
+
+@{
+    var adminOfficers = Model.AdminHubs
+        .Where(x => x.AdminOfficers.Count > 0)
+        .Select(x => new { x.AdminOfficers, x.Name }).ToList();
+
+
+}
+
+<div class="govuk-grid-column-full" id="summary-container">
+    <h1 class="govuk-heading-xl">
+        @ViewData["Title"] for @Model.Name
+    </h1>
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_PageErrors" />
+    
+    @if (Model.Id != Guid.Empty)
+    {
+        <partial name="_AdminHubDetails" model="@Model" />
+
+        <partial name="_AdminHubOfficers" model="@Model" />
+    }
+    else
+    {
+        <partial name="_ListOfAdminHubs" model="@Model" />
+    }
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+            <a asp-controller="Home" asp-action="Index" class="govuk-link" title="Home">Home</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <partial name="Partials/_DataTablesJs" />
+    <script src="~/js/admin-hub.js" ></script>
+}
+
+@section Css {
+    <link rel="stylesheet" href="~/css/assign-fla-select-user.css" />
+}

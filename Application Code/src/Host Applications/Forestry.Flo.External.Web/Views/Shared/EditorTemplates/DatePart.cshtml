@@ -1,0 +1,32 @@
+﻿@model Forestry.Flo.Services.Common.Models.DatePart
+
+@{
+    var divName = (Model?.FieldName ?? string.Empty) + "-div";
+}
+
+<div class="govuk-date-input" id="@divName">
+    <div class="govuk-date-input__item">
+        <div class="govuk-form-group">
+            <label class="govuk-label govuk-date-input__label" asp-for="Day">
+                Day
+            </label>
+            <input class="govuk-input govuk-date-input__input govuk-input--width-2" asp-for="Day" type="number" inputmode="numeric">
+        </div>
+    </div>
+    <div class="govuk-date-input__item">
+        <div class="govuk-form-group">
+            <label class="govuk-label govuk-date-input__label" asp-for="Month">
+                Month
+            </label>
+            <input class="govuk-input govuk-date-input__input govuk-input--width-2" asp-for="Month" type="number" inputmode="numeric">
+        </div>
+    </div>
+    <div class="govuk-date-input__item">
+        <div class="govuk-form-group">
+            <label class="govuk-label govuk-date-input__label" asp-for="Year">
+                Year
+            </label>
+            <input class="govuk-input govuk-date-input__input govuk-input--width-4" asp-for="Year" type="number" inputmode="numeric">
+        </div>
+    </div>
+</div>

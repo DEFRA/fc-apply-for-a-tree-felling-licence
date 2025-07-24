@@ -1,0 +1,98 @@
+﻿@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Dictionary<string, SpeciesModel>
+@{
+    var formPrefix = ViewData["FormPrefix"] as string;
+}
+<p id="@formPrefix-tree-species-selection-error" class="govuk-error-message" data-valmsg-for="Species" data-valmsg-replace="true"></p>
+<div class="govuk-form-group species-selection-container">
+    @* Create a select input with all the available tree species *@
+    <div class="govuk-form-group">
+        <div class="autocomplete-wrapper">
+            <select id="@formPrefix-tree-species-select" class="govuk-select" name="tree-species-select" aria-label="Tree species selection">
+                @foreach (var species in TreeSpeciesFactory.SpeciesDictionary.Values)
+                {
+                    <option value="@species.Name">@species.Name</option>
+                }
+            </select>
+        </div>
+        <button id="@formPrefix-add-tree-species-btn" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" data-module="govuk-button" aria-describedby="species-hint">
+            @if (@Model.Keys.Count > 0)
+            {
+                @:Add another species
+            }
+            else
+            {
+                @:Add species
+            }
+        </button>
+    </div>
+
+    <table class="govuk-table govuk-!-padding-bottom-4" id="@formPrefix-species-list-table" style="border-collapse: collapse" name="Selected species" aria-label="Selected species">
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Species</th>
+                @if (formPrefix == "restocking")
+                {
+                    <th scope="col" class="govuk-table__header">Percentage</th>
+                }
+                <th scope="col" class="govuk-table__header" id="application-list-table-actions-header">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var species in Model.Keys)
+            {
+                <tr data-id="@Model[species].Id" class="govuk-table__row">
+                    <td class="govuk-table__cell" data-order="@Model[species].Species)">
+                        @Model[species].SpeciesName
+                        <input type="hidden" asp-for="@Model[species].Species" />
+                        <input type="hidden" asp-for="@Model[species].SpeciesName" />
+                    </td>
+
+                    @if (formPrefix == "restocking")
+                    {
+                        <td class="govuk-table__cell" data-order="@Model[species].Percentage">
+                            <input class="govuk-input govuk-date-input__input govuk-input--width-4" asp-for="@Model[species].Percentage" />
+                        </td>
+                    }
+                    <td class="govuk-table__cell">
+                        <a class="govuk-link @formPrefix-remove-tree-species" href="#" title="Remove">Remove<span class="govuk-visually-hidden">&nbsp;@(Model[species].SpeciesName.ToLower())</span></a>
+                    </td>
+                    <input type="hidden" asp-for="@Model[species].Id" />
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <table class="govuk-table govuk-!-padding-bottom-4 govuk-visually-hidden" aria-hidden="True" id="species-Type-list-table" name="List of all species">
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Species</th>
+                <th scope="col" class="govuk-table__header">Type</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var treeSpeciesValue in TreeSpeciesFactory.SpeciesDictionary.Values)
+            {
+                <tr data-id="@treeSpeciesValue.Name" class="govuk-table__row">
+                    <td class="govuk-table__cell" id="@treeSpeciesValue.Code">
+                        @treeSpeciesValue.Code
+                    </td>
+
+                    <td class="govuk-table__cell">
+                        @treeSpeciesValue.SpeciesType
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<div class="govuk-!-margin-top-3">
+</div>
+
+@* <datalist id="species-names-data-list">
+    @foreach (var species in TreeSpeciesFactory.SpeciesDictionary.Values)
+    {
+        <option value="@species.Name"></option>
+    }
+</datalist> *@
