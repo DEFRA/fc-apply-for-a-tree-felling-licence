@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Agent Authority Form Check";
+    ViewData["Title"] = "Agent Authority Form check";
 
     var user = new InternalUser(User);
 }
@@ -11,7 +11,7 @@
     <partial name="Partials/_ConfirmationMessageDisplay"/>
     <partial name="Partials/_UserGuideDisplay"/>
 
-    <h1 class="govuk-heading-l">Agent Authority Form</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
     <partial name="Partials/_PageErrors"/>
 

@@ -234,6 +234,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             ? Maybe<SubmittedFlaPropertyCompartment>.None
             : Maybe<SubmittedFlaPropertyCompartment>.From(compartment);
     }
+
     public async Task<UnitResult<UserDbErrorReason>> UpdateSubmittedFlaPropertyCompartmentZonesAsync(
         Guid compartmentId,
         bool zone1,

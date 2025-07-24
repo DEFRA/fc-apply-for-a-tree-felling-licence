@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Confirm User Account";
+    ViewData["Title"] = "Review unconfirmed user account";
 }
 
 @using Forestry.Flo.Services.Common.Extensions
@@ -8,7 +8,7 @@
 @model Forestry.Flo.Internal.Web.Models.UserAccount.UserAccountModel
 
 <div class="govuk-grid-column-full">
-    <h1 class="govuk-heading-xl">Review Unconfirmed User Account</h1>
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
     
     <partial name="Partials/_UserGuideDisplay"/>
 

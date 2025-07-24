@@ -11,6 +11,8 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerRev
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.InternalUsers.Services;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using IndividualConfirmedFellingRestockingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.IndividualConfirmedFellingRestockingDetailModel;
 using NewConfirmedFellingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.NewConfirmedFellingDetailModel;
 
@@ -19,6 +21,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandO
 public class ConfirmedFellingAndRestockingDetailsUseCase(
     IUserAccountService internalUserAccountService,
     IRetrieveUserAccountsService externalUserAccountService,
+    IGetFellingLicenceApplicationForInternalUsers getFellingLicenceService,
     IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository,
     IRetrieveWoodlandOwners woodlandOwnerService,
     IUpdateConfirmedFellingAndRestockingDetailsService updateConfirmedFellingAndRestockingDetailsService,
@@ -319,6 +322,117 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         logger.LogInformation("Successfully saved confirmed felling details for application {ApplicationId}", model.ApplicationId);
         await transaction.CommitAsync(cancellationToken);
         await AuditConfirmedFellingDetailsUpdateAsync(model.ApplicationId, user, cancellationToken);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Retrieves a list of selectable compartments for a given felling licence application.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the felling licence application.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing a list of <see cref="SelectableCompartment"/> if successful,
+    /// or a failure result if retrieval was unsuccessful.
+    /// </returns>
+    public async Task<Result<SelectFellingCompartmentModel>> GetSelectableFellingCompartmentsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var summary = await GetFellingLicenceDetailsAsync(applicationId, cancellationToken);
+
+        if (summary.IsFailure)
+        {
+            logger.LogError("Failed to retrieve application summary for application {ApplicationId} with error {Error}", applicationId, summary.Error);
+            return Result.Failure<SelectFellingCompartmentModel>(
+                $"Unable to retrieve application summary for application {applicationId}");
+        }
+
+        var compartments = await getFellingLicenceService.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
+            applicationId,
+            cancellationToken);
+
+        if (compartments.IsFailure)
+        {
+            logger.LogError("Failed to retrieve compartments for application {ApplicationId} with error {Error}", applicationId, compartments.Error);
+            return Result.Failure<SelectFellingCompartmentModel>(
+                $"Unable to retrieve compartments for application {applicationId}");
+        }
+
+        var gisCompartment = compartments.Value.Select(c => new
+        {
+            c.Id,
+            c.GISData,
+            c.DisplayName,
+            Selected = false
+        }).ToList();
+
+        var model = new SelectFellingCompartmentModel
+        {
+            ApplicationId = applicationId,
+            SelectableCompartments = compartments.Value
+                .Select(x => new SelectableCompartment(x.CompartmentId, x.CompartmentNumber))
+                .ToList(),
+            FellingLicenceApplicationSummary = summary.Value,
+            GisData = JsonConvert.SerializeObject(gisCompartment),
+        };
+
+        SetBreadcrumbs(model, "Select felling compartment");
+        return model;
+    }
+
+    /// <summary>
+    /// Deletes a confirmed felling detail from an application, including all associated restocking details.
+    /// </summary>
+    /// <param name="applicationId">The id of the application containing the confirmed felling detail.</param>
+    /// <param name="confirmedFellingDetailId">The id of the confirmed felling detail to delete.</param>
+    /// <param name="user">The internal user performing the deletion.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the confirmed felling detail has been deleted.</returns>
+    public async Task<Result> DeleteConfirmedFellingDetailAsync(
+        Guid applicationId,
+        Guid confirmedFellingDetailId,
+        InternalUser user,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        ArgumentNullException.ThrowIfNull(confirmedFellingDetailId);
+        ArgumentNullException.ThrowIfNull(user);
+
+        logger.LogDebug("Attempting to delete confirmed felling detail {ConfirmedFellingDetailId} for application {ApplicationId}", confirmedFellingDetailId, applicationId);
+
+        await using var transaction = await _updateConfirmedFellingAndRestockingDetailsService.BeginTransactionAsync(cancellationToken);
+
+        var result = await _updateConfirmedFellingAndRestockingDetailsService.DeleteConfirmedFellingDetailAsync(
+            applicationId,
+            confirmedFellingDetailId,
+            user.UserAccountId!.Value,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            logger.LogError("Unable to delete confirmed felling detail {ConfirmedFellingDetailId} for application {ApplicationId}: {Error}", confirmedFellingDetailId, applicationId, result.Error);
+            await AuditConfirmedFellingDetailsUpdateFailureAsync(applicationId, user, result.Error, cancellationToken);
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure($"Unable to delete confirmed felling detail for application {applicationId}, error {result.Error}");
+        }
+
+        var woReviewUpdateResult = await _updateWoodlandOfficerReviewService.HandleConfirmedFellingAndRestockingChangesAsync(
+            applicationId,
+            user.UserAccountId!.Value,
+            false,
+            cancellationToken);
+
+        if (woReviewUpdateResult.IsFailure)
+        {
+            logger.LogError("Failed to update woodland officer review for application {ApplicationId} with error {Error}", applicationId, woReviewUpdateResult.Error);
+            await transaction.RollbackAsync(cancellationToken);
+            await AuditConfirmedFellingDetailsUpdateFailureAsync(applicationId, user, woReviewUpdateResult.Error, cancellationToken);
+            return woReviewUpdateResult.ConvertFailure<ConfirmedFellingRestockingDetailsModel>();
+        }
+
+        logger.LogInformation("Successfully deleted confirmed felling detail {ConfirmedFellingDetailId} for application {ApplicationId}", confirmedFellingDetailId, applicationId);
+        await transaction.CommitAsync(cancellationToken);
+        await AuditConfirmedFellingDetailsUpdateAsync(applicationId, user, cancellationToken);
         return Result.Success();
     }
 

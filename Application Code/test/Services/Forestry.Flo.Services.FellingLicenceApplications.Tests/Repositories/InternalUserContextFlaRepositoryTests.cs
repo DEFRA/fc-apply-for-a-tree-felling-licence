@@ -1431,4 +1431,72 @@ public class InternalUserContextFlaRepositoryTests
         Assert.True(result.IsFailure);
         Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
+    [Theory, AutoMoqData]
+    public async Task GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync_ReturnsCompartments_WhenDetailExists(
+        FellingLicenceApplication application,
+        SubmittedFlaPropertyDetail propertyDetail,
+        List<SubmittedFlaPropertyCompartment> compartments)
+    {
+        // Arrange
+        propertyDetail.FellingLicenceApplicationId = application.Id;
+        propertyDetail.SubmittedFlaPropertyCompartments = compartments;
+        application.SubmittedFlaPropertyDetail = propertyDetail;
+        foreach (var compartment in compartments)
+        {
+            compartment.SubmittedFlaPropertyDetailId = propertyDetail.FellingLicenceApplicationId;
+            compartment.SubmittedFlaPropertyDetail = propertyDetail;
+        }
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        _fellingLicenceApplicationsContext.SubmittedFlaPropertyDetails.Add(propertyDetail);
+        _fellingLicenceApplicationsContext.SubmittedFlaPropertyCompartments.AddRange(compartments);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal(compartments.Count, result.Value.Count);
+        foreach (var compartment in compartments)
+        {
+            Assert.Contains(result.Value, c => c == compartment);
+        }
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync_ReturnsEmptyList_WhenNoCompartments(
+        FellingLicenceApplication application,
+        SubmittedFlaPropertyDetail propertyDetail)
+    {
+        // Arrange
+        propertyDetail.FellingLicenceApplicationId = application.Id;
+        propertyDetail.SubmittedFlaPropertyCompartments = new List<SubmittedFlaPropertyCompartment>();
+        application.SubmittedFlaPropertyDetail = propertyDetail;
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        _fellingLicenceApplicationsContext.SubmittedFlaPropertyDetails.Add(propertyDetail);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Empty(result.Value);
+    }
+
+    [Fact]
+    public async Task GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync_ReturnsFailure_WhenDetailNotFound()
+    {
+        // Arrange
+        var nonExistentId = Guid.NewGuid();
+
+        // Act
+        var result = await _sut.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(nonExistentId, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Contains("not found", result.Error);
+    }
 }

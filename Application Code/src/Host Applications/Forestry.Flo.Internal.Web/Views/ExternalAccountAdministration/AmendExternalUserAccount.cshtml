@@ -5,9 +5,13 @@
 @using Forestry.Flo.Services.Common.User
 @model Forestry.Flo.Internal.Web.Models.UserAccount.AmendExternalUserAccountModel
 
+@{
+    ViewData["Title"] = "Amend external user details";
+}
+
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">Amend external user details</h1>
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
         
     <partial name="Partials/_PageErrors" />
 

@@ -155,6 +155,11 @@
         HTMLHelper.getElements = function(selector){
             return document.querySelectorAll(selector);
         }
+
+        HTMLHelper.getElementById = function (name) {
+            return document.getElementById(name);
+        }
+
         return HTMLHelper;
     }());
     return HTMLHelper;

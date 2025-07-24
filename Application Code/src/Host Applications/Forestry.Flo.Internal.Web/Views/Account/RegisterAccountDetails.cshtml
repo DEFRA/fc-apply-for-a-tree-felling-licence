@@ -1,12 +1,12 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Enter your details";
 }
 @model Forestry.Flo.Internal.Web.Models.UserAccount.UserRegistrationDetailsModel
 
 
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">Enter your details</h1>
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
 
     <p class="govuk-body">After you enter your details, we'll send them to the IT Service Desk to be approved.<br/>
         You'll get an email once your account is ready. This usually takes 1 working day.</p>

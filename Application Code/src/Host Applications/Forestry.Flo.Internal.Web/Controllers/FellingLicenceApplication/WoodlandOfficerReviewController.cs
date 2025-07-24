@@ -811,27 +811,6 @@ public partial class WoodlandOfficerReviewController : Controller
         return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
     }
 
-    [HttpGet]
-    public async Task<IActionResult> ConfirmedFellingAndRestocking(
-        Guid id,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
-        CancellationToken cancellationToken)
-    {
-        var user = new InternalUser(User);
-
-        var model = await useCase.GetConfirmedFellingAndRestockingDetailsAsync(
-            id,
-            user,
-            cancellationToken);
-
-        if (model.IsFailure)
-        {
-            return RedirectToAction("Error", "Home");
-        }
-
-        return View(model.Value);
-    }
-
     private void ValidateModel<T>(T model, IValidator<T> validator, bool createErrors = true)
     {
         if (createErrors)

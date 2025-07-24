@@ -7,7 +7,7 @@
 
 
 @{
-    ViewData["Title"] = "Confirm Felling and Restocking Details";
+    ViewData["Title"] = "Confirm felling and restocking details";
 }
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.ConfirmedFellingRestockingDetailsModel
@@ -23,7 +23,7 @@
     <partial name="Partials/_UserGuideDisplay" />
     <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
-    <h1 class="govuk-heading-l">Confirmed Felling and Restocking Details</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     @if (!ViewData.ModelState.IsValid)
     {

@@ -56,6 +56,7 @@ public class BaseServices
     protected async Task<Result> GetTokenAsync(CancellationToken cancellationToken)
     {
         if (TokenRequest.HasNoValue) {
+            _logger.LogWarning("Token Service not set");
             return Result.Failure("Token Service not set");
         }
 
@@ -63,6 +64,7 @@ public class BaseServices
             var response = await _client.PostAsync(GetTokenPath, TokenRequest.Value.ToFormUrlEncodedContentFormData(),
                 cancellationToken);
             if (!response.IsSuccessStatusCode) {
+                _logger.LogError("GIS token request failed with response status code {ResponseCode}", response.StatusCode);
                 return Result.Failure("Unable to connect to the esri service");
             }
 
@@ -70,6 +72,7 @@ public class BaseServices
 
             if (content.Contains("error")) {
                 var error = JsonConvert.DeserializeObject<EsriErrorResponse<string>>(content);
+                _logger.LogError("GIS token request returned error {Error}", error?.Error?.Message);
                 return Result.Failure(error!.Error!.Message);
             }
 
@@ -83,8 +86,8 @@ public class BaseServices
             }
 
 
-            var message = $"Unable to read content:{content}";
-            _logger.LogError(message);
+            var message = $"Unable to deserialize content as ESRI token response: {content}";
+            _logger.LogError("Unable to deserialize content as ESRI token response: {Content}", content);
             return Result.Failure(message);
         }
         catch (Exception ex) {
@@ -102,12 +105,18 @@ public class BaseServices
     protected Maybe<FeatureLayerConfig> GetLayerDetails(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) {
+            _logger.LogWarning("Cannot get layer configuration with no name");
             return Maybe<FeatureLayerConfig>.None;
         }
 
         name = name.Trim();
         var item = LayerSettings.FirstOrDefault(x =>
             x.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase));
+
+        if (item == null)
+        {
+            _logger.LogWarning("No layer configuration found for name: {Name}", name);
+        }
 
         return item == null
             ? Maybe<FeatureLayerConfig>.None
@@ -143,6 +152,8 @@ public class BaseServices
     private async Task<Result<HttpResponseMessage>> PostQueryFromUrlEncodedAsync(BaseParameter query, string path, bool needsToken,
             CancellationToken cancellationToken)
     {
+        _logger.LogDebug("Posting query to ESRI: {Path}", path);
+
         if (needsToken) {
             var tokenCheck = await GetTokenString(cancellationToken);
             if (tokenCheck.IsFailure) {
@@ -192,14 +203,14 @@ public class BaseServices
                 return postResult.ConvertFailure<T>();
             }
 
-            _logger.LogDebug("Response data: [{Value}], from [{path}]", postResult.Value, query);
+            _logger.LogDebug("ESRI Response data: [{Value}], from [{path}]", postResult.Value, path);
 
             var result = JsonConvert.DeserializeObject<T>(postResult.Value, new JavaScriptDateTimeConverter());
             if (result != null) {
                 return Result.Success(result);
             }
 
-            var message = $"Unable to read content:{postResult.Value}";
+            var message = $"ESRI: Unable to deserialise content as {typeof(T)} : {postResult.Value}";
             _logger.LogError(message);
             return Result.Failure<T>(message);
         }
@@ -227,18 +238,23 @@ public class BaseServices
                 return postResult.ConvertFailure<string>();
             }
 
+            _logger.LogDebug("ESRI Response data: [{Value}], from [{path}]", postResult.Value, path);
+
             var response = postResult.Value;
             if (!response.IsSuccessStatusCode) {
+                _logger.LogWarning("ESRI responded with unsuccessful status code: {ResponseCode}", response.StatusCode);
                 return Result.Failure<string>("Unable to connect to the esri service");
             }
 
             if (!htmlIsValid && response.Content.Headers.ContentType!.MediaType == "text/html") {
+                _logger.LogWarning("ESRI returned HTML content when not expected");
                 return Result.Failure<string>("Message returned in html");
             }
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             var maybeErrors = CheckForEsriErrors(content);
             if (maybeErrors.HasValue) {
+                _logger.LogError("ESRI returned error: {Error}", maybeErrors.Value);
                 return Result.Failure<string>(maybeErrors.Value);
             }
 
@@ -266,18 +282,15 @@ public class BaseServices
             if (postResult.IsFailure) {
                 return postResult.ConvertFailure<byte[]>();
             }
+            
+            _logger.LogDebug("ESRI Response data: [{Value}], from [{path}]", postResult.Value, path);
 
             var response = postResult.Value;
 
             if (!response.IsSuccessStatusCode) {
+                _logger.LogWarning("ESRI responded with unsuccessful status code: {ResponseCode}", response.StatusCode);
                 return Result.Failure<byte[]>("Unable to connect to the esri service");
             }
-
-
-            if (!response.IsSuccessStatusCode) {
-                return Result.Failure<byte[]>("Unable to connect to the esri service");
-            }
-
 
             var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
@@ -316,6 +329,7 @@ public class BaseServices
                 }
             }
 
+            _logger.LogDebug("Posting file to ESRI: {Path}", path);
 
             path = $"{path}{parameters.GetQuery()}";
 
@@ -326,6 +340,7 @@ public class BaseServices
 
             var response = await _client.PostAsync(path, multipartForm, cancellationToken);
             if (!response.IsSuccessStatusCode) {
+                _logger.LogWarning("ESRI responded with unsuccessful status code: {ResponseCode}", response.StatusCode);
                 return Result.Failure<string>("Unable to connect to the esri service");
             }
 
@@ -333,8 +348,13 @@ public class BaseServices
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             var maybeErrors = CheckForEsriErrors(content);
-            return maybeErrors.HasValue ?
-                Result.Failure<string>(maybeErrors.Value)
+            if (maybeErrors.HasValue)
+            {
+                _logger.LogError("ESRI returned error: {Error}", maybeErrors.Value);
+            }
+
+            return maybeErrors.HasValue 
+                ? Result.Failure<string>(maybeErrors.Value)
                 : Result.Success(content);
         }
         catch (Exception ex) {
@@ -364,7 +384,9 @@ public class BaseServices
 
         var result = await PostQueryWithConversionAsync<BaseQueryResponse<ObjectIdResponse<T>>>(query, path, true, cancellationToken);
 
-        return result.IsFailure ? Result.Failure<List<T>>(result.Error) : Result.Success(result.Value.Results.Select(f => f.Record.ObjectID).ToList());
+        return result.IsFailure 
+            ? Result.Failure<List<T>>(result.Error) 
+            : Result.Success(result.Value.Results.Select(f => f.Record.ObjectID).ToList());
     }
 
     /// <summary>

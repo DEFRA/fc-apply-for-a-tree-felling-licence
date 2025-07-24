@@ -1,6 +1,4 @@
 ﻿@using Forestry.Flo.Services.Common.Extensions
-@using NodaTime
-@using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Forestry.Flo.Services.FellingLicenceApplications.Models
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.Internal.Web.Infrastructure.Display
@@ -273,23 +271,6 @@
                                 }
                             </div>
                         </div>
-                    
-                        <div class="govuk-button-group">
-                            <a
-                                condition="@(Model.Editable(user))"
-                                id='@($"add-felling-{confirmedFellingDetail.ConfirmedFellingDetailsId}")'
-                                data-prevent-double-click="true"
-                                asp-action="AddConfirmedFellingDetails"
-                                asp-route-applicationId="@Model.ApplicationId"
-                                asp-route-compartmentId="@compartment.CompartmentId"
-                                class="govuk-button govuk-button--secondary"
-                                data-module="govuk-button">
-
-                                Add felling operation
-
-                            </a>
-                        </div>
-
                     </div>
                 </div>
 			}
@@ -311,9 +292,24 @@
 			});
 		</script>
 		<input asp-for="ApplicationId" />
-		<br />
+        <br />
+                    
+        <div class="govuk-button-group">
+            <a
+                condition="@(Model.Editable(user))"
+                id="add-felling-operation"
+                data-prevent-double-click="true"
+                asp-action="SelectFellingCompartment"
+                asp-route-applicationId="@Model.ApplicationId"
+                class="govuk-button govuk-button--secondary"
+                data-module="govuk-button">
 
-		<div class="govuk-form-group">
+                Add felling operation
+
+            </a>
+        </div>
+
+        <div class="govuk-form-group">
 			<fieldset class="govuk-fieldset">
 				<legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
 					<h2 class="govuk-fieldset__heading">Review actions</h2>
@@ -337,8 +333,7 @@
 			</fieldset>
 		</div>
 
-
-	</form>
+    </form>
 
 </div>
 

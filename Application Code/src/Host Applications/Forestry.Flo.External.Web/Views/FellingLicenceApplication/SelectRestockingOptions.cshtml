@@ -45,12 +45,12 @@
 
         @if (Model.RestockAlternativeArea)
         {
-            <label class="govuk-label">These are the permitted restocking options for <b>@Model.FellingOperationType.GetDisplayName()</b> in <b>@Model.FellingCompartmentName</b>.  Select all restocking options that apply to your plans for this new location.</label>
+            <p class="govuk-body">These are the permitted restocking options for <b>@Model.FellingOperationType.GetDisplayName()</b> in <b>@Model.FellingCompartmentName</b>.  Select all restocking options that apply to your plans for this new location.</p>
             <br />
         }
         else
         {
-            <label class="govuk-label">These are the permitted restocking options for <b>@Model.FellingOperationType.GetDisplayName()</b>.  Select all restocking options that apply to your plans.</label>
+            <p class="govuk-body">These are the permitted restocking options for <b>@Model.FellingOperationType.GetDisplayName()</b>.  Select all restocking options that apply to your plans.</p>
             <br />
         }
 

@@ -1,10 +1,13 @@
 ﻿using CSharpFunctionalExtensions;
+using FileSignatures.Formats;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -235,9 +238,106 @@ public partial class WoodlandOfficerReviewController
         if (isFailure)
         {
             this.AddErrorMessage("Could not save confirmed felling details");
-            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = model.ApplicationId });
+        }
+        else
+        {
+            this.AddConfirmationMessage("Confirmed felling details amended");
         }
 
         return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = model.ApplicationId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SelectFellingCompartment(
+        [FromQuery] Guid applicationId,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure, viewModel) = await useCase.GetSelectableFellingCompartmentsAsync(
+            applicationId,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not retrieve selectable compartments");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SelectFellingCompartment(
+        SelectFellingCompartmentModel model,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        if (ModelState.IsValid)
+        {
+            return RedirectToAction(nameof(AddConfirmedFellingDetails),
+                new { applicationId = model.ApplicationId, compartmentId = model.SelectedCompartmentId });
+        }
+
+        var (_, isFailure, viewModel) = await useCase.GetSelectableFellingCompartmentsAsync(
+            model.ApplicationId,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not retrieve selectable compartments");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = model.ApplicationId });
+        }
+
+        model.Breadcrumbs = viewModel.Breadcrumbs;
+        model.SelectableCompartments = viewModel.SelectableCompartments;
+        model.FellingLicenceApplicationSummary = viewModel.FellingLicenceApplicationSummary;
+
+        return View(model);
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> ConfirmedFellingAndRestocking(
+        Guid id,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var model = await useCase.GetConfirmedFellingAndRestockingDetailsAsync(
+            id,
+            user,
+            cancellationToken);
+
+        if (model.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        return View(model.Value);
+    }
+
+    public async Task<IActionResult> DeleteConfirmedFellingDetails(
+        [FromQuery] Guid applicationId,
+        [FromQuery] Guid confirmedFellingDetailId,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure) = await useCase.DeleteConfirmedFellingDetailAsync(
+            applicationId,
+            confirmedFellingDetailId,
+            new InternalUser(User),
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not delete confirmed felling details");
+        }
+        else
+        {
+            this.AddConfirmationMessage("Felling details deleted");
+        }
+
+        return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
     }
 }

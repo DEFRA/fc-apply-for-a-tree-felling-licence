@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Close User Account";
+    ViewData["Title"] = "Close internal user account";
 }
 
 @using Forestry.Flo.Services.Common.Extensions
@@ -10,7 +10,7 @@
 
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">Close internal user account</h1>
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
 
     <form method="post">
         <input type="hidden" asp-for="AccountToClose.Id"/>

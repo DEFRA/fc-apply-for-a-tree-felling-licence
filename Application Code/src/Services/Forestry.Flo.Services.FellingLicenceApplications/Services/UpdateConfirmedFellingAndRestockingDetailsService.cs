@@ -130,6 +130,59 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
     }
 
     /// <inheritdoc/>
+    public async Task<Result> DeleteConfirmedFellingDetailAsync(
+        Guid applicationId,
+        Guid confirmedFellingDetailId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var flaMaybe = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
+        if (flaMaybe.HasNoValue)
+        {
+            _logger.LogError("Unable to retrieve felling licence application {appId}", applicationId);
+            return Result.Failure("Unable to retrieve felling licence application");
+        }
+
+        var fla = flaMaybe.Value;
+
+        var userCheck = CheckUserIsPermittedToAmend(fla, userId);
+        if (userCheck.IsFailure)
+        {
+            return userCheck;
+        }
+
+        var compartment = fla.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+            .FirstOrDefault(c => c.ConfirmedFellingDetails.Any(f => f.Id == confirmedFellingDetailId));
+        if (compartment is null)
+        {
+            _logger.LogError("Confirmed felling detail not found in compartment for application {appId}", applicationId);
+            return Result.Failure("Confirmed felling detail not found");
+        }
+
+        var confirmedFellingDetail = compartment.ConfirmedFellingDetails.FirstOrDefault(f => f.Id == confirmedFellingDetailId);
+        if (confirmedFellingDetail is null)
+        {
+            _logger.LogError("Confirmed felling detail with id {id} not found in compartment for application {appId}", confirmedFellingDetailId, applicationId);
+            return Result.Failure("Confirmed felling detail not found");
+        }
+
+        foreach (var restockingDetail in confirmedFellingDetail.ConfirmedRestockingDetails.ToList())
+        {
+            restockingDetail.ConfirmedRestockingSpecies.Clear();
+            confirmedFellingDetail.ConfirmedRestockingDetails.Remove(restockingDetail);
+        }
+
+        compartment.ConfirmedFellingDetails.Remove(confirmedFellingDetail);
+
+        _internalFlaRepository.Update(fla);
+
+        var dbResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+        return dbResult.IsFailure 
+            ? Result.Failure(dbResult.Error.ToString()) 
+            : Result.Success();
+    }
+
+    /// <inheritdoc/>
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken) => await _internalFlaRepository.BeginTransactionAsync(cancellationToken);
 
     /// <inheritdoc/>

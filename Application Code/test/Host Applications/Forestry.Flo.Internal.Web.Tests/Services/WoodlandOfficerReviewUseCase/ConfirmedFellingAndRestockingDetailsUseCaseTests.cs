@@ -7,6 +7,7 @@ using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
+using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -17,6 +18,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -24,6 +26,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Text.Json;
 using IndividualConfirmedFellingRestockingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.IndividualConfirmedFellingRestockingDetailModel;
+using UserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
@@ -38,6 +41,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
     private readonly Mock<IDbContextTransaction> _transactionMock = new ();
+    private readonly Mock<IGetFellingLicenceApplicationForInternalUsers> _getFellingLicenceApplicationForInternalUsers = new();
     private readonly Mock<IAuditService<ConfirmedFellingAndRestockingDetailsUseCase>> _auditingService = new();
     private const string AdminHubAddress = "admin hub address";
     private readonly Fixture _fixture = new();
@@ -68,6 +72,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         return new ConfirmedFellingAndRestockingDetailsUseCase(
             _userAccountService.Object,
             _externalUserAccountService.Object,
+            _getFellingLicenceApplicationForInternalUsers.Object,
             _fellingLicenceRepository.Object,
             _woodlandOwnerService.Object,
             _updateConfirmedFellAndRestockService.Object,
@@ -738,6 +743,101 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
 
 
 
+    [Theory, AutoMoqData]
+    public async Task GetSelectableFellingCompartmentsAsync_ReturnsSelectableCompartments_WhenServiceSucceeds(
+        Guid applicationId,
+        List<SubmittedFlaPropertyCompartment> compartments,
+        WoodlandOwnerModel woodlandOwner,
+        UserAccount userAccount)
+    {
+        // Arrange
+        var sut = CreateSut();
+        var selectableCompartments = compartments
+            .Select(x => new SelectableCompartment(x.CompartmentId, x.CompartmentNumber))
+            .ToList();
+
+        _getFellingLicenceApplicationForInternalUsers
+            .Setup(s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(compartments));
+
+        _fellingLicenceRepository
+            .Setup(r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FellingLicenceApplication());
+
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwner);
+
+        _externalUserAccountService.Setup(r => r.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(userAccount);
+
+        // Act
+        var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.SelectableCompartments.Should().BeEquivalentTo(selectableCompartments);
+        result.Value.ApplicationId.Should().Be(applicationId);
+        result.Value.GisData.Should().NotBeNullOrEmpty();
+        result.Value.FellingLicenceApplicationSummary.Should().NotBeNull();
+        _getFellingLicenceApplicationForInternalUsers.Verify(
+            s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceRepository.Verify(
+            r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetSelectableFellingCompartmentsAsync_ReturnsFailure_WhenServiceFails(Guid applicationId, WoodlandOwnerModel woodlandOwner, UserAccount userAccount)
+    {
+        // Arrange
+        var sut = CreateSut();
+        var error = "Some error";
+        _getFellingLicenceApplicationForInternalUsers
+            .Setup(s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<List<SubmittedFlaPropertyCompartment>>(error));
+
+        _fellingLicenceRepository
+            .Setup(r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FellingLicenceApplication());
+
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwner);
+
+        _externalUserAccountService.Setup(r => r.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(userAccount);
+
+        // Act
+        var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain(applicationId.ToString());
+        _getFellingLicenceApplicationForInternalUsers.Verify(
+            s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceRepository.Verify(
+            r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetSelectableFellingCompartmentsAsync_ReturnsFailure_WhenFlaNotFound(Guid applicationId)
+    {
+        // Arrange
+        var sut = CreateSut();
+        _fellingLicenceRepository
+            .Setup(r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<FellingLicenceApplication>.None);
+
+        // Act
+        var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain("Unable to retrieve application summary for application");
+        _fellingLicenceRepository.Verify(
+            r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationForInternalUsers.Verify(
+            s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static void SetValidSpecies(AmendConfirmedFellingDetailsViewModel model)
     {
         var speciesDictionary = TreeSpeciesFactory.SpeciesDictionary;
@@ -782,5 +882,211 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
                 Deleted = false
             }
         ];
+    }
+
+    [Theory, AutoMoqData]
+    public async Task DeleteConfirmedFellingDetailAsync_ShouldReturnSuccess_WhenDeleteSucceeds(
+        Guid applicationId,
+        Guid confirmedFellingDetailId)
+    {
+        var sut = CreateSut();
+
+        var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(user);
+
+        _updateConfirmedFellAndRestockService
+            .Setup(s => s.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_transactionMock.Object);
+
+        _updateConfirmedFellAndRestockService
+            .Setup(s => s.DeleteConfirmedFellingDetailAsync(
+                applicationId,
+                confirmedFellingDetailId,
+                internalUser.UserAccountId!.Value,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.HandleConfirmedFellingAndRestockingChangesAsync(
+                applicationId,
+                internalUser.UserAccountId!.Value,
+                false,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        var result = await sut.DeleteConfirmedFellingDetailAsync(
+            applicationId,
+            confirmedFellingDetailId,
+            internalUser,
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+
+        _updateConfirmedFellAndRestockService.Verify(s =>
+            s.DeleteConfirmedFellingDetailAsync(
+                applicationId,
+                confirmedFellingDetailId,
+                internalUser.UserAccountId!.Value,
+                CancellationToken.None), Times.Once);
+
+        _updateWoodlandOfficerReviewService.Verify(s =>
+            s.HandleConfirmedFellingAndRestockingChangesAsync(
+                applicationId,
+                internalUser.UserAccountId!.Value,
+                false,
+                CancellationToken.None), Times.Once);
+
+        _transactionMock.Verify(t => t.CommitAsync(CancellationToken.None), Times.Once);
+        _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+        _auditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
+            a.EventName == AuditEvents.UpdateConfirmedFellingDetails
+            && a.ActorType == ActorType.InternalUser
+            && a.SourceEntityId == applicationId
+            && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
+        ), CancellationToken.None), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task DeleteConfirmedFellingDetailAsync_ShouldReturnFailure_WhenDeleteFails(
+        Guid applicationId,
+        Guid confirmedFellingDetailId)
+    {
+        var sut = CreateSut();
+
+        var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(user);
+
+        const string errorMessage = "Delete failed";
+
+        _updateConfirmedFellAndRestockService
+            .Setup(s => s.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_transactionMock.Object);
+
+        _updateConfirmedFellAndRestockService
+            .Setup(s => s.DeleteConfirmedFellingDetailAsync(
+                applicationId,
+                confirmedFellingDetailId,
+                internalUser.UserAccountId!.Value,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(errorMessage));
+
+        var result = await sut.DeleteConfirmedFellingDetailAsync(
+            applicationId,
+            confirmedFellingDetailId,
+            internalUser,
+            CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain(errorMessage);
+
+        _updateConfirmedFellAndRestockService.Verify(s =>
+            s.DeleteConfirmedFellingDetailAsync(
+                applicationId,
+                confirmedFellingDetailId,
+                internalUser.UserAccountId!.Value,
+                CancellationToken.None), Times.Once);
+
+        _updateWoodlandOfficerReviewService.Verify(s =>
+            s.HandleConfirmedFellingAndRestockingChangesAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+
+        _transactionMock.Verify(t => t.RollbackAsync(CancellationToken.None), Times.Once);
+        _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+        _auditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
+            a.EventName == AuditEvents.UpdateConfirmedFellingDetailsFailure
+            && a.ActorType == ActorType.InternalUser
+            && a.SourceEntityId == applicationId
+            && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
+            && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
+               JsonSerializer.Serialize(new { Error = errorMessage }, SerializerOptions)
+        ), CancellationToken.None), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task DeleteConfirmedFellingDetailAsync_ShouldReturnFailure_WhenWoReviewUpdateFails(
+        Guid applicationId,
+        Guid confirmedFellingDetailId)
+    {
+        var sut = CreateSut();
+
+        var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(user);
+
+        const string errorMessage = "WO review update failed";
+
+        _updateConfirmedFellAndRestockService
+            .Setup(s => s.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_transactionMock.Object);
+
+        _updateConfirmedFellAndRestockService
+            .Setup(s => s.DeleteConfirmedFellingDetailAsync(
+                applicationId,
+                confirmedFellingDetailId,
+                internalUser.UserAccountId!.Value,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.HandleConfirmedFellingAndRestockingChangesAsync(
+                applicationId,
+                internalUser.UserAccountId!.Value,
+                false,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(errorMessage));
+
+        var result = await sut.DeleteConfirmedFellingDetailAsync(
+            applicationId,
+            confirmedFellingDetailId,
+            internalUser,
+            CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain(errorMessage);
+
+        _updateConfirmedFellAndRestockService.Verify(s =>
+            s.DeleteConfirmedFellingDetailAsync(
+                applicationId,
+                confirmedFellingDetailId,
+                internalUser.UserAccountId!.Value,
+                CancellationToken.None), Times.Once);
+
+        _updateWoodlandOfficerReviewService.Verify(s =>
+            s.HandleConfirmedFellingAndRestockingChangesAsync(
+                applicationId,
+                internalUser.UserAccountId!.Value,
+                false,
+                CancellationToken.None), Times.Once);
+
+        _transactionMock.Verify(t => t.RollbackAsync(CancellationToken.None), Times.Once);
+        _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+        _auditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
+            a.EventName == AuditEvents.UpdateConfirmedFellingDetailsFailure
+            && a.ActorType == ActorType.InternalUser
+            && a.SourceEntityId == applicationId
+            && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
+            && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
+               JsonSerializer.Serialize(new { Error = errorMessage }, SerializerOptions)
+        ), CancellationToken.None), Times.Once);
     }
 }

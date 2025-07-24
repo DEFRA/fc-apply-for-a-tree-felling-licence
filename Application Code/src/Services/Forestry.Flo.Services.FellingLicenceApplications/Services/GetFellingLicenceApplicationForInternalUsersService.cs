@@ -191,4 +191,12 @@ public class GetFellingLicenceApplicationForInternalUsersService : IGetFellingLi
 
         return Result.Success(models);
     }
+
+    ///<inheritdoc />
+    public async Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken) =>  
+        await _fellingLicenceApplicationInternalRepository
+            .GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, cancellationToken)
+            .ConfigureAwait(false);
 }

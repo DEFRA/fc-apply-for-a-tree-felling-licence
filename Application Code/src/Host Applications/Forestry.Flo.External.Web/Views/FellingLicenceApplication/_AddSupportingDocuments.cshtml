@@ -30,9 +30,7 @@
 
     <div class="govuk-form-group" id="file-select-group">
         <label for="supporting-documentation-files" class="govuk-label">Upload a file</label>
-        <p id="supporting-documentation-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
-            <span class="govuk-visually-hidden">Error:</span><span id="file-upload-error-text"></span>
-        </p>
+        <div id="supporting-documentation-files-error" class="govuk-visually-hidden" aria-hidden="true"></div>
         <input type="file" multiple class="custom-file-input govuk-file-upload" id="supporting-documentation-files" name="supportingDocumentationFiles" runat="server" />
     </div>
 
@@ -44,10 +42,10 @@
         <label class="govuk-label govuk-checkboxes__label" asp-for="AvailableToConsultees">Visible to external consultees</label>
     </div>
     <br/>
-    <fieldset class="govuk-fieldset">
+    <div class="govuk-body">
         <div class="govuk-hint">You must select one or more files above to upload them</div>
         <button id="submit-supporting-document-button" type="submit" class="govuk-button" data-module="govuk-button" name="store-supporting-documents" value="Upload" disabled="disabled">
             Upload
         </button>
-    </fieldset>
+    </div>
 </form>

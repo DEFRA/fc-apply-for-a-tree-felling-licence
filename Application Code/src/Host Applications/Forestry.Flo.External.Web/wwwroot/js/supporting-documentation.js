@@ -18,9 +18,9 @@ $(function () {
 
         $('#supporting-documentation-files-error').addClass('govuk-visually-hidden');
         $('#supporting-documentation-files-error').attr('aria-hidden', 'true');
+        $('#supporting-documentation-files-error').html('');
         $('#submit-supporting-document-button').removeAttr('disabled');
         $('#supporting-documentation-files').removeClass('govuk-file-upload--error');
-        $('#file-upload-error-text').html('');
         $('#file-select-group').removeClass('govuk-form-group--error');
 
         var fileExtensions = $('#allowed-extensions').val();
@@ -73,7 +73,12 @@ $(function () {
             var errorText = errors.join('<br/>');
             $('#supporting-documentation-files-error').removeClass('govuk-visually-hidden');
             $('#supporting-documentation-files-error').attr('aria-hidden', 'false');
-            $('#file-upload-error-text').html(errorText);
+            $('#supporting-documentation-files-error').append(
+                $("<p>").addClass("govuk-error-message")
+                .append($("<span/>").addClass("govuk-visually-hidden").text("Error:"))
+                .append(errorText)
+            );
+            
             $('#submit-supporting-document-button').attr('disabled', 'disabled');
             $('#supporting-documentation-files').addClass('govuk-file-upload--error');
             $('#file-select-group').addClass('govuk-form-group--error');
