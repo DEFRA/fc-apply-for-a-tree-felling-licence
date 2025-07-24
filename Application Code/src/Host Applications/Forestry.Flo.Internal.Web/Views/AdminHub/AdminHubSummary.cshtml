@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Admin Hub Summary ";
+    ViewData["Title"] = "Admin hub summary ";
 }
 
 @using Microsoft.AspNetCore.Mvc.TagHelpers
@@ -15,7 +15,7 @@
 
 <div class="govuk-grid-column-full" id="summary-container">
     <h1 class="govuk-heading-xl">
-        @Model.Name
+        @ViewData["Title"] for @Model.Name
     </h1>
     <partial name="Partials/_ConfirmationMessageDisplay" />
     <partial name="Partials/_UserGuideDisplay" />

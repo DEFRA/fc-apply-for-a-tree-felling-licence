@@ -82,4 +82,18 @@ public interface IGetFellingLicenceApplicationForInternalUsers
         Guid applicationId, 
         UserAccessModel userAccessModel, 
         CancellationToken cancellationToken);
+
+
+    /// <summary>
+    /// Retrieves the list of submitted FLA property compartments for a given application ID.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve compartments for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing a list of <see cref="SubmittedFlaPropertyCompartment"/> entities
+    /// associated with the specified application, or a failure result if retrieval was unsuccessful.
+    /// </returns>
+    Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
 }

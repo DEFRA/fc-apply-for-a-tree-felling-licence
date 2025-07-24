@@ -18,7 +18,7 @@
 	<partial name="Partials/_PageErrors" />
 	<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
-	<h1 class="govuk-heading-l">Approver review</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     <form asp-action="SaveApproverReview" method="post">
 
         @Html.AntiForgeryToken()

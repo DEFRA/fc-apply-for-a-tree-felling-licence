@@ -1,7 +1,7 @@
 ﻿@using NodaTime
 
 @{
-    ViewData["Title"] = "Site Visit";
+    ViewData["Title"] = "Site visit";
 }
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SiteVisitViewModel
@@ -18,7 +18,7 @@
     <partial name="Partials/_UserGuideDisplay"/>
     <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
-    <h1 class="govuk-heading-l">Site Visit</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
     <partial name="Partials/_PageErrors"/>
 

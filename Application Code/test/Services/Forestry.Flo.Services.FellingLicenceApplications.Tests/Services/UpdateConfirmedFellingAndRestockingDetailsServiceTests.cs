@@ -16,6 +16,8 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Forestry.Flo.Services.Common.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
@@ -559,5 +561,140 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceTests
                     Error = "Unable to retrieve felling licence application"
                 }, _options)),
             CancellationToken.None), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmedFellingDetailAsync_RemovesConfirmedFellingDetailAndRestockingDetails()
+    {
+        // setup
+        var userId = Guid.NewGuid();
+        var sut = CreateSut();
+        var fla = ConstructFellingLicenceApplication(true, userId);
+
+        _fellingLicenceApplicationsContext!.Add(fla);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        var compartment = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
+        var confirmedFellingDetail = compartment.ConfirmedFellingDetails.First();
+
+        // Act
+        var result = await sut.DeleteConfirmedFellingDetailAsync(
+            fla.Id,
+            confirmedFellingDetail.Id,
+            userId,
+            CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        var storedFla = await _fellingLicenceApplicationsContext.FellingLicenceApplications
+            .Include(fellingLicenceApplication => fellingLicenceApplication.SubmittedFlaPropertyDetail!)
+            .ThenInclude(submittedFlaPropertyDetail => submittedFlaPropertyDetail.SubmittedFlaPropertyCompartments!)
+            .ThenInclude(submittedFlaPropertyCompartment => submittedFlaPropertyCompartment.ConfirmedFellingDetails)
+            .ThenInclude(fellingDetail => fellingDetail.ConfirmedRestockingDetails)
+            .FirstAsync(x => x.Id == fla.Id);
+        var storedCompartment = storedFla!.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
+        storedCompartment.ConfirmedFellingDetails.Should().NotContain(x => x.Id == confirmedFellingDetail.Id);
+
+        _fellingLicenceApplicationsContext.ConfirmedFellingDetails
+            .Any(x => x.Id == confirmedFellingDetail.Id)
+            .Should().BeFalse();
+
+        foreach (var restockingDetail in confirmedFellingDetail.ConfirmedRestockingDetails)
+        {
+            _fellingLicenceApplicationsContext.ConfirmedRestockingDetails
+                .Any(x => x.Id == restockingDetail.Id)
+                .Should().BeFalse();
+
+            foreach (var restockingSpecies in restockingDetail.ConfirmedRestockingSpecies)
+            {
+                _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies
+                    .Any(x => x.Id == restockingSpecies.Id)
+                    .Should().BeFalse();
+            }
+        }
+
+        _fellingLicenceApplicationsContext.ConfirmedFellingSpecies
+            .NotAny(x => x.ConfirmedFellingDetailId == confirmedFellingDetail.Id)
+            .Should()
+            .BeTrue();
+
+        foreach (var restock in confirmedFellingDetail.ConfirmedRestockingDetails)
+        {
+            _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies
+                .NotAny(x => x.ConfirmedRestockingDetailsId == restock.Id)
+                .Should()
+                .BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task DeleteConfirmedFellingDetailAsync_ReturnsFailure_WhenDetailNotFound()
+    {
+        // setup
+        var userId = Guid.NewGuid();
+        var sut = CreateSut();
+        var fla = ConstructFellingLicenceApplication(true, userId);
+
+        _fellingLicenceApplicationsContext!.Add(fla);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        var nonExistentDetailId = Guid.NewGuid();
+
+        // Act
+        var result = await sut.DeleteConfirmedFellingDetailAsync(
+            fla.Id,
+            nonExistentDetailId,
+            userId,
+            CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteConfirmedFellingDetailAsync_ReturnsFailure_WhenUserIsNotAssigned()
+    {
+        // setup
+        var userId = Guid.NewGuid();
+        var fla = ConstructFellingLicenceApplication(true, userId);
+        var sut = CreateSut();
+
+        _fellingLicenceApplicationsContext!.Add(fla);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        var compartment = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
+        var confirmedFellingDetail = compartment.ConfirmedFellingDetails.First();
+        var otherUserId = Guid.NewGuid();
+
+        // Act
+        var result = await sut.DeleteConfirmedFellingDetailAsync(
+            fla.Id,
+            confirmedFellingDetail.Id,
+            otherUserId,
+            CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteConfirmedFellingDetailAsync_ReturnsFailure_WhenApplicationNotFound()
+    {
+        // setup
+        var userId = Guid.NewGuid();
+        var sut = CreateSut();
+        var nonExistentAppId = Guid.NewGuid();
+        var confirmedFellingDetailId = Guid.NewGuid();
+
+        // Act
+        var result = await sut.DeleteConfirmedFellingDetailAsync(
+            nonExistentAppId,
+            confirmedFellingDetailId,
+            userId,
+            CancellationToken.None);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
     }
 }

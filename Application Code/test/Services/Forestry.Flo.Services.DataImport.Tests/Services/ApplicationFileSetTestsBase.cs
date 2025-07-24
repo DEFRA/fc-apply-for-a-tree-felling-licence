@@ -63,10 +63,21 @@ public abstract class ApplicationFileSetTestsBase
 
                 var fellingOperation = FixtureInstance.Create<FellingOperationType>();
 
+                int loopCount = 0;
                 while (fellingOperation == FellingOperationType.None
                        || proposedFelling.Any(x => x.Flov2CompartmentName == fellingCompartment.CompartmentName && x.OperationType == fellingOperation))
                 {
+                    loopCount++;
                     fellingOperation = FixtureInstance.Create<FellingOperationType>();
+                    if (loopCount > 10)
+                    {
+                        break;
+                    }
+                }
+
+                if (loopCount > 10)
+                {
+                    continue;
                 }
 
                 List<string> species = [SpeciesCodes.RandomElement()];
@@ -101,9 +112,19 @@ public abstract class ApplicationFileSetTestsBase
                 for (int r = 0; r < restockingForThisFellingCount; r++)
                 {
                     var operation = validRestockingTypes.RandomElement();
+                    loopCount = 0;
                     while (proposedRestocking.Any(x => x.RestockingProposal == operation && x.ProposedFellingId == nextFelling.ProposedFellingId))
                     {
+                        loopCount++;
                         operation = validRestockingTypes.RandomElement();
+                        if (loopCount > 10)
+                        {
+                            break;
+                        }
+                    }
+                    if (loopCount > 10)
+                    {
+                        continue;
                     }
 
                     var restockingCompartment = operation.IsAlternativeCompartmentRestockingType()

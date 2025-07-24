@@ -139,7 +139,7 @@ public partial class BaseServicesTests
         var response = await classUnderTest.GetTokenAsync(CancellationToken.None);
 
         Assert.True(response.IsFailure);
-        Assert.Equal($"Unable to read content:{obj}", response.Error);
+        Assert.Equal($"Unable to deserialize content as ESRI token response: {obj}", response.Error);
     }
 
 
@@ -218,7 +218,7 @@ public partial class BaseServicesTests
         var response = await classUnderTest.GetTokenAsync(CancellationToken.None);
 
         Assert.True(response.IsFailure);
-        Assert.Equal($"Unable to read content:{obj}", response.Error);
+        Assert.Equal($"Unable to deserialize content as ESRI token response: {obj}", response.Error);
     }
 
     [Fact]

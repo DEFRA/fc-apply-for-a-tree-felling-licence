@@ -424,4 +424,16 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         Guid applicationId,
         Guid? approverId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves all <see cref="SubmittedFlaPropertyCompartment"/> entities associated with a specific felling licence application.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the felling licence application.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result{T, TError}"/> containing a list of <see cref="SubmittedFlaPropertyCompartment"/> if successful.
+    /// </returns>
+    Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
 }

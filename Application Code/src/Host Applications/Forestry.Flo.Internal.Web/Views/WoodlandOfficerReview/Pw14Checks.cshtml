@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "PW14 Checks";
+    ViewData["Title"] = "Woodland officer checks";
 }
 
 @using Microsoft.AspNetCore.Mvc.TagHelpers
@@ -19,7 +19,7 @@
 
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-l">Woodland officer checks</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <form method="post">
         <input asp-for="ApplicationId" />
@@ -227,7 +227,7 @@
                 <div class="govuk-hint">
                     Check if the felling is on or near a European site.
                     Consider whether a European Protected Species (EPS) licence may be needed and record any discussion with the applicant. Refer to the
-                    <a target="_blank" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
+                    <a target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
                         Conservation of Species and Habitats (Habitats Regulations) G&R code
                     </a>
                 </div>
@@ -251,7 +251,7 @@
                 </legend>
                 <div class="govuk-hint">
                     Check if the felling is near a designated site and whether an assessment is needed. Refer to the
-                    <a target="_blank" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
+                    <a target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
                         Conservation of Species and Habitats (Habitats Regulations) G&R code
                     </a>
                 </div>

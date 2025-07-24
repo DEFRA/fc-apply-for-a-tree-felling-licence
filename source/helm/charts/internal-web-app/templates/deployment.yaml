@@ -535,15 +535,15 @@ spec:
             # ------------------- ESRI Forestry -------------------
             {{- with .Values.config.esriConfig.Forestry }}
             {{- if .BaseUrl }}
-            - name: ESRI_FORESTRY_BASEURL
+            - name: EsriConfig__Forestry__Baseurl
               value: {{ .BaseUrl | quote }}
             {{- end }}
             {{- if .CountryCode }}
-            - name: ESRI_FORESTRY_COUNTRYCODE
+            - name: EsriConfig__Forestry__CountryCode
               value: {{ .CountryCode | quote }}
             {{- end }}
             {{- if .ApiKey }}
-            - name: ESRI_FORESTRY_APIKEY
+            - name: EsriConfig__Forestry__ApiKey
               {{- if .ApiKey.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -556,11 +556,11 @@ spec:
             # ------------------- ESRI Forestry - GenerateTokenService -------------------
             {{- with .GenerateTokenService }}
               {{- if .Path }}
-            - name: ESRI_FORESTRY_GENERATETOKEN_PATH
+            - name: EsriConfig__Forestry__GenerateTokenService__Path
               value: {{ .Path | quote }}
               {{- end }}
               {{- if .ClientID }}
-            - name: ESRI_FORESTRY_GENERATETOKEN_CLIENTID
+            - name: EsriConfig__Forestry__GenerateTokenService__ClientID
               {{- if .ClientID.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -571,7 +571,7 @@ spec:
               {{- end }}
               {{- end }}
               {{- if .ClientSecret }}
-            - name: ESRI_FORESTRY_GENERATETOKEN_CLIENTSECRET
+            - name: EsriConfig__Forestry__GenerateTokenService__ClientSecret
               {{- if .ClientSecret.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -585,36 +585,36 @@ spec:
             # ------------------- ESRI Forestry - FeaturesService -------------------
             {{- with .FeaturesService }}
               {{- if .IsPublic }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_ISPUBLIC
+            - name: EsriConfig__Forestry__FeaturesService__IsPublic
               value: {{ .IsPublic | quote }}
               {{- end }}
               {{- if .NeedsToken }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_NEEDSTOKEN
+            - name: EsriConfig__Forestry__FeaturesService__NeedsToken
               value: {{ .NeedsToken | quote }}
               {{- end }}
               {{- if .Path }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_PATH
+            - name: EsriConfig__Forestry__FeaturesService__Path
               value: {{ .Path | quote }}
               {{- end }}
               {{- with .GenerateService }}
                 {{- if .Path }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_PATH
+            - name: EsriConfig__Forestry__FeaturesService__GenerateService__Path
               value: {{ .Path | quote }}
                 {{- end }}
                 {{- if .SupportedFileImports }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_SUPPORTEDFILEIMPORTS
+            - name: EsriConfig__Forestry__FeaturesService__GenerateService__SupportedFileImports
               value: '{{ .SupportedFileImports | toJson }}'
                 {{- end }}
                 {{- if .MaxRecords }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_MAXRECORDS
+            - name: EsriConfig__Forestry__FeaturesService__GenerateService__MaxRecords
               value: {{ .MaxRecords | quote }}
                 {{- end }}
                 {{- if .EnforceInputFileSizeLimit }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_ENFORCEINPUTFILESIZELIMIT
+            - name: EsriConfig__Forestry__FeaturesService__GenerateService__EnforceInputFileSizeLimit
               value: {{ .EnforceInputFileSizeLimit | quote }}
                 {{- end }}
                 {{- if .EnforceOutputJsonSizeLimit }}
-            - name: ESRI_FORESTRY_FEATURESSERVICE_GENERATESERVICE_ENFORCEOUTPUTJSONSIZELIMIT
+            - name: EsriConfig__Forestry__FeaturesService__GenerateService__EnforceOutputJsonSizeLimit
               value: {{ .EnforceOutputJsonSizeLimit | quote }}
                 {{- end }}
               {{- end }}
@@ -622,66 +622,66 @@ spec:
             # ------------------- ESRI Forestry - GeometryService -------------------
             {{- with .GeometryService }}
               {{- if .Path }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PATH
+            - name: EsriConfig__Forestry__GeometryService__Path
               value: {{ .Path | quote }}
               {{- end }}
               {{- if .NeedsToken }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_NEEDSTOKEN
+            - name: EsriConfig__Forestry__GeometryService__NeedsToken
               value: {{ .NeedsToken | quote }}
               {{- end }}
               {{- if .IsPublic }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_ISPUBLIC
+            - name: EsriConfig__Forestry__GeometryService__IsPublic
               value: {{ .IsPublic | quote }}
               {{- end }}
               {{- with .IntersectService }}
                 {{- if .Path }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_INTERSECTSERVICE_PATH
+            - name: EsriConfig__Forestry__GeometryService__IntersectService__Path
               value: {{ .Path | quote }}
                 {{- end }}
               {{- end }}
               {{- with .ProjectService }}
                 {{- if .Path }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_PATH
+            - name: EsriConfig__Forestry__GeometryService__ProjectService__Path
               value: {{ .Path | quote }}
                 {{- end }}
                 {{- if .OutSR }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_OUTSR
+            - name: EsriConfig__Forestry__GeometryService__ProjectService__OutSR
               value: {{ .OutSR | quote }}
                 {{- end }}
                 {{- if .GridLength }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_GRIDLENGTH
+            - name: EsriConfig__Forestry__GeometryService__ProjectService__GridLength
               value: {{ .GridLength | quote }}
                 {{- end }}
                 {{- if .IncludeSpaces }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_PROJECTSERVICE_INCLUDESPACES
+            - name: EsriConfig__Forestry__GeometryService__ProjectService__IncludeSpaces
               value: {{ .IncludeSpaces | quote }}
                 {{- end }}
               {{- end }}
               {{- with .UnionService }}
                 {{- if .Path }}
-            - name: ESRI_FORESTRY_GEOMETRYSERVICE_UNIONSERVICE_PATH
+            - name: EsriConfig__Forestry__GeometryService__UnionService__Path
               value: {{ .Path | quote }}
                 {{- end }}
               {{- end }}
             {{- end }}
             # ------------------- ESRI Forestry - LayerServices -------------------
             {{- if .LayerServices }}
-            - name: ESRI_FORESTRY_LAYERSERVICES
+            - name: EsriConfig__Forestry__LayerServices
               value: '{{ .LayerServices | toJson }}'
             {{- end }}
             {{- end }}
             # ------------------- ESRI Forester -------------------
             {{- with .Values.config.esriConfig.Forester }}
             {{- if .BaseUrl }}
-            - name: ESRI_FORESTER_BASEURL
+            - name: EsriConfig__Forester__BaseUrl
               value: {{ .BaseUrl | quote }}
             {{- end }}
             {{- if .CountryCode }}
-            - name: ESRI_FORESTER_COUNTRYCODE
+            - name: EsriConfig__Forester__CountryCode
               value: {{ .CountryCode | quote}}
             {{- end }}
             {{- if .ApiKey }}
-            - name: ESRI_FORESTER_APIKEY
+            - name: EsriConfig__Forester__ApiKey
               {{- if .ApiKey.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -692,17 +692,17 @@ spec:
               {{- end }}
             {{- end }}
             {{- if .NeedsToken }}
-            - name: ESRI_FORESTER_NEEDSTOKEN
+            - name: EsriConfig__Forester__NeedsToken
               value: {{ .NeedsToken | quote }}
             {{- end }}
             # ------------------- ESRI Forester - GenerateTokenService -------------------
             {{- with .GenerateTokenService }}
               {{- if .Path }}
-            - name: ESRI_FORESTER_GENERATETOKEN_PATH
+            - name: EsriConfig__Forester__GenerateTokenService__Path
               value: {{ .Path | quote }}
               {{- end }}
               {{- if .Username }}
-            - name: ESRI_FORESTER_GENERATETOKEN_USERNAME
+            - name: EsriConfig__Forester__GenerateTokenService__Username
               {{- if .Username.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -713,7 +713,7 @@ spec:
               {{- end }}
               {{- end }}
               {{- if .Password }}
-            - name: ESRI_FORESTER_GENERATETOKEN_PASSWORD
+            - name: EsriConfig__Forester__GenerateTokenService__Password
               {{- if .Password.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -726,7 +726,7 @@ spec:
             {{- end }}
             # ------------------- ESRI Forester - LayerServices -------------------
             {{- if .LayerServices }}
-            - name: ESRI_FORESTER_LAYERSERVICES
+            - name: EsriConfig__Forester__LayerServices
               value: '{{ .LayerServices | toJson }}'
             {{- end }}
             {{- end }}
@@ -734,21 +734,21 @@ spec:
             # ------------------- ESRI PublicRegister -------------------
             {{- with .Values.config.esriConfig.PublicRegister }}
             {{- if .BaseUrl }}
-            - name: ESRI_PUBLICREGISTER_BASEURL
+            - name: EsriConfig__PublicRegister__BaseUrl
               value: {{ .BaseUrl | quote }}
             {{- end }}
             {{- if .NeedsToken }}
-            - name: ESRI_PUBLICREGISTER_NEEDSTOKEN
+            - name: EsriConfig__PublicRegister__NeedsToken
               value: {{ .NeedsToken | quote }}
             {{- end }}
             # ------------------- ESRI PublicRegister - GenerateTokenService -------------------
             {{- with .GenerateTokenService }}
               {{- if .Path }}
-            - name: ESRI_PUBLICREGISTER_GENERATETOKEN_PATH
+            - name: EsriConfig__PublicRegister__GenerateTokenService__Path
               value: {{ .Path | quote }}
               {{- end }}
               {{- if .Username }}
-            - name: ESRI_PUBLICREGISTER_GENERATETOKEN_USERNAME
+            - name: EsriConfig__PublicRegister__GenerateTokenService__Username
               {{- if .Username.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -759,7 +759,7 @@ spec:
               {{- end }}
               {{- end }}
               {{- if .Password }}
-            - name: ESRI_PUBLICREGISTER_GENERATETOKEN_PASSWORD
+            - name: EsriConfig__PublicRegister__GenerateTokenService__Password
               {{- if .Password.secret_key }}
               valueFrom:
                 secretKeyRef:
@@ -773,43 +773,43 @@ spec:
             # ------------------- ESRI PublicRegister - Boundaries -------------------
             {{- with .Boundaries }}
               {{- if .Path }}
-            - name: ESRI_PUBLICREGISTER_BOUNDARIES_PATH
+            - name: EsriConfig__PublicRegister__Boundaries__Path
               value: {{ .Path | quote }}
               {{- end }}
             {{- end }}
             # ------------------- ESRI PublicRegister - Compartments -------------------
             {{- with .Compartments }}
               {{- if .Path }}
-            - name: ESRI_PUBLICREGISTER_COMPARTMENTS_PATH
+            - name: EsriConfig__PublicRegister__Compartments__Path
               value: {{ .Path | quote }}
               {{- end }}
             {{- end }}
             # ------------------- ESRI PublicRegister - Comments -------------------
             {{- with .Comments }}
               {{- if .Path }}
-            - name: ESRI_PUBLICREGISTER_COMMENTS_PATH
+            - name: EsriConfig__PublicRegister__Comments_Path
               value: {{ .Path | quote }}
               {{- end }}
             {{- end }}
             # ------------------- ESRI PublicRegister - LookUps -------------------
             {{- with .LookUps }}
               {{- if .Status }}
-            - name: ESRI_PUBLICREGISTER_LOOKUPS_STATUS
+            - name: EsriConfig__PublicRegister__LookUps__Status
               value: '{{ .Status | toJson }}'
               {{- end }}
             {{- end }}
             {{- end }}
             # ------------------- ESRI Common Fields -------------------
             {{- if .Values.config.esriConfig.SpatialReference }}
-            - name: ESRI_SPATIALREFERENCE
+            - name: EsriConfig__SpatialReference
               value: {{ .Values.config.esriConfig.SpatialReference | quote }}
             {{- end }}
             {{- if .Values.config.esriConfig.RequestFormat }}
-            - name: ESRI_REQUESTFORMAT
+            - name: EsriConfig__RequestFormat
               value: {{ .Values.config.esriConfig.RequestFormat | quote }}
             {{- end }}
             {{- if .Values.config.esriConfig.LayoutTemplate }}
-            - name: ESRI_LAYOUTTEMPLATE
+            - name: EsriConfig__LayoutTemplate
               value: {{ .Values.config.esriConfig.LayoutTemplate | quote }}
             {{- end }}
             {{- end }}

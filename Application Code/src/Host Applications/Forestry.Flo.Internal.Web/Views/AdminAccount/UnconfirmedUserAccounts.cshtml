@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Unconfirmed User Accounts";
+    ViewData["Title"] = "Unconfirmed user accounts";
 }
 
 @using Forestry.Flo.Services.Common.Extensions
@@ -7,7 +7,7 @@
 @model IEnumerable<Forestry.Flo.Internal.Web.Models.UserAccount.UserAccountModel>
 
 <div class="govuk-grid-column-full">
-    <h1 class="govuk-heading-xl">Unconfirmed User Accounts</h1>
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
     
     <partial name="Partials/_ConfirmationMessageDisplay"/>
     <partial name="Partials/_PageErrors"/>

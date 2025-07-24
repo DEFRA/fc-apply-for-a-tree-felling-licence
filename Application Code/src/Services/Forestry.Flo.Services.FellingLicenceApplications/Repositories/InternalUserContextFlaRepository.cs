@@ -674,4 +674,18 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
         return UnitResult.Failure(UserDbErrorReason.NotFound);
     }
+
+    /// <inheritdoc />
+    public async Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var propertyDetail = await Context.SubmittedFlaPropertyDetails
+            .Include(d => d.SubmittedFlaPropertyCompartments)
+            .FirstOrDefaultAsync(d => d.FellingLicenceApplicationId == applicationId, cancellationToken);
+
+        return propertyDetail is null
+            ? Result.Failure<List<SubmittedFlaPropertyCompartment>>("SubmittedFlaPropertyDetail not found for applicationId.")
+            : Result.Success(propertyDetail.SubmittedFlaPropertyCompartments?.ToList() ?? []);
+    }
 }

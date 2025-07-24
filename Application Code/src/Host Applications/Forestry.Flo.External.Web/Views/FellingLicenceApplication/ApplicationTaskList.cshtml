@@ -54,19 +54,19 @@
         <ul class="app-task-list__items">
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
-                    <a href="@Url.Action("SelectCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="select-compartments">
+                    <a href="@Url.Action("SelectCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="select-compartments-status">
                         Select compartments
                     </a>
                 </span>
-                <strong class="govuk-tag @GetStatusStyleName(Model.SelectedCompartments.Status) app-task-list__tag" id="select-compartments">@(Model.SelectedCompartments.Status.GetDescription())</strong>
+                <strong class="govuk-tag @GetStatusStyleName(Model.SelectedCompartments.Status) app-task-list__tag" id="select-compartments-status">@(Model.SelectedCompartments.Status.GetDescription())</strong>
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
-                    <a href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="operations">
+                    <a href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="operations-status">
                         Proposed felling schedule
                     </a>
                 </span>
-                <strong class="govuk-tag @GetStatusStyleName(Model.OperationDetails.Status) app-task-list__tag" id="operations">@(Model.OperationDetails.Status.GetDescription())</strong>
+                <strong class="govuk-tag @GetStatusStyleName(Model.OperationDetails.Status) app-task-list__tag" id="operations-status">@(Model.OperationDetails.Status.GetDescription())</strong>
             </li>
 
             <!-- temp -->
@@ -75,7 +75,7 @@
                 @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted || Model.FellingAndRestockingDetails.DetailsList.Count < 1)
                 {
                     <span class="app-task-list__task-name">
-                        <a aria-describedby="felling-and-restocking-details">
+                        <a aria-describedby="felling-and-restocking-details-status">
                             Felling and restocking details 
                         </a>
                     </span>
@@ -99,7 +99,7 @@
                 else
                 {
                     <span class="app-task-list__task-name">
-                        <a href="@Url.Action("ContinueFellingAndRestocking", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="felling-and-restocking-details">
+                        <a href="@Url.Action("ContinueFellingAndRestocking", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="felling-and-restocking-details-status">
                             Felling and restocking details
                         </a>
                         <span>
@@ -113,11 +113,11 @@
                 @if (Model.SelectedCompartments.Status != ApplicationStepStatus.Completed && Model.ConstraintCheck.Status == ApplicationStepStatus.NotStarted)
                 {
                     <span class="app-task-list__task-name">
-                        <a aria-describedby="Check for Contraints">
+                        <a aria-describedby="check-for-constraints-status">
                             Check for constraints
                         </a>
                     </span>
-                    <strong class="govuk-tag @GetStatusStyleName(ApplicationStepStatus.NotStarted) app-task-list__tag" id="felling-and-restocking-details-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</strong>
+                    <strong class="govuk-tag @GetStatusStyleName(ApplicationStepStatus.NotStarted) app-task-list__tag" id="check-for-constraints-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</strong>
                     <span class="govuk-hint">
                         <br />(Select compartments must be COMPLETED)
                     </span>
@@ -125,24 +125,24 @@
                 else
                 {
                     <span class="app-task-list__task-name">
-                        <a href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="felling-and-restocking-details">
+                        <a href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="check-for-constraints-status">
                             Check for constraints
                         </a>
                     </span>
-                    <strong class="govuk-tag @GetStatusStyleName(Model.ConstraintCheck.Status) app-task-list__tag" id="felling-and-restocking-details-status">@(Model.ConstraintCheck.Status.GetDescription())</strong>
+                    <strong class="govuk-tag @GetStatusStyleName(Model.ConstraintCheck.Status) app-task-list__tag" id="check-for-constraints-status">@(Model.ConstraintCheck.Status.GetDescription())</strong>
                 }
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
-                    <a href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="shared-application-details">
+                    <a href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="shared-application-details-status">
                         Supporting documentation
                     </a>
                 </span>
-                <strong class="govuk-tag @GetStatusStyleName(Model.SupportingDocumentation.Status) app-task-list__tag" id="shared-application-details">@(Model.SupportingDocumentation.Status.GetDescription())</strong>
+                <strong class="govuk-tag @GetStatusStyleName(Model.SupportingDocumentation.Status) app-task-list__tag" id="shared-application-details-status">@(Model.SupportingDocumentation.Status.GetDescription())</strong>
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
-                    <a href="@Url.Action("TermsAndConditions", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="terms-and-conditions">
+                    <a href="@Url.Action("TermsAndConditions", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="fla-terms-and-conditions-status">
                         Declaration and confirmation
                     </a>
                 </span>

@@ -84,4 +84,19 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
     Task<Result<CombinedConfirmedFellingAndRestockingDetailRecord>> RetrieveConfirmedFellingAndRestockingDetailModelAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes a confirmed felling detail from an application.
+    /// This will also remove all associated restocking details.
+    /// </summary>
+    /// <param name="applicationId">The id of the application containing the confirmed felling detail.</param>
+    /// <param name="confirmedFellingDetailId">The id of the confirmed felling detail to delete.</param>
+    /// <param name="userId">The id of the user performing the deletion.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the confirmed felling detail has been deleted.</returns>
+    Task<Result> DeleteConfirmedFellingDetailAsync(
+        Guid applicationId,
+        Guid confirmedFellingDetailId,
+        Guid userId,
+        CancellationToken cancellationToken);
 }

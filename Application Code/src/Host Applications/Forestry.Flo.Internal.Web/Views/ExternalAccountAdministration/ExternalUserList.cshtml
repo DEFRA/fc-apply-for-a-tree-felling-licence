@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "External User Account List";
+    ViewData["Title"] = "Manage applicant user accounts";
     Layout = "_Layout";
 
     var externalAccountTypes = new List<AccountTypeExternal>
@@ -20,7 +20,7 @@
     <partial name="Partials/_ConfirmationMessageDisplay"/>
     <partial name="Partials/_UserGuideDisplay"/>
 
-    <h1 class="govuk-heading-m">Select an applicant or FC user account to amend or close</h1>
+    <h1 class="govuk-heading-m">@ViewData["Title"]</h1>
 
     <partial name="Partials/_PageErrors"/>
     

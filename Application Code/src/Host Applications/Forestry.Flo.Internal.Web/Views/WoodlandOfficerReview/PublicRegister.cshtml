@@ -6,7 +6,7 @@
 @using NodaTime
 
 @{
-    ViewData["Title"] = "Public Register";
+    ViewData["Title"] = "Consultation public register";
 }
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.PublicRegisterViewModel
@@ -24,7 +24,7 @@
     <partial name="Partials/_UserGuideDisplay"/>
     <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
-    <h1 class="govuk-heading-l">Consultation public register exemption</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
     <partial name="Partials/_PageErrors"/>
     

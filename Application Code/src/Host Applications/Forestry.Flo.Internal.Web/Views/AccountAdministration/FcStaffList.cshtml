@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "User Account List";
+    ViewData["Title"] = "Select a user account to manage";
     Layout = "_Layout";
 
     var viewingUser = new InternalUser(User);
@@ -15,7 +15,7 @@
     <partial name="Partials/_ConfirmationMessageDisplay"/>
     <partial name="Partials/_UserGuideDisplay"/>
 
-    <h1 class="govuk-heading-m">Select a user account to manage</h1>
+    <h1 class="govuk-heading-m">@ViewData["Title"]</h1>
 
     <partial name="Partials/_PageErrors"/>
     

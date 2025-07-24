@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Constraints Check";
+    ViewData["Title"] = "Check for constraints";
 
     var user = new InternalUser(User);
 }
@@ -20,7 +20,7 @@
     <partial name="Partials/_ConfirmationMessageDisplay"/>
     <partial name="Partials/_UserGuideDisplay"/>
 
-    <h1 class="govuk-heading-l">Check for constraints</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
     <partial name="Partials/_PageErrors"/>
     

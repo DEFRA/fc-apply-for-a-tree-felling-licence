@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Mapping Check";
+    ViewData["Title"] = "Mapping check";
 
     var user = new InternalUser(User);
 }
@@ -13,7 +13,7 @@
     <partial name="Partials/_ConfirmationMessageDisplay" />
     <partial name="Partials/_UserGuideDisplay" />
 
-    <h1 class="govuk-heading-l">Review the mapping for @Model.FellingLicenceApplicationSummary!.ApplicationReference</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <partial name="Partials/_PageErrors" />
 
