@@ -1,0 +1,183 @@
+﻿@{
+    ViewData["Title"] = "Assign felling licence application";
+}
+
+@using Forestry.Flo.Internal.Web.Models.AdminOfficerReview
+@using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@using Microsoft.AspNetCore.Mvc.ModelBinding
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.AssignBackToApplicantModel;
+
+@{
+    const string className = "govuk-form-group--error";
+
+    string AppendFormErrorClass(string fieldName)
+    {
+        var modelState = ViewContext.ViewData.ModelState;
+
+        if (modelState.TryGetValue(fieldName, out var field))
+        {
+            return field.ValidationState is not ModelValidationState.Valid ? className : "";
+        }
+
+        return "";
+    }
+
+    var defaultUserName = Model.ExternalApplicantId.HasValue
+        ? Model.ExternalApplicants?.Single(x => x.UserAccountId == Model.ExternalApplicantId.Value).FullName
+        : null;
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+    <h1 condition="Model.ShowListOfUsers" class="govuk-heading-m">Are you sure you wish to assign the application @Model.FellingLicenceApplicationSummary.ApplicationReference back to the applicant?</h1>
+    <h1 condition="@(Model.ShowListOfUsers == false)" class="govuk-heading-m">Are you sure you wish to assign the application @Model.FellingLicenceApplicationSummary.ApplicationReference back to @defaultUserName?</h1>
+
+    <partial name="Partials/_PageErrors"/>
+
+    <form method="POST" asp-action="AssignBackToApplicant">
+
+        <input asp-for="FellingLicenceApplicationId" />
+        <input asp-for="ReturnUrl"/>
+
+        <div condition="Model.ShowListOfUsers" class="govuk-form-group">
+            <div class="govuk-radios" data-module="govuk-radios">
+                <validation asp-for="ExternalApplicantId"></validation>
+                @foreach (var externalApplicant in @Model.ExternalApplicants!)
+                {
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="ExternalApplicantId" value="@externalApplicant.UserAccountId" type="radio"/>
+                        <label class="govuk-label govuk-radios__label" for="ExternalApplicantId">@externalApplicant.FirstName @externalApplicant.LastName (@externalApplicant.Email)</label>
+                    </div>
+                }
+            </div>
+        </div>
+        <input condition="@(Model.ShowListOfUsers == false)" type="hidden" asp-for="ExternalApplicantId"/>
+
+        <div class="govuk-form-group">
+            <div id="return-to-applicant-comment-hint" class="govuk-hint">
+                Please add a comment to explain why this application is being returned.
+            </div>
+            <validation asp-for="ReturnToApplicantComment"></validation>
+            <textarea class="govuk-textarea" asp-for="ReturnToApplicantComment" rows="5" aria-describedby="return-to-applicant-comment-hint"></textarea>
+        </div>
+
+        <div class="govuk-form-group @AppendFormErrorClass(nameof(Model.SectionsToReview))">
+            <fieldset class="govuk-fieldset" aria-describedby="waste-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-heading-m">
+                        Which sections require amendment?
+                    </h1>
+                </legend>
+                <validation asp-for="SectionsToReview"></validation>
+                <div id="waste-hint" class="govuk-hint">
+                    Select all that apply.
+                </div>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    @foreach (var applicationSection in Model.SectionsToReview.Keys)
+                    {
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="SectionsToReview[applicationSection]" type="checkbox">
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="SectionsToReview[applicationSection]">
+                                @applicationSection.GetDescription()
+                            </label>
+                        </div>
+                    }
+                    <input type="hidden" asp-for="LarchCheckSplit" />
+
+                    @if (Model.LarchCheckSplit)
+                    {
+                    <div class="govuk-checkboxes__item">
+                        <input condition-disabled="true" class="govuk-checkboxes__input" asp-for="LarchCheckSplit" checked="@Model.LarchCheckSplit"
+                               id="chkLarchCheckSplit" type="checkbox" data-aria-controls="conditional-@Html.NameFor(x => x.LarchCheckSplit)">
+                        <label class="govuk-label govuk-checkboxes__label" for="chkLarchCheckSplit">
+                            Larch Check
+                        </label>
+                    </div>
+                    <div class="govuk-form-group govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden"
+                         id="conditional-@Html.NameFor(x => x.LarchCheckSplit)">
+                        <fieldset class="govuk-fieldset">
+                            <div class="govuk-radios" data-module="govuk-radios">
+                                <div class="govuk-radios__item">
+                                    <input condition-disabled="true" class="govuk-radios__input check-radios"
+                                               id="LarchInZone1AndOtherSpecies" asp-for="LarchCheckSplitRecommendation" type="radio" value="MixLarchZone1" />
+                                    <label class="govuk-label govuk-radios__label" for="LarchInZone1AndOtherSpecies">
+                                        @RecommendSplitApplicationEnum.MixLarchZone1.GetDescription()
+                                    </label>
+                                </div>
+                                <div class="govuk-radios__item">
+                                    <input condition-disabled="true" class="govuk-radios__input check-radios"
+                                               id="LarchInMixedZonesIncludingZone1" asp-for="LarchCheckSplitRecommendation" type="radio" value="LarchOnlyMixZone" />
+                                    <label class="govuk-label govuk-radios__label" for="LarchInMixedZonesIncludingZone1">
+                                        @RecommendSplitApplicationEnum.LarchOnlyMixZone.GetDescription()
+                                    </label>
+                                </div>
+                                <div class="govuk-radios__item">
+                                    <input condition-disabled="true" class="govuk-radios__input check-radios"
+                                               id="LarchInMixedZonesIncludingZone1AndOtherSpecies" asp-for="LarchCheckSplitRecommendation" type="radio" value="MixLarchMixZone" />
+                                    <label class="govuk-label govuk-radios__label" for="LarchInMixedZonesIncludingZone1AndOtherSpecies">
+                                        @RecommendSplitApplicationEnum.MixLarchMixZone.GetDescription()
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>                    
+                    }
+                </div>
+            </fieldset>
+        </div>
+        
+        <div class="govuk-form-group @AppendFormErrorClass(nameof(Model.CompartmentIdentifiersToReview))" id="compartment-selection">
+            <fieldset class="govuk-fieldset" aria-describedby="waste-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-heading-m">
+                        Which compartments' felling and restocking details require amendment?
+                    </h1>
+                </legend>
+                <validation asp-for="CompartmentIdentifiersToReview"></validation>
+                <div id="waste-hint" class="govuk-hint">
+                    Select all that apply.
+                </div>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    @foreach (var compartment in Model.FellingLicenceApplicationSummary.DetailsList)
+                    {
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="CompartmentIdentifiersToReview[compartment.CompartmentId]" type="checkbox">
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentIdentifiersToReview[compartment.CompartmentId]">
+                                @compartment.CompartmentName
+                            </label>
+                        </div>
+                    }
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="govuk-form-group govuk-!-margin-top-6">
+            <div class="govuk-button-group">
+
+                <button type="submit" class="govuk-button">
+                    Continue
+                </button>
+
+                <a class="govuk-link" href="@Model.ReturnUrl" title="Cancel">Cancel</a>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/assign-to-applicant.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

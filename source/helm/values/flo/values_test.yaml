@@ -1,0 +1,621 @@
+global: 
+  secret_key_ref_name: test-flo-all-secrets
+  networkpolicy:
+    enabled: true
+    localnetworks:
+      - ipBlock:
+          cidr: 192.168.176.0/22
+      - ipBlock:
+          cidr: 10.242.3.0/24
+  postgresql:
+    enabled: true
+    existingSecret: test-flo-all-secrets
+    auth:
+      username: "qxlva"
+      password: db.password
+      postgresPassword: db.postgresPassword
+  environment: development
+  rabbitmq:
+    enabled: true
+
+external-web-app:
+  enabled: true
+
+  ingressRoute:
+    app:
+      hostname: "testflo.ps.conneqt.cloud"
+  
+  config:
+    secret_key_ref_name: test-flo-all-secrets
+    connectionStrings:
+      defaultConnection: 
+        secret_key: db.connectionstring
+    azureADB2C:
+      instance: "https://testflo2.b2clogin.com"
+      clientId: 
+        secret_key: azureb2c.client_id
+      clientSecret: 
+        secret_key: azureb2c.client_secret
+      domain: "testflo2.onmicrosoft.com"
+      signInPolicyId: "B2C_1_FLO_V2_Signin"
+      signUpPolicyId: "B2C_1_FLO_V2_Signup"
+    environment: Test
+    dataProtectionKeysDirectory: /app/dataprotectionkeys
+    notifications:
+      defaultFromAddress: test@qxlva.com
+      defaultFromName: Test Email
+      smtp:
+        host: mail.postfix
+        port: 587
+    fileStorage:
+      connectionString: 
+        secret_key: blob.connectionString
+      container: testingflo
+    pdfGeneratorApi:
+      baseUrl: "http://test-flo-pdf-generation-service:8080/api/v1/generate-pdf"
+      templateName: "FellingLicence.html"
+      version: "0.0"
+    FellingLicenceApplication:
+      FinalActionDateDaysFromSubmission: 90
+      CitizensCharterDateLength: "77.00:00:00"
+      PostFix: "Test"
+      StartCounter: 0
+    landInformationSearch:
+      clientID: 
+        secret_key: landInformationSearch.clientID
+      clientSecret: 
+        secret_key: landInformationSearch.clientSecret
+    rabbitMqOptions:
+      username: 
+        secret_key: rabbitmq.username
+      password: 
+        secret_key: rabbitmq.password
+      queueExpiration: 18000
+      retryCount: 3
+      retryIntervalMilliseconds: 10000 
+      prefetchCount: 16
+    siteAnalytics:
+      googleAnalytics:
+        enabled: true
+        trackingId: "G-KY5CXV9G4M"
+      microsoftClarity:
+        enabled: true
+        trackingId: "pcrkb95e7y"
+    GovUkNotifyOptions:
+      enabled: true
+      ApiKey:
+        secret_key: govuk.notify_apikey
+      ReplyToId: "1043c5d1-ed9f-4e0c-a6f1-efd3f30ad712"
+      TemplateIds:
+        ApplicationResubmitted: "6c8dc0b2-fba5-47d4-b76d-5dfa9b3fcb18"
+        ApplicationSubmissionConfirmation: "96e83d5d-b82a-466c-89e2-964d9120e39d"
+        ApplicationWithdrawnConfirmation: "f8e5a20d-9ef0-4107-995d-7b63c6a35d42"
+        ApplicationWithdrawn: "dc6b9b65-e7bc-4014-a56d-24e4913fb4ea"
+        ConditionsToApplicant: "859ccc30-557c-4354-bd42-a195e35ad06a"
+        ExternalConsulteeInvite: "a6f9b1bb-5639-4838-a35d-08b207cb2909"
+        ExternalConsulteeInviteWithPublicRegisterInfo: "7838d34c-edbb-4741-af5b-344100f536c2"
+        InformApplicantOfApplicationApproval: "e029acc1-857d-4b54-8567-7387ad603d1b"
+        InformApplicantOfApplicationReferredToLocalAuthority: "b3d1c357-41de-4156-b04c-fd026ea568dd"
+        InformApplicantOfApplicationRefusal: "ec5b9833-cb5a-43ce-bc37-3f3dbcb0b66f"
+        InformApplicantOfApplicationVoluntaryWithdrawOption: "a7fd4e9f-dbf4-452b-9509-42e17f1b125f"
+        InformApplicantOfReturnedApplication: "da5c3822-c793-438f-a36c-e8a91889bd94"
+        InformApplicantOfApplicationExtension: "bd959a9c-0fdd-4012-a154-7be260e5f51c"
+        InformFcStaffOfApplicationAddedToConsultationPublicRegister: "99167a43-04ad-4fbe-8aeb-ae3f419beb5a"
+        InformFcStaffOfApplicationAddedToDecisionPublicRegister: "edb04065-d755-4932-8c1e-eb63ba9f8def"
+        InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure: "532d9a32-a527-4d64-895b-883568f1897e"
+        InformFieldManagerOfWoodlandOfficerReviewCompletion: "4c53a6b1-ff9c-420c-8e28-8e71d08db080"
+        InformWoodlandOfficerOfAdminOfficerReviewCompletion: "a6547f1b-2e98-486f-ba8b-39e247c5346b"
+        InformFCStaffOfReturnedApplication: "af1bc4cf-de61-4e8f-aedf-8ceadedddaad"
+        InformFCStaffOfFinalActionDateReached: "f2b14123-9abd-4b64-9014-74534f5e019f"
+        UserAssignedToApplication: "e5925fdf-b3b4-4709-a3c0-8f38e9fefa07"
+        InformAdminOfNewAccountSignup: "4e85b012-4b3e-4536-a95e-de91cfc4b952"
+        InformInternalUserOfAccountApproval: "de00a309-81cd-4525-8218-f3a1e1b0eeb1"
+        InviteWoodlandOwnerUserToOrganisation: "ae780279-31d0-419b-a35e-39edca775c51"
+        InviteAgentUserToOrganisation: "4506918c-4666-4bbc-9c02-43ebe98804fb"
+    FcAgency:
+      enabled: true
+      PermittedEmailDomainsForFcAgent:
+        - "qxlva.com"
+        - "forestrycommission.gov.uk"
+        - "harriscomputer.com"
+    logging:
+      LogLevel:
+        Default: "Debug"
+        Microsoft:
+          AspNetCore: "Debug"
+    esriConfig:
+      enabled: true
+      Forestry:
+        BaseUrl: "https://forestry.maps.arcgis.com/sharing/rest/"
+        CountryCode: "E92000001"
+        ApiKey:
+          secret_key: esri.APIKey
+        GenerateTokenService:
+          Path: "oauth2/token"
+          ClientID: 
+            secret_key: esri.Forestry.GenerateTokenService.ClientID
+          ClientSecret: 
+            secret_key: esri.Forestry.GenerateTokenService.ClientSecret
+        FeaturesService:
+          IsPublic: false
+          NeedsToken: true
+          Path: "content/features"
+          GenerateService:
+            Path: "generate"
+            SupportedFileImports: [ ".zip", ".kml", ".kmz", ".json", ".geojson" ]
+            MaxRecords: 1000
+            EnforceInputFileSizeLimit: true
+            EnforceOutputJsonSizeLimit: true
+        GeometryService:
+          Path: "https://utility.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/"
+          NeedsToken: false
+          IsPublic: true
+          IntersectService:
+            Path: "intersect"
+          ProjectService:
+            Path: "project"
+            OutSR: 4326
+            GridLength: 12
+            IncludeSpaces: true
+          UnionService:
+            Path: "union"
+        LayerServices:
+          - name: "SiteVisitCompartments"
+            ServiceURI: "https://services2.arcgis.com/mHXjwgl3OARRqqD4/ArcGIS/rest/services/survey123_6bc13ab44760443d8c3ec3663141457b_form/FeatureServer/0/"
+            NeedsToken: true
+            Fields:
+              - "objectid"
+              - "globalid"
+              - "CreationDate"
+              - "Creator"
+              - "EditDate"
+              - "Editor"
+              - "case_reference"
+              - "property_name"
+              - "woodland_name"
+              - "date_of_site_visit"
+              - "notes_remarks_for_file_only_sit"
+              - "notes_remarks_for_licence_advis"
+      Forester:
+        BaseUrl: "https://www.forestergis.com/geostore/"
+        CountryCode: "E92000001"
+        ApiKey: 
+          secret_key: esri.APIKey
+        NeedsToken: true
+        GenerateTokenService:
+          Path: "tokens/"
+          Username: 
+            secret_key: esri.Forester.GenerateTokenService.Username
+          Password: 
+            secret_key: esri.Forester.GenerateTokenService.Password
+        LayerServices:
+          - Name: "Country_Boundaries_Generalised"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/525"
+            NeedsToken: true
+            Fields: [ "ctry23cd" ]
+          - Name: "Woodland_Officers"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
+            NeedsToken: true
+            Fields: [ "featname" , "area_code"]
+          - Name: "LocalAuthority_Areas"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
+            NeedsToken: true
+            Fields: [ "area_code" , "admin_hub"]
+          - Name: "Phytophthora_Ramorum_Risk_Zones"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
+            NeedsToken: true
+            Fields: [ "name"]
+        GeometryService:
+          Path: "https://utility.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/"
+          NeedsToken: false
+          IsPublic: true
+          IntersectService:
+            Path: "intersect"
+          ProjectService:
+            Path: "project"
+            OutSR: 4326
+            GridLength: 12
+            IncludeSpaces: true
+          UnionService:
+            Path: "union"
+        UtilitiesService:
+          Path: "rest/services/Secure_FSE_GP/FLOv2_PrintService/GPServer"
+          NeedsToken: true
+          IsPublic: false
+          ExportService:
+            Path: "Export%20Web%20Map/submitJob"
+            DefaultFormat: "PNG8"
+            BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
+            BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
+            TextOverrides:
+              Copyright: "© Crown copyright and database rights 2021"
+              FellingTitle: "Felling"
+              RestockingTitle: "Restocking"
+          JobStatusService:
+            Path: "jobs/{0}"
+            Status:
+              FailedStates:
+                - "esriJobCancelled"
+                - "esriJobCancelling"
+                - "esriJobDeleted"
+                - "esriJobDeleting"
+                - "esriJobFailed"
+                - "esriJobTimedOut"
+              SuccessStates: [ "esriJobSucceeded" ]
+              PendingStates:
+                - "esriJobExecuting"
+                - "esriJobSubmitted"
+                - "esriJobWaiting"
+      PublicRegister:
+        BaseUrl: "https://www.forestergis.com/geostore/"
+        NeedsToken: true
+        GenerateTokenService:
+          Path: "tokens/"
+          Username: 
+            secret_key: esri.PublicRegister.GenerateTokenService.Username
+          Password: 
+            secret_key: esri.PublicRegister.GenerateTokenService.Password
+        Boundaries:
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/1"
+        Compartments:
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/0"
+        Comments:
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/2"
+        LookUps:
+          Status:
+            InitialProposal: "01"
+            Consultation: "Consultation"
+            FinalProposal: "03"
+            Approved: "Approved"
+            Archived: "05"
+            UploadedByGMS: "06"
+      SpatialReference: 27700
+      RequestFormat: "json"
+      LayoutTemplate: "testLayout"
+          
+
+internal-web-app:
+  enabled: true
+
+  ingressRoute:
+    app:
+      hostname: "internaltestflo.ps.conneqt.cloud"
+  
+  config:
+    secret_key_ref_name: test-flo-all-secrets
+    connectionStrings:
+      defaultConnection: 
+        secret_key: db.connectionstring
+    azureADB2C:
+      instance: "https://testflo2.b2clogin.com"
+      clientId: 
+        secret_key: azureb2c.client_id
+      clientSecret: 
+        secret_key: azureb2c.client_secret
+      domain: "testflo2.onmicrosoft.com"
+      signUpSignInPolicyId: "B2C_1_FLO_V2_Internal_Signup_Signin"
+    azureAD:
+      tenantId: 
+        secret_key: azuread.tennant_id
+      clientId: 
+        secret_key: azureb2c.client_id
+      clientSecret: 
+        secret_key: azureb2c.client_secret
+    environment: Test
+    dataProtectionKeysDirectory: /app/dataprotectionkeys
+    notifications:
+      defaultFromAddress: test@qxlva.com
+      defaultFromName: Test Email
+      smtp:
+        host: mail.postfix
+        port: 587
+    fileStorage:
+      connectionString: 
+        secret_key: blob.connectionString
+      container: testingflo
+    externalApplicantSite:
+      baseUrl: "https://testflo.ps.conneqt.cloud"
+    woodlandOfficerReview:
+      useDevPublicRegister: false
+      useNewConfirmedFellingRestocking: true
+    cronJobs:
+      apiKey:
+        secret_key: cronJobs.apiKey
+    publicRegisterExpiry:
+      thresholdBeforePublicRegisterPeriodEnd: "14.00:00:00"
+    voluntaryWithdrawApplication:
+      thresholdAfterWithApplicantStatusDate: "21.00:00:00"
+      thresholdAutomaticWithdrawal: "28.00:00:00"
+    applicationExtension:
+      thresholdBeforeFinalActionDate: "14.00:00:00"
+      extensionLength: "90.00:00:00"
+    pdfGeneratorApi:
+      baseUrl: "http://test-flo-pdf-generation-service:8080/api/v1/generate-pdf"
+      templateName: "FellingLicence.html"
+      version: "0.0"
+    FellingLicenceApplication:
+      FinalActionDateDaysFromSubmission: 90
+      CitizensCharterDateLength: "77.00:00:00"
+    LarchOptions:
+      EarlyFadDay: "30"
+      EarlyFadMonth: "6"
+      LateFadDay: "31"
+      LateFadMonth: "10"
+      FlyoverPeriodStartDay: "1"
+      FlyoverPeriodStartMonth: "4"
+      FlyoverPeriodEndDay: "31"
+      FlyoverPeriodEndMonth: "8"
+    landInformationSearch:
+      clientID: 
+        secret_key: landInformationSearch.clientID
+      clientSecret: 
+        secret_key: landInformationSearch.clientSecret
+    rabbitMqOptions:
+      username: 
+        secret_key: rabbitmq.username
+      password: 
+        secret_key: rabbitmq.password
+    siteAnalytics:
+      googleAnalytics:
+        enabled: true
+        trackingId: "G-LQMY6K9G46"
+      microsoftClarity:
+        enabled: true
+        trackingId: "pcroui0u2v"
+    GovUkNotifyOptions:
+      enabled: true
+      ApiKey: 
+        secret_key: govuk.notify_apikey
+      ReplyToId: "1043c5d1-ed9f-4e0c-a6f1-efd3f30ad712"
+      TemplateIds:
+        ApplicationResubmitted: "6c8dc0b2-fba5-47d4-b76d-5dfa9b3fcb18"
+        ApplicationSubmissionConfirmation: "96e83d5d-b82a-466c-89e2-964d9120e39d"
+        ApplicationWithdrawnConfirmation: "f8e5a20d-9ef0-4107-995d-7b63c6a35d42"
+        ApplicationWithdrawn: "dc6b9b65-e7bc-4014-a56d-24e4913fb4ea"
+        ConditionsToApplicant: "859ccc30-557c-4354-bd42-a195e35ad06a"
+        ExternalConsulteeInvite: "a6f9b1bb-5639-4838-a35d-08b207cb2909"
+        ExternalConsulteeInviteWithPublicRegisterInfo: "7838d34c-edbb-4741-af5b-344100f536c2"
+        InformApplicantOfApplicationApproval: "e029acc1-857d-4b54-8567-7387ad603d1b"
+        InformApplicantOfApplicationReferredToLocalAuthority: "b3d1c357-41de-4156-b04c-fd026ea568dd"
+        InformApplicantOfApplicationRefusal: "ec5b9833-cb5a-43ce-bc37-3f3dbcb0b66f"
+        InformApplicantOfApplicationVoluntaryWithdrawOption: "a7fd4e9f-dbf4-452b-9509-42e17f1b125f"
+        InformApplicantOfReturnedApplication: "da5c3822-c793-438f-a36c-e8a91889bd94"
+        InformApplicantOfApplicationExtension: "bd959a9c-0fdd-4012-a154-7be260e5f51c"
+        InformFcStaffOfApplicationAddedToConsultationPublicRegister: "99167a43-04ad-4fbe-8aeb-ae3f419beb5a"
+        InformFcStaffOfApplicationAddedToDecisionPublicRegister: "edb04065-d755-4932-8c1e-eb63ba9f8def"
+        InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure: "532d9a32-a527-4d64-895b-883568f1897e"
+        InformFieldManagerOfWoodlandOfficerReviewCompletion: "4c53a6b1-ff9c-420c-8e28-8e71d08db080"
+        InformWoodlandOfficerOfAdminOfficerReviewCompletion: "a6547f1b-2e98-486f-ba8b-39e247c5346b"
+        InformFCStaffOfReturnedApplication: "af1bc4cf-de61-4e8f-aedf-8ceadedddaad"
+        InformFCStaffOfFinalActionDateReached: "f2b14123-9abd-4b64-9014-74534f5e019f"
+        UserAssignedToApplication: "e5925fdf-b3b4-4709-a3c0-8f38e9fefa07"
+        InformAdminOfNewAccountSignup: "4e85b012-4b3e-4536-a95e-de91cfc4b952"
+        InformInternalUserOfAccountApproval: "de00a309-81cd-4525-8218-f3a1e1b0eeb1"
+        InviteWoodlandOwnerUserToOrganisation: "ae780279-31d0-419b-a35e-39edca775c51"
+        InviteAgentUserToOrganisation: "4506918c-4666-4bbc-9c02-43ebe98804fb"
+        InformApplicantOfLarchOnlyApplicationFADextension: "2c6ab3f7-85b9-4ca2-9386-abc70fa5b010"
+        InformApplicantOfReturnedApplicationMixLarchZone1: "8ad474f1-5a93-44bd-b06a-ed79f88da44b"
+        InformApplicantOfReturnedApplicationMixLarchMixZone: "fd331395-e8a4-4394-b61c-61cf27e7fb0f"
+        InformApplicantOfReturnedApplicationLarchOnlyMixZone: "59380bf2-28fb-4c70-9c6e-8f47cfdc8bd3"
+    permittedRegisteredUser:
+      enabled: true
+      permittedEmailDomainsForRegisteredUser:
+        - "qxlva.com"
+        - "forestrycommission.gov.uk"
+        - "harriscomputer.com"
+    logging:
+      LogLevel:
+        Default: "Debug"
+        Microsoft:
+          AspNetCore: "Debug"
+    esriConfig:
+      enabled: true
+      Forestry:
+        BaseUrl: "https://forestry.maps.arcgis.com/sharing/rest/"
+        CountryCode: "E92000001"
+        ApiKey:
+          secret_key: esri.APIKey
+        GenerateTokenService:
+          Path: "oauth2/token"
+          ClientID: 
+            secret_key: esri.Forestry.GenerateTokenService.ClientID
+          ClientSecret: 
+            secret_key: esri.Forestry.GenerateTokenService.ClientSecret
+        FeaturesService:
+          IsPublic: false
+          NeedsToken: true
+          Path: "content/features"
+          GenerateService:
+            Path: "generate"
+            SupportedFileImports: [ ".zip", ".kml", ".kmz", ".json", ".geojson" ]
+            MaxRecords: 1000
+            EnforceInputFileSizeLimit: true
+            EnforceOutputJsonSizeLimit: true
+        GeometryService:
+          Path: "https://utility.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/"
+          NeedsToken: false
+          IsPublic: true
+          IntersectService:
+            Path: "intersect"
+          ProjectService:
+            Path: "project"
+            OutSR: 4326
+            GridLength: 12
+            IncludeSpaces: true
+          UnionService:
+            Path: "union"
+        LayerServices:
+          - name: "SiteVisitCompartments"
+            ServiceURI: "https://services2.arcgis.com/mHXjwgl3OARRqqD4/ArcGIS/rest/services/survey123_6bc13ab44760443d8c3ec3663141457b_form/FeatureServer/0/"
+            NeedsToken: true
+            Fields:
+              - "objectid"
+              - "globalid"
+              - "CreationDate"
+              - "Creator"
+              - "EditDate"
+              - "Editor"
+              - "case_reference"
+              - "property_name"
+              - "woodland_name"
+              - "date_of_site_visit"
+              - "notes_remarks_for_file_only_sit"
+              - "notes_remarks_for_licence_advis"
+      Forester:
+        BaseUrl: "https://www.forestergis.com/geostore/"
+        CountryCode: "E92000001"
+        ApiKey:
+          secret_key: esri.APIKey
+        NeedsToken: true
+        GenerateTokenService:
+          Path: "tokens/"
+          Username: 
+            secret_key: esri.Forester.GenerateTokenService.Username
+          Password: 
+            secret_key: esri.Forester.GenerateTokenService.Password
+        LayerServices:
+          - Name: "Country_Boundaries_Generalised"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/525"
+            NeedsToken: true
+            Fields: [ "ctry23cd" ]
+          - Name: "Woodland_Officers"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
+            NeedsToken: true
+            Fields: [ "featname" , "area_code"]
+          - Name: "LocalAuthority_Areas"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
+            NeedsToken: true
+            Fields: [ "area_code" , "admin_hub"]
+          - Name: "Phytophthora_Ramorum_Risk_Zones"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
+            NeedsToken: true
+            Fields: [ "name"]
+        GeometryService:
+          Path: "https://utility.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/"
+          NeedsToken: false
+          IsPublic: true
+          IntersectService:
+            Path: "intersect"
+          ProjectService:
+            Path: "project"
+            OutSR: 4326
+            GridLength: 12
+            IncludeSpaces: true
+          UnionService:
+            Path: "union"
+        UtilitiesService:
+          Path: "rest/services/Secure_FSE_GP/FLOv2_PrintService/GPServer"
+          NeedsToken: true
+          IsPublic: false
+          ExportService:
+            Path: "Export%20Web%20Map/submitJob"
+            DefaultFormat: "PNG8"
+            BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
+            BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
+            TextOverrides:
+              Copyright: "© Crown copyright and database rights 2021"
+              FellingTitle: "Felling"
+              RestockingTitle: "Restocking"
+          JobStatusService:
+            Path: "jobs/{0}"
+            Status:
+              FailedStates:
+                - "esriJobCancelled"
+                - "esriJobCancelling"
+                - "esriJobDeleted"
+                - "esriJobDeleting"
+                - "esriJobFailed"
+                - "esriJobTimedOut"
+              SuccessStates: [ "esriJobSucceeded" ]
+              PendingStates:
+                - "esriJobExecuting"
+                - "esriJobSubmitted"
+                - "esriJobWaiting"
+      PublicRegister:
+        BaseUrl: "https://www.forestergis.com/geostore/"
+        NeedsToken: true
+        GenerateTokenService:
+          Path: "tokens/"
+          Username: 
+            secret_key: esri.PublicRegister.GenerateTokenService.Username
+          Password: 
+            secret_key: esri.PublicRegister.GenerateTokenService.Password
+        Boundaries:
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/1"
+        Compartments:
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/0"
+        Comments:
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/2"
+        LookUps:
+          Status:
+            InitialProposal: "01"
+            Consultation: "Consultation"
+            FinalProposal: "03"
+            Approved: "Approved"
+            Archived: "05"
+            UploadedByGMS: "06"
+      SpatialReference: 27700
+      RequestFormat: "json"
+      LayoutTemplate: "testLayout"
+
+
+pdf-generation-service:
+  enabled: true
+
+  config:
+    bitbucket:
+      folder: /source/html-templates/*
+      origin: ""
+      branch: main
+    spring:
+      thymeleaf:
+        prefix: "file:///templates/source/html-templates/"
+
+postgresql:
+  primary:
+    initdb:
+      scripts:
+        my_init_script.sh: |
+          #!/usr/bin/env bash
+          echo "whoami";
+          whoami;
+          ls -la /docker-entrypoint-initdb.d/dbscripts
+          # Check if the init scripts have already been populated, should only be this script in directory.
+          if(( $(ls -1 /docker-entrypoint-initdb.d/dbscripts | wc -l) == 0 ))
+          then
+          echo "Attempting to download initdb scripts";
+          echo "Make dir";
+          mkdir /docker-entrypoint-initdb.d/dbscripts/temp;
+          echo "curl data";
+  
+          curl --header "Authorization: Bearer ${TEAMCITY_TOKEN}" -L -k -o /docker-entrypoint-initdb.d/dbscripts/temp/dbschema.tar $DB_SCHEMA;
+          curl --header "Authorization: Bearer ${TEAMCITY_TOKEN}" -L -k -o /docker-entrypoint-initdb.d/dbscripts/temp/seed.tar $SEED;
+          echo "untar";
+  
+          tar -xvf /docker-entrypoint-initdb.d/dbscripts/temp/dbschema.tar -C /docker-entrypoint-initdb.d/dbscripts;
+          tar -xvf /docker-entrypoint-initdb.d/dbscripts/temp/seed.tar -C /docker-entrypoint-initdb.d/dbscripts;
+  
+          echo "remove temp";
+          rm -r /docker-entrypoint-initdb.d/dbscripts/temp;
+          echo "Completed download of initdb scripts";
+          shutdown -r now;
+          else
+          echo "initdb scripts already collected";
+          fi
+    extraEnvVars:
+      - name: DB_SCHEMA
+        value: "https://quicksilva.teamcity.com/app/rest/builds/buildType:(id:ForestServicesFLOv2_Release_CreateFloRelease),branch:(default:any)/artifacts/content/dbschema*.tar"
+      - name: SEED
+        value: "https://quicksilva.teamcity.com/app/rest/builds/buildType:(id:ForestServicesFLOv2_Release_CreateFloRelease),branch:(default:any)/artifacts/content/seed*.tar"
+      - name: TEAMCITY_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: test-flo-all-secrets
+            key: teamcity.artifact_token
+
+rabbitmq:
+  auth:
+    existingSecret: test-flo-all-secrets
+    username: qxlva_rabbitmq
+    password: rabbitmq.password
+    erlangCookie: rabbitmq.erlang_cookie

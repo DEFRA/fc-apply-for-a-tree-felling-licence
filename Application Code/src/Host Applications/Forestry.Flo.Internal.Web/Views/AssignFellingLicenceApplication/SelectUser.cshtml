@@ -1,0 +1,157 @@
+﻿@{
+    ViewData["Title"] = "Assign felling licence application";
+    Layout = "_Layout";
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common.User
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.AssignToUserModel;
+
+@{
+    var currentUser = new InternalUser(User);
+}
+
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+    <partial name="Partials/_PageErrors"/>
+
+    <h1 class="govuk-heading-l">Assign @Model.SelectedRole.GetDisplayName()?.ToLower()</h1>
+    <fieldset class="govuk-fieldset">
+
+        <form method="post">
+    
+            @if (Model.SelectedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
+            {
+                <h2 class="govuk-heading-m">Admin Hub</h2>
+                <div class="govuk-form-group">
+
+                    <label class="govuk-label" for="@nameof(Model.SelectedFcAreaCostCode)">Change the area this application is currently assigned to</label>
+                    <div id="subject-hint" class="govuk-hint">
+                        This will also update the Application Reference
+                    </div>
+                    <select class="govuk-select" id="@nameof(Model.SelectedFcAreaCostCode)" name="@nameof(Model.SelectedFcAreaCostCode)">
+                        @if (Model.FellingLicenceApplicationSummary.AreaCode is null)
+                        {
+                            <option value="">Choose area</option>
+                        }
+                        @foreach (var fcArea in Model.ConfiguredFcAreas)
+                        {
+                            <option value="@fcArea.AreaCostCode" 
+                                    selected=@(fcArea.AreaCostCode == Model.FellingLicenceApplicationSummary.AreaCode || fcArea.AreaCostCode == Model.SelectedFcAreaCostCode) >
+                                @fcArea.Area.Name - @fcArea.AreaCostCode (@fcArea.AdminHubName)
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <h2 class="govuk-heading-m">Which user would you like to assign application @Model.FellingLicenceApplicationSummary.ApplicationReference to?</h2>
+
+            @if (Model.SelectedRole == AssignedUserRole.AdminOfficer)
+            {
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input id="assign-to-me-radio" class="govuk-radios__input" type="radio" value="@currentUser.UserAccountId" checked="checked" />
+                        <label for="assign-to-me-radio" class="govuk-label govuk-radios__label">Assign to me</label>
+                    </div>
+                </div>
+                <br/>
+            }
+
+            @if (Model.HiddenAccounts == true)
+            {
+                <div class="govuk-inset-text">
+                    <strong class="govuk-warning-text__text">
+                        Some users have been hidden as they cannot be assigned to approve an application they created or they are lacking the required permission to approve applications.
+                    </strong>
+                </div>
+                <br/>
+            }
+        
+            <table class="govuk-table" id="user-list-table">
+                <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Name</th>
+                    <th scope="col" class="govuk-table__header">Email</th>
+                    <th scope="col" class="govuk-table__header">Account type</th>
+                </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                @foreach (var user in Model.UserAccounts)
+                {
+                    if (Model.SelectedRole == AssignedUserRole.AdminOfficer && user.Id == currentUser.UserAccountId)
+                    {
+                        continue;
+                    }
+
+                    var username = $"{user.FirstName} {user.LastName}";
+
+                    <tr data-id="@user.Id" id="@user.Id" class="govuk-table__row">
+                        <td class="govuk-table__cell" data-order="@username">@username</td>
+                        <td class="govuk-table__cell" data-order="@user.Email">@user.Email</td>
+                        <td class="govuk-table__cell" data-order="@user.AccountType.GetDisplayName()">@user.AccountType.GetDisplayName()</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+
+            <div class="govuk-form-group govuk-visually-hidden">
+                <input asp-for="@Model.SelectedRole"/>
+                <input asp-for="@Model.ReturnUrl"/>
+                <input id="selected-user-id" asp-for="@Model.SelectedUserId"/>
+                <input asp-for="@Model.AdministrativeRegion"/>
+            </div>
+
+            <fieldset class="govuk-fieldset">
+                <div class="govuk-form-group">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                        <h3 class="govuk-fieldset__heading">
+                            Case note
+                        </h3>
+                    </legend>
+                    @Html.EditorFor(m => m.FormLevelCaseNote)
+                </div>
+            </fieldset>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Continue
+                    </button>
+
+                    <a class="govuk-link" href="@Model.ReturnUrl" title="Cancel">Cancel</a>
+                </div>
+            </div>
+        </form>
+        </fieldset>
+
+</div>
+
+@section Scripts
+{
+    <partial name="Partials/_DataTablesJs" />
+    <script src="~/js/assign-fla-select-user.js" asp-append-version="true"></script>
+    <script>
+        $(function () {
+            $('input[type="search"]').addClass('govuk-input');
+            $('#user-list-table_filter').removeClass('dataTables_filter');
+        });
+    </script>
+}
+
+@section Css
+{
+    <partial name="Partials/_DataTablesCss" />
+    <link rel="stylesheet" href="~/css/assign-fla-select-user.css" aria-busyasp-append-version="true" />
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

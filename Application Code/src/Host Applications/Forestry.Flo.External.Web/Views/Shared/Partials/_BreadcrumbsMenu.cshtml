@@ -1,0 +1,26 @@
+﻿@model BreadcrumbsModel
+
+@*<div class="govuk-breadcrumbs">
+    <ol class="govuk-breadcrumbs__list">
+        @foreach (var breadCrumb in Model.Breadcrumbs)
+        {
+            <li class="govuk-breadcrumbs__list-item">
+                @if (string.IsNullOrWhiteSpace(breadCrumb.RouteId))
+                {
+                    <a class="govuk-breadcrumbs__link" asp-controller="@breadCrumb.Controller" asp-action="@breadCrumb.Action">@breadCrumb.Text</a>
+                }
+                else
+                {
+                    <a class="govuk-breadcrumbs__link" asp-controller="@breadCrumb.Controller" asp-action="@breadCrumb.Action" asp-route-id="@breadCrumb.RouteId">@breadCrumb.Text</a>
+                }
+                
+            </li>
+        }
+        @if (string.IsNullOrWhiteSpace(Model.CurrentPage) == false)
+        {
+            <li class="govuk-breadcrumbs__list-item">
+                <a class="govuk-breadcrumbs__link" href="#">@Model.CurrentPage</a>
+            </li>
+        }
+    </ol>
+</div>*@

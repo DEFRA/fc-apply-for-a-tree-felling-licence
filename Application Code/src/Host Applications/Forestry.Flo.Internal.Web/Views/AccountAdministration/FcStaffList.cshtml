@@ -1,0 +1,95 @@
+﻿@{
+    ViewData["Title"] = "Select a user account to manage";
+    Layout = "_Layout";
+
+    var viewingUser = new InternalUser(User);
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common.User
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.AccountAdministration.FcStaffListModel;
+
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+
+    <h1 class="govuk-heading-m">@ViewData["Title"]</h1>
+
+    <partial name="Partials/_PageErrors"/>
+    
+    <fieldset class="govuk-fieldset">
+        <div class="govuk-form-group govuk-body-s">
+            Filter:
+            @foreach (var accountType in typeof(AccountTypeInternal).GetDisplayNames())
+            {
+                if (accountType == AccountTypeInternal.FcStaffMember.GetDisplayName())
+                    continue;
+
+                var cssClass = "filter unselected";
+
+                <button id="@accountType" data-id="@accountType" class="@cssClass">@accountType</button>
+            }
+        </div>
+        <table class="govuk-table" id="fc-staff-table">
+            <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Name</th>
+                <th scope="col" class="govuk-table__header">Email</th>
+                <th scope="col" class="govuk-table__header">Account Type</th>
+            </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+            @foreach (var user in Model.FcStaffList!)
+            {
+                var username = $"{user.FirstName} {user.LastName}";
+
+                <tr data-id="@user.Id" id="@user.Id" class="govuk-table__row">
+                    <td class="govuk-table__cell" data-order="@username">@username</td>
+                    <td class="govuk-table__cell" data-order="@user.Email">@user.Email</td>
+                    <td class="govuk-table__cell" data-order="@user.AccountType.GetDisplayName()">@user.AccountType.GetDisplayName()</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        
+        <form method="post">
+            <div class="govuk-form-group govuk-visually-hidden">
+                <input asp-for="@Model.ReturnUrl"/>
+                <input id="selected-user-id" asp-for="@Model.SelectedUserAccountId">
+                <input id="viewing-user-id" asp-for="@viewingUser.UserAccountId">
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+
+                    <button id="amend-submit" asp-action="AmendInternalUserAccount" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                        Manage Account
+                    </button>
+
+                    <a class="govuk-link" href="@Model.ReturnUrl" title="Cancel">Cancel</a>
+
+                </div>
+            </div>
+        </form>
+    </fieldset>
+
+</div>
+
+@section Scripts
+{
+    <partial name="Partials/_DataTablesJs" />
+    <script src="~/js/fc-staff-list.js" asp-append-version="true"></script>
+}
+
+@section Css
+{
+    <partial name="Partials/_DataTablesCss" />
+    <link rel="stylesheet" href="~/css/user-account-selectable-list.css" aria-busyasp-append-version="true" />
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

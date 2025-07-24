@@ -1,0 +1,172 @@
+﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.SelectFellingOperationTypesViewModel
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.External.Web.Infrastructure.Display
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.Common
+
+@{
+    ViewData["Title"] = "Select felling options";
+    ViewData.ManuallySetBackLink(Model.ReturnToPlayback
+        ? Url.Action("FellingAndRestockingPlayback", "FellingLicenceApplication", new { applicationId = Model.ApplicationId })
+        : Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    ViewData.ShowBackLink();
+
+    var selectedOperationTypes = Model.OperationTypes?.ToHashSet() ?? [];
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+    <partial name="Partials/_PageErrors" />
+
+    <form id="select-operation-types" method="post">
+
+        <input type="hidden" asp-for="ApplicationId" />
+        <input type="hidden" asp-for="FellingCompartmentId" />
+
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-fieldset__heading">
+                        Select the felling options for @Model.CompartmentName
+                    </h1>
+                </legend>
+            </fieldset>
+        </div>
+
+        <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+
+        <input type="hidden" asp-for="@Model.GIS" />
+
+        <a class="govuk-link govuk-heading-s collapsible" href="#">View map of @Model.CompartmentName</a>
+        <br />
+        <div id="mapWrapper" style="display:none;" class="mapWrapper">
+            <br/>
+            <div id="viewDiv" aria-label="Map of the selected compartment"></div>
+            <br />
+        </div>
+
+        <br/>
+
+        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+
+            <p class="govuk-body">Select the operations you'd like to perform for this compartment.</p>
+            <br/>
+
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsClearFellingSelected">
+                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsClearFellingSelected">
+                    <b>@FellingOperationType.ClearFelling.GetDisplayName()</b>
+                </label>
+                <div class="govuk-hint govuk-checkboxes__hint">
+                    @FellingOperationType.ClearFelling.GetDescription()
+                </div>
+            </div>
+
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsFellingOfCoppiceSelected">
+                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsFellingOfCoppiceSelected">
+                    <b>@FellingOperationType.FellingOfCoppice.GetDisplayName()</b>
+                </label>
+                <div class="govuk-hint govuk-checkboxes__hint">
+                    @FellingOperationType.FellingOfCoppice.GetDescription()
+                </div>
+            </div>
+
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsFellingIndividualTreesSelected">
+                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsFellingIndividualTreesSelected">
+                    <b>@FellingOperationType.FellingIndividualTrees.GetDisplayName()</b>
+                </label>
+                <div class="govuk-hint govuk-checkboxes__hint">
+                    @FellingOperationType.FellingIndividualTrees.GetDescription()
+                </div>
+            </div>
+
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsRegenerationFellingSelected">
+                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsRegenerationFellingSelected">
+                    <b>@FellingOperationType.RegenerationFelling.GetDisplayName()</b>
+                </label>
+                <div class="govuk-hint govuk-checkboxes__hint">
+                    @FellingOperationType.RegenerationFelling.GetDescription()
+                </div>
+            </div>
+
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsThinningSelected">
+                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsThinningSelected">
+                    <b>@FellingOperationType.Thinning.GetDisplayName()</b>
+                </label>
+                <div class="govuk-hint govuk-checkboxes__hint">
+                    @FellingOperationType.Thinning.GetDescription()
+                </div>
+            </div>
+
+        </div>
+        <br/>
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
+                Continue
+            </button>
+        </div>
+    </form>
+</div>
+
+
+@section Css {
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+
+    <style>
+        #viewDiv {
+            border-color: black;
+            border-style: solid;
+            border-width: 1px;
+            padding: 0;
+            margin: 0;
+            height: 85vh !important;
+        }
+    </style>
+}
+
+@section Scripts{
+
+    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script>
+        require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {
+            var mapObj = new MapCompartmentSelection("viewDiv");
+        })
+    </script>
+
+    <script>
+        var coll = document.getElementsByClassName("collapsible");
+        
+        coll[0].addEventListener("click", function () {
+            var content = document.getElementsByClassName("mapWrapper");
+            if (content[0].style.display === "block") {
+                content[0].style.display = "none";
+            } else {
+                content[0].style.display = "block";
+            }
+        });
+    </script>
+
+    @if (!Model.AllowEditing)
+    {
+        <script src="/js/disable-form-elements.js"></script>
+
+        <script>
+
+            $(function () {
+
+                disableFormElements('#select-operation-types');
+            });
+
+        </script>
+    }
+}

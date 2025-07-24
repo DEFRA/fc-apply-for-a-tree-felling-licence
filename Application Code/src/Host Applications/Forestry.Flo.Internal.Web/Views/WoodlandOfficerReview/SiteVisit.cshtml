@@ -1,0 +1,137 @@
+﻿@using NodaTime
+
+@{
+    ViewData["Title"] = "Site visit";
+}
+
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SiteVisitViewModel
+
+
+@{
+    var user = new InternalUser(User);
+
+    const bool mobileAppsEnabled = false;  //FLOV-1317 - hint text referring to mobile apps which are disabled for now
+}
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    <partial name="Partials/_PageErrors"/>
+
+    <div condition="@(Model.SiteVisitComments.ActivityFeedItemModels.Any() is false && Model.SiteVisitArtefactsCreated.HasValue is false && Model.Editable(user) is false)" class="govuk-hint">
+        A woodland officer has not started the site visit process for this application yet.
+    </div>
+
+    <form condition="@(Model.SiteVisitNotesRetrieved.HasValue == false && Model.SiteVisitNotNeeded is false && Model.Editable(user))" method="post" asp-action="SiteVisitNotNeeded">
+
+        <input asp-for="ApplicationId"/>
+
+        <div class="govuk-form-group">
+            <h2 class="govuk-label-wrapper">
+                <label class="govuk-label govuk-label--m" for="not-needed-reason-text">
+                    Site visit is not needed?
+                </label>
+            </h2>
+            <div class="govuk-hint">
+                If a site visit is not needed, enter a reason here and click the button below.  Your comment will be stored as a Site Visit case note.
+            </div>
+            <textarea id="not-needed-reason-text" class="govuk-textarea" rows="4" asp-for="SiteVisitNotNeededReason"></textarea>
+            <br/>
+            <div class="govuk-button-group">
+                <button id="save-not-needed-btn" class="govuk-button" data-module="govuk-button" type="submit">Site visit is not needed</button>
+            </div>
+        </div>
+
+    </form>
+    
+    <div condition="@Model.SiteVisitNotNeeded" class="govuk-inset-text">
+        The site visit has previously been declared as not needed - see the reason that was entered in the site visit comments section at the bottom of the page.
+        You may still begin the site visit process if a site visit is needed after all by clicking the button below.
+    </div>
+    
+    <form condition="@(Model.SiteVisitArtefactsCreated.HasValue == false && Model.Editable(user))" method="post" asp-action="GenerateSiteVisitArtefacts">
+        <input asp-for="ApplicationId"/>
+        <input asp-for="ApplicationDocumentHasBeenGenerated" />
+        <h2 class="govuk-label-wrapper">
+            <label class="govuk-label govuk-label--m" for="site-visit-artefacts-btn">
+                Site visit is needed?
+            </label>
+        </h2>
+        <div class="govuk-hint" condition="@mobileAppsEnabled">
+            If a site visit is needed, click the button below to begin the process. This will publish the application to Forester in order to
+            use the mobile apps in the field, and also generate the application PDF.
+        </div>
+        <div class="govuk-hint" condition="@(!mobileAppsEnabled)">
+            If a site visit is needed, click the button below to begin the process. This will additionally generate a draft application 
+            licence PDF document to refer to when visiting the site.
+        </div>
+        <br/>
+        <div class="govuk-button-group">
+            <button id="site-visit-artefacts-btn" class="govuk-button" data-module="govuk-button" type="submit">Begin site visit process</button>
+        </div>
+    </form>
+
+    <div condition="@(Model.SiteVisitArtefactsCreated.HasValue && mobileAppsEnabled)" class="govuk-inset-text">
+        The site visit process was started on @(Model.SiteVisitArtefactsCreated.Value.ToString("g")).  The application has been published to Forester to
+        enable use of the mobile apps whilst in the field.
+        <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary"/>
+    </div>
+    <div condition="@(Model.SiteVisitArtefactsCreated.HasValue && !mobileAppsEnabled)" class="govuk-inset-text">
+        The site visit process was started on @(Model.SiteVisitArtefactsCreated.Value.ToString("g")).
+        <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
+    </div>
+
+    <form condition="@(Model.SiteVisitArtefactsCreated.HasValue && Model.SiteVisitNotesRetrieved.HasValue == false && Model.Editable(user))" method="post" asp-action="RetrieveSiteVisitNotes">
+        <input asp-for="ApplicationId"/>
+        <input asp-for="ApplicationReference"/>
+
+        <h2 class="govuk-label-wrapper">
+            <label class="govuk-label govuk-label--m" for="site-visit-retrieve-notes-btn">
+                Complete the site visit process
+            </label>
+        </h2>
+        <div class="govuk-hint" enabled="@mobileAppsEnabled">
+            After the site visit has been completed, and you have entered your review comments below, you should 
+            complete the site visit process.  Any notes that were entered into the mobile apps will be retrieved from
+            Forester and added to the application as site visit comment case notes.
+        </div>
+        <div class="govuk-hint" enabled="@(!mobileAppsEnabled)">
+            After the site visit has been completed, and you have entered your review comments below, you should
+            complete the site visit process.
+        </div>
+        <br />
+        <div class="govuk-button-group">
+            <button id="site-visit-retrieve-notes-btn" class="govuk-button" data-module="govuk-button" type="submit">Complete site visit process</button>
+        </div>
+    </form>
+    
+    <div condition="@Model.SiteVisitNotesRetrieved.HasValue" class="govuk-inset-text">
+        The site visit process was marked as complete on @(Model.SiteVisitNotesRetrieved.Value.ToString("g")).
+    </div>
+
+    <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>
+
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-full">
+            <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to Woodland Officer Review</a>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/site-visit.js" asp-append-version="true"></script>
+    <script src="~/js/add-case-note.js" asp-append-version="true"></script>
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

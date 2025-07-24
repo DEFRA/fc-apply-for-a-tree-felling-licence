@@ -1,0 +1,59 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ConfirmSubmitFellingLicenceApplicationModel
+@{
+    ViewData["Title"] = "Confirm felling licence application submission";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+    
+    <h1 class="govuk-heading-l">
+        Please confirm your felling licence application submission
+    </h1>
+    
+    <p class="govuk-body">
+        Your reference number is
+        <strong>@Model.ApplicationReference</strong>
+    </p>
+    
+    <p class="govuk-body">
+        If we need to make any changes to your application, we’ll get in touch with you.
+    </p>
+
+    <div class="govuk-!-margin-top-6">
+
+        <form method="POST" asp-action="SubmitFellingLicenceApplication">
+            @Html.HiddenFor(x => x.ApplicationId)
+            @if (Model.ValidAuthorityForm)
+            {
+            <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                Submit application
+            </button>
+            }
+            else
+            {
+            <button class="govuk-button" data-module="govuk-button" disabled="disabled">Submit application</button>
+            }
+            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-action="ApplicationSummary" asp-route-applicationId="@Model.ApplicationId" asp-route-applicationId="@Model.ApplicationId">
+                Application summary
+            </a>
+        </form>
+        
+    </div>
+    @if (!Model.ValidAuthorityForm)
+    {
+        <div class="govuk-notification-banner" role="alert" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+                    Important
+                </h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">
+                    You need an Agent Authority Form before you can submit this application
+                </p>
+            </div>
+        </div>
+    }
+
+</div>

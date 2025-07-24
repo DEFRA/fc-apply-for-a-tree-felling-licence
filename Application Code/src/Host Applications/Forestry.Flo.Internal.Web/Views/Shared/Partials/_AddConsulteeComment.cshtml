@@ -1,0 +1,71 @@
+﻿@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee
+@model Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview.AddConsulteeCommentModel
+<div id="external-consultee-comment">
+    <h1 class="govuk-heading-m">Application Feedback</h1>
+    <form method="post" asp-action="Index" asp-controller="ExternalConsulteeReview">
+        
+        <partial name="Partials/_PageErrors"/>
+
+        <input asp-for="ApplicationId"/>
+        <input asp-for="AccessCode"/>
+        <input asp-for="AuthorContactEmail"/>
+        <input asp-for="LinkExpiryDateTime"/>
+        
+        <div class="govuk-hint">
+            Please enter your name and feedback below and click <b>Save feedback</b> to submit the form.  If your comments are 
+            about a particular section of the application, you may optionally specify this as well.  You may enter multiple comments - 
+            after clicking <b>Save feedback</b> you will be able to enter further comments, or you may return later to this
+            page using the link in your email until it expires on @(Model.LinkExpiryDateTime.ToString("dddd, dd MMMM yyyy")) at @(Model.LinkExpiryDateTime.ToString("h:mm tt")).
+        </div>
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+
+                <div class="govuk-form-group">
+                    <validation asp-for="AuthorName"/>
+                    <label class="govuk-label" asp-for="AuthorName"></label>
+                    <input class="govuk-input" asp-for="AuthorName"/>
+                </div>
+
+
+                <div class="govuk-form-group">
+                    <label class="govuk-label" asp-for="ApplicableToSection"></label>
+                    <select class="govuk-select" asp-for="ApplicableToSection">
+                        <option value="" selected="selected">- Please select -</option>
+                        @foreach (var item in typeof(ApplicationSection).GetEnumValues())
+                        {
+                            <option value="@item">@(((ApplicationSection)item).GetDisplayName())</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="govuk-form-group">
+                    <h2 class="govuk-label-wrapper">
+                        <label class="govuk-label govuk-label--s" for="Comment">
+                            Feedback comments
+                        </label>
+                    </h2>
+                    <div id="comments-hint" class="govuk-hint">
+                        Please provide any feedback you have on this felling licence application.  Your comments will be seen by the applicant so
+                        please do not include any personal or financial information.
+                    </div>
+                    <validation asp-for="Comment"/>
+                    <textarea id="Comment" class="govuk-textarea govuk-js-character-count" rows="4" aria-describedby="comments-hint" asp-for="Comment"></textarea>
+                    <div class="govuk-hint govuk-character-count__message">
+                        You can enter up to @DataValueConstants.ConsulteeCommentMaxLength characters
+                    </div>
+                </div>
+
+                <div class="govuk-grid-row">
+                    <div class="govuk-grid-column-one-third">
+                        <div class="govuk-button-group">
+                            <button id="save-case-note-btn" class="govuk-button save-button-padding" data-module="govuk-button" type="submit">Save feedback</button>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </form>
+</div>

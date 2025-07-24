@@ -1,0 +1,64 @@
+﻿@using Forestry.Flo.Services.Common
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.AgentAuthorityFormViewModel
+
+@{
+    var validityExpirationWarning = Model.SpecificTimestampAgentAuthorityForm.HasValue && Model.SpecificTimestampAgentAuthorityForm.Value.ValidToDate.HasValue;
+
+    var agentAuthorityUrl = Model.AgentAuthorityFormManagementUrl.HasValue 
+        ? Model.AgentAuthorityFormManagementUrl.Value 
+        : "";
+}
+
+<div id="application-agent-authority">
+
+    <div condition="@(Model.CouldRetrieveAgentAuthorityFormDetails == false)" class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            Failed to retrieve AAF details for this application, refresh to try again
+        </strong>
+    </div>
+
+    <div condition="@(Model is { CouldRetrieveAgentAuthorityFormDetails: true, SpecificAafIsNotCurrent: true })">        
+        <p class="govuk-body">
+            AAF when application was submitted:
+            <a class="govuk-link govuk-link--no-visited-state"
+               title="Download"
+               asp-route-agentAuthorityId="@Model.AgentAuthorityId"
+               asp-route-agentAuthorityFormId="@Model.SpecificTimestampAgentAuthorityForm.Value.Id"
+               asp-action="DownloadAgentAuthorityFormDocument"
+               asp-controller="AgentAuthorityForm">Download</a>
+            <b condition="@validityExpirationWarning"> - AAF expired @DateTimeDisplay.GetDateDisplayString(Model.SpecificTimestampAgentAuthorityForm.Value.ValidToDate)</b>
+        </p>
+    </div>
+
+    <div condition="@(Model is { CouldRetrieveAgentAuthorityFormDetails: true, SpecificTimestampAgentAuthorityForm.HasNoValue: true })" class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            Agency did not have an AAF when the application was submitted
+        </strong>
+    </div>
+
+    <div condition="@(Model is { CouldRetrieveAgentAuthorityFormDetails: true, CurrentAgentAuthorityForm.HasValue: true })">
+        <p class="govuk-body">
+            Current AAF for Agency and Woodland Owner:
+            <a class="govuk-link govuk-link--no-visited-state"
+               title="Download"
+               asp-route-agentAuthorityId="@Model.AgentAuthorityId"
+               asp-route-agentAuthorityFormId="@Model.CurrentAgentAuthorityForm.Value.Id"
+               asp-action="DownloadAgentAuthorityFormDocument"
+               asp-controller="AgentAuthorityForm">Download</a>
+
+            <a class="govuk-link govuk-link--no-visited-state"
+               condition="@Model.AgentAuthorityFormManagementUrl.HasValue"
+               title="Manage"
+               href="@agentAuthorityUrl">Manage</a>
+        </p>
+    </div>
+
+    <div condition="@(Model is { CouldRetrieveAgentAuthorityFormDetails: true, CurrentAgentAuthorityForm.HasValue: false })" class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            Agency does not have a current AAF
+        </strong>
+    </div>
+</div>

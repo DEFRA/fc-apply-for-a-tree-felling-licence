@@ -1,0 +1,18 @@
+﻿@{
+    ViewData["Title"] = "Reporting";
+}
+@model Forestry.Flo.Internal.Web.Models.Reports.ReportRequestViewModel
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    <h2 class="govuk-heading-s">Choose a report from those available</h2>
+    <ul class="govuk-list">
+        <li><a class="govuk-link" href="@Url.Action("FellingLicenceApplicationsDataReport", "Reports")">Felling licence application data report</a></li>
+    </ul>
+
+</div>

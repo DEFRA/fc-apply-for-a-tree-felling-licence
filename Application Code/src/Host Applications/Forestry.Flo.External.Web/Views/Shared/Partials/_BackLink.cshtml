@@ -1,0 +1,46 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@inject BackLinkService BackLinkService
+
+@{
+    
+    var backLinkUrl = ViewBag.BackLinkUrl;
+
+    if (ViewData.GetBackLinkType() is BackLinkType.Default)
+    {
+        const string historyListKey = "HistoryList";
+
+        var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+        var rawList = TempData[historyListKey] as List<string> ??
+                      (TempData[historyListKey] is IEnumerable<object> tempDataEnumerable
+                          ? tempDataEnumerable.OfType<string>().ToList()
+                          : []);
+
+        var historyList = rawList;
+
+        if (ViewData.IsOmittedFromNavigationHistory() is false)
+        { 
+            historyList = BackLinkService.UpdateHistoryList(currentUrl, historyList);
+        }
+
+        TempData[historyListKey] = historyList;
+        backLinkUrl ??= BackLinkService.GetBackLinkUrl(historyList);
+    }
+}
+
+@if (ViewBag.BackLinkShow ?? false)
+{
+    if (ViewData.GetBackLinkType() is BackLinkType.Close)
+    {
+        <div id="backlink"></div>
+
+        <script>
+            document.querySelector('#backlink').insertAdjacentHTML("afterbegin", (document.referrer === undefined || document.referrer === '')
+                    ? '<a href="javascript:window.close();" class= "govuk-back-link" >Back</a>'
+                    : '<a href="javascript:window.history.go(-1);" class= "govuk-back-link" >Back</a>')
+        </script>
+    }
+    else
+    {
+        <a role="navigation" href="@backLinkUrl" class="govuk-back-link">Back</a>
+    }
+}

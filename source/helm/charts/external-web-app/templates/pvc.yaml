@@ -1,0 +1,16 @@
+{{- if .Values.config.dataProtectionKeysDirectory }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "external-web-app.fullname" . }}-dataprotectionkeys
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "external-web-app.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Mi
+  storageClassName: default
+{{- end }}

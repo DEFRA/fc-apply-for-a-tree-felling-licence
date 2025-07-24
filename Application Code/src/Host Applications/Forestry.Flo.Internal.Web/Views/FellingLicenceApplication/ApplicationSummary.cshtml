@@ -1,0 +1,151 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingLicenceApplicationReviewSummaryModel
+@{
+    ViewData["Title"] = "Application summary";
+}
+
+<div class="govuk-grid-column-full" id="summary-container">
+    <h1 class="govuk-heading-xl">
+        Application @Model.FellingLicenceApplicationSummary!.ApplicationReference
+    </h1>
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_PageErrors" />
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="AdminOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
+                Operations admin officer review
+            </a>
+            <a id="mapButton" data-module="govuk-button" class="govuk-button govuk-button--secondary">
+                Generate Images
+            </a>
+            <a condition="@(Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.WoodlandOfficerReview))" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
+                Woodland officer review
+            </a>
+            <a condition="@(Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.SentForApproval))" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="ApproverReview" asp-action="Index" asp-route-id="@Model.Id">
+                Approver review
+            </a>
+        </div>
+    </div>
+
+    <input type="hidden" id="runningMode" value="felling" />
+    @if (Model.FellingAndRestockingDetail?.DetailsList is not null)
+    {
+        @foreach (var item in Model.FellingAndRestockingDetail!.DetailsList!)
+        {
+            <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling" />
+            <input type="hidden" id="@item.CompartmentId" value="@item.RestockingGISData" data-label="@item.RestockingCompartment" data-group="compartments_GIS" data-type="restocking" />
+        }
+    }
+    <div class="govuk-accordion" data-module="govuk-accordion" id="accordion-default">
+        <div id="compartments-display">
+            <div class="govuk-accordion__section ">
+                <div class="govuk-accordion__section-header">
+                    <h2 class="govuk-accordion__section-heading">
+                        <span class="govuk-accordion__section-button" id="accordion-default-heading-1">
+                            Compartment map
+                        </span>
+                    </h2>
+                </div>
+                <div id="accordion-default-content-1" class="govuk-accordion__section-content" aria-labelledby="accordion-default-heading-1">
+                    <calcite-shell id="shell" content-behind>
+                        <h2 id="header-title" slot="header">
+                            Felling
+                        </h2>
+                        <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed> 
+                            <calcite-action-bar slot="action-bar" expanded>
+                                <calcite-action id="view"
+                                                icon="analysis"
+                                                text="View Restocking"
+                                                scale="l"></calcite-action>
+
+                            </calcite-action-bar>
+                        </calcite-shell-panel>
+                            <div class="profileMap" id="viewDivMain"></div>
+
+                    </calcite-shell>
+                </div>
+            </div>
+        </div>
+
+        <partial name="Partials/_FellingLicenceApplicationInfoTabs" model="@Model" />
+
+
+    </div>
+    <div class="modal" id="modal">
+        <div class="modal-bg modal-exit"></div>
+        <div class="modal-container">
+            <div class="printerDiv" id="printerDiv"></div>
+            <input type="button" class="modal-close modal-exit" id="close_modal" value="x" />
+        </div>
+    </div>
+</div>
+    @section breadcrumbs
+    {
+        <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+    }
+
+    @section Scripts
+    {
+        <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+        <partial name="Partials/_DataTablesJs" />
+        <script src="~/js/compartment-list.js" asp-append-version="true"></script>
+        <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
+        <script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
+        <script src="~/js/add-case-note.js" asp-append-version="true"></script>
+        <script src="~/js/supporting-documentation.js" asp-append-version="true"></script>
+        <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+
+
+        <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+        <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+        <script>
+
+            document.getElementById("mapButton").addEventListener("click", function (evt) {
+                evt.preventDefault();
+                document.getElementById('modal').classList.add("open");
+            });
+
+            document.getElementById("close_modal").addEventListener("click", function hideModal(evt) {
+                document.getElementById('modal').classList.remove("open");
+            });
+
+        </script>
+        <script type="module">
+            require(["../../js/mapping/maps/map-printer.js?v=" + Date.now()], function (PrinterMap) {
+                var mapObj = new PrinterMap("printerDiv");
+            });
+
+            require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
+                var mapObj = new ProfileMap("viewDivMain", true);
+            });
+        </script>
+    }
+
+    @section Css {
+        <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")" />
+        <link rel="stylesheet" href="~/css/assign-fla-select-user.css" aria-busyasp-append-version="true" />
+        <link rel="stylesheet" href="~/css/application-summary.css" aria-busyasp-append-version="true" />
+        <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+        <style>
+            #shell{
+                position: unset !important;
+                height:600px;
+            }
+            #viewDivMain{
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+
+            calcite-shell-panel[closed] {
+                display: none !important;
+            }
+        </style>
+    }
+

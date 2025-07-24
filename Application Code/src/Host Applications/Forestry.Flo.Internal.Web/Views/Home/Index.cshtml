@@ -1,0 +1,265 @@
+﻿@{
+    ViewData["Title"] = "Process felling licence applications";
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication
+@using Forestry.Flo.Services.InternalUsers.Entities.UserAccount
+@using Forestry.Flo.Internal.Web.Infrastructure
+@using Forestry.Flo.Services.Common.User
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.HomePageModel 
+
+@{
+    var user = new InternalUser(User);
+    var offset = user.AccountType is AccountTypeInternal.AccountAdministrator ? -1 : 0;
+}
+
+@functions
+{
+    public string GetStatusStyleName(FellingLicenceStatus status)
+    {
+        // Full list of gov tag colours available https://design-system.service.gov.uk/components/tag/
+
+        return status switch
+        {
+            // All felling licences included here for completeness though not all may be 
+            // valid post-submitted status values
+
+            FellingLicenceStatus.Submitted => "govuk-tag--blue",
+            FellingLicenceStatus.AdminOfficerReview => "govuk-tag--pink",
+            FellingLicenceStatus.WithApplicant => "govuk-tag--turquoise",
+            FellingLicenceStatus.ReturnedToApplicant => "govuk-tag--turquoise",
+            FellingLicenceStatus.WoodlandOfficerReview => "govuk-tag--yellow",
+            FellingLicenceStatus.SentForApproval => "govuk-tag--purple",
+            FellingLicenceStatus.Approved => "govuk-tag--green",
+            FellingLicenceStatus.Refused => "govuk-tag--red",
+            FellingLicenceStatus.Withdrawn => "govuk-tag--orange",
+            FellingLicenceStatus.ReferredToLocalAuthority => "govuk-tag--mid-grey",
+            _ => "govuk-tag--grey"
+        };
+    }
+}
+
+<not-logged-in>
+
+    <div class="govuk-grid-column-full govuk-body">
+        <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+        
+        <p class="govuk-body">Use this service to process applications for a tree felling licence.</p>
+
+        <a asp-controller="Home" asp-action="SignIn" draggable="false" class="govuk-button govuk-button--start" data-module="govuk-button">
+
+            Start now
+
+            <svg class="govuk-button__start-icon" xmlns="http://www.w3.org/2000/svg" width="17.5" height="19" viewBox="0 0 33 40" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M0 0h13l20 20-20 20H0l20-20z"/>
+            </svg>
+
+        </a>
+
+    </div>
+
+</not-logged-in>
+<logged-in>
+    <div class="govuk-grid-column-full govuk-body">
+
+        <div class="govuk-grid-row">
+
+            <div class="govuk-grid-column-full">
+                <h1 class="govuk-heading-l">Applications</h1>
+            </div>
+
+        </div>
+
+        <div class="govuk-!-text-align-left govuk-grid-row">
+            <div class="govuk-grid-column-full">
+                <p>Include</p>
+
+                @foreach (var fellingLicenceStatus in FellingLicenceApplicationUseCase.PostSubmittedStatuses)
+                {
+                    <strong fla-status-filter="@fellingLicenceStatus" style="float: left; cursor: pointer" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 @GetStatusStyleName(fellingLicenceStatus)" id="company-information-status">
+                        @fellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)
+
+                        (@Model.FellingLicenceApplicationAssignmentListModel.AssignedFellingLicenceApplicationModels.Count(x => x.FellingLicenceStatus == fellingLicenceStatus))
+                    </strong>
+                }
+            </div>
+        </div>
+
+        <div class="govuk-!-text-align-left govuk-grid-row">
+            <div class="govuk-grid-column-full" id="filter-section">
+                <div>
+
+                    <p>Filter by</p>
+
+                    <strong id="fla-assigned-to-user-filter" style="float: left; cursor: pointer" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 govuk-tag--grey" id="company-information-status">
+                        Assigned to me (@Model.FellingLicenceApplicationAssignmentListModel.AssignedToUserCount)
+                    </strong>
+
+                </div>
+
+                <div id="keywords-container">
+
+                    <p>Keywords</p>
+
+                    <input class="govuk-input" id="keywords-text" name="keywords-text" type="text" title="Search terms">
+
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-full">
+                <p>Showing @Model.FellingLicenceApplicationAssignmentListModel.AssignedFellingLicenceApplicationModels.Count applications | <a class="govuk-link govuk-link--no-visited-state" style="cursor: pointer" id="clear-all-filters">Clear all filters</a></p>
+            </div>
+        </div>
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-full">
+                <table class="govuk-table" data-module="moj-sortable-table" id="application-list-table">
+
+                    <thead class="govuk-table__head">
+
+                    <tr class="govuk-table__row">
+
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Status</th>
+
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Reference</th>
+
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Property</th>
+
+                        <th scope="col" class="govuk-table__header" aria-sort="none">User</th>
+
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Date submitted</th>
+
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Citizen charter date</th>
+
+                        <th scope="col" class="govuk-table__header" aria-sort="ascending">Final action date</th>
+
+                        <require-user-account-type required-account-type="AccountAdministrator">
+                            <th scope="col" class="govuk-table__header" aria-sort="ascending">Options</th>
+                        </require-user-account-type>
+                    </tr>
+
+                    </thead>
+
+                    <tbody class="govuk-table__body">
+
+                    @{
+                        foreach (var assignedFellingLicenceApplicationModel in Model.FellingLicenceApplicationAssignmentListModel.AssignedFellingLicenceApplicationModels)
+                        {
+                            <tr class="govuk-table__row data-row">
+
+                                <td class="govuk-table__cell" style="width: @(14 + offset)%">
+                                    <strong style="float: left" class="govuk-tag app-task-list__tag @GetStatusStyleName(assignedFellingLicenceApplicationModel.FellingLicenceStatus)" id="company-information-status">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
+                                </td>
+
+                                <td class="govuk-table__cell" style="width: @(10 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.Reference)">
+                                    <a asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId" aria-describedby="application-details">
+                                        @assignedFellingLicenceApplicationModel.Reference
+                                    </a>
+                                </td>
+
+                                <td class="govuk-table__cell" style="width: @(14 + offset)%;">
+                                    @assignedFellingLicenceApplicationModel.Property
+                                </td>
+
+                                <td class="govuk-table__cell" style="width: @(20 + offset)%;">
+
+                                    @{
+                                        // Display comma separated list of users
+
+                                        if (assignedFellingLicenceApplicationModel.UserFirstLastNames != null)
+                                        {
+                                            @(string.Join(", ", assignedFellingLicenceApplicationModel.UserFirstLastNames))
+                                        }
+                                    }
+                                </td>
+
+                                <td class="govuk-table__cell" style="width: @(14 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.SubmittedDate.HasValue ? assignedFellingLicenceApplicationModel.SubmittedDate.Value.ToString("yyyyMMdd") : "")">
+                                    @(assignedFellingLicenceApplicationModel.SubmittedDate.HasValue ? assignedFellingLicenceApplicationModel.SubmittedDate.Value.ToString("dd/MM/yyyy") : "")
+                                </td>
+
+                                <td class="govuk-table__cell" style="width: @(14 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.CitizensCharterDate.HasValue ? assignedFellingLicenceApplicationModel.CitizensCharterDate.Value.ToString("yyyyMMdd") : "")">
+                                    @(assignedFellingLicenceApplicationModel.CitizensCharterDate.HasValue ? assignedFellingLicenceApplicationModel.CitizensCharterDate.Value.ToString("dd/MM/yyyy") : "")
+                                </td>
+
+                                <td class="govuk-table__cell" style="width: @(14 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.Deadline.HasValue ? assignedFellingLicenceApplicationModel.Deadline.Value.ToString("yyyyMMdd") : "")">
+                                    @(assignedFellingLicenceApplicationModel.Deadline.HasValue ? assignedFellingLicenceApplicationModel.Deadline.Value.ToString("dd/MM/yyyy") : "")
+                                </td>
+
+                                <require-user-account-type required-account-type="AccountAdministrator">
+                                    @{
+                                        if (@assignedFellingLicenceApplicationModel.FellingLicenceStatus is FellingLicenceStatus.Withdrawn)
+                                        {
+                                            <td class="govuk-table__cell" style="width: 7%;">
+                                                <a asp-controller="FellingLicenceApplication" asp-action="ReopenWithdrawnApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId">
+                                                    Re-open
+                                                </a>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="govuk-table__cell" style="width: 7%;"></td>
+                                        }
+                                    }
+                                </require-user-account-type>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <div>
+        <h2 class="govuk-heading-m">Navigation</h2>
+
+        <ul class="govuk-body">
+
+            <li>
+                <a href="@Url.Action("Index", "Home")">Home</a>
+            </li>
+
+            @{
+                if (Model.SignedInUserRoles.Contains(Roles.FcAdministrator))
+                {
+                    <li>
+                        <a href="@Url.Action("UnconfirmedUserAccounts", "AdminAccount")">Unconfirmed user accounts</a>
+                    </li>
+
+                    <li>
+                        <a href="@Url.Action("FcStaffList", "AccountAdministration")">Manage FC user accounts in the system</a>
+                    </li>
+
+                    <li>
+                        <a href="@Url.Action("ExternalUserList", "ExternalAccountAdministration")">Manage applicant and FC user accounts in external applicant system</a>
+                    </li>
+                }
+            }
+
+            <li>
+                <a href="@Url.Action("Index", "Reports")">Reports</a>
+            </li>
+
+            <require-user-account-type required-account-type="AdminHubManager">
+                <li>
+                    <a href="@Url.Action("AdminHubSummary", "AdminHub")">Manage admin hub</a>
+                </li>
+            </require-user-account-type>
+
+        </ul>
+    </div>
+</logged-in>
+
+
+@section Scripts {
+    <script src="/js/fla-assignments-list.js"></script>
+}
+
+@section Css{
+    <link rel="stylesheet" href="~/css/application-list.css" aria-busyasp-append-version="true"/>
+}

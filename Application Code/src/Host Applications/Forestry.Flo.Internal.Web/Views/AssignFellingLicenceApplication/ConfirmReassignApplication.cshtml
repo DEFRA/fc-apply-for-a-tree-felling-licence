@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "Assign felling licence application";
+}
+
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ConfirmReassignApplicationModel;
+
+@{
+    var currentUserAssignment = Model.FellingLicenceApplicationSummary!.AssigneeHistories
+        .Single(x => x.TimestampUnassigned.HasValue == false && x.Role == Model.SelectedRole);
+
+    var currentUserName = $"{currentUserAssignment.UserAccount.FirstName} {currentUserAssignment.UserAccount.LastName}";
+}
+
+<div class="govuk-grid-column-full">
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+    <h1 class="govuk-heading-m">Are you sure you wish to reassign application @Model.FellingLicenceApplicationSummary.ApplicationReference ?</h1>
+
+    <partial name="Partials/_PageErrors"/>
+
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            @currentUserName is currently assigned as the @Model.SelectedRole.GetDisplayName() for application @Model.FellingLicenceApplicationSummary.ApplicationReference - are you sure you wish to reassign this role?
+        </strong>
+    </div>
+    
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+            
+            <a class="govuk-button" asp-controller="AssignFellingLicenceApplication" asp-action="SelectUser" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" asp-route-selectedRole="@Model.SelectedRole" asp-route-returnUrl="@Model.ReturnUrl">
+                Continue
+            </a>
+
+            <a class="govuk-link" href="@Model.ReturnUrl" title="Abandon changes and go to the application page">Cancel</a>
+
+        </div>
+    </div>
+
+</div>
+
+
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

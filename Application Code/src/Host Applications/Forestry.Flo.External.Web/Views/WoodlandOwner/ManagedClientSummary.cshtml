@@ -1,0 +1,133 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.WoodlandOwner.ManagedClientSummaryModel
+
+@{
+    ViewData["Title"] = "Manage client";
+    ViewData.ManuallySetBackLink(Url.Action("AgentUser", "Home", new
+    {
+        agentAuthorityId = Model.AgencyId
+    }));
+    ViewData.ShowBackLink();
+
+    var breadcrumbs = new BreadcrumbsModel { Breadcrumbs = new List<BreadCrumb>(0), CurrentPage = "Home" };
+    var address = Model.ManageWoodlandOwnerDetails.IsOrganisation ? Model.ManageWoodlandOwnerDetails.OrganisationAddress : Model.ManageWoodlandOwnerDetails.ContactAddress;
+
+    var addressLines = new List<string>(){
+            address?.Line1 ?? string.Empty,
+            address?.Line2 ?? string.Empty,
+            address?.Line3 ?? string.Empty,
+            address?.Line4 ?? string.Empty,
+            address?.PostalCode ?? string.Empty
+        };
+    var addressFormatted = string.Join(",", addressLines.Where(x => !string.IsNullOrEmpty(x)));
+    var orgName = Model.ManageWoodlandOwnerDetails.IsOrganisation ? Model.ManageWoodlandOwnerDetails.OrganisationName : "N/A";
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_PageErrors" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+
+    <h1 class="govuk-heading-xl">@Model.ManageWoodlandOwnerDetails.ContactName</h1>
+
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+                Organisation
+            </dt>
+            <dd class="govuk-summary-list__value">
+                @orgName
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+                Address
+            </dt>
+            <dd class="govuk-summary-list__value">
+                @addressFormatted
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+                Telephone
+            </dt>
+            <dd class="govuk-summary-list__value">
+                @Model.ManageWoodlandOwnerDetails.ContactTelephoneNumber
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+                Email
+            </dt>
+            <dd class="govuk-summary-list__value">
+                @Model.ManageWoodlandOwnerDetails.ContactEmail
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+                Agent authority form
+            </dt>
+            @if (Model.CurrentAgentAuthorityForm != null)
+            {
+                <dd class="govuk-summary-list__value">
+                    <a class="hidden-download-supporting-document"
+                       asp-controller="AgentAuthorityFormDocuments"
+                       asp-action="Download"
+                       asp-route-agentAuthorityId="@Model.AgentAuthorityId"
+                       asp-route-agentAuthorityFormId="@Model.CurrentAgentAuthorityForm.Id">
+                        @Model.CurrentAgentAuthorityForm.AafDocumentFileNamesList
+                    </a>
+                </dd>
+            }
+        </div>
+    </dl>
+
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@Model.ManageWoodlandOwnerDetails.Id">
+                Edit Client Details
+            </a>
+
+            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="AgentAuthorityFormDocuments" asp-action="Index" asp-route-agentAuthorityId="@Model.AgentAuthorityId">
+				Manage agent authority forms
+			</a>
+		</div>
+    </div>
+
+    <table class="govuk-table">
+        <caption class="govuk-table__caption govuk-table__caption--m">Properties</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Property name</th>
+                <th scope="col" class="govuk-table__header">Compartments</th>
+                <th scope="col" class="govuk-table__header">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var property in Model.Properties)
+            {
+                <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header">@property.Name</th>
+                    <td class="govuk-table__cell">@property.NoOfCompartments</td>
+                    <td class="govuk-table__cell margin-right-seperate">
+                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="Edit" asp-route-id="@property.PropertyId" asp-route-woodlandOwnerId="@Model.ManageWoodlandOwnerDetails.Id" asp-route-agencyId="@Model.AgencyId">
+                            Manage
+                        </a>
+                        <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="SelectWoodland" asp-route-woodlandOwnerId="@Model.ManageWoodlandOwnerDetails.Id" asp-route-agencyId="@Model.AgencyId" asp-route-propertyId="@property.PropertyId" asp-route-agencySourcePage="ClientProperty">
+                            Start new licence application
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+			<a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="PropertyProfile" asp-action="Create" asp-route-isApplication="False" asp-route-woodlandOwnerId="@Model.ManageWoodlandOwnerDetails.Id" asp-route-agencyId="@Model.AgencyId">
+				Add new property
+			</a>
+        </div>
+    </div>
+</div>

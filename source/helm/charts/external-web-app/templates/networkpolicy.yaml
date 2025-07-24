@@ -1,0 +1,67 @@
+{{- if .Values.global.networkpolicy.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "external-web-app.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "external-web-app.selectorLabels" . | nindent 6 }}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+         name: traefik
+         #kubernetes.io/metadata.name: traefik
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+    ports:
+      - port: http
+        protocol: TCP
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports:
+      - port: 53
+        protocol: UDP
+      - port: 53
+        protocol: TCP
+      - port: 5432
+        protocol: TCP
+  {{- if .Values.config.fileStorage.connectionString }}
+  - ports:
+      - port: 443
+        protocol: TCP
+  {{- end }}
+  {{- if .Values.config.notifications.smtp.port }}
+  - ports:
+      - port: {{ .Values.config.notifications.smtp.port }}
+        protocol: TCP
+  {{- end }}
+  {{- if .Values.config.quicksilvaVirusScannerService.avEndpoint }}
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: file-scan-web-app
+      namespaceSelector: {}
+    ports:
+      - port: 80
+        protocol: TCP
+      - port: 8080
+        protocol: TCP
+  {{- end }}
+  {{- if .Values.global.rabbitmq.enabled }}
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: rabbitmq
+    ports:
+      - port: 5672
+        protocol: TCP
+  {{- end }}
+{{- end -}}

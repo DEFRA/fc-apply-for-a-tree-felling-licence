@@ -1,0 +1,249 @@
+﻿@using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ApproverReviewSummaryModel
+@{
+    ViewData["Title"] = "Approver review";
+    var user = new InternalUser(User);
+}
+
+<div class="govuk-grid-column-full" id="summary-container">
+	<h1 class="govuk-heading-xl">
+		Application @Model.FellingLicenceApplicationSummary!.ApplicationReference
+	</h1>
+	<partial name="Partials/_ConfirmationMessageDisplay" />
+	<partial name="Partials/_UserGuideDisplay" />
+	<partial name="Partials/_PageErrors" />
+	<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    <form asp-action="SaveApproverReview" method="post">
+
+        @Html.AntiForgeryToken()
+        
+        <input type="hidden" asp-for="ApproverReview.ApplicationId"/>
+        <input type="hidden" asp-for="RecommendedLicenceDuration" />
+        <input type="hidden" asp-for="IsWOReviewed" />
+
+		<div class="govuk-form-group">
+			<fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading"> Confirm you have reviewed the application details</h2>
+                </legend>
+				<div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <validation asp-for="ApproverReview.CheckedApplication"></validation>
+                    <div class="govuk-checkboxes__item">
+						<input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedApplication" />
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedApplication">I have reviewed the felling licence application</label>
+                    </div>
+                    <validation asp-for="ApproverReview.CheckedDocumentation"></validation>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedDocumentation"/>
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedDocumentation">I have reviewed the supporting documentation</label>
+                    </div>
+                    <validation asp-for="ApproverReview.CheckedCaseNotes"></validation>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedCaseNotes"/>
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedCaseNotes">I have reviewed the case notes</label>
+                    </div>
+                    @if (Model.IsWOReviewed)
+                    {
+                        <validation asp-for="ApproverReview.CheckedWOReview"></validation>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedWOReview"/>
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedWOReview">
+                                I have reviewed the Woodland Officer review and recommendations
+                            </label>
+                        </div>
+                    }
+                </div>
+            </fieldset>
+
+        </div>
+
+        <div class="govuk-form-group" condition-disabled="Model.IsReadonly">
+            <fieldset class="govuk-fieldset" aria-describedby="decision-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-fieldset__heading">
+                        Is this application ready for a decision?
+                    </h1>
+                </legend>
+
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" id="decision-yes" name="Decision" type="radio" value="true" data-aria-controls="conditional-decision-yes" asp-for="Decision" />
+                        <label class="govuk-label govuk-radios__label" for="decision-yes">
+                            Yes
+                        </label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" id="decision-no" name="Decision" type="radio" value="false" data-aria-controls="conditional-decision-no" asp-for="Decision" />
+                        <label class="govuk-label govuk-radios__label" for="decision-no">
+                            No (it needs to be returned to an AO or WO for further work)
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div id="conditional-decision-no">
+            <div class="govuk-button-group">
+                <button
+                    type="submit"
+                    class="govuk-button"
+                    data-module="govuk-button"
+                    asp-action="ReturnApplication"
+                    asp-route-id="@Model.FellingLicenceApplicationSummary.Id"
+                    condition-disabled="Model.IsReadonly"
+                    data-prevent-double-click="true">
+                    Return this application
+                </button>
+				<a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary!.Id" title="Abandon changes and go to the previous page">Cancel</a>
+            </div>
+        </div>
+
+		<div id="conditional-decision-empty">
+			<div class="govuk-button-group">
+				<a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary!.Id" title="Abandon changes and go to the previous page">Cancel</a>
+			</div>
+		</div>
+
+		<div id="conditional-decision-yes">
+
+            <div class="govuk-form-group">
+
+			    <fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                        <h2 class="govuk-fieldset__heading">Make a decision on the application</h2>
+                    </legend>
+                
+                    <validation asp-for="ApproverReview.RequestedStatus"></validation>
+
+                    <div class="govuk-radios" data-module="govuk-radios">
+                        <div class="govuk-radios__item">
+                            <input id="status-approve" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Approved" asp-for="ApproverReview.RequestedStatus" />
+                            <label class="govuk-label govuk-radios__label" for="status-approve">Approve</label>
+                            <div class="govuk-hint govuk-radios__hint">
+                                You approve the woodland officer review and confirm that a licence
+                                can be issued.
+                            </div>
+                        </div>
+
+					    <fieldset class="govuk-fieldset" id="conditional-reason">
+                            <div class="govuk-radios__conditional">
+                                <div class="govuk-form-group">
+                                    <label class="govuk-label" asp-for="ApproverReview.ApprovedLicenceDuration">Licence duration.</label>
+                                    <div class="govuk-hint" id="duration-hint">
+                                        You can change the licence duration, the licence end date will be
+                                        automatically generated based on this selection. If you approve this
+                                        application today a [years] licence will expire [D/MM/YYYY].
+                                    </div>
+                                    <validation asp-for="ApproverReview.ApprovedLicenceDuration"></validation>
+                                    <select class="govuk-select" asp-for="ApproverReview.ApprovedLicenceDuration" asp-items="@Model.RecommendedLicenceDurations"></select>
+                                </div>
+
+                                <div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="150">
+                                    <label class="govuk-label" asp-for="ApproverReview.DurationChangeReason">
+                                        Give your reasons if you have changed the recommended licence duration.
+                                    </label>
+                                    <validation asp-for="ApproverReview.DurationChangeReason"></validation>
+                                    <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="ApproverReview.DurationChangeReason" aria-describedby="ApproverReview_DurationChangeReason-info"></textarea>
+                                    <div id="ApproverReview_DurationChangeReason-info" class="govuk-hint govuk-character-count__message">
+                                        You can enter up to 150 characters 
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <div class="govuk-radios__item">
+                            <input id="status-refer" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.ReferredToLocalAuthority" asp-for="ApproverReview.RequestedStatus" />
+                            <label class="govuk-label govuk-radios__label" for="status-refer">Refer to the local authority</label>
+
+                        </div>
+                        <div class="govuk-radios__divider"></div>
+                        <div class="govuk-radios__item">
+                            <input id="status-refuse" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Refused" asp-for="ApproverReview.RequestedStatus" />
+                            <label class="govuk-label govuk-radios__label" for="status-refuse">Refuse</label>
+
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="govuk-form-group">
+
+			    <fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
+
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                        <h2 class="govuk-heading-m">Inform the applicant about the decision</h2>
+                    </legend>
+                    <div class="govuk-body-s">
+                        <validation asp-for="ApproverReview.InformedApplicant"></validation>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.InformedApplicant" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.InformedApplicant">
+                                I confirm that I have informed the applicant about the decision application
+                            </label>
+                        </div>
+                    </div>
+
+				    <button data-prevent-double-click="true" type="submit" asp-action="SaveGeneratePdfPreview" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" 
+                            class="govuk-button govuk-button--secondary" data-module="govuk-button" condition-disabled="Model.IsReadonly">
+                        Generate preview document
+                    </button>
+
+                    <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
+
+                </fieldset>
+            </div>
+
+            <div class="govuk-form-group">
+
+			    <fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
+                    <h2 class="govuk-heading-m">Publish your decision</h2>
+
+                    <div class="govuk-radios" data-module="govuk-radios">
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" id="dpr-yes" asp-for="ApproverReview.PublicRegisterPublish" type="radio" value="true"/>
+                            <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes publish to the Decision Public Register</label>
+                        </div>
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" id="dpr-no" asp-for="ApproverReview.PublicRegisterPublish" type="radio" value="false"/>
+                            <label class="govuk-label govuk-radios__label" for="dpr-no">No this application is exempt</label>
+                        </div>
+                        <fieldset class="govuk-fieldset" id="conditional-exempt">
+                            <div class="govuk-radios__conditional">
+                                <div class="govuk-form-group" id="dpr-reason">
+                                    <label class="govuk-label" asp-for="ApproverReview.PublicRegisterExemptionReason">Explain why this application is exempt</label>
+                                    <validation asp-for="ApproverReview.PublicRegisterExemptionReason"></validation>
+                                    <textarea class="govuk-textarea" rows="4" asp-for="ApproverReview.PublicRegisterExemptionReason"></textarea>
+                                </div>
+						    </div>
+					    </fieldset>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+                    <button data-prevent-double-click="true" type="submit" asp-action="SaveApproverReview" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" class="govuk-button" data-module="govuk-button" condition-disabled="Model.IsReadonly">
+                        Confirm
+                    </button>
+                    <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary!.Id" title="Abandon changes and go to the previous page">Cancel</a>
+                </div>
+            </div>
+		</div>
+	</form>
+
+</div>
+
+@section breadcrumbs
+{
+	<partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}
+
+@section Scripts
+{
+	<script src="~/js/approver-review.js" asp-append-version="true"></script>
+}
