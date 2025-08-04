@@ -72,11 +72,18 @@
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
-                    <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="consultation">
+                    @*                     <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="consultation">
+                        Consultation
+                    </a>*@
+                    <a aria-describedby="consultation">
                         Consultation
                     </a>
+                    <a class="govuk-hint">
+                        <br/>(Not implemented yet)
+                    </a>
                 </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetStatusStyleName() app-task-list__tag" id="consultation">@Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()</strong>
+                @* <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetStatusStyleName() app-task-list__tag" id="consultation">@Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()</strong> *@
+                <strong class="govuk-tag @(InternalReviewStepStatus.NotRequired.GetStatusStyleName()) app-task-list__tag" id="consultation">@(InternalReviewStepStatus.NotRequired.GetDisplayName())</strong>
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
@@ -140,11 +147,18 @@
 			</li>
 			<li class="app-task-list__item">
                 <span class="app-task-list__task-name">
-                    <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="final-checks">
+                    @* <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="final-checks">
+                        Final checks
+                    </a> *@
+                    <a aria-describedby="consultation">
                         Final checks
                     </a>
+                    <a class="govuk-hint">
+                        <br/>(Not implemented yet)
+                    </a>
                 </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetStatusStyleName() app-task-list__tag" id="final-checks">@Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()</strong>
+                @* <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetStatusStyleName() app-task-list__tag" id="final-checks">@Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()</strong> *@
+                <strong class="govuk-tag @(InternalReviewStepStatus.NotRequired.GetStatusStyleName()) app-task-list__tag" id="final-checks">@(InternalReviewStepStatus.NotRequired.GetDisplayName())</strong>
             </li>
         </ul>
         

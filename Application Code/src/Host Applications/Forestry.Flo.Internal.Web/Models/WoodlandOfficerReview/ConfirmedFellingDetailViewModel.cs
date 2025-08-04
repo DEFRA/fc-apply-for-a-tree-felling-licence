@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Services.FellingLicenceApplications.Models; // Add this for TreeSpeciesFactory
@@ -88,7 +89,7 @@ public class NewConfirmedFellingDetailViewModel
     /// </summary>
     public string? NoRestockingReason { get; set; }
 
-    public Dictionary<string, string> AmendedProperties { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, string?> AmendedProperties { get; set; } = new Dictionary<string, string?>();
 
     public object? OldValue(string propName, object? currentValue = null)
     {
@@ -126,4 +127,10 @@ public class ConfirmedFellingDetailViewModel : NewConfirmedFellingDetailViewMode
     /// </summary>
     [HiddenInput]
     public Guid ConfirmedFellingDetailsId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier for the proposed felling details, if applicable.
+    /// </summary>
+    [HiddenInput]
+    public Guid? ProposedFellingDetailsId { get; set; }
 }

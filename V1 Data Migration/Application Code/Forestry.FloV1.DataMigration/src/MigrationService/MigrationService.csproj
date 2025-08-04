@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\GetAllV1ManagedOwners.sql" />
+    <None Remove="Resources\GetAllV1Users.sql" />
+    <None Remove="Resources\V2\InsertAgency.sql" />
+    <None Remove="Resources\V2\InsertAgentAuthority.sql" />
+    <None Remove="Resources\V2\InsertUserAccount.sql" />
+    <None Remove="Resources\V2\InsertWoodlandOwner.sql" />
+    <None Remove="Resources\V2\UpdateWoodlandOwnerManagedOwnerId.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\V1\GetAllV1ManagedOwners.sql" />
+    <EmbeddedResource Include="Resources\V1\GetAllV1Users.sql" />
+    <EmbeddedResource Include="Resources\V2\InsertAgency.sql" />
+    <EmbeddedResource Include="Resources\V2\InsertAgentAuthority.sql" />
+    <EmbeddedResource Include="Resources\V2\InsertUserAccount.sql" />
+    <EmbeddedResource Include="Resources\V2\InsertWoodlandOwner.sql" />
+    <EmbeddedResource Include="Resources\V2\UpdateWoodlandOwnerManagedOwnerId.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ardalis.GuardClauses" Version="4.0.1" />
+    <PackageReference Include="CSharpFunctionalExtensions" Version="2.37.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
+    <PackageReference Include="Npgsql" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\Domain.csproj" />
+  </ItemGroup>
+
+</Project>

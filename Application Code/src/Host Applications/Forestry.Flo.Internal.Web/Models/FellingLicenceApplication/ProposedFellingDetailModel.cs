@@ -60,4 +60,14 @@ public class ProposedFellingDetailModel
 
 
     public double EstimatedTotalFellingVolume { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether there is restocking for this felling.
+    /// </summary>
+    public bool? IsRestocking { get; set; }
+
+    /// <summary>
+    /// Gets or sets the reason for not having restocking.
+    /// </summary>
+    public string? NoRestockingReason { get; set; }
 }

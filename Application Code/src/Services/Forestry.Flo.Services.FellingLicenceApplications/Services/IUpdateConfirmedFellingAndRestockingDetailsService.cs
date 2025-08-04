@@ -30,6 +30,20 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Reverts amendments made to a deleted confirmed felling detail by reimporting the proposed felling details.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="proposedFellingDetailsId">The id of the proposed felling details to reimport.</param>
+    /// <param name="userId">The id of the user reverting the amendments.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the deleted confirmed felling detail amendments have been reverted.</returns>
+    Task<Result> RevertConfirmedFellingDetailAmendmentsAsync(
+        Guid applicationId,
+        Guid proposedFellingDetailsId,
+        Guid userId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Saves amendments made to confirmed felling and restocking details.
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
@@ -72,6 +86,13 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Guid applicationId,
         Guid userId,
         NewConfirmedFellingDetailWithCompartmentId confirmedFellingDetailsModel,
+        Dictionary<string, SpeciesModel> speciesModel,
+        CancellationToken cancellationToken);
+
+    Task<Result> SaveChangesToConfirmedRestockingDetailsAsync(
+        Guid applicationId,
+        Guid userId,
+        IndividualConfirmedRestockingDetailModel confirmedRestockingDetailsModel,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 

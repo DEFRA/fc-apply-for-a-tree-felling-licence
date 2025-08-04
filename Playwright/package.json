@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@axe-core/playwright": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.25.1"
+  },
+  "scripts": {}
+}

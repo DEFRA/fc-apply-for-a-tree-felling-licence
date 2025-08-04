@@ -1,0 +1,36 @@
+{
+  "profiles": {
+    "Reset Flov2 Target Env": {
+      "commandName": "Project",
+      "commandLineArgs": "reset"
+    },
+    "PreValidate ExternalUsers": {
+      "commandName": "Project",
+      "commandLineArgs": "prevalidate --migration ExternalUsers"
+    },
+    "Migrate ExternalUsers": {
+      "commandName": "Project",
+      "commandLineArgs": "migrate --migration ExternalUsers"
+    },
+    "Migrate ExternalUsers (testmode)": {
+      "commandName": "Project",
+      "commandLineArgs": "migrate --migration ExternalUsers -t"
+    },
+    "Migrate ExternalUsers (with user email address of choosing with +flov1 suffix before the domain)": {
+      "commandName": "Project",
+      "commandLineArgs": "migrate --migration ExternalUsers -e paul.winslade@qxlva.com"
+    },
+    "Migrate ExternalUsers (no prevalidation step)": {
+      "commandName": "Project",
+      "commandLineArgs": "migrate --migration ExternalUsers -d"
+    },
+    "Migrate ManagedOwners (no prevalidate step)": {
+      "commandName": "Project",
+      "commandLineArgs": "migrate --migration ManagedOwners -d"
+    },
+    "Migrate ManagedOwners": {
+      "commandName": "Project",
+      "commandLineArgs": "migrate --migration ManagedOwners"
+    }
+  }
+}

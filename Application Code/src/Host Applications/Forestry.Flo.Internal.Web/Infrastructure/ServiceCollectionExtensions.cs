@@ -168,6 +168,8 @@ public static class ServiceCollectionExtensions
         services.AddOptions<SiteAnalyticsSettings>().BindConfiguration(SiteAnalyticsSettings.ConfigurationKey);
         services.AddSingleton<SiteSiteAnalyticsService>();
 
+        services.AddScoped<BackLinkService>();
+
         RegisterUseCases(services, configuration);
 
         return services;

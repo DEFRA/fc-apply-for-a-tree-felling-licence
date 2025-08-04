@@ -40,6 +40,11 @@
             name: 'Species and percentages selection'
         });
         $('#restocking-tree-species-select').val('');
+
+        var speciesError = $('.govuk-error-summary a[href="#Species"]');
+        if (speciesError !== null) {
+            speciesError.attr('href', '#restocking-tree-species-select');
+        }
     }
     function addSpecies(e) {
         e.preventDefault(); // Prevent form submission

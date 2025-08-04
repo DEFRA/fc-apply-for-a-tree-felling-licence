@@ -34,7 +34,11 @@
 
     @foreach (var item in Model.FellingAndRestockingDetails)
     {
-        <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" />
+        <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling" />
+        @foreach (var restocking in item.RestockingDetail)
+        {
+            <input type="hidden" id="@restocking.RestockingCompartmentId" value="@restocking.GISData" data-label="@restocking.RestockingCompartmentName" data-group="compartments_GIS" data-type="restocking" />
+        }
     }
 
     <div class="profileMap" id="viewDiv"></div>
