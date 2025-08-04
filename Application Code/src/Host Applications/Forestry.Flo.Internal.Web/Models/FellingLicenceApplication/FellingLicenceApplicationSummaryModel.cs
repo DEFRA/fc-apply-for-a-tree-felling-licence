@@ -123,14 +123,14 @@ public class FellingLicenceApplicationSummaryModel
             bool areAllSpeciesCBW = DetailsList
                 .All(detail =>
                     detail.FellingDetail.Species.All(specie => specie.Key == "CBW") &&
-                    (detail.RestockingDetail?.Species == null || detail.RestockingDetail.Species.All(specie => specie.Key == "CBW"))
+                    detail.RestockingDetail.All(r => r.Species.All(specie => specie.Key == "CBW"))
                 );
 
             bool areAllFellingIndividualTrees = DetailsList
                 .All(detail => detail.FellingDetail.OperationType == FellingOperationType.FellingIndividualTrees);
 
-            bool areAllRestockingIndividualTrees = DetailsList
-                .All(detail => detail.RestockingDetail?.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees);
+            bool areAllRestockingIndividualTrees = DetailsList.SelectMany(x => x.RestockingDetail)
+                .All(detail => detail.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees);
 
             return areAllSpeciesCBW && areAllFellingIndividualTrees && areAllRestockingIndividualTrees;
         }

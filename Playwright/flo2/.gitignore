@@ -1,0 +1,6 @@
+node_modules/
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/flo2-report/
+/flo2-report/index.html

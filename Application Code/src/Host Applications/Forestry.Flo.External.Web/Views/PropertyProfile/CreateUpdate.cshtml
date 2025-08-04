@@ -164,23 +164,23 @@
 
                 <table class="govuk-table govuk-!-padding-bottom-4" id="compartment-list-table" style="border-collapse: collapse">
                     <thead class="govuk-table__head">
-                        <tr class="govuk-table__row">
-                            <th scope="col" class="govuk-table__header">Name</th>
-                            <th scope="col" class="govuk-table__header">Size (ha)</th>
-                        </tr>
+                    <tr class="govuk-table__row">
+                        <th scope="col" class="govuk-table__header">Name</th>
+                        <th scope="col" class="govuk-table__header">Size (ha)</th>
+                    </tr>
                     </thead>
                     <tbody class="govuk-table__body">
-                        @foreach (var compartment in Model?.Compartments ?? Array.Empty<CompartmentModel>())
-                        {
-                            <tr data-id="@compartment.Id" class="govuk-table__row">
-                                <td class="govuk-table__cell">
-                                    <a class="govuk-link" asp-controller="Compartment" asp-action="EditDetails" asp-route-id="@compartment.Id" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId">
-                                        @compartment.DisplayName
-                                    </a> &nbsp;
-                                </td>
-                                <th scope="row" class="govuk-table__header">@Math.Round((compartment.TotalHectares.HasValue ? compartment.TotalHectares.Value : 0), 2)</th>
-                            </tr>
-                        }
+                    @foreach (var compartment in Model?.Compartments ?? Array.Empty<CompartmentModel>())
+                    {
+                        <tr data-id="@compartment.Id" class="govuk-table__row">
+                            <td class="govuk-table__cell">
+                                <a class="govuk-link" asp-controller="Compartment" asp-action="EditDetails" asp-route-id="@compartment.Id" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId">
+                                    @compartment.DisplayName
+                                </a> &nbsp;
+                            </td>
+                            <th scope="row" class="govuk-table__header">@Math.Round((compartment.TotalHectares.HasValue ? compartment.TotalHectares.Value : 0), 2)</th>
+                        </tr>
+                    }
                     </tbody>
                 </table>
 
@@ -211,10 +211,15 @@
                 </button>
 
             </div>
+            
+            @{
+                var formAction = editing ? Url.Action("Edit") : Url.Action("Create");
+            }
 
             <div class="govuk-form-group">
                 <div class="govuk-button-group">
-                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button" formaction="Save">
+
+                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button" formaction="@formAction">
                         @saveLabel
                     </button>
 

@@ -39,7 +39,7 @@
             <li condition="@Model.AgentApplication" class="app-task-list__item">
                 <span class="app-task-list__task-name">
                     <a href="@Url.Action(nameof(AdminOfficerReviewController.AgentAuthorityFormCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="agent-authority-form">
-                        Agent authority form
+                        Agent Authority Form
                     </a>
                 </span>
                 <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus.GetStatusStyleName() app-task-list__tag" id="agent-authority-form">@Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus.GetDisplayName()</strong>
@@ -130,13 +130,13 @@
                     @if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.NotRequired || Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.CannotStartYet)
                     {
                         <a aria-describedby="cbw-check">
-                            Cricket bat willow check
+                            Cricket Bat Willow check
                         </a>
                     }
                     else
                     {
                         <a href="@Url.Action(nameof(AdminOfficerReviewController.CBWCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="cbw-check">
-                            Cricket bat willow check
+                            Cricket Bat Willow check
                         </a>
                     }
                 </span>

@@ -46,3 +46,8 @@ public class NewConfirmedFellingDetailModel : CompartmentConfirmedFellingRestock
     /// </summary>
     public required NewConfirmedFellingDetailViewModel ConfirmedFellingDetails { get; set; }
 }
+
+public class IndividualConfirmedRestockingDetailModel : CompartmentConfirmedFellingRestockingDetailsModelBase
+{
+    public ConfirmedRestockingDetailViewModel ConfirmedRestockingDetails { get; set; }
+}

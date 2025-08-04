@@ -62,3 +62,15 @@ public class IndividualConfirmedFellingRestockingDetailModel : ConfirmedFellingA
     /// </summary>
     public required ConfirmedFellingDetailModel ConfirmedFellingDetailModel { get; set; }
 }
+
+/// <summary>
+/// Model class for an individual confirmed felling and restocking detail, 
+/// containing a single confirmed felling detail for a compartment.
+/// </summary>
+public class IndividualConfirmedRestockingDetailModel : ConfirmedFellingAndRestockingDetailModelBase
+{
+    /// <summary>
+    /// Gets or sets the confirmed felling detail model for the compartment.
+    /// </summary>
+    public required ConfirmedRestockingDetailModel ConfirmedRestockingDetailModel { get; set; }
+}

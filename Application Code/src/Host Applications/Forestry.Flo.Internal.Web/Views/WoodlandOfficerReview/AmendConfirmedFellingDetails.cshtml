@@ -271,7 +271,9 @@
                             Do you want to restock?
                         </legend>
                         <div id="restock-hint" class="govuk-hint">
-                            The applicant answered @((fd.OldValue("IsRestocking") ?? ((fd.IsRestocking??false).ToString())) == "True" ? "Yes" : "No")
+                            The applicant answered @(fd.OldValue("IsRestocking") == null
+                                                        ? "N/A"
+                                                        : (fd.OldValue("IsRestocking") == "True" ? "Yes" : "No"))
                         </div>
                         <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
@@ -309,7 +311,7 @@
                             Save
                         </button>
 
-                        <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and go to the woodland officer review">Cancel</a>
+                        <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and go to the summary">Cancel</a>
 
                     </div>
                 </div>

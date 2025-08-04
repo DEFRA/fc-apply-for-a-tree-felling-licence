@@ -19,10 +19,12 @@ using System.Threading.Tasks;
 using Forestry.Flo.Services.Common.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
-public class UpdateConfirmedFellingAndRestockingDetailsServiceTests
+public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
 {
     private IFellingLicenceApplicationInternalRepository? _fellingLicenceApplicationRepository;
     private readonly Mock<IAuditService<UpdateConfirmedFellingAndRestockingDetailsService>> _audit = new();
@@ -695,6 +697,156 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
+        result.IsFailure.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveChangesToConfirmedRestockingDetailsAsync_AmendsDetails_WhenAllDataRetrieved()
+    {
+        var sut = CreateSut();
+        var userId = Guid.NewGuid();
+        var fla = ConstructFellingLicenceApplication(true, userId);
+        var compartment = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
+        var confirmedFellingDetail = compartment.ConfirmedFellingDetails.First();
+        var confirmedRestockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.First();
+
+        _fellingLicenceApplicationsContext!.Add(fla);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        var restockingSpecies = new List<ConfirmedRestockingSpecies>
+        {
+            new ConfirmedRestockingSpecies { Species = "speciesA", Percentage = 50 },
+            new ConfirmedRestockingSpecies { Species = "speciesB", Percentage = 50 }
+        };
+
+        var detailModel = new IndividualConfirmedRestockingDetailModel
+        {
+            CompartmentId = compartment.CompartmentId,
+            ConfirmedRestockingDetailModel = new ConfirmedRestockingDetailModel
+            {
+                ConfirmedRestockingDetailsId = confirmedRestockingDetail.Id,
+                ConfirmedFellingDetailsId = confirmedFellingDetail.Id,
+                Area = 123,
+                RestockingProposal = TypeOfProposal.ReplantTheFelledArea,
+                NumberOfTrees = 10,
+                PercentOpenSpace = 5,
+                PercentNaturalRegeneration = 10,
+                PercentageOfRestockArea = 100,
+                RestockingDensity = 200,
+                ConfirmedRestockingSpecies = restockingSpecies
+            }
+        };
+
+        var speciesModel = new Dictionary<string, SpeciesModel>
+        {
+            { "speciesA", new SpeciesModel { Id = Guid.NewGuid(), Species = "speciesA", Percentage = 50 } },
+            { "speciesB", new SpeciesModel { Id = Guid.NewGuid(), Species = "speciesB", Percentage = 50 } }
+        };
+
+        var result = await sut.SaveChangesToConfirmedRestockingDetailsAsync(
+            fla.Id,
+            userId,
+            detailModel,
+            speciesModel,
+            CancellationToken.None);
+
+        var storedFla = await _fellingLicenceApplicationsContext.FellingLicenceApplications
+            .Include(x => x.SubmittedFlaPropertyDetail)
+            .ThenInclude(d => d.SubmittedFlaPropertyCompartments!)
+            .ThenInclude(c => c.ConfirmedFellingDetails)
+            .ThenInclude(fd => fd.ConfirmedRestockingDetails)
+            .ThenInclude(rd => rd.ConfirmedRestockingSpecies)
+            .FirstOrDefaultAsync(x => x.Id == fla.Id);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(storedFla);
+        var storedCompartment = storedFla!.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First(x => x.CompartmentId == compartment.CompartmentId);
+        var storedFellingDetail = storedCompartment.ConfirmedFellingDetails.First(x => x.Id == confirmedFellingDetail.Id);
+        var storedRestockingDetail = storedFellingDetail.ConfirmedRestockingDetails.First(x => x.Id == confirmedRestockingDetail.Id);
+        Assert.Equal(123, storedRestockingDetail.Area);
+        Assert.Equal(TypeOfProposal.ReplantTheFelledArea, storedRestockingDetail.RestockingProposal);
+        Assert.Equal(10, storedRestockingDetail.NumberOfTrees);
+        Assert.Equal(5, storedRestockingDetail.PercentOpenSpace);
+        Assert.Equal(10, storedRestockingDetail.PercentNaturalRegeneration);
+        Assert.Equal(100, storedRestockingDetail.PercentageOfRestockArea);
+        Assert.Equal(200, storedRestockingDetail.RestockingDensity);
+        Assert.Equal(2, storedRestockingDetail.ConfirmedRestockingSpecies.Count);
+        Assert.Contains(storedRestockingDetail.ConfirmedRestockingSpecies, x => x.Species == "speciesA" && x.Percentage == 50);
+        Assert.Contains(storedRestockingDetail.ConfirmedRestockingSpecies, x => x.Species == "speciesB" && x.Percentage == 50);
+    }
+
+    [Fact]
+    public async Task SaveChangesToConfirmedRestockingDetailsAsync_ReturnsFailure_WhenCompartmentIsNotFound()
+    {
+        var sut = CreateSut();
+        var userId = Guid.NewGuid();
+        var fla = ConstructFellingLicenceApplication(true, userId);
+        var confirmedFellingDetail = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First().ConfirmedFellingDetails.First();
+        var confirmedRestockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.First();
+        var randomCompartmentId = Guid.NewGuid();
+        var detailModel = new IndividualConfirmedRestockingDetailModel
+        {
+            CompartmentId = randomCompartmentId,
+            ConfirmedRestockingDetailModel = new ConfirmedRestockingDetailModel
+            {
+                ConfirmedRestockingDetailsId = confirmedRestockingDetail.Id,
+                ConfirmedFellingDetailsId = confirmedFellingDetail.Id,
+                Area = 123,
+                RestockingProposal = TypeOfProposal.ReplantTheFelledArea,
+                ConfirmedRestockingSpecies = new List<ConfirmedRestockingSpecies>()
+            }
+        };
+        var result = await sut.SaveChangesToConfirmedRestockingDetailsAsync(
+            fla.Id,
+            userId,
+            detailModel,
+            new Dictionary<string, SpeciesModel>(),
+            CancellationToken.None);
+        result.IsFailure.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveChangesToConfirmedRestockingDetailsAsync_ReturnsFailure_WhenUserIsNotPermitted()
+    {
+        var sut = CreateSut();
+        var userId = Guid.NewGuid();
+        var fla = ConstructFellingLicenceApplication(true, userId);
+        var confirmedFellingDetail = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First().ConfirmedFellingDetails.First();
+        var confirmedRestockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.First();
+        var detailModel = new IndividualConfirmedRestockingDetailModel
+        {
+            CompartmentId = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First().CompartmentId,
+            ConfirmedRestockingDetailModel = new ConfirmedRestockingDetailModel
+            {
+                ConfirmedRestockingDetailsId = confirmedRestockingDetail.Id,
+                ConfirmedFellingDetailsId = confirmedFellingDetail.Id,
+                Area = 123,
+                RestockingProposal = TypeOfProposal.ReplantTheFelledArea,
+                ConfirmedRestockingSpecies = new List<ConfirmedRestockingSpecies>()
+            }
+        };
+        var otherUserId = Guid.NewGuid();
+        var result = await sut.SaveChangesToConfirmedRestockingDetailsAsync(
+            fla.Id,
+            otherUserId,
+            detailModel,
+            new Dictionary<string, SpeciesModel>(),
+            CancellationToken.None);
+        result.IsFailure.Should().BeTrue();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task SaveChangesToConfirmedRestockingDetailsAsync_ReturnsFailure_WhenApplicationNotFound(
+        FellingLicenceApplication fla, IndividualConfirmedRestockingDetailModel detailModel)
+    {
+        var userId = Guid.NewGuid();
+        var sut = CreateSut();
+        var result = await sut.SaveChangesToConfirmedRestockingDetailsAsync(
+            fla.Id,
+            userId,
+            detailModel,
+            new Dictionary<string, SpeciesModel>(),
+            CancellationToken.None);
         result.IsFailure.Should().BeTrue();
     }
 }

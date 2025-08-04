@@ -28,12 +28,12 @@ public class ProposedRestockingDetailModel
     /// <summary>
     /// Gets or sets the percentage of restock area.
     /// </summary>
-    public int? PercentageOfRestockArea { get; set; }
+    public double? PercentageOfRestockArea { get; set; }
 
     /// <summary>
     /// Gets or sets the restocking density.
     /// </summary>
-    public double RestockingDensity { get; set; }
+    public double? RestockingDensity { get; set; }
 
     /// <summary>
     /// Gets or sets the no of trees.
@@ -48,4 +48,10 @@ public class ProposedRestockingDetailModel
     // TODO: Step complete applies at the compartment level
 
     public bool? StepComplete { get; set; }
+
+    public Guid RestockingCompartmentId { get; set; }
+
+    public string? RestockingCompartmentName { get; set; }
+
+    public string? GISData { get; set; }
 }

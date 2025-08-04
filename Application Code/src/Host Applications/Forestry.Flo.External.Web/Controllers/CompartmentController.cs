@@ -83,17 +83,26 @@ public class CompartmentController : Controller
     }
 
     [HttpPost]
-    public ActionResult CreateFromApplication(Guid propertyProfileId, Guid applicationId, bool isForRestockingCompartmentSelection, Guid? fellingCompartmentId, string? fellingCompartmentName, Guid? proposedFellingDetailsId, FellingOperationType? fellingOperationType)
+    public ActionResult CreateFromApplication(
+        Guid propertyProfileId, 
+        Guid applicationId, 
+        bool isForRestockingCompartmentSelection, 
+        Guid? fellingCompartmentId, 
+        string? fellingCompartmentName, 
+        Guid? proposedFellingDetailsId, 
+        Guid? woodlandOwnerId,
+        FellingOperationType? fellingOperationType)
     {
         return RedirectToAction(nameof(CreateDetails), new 
         { 
             propertyProfileId, 
             applicationId, 
+            woodlandOwnerId,
             isForRestockingCompartmentSelection,
             fellingCompartmentId, 
             fellingCompartmentName, 
             proposedFellingDetailsId, 
-            fellingOperationType 
+            fellingOperationType
         });
     }
 

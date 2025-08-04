@@ -1,0 +1,374 @@
+{
+	"info": {
+		"_postman_id": "5d93e426-35b0-4a1a-ac60-0eb040a2dbd2",
+		"name": "Forestry AGOL",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23575896"
+	},
+	"item": [
+		{
+			"name": "GetToken",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "Client_ID",
+							"value": "UtlsgDHlYCOgFW02",
+							"type": "text"
+						},
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "7f9e03d160bd45d497a01ee3f3f44963",
+							"type": "text"
+						},
+						{
+							"key": "f",
+							"value": "json",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://forestergis.maps.arcgis.com/sharing/rest/oauth2/token",
+					"protocol": "https",
+					"host": [
+						"forestergis",
+						"maps",
+						"arcgis",
+						"com"
+					],
+					"path": [
+						"sharing",
+						"rest",
+						"oauth2",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Distance",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "geometry1",
+							"value": "{\"geometryType\":\"esriGeometryPolygon\",\"geometry\":{\"rings\":[[[415045.3573037274,184773.88206445618],[415056.49363465986,184777.44569035454],[415070.5945336892,184791.58883063897],[415087.59855898865,184738.45125157712],[415045.3573037274,184724.93404989352],[415034.7739492273,184758.0070327062],[415045.3573037274,184773.88206445618]]]}}",
+							"type": "text"
+						},
+						{
+							"key": "token",
+							"value": "PEX3syJLeCtgNXTLePAI-55wW0qqVo_Ik8DapPunDZxJYzR7-hVAu3o3kcVYXEd4RRHHsG-lnRJdKqQo-0b-z6nF2f3mIWcdctU9qVL9S0e2kBV3jfW7D7a044oNOOHNdobFLyystvv99Z4eFmTSBA..",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "geometry2",
+							"value": "{\"geometryType\":\"esriGeometryPolygon\",\"geometry\":{\"rings\":[[[415057.3451098573,184814.30235519764],[415057.3451098573,184778.31894384167],[415031.6804630831,184778.31894384167],[415031.6804630831,184814.30235519764],[415057.3451098573,184814.30235519764]]]}}",
+							"type": "text"
+						},
+						{
+							"key": "sr",
+							"value": "27700",
+							"type": "text"
+						},
+						{
+							"key": "distanceUnit",
+							"value": "109006",
+							"type": "text"
+						},
+						{
+							"key": "geodesic",
+							"value": "false",
+							"type": "text"
+						},
+						{
+							"key": "f",
+							"value": "json",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://utility.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/distance",
+					"protocol": "https",
+					"host": [
+						"utility",
+						"arcgisonline",
+						"com"
+					],
+					"path": [
+						"arcgis",
+						"rest",
+						"services",
+						"Geometry",
+						"GeometryServer",
+						"distance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Features: Generate From ShapeFile",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/paulpa/Downloads/1. Hambleton_shapefile_template_extra_cpt (1).zip"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://forestry.maps.arcgis.com/sharing/rest/content/features/generate?token=gurunzw7y4FKPKKsiwDtI2DwFndGrSlS31bUo2Ub-KpABcZLRD9_CAT-OeIw7uMJMIfihaGvy-ptqdk0-GObBznYgMK8QO1QMPx-Sru3Ct2lYwEQB5zzLjU34jIIkftDfHF9EiHN7PNAO75Yxk0lyw..&f=json&filetype=shapefile&publishParameters={\"name\":\"1 hambleton_shapefile_template.zip\",\"targetSR\":27700,\"maxRecordCount\":1000,\"enforceInputFileSizeLimit\":true,\"enforceOutputJsonSizeLimit\":true,\"generalize\":false,\"maxAllowableOffset\":0,\"reducePrecision\":false,\"numberOfDigitsAfterDecimal\":2}",
+					"protocol": "https",
+					"host": [
+						"forestry",
+						"maps",
+						"arcgis",
+						"com"
+					],
+					"path": [
+						"sharing",
+						"rest",
+						"content",
+						"features",
+						"generate"
+					],
+					"query": [
+						{
+							"key": "token",
+							"value": "gurunzw7y4FKPKKsiwDtI2DwFndGrSlS31bUo2Ub-KpABcZLRD9_CAT-OeIw7uMJMIfihaGvy-ptqdk0-GObBznYgMK8QO1QMPx-Sru3Ct2lYwEQB5zzLjU34jIIkftDfHF9EiHN7PNAO75Yxk0lyw.."
+						},
+						{
+							"key": "f",
+							"value": "json"
+						},
+						{
+							"key": "filetype",
+							"value": "shapefile"
+						},
+						{
+							"key": "publishParameters",
+							"value": "{\"name\":\"1 hambleton_shapefile_template.zip\",\"targetSR\":27700,\"maxRecordCount\":1000,\"enforceInputFileSizeLimit\":true,\"enforceOutputJsonSizeLimit\":true,\"generalize\":false,\"maxAllowableOffset\":0,\"reducePrecision\":false,\"numberOfDigitsAfterDecimal\":2}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Features: Generate From Sting",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Esri-Authorization",
+						"value": "Bearer x5PYRBVx9edIRiToOKCPJlB_sdP7oXk7ExGM3dXd68HJzdGZ_ixg0YBipTTAp-kGsdVrj8rwkXI0ikok7sT8Tjd0QldziQ0MLbEQFxCrKOjtUhpHJKF3CJSYSp2Kh0w6ZWhALN-YAbI16AZ1hJxLIg..",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "f",
+							"value": "json",
+							"type": "text"
+						},
+						{
+							"key": "filetype",
+							"value": "geojson",
+							"type": "text"
+						},
+						{
+							"key": "token",
+							"value": "GhnIo1BFBllC_KgaRg6-631Uj7CHiGZOb7enByBFwpxotJzMHnsl7gcG-4Tx7cooTcfRBobe99xMbN4EoyDQsu6hW5Be6KJUiHFJMrHvdpxWK1x6yP1xzsy_ZODQFRwOQfoVFIJ1araznYXB3hiRRA..",
+							"type": "text"
+						},
+						{
+							"key": "publishParameters",
+							"value": "{\"targetSR\":27700,\"maxRecordCount\":1000,\"enforceInputFileSizeLimit\":true,\"enforceOutputJsonSizeLimit\":true,\"generalize\":false,\"maxAllowableOffset\":0,\"reducePrecision\":false,\"numberOfDigitsAfterDecimal\":2}",
+							"type": "text"
+						},
+						{
+							"key": "text",
+							"value": "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[-4.883976246033768,50.43482975577832,50.36531559284775],[-4.884129140450336,50.43509644851461,50.3657953934744],[-4.884149039481278,50.43519172287781,50.36593333445489],[-4.884222599137365,50.43554425088767,50.36644365545362],[-4.884517469049372,50.43580812065982,50.36705669388175],[-4.884748460649879,50.43592347895362,50.36742305383086],[-4.884950271400291,50.43602427976925,50.36774314381182],[-4.885090977421505,50.43602147893523,50.36787522956729],[-4.885711841223694,50.43610761382817,50.3685807865113],[-4.885940312588821,50.43613929366504,50.36884039547293],[-4.887278085599869,50.43615753096388,50.37015192955732],[-4.888828189618632,50.43617139004431,50.37166236527264],[-4.890451253837957,50.43627368291653,50.37335305847227],[-4.892006703126548,50.43642240188431,50.37503625638784],[-4.893984206848161,50.43656243710645,50.37711474113166],[-4.895538487386695,50.436666149957,50.37874022312462],[-4.896880227767635,50.43677403358031,50.38016611617059],[-4.897934037431925,50.43670784056041,50.38109785690904],[-4.899197333611971,50.43663748183592,50.38222589995712],[-4.900235777923251,50.43630176383976,50.38280683103948],[-4.900499531055226,50.43593671288493,50.38260574545711],[-4.900478979072451,50.43553254228486,50.38208233006299],[-4.900186799183368,50.43531361445396,50.38152837194502],[-4.899750955528042,50.43505256248879,50.38078365381807],[-4.899111273109606,50.43493058861859,50.38001608289778],[-4.898476834609111,50.43489837124282,50.37936537992209],[-4.897981761807777,50.43486343209565,50.37884537782519],[-4.897624717132212,50.43473567540103,50.37834251392633],[-4.897329624683895,50.43465243760892,50.37795475125313],[-4.896999325307085,50.43443291369356,50.37736321426928],[-4.896565167322562,50.43412699616334,50.37656399235128],[-4.896530557182728,50.43409796806544,50.37649449333549],[-4.896260855884613,50.43387169163513,50.37595281284303],[-4.896120222754073,50.43366961970247,50.37556552793831],[-4.895959298171652,50.4332936867995,50.37494193948805],[-4.895780163368981,50.43302595001065,50.37443569023162],[-4.895773380466181,50.43300933557293,50.3744084443897],[-4.895718942699887,50.4329323786328,50.37426009122282],[-4.895398148158955,50.43268417854739,50.37364179547875],[-4.895012537441518,50.43245541491092,50.37298531271517],[-4.894206160883012,50.43251130542685,50.37227865867317],[-4.893164781761017,50.4328020378655,50.37163849920033],[-4.892206115434014,50.43331586923794,50.37135606445372],[-4.891240411222217,50.43373988423786,50.37095474824309],[-4.890342420136966,50.43407267590796,50.37050481792539],[-4.889571505700159,50.43413311424742,50.36983766686171],[-4.888509881556664,50.43401954218822,50.36867349315435],[-4.887376255794862,50.43386237390435,50.36738549452274],[-4.886310472165292,50.43365894688952,50.36610505450517],[-4.884168125383757,50.43302737676276,50.36325320601463],[-4.88366360030782,50.43276768391982,50.36244313418865],[-4.883516099745096,50.43263577309718,50.36213647294789],[-4.883371484329673,50.43254871286376,50.36188852135092],[-4.883335678950091,50.43253617097051,50.36183837428688],[-4.88324398391081,50.43249717934728,50.36170137114823],[-4.883155057914563,50.43246314823043,50.36157322209328],[-4.882942642496628,50.4324224519364,50.36131774354725],[-4.882516526164489,50.43234099921172,50.36080545652658],[-4.882302828813614,50.43230032454489,50.36054875515402],[-4.882164861738369,50.43234799539654,50.36047523189335],[-4.882025618052587,50.43239579847609,50.36040063947438],[-4.881960743339587,50.43248700398128,50.36045186314732],[-4.881898490811034,50.43266816448827,50.3606178034097],[-4.881908061877194,50.43284774692887,50.36085099447519],[-4.881914736819592,50.43298251572256,50.36102550104259],[-4.881640262908493,50.43312288093681,50.36093598883599],[-4.881292742121066,50.43321976476732,50.36072183027863],[-4.880943812351608,50.43327165850815,50.36045020073652],[-4.880391724693737,50.43348207892372,50.36018040217459],[-4.880673283756343,50.43350198052333,50.36047663912177],[-4.881314322766197,50.43366900081165,50.36130283772945],[-4.881740441985207,50.43375033830283,50.36181499436497],[-4.882591089300055,50.43386824629892,50.36278189904987],[-4.883307922613342,50.4341237184167,50.36379129439592],[-4.883525779744817,50.43425427218893,50.36416402179748],[-4.883717008687798,50.43449855195954,50.36465286556631],[-4.883976246033768,50.43482975577832,50.36531559284775]]]},\"properties\":{\"styleUrl\":\"#falseColor\",\"styleHash\":\"25107017\",\"styleMapHash\":{\"normal\":\"#falseColor0\",\"highlight\":\"#falseColor1\"},\"OBJECTID\":\"1\",\"PCLASSDESC\":\"Deep Peaty Soils\",\"AREA\":\"369002\",\"PERIMETER\":\"3433.6\",\"HECTARES\":\"36.9\",\"GlobalID\":\"{A3DD917C-8E85-4496-ADEA-F00AE1425B82}\",\"SHAPE_Leng\":\"3433.6\",\"SHAPE_Area\":\"-369002\"}}]}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://forestergis.maps.arcgis.com/sharing/rest/content/features/generate",
+					"protocol": "https",
+					"host": [
+						"forestergis",
+						"maps",
+						"arcgis",
+						"com"
+					],
+					"path": [
+						"sharing",
+						"rest",
+						"content",
+						"features",
+						"generate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Admin Boundary",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "f",
+							"value": "json",
+							"type": "text"
+						},
+						{
+							"key": "token",
+							"value": "RxGiIz9qqASm_1C0j6b-jfhTOlE8pGLrLTabj2D_LIhDYU7XPI-GxgDTVDf8eGkUyROqFHgeo3pjbDGdU21bSS7pOoJgELbRWSj1R7WkH4BbteLk-16mE4BZ3vy2oxJb",
+							"type": "text"
+						},
+						{
+							"key": "where",
+							"value": "1=1",
+							"type": "text"
+						},
+						{
+							"key": "outfields",
+							"value": "FID,AREA_NAME",
+							"type": "text"
+						},
+						{
+							"key": "returnGeometry",
+							"value": "false",
+							"type": "text"
+						},
+						{
+							"key": "objectIDs",
+							"value": "1203",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "geometry",
+							"value": "{\"rings\":[[[415045.3573037274,184773.88206445618],[415056.49363465986,184777.44569035454],[415070.5945336892,184791.58883063897],[415087.59855898865,184738.45125157712],[415045.3573037274,184724.93404989352],[415034.7739492273,184758.0070327062],[415045.3573037274,184773.88206445618]]]}",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "geometryType",
+							"value": "esriGeometryPolygon",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://services-eu1.arcgis.com/dzWO3ZisLb7i278T/arcgis/rest/services/FORESTRY_COMMISSION_ENGLAND_FOREST_SERVICES_AREAS/FeatureServer/0/query",
+					"protocol": "https",
+					"host": [
+						"services-eu1",
+						"arcgis",
+						"com"
+					],
+					"path": [
+						"dzWO3ZisLb7i278T",
+						"arcgis",
+						"rest",
+						"services",
+						"FORESTRY_COMMISSION_ENGLAND_FOREST_SERVICES_AREAS",
+						"FeatureServer",
+						"0",
+						"query"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "LA",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "f",
+							"value": "json",
+							"type": "text"
+						},
+						{
+							"key": "token",
+							"value": "x77bUjUJWHYkLka_P37nB5EuKOUoTLv2xcOcU6KsNv7lxBohkaLAHba_RAwJarvoZvHWLxyKRduzziJ88RLorIsUNhPZIV_womqfgGr2iQd2ZrXxVw6aSHnAAjuGqmvckhXEHqoZ28QTzQCN2R2SuA..",
+							"type": "text"
+						},
+						{
+							"key": "where",
+							"value": "LAD21NMW <> ' '",
+							"type": "text"
+						},
+						{
+							"key": "outfields",
+							"value": "objectid, LAD21CD, LAD21NM",
+							"type": "text"
+						},
+						{
+							"key": "returnGeometry",
+							"value": "false",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2021_GB_BGC_2022/FeatureServer/0/query",
+					"protocol": "https",
+					"host": [
+						"services1",
+						"arcgis",
+						"com"
+					],
+					"path": [
+						"ESMARspQHYMw9BZ9",
+						"arcgis",
+						"rest",
+						"services",
+						"Local_Authority_Districts_December_2021_GB_BGC_2022",
+						"FeatureServer",
+						"0",
+						"query"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

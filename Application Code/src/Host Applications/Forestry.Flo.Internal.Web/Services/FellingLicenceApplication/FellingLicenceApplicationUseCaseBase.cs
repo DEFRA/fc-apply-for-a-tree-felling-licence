@@ -5,6 +5,7 @@ using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Services;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -105,7 +106,7 @@ public abstract class FellingLicenceApplicationUseCaseBase
             AgentOrAgencyName = agentOrAgencyName,
             MostRecentFcLisReport = GetMostRecentDocumentOfType(fla.Documents, DocumentPurpose.FcLisConstraintReport),
             MostRecentApplicationDocument = GetMostRecentDocumentOfType(fla.Documents, DocumentPurpose.ApplicationDocument),
-            DetailsList = CreateFellingAndRestockingDetails(fla),
+            DetailsList = ModelMapping.RetrieveFellingAndRestockingDetails(fla).ToList(),
             DateReceived = fla.DateReceived,
             Source = fla.Source,
             AreaCode = fla.AreaCode,
@@ -234,46 +235,6 @@ public abstract class FellingLicenceApplicationUseCaseBase
         }
 
         return Result.Success(result);
-    }
-
-    private List<FellingAndRestockingDetail> CreateFellingAndRestockingDetails(Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication application)
-    {
-        if (application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments is null)
-        {
-            return new List<FellingAndRestockingDetail>();
-        }
-
-        var compartmentsDictionary = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ToDictionary(c => c.CompartmentId, c => c);
-        
-        var fellingAndRestockingDetails =
-            (application.LinkedPropertyProfile?.ProposedFellingDetails ?? new List<ProposedFellingDetail>())
-            .Select(proposedFellingDetail =>
-                new FellingAndRestockingDetail
-                {
-                    CompartmentId = proposedFellingDetail.PropertyProfileCompartmentId,
-                    CompartmentName = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].DisplayName,
-                    GISData = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].GISData,
-                    WoodlandId = proposedFellingDetail.LinkedPropertyProfileId,
-                    FellingDetail = ModelMapping.ToProposedFellingDetailModel(proposedFellingDetail),
-                    Zone1 = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].Zone1,
-                    Zone2 = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].Zone2,
-                    Zone3 = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].Zone3,
-                }).ToList();
-        var fellingAndRestockingDetailsDictionary =
-            fellingAndRestockingDetails.ToDictionary(d => d.FellingDetail.Id, d => d);
-
-        var proposedRestockingDetails = application.LinkedPropertyProfile?.ProposedFellingDetails?.SelectMany(p => p.ProposedRestockingDetails);
-
-        proposedRestockingDetails?.ToList().ForEach(r =>
-            {
-                if (!fellingAndRestockingDetailsDictionary.ContainsKey(r.ProposedFellingDetailsId))
-                {
-                    return;
-                }
-                fellingAndRestockingDetailsDictionary[r.ProposedFellingDetailsId].RestockingDetail =
-                    ModelMapping.ToProposedRestockingDetailModel(r);
-            });
-        return fellingAndRestockingDetails;
     }
 
     private static Maybe<DocumentModel> GetMostRecentDocumentOfType(IList<Document>? documents, DocumentPurpose purpose)
