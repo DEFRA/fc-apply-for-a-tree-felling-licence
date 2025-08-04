@@ -115,10 +115,19 @@
                 </span>
             </p>
         </div>
+        <div class="govuk-grid-row" role="complementary">
+            <div class="govuk-grid-column-one-half">
+                <partial name="Partials/_BackLink" /> &nbsp;
+            </div>
+            <div class="govuk-grid-column-one-half govuk-!-text-align-right">
+                <partial name="Partials/_AccountManagementBar" />
+            </div>
+        </div>
+        <logged-in>
+            <hr class="govuk-section-break govuk-section-break--visible">
+        </logged-in>
 
-        <partial name="Partials/_AccountManagementBar" />
         @await RenderSectionAsync("breadcrumbs", required: false)
-        @await RenderSectionAsync("backlink", required: false)
 
         <main class="govuk-main-wrapper govuk-main-wrapper--l" id="main-content" role="main">
             <div class="govuk-grid-row">

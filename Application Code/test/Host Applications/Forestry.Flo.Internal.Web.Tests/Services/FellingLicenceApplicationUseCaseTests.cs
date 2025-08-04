@@ -214,7 +214,10 @@ public partial class FellingLicenceApplicationUseCaseTests
         var lastCompartment = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.ToList().Last();
         var detailsList = result.Value.FellingAndRestockingDetail!.DetailsList;
         detailsList.Should()
-            .HaveCount(application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.SelectMany(x => x.ConfirmedFellingDetails).Count());
+            .HaveCount(application.LinkedPropertyProfile.ProposedFellingDetails.Count);
+        detailsList.SelectMany(x => x.RestockingDetail).Should()
+            .HaveCount(application.LinkedPropertyProfile.ProposedFellingDetails
+                .SelectMany(x => x.ProposedRestockingDetails).Count());
         detailsList.Should().NotContainNulls(d => d.FellingDetail);
         detailsList.Should().NotContainNulls(d => d.RestockingDetail);
         detailsList.Last().CompartmentId.Should()

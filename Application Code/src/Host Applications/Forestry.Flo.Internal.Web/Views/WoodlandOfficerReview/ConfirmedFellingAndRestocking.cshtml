@@ -14,7 +14,6 @@
 
 @{
 	var user = new InternalUser(User);
-	var treeSpeciesValues = TreeSpeciesFactory.SpeciesDictionary.Values;
 }
 <div class="govuk-grid-column-full">
 
@@ -34,7 +33,7 @@
 	}
 
     @functions {
-        public void RenderSummaryRow(string key, string measure, object? value, object? oldValue = null)
+        public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
         {
             bool hasValue = value != null && !string.IsNullOrWhiteSpace(value.ToString());
             bool hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
@@ -92,7 +91,8 @@
 			for (int j = 0; j < compartment.ConfirmedFellingDetails.Length; j++)
 			{
 				var confirmedFellingDetail = compartment.ConfirmedFellingDetails[j];
-				var restockCount = confirmedFellingDetail.ConfirmedRestockingDetails.Where(x => x.RestockingProposal!=null).Count();
+				var restockCount = confirmedFellingDetail.ConfirmedRestockingDetails.Count(x => x.RestockingProposal!=null);
+                var shouldShowRevert = confirmedFellingDetail is { ProposedFellingDetailsId: not null, AmendedProperties.Count: > 0 };
 
                 <div class="govuk-summary-card" id="felling-operation-card">
                     <div class="govuk-summary-card__title-wrapper" style="background: #f3f2f1; display: flex; align-items: flex-start; justify-content: space-between;">
@@ -105,12 +105,27 @@
                                 <strong class="govuk-!-margin-left-3">Compartment size:</strong> 32 Ha
                             </div>
                         </div>
-                        <div>
-                            <a href="javascript:void(0);" id="hide-felling-card-link" class="govuk-link govuk-link--no-visited-state" aria-expanded="true">
-                                <svg style="vertical-align:middle;margin-right:2px;" width="16" height="16" viewBox="0 0 16 16" focusable="false" aria-hidden="true"><path d="M8 10.5l-4-4h8z" fill="#1d70b8" /></svg>
-                                Hide
-                            </a>
-                        </div>
+                        <ul condition="@shouldShowRevert" class="govuk-summary-card__actions">
+                            @{
+                                var visibleId = $"delete-amendments-visible-{confirmedFellingDetail.ConfirmedFellingDetailsId}";
+                                var invisibleId = $"delete-amendments-invisible-{confirmedFellingDetail.ConfirmedFellingDetailsId}";
+                            }
+                            <li class="govuk-summary-card__action">
+                                <a
+                                    class="delete-amendments-invisible"
+                                    id="@invisibleId"
+                                    hidden="hidden"
+                                    aria-hidden="true"
+                                    tabindex="-1"
+                                    asp-action="RevertAmendedConfirmedFellingDetails"
+                                    asp-route-applicationId="@Model.ApplicationId"
+                                    asp-route-proposedFellingDetailsId="@confirmedFellingDetail.ProposedFellingDetailsId">
+                                </a>
+                                <a id="@visibleId" href="#@visibleId" class="govuk-link delete-amendments-visible">
+                                    Delete amendments (revert to proposed felling and restocking)
+                                </a>
+                            </li>
+                        </ul>
                     </div>
 
                     <div class="govuk-summary-card__content" id="felling-card-content">
@@ -199,29 +214,34 @@
                                                     string.IsNullOrWhiteSpace(confirmedFellingDetail.TreeMarking)
                                                         ? "No"
                                                         : "Yes, " + confirmedFellingDetail.TreeMarking,
-                                                    confirmedFellingDetail.OldValue("TreeMarking") == null
+                                                    string.IsNullOrWhiteSpace(confirmedFellingDetail.OldValue("TreeMarking")?.ToString())
                                                         ? null
                                                         : "Yes, " + confirmedFellingDetail.OldValue("TreeMarking"));
 
                                                 RenderSummaryRow("TPO", null, 
                                                     confirmedFellingDetail.IsPartOfTreePreservationOrder == true ? "Yes" : "No", 
-                                                    confirmedFellingDetail.OldValue("IsPartOfTreePreservationOrder") == "True" ? "Yes" : null);
+                                                    confirmedFellingDetail.OldValue("IsPartOfTreePreservationOrder")?.ToString() == "True" ? "Yes" : null);
 
                                                 RenderSummaryRow("TPO Reference", null, 
                                                     confirmedFellingDetail.IsPartOfTreePreservationOrder == true ? confirmedFellingDetail.TreePreservationOrderReference : "N/A", 
-                                                    confirmedFellingDetail.OldValue("IsPartOfTreePreservationOrder") == "True" ? confirmedFellingDetail.OldValue("TreePreservationOrderReference") : null);
+                                                    confirmedFellingDetail.OldValue("IsPartOfTreePreservationOrder")?.ToString() == "True" ? confirmedFellingDetail.OldValue("TreePreservationOrderReference") : null);
 
                                                 RenderSummaryRow("CA", null, 
                                                     confirmedFellingDetail.IsWithinConservationArea == true ? "Yes" : "No", 
-                                                    confirmedFellingDetail.OldValue("IsWithinConservationArea") == "True" ? "Yes" : null);
+                                                    confirmedFellingDetail.OldValue("IsWithinConservationArea")?.ToString() == "True" ? "Yes" : null);
 
                                                 RenderSummaryRow("CA Reference", null, 
                                                     confirmedFellingDetail.IsWithinConservationArea == true ? confirmedFellingDetail.ConservationAreaReference : "N/A", 
-                                                    confirmedFellingDetail.OldValue("IsWithinConservationArea") == "True" ? confirmedFellingDetail.OldValue("ConservationAreaReference") : null);
+                                                    confirmedFellingDetail.OldValue("IsWithinConservationArea")?.ToString() == "True" ? confirmedFellingDetail.OldValue("ConservationAreaReference") : null);
 
                                                 RenderSummaryRow("Do you want to restock", null, 
-                                                    confirmedFellingDetail.IsRestocking == true ? "Yes" : "No", 
-                                                    confirmedFellingDetail.OldValue("IsRestocking") == "True" ? "Yes" : null);
+                                                    confirmedFellingDetail.IsRestocking == null 
+                                                        ? "N/A" 
+                                                        : (confirmedFellingDetail.IsRestocking == true ? "Yes" : "No"), 
+                                                    confirmedFellingDetail.OldValue("IsRestocking") == null
+                                                        ? "N/A"
+                                                        : (confirmedFellingDetail.OldValue("IsRestocking")?.ToString() == "True" ? "Yes" : "No")
+                                                );
                                             }
                                         </dl>
                                     </div>
@@ -231,69 +251,68 @@
 
                                 @for (int k = 0; k < restockCount; k++)
                                 {
-                                    var restockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.Count() > 0 ? confirmedFellingDetail.ConfirmedRestockingDetails[k] : null;
+                                    var restockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.Any() ? confirmedFellingDetail.ConfirmedRestockingDetails[k] : null;
 
-                                    <div class="govuk-summary-card">
-                                        <div class="govuk-summary-card__title-wrapper">
-                                            <h2 class="govuk-summary-card__title">Restocking operation</h2>
-                                            <ul class="govuk-summary-card__actions">
-                                                <li class="govuk-summary-card__action">
-                                                    <a class="govuk-link govuk-link--no-visited-state" href="#">Show on map</a>
-                                                </li>
-                                                <li class="govuk-summary-card__action">
-                                                    <a class="govuk-link govuk-link--no-visited-state" href="#">Amend</a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                        <div class="govuk-summary-card__content">
-                                            <dl class="govuk-summary-list">
+						        <div class="govuk-summary-card">
+							        <div class="govuk-summary-card__title-wrapper">
+								        <h2 class="govuk-summary-card__title">Restocking operation</h2>
+								        <ul class="govuk-summary-card__actions">
+									        <li class="govuk-summary-card__action">
+										        <a class="govuk-link govuk-link--no-visited-state" href="#">Show on map</a>
+									        </li>
+									        <li class="govuk-summary-card__action">
+										        <a href="@Url.Action("AmendConfirmedRestockingDetails", 
+											        new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId, confirmedRestockingDetailsId = confirmedFellingDetail.ConfirmedRestockingDetails[k].ConfirmedRestockingDetailsId })" 
+										        aria-describedby="felling-and-restocking">
+											        Amend
+										        </a>
+									        </li>
+								        </ul>
+							        </div>
+							        <div class="govuk-summary-card__content">
+								        <dl class="govuk-summary-list">
+									        @{
+										        RenderSummaryRow("Restocking operation type", "", restockingDetail!.RestockingProposal!.GetDisplayName(), restockingDetail.OldValue(nameof(restockingDetail.RestockingProposal)));
+										        RenderSummaryRow("Restocking compartment", "", restockingDetail.RestockingCompartmentNumber, restockingDetail.OldValue(nameof(restockingDetail.RestockingCompartmentNumber)));
+									        }
+									        <div class="govuk-summary-list__row">
+										        <dt class="govuk-summary-list__key">Estimated percentage of the area that will be restocked</dt>
+										        <dd class="govuk-summary-list__value">
+											        @(compartment.TotalHectares.HasValue
+																						? Math.Round((restockingDetail.RestockArea ?? 0) / compartment.TotalHectares!.Value * 100, 2) + "%"
+																						: string.Empty)
+										        </dd>
+									        </div>
                                                 @{
-                                                    RenderSummaryRow("Restocking operation type", "", restockingDetail!.RestockingProposal!.GetDisplayName(), confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingProposal"));
-                                                    RenderSummaryRow("Restocking compartment", "", restockingDetail.RestockingCompartmentNumber, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingCompartmentNumber"));
-                                                }
-                                                <div class="govuk-summary-list__row">
-                                                    <dt class="govuk-summary-list__key">Estimated percentage of the area that will be restocked</dt>
-                                                    <dd class="govuk-summary-list__value">
-                                                        @(compartment.TotalHectares.HasValue
-                                                            ? Math.Round((restockingDetail.RestockArea ?? 0) / compartment.TotalHectares!.Value * 100, 2) + "%"
-                                                            : string.Empty)
-                                                    </dd>
-                                                </div>
-                                                @{
-                                                    RenderSummaryRow("Estimated area to be restocked", " Ha", restockingDetail.RestockArea, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockArea"));
-                                                    RenderSummaryRow("Estimate of the restocking density", "", restockingDetail.RestockingDensity, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingDensity"));
-                                                    RenderSummaryRow("Estimated number of trees to be restocked", " Trees", restockingDetail.NumberOfTrees, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].NumberOfTrees"));
-                                                    RenderSummaryRow("Species and restocking percentage", "", restockingDetail.ListRestockingSpecies(), confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingSpecies"));
-                                                }
-                                            </dl>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                                    if (restockingDetail.RestockingProposal != Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.CreateDesignedOpenGround)
+                                                    {
+                                                        RenderSummaryRow("Estimated area to be restocked", " Ha", restockingDetail.RestockArea, restockingDetail.OldValue("Area"));
+                                                        if (restockingDetail.RestockingProposal == Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.RestockWithIndividualTrees ||
+                                                            restockingDetail.RestockingProposal == Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
+                                                        {
+                                                            var oldNumberOfTrees = restockingDetail.OldValue(nameof(restockingDetail.NumberOfTrees), restockingDetail.NumberOfTrees);
+                                                            RenderSummaryRow("Estimated number of trees to be restocked", " Trees", restockingDetail.NumberOfTrees, string.IsNullOrEmpty(oldNumberOfTrees?.ToString()) ? "0" : oldNumberOfTrees);
+                                                        }
+                                                        else
+                                                        {
+                                                            RenderSummaryRow("Estimate of the restocking density", "", restockingDetail.RestockingDensity, restockingDetail.OldValue((nameof(restockingDetail.RestockingDensity))));
+                                                        }
+                                                        RenderSummaryRow("Species and restocking percentage", "", restockingDetail.ListRestockingSpecies(), restockingDetail.OldValue("RestockingSpecies"));
+                                                    }
+									            }
+								        </dl>
+							        </div>
+						        </div>
+						        }
+					        </div>
+				        </div>
+			        </div>
+		        </div>
 			}
 		}
-		<script>
-			// Simple collapse/expand for the summary card
-			document.addEventListener('DOMContentLoaded', function () {
-			  var hideLink = document.getElementById('hide-felling-card-link');
-			  var cardContent = document.getElementById('felling-card-content');
-			  var expanded = true;
-			  hideLink.addEventListener('click', function () {
-				expanded = !expanded;
-				cardContent.style.display = expanded ? '' : 'none';
-				hideLink.innerHTML = (expanded
-				  ? '<svg style="vertical-align:middle;margin-right:2px;" width="16" height="16" viewBox="0 0 16 16" focusable="false" aria-hidden="true"><path d="M8 10.5l-4-4h8z" fill=\"#1d70b8\"/></svg>Hide'
-				  : '<svg style="vertical-align:middle;margin-right:2px;" width="16" height="16" viewBox="0 0 16 16" focusable="false" aria-hidden="true"><path d="M8 5.5l4 4H4z" fill=\"#1d70b8\"/></svg>Show');
-				hideLink.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-			  });
-			});
-		</script>
 		<input asp-for="ApplicationId" />
         <br />
-                    
+
         <div class="govuk-button-group">
             <a
                 condition="@(Model.Editable(user))"
@@ -318,12 +337,12 @@
 					If there are any issues with the application that require changes from the applicant, click here.
 				</div>
 				<div class="govuk-button-group">
-					<button condition-disabled="@(Model.Editable(user) && !Model.IsAmended)" id="save-btn" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+					<button condition-disabled="@(!Model.Editable(user) || !Model.IsAmended)" id="save-btn" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
 						Send amendments to application for confirmation
 					</button>
 				</div>
 				<div class="govuk-button-group">
-					<button condition-disabled="@(Model.Editable(user) && Model.IsAmended)" id="save-btn" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+					<button condition-disabled="@(!(Model.Editable(user) && !Model.IsAmended))" id="save-btn" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
 						Confirm felling and restocking
 					</button>
 				</div>
@@ -345,7 +364,8 @@
 
 	<!-- Other scripts follow -->
 	<script src="~/js/confirmed-felling-and-restocking.js" asp-append-version="true"></script>
-	<script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/confirmed-felling-and-restocking-revert-amendments.js" asp-append-version="true"></script>
 
 	<!-- ArcGIS scripts and styles -->
 	<script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>

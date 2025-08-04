@@ -7,7 +7,7 @@ public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModel
     [HiddenInput]
     public Guid ApplicationId { get; set; }
 
-    public CompartmentConfirmedFellingRestockingDetailsModel[] Compartments { get; set; } = Array.Empty<CompartmentConfirmedFellingRestockingDetailsModel>();
+    public CompartmentConfirmedFellingRestockingDetailsModel[] Compartments { get; set; } = [];
 
     public bool ConfirmedFellingAndRestockingComplete { get; set; }
 

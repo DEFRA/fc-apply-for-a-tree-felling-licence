@@ -26,17 +26,6 @@ $(function () {
             $(this).text("Add species");
         }
     });
-    
-    $("#restocking-add-tree-species-btn").click(function () {
-        const $tableRows = $('#restocking-species-list-table tr');
-        const rowCount = $tableRows.length - 1;
-        if (rowCount > 0) {
-            $(this).text("Add another species");
-        } else {
-            $(this).text("Add species");
-        }
-        $(this).text("Add another species");
-    });
 
     $('#FellingDetail_OperationType').change(function () {
         canCompleteSection();

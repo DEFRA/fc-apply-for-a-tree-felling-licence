@@ -494,6 +494,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<double?>("PercentageOfRestockArea")
                         .HasColumnType("double precision");
 
+                    b.Property<Guid?>("ProposedRestockingDetailId")
+                        .HasColumnType("uuid");
+
                     b.Property<double?>("RestockingDensity")
                         .HasColumnType("double precision");
 

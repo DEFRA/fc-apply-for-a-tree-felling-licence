@@ -54,4 +54,8 @@ public class ConfirmedRestockingDetailModel
     public string? CompartmentNumber { get; set; }
 
     public string? SubCompartmentName { get; set; }
+
+    public Dictionary<string, string> AmendedProperties { get; set; } = new Dictionary<string, string>();
+
+    public Guid ConfirmedFellingDetailsId { get; set; }
 }

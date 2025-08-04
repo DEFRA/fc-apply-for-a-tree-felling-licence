@@ -30,4 +30,6 @@ public class SelectedCompartmentsModel: ApplicationStepBase, IApplicationWithBre
     public string? FellingCompartmentName { get; set; }
     public Guid? FellingCompartmentId { get; set; }
     public Guid? ProposedFellingDetailsId { get; set; }
+
+    public Guid? WoodlandOwnerId { get; set; }
 }

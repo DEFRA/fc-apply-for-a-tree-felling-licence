@@ -9,6 +9,8 @@ public class ConfirmedRestockingDetailViewModel
     [HiddenInput]
     public Guid ConfirmedRestockingDetailsId { get; set; }
 
+    [HiddenInput]
+    public Guid ConfirmedFellingDetailsId { get; set; }
     public double? RestockArea { get; set; }
 
     public int? PercentOpenSpace { get; set; }
@@ -27,6 +29,18 @@ public class ConfirmedRestockingDetailViewModel
     public Guid RestockingCompartmentId { get; set; }
 
     public string? RestockingCompartmentNumber { get; set; }
+
+    public FellingOperationType OperationType { get; set; }
+
+    public Dictionary<string, string> AmendedProperties { get; set; } = new Dictionary<string, string>();
+    public object? OldValue(string propName, object? currentValue = null)
+    {
+        if (AmendedProperties.TryGetValue(propName, out var oldValue))
+        {
+            return oldValue;
+        }
+        return currentValue;
+    }
 
     /// <summary>
     /// Returns a comma-separated list of actual species names and their percentages from ConfirmedRestockingSpecies,
