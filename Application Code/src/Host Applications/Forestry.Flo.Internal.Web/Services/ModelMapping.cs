@@ -21,6 +21,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
 using StatusHistoryModel = Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.StatusHistoryModel;
 using ServiceWoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
 using WoodlandOwnerModel = Forestry.Flo.Internal.Web.Models.UserAccount.WoodlandOwnerModel;
+using Forestry.Flo.Services.Common.Extensions;
 
 namespace Forestry.Flo.Internal.Web.Services;
 
@@ -63,7 +64,8 @@ public static class ModelMapping
                     opt.MapFrom(s =>  MapRestockingSpecies(s)))
                 .ForMember(dest => dest.StepComplete, opt => opt.Ignore());
 
-            cfg.CreateMap<Document, DocumentModel>();
+            cfg.CreateMap<Document, DocumentModel>()
+                .ForMember(x => x.DocumentPurpose, opt => opt.MapFrom(s => s.Purpose));
             cfg.CreateMap<ExternalAccessLink, ExternalInviteLink>()
                 .ForMember(dest => dest.AreCommentsProvided, opt => opt.Ignore());
             cfg.CreateMap<StatusHistory, StatusHistoryModel>();
@@ -89,9 +91,10 @@ public static class ModelMapping
         Mapper = config.CreateMapper();
     }
     
-    private static Dictionary<string, FellingSpeciesModel> MapFellingSpecies(ProposedFellingDetail s) =>
+    public static Dictionary<string, FellingSpeciesModel> MapFellingSpecies(ProposedFellingDetail s) =>
         (s.FellingSpecies ?? new List<FellingSpecies>()).ToDictionary(d => d.Species, d => Mapper.Map<FellingSpeciesModel>(d));
-    private static Dictionary<string, RestockingSpeciesModel> MapRestockingSpecies(ProposedRestockingDetail s) =>
+    
+    public static Dictionary<string, RestockingSpeciesModel> MapRestockingSpecies(ProposedRestockingDetail s) =>
         (s.RestockingSpecies ?? new List<RestockingSpecies>()).ToDictionary(d => d.Species, d => Mapper.Map<RestockingSpeciesModel>(d));
 
 
@@ -287,31 +290,44 @@ public static class ModelMapping
 
         var compartmentsDictionary = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ToDictionary(c => c.CompartmentId, c => c);
 
-        var fellingAndRestockingDetails =
-            (application.LinkedPropertyProfile?.ProposedFellingDetails ?? new List<ProposedFellingDetail>())
-            .Select(proposedFellingDetail =>
-                new FellingAndRestockingDetail
+        var results = new List<FellingAndRestockingDetail>();
+        foreach (var proposedFelling in application.LinkedPropertyProfile!.ProposedFellingDetails!)
+        {
+            var restocking = proposedFelling.ProposedRestockingDetails is null
+                ? new List<ProposedRestockingDetailModel>()
+                : proposedFelling.ProposedRestockingDetails.Select(pr => new ProposedRestockingDetailModel
                 {
-                    ApplicationId = application.Id,
-                    CompartmentId = proposedFellingDetail.PropertyProfileCompartmentId,
-                    CompartmentName = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].DisplayName,
-                    GISData = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].GISData,
-                    WoodlandId = proposedFellingDetail.LinkedPropertyProfileId,
-                    FellingDetail = ToProposedFellingDetailModel(proposedFellingDetail),
-                }).ToList();
-        var fellingAndRestockingDetailsDictionary =
-            fellingAndRestockingDetails.ToDictionary(d => d.FellingDetail.Id, d => d);
+                    RestockingProposal = pr.RestockingProposal,
+                    RestockingDensity = pr.RestockingDensity,
+                    Area = pr.Area,
+                    NumberOfTrees = pr.NumberOfTrees,
+                    PercentageOfRestockArea = pr.PercentageOfRestockArea,
+                    Id = pr.Id,
+                    GISData = compartmentsDictionary[pr.PropertyProfileCompartmentId].GISData,
+                    Species = ModelMapping.MapRestockingSpecies(pr),
+                    RestockingCompartmentId = pr.PropertyProfileCompartmentId,
+                    RestockingCompartmentName = compartmentsDictionary[pr.PropertyProfileCompartmentId].DisplayName
+                });
 
-        var proposedRestockingDetails = application.LinkedPropertyProfile?.ProposedFellingDetails?.SelectMany(p => p.ProposedRestockingDetails!);
-
-        proposedRestockingDetails?
-            .ToList().ForEach(r =>
+            results.Add(new FellingAndRestockingDetail
             {
-                fellingAndRestockingDetailsDictionary[r.ProposedFellingDetailsId].RestockingDetail =
-                    ToProposedRestockingDetailModel(r);
+                CompartmentId = proposedFelling.PropertyProfileCompartmentId,
+                Felling = $"{proposedFelling.OperationType.GetDisplayName()} in {compartmentsDictionary[proposedFelling.PropertyProfileCompartmentId].DisplayName}",
+                CompartmentName = compartmentsDictionary[proposedFelling.PropertyProfileCompartmentId].DisplayName,
+                GISData = compartmentsDictionary[proposedFelling.PropertyProfileCompartmentId].GISData,
+                WoodlandId = proposedFelling.LinkedPropertyProfileId,
+                FellingDetail = ModelMapping.ToProposedFellingDetailModel(proposedFelling),
+                RestockingDetail = restocking.ToList(),
+                CompartmentTotalHectares = compartmentsDictionary[proposedFelling.PropertyProfileCompartmentId].TotalHectares,
+                Zone1 = compartmentsDictionary[proposedFelling.PropertyProfileCompartmentId].Zone1,
+                Zone2 = compartmentsDictionary[proposedFelling.PropertyProfileCompartmentId].Zone2,
+                Zone3 = compartmentsDictionary[proposedFelling.PropertyProfileCompartmentId].Zone3,
+                ApplicationReference = application.ApplicationReference,
+                ApplicationId = application.Id
             });
+        }
 
-        return fellingAndRestockingDetails;
+        return results;
     }
 
 }

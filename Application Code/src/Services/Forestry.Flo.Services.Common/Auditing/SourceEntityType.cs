@@ -11,5 +11,6 @@ public enum SourceEntityType
     AdminHub,
     Agency,
     AgentAuthority,
-    FcUser
+    FcUser,
+    ProposedFellingDetails,
 }

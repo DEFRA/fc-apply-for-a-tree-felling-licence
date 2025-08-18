@@ -6,12 +6,11 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.PropertyProfiles.DataImports;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
+using NodaTime;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Logging.Abstractions;
-using NodaTime;
 
 namespace Forestry.Flo.Services.DataImport.Tests.Services;
 
@@ -31,7 +30,7 @@ public abstract class ApplicationFileSetTestsBase
     }
 
     protected ImportFileSetContents GenerateValidImportSets(
-        int applicationsCount = 3,
+        int applicationsCount = 1,
         int fellingPerApplication = 3,
         int restockingPerFelling = 1)
     {

@@ -1,16 +1,15 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FileStorage.Configuration;
 using Forestry.Flo.Services.FileStorage.ResultModels;
-using Forestry.Flo.Services.InternalUsers.Repositories;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Moq;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace Forestry.Flo.Internal.Web.Tests.ApiControllers
 {
@@ -43,7 +42,7 @@ namespace Forestry.Flo.Internal.Web.Tests.ApiControllers
 
             _factory.AddDocumentServiceMock.Setup(r =>
                     r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
             var client = CreateClient();
             client.DefaultRequestHeaders.Add("X-Api-Key","iazo54uwhDnydbAqbrHcDvUr4UTf4w5zr1hKwSm4JxJGNvCsS");

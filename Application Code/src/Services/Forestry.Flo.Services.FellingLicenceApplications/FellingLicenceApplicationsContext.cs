@@ -219,15 +219,15 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
 
         modelBuilder
             .Entity<ConsulteeComment>()
+            .Property(x => x.DocumentIds)
+            .HasJsonConversion();
+
+        modelBuilder
+            .Entity<ConsulteeComment>()
             .HasOne<FellingLicenceApplication>()
             .WithMany(x => x.ConsulteeComments)
             .HasForeignKey(p => p.FellingLicenceApplicationId)
             .IsRequired();
-
-        modelBuilder
-            .Entity<ConsulteeComment>()
-            .Property(e => e.ApplicableToSection)
-            .HasConversion<string>();
 
         modelBuilder
             .Entity<Document>()
@@ -553,11 +553,6 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
         // > A SubmittedFlaPropertyCompartment will have zero to 1 Confirmed Felling Details and zero to 1 Confirmed Restocking Details.
 
         modelBuilder
-            .Entity<ConfirmedFellingDetail>()
-            .HasIndex(i => new { i.SubmittedFlaPropertyCompartmentId, i.OperationType })
-            .IsUnique();
-
-        modelBuilder
             .Entity<ConfirmedRestockingDetail>()
             .Property(x => x.Id)
             .HasColumnType("uuid")
@@ -572,11 +567,6 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                     .HasForeignKey(p => p.ConfirmedFellingDetailId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
-
-        modelBuilder
-            .Entity<ConfirmedRestockingDetail>()
-            .HasIndex(i => new { i.SubmittedFlaPropertyCompartmentId, i.ConfirmedFellingDetailId, i.RestockingProposal })
-            .IsUnique();
 
         modelBuilder
             .Entity<ConfirmedRestockingSpecies>()

@@ -1,7 +1,5 @@
-using Ardalis.GuardClauses;
-using Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
+using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
-using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 using Microsoft.AspNetCore.Mvc;
 using AddConsulteeCommentModel = Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview.AddConsulteeCommentModel;
 
@@ -9,14 +7,6 @@ namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
 public class ExternalConsulteeReviewController : Controller
 {
-    private readonly ExternalConsulteeReviewUseCase _externalConsulteeReviewUseCase;
-
-    public ExternalConsulteeReviewController(
-        ExternalConsulteeReviewUseCase externalConsulteeReviewUseCase)
-    {
-        _externalConsulteeReviewUseCase = Guard.Against.Null(externalConsulteeReviewUseCase);
-    }
-
     // GET: ExternalConsulteeReview
     public async Task<IActionResult> Index(
         [FromQuery] Guid applicationId, 
@@ -31,7 +21,7 @@ public class ExternalConsulteeReviewController : Controller
             return RedirectToAction("LinkExpired");
         }
 
-        var model = await externalConsulteeReviewUseCase.GetApplicationSummaryForConsulteeReviewAsync(applicationId, validationResult.Value, cancellationToken);
+        var model = await externalConsulteeReviewUseCase.GetApplicationSummaryForConsulteeReviewAsync(applicationId, validationResult.Value, accessCode, cancellationToken);
         
         if (model.IsFailure)
         {
@@ -45,7 +35,8 @@ public class ExternalConsulteeReviewController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Index(
-        AddConsulteeCommentModel commentModel,
+        AddConsulteeCommentModel commentModel, 
+        FormFileCollection consulteeAttachmentFiles,
         [FromServices] ExternalConsulteeReviewUseCase externalConsulteeReviewUseCase,
         CancellationToken cancellationToken)
     {
@@ -57,7 +48,7 @@ public class ExternalConsulteeReviewController : Controller
                 return RedirectToAction("Error", "Home");
             }
 
-            var reloadModel = await externalConsulteeReviewUseCase.GetApplicationSummaryForConsulteeReviewAsync(commentModel.ApplicationId, validationResult.Value, cancellationToken);
+            var reloadModel = await externalConsulteeReviewUseCase.GetApplicationSummaryForConsulteeReviewAsync(commentModel.ApplicationId, validationResult.Value, commentModel.AccessCode, cancellationToken);
             if (reloadModel.IsFailure)
             {
                 return RedirectToAction("Error", "Home");
@@ -68,7 +59,7 @@ public class ExternalConsulteeReviewController : Controller
         }
 
         var result = await externalConsulteeReviewUseCase.AddConsulteeCommentAsync(
-            commentModel, cancellationToken);
+            commentModel, consulteeAttachmentFiles, cancellationToken);
 
         if (result.IsFailure)
         {
@@ -86,5 +77,27 @@ public class ExternalConsulteeReviewController : Controller
     public IActionResult LinkExpired()
     {
         return View();
+    }
+
+    public async Task<IActionResult> DownloadSupportingDocument(
+        [FromServices] ExternalConsulteeReviewUseCase useCase,
+        [FromQuery] Guid applicationId,
+        [FromQuery] Guid accessCode,
+        [FromQuery] Guid documentId,
+        [FromQuery] string emailAddress,
+        CancellationToken cancellationToken)
+    {
+        
+        var result = await useCase.GetSupportingDocumentAsync(
+            applicationId, accessCode, documentId, emailAddress, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            return result.Value;
+        }
+
+        this.AddErrorMessage("Could not download document content, please try again");
+
+        return RedirectToAction("Index", new { applicationId, accessCode, emailAddress });
     }
 }

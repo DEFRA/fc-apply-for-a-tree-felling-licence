@@ -28,18 +28,18 @@
     <partial name="Partials/_PageErrors" />
     <partial name="Partials/_FellingLicenceApplicationSummary" model="Model.FellingLicenceApplicationSummary" />
 
-    <form method="post">
-        <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
-        <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.CompartmentId" />
-        <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.CompartmentNumber" />
-        <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.TotalHectares" />
-        <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingDetailsId" />
-        <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingSpecies" />
+    <div class="govuk-grid-column-one-half">
+        <form method="post">
+            <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
+            <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.CompartmentId" />
+            <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.CompartmentNumber" />
+            <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.TotalHectares" />
+            <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingDetailsId" />
+            <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingSpecies" />
 
 
-        <h1 class="govuk-heading-l">@ViewBag.Title</h1>
+            <h1 class="govuk-heading-l">@ViewBag.Title</h1>
 
-        <div class="govuk-grid-column-one-half">
             <div class="govuk-body">
                 <div class="govuk-form-group">
                     <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.OperationType">
@@ -70,8 +70,8 @@
                                type="number" step="0.01"
                                aria-describedby="area-to-be-felled-hint"
                                value="@(fd.AreaToBeFelled == 0
-                                                ? string.Empty
-                                                : fd.AreaToBeFelled)">
+                                                                                                                                                          ? string.Empty
+                                                                                                                                                          : fd.AreaToBeFelled)">
                         <div class="govuk-input__suffix" aria-hidden="true">ha</div>
                     </div>
                 </div>
@@ -271,7 +271,9 @@
                             Do you want to restock?
                         </legend>
                         <div id="restock-hint" class="govuk-hint">
-                            The applicant answered @((fd.OldValue("IsRestocking") ?? ((fd.IsRestocking??false).ToString())) == "True" ? "Yes" : "No")
+                            The applicant answered @(fd.OldValue("IsRestocking") == null
+                                                        ? "N/A"
+                                                        : (fd.OldValue("IsRestocking") == "True" ? "Yes" : "No"))
                         </div>
                         <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
@@ -309,28 +311,30 @@
                             Save
                         </button>
 
-                        <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and go to the woodland officer review">Cancel</a>
+                        <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and go to the summary">Cancel</a>
 
                     </div>
                 </div>
-
-                <div class="govuk-form-group">
-                    <div class="govuk-button-group">
-
-                        <a class="govuk-button govuk-button--warning"
-                           asp-action="DeleteConfirmedFellingDetails"
-                           asp-route-applicationId="@Model.ApplicationId"
-                           asp-route-confirmedFellingDetailId="@Model.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingDetailsId"
-                           data-module="govuk-button">
-                            Delete felling (this will delete the related restocking)
-                        </a>
-
-                    </div>
-                </div>
-
             </div>
-        </div>
-    </form>
+        </form>
+        <form id="delete-felling-details"
+              asp-action="DeleteConfirmedFellingDetails"
+              asp-route-applicationId="@Model.ApplicationId"
+              asp-route-confirmedFellingDetailId="@Model.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingDetailsId">
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+
+                    <button class="govuk-button govuk-button--warning"
+                            type="button"
+                            id="delete-felling-details-button"
+                            data-module="govuk-button">
+                        Delete felling (this will delete the related restocking)
+                    </button>
+
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Scripts

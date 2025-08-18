@@ -36,7 +36,7 @@
         </div>
     </div>
     <div id="confirmed-felling-type-filters">
-        <h3 class="govuk-heading-s govuk-!-margin-bottom-0">Confirmed Felling Operation<br/> 
+        <h3 class="govuk-heading-s govuk-!-margin-bottom-0">Confirmed felling operation<br/> 
             <span class="moj-badge moj-badge--green no-filter-applied">(all)</span></h3>
         <ul class="moj-filter-tags">
             @foreach (var fellingOperationType in Model.SelectedConfirmedFellingOperationTypes)
@@ -49,7 +49,7 @@
     </div>
     <p></p>
     <div id="confirmed-felling-tree-species-filters">
-        <h3 class="govuk-heading-s govuk-!-margin-bottom-0">Confirmed Felling Species<br/> 
+        <h3 class="govuk-heading-s govuk-!-margin-bottom-0">Confirmed felling species<br/> 
             <span class="moj-badge moj-badge--green no-filter-applied">(all)</span></h3>
         <ul class="moj-filter-tags">
             @foreach (var modelSelectedConfirmedFellingSpecies in Model.SelectedConfirmedFellingSpecies)
@@ -68,13 +68,13 @@
                 <div class="govuk-grid-column-one-half">
                     <div class="moj-filter__selected-heading">
                         <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                            Date Type
+                            Date type
                         </legend>
                         <div class="govuk-form-group">
                             <select asp-for="DateRangeType" class="govuk-select" asp-items="@Html.GetEnumSelectList<DateRangeTypeForReporting>()"></select>
                         </div>
                         <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                            Date Range
+                            Date range
                         </legend>
                         <div class="govuk-form-group">
                             <fieldset class="govuk-fieldset" role="group">
@@ -141,7 +141,7 @@
                         <div class="govuk-form-group">
                             <fieldset class="govuk-fieldset">
                                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                                    Current Status
+                                    Current status
                                 </legend>
                                 <div class="govuk-form-group">
                                     <select class="govuk-select" id="CurrentStatus" name="CurrentStatus">
@@ -166,7 +166,7 @@
                     <div class="govuk-form-group">
                         <fieldset class="govuk-fieldset">
                             <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                                Admin Hub Assigned
+                                Admin hub assigned
                             </legend>
                             @foreach (var adminHub in Model!.AdminHubs)
                             {
@@ -183,7 +183,7 @@
                     <div class="govuk-form-group">
                         <fieldset class="govuk-fieldset">
                             <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                                Admin Officer Assigned
+                                Operations admin officer assigned
                             </legend>
                             <div class="govuk-form-group">
                                 <select class="govuk-select" id="SelectedAdminOfficerId" name="SelectedAdminOfficerId">
@@ -200,7 +200,7 @@
                     <div class="govuk-form-group">
                         <fieldset class="govuk-fieldset">
                             <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                                Woodland Officer Assigned
+                                Woodland officer assigned
                             </legend>
                             <div class="govuk-form-group">
                                 <select class="govuk-select" id="SelectedWoodlandOfficerId" name="SelectedWoodlandOfficerId">
@@ -222,7 +222,7 @@
                                                     <fieldset class="govuk-fieldset">
                                                         <fieldset class="govuk-fieldset">
                                                             <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                                                                Confirmed Felling Operation
+                                                                Confirmed felling operation
                                                             </legend>
                                                             <select class="govuk-select" id="confirmed-felling-type-select" name="confirmed-felling-type-select">
                                                                 <option value="">Select ...</option>
@@ -242,7 +242,7 @@
                                                 <div class="govuk-form-group">
                                                     <fieldset class="govuk-fieldset">
                                                         <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                                                            Confirmed Felling Species
+                                                            Confirmed felling species
                                                         </legend>
                                                         <select class="govuk-select" id="confirmed-felling-tree-species-select" name="tree-species-select">
                                                             <option value="">Select ...</option>
@@ -270,7 +270,7 @@
     <div class="moj-button-menu">
         <div class="moj-button-menu__wrapper">
             <button id="submit-reportquery" class="govuk-button  moj-button-menu__item" data-prevent-double-click="true" data-module="govuk-button">
-                Download Report
+                Download report
             </button>
             <a class="govuk-button govuk-button--secondary govuk-button moj-button-menu__item" data-module="govuk-button" role="button" draggable="false"
                asp-controller="Reports" asp-action="FellingLicenceApplicationsDataReport">

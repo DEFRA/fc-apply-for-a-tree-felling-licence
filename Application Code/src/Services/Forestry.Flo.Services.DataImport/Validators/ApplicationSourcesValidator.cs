@@ -7,6 +7,11 @@ public class ApplicationSourcesValidator : AbstractValidator<IEnumerable<Applica
 {
     public ApplicationSourcesValidator()
     {
+        // This rule can be removed if we decide to allow multiple applications in the source file.
+        RuleFor(s => s)
+            .Must(s => s.ToList().Count == 1)
+            .WithMessage("There must be exactly one Application record in the source file");
+
         RuleFor(s => s)
             .Must(IsDistinctId)
             .WithMessage("There are repeated id values within the Application records source");

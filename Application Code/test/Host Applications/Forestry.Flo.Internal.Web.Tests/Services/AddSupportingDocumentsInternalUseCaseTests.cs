@@ -1,10 +1,8 @@
-﻿using System.Text;
-using AutoFixture;
+﻿using AutoFixture;
 using CSharpFunctionalExtensions;
 using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -13,18 +11,16 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FileStorage.Configuration;
-using Forestry.Flo.Services.FileStorage.Model;
 using Forestry.Flo.Services.FileStorage.ResultModels;
 using Forestry.Flo.Services.FileStorage.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
 using NodaTime.Testing;
-using NuGet.Configuration;
+using System.Text;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services
 {
@@ -77,7 +73,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                 .ReturnsAsync(fla);
 
             _addDocumentsService.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
             AddFileToFormCollection("testFile");
 

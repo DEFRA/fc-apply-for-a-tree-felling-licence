@@ -1,7 +1,6 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
 
@@ -11,21 +10,19 @@ public class AddConsulteeCommentModel
     public Guid ApplicationId { get; set; }
 
     [HiddenInput]
-    public string AccessCode { get; set; }
+    public Guid AccessCode { get; set; }
 
-    [DisplayName("Your name")]
-    [Required(ErrorMessage = "Your name must be provided")]
+    [DisplayName("Your name or organisation name")]
+    [Required(ErrorMessage = "Your name or organisation name must be provided")]
     public string AuthorName { get; set; }
 
     [HiddenInput]
     public string AuthorContactEmail { get; set; }
 
-    [Required(ErrorMessage = "Comment text must be provided")]
+    [DisplayName("Your comments")]
+    [Required(ErrorMessage = "Your comments must be provided")]
     [MaxLength(DataValueConstants.ConsulteeCommentMaxLength)]
     public string Comment { get; set; } = null!;
-
-    [DisplayName("Applicable to section (optional)")]
-    public ApplicationSection? ApplicableToSection { get; set; }
 
     [HiddenInput]
     public DateTime LinkExpiryDateTime { get; set; }

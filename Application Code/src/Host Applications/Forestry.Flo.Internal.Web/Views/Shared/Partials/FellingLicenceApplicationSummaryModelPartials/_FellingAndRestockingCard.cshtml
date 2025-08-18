@@ -1,0 +1,58 @@
+﻿@using Forestry.Flo.Internal.Web.Extensions
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingAndRestockingDetail
+
+@{
+    var willUseTreeMarking = string.IsNullOrEmpty(Model.FellingDetail.TreeMarking) ? "No" : $"Yes. {Model.FellingDetail.TreeMarking}";
+    var tpoInfo = Model.FellingDetail.IsPartOfTreePreservationOrder ? $"Yes: {Model.FellingDetail.TreePreservationOrderReference}" : "No";
+    var conservationAreaInfo = Model.FellingDetail.IsWithinConservationArea ? $"Yes: {Model.FellingDetail.ConservationAreaReference}" : "No";
+    var willRestock = !Model.FellingDetail.IsRestocking.HasValue ? "N/A" : (Model.FellingDetail.IsRestocking.Value ? "Yes" : $"No. {Model.FellingDetail.NoRestockingReason}");
+    var showRestocking = Model.FellingDetail.IsRestocking.HasValue && Model.FellingDetail.IsRestocking.Value;
+    var species = string.Join(", ", Model.FellingDetail.Species.Select(s => s.Value.SpeciesName));
+}
+
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">@Model.FellingDetail.OperationType.GetDisplayName() in @Model.CompartmentName</h2>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Estimated area to be felled
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.FellingDetail.AreaToBeFelled Ha
+                </dd>
+            </div>
+            
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Estimated number of trees to be felled
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.FellingDetail.NumberOfTrees Trees
+                </dd>
+            </div>
+            
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Will you use tree marking?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @willUseTreeMarking
+                </dd>
+            </div>
+            
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    What species of trees will be felled?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @species
+                </dd>
+            </div>
+        </dl>
+    </div>
+</div>

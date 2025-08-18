@@ -113,4 +113,19 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+
+    public IActionResult Privacy()
+    {
+        return View();
+    }
+
+    public IActionResult Accessibility()
+    {
+        return View();
+    }
+
+    public IActionResult Cookies()
+    {
+        return View();
+    }
 }

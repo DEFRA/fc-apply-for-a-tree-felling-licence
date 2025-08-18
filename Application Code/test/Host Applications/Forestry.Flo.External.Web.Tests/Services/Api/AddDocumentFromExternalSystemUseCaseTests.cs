@@ -1,29 +1,28 @@
-﻿using System.Text.Json;
+﻿using AutoFixture;
+using CSharpFunctionalExtensions;
+using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.External.Web.Services.ExternalApi;
+using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Infrastructure;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FileStorage.Configuration;
-using Forestry.Flo.Services.FileStorage.Services;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using AutoFixture;
-using CSharpFunctionalExtensions;
-using Forestry.Flo.External.Web.Services;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
-using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Infrastructure;
-using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FileStorage.ResultModels;
+using Forestry.Flo.Services.FileStorage.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using NodaTime.Testing;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using NodaTime;
-using Forestry.Flo.External.Web.Infrastructure;
-using Forestry.Flo.Services.Common.Models;
+using NodaTime.Testing;
+using System.Text.Json;
 
 namespace Forestry.Flo.External.Web.Tests.Services.Api
 {
@@ -144,7 +143,7 @@ namespace Forestry.Flo.External.Web.Tests.Services.Api
             _addDocumentService.Setup(r =>
                     r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(
-                    new AddDocumentsSuccessResult(new List<string>())));
+                    new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
             var docBytes = new byte[10];
             var docName = "testdoc";

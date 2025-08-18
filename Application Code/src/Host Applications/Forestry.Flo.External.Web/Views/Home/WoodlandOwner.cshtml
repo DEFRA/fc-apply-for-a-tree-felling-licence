@@ -9,9 +9,6 @@
 
     var user = new ExternalApplicant(User);
 
-    //hide the data import until it can be updated for multiple felling/restocking per cpt - FLOV2-1659
-    const bool showDataImport = false;
-
     //hide the link to manage other users at this WO - FLOV2-2154
     const bool showManageUsers = false;
 
@@ -35,6 +32,9 @@
     <a asp-controller="FellingLicenceApplication" asp-action="Index" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" draggable="false" class="govuk-button" data-module="govuk-button">
         Start a new licence application
     </a>
+    <a class="govuk-button govuk-button--secondary" asp-controller="DataImport" asp-action="Index" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" draggable="false" data-module="govuk-button">
+        Import a licence application
+    </a>
 
     <partial name="Partials/_FellingLicenceApplicationList" model="Model.FellingLicenceApplications" />
     
@@ -56,9 +56,6 @@
     </user-is-in-role>
     
     <br />
-    <a class="govuk-link" asp-controller="DataImport" asp-action="Index" condition="@showDataImport">
-        Import property/application data using CSV templates for @user.WoodlandOwnerName
-    </a>
 
 </div>
 

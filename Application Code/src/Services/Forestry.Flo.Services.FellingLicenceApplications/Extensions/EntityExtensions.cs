@@ -118,7 +118,7 @@ public static class EntityExtensions
 
     public static bool IsAlternativeCompartmentRestockingType(this TypeOfProposal typeOfProposal)
     {
-        return typeOfProposal is TypeOfProposal.PlantAnAlternativeArea or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees;
+        return typeOfProposal is TypeOfProposal.PlantAnAlternativeArea or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees or TypeOfProposal.NaturalColonisation;
     }
 
     public static bool IsNumberOfTreesRestockingType(this TypeOfProposal typeOfProposal)

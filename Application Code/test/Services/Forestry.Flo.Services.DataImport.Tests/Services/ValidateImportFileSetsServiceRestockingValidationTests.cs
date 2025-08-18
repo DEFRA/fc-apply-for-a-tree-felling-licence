@@ -25,18 +25,17 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
     }
 
     [Theory, AutoData]
-    public async Task WhenRestockingDetailsHaveSameRestockingTypeForSameFelling(Guid woodlandOwnerId)
+    public async Task WhenRestockingDetailsHaveSameRestockingTypeForSameFellingInFellingCompartment(Guid woodlandOwnerId)
     {
         var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 3);
 
-        var restockingType = input.ProposedRestockingSourceRecords!.First().RestockingProposal;
-        var cpt = input.ProposedRestockingSourceRecords!.First().Flov2CompartmentName;
-        var area = input.ProposedRestockingSourceRecords!.First().AreaToBeRestocked;
+        var restockingType = TypeOfProposal.ReplantTheFelledArea;
+        var area = input.ProposedFellingSourceRecords.First().AreaToBeFelled;
 
         input.ProposedRestockingSourceRecords!.ForEach(x =>
         {
             x.RestockingProposal = restockingType;
-            x.Flov2CompartmentName = cpt;
+            x.Flov2CompartmentName = null;
             x.AreaToBeRestocked = area;
             x.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
             x.RestockingDensity = FixtureInstance.Create<double>();
@@ -50,6 +49,35 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         Assert.Single(result.Error);
 
         Assert.Equal("There are repeated restocking operation types for the same felling operation within the Proposed Restocking records source", result.Error.Single().ErrorMessage);
+    }
+
+    [Theory, AutoData]
+    public async Task WhenRestockingDetailsHaveSameRestockingTypeForSameFellingInAltCompartment(Guid woodlandOwnerId)
+    {
+        var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 3);
+
+        input.ProposedFellingSourceRecords.First().OperationType = FellingOperationType.ClearFelling; // ensure it is clearfelling so we can plant an alternative area
+        var restockingType = TypeOfProposal.PlantAnAlternativeArea;
+        var cpt = Properties.Single(x => x.Name == input.ApplicationSourceRecords.Single().Flov2PropertyName)
+            .CompartmentIds.First(x => x.CompartmentName != input.ProposedFellingSourceRecords.First().Flov2CompartmentName);
+
+        input.ProposedRestockingSourceRecords!.ForEach(x =>
+        {
+            x.RestockingProposal = restockingType;
+            x.Flov2CompartmentName = cpt.CompartmentName;
+            x.AreaToBeRestocked = 1;
+            x.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+            x.RestockingDensity = FixtureInstance.Create<double>();
+        });
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Single(result.Error);
+
+        Assert.Equal("There are repeated restocking operation types for the same restocking compartment and felling operation within the Proposed Restocking records source", result.Error.Single().ErrorMessage);
     }
 
     [Theory, AutoData]
