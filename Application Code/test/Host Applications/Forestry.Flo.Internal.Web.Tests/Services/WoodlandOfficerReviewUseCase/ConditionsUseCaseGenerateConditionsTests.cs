@@ -87,7 +87,7 @@ public class ConditionsUseCaseGenerateConditionsTests
     public async Task WhenCannotGenerateConditions(
         Guid applicationId,
         Guid userId,
-        ConfirmedFellingAndRestockingDetailModel fellingAndRestocking,
+        FellingAndRestockingDetailModel fellingAndRestocking,
         string error)
     {
         var user = new InternalUser(
@@ -97,7 +97,10 @@ public class ConditionsUseCaseGenerateConditionsTests
 
         _fellingAndRestockingService
             .Setup(x => x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(new CombinedConfirmedFellingAndRestockingDetailRecord(new List<ConfirmedFellingAndRestockingDetailModel> { fellingAndRestocking }, false)));
+            .ReturnsAsync(Result.Success(new CombinedConfirmedFellingAndRestockingDetailRecord(
+                [fellingAndRestocking],
+                [],
+                false)));
         _conditionsService
             .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ConditionsResponse>(error));
@@ -186,7 +189,7 @@ public class ConditionsUseCaseGenerateConditionsTests
     public async Task WhenGeneratesConditions(
         Guid applicationId,
         Guid userId,
-        ConfirmedFellingAndRestockingDetailModel fellingAndRestocking,
+        FellingAndRestockingDetailModel fellingAndRestocking,
         ConditionsResponse response)
     {
         var user = new InternalUser(
@@ -196,7 +199,10 @@ public class ConditionsUseCaseGenerateConditionsTests
 
         _fellingAndRestockingService
             .Setup(x => x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(new CombinedConfirmedFellingAndRestockingDetailRecord(new List<ConfirmedFellingAndRestockingDetailModel> { fellingAndRestocking }, false)));
+            .ReturnsAsync(Result.Success(new CombinedConfirmedFellingAndRestockingDetailRecord(
+                [fellingAndRestocking],
+                [],
+                false)));
         _conditionsService
             .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(response));

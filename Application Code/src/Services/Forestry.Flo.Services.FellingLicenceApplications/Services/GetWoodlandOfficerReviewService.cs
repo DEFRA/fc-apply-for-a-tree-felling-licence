@@ -58,7 +58,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
             var publicRegister = await _internalFlaRepository.GetPublicRegisterAsync(applicationId, cancellationToken);
 
-            var proposedFellingAndRestockingDetails = await 
+            var proposedFellingAndRestockingDetails = await
                 _internalFlaRepository.GetProposedFellingAndRestockingDetailsForApplicationAsync(
                     applicationId, cancellationToken);
 
@@ -69,7 +69,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     applicationId);
                 return proposedFellingAndRestockingDetails.ConvertFailure<WoodlandOfficerReviewStatusModel>();
             }
-            
+
             var confirmedFellingAndRestockingDetails = await
                 _internalFlaRepository.GetConfirmedFellingAndRestockingDetailsForApplicationAsync(
                     applicationId, cancellationToken);
@@ -110,12 +110,17 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     CaseNoteType.WoodlandOfficerReviewComment
                 },
                 cancellationToken);
-            
-            var isLarchApplication = fAndRStatus == InternalReviewStepStatus.NotStarted 
+
+            var isLarchApplication = fAndRStatus == InternalReviewStepStatus.NotStarted
                 ? IsFellingLarchSpecies(proposedFellingAndRestockingDetails.Value.Item1)
                 : IsFellingLarchSpecies(confirmedFellingAndRestockingDetails.Value.Item1);
-            
-            var LarchFlyoverComplete = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.FellingLicenceApplication?.LarchCheckDetails?.FlightDate !=null;
+
+            var LarchFlyoverComplete = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.FellingLicenceApplication?.LarchCheckDetails?.FlightDate != null;
+            var LarchFlyoverStatus = larchCheckStatus != InternalReviewStepStatus.Completed
+                ? InternalReviewStepStatus.CannotStartYet
+                : LarchFlyoverComplete
+                        ? InternalReviewStepStatus.Completed
+                        : InternalReviewStepStatus.NotStarted;
 
             var taskListStates = new WoodlandOfficerReviewTaskListStates(
                 publicRegister.GetPublicRegisterStatus(),
@@ -124,8 +129,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 fAndRStatus,
                 conditionsStatus,
                 InternalReviewStepStatus.NotStarted,
-                isLarchApplication ? larchCheckStatus: InternalReviewStepStatus.NotRequired,
-                isLarchApplication ? LarchFlyoverComplete ? InternalReviewStepStatus.Completed : InternalReviewStepStatus.NotStarted : InternalReviewStepStatus.NotRequired,
+                isLarchApplication ? larchCheckStatus : InternalReviewStepStatus.NotRequired,
+                isLarchApplication ? LarchFlyoverStatus : InternalReviewStepStatus.NotRequired,
                 InternalReviewStepStatus.NotStarted);
 
             var result = new WoodlandOfficerReviewStatusModel
@@ -163,7 +168,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
     /// <inheritdoc/>
     public async Task<Result<Maybe<PublicRegisterModel>>> GetPublicRegisterDetailsAsync(
-        Guid applicationId, 
+        Guid applicationId,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to retrieve Public Register details for FLA with id {ApplicationId}", applicationId);
@@ -212,7 +217,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     CaseNoteType.SiteVisitComment
                 ],
                 cancellationToken);
-            
+
             if (woodlandOfficerReview.HasNoValue && caseNotes.Count == 0)
             {
                 return Result.Success(Maybe<SiteVisitModel>.None);
@@ -267,7 +272,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 EpsLicenceConsidered = woodlandOfficerReview.Value.EpsLicenceConsidered,
                 Stage1HabitatRegulationsAssessmentRequired = woodlandOfficerReview.Value.Stage1HabitatRegulationsAssessmentRequired,
             };
-            
+
             return Result.Success(Maybe<Pw14ChecksModel>.From(result));
         }
         catch (Exception ex)
@@ -300,7 +305,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
             var localAuthority = await GetLocalAuthorityForFellingLicenceApplicationAsync(fla.Value, cancellationToken);
 
             // TODO: NEEDS TO BE THE CONFIRMED F&R DETAILS, When entities straightened out!!!
-            var fellingDetails = 
+            var fellingDetails =
                 fla.Value.LinkedPropertyProfile.ProposedFellingDetails ?? new List<ProposedFellingDetail>(0);
 
             var totalArea = fellingDetails.Sum(x => x.AreaToBeFelled);
@@ -314,7 +319,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 compartmentAreaTotal += compartmentArea;
             }
 
-            var compartmentDetails = 
+            var compartmentDetails =
                 fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments
                     .Select(x => x.ToInternalCompartmentDetails())
                     .ToList();
@@ -332,8 +337,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 ConiferousArea = conifer,
                 OpenGroundArea = totalArea - compartmentAreaTotal,
                 Compartments = compartmentDetails,
-                CentrePoint = fla.HasValue && !string.IsNullOrEmpty(fla.Value.CentrePoint) 
-                    ? JsonConvert.DeserializeObject<Point>(fla.Value.CentrePoint) 
+                CentrePoint = fla.HasValue && !string.IsNullOrEmpty(fla.Value.CentrePoint)
+                    ? JsonConvert.DeserializeObject<Point>(fla.Value.CentrePoint)
                     : null,
                 AssignedInternalUserIds = fla.Value.AssigneeHistories
                     .Where(x => x.Role != AssignedUserRole.Applicant && x.Role != AssignedUserRole.Author && x.TimestampUnassigned == null)
@@ -388,7 +393,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
     /// <inheritdoc/>
     public async Task<Result<ConditionsStatusModel>> GetConditionsStatusAsync(
-        Guid applicationId, 
+        Guid applicationId,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to get conditions status for application with id {ApplicationId}", applicationId);
@@ -417,7 +422,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
     /// <inheritdoc/>
     public async Task<Result<ApplicationDetailsForConditionsNotification>> GetDetailsForConditionsNotificationAsync(
-        Guid applicationId, 
+        Guid applicationId,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to get application details for the conditions notification for application with id {ApplicationId}", applicationId);

@@ -1,0 +1,174 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@model Forestry.Flo.External.Web.Models.DataImport.ParsedDataViewModel;
+
+
+
+@{
+    ViewData["Title"] = "Check your imported application data";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <partial name="Partials/_PageErrors"/>
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+
+    <p class="govuk-body">This information was imported from your CSV templates. Check everything looks correct before creating your application.</p>
+
+    <h2 class="govuk-heading-m">If something looks wrong</h2>
+    <p class="govuk-body">Check your CSV files and return to the previous step to upload the corrected versions.</p>
+    <p class="govuk-body">You'll need to restart the import process to fix any errors.</p>
+
+    <form method="post" asp-controller="DataImport" asp-action="ImportParsedData">
+        <input type="hidden" asp-for="WoodlandOwnerId" />
+
+        @foreach (var application in Model.ImportFileSetContents.ApplicationSourceRecords!)
+        {
+
+            var fellingSources = Model.ImportFileSetContents.ProposedFellingSourceRecords
+                .Where(x => x.ApplicationId == application.ApplicationId)
+                .ToList();
+            var fellingIds = fellingSources.Select(x => x.ProposedFellingId).ToList();
+            var restockingSources = Model.ImportFileSetContents.ProposedRestockingSourceRecords
+                .Where(x => fellingIds.Contains(x.ProposedFellingId))
+                .ToList();
+
+            var compartments = fellingSources.Select(x => x.Flov2CompartmentName).ToList();
+            compartments.AddRange(restockingSources.Where(x => !string.IsNullOrWhiteSpace(x.Flov2CompartmentName)).Select(x => x.Flov2CompartmentName!));
+            compartments = compartments.Distinct().ToList();
+
+
+            <div class="govuk-summary-card">
+                <div class="govuk-summary-card__title-wrapper">
+                    <h2 class="govuk-summary-card__title">
+                        Woodland details
+                    </h2>
+                </div>
+                <div class="govuk-summary-card__content">
+                    <dl class="govuk-summary-list">
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Name
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @application.Flov2PropertyName
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="govuk-summary-card">
+                <div class="govuk-summary-card__title-wrapper">
+                    <h2 class="govuk-summary-card__title">
+                        Felling schedule
+                    </h2>
+                </div>
+                <div class="govuk-summary-card__content">
+                    <dl class="govuk-summary-list">
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Felling start date
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @DateTimeDisplay.GetDateDisplayString(application.ProposedFellingStart?.ToDateTime(TimeOnly.MinValue))
+                            </dd>
+                        </div>
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Felling completion date
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @DateTimeDisplay.GetDateDisplayString(application.ProposedFellingEnd?.ToDateTime(TimeOnly.MinValue))
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="govuk-summary-card">
+                <div class="govuk-summary-card__title-wrapper">
+                    <h2 class="govuk-summary-card__title">
+                        Felling and restocking operations
+                    </h2>
+                </div>
+                <div class="govuk-summary-card__content">
+                    <dl class="govuk-summary-list">
+                        @foreach (var compartment in compartments)
+                        {
+                            var fellingInCpt = fellingSources.Where(x => x.Flov2CompartmentName == compartment);
+                            var altCptRestockingInCpt = restockingSources.Where(x => x.Flov2CompartmentName == compartment && x.RestockingProposal.IsAlternativeCompartmentRestockingType());
+
+                            <div class="govuk-summary-list__row">
+                                <dt class="govuk-summary-list__key">
+                                    Compartment @compartment
+                                </dt>
+                                <dd class="govuk-summary-list__value">
+                                    @foreach (var fellingItem in fellingInCpt)
+                                    {
+                                        var restockingItems = restockingSources
+                                            .Where(x => x.ProposedFellingId == fellingItem.ProposedFellingId)
+                                            .ToList();
+
+                                        var speciesCodesList = fellingItem.Species.Split(',').Select(s => s.Trim()).ToList();
+
+                                        var speciesList = speciesCodesList.Select(x => TreeSpeciesFactory.SpeciesDictionary[x].Name).ToList();
+
+                                        var output = $"{fellingItem.OperationType.GetDisplayName()} {speciesList.JoinWithCommasAnd()} ";
+
+                                        if (!restockingItems.Any())
+                                        {
+                                            output += "that will not be restocked";
+                                        }
+                                        else
+                                        {
+                                            output += "that will be restocked through ";
+                                            var restockingOutputs = restockingItems.Select(restock => restock.RestockingProposal.IsAlternativeCompartmentRestockingType()
+                                                    ? $"{restock.RestockingProposal.GetDisplayName().ToLower()} in an alternative compartment ({restock.Flov2CompartmentName})"
+                                                    : $"{restock.RestockingProposal.GetDisplayName().ToLower()} in the same compartment")
+                                                .ToList();
+
+                                            output += restockingOutputs.JoinWithCommasAnd();
+                                        }
+
+                                        <p>@output</p>
+                                    }
+
+                                    @foreach (var altCptRestock in altCptRestockingInCpt)
+                                    {
+                                        var felling = fellingSources.FirstOrDefault(x => x.ProposedFellingId == altCptRestock.ProposedFellingId);
+
+                                        var output = $"{altCptRestock.RestockingProposal.GetDisplayName()} for the felling operation of {felling.OperationType.GetDisplayName().ToLower()} in compartment {felling.Flov2CompartmentName}";
+
+                                        <p>@output</p>
+                                    }
+                                </dd>
+                            </div>
+                        }
+                    </dl>
+                </div>
+            </div>
+        }
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+                <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                    Continue
+                </button>
+
+                <a class="govuk-link" asp-controller="DataImport" asp-action="Index" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" title="Return to the data import page">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

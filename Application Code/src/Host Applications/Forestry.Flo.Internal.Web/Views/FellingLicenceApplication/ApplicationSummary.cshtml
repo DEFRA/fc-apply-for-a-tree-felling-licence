@@ -21,7 +21,7 @@
                 Operations admin officer review
             </a>
             <a id="mapButton" data-module="govuk-button" class="govuk-button govuk-button--secondary">
-                Generate Images
+                Generate images
             </a>
             <a condition="@(Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.WoodlandOfficerReview))" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
                 Woodland officer review
@@ -38,7 +38,10 @@
         @foreach (var item in Model.FellingAndRestockingDetail!.DetailsList!)
         {
             <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling" />
-            <input type="hidden" id="@item.CompartmentId" value="@item.RestockingGISData" data-label="@item.RestockingCompartment" data-group="compartments_GIS" data-type="restocking" />
+            @foreach (var restocking in item.RestockingDetail)
+            {
+                <input type="hidden" id="@restocking.RestockingCompartmentId" value="@restocking.GISData" data-label="@restocking.RestockingCompartmentName" data-group="compartments_GIS" data-type="restocking" />
+            }
         }
     }
     <div class="govuk-accordion" data-module="govuk-accordion" id="accordion-default">

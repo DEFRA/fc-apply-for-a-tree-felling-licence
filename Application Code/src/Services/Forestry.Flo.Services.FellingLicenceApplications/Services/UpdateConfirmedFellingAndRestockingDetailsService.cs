@@ -4,6 +4,7 @@ using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -65,21 +66,37 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
         }
 
         var woodlandOfficerReviewMaybe = await _internalFlaRepository.GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
+        // Add both Id and Proposed CompartmentId as keys for compartmentNames
+        var compartmentNames = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments
+            .ToDictionary(x => x.Id, x => x.CompartmentNumber);
+        // Add CompartmentId as key as well, if not already present
+        foreach (var compartment in application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments)
+        {
+            if (!compartmentNames.ContainsKey(compartment.CompartmentId))
+            {
+                compartmentNames.Add(compartment.CompartmentId, compartment.CompartmentNumber);
+            }
+        }
+
+        var treeSpeciesDict = TreeSpeciesFactory.SpeciesDictionary;
 
         var compartmentList =
             (from compartment in application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
-             select new ConfirmedFellingAndRestockingDetailModel
+             select new FellingAndRestockingDetailModel
              {
                  CompartmentId = compartment.CompartmentId,
+                 SubmittedFlaPropertyCompartmentId = compartment.Id,
                  TotalHectares = compartment.TotalHectares,
                  ConfirmedTotalHectares = compartment.ConfirmedTotalHectares,
                  CompartmentNumber = compartment.CompartmentNumber,
                  SubCompartmentName = compartment.SubCompartmentName,
+                 NearestTown = application.SubmittedFlaPropertyDetail.NearestTown,
 
                  ConfirmedFellingDetailModels = compartment.ConfirmedFellingDetails.Select(fellingDetails =>
                     new ConfirmedFellingDetailModel
                     {
                         ConfirmedFellingDetailsId = fellingDetails.Id,
+                        ProposedFellingDetailsId = fellingDetails.ProposedFellingDetailId,
                         AreaToBeFelled = fellingDetails.AreaToBeFelled,
                         IsPartOfTreePreservationOrder = fellingDetails.IsPartOfTreePreservationOrder,
                         TreePreservationOrderReference = fellingDetails.TreePreservationOrderReference,
@@ -91,19 +108,23 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
                         TreeMarking = fellingDetails.TreeMarking,
                         EstimatedTotalFellingVolume = fellingDetails.EstimatedTotalFellingVolume,
                         ConfirmedFellingSpecies = fellingDetails.ConfirmedFellingSpecies,
-                        IsRestocking = fellingDetails.IsRestocking ?? fellingDetails.ConfirmedRestockingDetails.Count() > 0,
+                        IsRestocking = fellingDetails.IsRestocking,
                         NoRestockingReason = fellingDetails.NoRestockingReason,
                         AmendedProperties =
                             GetAmendedFellingDetailProperties(
                                 application.LinkedPropertyProfile!.ProposedFellingDetails!
-                                    .FirstOrDefault(x => x.LinkedPropertyProfile.PropertyProfileId == fellingDetails.SubmittedFlaPropertyCompartment.SubmittedFlaPropertyDetail.PropertyProfileId)!,
+                                    .FirstOrDefault(x => x.Id == fellingDetails.ProposedFellingDetailId),
                                 fellingDetails),
                         ConfirmedRestockingDetailModels = fellingDetails.ConfirmedRestockingDetails.Select(restockingDetails =>
                         new ConfirmedRestockingDetailModel
                         {
                             ConfirmedRestockingDetailsId = restockingDetails.Id,
+                            ProposedRestockingDetailsId = restockingDetails.ProposedRestockingDetailId,
                             Area = restockingDetails.Area,
                             ConfirmedRestockingSpecies = restockingDetails.ConfirmedRestockingSpecies,
+                            RestockingCompartmentTotalHectares = restockingDetails.ConfirmedFellingDetail?.SubmittedFlaPropertyCompartment?
+                                .SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                                .Where(x => x.Id == restockingDetails.SubmittedFlaPropertyCompartmentId).FirstOrDefault()?.TotalHectares ?? 0,
                             PercentageOfRestockArea = restockingDetails.PercentageOfRestockArea,
                             PercentNaturalRegeneration = restockingDetails.PercentNaturalRegeneration,
                             PercentOpenSpace = restockingDetails.PercentOpenSpace,
@@ -111,21 +132,82 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
                             NumberOfTrees = restockingDetails.NumberOfTrees,
                             RestockingProposal = restockingDetails.RestockingProposal,
                             CompartmentId = restockingDetails.SubmittedFlaPropertyCompartmentId,
-                            CompartmentNumber = restockingDetails.ConfirmedFellingDetail?.SubmittedFlaPropertyCompartment?
-                                .SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                            AmendedProperties =
+                                GetAmendedRestockingProperties(
+                                    application.LinkedPropertyProfile.ProposedFellingDetails!
+                                        .SelectMany(x => x.ProposedRestockingDetails)
+                                        .FirstOrDefault(x => x.Id == restockingDetails.ProposedRestockingDetailId), restockingDetails, compartmentNames),
+                            CompartmentNumber = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments?
                                 .Where(x => x.Id == restockingDetails.SubmittedFlaPropertyCompartmentId).FirstOrDefault()?.CompartmentNumber ?? string.Empty,
-                            SubCompartmentName = restockingDetails.ConfirmedFellingDetail?.SubmittedFlaPropertyCompartment?
-                                .SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
-                                .Where(x => x.Id == restockingDetails.SubmittedFlaPropertyCompartmentId).FirstOrDefault()?.SubCompartmentName ?? string.Empty
+                            ConfirmedFellingDetailsId = restockingDetails.ConfirmedFellingDetailId
                         })
-                    })
+                    }),
+                 ProposedFellingDetailModels = application.LinkedPropertyProfile.ProposedFellingDetails
+                     .Where(x => x.PropertyProfileCompartmentId == compartment.CompartmentId)
+                     .Select(proposedFellingDetail =>
+                    new ProposedFellingDetailModel
+                    {
+                        Id = proposedFellingDetail.Id,
+                        AreaToBeFelled = proposedFellingDetail.AreaToBeFelled,
+                        IsPartOfTreePreservationOrder = proposedFellingDetail.IsPartOfTreePreservationOrder,
+                        TreePreservationOrderReference = proposedFellingDetail.TreePreservationOrderReference,
+                        IsWithinConservationArea = proposedFellingDetail.IsWithinConservationArea,
+                        ConservationAreaReference = proposedFellingDetail.ConservationAreaReference,
+                        NumberOfTrees = proposedFellingDetail.NumberOfTrees,
+                        OperationType = proposedFellingDetail.OperationType,
+                        IsTreeMarkingUsed = !string.IsNullOrEmpty(proposedFellingDetail.TreeMarking),
+                        TreeMarking = proposedFellingDetail.TreeMarking,
+                        EstimatedTotalFellingVolume = proposedFellingDetail.EstimatedTotalFellingVolume,
+                        Species = proposedFellingDetail.FellingSpecies
+                            .ToDictionary(
+                                x => x.Species,
+                                x => new SpeciesModel
+                                {
+                                    Id = x.Id,
+                                    Species = x.Species,
+                                    SpeciesName = treeSpeciesDict[x.Species].Name
+                                }),
+                        IsRestocking = proposedFellingDetail.IsRestocking,
+                        NoRestockingReason = proposedFellingDetail.NoRestockingReason,
+                        ProposedRestockingDetails = proposedFellingDetail.ProposedRestockingDetails.Select(
+                            restockingDetails =>
+                            {
+                                var restockingCompartment = application.SubmittedFlaPropertyDetail
+                                    .SubmittedFlaPropertyCompartments
+                                    .First(x => x.CompartmentId == restockingDetails.PropertyProfileCompartmentId);
+                                return new ProposedRestockingDetailModel
+                                {
+                                    Id = restockingDetails.Id,
+                                    Area = restockingDetails.Area,
+                                    CompartmentTotalHectares = restockingCompartment.TotalHectares,
+                                    Species = restockingDetails.RestockingSpecies
+                                        .ToDictionary(
+                                            x => x.Species,
+                                            x => new SpeciesModel
+                                            {
+                                                Id = x.Id,
+                                                Species = x.Species,
+                                                SpeciesName = treeSpeciesDict[x.Species].Name,
+                                                Percentage = x.Percentage
+                                            }),
+                                    PercentageOfRestockArea = restockingDetails.PercentageOfRestockArea,
+                                    RestockingDensity = restockingDetails.RestockingDensity,
+                                    NumberOfTrees = restockingDetails.NumberOfTrees,
+                                    RestockingProposal = restockingDetails.RestockingProposal,
+                                    OperationType = restockingDetails.ProposedFellingDetail.OperationType,
+                                    CompartmentId = restockingDetails.PropertyProfileCompartmentId,
+                                    CompartmentNumber = restockingCompartment.CompartmentNumber,
+                                    SubCompartmentName = restockingCompartment.SubCompartmentName,
+                                };
+                            }).ToList()
+                    }),
              }).ToList();
 
         return Result.Success(
             new CombinedConfirmedFellingAndRestockingDetailRecord(
                 compartmentList,
-                woodlandOfficerReviewMaybe.HasValue && woodlandOfficerReviewMaybe.Value.ConfirmedFellingAndRestockingComplete
-                )
+                application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ToList(),
+                woodlandOfficerReviewMaybe.HasValue && woodlandOfficerReviewMaybe.Value.ConfirmedFellingAndRestockingComplete)
             );
     }
 
@@ -177,8 +259,57 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
         _internalFlaRepository.Update(fla);
 
         var dbResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
-        return dbResult.IsFailure 
-            ? Result.Failure(dbResult.Error.ToString()) 
+        return dbResult.IsFailure
+            ? Result.Failure(dbResult.Error.ToString())
+            : Result.Success();
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result> DeleteConfirmedRestockingDetailAsync(
+        Guid applicationId,
+        Guid confirmedRestockingDetailId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var flaMaybe = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
+        if (flaMaybe.HasNoValue)
+        {
+            _logger.LogError("Unable to retrieve felling licence application {appId}", applicationId);
+            return Result.Failure("Unable to retrieve felling licence application");
+        }
+
+        var fla = flaMaybe.Value;
+
+        var userCheck = CheckUserIsPermittedToAmend(fla, userId);
+        if (userCheck.IsFailure)
+        {
+            return userCheck;
+        }
+
+        var felling = fla.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+            .SelectMany(x => x.ConfirmedFellingDetails)
+            .FirstOrDefault(f => f.ConfirmedRestockingDetails.Any(y => y.Id == confirmedRestockingDetailId));
+        if (felling is null)
+        {
+            _logger.LogError("Confirmed felling detail not found for application {appId}", applicationId);
+            return Result.Failure("Confirmed felling detail not found");
+        }
+
+        var confirmedRestockingDetail = felling.ConfirmedRestockingDetails.FirstOrDefault(f => f.Id == confirmedRestockingDetailId);
+        if (confirmedRestockingDetail is null)
+        {
+            _logger.LogError("Confirmed restocking detail with id {id} not found for application {appId}", confirmedRestockingDetailId, applicationId);
+            return Result.Failure("Confirmed restocking detail not found");
+        }
+
+        confirmedRestockingDetail.ConfirmedRestockingSpecies.Clear();
+        felling.ConfirmedRestockingDetails.Remove(confirmedRestockingDetail);
+
+        _internalFlaRepository.Update(fla);
+
+        var dbResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+        return dbResult.IsFailure
+            ? Result.Failure(dbResult.Error.ToString())
             : Result.Success();
     }
 
@@ -206,7 +337,8 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
 
         var userCheck = CheckUserIsPermittedToAmend(
             flaMaybe.Value,
-            userId);
+            userId,
+            allowAdminOfficer: true);
 
         if (userCheck.IsFailure)
         {
@@ -271,6 +403,366 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
 
     }
 
+    /// <inheritdoc/>
+    public async Task<Result> RevertConfirmedFellingDetailAmendmentsAsync(
+        Guid applicationId,
+        Guid proposedFellingDetailsId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var flaMaybe = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
+            if (flaMaybe.HasNoValue)
+            {
+                _logger.LogError("Unable to retrieve felling licence application in RevertConfirmedFellingDetailAmendmentsAsync, id {id}", applicationId);
+                return Result.Failure($"Unable to retrieve felling licence application in RevertConfirmedFellingDetailAmendmentsAsync, id {applicationId}");
+            }
+
+            var fla = flaMaybe.Value;
+
+            var userCheck = CheckUserIsPermittedToAmend(fla, userId);
+            if (userCheck.IsFailure)
+            {
+                await SaveDetailsFailureEvent(
+                    applicationId,
+                    userId,
+                    userCheck.Error,
+                    cancellationToken);
+
+                _logger.LogError(
+                    "User {userId} is not permitted to amend felling licence application {applicationId} in RevertConfirmedFellingDetailAmendmentsAsync",
+                    userId,
+                    applicationId);
+
+                return userCheck;
+            }
+
+            var proposedFellingDetail = fla.LinkedPropertyProfile?.ProposedFellingDetails?
+                .FirstOrDefault(p => p.Id == proposedFellingDetailsId);
+
+            if (proposedFellingDetail is null)
+            {
+                await SaveDetailsFailureEvent(
+                    applicationId,
+                    userId,
+                    "Unable to find proposed felling detail for the given id",
+                    cancellationToken);
+
+                _logger.LogError("Unable to find proposed felling detail {proposedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}",
+                    proposedFellingDetailsId, applicationId);
+                return Result.Failure($"Unable to find proposed felling detail {proposedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}");
+            }
+
+            var compartment = fla.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                .FirstOrDefault(c => c.CompartmentId == proposedFellingDetail.PropertyProfileCompartmentId);
+
+            if (compartment is null)
+            {
+                await SaveDetailsFailureEvent(
+                    applicationId,
+                    userId,
+                    "Unable to find compartment for proposed felling detail",
+                    cancellationToken);
+
+                _logger.LogError("Unable to find compartment for proposed felling detail {proposedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}",
+                    proposedFellingDetailsId, applicationId);
+                return Result.Failure($"Unable to find compartment for proposed felling detail {proposedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}");
+            }
+
+            var confirmedFellingDetail = compartment.ConfirmedFellingDetails
+                .FirstOrDefault(f => f.ProposedFellingDetailId == proposedFellingDetailsId);
+
+            if (confirmedFellingDetail is not null)
+            {
+                _logger.LogInformation("Confirmed felling detail already exists for proposed felling detail {proposedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}",
+                    proposedFellingDetailsId, applicationId);
+                return await RevertConfirmedFellingDetailEntityAsync(
+                        fla,
+                        confirmedFellingDetail.Id,
+                        userId,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            var newConfirmedFellingDetail = new ConfirmedFellingDetail
+            {
+                AreaToBeFelled = proposedFellingDetail.AreaToBeFelled,
+                IsPartOfTreePreservationOrder = proposedFellingDetail.IsPartOfTreePreservationOrder,
+                TreePreservationOrderReference = proposedFellingDetail.TreePreservationOrderReference,
+                IsWithinConservationArea = proposedFellingDetail.IsWithinConservationArea,
+                ConservationAreaReference = proposedFellingDetail.ConservationAreaReference,
+                NumberOfTrees = proposedFellingDetail.NumberOfTrees,
+                OperationType = proposedFellingDetail.OperationType,
+                TreeMarking = proposedFellingDetail.TreeMarking,
+                EstimatedTotalFellingVolume = proposedFellingDetail.EstimatedTotalFellingVolume,
+                IsRestocking = proposedFellingDetail.IsRestocking ?? (proposedFellingDetail.ProposedRestockingDetails?.Any() == true),
+                NoRestockingReason = proposedFellingDetail.NoRestockingReason,
+                ProposedFellingDetailId = proposedFellingDetailsId,
+                SubmittedFlaPropertyCompartment = compartment,
+                SubmittedFlaPropertyCompartmentId = compartment.Id
+            };
+
+            if (proposedFellingDetail.FellingSpecies != null)
+            {
+                foreach (var species in proposedFellingDetail.FellingSpecies)
+                {
+                    newConfirmedFellingDetail.ConfirmedFellingSpecies.Add(new ConfirmedFellingSpecies
+                    {
+                        Species = species.Species,
+                        ConfirmedFellingDetail = newConfirmedFellingDetail,
+                        ConfirmedFellingDetailId = newConfirmedFellingDetail.Id
+                    });
+                }
+            }
+
+            if (proposedFellingDetail.ProposedRestockingDetails != null)
+            {
+                foreach (var proposedRestock in proposedFellingDetail.ProposedRestockingDetails)
+                {
+                    var restockCompartment = fla.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                        .FirstOrDefault(x => x.CompartmentId == proposedRestock.PropertyProfileCompartmentId);
+
+                    var confirmedRestock = new ConfirmedRestockingDetail
+                    {
+                        Area = proposedRestock.Area,
+                        SubmittedFlaPropertyCompartmentId = restockCompartment?.Id ?? compartment.Id,
+                        PercentageOfRestockArea = proposedRestock.PercentageOfRestockArea,
+                        RestockingDensity = proposedRestock.RestockingDensity,
+                        NumberOfTrees = proposedRestock.NumberOfTrees,
+                        RestockingProposal = proposedRestock.RestockingProposal,
+                        ConfirmedFellingDetail = newConfirmedFellingDetail,
+                        ConfirmedFellingDetailId = newConfirmedFellingDetail.Id,
+                        ProposedRestockingDetailId = proposedRestock.Id
+                    };
+
+                    if (proposedRestock.RestockingSpecies is not null)
+                    {
+                        foreach (var species in proposedRestock.RestockingSpecies)
+                        {
+                            confirmedRestock.ConfirmedRestockingSpecies.Add(new ConfirmedRestockingSpecies
+                            {
+                                Species = species.Species,
+                                Percentage = species.Percentage,
+                                ConfirmedRestockingDetail = confirmedRestock,
+                                ConfirmedRestockingDetailsId = confirmedRestock.Id
+                            });
+                        }
+                    }
+
+                    newConfirmedFellingDetail.ConfirmedRestockingDetails.Add(confirmedRestock);
+                }
+            }
+
+            compartment.ConfirmedFellingDetails.Add(newConfirmedFellingDetail);
+            _internalFlaRepository.Update(fla);
+
+            var dbResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError("Failed to save reverted deleted confirmed felling detail for application {applicationId}: {error}", applicationId, dbResult.Error);
+                return Result.Failure(dbResult.Error.ToString());
+            }
+
+            _logger.LogInformation(
+                "Reverted deleted confirmed felling detail for application {applicationId}, proposed felling detail {proposedFellingDetailsId}",
+                applicationId,
+                proposedFellingDetailsId);
+
+            await _audit.PublishAuditEventAsync(
+                new AuditEvent(
+                    AuditEvents.UpdateWoodlandOfficerReview,
+                    applicationId,
+                    null,
+                    _requestContext,
+                    new
+                    {
+                        Section = "Revert Deleted Confirmed Felling/Restocking Detail Amendments",
+                        ProposedFellingDetailsId = proposedFellingDetailsId
+                    }
+                ), cancellationToken
+            );
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in RevertConfirmedFellingDetailAmendmentsAsync");
+            return Result.Failure("Exception caught in RevertConfirmedFellingDetailAmendmentsAsync");
+        }
+    }
+
+    private async Task<Result> RevertConfirmedFellingDetailEntityAsync(
+        FellingLicenceApplication fla,
+        Guid confirmedFellingDetailsId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var compartment = fla.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+            .FirstOrDefault(c => c.ConfirmedFellingDetails.Any(f => f.Id == confirmedFellingDetailsId));
+
+        if (compartment is null)
+        {
+            await SaveDetailsFailureEvent(
+                fla.Id,
+                userId,
+                $"Unable to find compartment for confirmed felling detail {confirmedFellingDetailsId}",
+                cancellationToken);
+
+            _logger.LogError("Unable to find compartment for confirmed felling detail {confirmedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}",
+                confirmedFellingDetailsId, fla.Id);
+
+            return Result.Failure($"Unable to find compartment for confirmed felling detail {confirmedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {fla.Id}");
+        }
+
+        var confirmedFellingDetail = compartment.ConfirmedFellingDetails.FirstOrDefault(f => f.Id == confirmedFellingDetailsId);
+        if (confirmedFellingDetail is null)
+        {
+            await SaveDetailsFailureEvent(
+                fla.Id,
+                userId,
+                $"Unable to find confirmed felling detail {confirmedFellingDetailsId}",
+                cancellationToken);
+
+            _logger.LogError("Unable to find confirmed felling detail {confirmedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}",
+                confirmedFellingDetailsId, fla.Id);
+
+            return Result.Failure($"Unable to find confirmed felling detail {confirmedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {fla.Id}");
+        }
+
+        if (confirmedFellingDetail.ProposedFellingDetailId is null || fla.LinkedPropertyProfile?.ProposedFellingDetails is null)
+        {
+            await SaveDetailsFailureEvent(
+                fla.Id,
+                userId,
+                $"No linked proposed felling detail for confirmed felling detail {confirmedFellingDetailsId}",
+                cancellationToken);
+
+            _logger.LogError("No linked proposed felling detail for confirmed felling detail {confirmedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}",
+                confirmedFellingDetailsId, fla.Id);
+
+            return Result.Failure($"No linked proposed felling detail for confirmed felling detail {confirmedFellingDetailsId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {fla.Id}");
+        }
+
+        var proposedFellingDetail = fla.LinkedPropertyProfile.ProposedFellingDetails
+            .FirstOrDefault(p => p.Id == confirmedFellingDetail.ProposedFellingDetailId);
+
+        if (proposedFellingDetail is null)
+        {
+            await SaveDetailsFailureEvent(
+                fla.Id,
+                userId,
+                $"Unable to find proposed felling detail {confirmedFellingDetail.ProposedFellingDetailId}",
+                cancellationToken);
+
+            _logger.LogError("Unable to find proposed felling detail {proposedFellingDetailId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {applicationId}",
+                confirmedFellingDetail.ProposedFellingDetailId, fla.Id);
+
+            return Result.Failure($"Unable to find proposed felling detail {confirmedFellingDetail.ProposedFellingDetailId} in RevertConfirmedFellingDetailAmendmentsAsync, application id {fla.Id}");
+        }
+
+        confirmedFellingDetail.AreaToBeFelled = proposedFellingDetail.AreaToBeFelled;
+        confirmedFellingDetail.IsPartOfTreePreservationOrder = proposedFellingDetail.IsPartOfTreePreservationOrder;
+        confirmedFellingDetail.TreePreservationOrderReference = proposedFellingDetail.TreePreservationOrderReference;
+        confirmedFellingDetail.IsWithinConservationArea = proposedFellingDetail.IsWithinConservationArea;
+        confirmedFellingDetail.ConservationAreaReference = proposedFellingDetail.ConservationAreaReference;
+        confirmedFellingDetail.NumberOfTrees = proposedFellingDetail.NumberOfTrees;
+        confirmedFellingDetail.OperationType = proposedFellingDetail.OperationType;
+        confirmedFellingDetail.TreeMarking = proposedFellingDetail.TreeMarking;
+        confirmedFellingDetail.EstimatedTotalFellingVolume = proposedFellingDetail.EstimatedTotalFellingVolume;
+        confirmedFellingDetail.IsRestocking = proposedFellingDetail.IsRestocking ?? (proposedFellingDetail.ProposedRestockingDetails?.Any() == true);
+        confirmedFellingDetail.NoRestockingReason = proposedFellingDetail.NoRestockingReason;
+        confirmedFellingDetail.ProposedFellingDetailId = proposedFellingDetail.Id;
+
+        confirmedFellingDetail.ConfirmedFellingSpecies.Clear();
+        if (proposedFellingDetail.FellingSpecies != null)
+        {
+            foreach (var species in proposedFellingDetail.FellingSpecies)
+            {
+                confirmedFellingDetail.ConfirmedFellingSpecies.Add(new ConfirmedFellingSpecies
+                {
+                    Species = species.Species,
+                    ConfirmedFellingDetail = confirmedFellingDetail,
+                    ConfirmedFellingDetailId = confirmedFellingDetail.Id
+                });
+            }
+        }
+
+        confirmedFellingDetail.ConfirmedRestockingDetails.Clear();
+        if (proposedFellingDetail.ProposedRestockingDetails is not null)
+        {
+            foreach (var proposedRestock in proposedFellingDetail.ProposedRestockingDetails)
+            {
+                var restockCompartment = fla.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                    .FirstOrDefault(x => x.CompartmentId == proposedRestock.PropertyProfileCompartmentId);
+
+                var confirmedRestock = new ConfirmedRestockingDetail
+                {
+                    Area = proposedRestock.Area,
+                    SubmittedFlaPropertyCompartmentId = restockCompartment?.Id ?? compartment.Id,
+                    PercentageOfRestockArea = proposedRestock.PercentageOfRestockArea,
+                    RestockingDensity = proposedRestock.RestockingDensity,
+                    NumberOfTrees = proposedRestock.NumberOfTrees,
+                    RestockingProposal = proposedRestock.RestockingProposal,
+                    ConfirmedFellingDetail = confirmedFellingDetail,
+                    ConfirmedFellingDetailId = confirmedFellingDetail.Id,
+                    ProposedRestockingDetailId = proposedRestock.Id
+                };
+
+                if (proposedRestock.RestockingSpecies is not null)
+                {
+                    foreach (var species in proposedRestock.RestockingSpecies)
+                    {
+                        confirmedRestock.ConfirmedRestockingSpecies.Add(new ConfirmedRestockingSpecies
+                        {
+                            Species = species.Species,
+                            Percentage = species.Percentage,
+                            ConfirmedRestockingDetail = confirmedRestock,
+                            ConfirmedRestockingDetailsId = confirmedRestock.Id
+                        });
+                    }
+                }
+
+                confirmedFellingDetail.ConfirmedRestockingDetails.Add(confirmedRestock);
+            }
+        }
+
+        _internalFlaRepository.Update(fla);
+
+        var dbResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+        if (dbResult.IsFailure)
+        {
+            await SaveDetailsFailureEvent(
+                fla.Id,
+                userId,
+                dbResult.Error.ToString(),
+                cancellationToken);
+
+            return Result.Failure(dbResult.Error.ToString());
+        }
+
+        _logger.LogInformation(
+            "Reverted confirmed felling detail amendments for application {applicationId}, confirmed felling detail {confirmedFellingDetailsId}",
+            fla.Id,
+            confirmedFellingDetailsId);
+
+        await _audit.PublishAuditEventAsync(
+            new AuditEvent(
+                AuditEvents.UpdateWoodlandOfficerReview,
+                fla.Id,
+                userId,
+                _requestContext,
+                new
+                {
+                    Section = "Revert Confirmed Felling/Restocking Detail Amendments",
+                    ConfirmedFellingDetailsId = confirmedFellingDetailsId
+                }
+            ), cancellationToken
+        );
+
+        return Result.Success();
+    }
+
     private Result ConvertProposedFellingDetailsToConfirmedAsync(FellingLicenceApplication fla)
     {
         try
@@ -309,7 +801,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
                     TreeMarking = propFelling.TreeMarking,
                     SubmittedFlaPropertyCompartmentId = submittedFlaPropertyCompartment.Id,
                     EstimatedTotalFellingVolume = propFelling.EstimatedTotalFellingVolume,
-                    IsRestocking = propFelling.IsRestocking ?? propFelling.ProposedRestockingDetails?.Count() > 0,
+                    IsRestocking = propFelling.IsRestocking,
                     NoRestockingReason = propFelling.NoRestockingReason,
                     ProposedFellingDetailId = propFelling.Id
                 };
@@ -340,7 +832,8 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
                         NumberOfTrees = proposedRestockingDetail.NumberOfTrees,
                         RestockingProposal = proposedRestockingDetail.RestockingProposal,
                         ConfirmedFellingDetail = confirmedFellingDetail,
-                        ConfirmedFellingDetailId = confirmedFellingDetail.Id
+                        ConfirmedFellingDetailId = confirmedFellingDetail.Id,
+                        ProposedRestockingDetailId = proposedRestockingDetail.Id
                     };
 
                     foreach (var species in proposedRestockingDetail.RestockingSpecies)
@@ -370,24 +863,37 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
     private Result CheckUserIsPermittedToAmend(
         FellingLicenceApplication fla,
         Guid userId,
-        [CallerMemberName] string? methodName = null)
+        [CallerMemberName] string? methodName = null,
+        bool allowAdminOfficer = false)
     {
         // check the application is in the Woodland Officer review stage
 
-        if (fla.StatusHistories.MaxBy(x => x.Created)?.Status != FellingLicenceStatus.WoodlandOfficerReview &&
-           fla.StatusHistories.MaxBy(x => x.Created)?.Status != FellingLicenceStatus.AdminOfficerReview)
+        var currentStatus = fla.GetCurrentStatus();
+
+        List<FellingLicenceStatus> allowedStates = [ FellingLicenceStatus.WoodlandOfficerReview ];
+        List<AssignedUserRole> permittedRoles = [ AssignedUserRole.WoodlandOfficer ];
+
+        if (allowAdminOfficer)
         {
-            _logger.LogError("Application is not in Woodland Officer review stage in {methodName}, id {id}", methodName, fla.Id);
-            return Result.Failure($"Application is not in Woodland Officer review stage in {methodName}, id {fla.Id}");
+            allowedStates.Add(FellingLicenceStatus.AdminOfficerReview);
+            permittedRoles.Add(AssignedUserRole.AdminOfficer);
+        }
+
+        if (allowedStates.Contains(currentStatus) is false)
+        {
+            _logger.LogError("Application is not in the correct stage in {methodName}, id {id}", methodName, fla.Id);
+            return Result.Failure($"Application is not in the correct stage in {methodName}, id {fla.Id}");
         }
 
         // check that the user is permitted to change details
 
-        if (fla.AssigneeHistories.FirstOrDefault(x =>
-                (x.Role is AssignedUserRole.WoodlandOfficer || x.Role is AssignedUserRole.AdminOfficer) && x.AssignedUserId == userId && !x.TimestampUnassigned.HasValue) is null)
+        if (fla.AssigneeHistories.FirstOrDefault(x => 
+                permittedRoles.Contains(x.Role) && 
+                x.AssignedUserId == userId && 
+                !x.TimestampUnassigned.HasValue) is null)
         {
-            _logger.LogError("User is not assigned Woodland Officer for application in {methodName}, application id {id}, user id {userId}", methodName, fla.Id, userId);
-            return Result.Failure($"User is not assigned Woodland Officer for application in {methodName}, application id {fla.Id}, user id {userId}");
+            _logger.LogError("User {userId} is not permitted to amend felling licence application {applicationId} in {methodName}", userId, fla.Id, methodName);
+            return Result.Failure($"User {userId} is not permitted to amend felling licence application {fla.Id} in {methodName}");
         }
 
         return Result.Success();
@@ -418,7 +924,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
     public async Task<Result> SaveChangesToConfirmedFellingAndRestockingAsync(
         Guid applicationId,
         Guid userId,
-        IList<ConfirmedFellingAndRestockingDetailModel> confirmedFellingAndRestockingDetailModels,
+        IList<FellingAndRestockingDetailModel> confirmedFellingAndRestockingDetailModels,
         CancellationToken cancellationToken)
     {
         try
@@ -566,7 +1072,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
     public async Task<Result> SaveChangesToConfirmedFellingDetailsAsync(
         Guid applicationId,
         Guid userId,
-        IndividualConfirmedFellingRestockingDetailModel confirmedFellingDetailsModel,
+        IndividualFellingRestockingDetailModel confirmedFellingDetailsModel,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken)
     {
@@ -701,6 +1207,126 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
     }
 
     /// <inheritdoc />
+    public async Task<Result> SaveChangesToConfirmedRestockingDetailsAsync(
+        Guid applicationId,
+        Guid userId,
+        IndividualRestockingDetailModel confirmedRestockingDetailsModel,
+        Dictionary<string, SpeciesModel> speciesModel,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var flaMaybe = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
+            if (flaMaybe.HasNoValue)
+            {
+                await SaveDetailsFailureEvent(
+                    applicationId,
+                    userId,
+                    "Unable to retrieve felling licence application",
+                    cancellationToken);
+
+                _logger.LogError("Unable to retrieve felling licence application in SaveChangesToConfirmedFellingAsync, id {id}", applicationId);
+                return Result.Failure($"Unable to retrieve felling licence application in SaveChangesToConfirmedFellingAsync, id {applicationId}");
+            }
+
+            var updatedFla = flaMaybe.Value;
+
+            var userCheck = CheckUserIsPermittedToAmend(flaMaybe.Value, userId);
+
+            if (userCheck.IsFailure)
+            {
+                await SaveDetailsFailureEvent(
+                    applicationId,
+                    userId,
+                    userCheck.Error,
+                    cancellationToken);
+
+                return userCheck;
+            }
+
+            var newConfirmedRestock = confirmedRestockingDetailsModel.ConfirmedRestockingDetailModel;
+
+            var dbConfirmedRestock = updatedFla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments
+                .SelectMany(x => x.ConfirmedFellingDetails)
+                .SelectMany(x => x.ConfirmedRestockingDetails)
+                .FirstOrDefault(x => x.Id == newConfirmedRestock?.ConfirmedRestockingDetailsId);
+
+            // Add New Restocking record if it does not exist
+            if (dbConfirmedRestock is null)
+            {
+                dbConfirmedRestock ??= new ConfirmedRestockingDetail();
+                updatedFla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments
+                    .SelectMany(x => x.ConfirmedFellingDetails)
+                    .First(x => x.Id == newConfirmedRestock.ConfirmedFellingDetailsId).ConfirmedRestockingDetails
+                    .Add(dbConfirmedRestock);
+            }
+
+            dbConfirmedRestock.SubmittedFlaPropertyCompartmentId = newConfirmedRestock.CompartmentId;
+            dbConfirmedRestock.Area = newConfirmedRestock.Area;
+            dbConfirmedRestock.RestockingProposal = newConfirmedRestock.RestockingProposal;
+            dbConfirmedRestock.NumberOfTrees = newConfirmedRestock.NumberOfTrees;
+            dbConfirmedRestock.PercentOpenSpace = newConfirmedRestock.PercentOpenSpace;
+            dbConfirmedRestock.PercentNaturalRegeneration = newConfirmedRestock.PercentNaturalRegeneration;
+            dbConfirmedRestock.PercentageOfRestockArea = newConfirmedRestock.PercentageOfRestockArea;
+            dbConfirmedRestock.RestockingDensity = newConfirmedRestock.RestockingDensity;
+            dbConfirmedRestock.ConfirmedRestockingSpecies = newConfirmedRestock.ConfirmedRestockingSpecies.ToList();
+            dbConfirmedRestock.ConfirmedFellingDetailId = newConfirmedRestock.ConfirmedFellingDetailsId;
+
+            foreach (var fellingSpecies in dbConfirmedRestock.ConfirmedRestockingSpecies.ToList()
+                         .Where(fellingSpecies => speciesModel.ContainsKey(fellingSpecies.Species) is false))
+            {
+                dbConfirmedRestock.ConfirmedRestockingSpecies.Remove(fellingSpecies);
+            }
+
+            foreach (var species in speciesModel
+                         .Where(species => dbConfirmedRestock.ConfirmedRestockingSpecies.Any(x => x.Species == species.Key) is false))
+            {
+                dbConfirmedRestock.ConfirmedRestockingSpecies.Add(new ConfirmedRestockingSpecies
+                {
+                    Species = species.Key,
+                    Percentage = species.Value.Percentage,
+                    ConfirmedRestockingDetail = dbConfirmedRestock,
+                });
+            }
+
+            _internalFlaRepository.Update(updatedFla);
+
+            var dbResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                await SaveDetailsFailureEvent(
+                    applicationId,
+                    userId,
+                    dbResult.Error.ToString(),
+                    cancellationToken);
+
+                return Result.Failure(dbResult.Error.ToString());
+            }
+
+            await _audit.PublishAuditEventAsync(
+                new AuditEvent(
+                    AuditEvents.UpdateWoodlandOfficerReview,
+                    applicationId,
+                    userId,
+                    _requestContext,
+                    new
+                    {
+                        Section = "Save Changes Confirmed Restocking Details"
+                    }
+                ), cancellationToken
+            );
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in SaveChangesToConfirmedRestockingAsync");
+            return Result.Failure("Exception caught in SaveChangesToConfirmedRestockingAsync");
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Result> AddNewConfirmedFellingDetailsAsync(
         Guid applicationId,
         Guid userId,
@@ -814,7 +1440,6 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
             return Result.Failure("Exception caught in SaveChangesToConfirmedFellingAsync");
         }
     }
-
     private async Task SaveDetailsFailureEvent(
         Guid applicationId,
         Guid userId,
@@ -836,23 +1461,21 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
         );
     }
 
-    public Dictionary<string, string> GetAmendedFellingDetailProperties(ProposedFellingDetail proposed, ConfirmedFellingDetail confirmed)
+    public Dictionary<string, string?> GetAmendedFellingDetailProperties(ProposedFellingDetail? proposed, ConfirmedFellingDetail confirmed)
     {
-        var amended = new Dictionary<string, string>();
+        var amended = new Dictionary<string, string?>();
+        if (proposed is null)
+            return amended;
 
-        void AddIfChanged<T>(string name, T? proposedValue, T? confirmedValue)
-        {
-            if (!EqualityComparer<T>.Default.Equals(proposedValue, confirmedValue))
-                amended[name] = proposedValue?.ToString() ?? string.Empty;
-        }
 
         AddIfChanged(nameof(proposed.AreaToBeFelled), proposed.AreaToBeFelled, confirmed.AreaToBeFelled);
         AddIfChanged(nameof(proposed.IsPartOfTreePreservationOrder), proposed.IsPartOfTreePreservationOrder, confirmed.IsPartOfTreePreservationOrder);
         AddIfChanged(nameof(proposed.TreePreservationOrderReference), proposed.TreePreservationOrderReference, confirmed.TreePreservationOrderReference);
         AddIfChanged(nameof(proposed.IsWithinConservationArea), proposed.IsWithinConservationArea, confirmed.IsWithinConservationArea);
-        AddIfChanged(nameof(proposed.IsRestocking), proposed.IsRestocking, confirmed.IsRestocking ?? confirmed.ConfirmedRestockingDetails.Count() > 0);
+        AddIfChanged(nameof(proposed.IsRestocking), proposed.IsRestocking, confirmed.IsRestocking);
+        AddIfChanged(nameof(proposed.NoRestockingReason), proposed.NoRestockingReason, confirmed.NoRestockingReason);
         AddIfChanged(nameof(proposed.ConservationAreaReference), proposed.ConservationAreaReference, confirmed.ConservationAreaReference);
-        AddIfChanged(nameof(proposed.NumberOfTrees), GetIntProp(proposed, "NumberOfTrees"), GetIntProp(confirmed, "NumberOfTrees"));
+        AddIfChanged(nameof(proposed.NumberOfTrees), proposed.NumberOfTrees, confirmed.NumberOfTrees);
         AddIfChanged(nameof(proposed.OperationType), proposed.OperationType.GetDisplayName(), confirmed.OperationType.GetDisplayName());
         AddIfChanged(nameof(proposed.TreeMarking), proposed.TreeMarking, confirmed.TreeMarking);
         AddIfChanged(nameof(proposed.EstimatedTotalFellingVolume), proposed.EstimatedTotalFellingVolume, confirmed.EstimatedTotalFellingVolume);
@@ -861,11 +1484,11 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
         var proposedSpecies = proposed.FellingSpecies;
         var confirmedSpecies = confirmed.ConfirmedFellingSpecies;
 
-        if (proposedSpecies != null && confirmedSpecies != null)
+        if (proposedSpecies is not null)
         {
             if (proposedSpecies.Count != confirmedSpecies.Count ||
-                proposedSpecies.Any(ps => !confirmedSpecies.Any(cs => cs.Species == ps.Species)) ||
-                confirmedSpecies.Any(cs => !proposedSpecies.Any(ps => ps.Species == cs.Species)))
+                proposedSpecies.Any(ps => confirmedSpecies.All(cs => cs.Species != ps.Species)) ||
+                confirmedSpecies.Any(cs => proposedSpecies.All(ps => ps.Species != cs.Species)))
             {
                 amended[nameof(proposed.FellingSpecies)] = string.Join(",", proposedSpecies.Select(s =>
                         Models.TreeSpeciesFactory.SpeciesDictionary.TryGetValue(s.Species ?? "", out var speciesModel)
@@ -874,133 +1497,106 @@ public class UpdateConfirmedFellingAndRestockingDetailsService : IUpdateConfirme
                         ));
             }
         }
-        // Compare ProposedRestockingDetails and ConfirmedRestockingDetails
-        if (proposed.ProposedRestockingDetails != null && proposed.ProposedRestockingDetails.Count() > 0)
+
+        return amended;
+
+        void AddIfChanged<T>(string name, T? proposedValue, T? confirmedValue)
         {
-            var proposedRestocking = proposed.ProposedRestockingDetails.OrderBy(x => x.RestockingProposal).ToList();
-            var confirmedRestocking = confirmed.ConfirmedRestockingDetails.OrderBy(x => x.RestockingProposal).ToList();
-            if (proposedRestocking == null && confirmedRestocking != null && confirmedRestocking.Count > 0)
+            var valuesDiffer = !EqualityComparer<T>.Default.Equals(proposedValue, confirmedValue);
+
+            if (valuesDiffer)
             {
-                amended[nameof(proposed.ProposedRestockingDetails)] = string.Empty;
-            }
-            else if (proposedRestocking != null && confirmedRestocking != null)
-            {
-                if (proposedRestocking.Count != confirmedRestocking.Count)
+                if (typeof(T) == typeof(string))
                 {
-                    amended[nameof(proposed.ProposedRestockingDetails)] = string.Join(",", proposedRestocking.Select(r => r?.ToString() ?? ""));
+                    var proposedStr = string.IsNullOrWhiteSpace(proposedValue?.ToString()) ? "N/A" : proposedValue?.ToString();
+                    var confirmedStr = string.IsNullOrWhiteSpace(confirmedValue?.ToString()) ? "N/A" : confirmedValue?.ToString();
+
+                    if (!string.Equals(proposedStr, confirmedStr, StringComparison.Ordinal))
+                        amended[name] = proposedStr;
                 }
                 else
                 {
-                    for (int i = 0; i < proposedRestocking.Count; i++)
+                    amended[name] = proposedValue == null ? "N/A" : proposedValue.ToString();
+                }
+            }
+        }
+    }
+    public Dictionary<string, string> GetAmendedRestockingProperties(ProposedRestockingDetail? proposed, ConfirmedRestockingDetail confirmed, Dictionary<Guid, string?> compartmentNames)
+    {
+        var amended = new Dictionary<string, string>();
+        if (proposed == null || confirmed == null)
+            return amended;
+
+        AddIfChanged(nameof(proposed.Area), proposed.Area, confirmed.Area);
+        AddIfChanged(nameof(proposed.PercentageOfRestockArea), proposed.PercentageOfRestockArea, confirmed.PercentageOfRestockArea);
+        AddIfChanged(nameof(proposed.RestockingDensity), proposed.RestockingDensity, confirmed.RestockingDensity);
+        AddIfChanged(nameof(proposed.NumberOfTrees), proposed.NumberOfTrees, confirmed.NumberOfTrees);
+        AddIfChanged(nameof(proposed.RestockingProposal), proposed.RestockingProposal.GetDisplayName(), confirmed.RestockingProposal.GetDisplayName());
+
+        // Compare RestockingSpecies
+        if (proposed.RestockingSpecies != null && confirmed.ConfirmedRestockingSpecies != null)
+        {
+            var propList = proposed.RestockingSpecies.OrderBy(x => x.Species).ToList();
+            var confList = confirmed.ConfirmedRestockingSpecies.OrderBy(x => x.Species).ToList();
+            bool anySpeciesOrPercentDifferent = false;
+            if (propList.Count == confList.Count)
+            {
+                for (int j = 0; j < propList.Count; j++)
+                {
+                    if (propList[j].Species != confList[j].Species || propList[j].Percentage != confList[j].Percentage)
                     {
-                        var propRestock = proposedRestocking[i];
-                        var confRestock = confirmedRestocking[i];
-
-                        AddIfChanged($"{nameof(proposed.ProposedRestockingDetails)}[{i}].RestockArea",
-                            propRestock.Area, confRestock.Area);
-                        AddIfChanged($"{nameof(proposed.ProposedRestockingDetails)}[{i}].PercentageOfRestockArea",
-                            propRestock.PercentageOfRestockArea, confRestock.PercentageOfRestockArea);
-                        AddIfChanged($"{nameof(proposed.ProposedRestockingDetails)}[{i}].RestockingDensity",
-                            propRestock.RestockingDensity, confRestock.RestockingDensity);
-                        AddIfChanged($"{nameof(proposed.ProposedRestockingDetails)}[{i}].NumberOfTrees",
-                            propRestock.NumberOfTrees, confRestock.NumberOfTrees);
-                        AddIfChanged($"{nameof(proposed.ProposedRestockingDetails)}[{i}].RestockingProposal",
-                            propRestock.RestockingProposal, confRestock.RestockingProposal);
-
-                        // Compare RestockingSpecies
-                        if (propRestock.RestockingSpecies != null && confRestock.ConfirmedRestockingSpecies != null)
-                        {
-                            var propSpeciesList = propRestock.RestockingSpecies.OrderBy(x => x.Species).ToList();
-                            var confSpeciesList = confRestock.ConfirmedRestockingSpecies.OrderBy(x => x.Species).ToList();
-                            bool anySpeciesOrPercentDifferent = false;
-                            if (propSpeciesList.Count == confSpeciesList.Count)
-                            {
-                                for (int j = 0; j < propSpeciesList.Count; j++)
-                                {
-                                    var propSpecies = propSpeciesList[j].Species;
-                                    var confSpecies = confSpeciesList[j].Species;
-                                    var propPercent = propSpeciesList[j].Percentage;
-                                    var confPercent = confSpeciesList[j].Percentage;
-                                    if (propSpecies != confSpecies || propPercent != confPercent)
-                                    {
-                                        anySpeciesOrPercentDifferent = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            else
-                                anySpeciesOrPercentDifferent = true;
-
-                            if (anySpeciesOrPercentDifferent)
-                            {
-                                amended[$"{nameof(proposed.ProposedRestockingDetails)}[{i}].RestockingSpecies"] = string.Join(
-                                    ", ",
-                                    propSpeciesList
-                                        .Where(s =>
-                                        {
-                                            var deletedProp = s?.GetType().GetProperty("Deleted")?.GetValue(s) as bool?;
-                                            var speciesStr = s?.GetType().GetProperty("Species")?.GetValue(s) as string;
-                                            return (deletedProp == null || deletedProp == false) && !string.IsNullOrWhiteSpace(speciesStr);
-                                        })
-                                        .Select(s =>
-                                        {
-                                            var speciesKey = s?.GetType().GetProperty("Species")?.GetValue(s) as string;
-                                            var percent = s?.GetType().GetProperty("Percentage")?.GetValue(s) as double?;
-                                            var name = TreeSpeciesFactory.SpeciesDictionary.TryGetValue(speciesKey ?? "", out var speciesModel)
-                                                ? speciesModel.Name
-                                                : speciesKey;
-                                            var percentStr = percent.HasValue ? $"{percent.Value}%" : "";
-                                            return string.IsNullOrEmpty(percentStr) ? name : $"{name}: {percentStr}";
-                                        })
-                                );
-                            }
-                        }
+                        anySpeciesOrPercentDifferent = true;
+                        break;
                     }
                 }
             }
+            else
+                anySpeciesOrPercentDifferent = true;
 
+            if (anySpeciesOrPercentDifferent)
+            {
+                amended[nameof(proposed.RestockingSpecies)] = string.Join(
+                    ", ",
+                    propList
+                        .Select(s =>
+                        {
+                            var name = TreeSpeciesFactory.SpeciesDictionary.TryGetValue(s.Species ?? "", out var speciesModel)
+                                ? speciesModel.Name
+                                : s.Species;
+                            var percentStr = s.Percentage.HasValue ? $"{s.Percentage.Value}%" : "";
+                            return string.IsNullOrEmpty(percentStr) ? name : $"{name}: {percentStr}";
+                        })
+                );
+            }
+        }
+
+        if (proposed.PropertyProfileCompartmentId != confirmed.SubmittedFlaPropertyCompartmentId)
+        {
+            compartmentNames.TryGetValue(proposed.PropertyProfileCompartmentId, out var proposedCompartmentName);
+            compartmentNames.TryGetValue(confirmed.SubmittedFlaPropertyCompartmentId, out var confirmedCompartmentName);
+            AddIfChanged("CompartmentName", proposedCompartmentName ?? string.Empty, confirmedCompartmentName ?? string.Empty);
         }
 
         return amended;
 
-        // Helper to get property value by name using reflection
-        static T? GetProp<T>(object? obj, string propName)
+        void AddIfChanged<T>(string name, T? proposedValue, T? confirmedValue)
         {
-            if (obj == null) return default;
-            var prop = obj.GetType().GetProperty(propName);
-            if (prop == null) return default;
-            var value = prop.GetValue(obj);
-            if (value == null) return default;
-            if (value is T tValue) return tValue;
-            try
-            {
-                // Handle numeric conversions (e.g., double to int?)
-                var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-                return (T)Convert.ChangeType(value, targetType);
-            }
-            catch
-            {
-                return default;
-            }
-        }
+            var valuesDiffer = !EqualityComparer<T>.Default.Equals(proposedValue, confirmedValue);
 
-        // Helper to safely get int? from possibly double or int property
-        static int? GetIntProp(object? obj, string propName)
-        {
-            if (obj == null) return null;
-            var prop = obj.GetType().GetProperty(propName);
-            if (prop == null) return null;
-            var value = prop.GetValue(obj);
-            if (value == null) return null;
-            if (value is int i) return i;
-            if (value is double d) return (int?)Convert.ToInt32(d);
-            try
+            if (valuesDiffer)
             {
-                return Convert.ToInt32(value);
-            }
-            catch
-            {
-                return null;
+                if (typeof(T) == typeof(string))
+                {
+                    var proposedStr = string.IsNullOrWhiteSpace(proposedValue?.ToString()) ? "N/A" : proposedValue?.ToString();
+                    var confirmedStr = string.IsNullOrWhiteSpace(confirmedValue?.ToString()) ? "N/A" : confirmedValue?.ToString();
+
+                    if (!string.Equals(proposedStr, confirmedStr, StringComparison.Ordinal))
+                        amended[name] = proposedStr;
+                }
+                else
+                {
+                    amended[name] = proposedValue == null ? "N/A" : proposedValue.ToString();
+                }
             }
         }
     }

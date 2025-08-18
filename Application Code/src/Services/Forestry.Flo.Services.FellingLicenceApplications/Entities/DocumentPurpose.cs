@@ -15,6 +15,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         [Display(Name = "External constraint report")]
         ExternalLisConstraintReport,
         [Display(Name = "Site Visit Attachment")]
-        SiteVisitAttachment
+        SiteVisitAttachment,
+        [Display(Name = "Consultation Attachment")]
+        ConsultationAttachment,
     }
 }

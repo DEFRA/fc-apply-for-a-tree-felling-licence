@@ -45,7 +45,7 @@ namespace Forestry.Flo.External.Web.Tests.ApiControllers
 
             _factory.AddDocumentServiceMock.Setup(r =>
                     r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult> (new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult> (new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
             var client = CreateClient();
             client.DefaultRequestHeaders.Add("X-Api-Key","iazo54uwhDnydbAqbrHcDvUr4UTf4w5zr1hKwSm4JxJGNvCsS");

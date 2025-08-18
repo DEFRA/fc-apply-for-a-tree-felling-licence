@@ -184,6 +184,7 @@ public class AgentAuthorityFormCheckUseCaseTests
             ContactAddress = ModelMapping.ToAddressModel(_woodlandOwner.ContactAddress),
             ContactEmail = _woodlandOwner.ContactEmail,
             ContactName = _woodlandOwner.ContactName,
+            ContactTelephone = _woodlandOwner.ContactTelephone,
             IsOrganisation = _woodlandOwner.IsOrganisation,
             OrganisationName = _woodlandOwner.OrganisationName,
             OrganisationAddress = ModelMapping.ToAddressModel(_woodlandOwner.OrganisationAddress)

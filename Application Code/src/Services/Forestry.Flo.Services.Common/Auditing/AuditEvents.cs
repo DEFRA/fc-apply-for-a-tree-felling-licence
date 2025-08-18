@@ -109,7 +109,11 @@ public static class AuditEvents
     public const string ConfirmWoodlandOfficerReviewNotificationFailure = "Confirm Woodland Officer Review Notification Failure";
     public const string UpdateConfirmedFellingDetails = "Update Confirmed Felling Details";
     public const string UpdateConfirmedFellingDetailsFailure = "Update Confirmed Felling Details Failure";
+    public const string UpdateConfirmedRestockingDetails = "Update Confirmed Restocking Details";
+    public const string UpdateConfirmedRestockingDetailsFailure = "Update Confirmed Restocking Details Failure";
     public const string RevertApproveToWoodlandOfficerReview = "Revert Approve to Woodland Officer Review";
+    public const string RevertConfirmedFellingDetails = "Revert Confirmed Felling Details";
+    public const string RevertConfirmedFellingDetailsFailure = "Revert Confirmed Felling Details Failure";
 
     //Admin officer review audit events
     public const string ConfirmAdminOfficerReview = "Confirm Operations Admin Officer Review";
@@ -333,6 +337,10 @@ public static class AuditEvents
             RevertApproveToWoodlandOfficerReview => SourceEntityType.FellingLicenceApplication,
             UpdateConfirmedFellingDetails => SourceEntityType.FellingLicenceApplication,
             UpdateConfirmedFellingDetailsFailure => SourceEntityType.FellingLicenceApplication,
+            UpdateConfirmedRestockingDetails => SourceEntityType.FellingLicenceApplication,
+            UpdateConfirmedRestockingDetailsFailure => SourceEntityType.FellingLicenceApplication,
+            RevertConfirmedFellingDetails => SourceEntityType.ProposedFellingDetails,
+            RevertConfirmedFellingDetailsFailure => SourceEntityType.ProposedFellingDetails,
 
             ConfirmAdminOfficerReview => SourceEntityType.FellingLicenceApplication,
             ConfirmAdminOfficerReviewFailure => SourceEntityType.FellingLicenceApplication,

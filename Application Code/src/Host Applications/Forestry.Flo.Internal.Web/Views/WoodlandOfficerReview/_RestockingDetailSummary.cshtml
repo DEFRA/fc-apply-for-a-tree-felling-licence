@@ -1,0 +1,102 @@
+﻿@using Forestry.Flo.Services.Common.Extensions
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.RestockingDetailViewModel
+
+@functions {
+    public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
+    {
+        var hasValue = value != null && !string.IsNullOrWhiteSpace(value.ToString());
+        var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
+        var hasMeasure = !string.IsNullOrEmpty(measure);
+
+        if (!hasOldValue)
+        {
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">@key</dt>
+                <dd class="govuk-summary-list__value">
+                    @if (hasValue)
+                    {
+                        @value
+                        @if (hasMeasure)
+                        {
+                            @(" " + measure)
+                        }
+                    }
+                </dd>
+            </div>
+        }
+        else
+        {
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">@key</dt>
+                <dd class="govuk-summary-list__value">
+                    @oldValue
+                    @if (hasMeasure)
+                    {
+                        @(" " + measure)
+                    }
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row" style="background:#fff3bf;">
+                <dt class="govuk-summary-list__key">
+                    <span aria-hidden="true" style="margin-right: 4px;">↳</span>
+                    @key (amended)
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @value
+                    @if (hasMeasure)
+                    {
+                        @(" " + measure)
+                    }
+                </dd>
+            </div>
+        }
+    }
+
+    public void RenderStringSummaryRow(
+        string key,
+        string? value,
+        string? oldValue)
+    {
+        RenderSummaryRow(
+            key,
+            null,
+            string.IsNullOrEmpty(value) ? "N/A" : value,
+            string.IsNullOrEmpty(oldValue) ? null : oldValue);
+    }
+}
+
+<div class="govuk-summary-card__content">
+    <dl class="govuk-summary-list">
+        @{
+            RenderSummaryRow("Restocking operation type", "", Model.RestockingProposal!.GetDisplayName(), Model.OldValue(nameof(Model.RestockingProposal)));
+            RenderSummaryRow("Restocking compartment", "", Model.CompartmentName, Model.OldValue(nameof(Model.CompartmentName)));
+        }
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Estimated percentage of the area that will be restocked</dt>
+            <dd class="govuk-summary-list__value">
+                @(Model.TotalHectares.HasValue
+                                ? Math.Round((Model.RestockArea ?? 0) / Model.TotalHectares!.Value * 100, 2) + "%"
+                                : string.Empty)
+            </dd>
+        </div>
+        @{
+            if (Model.RestockingProposal != Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.CreateDesignedOpenGround)
+            {
+                RenderSummaryRow("Estimated area to be restocked", " Ha", Model.RestockArea, Model.OldValue("Area"));
+                if (Model.RestockingProposal == Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.RestockWithIndividualTrees ||
+                Model.RestockingProposal == Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
+                {
+                    RenderStringSummaryRow(
+                        "Estimated number of trees to be restocked",
+                        Model.NumberOfTrees.ToString() ?? string.Empty,
+                        Model.OldValue(nameof(Model.NumberOfTrees))?.ToString());
+                }
+                else
+                {
+                    RenderSummaryRow("Estimate of the restocking density", "", Model.RestockingDensity, Model.OldValue((nameof(Model.RestockingDensity))));
+                }
+                RenderSummaryRow("Species and restocking percentage", "", Model.ConfirmedRestockingSpecies, Model.OldValue("RestockingSpecies"));
+            }
+        }
+    </dl>
+</div>

@@ -1,35 +1,58 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
 @model Forestry.Flo.External.Web.Models.DataImport.DataImportViewModel;
 
+@{
+    ViewData["Title"] = "Import a new felling licence application";
+    ViewData.ShowBackLink();
+}
+
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">Data Import Facility</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <partial name="Partials/_PageErrors"/>
     <partial name="Partials/_ConfirmationMessageDisplay" />
     
-    <div class="govuk-warning-text">
-        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-        <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive">Todo</span>
-            This page needs content to explain what it is, how to use it etc.
-        </strong>
+    <p class="govuk-body">Upload the completed template files to import your data.</p>
+
+    <div>
+        <h2 class="govuk-heading-m">To get started:</h2>
+        <ol class="govuk-list govuk-list--bullet">
+            <li><a download href="assets/resources/data import templates.zip" class="govuk-link">Download felling licence application CSV templates</a></li>
+            <li>Fill them in using your licence data</li>
+            <li>Upload all 3 files below</li>
+        </ol>
     </div>
 
-    <p>
-        <a download href="assets/resources/data import templates.zip" class="govuk-link">Download CSV templates for the data import</a> (files download as a single .zip file)
-        <br/>
-    </p>
-
-    <form method="post" enctype="multipart/form-data" asp-controller="DataImport" asp-action="ImportData">
+    <form method="post" enctype="multipart/form-data" asp-controller="DataImport" asp-action="ParseImportFiles">
+        
+        <input type="hidden" asp-for="WoodlandOwnerId"/>
 
         <fieldset class="govuk-fieldset">
             <div class="govuk-form-group" id="file-select-group">
-                <label for="data-import-files" class="govuk-label">Select import CSV files</label>
+                <label for="data-import-files" class="govuk-label govuk-label--m">Upload licence application templates</label>
+                <p class="govuk-hint">Please select all 3 completed template files to upload together</p>
                 <p id="data-import-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
                     <span class="govuk-visually-hidden">Error:</span><span id="data-import-error-text"></span>
                 </p>
-                <input type="file" accept=".csv" multiple class="custom-file-input govuk-file-upload" id="data-import-files" name="dataImportFiles" runat="server" />
+                <div class="govuk-drop-zone" data-module="govuk-file-upload">
+                    <input type="file" accept=".csv" multiple class="custom-file-input govuk-file-upload" id="data-import-files" name="dataImportFiles" runat="server" />
+                </div>
+            </div>
+            
+            <div class="govuk-visually-hidden" aria-hidden="true" id="import-selected-files-list">
+                <div class="govuk-grid-row govuk-body">
+                    <div class="govuk-grid-column-two-thirds">
+                        <table class="govuk--table" id="import-selected-files" name="import-selected-files">
+                            <thead class="govuk-table__head">
+                            <tr class="govuk-table__row">
+                                <th scope="col" class="govuk-table__header">Document</th>
+                                    <th scope="col" class="govuk-table__header">Action</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div class="govuk-form-group">
@@ -38,7 +61,7 @@
                         Continue
                     </button>
 
-                    <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" title="Return to the home page">Cancel</a>
+                    <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" title="Return to the home page">Cancel</a>
                 </div>
             </div>
         </fieldset>

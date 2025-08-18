@@ -19,52 +19,47 @@
     </ul>
 
     <p class="govuk-body">We’ve also made the website text as simple as possible to understand.</p>
-    <p class="govuk-body"><a class="govuk-link" href="https://mcmw.abilitynet.org.uk/">AbilityNet</a> has advice on making your device easier to use if you have a disability.</p>
+    <p class="govuk-body"><a class="govuk-link" target="_blank" href="https://mcmw.abilitynet.org.uk/">AbilityNet (opens in new tab)</a> has advice on making your device easier to use if you have a disability.</p>
 
     <h2 class="govuk-heading-l">How accessible this website is</h2>
-    <p class="govuk-body">We know some parts of this website are not fully accessible for:</p>
+    <p class="govuk-body">We know some parts of this website are not fully accessible. This means that:</p>
     <ul class="govuk-list govuk-list--bullet">
-        <li>users who need to zoom in or increase the size of the text, the content will not reflow in a single column</li>
-        <li>users who use screen-readers, most older PDF documents are not fully accessible</li>
+        <li>some radio buttons that reveal extra content are not fully supported by screen readers</li>
+        <li>maps and map controls cannot be used properly with a keyboard</li>
+        <li>some links and dropdowns are not accessible to keyboard-only users or people using screen readers such as VoiceOver and TalkBack</li>
+        <li>file upload buttons on some pages cannot be activated using Dragon NaturallySpeaking voice software</li>
+        <li>some placeholder text cannot be deleted using assistive technology on mobile devices</li>
+        <li>keyboard focus does not always move in a logical order when new content appears</li>
     </ul>
+    <p class="govuk-body">These issues mean the website does not fully meet WCAG 2.2 accessibility standards. You can find more detail about each issue in the Known issues with this website section below.</p>
     
     <h2 class="govuk-heading-l">Known issues with this website</h2>
     <p class="govuk-body">We are aware of the following accessibility issues within the service:</p>
-    <ul class="govuk-list govuk-list--bullet">
-        <li>
-            On some pages (such as ‘Create a Property’ and ‘Felling Details’), we use radio buttons to reveal additional content. 
-            These buttons use the aria-expanded attribute but do not include an ARIA role such as menuitemradio, which is required for screen reader support.
-        </li>
-        <li>
-            This means the component may not be interpreted correctly by some assistive technologies and does not meet 
-			<a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">
-				WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.
-                We have followed the 
-            <a class="govuk-link" href="https://design-system.service.gov.uk/components/radios/#conditionally-revealing-radios">
-                GOV.UK Design System guidance for radios with conditionally revealing content</a>, 
-                but recognise that this approach may result in invalid HTML. 
-                We are monitoring guidance and exploring alternatives to improve compliance.
-        </li>
-		<li>
-            On the ‘Create a Compartment’ page, users cannot interact with the map using a keyboard. This does not meet
-            <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">
-                WCAG 2.2 success criterion 2.1.1: Keyboard</a>.
-		</li>
-        <li>
-            Also on the ‘Create a Compartment’ page, the tab order of the map controls is not logical. 
-            When users reveal new options, the keyboard focus does not move to them in a usable order. This does not meet 
-            <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">
-                WCAG 2.2 success criterion 2.4.3: Focus Order</a>.
-        </li>
-        <li>
-            This site uses a third-party component for user registration. On some pages in the user sign up/sign in flows there is use of
-            HTML list elements to represent a form. This may affect how some assistive technologies interpret the content, and does not meet 
-            <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html">
-                WCAG 2.2 success criterion 1.3.1: Info and relationships
-            </a>.
-        </li>
-	</ul>
-    <p class="govuk-body">We will continue to update this accessibility statement as we fix these issues.</p>
+    
+    <h3 class="govuk-heading-m">Radio buttons do not include the correct ARIA role</h3>
+    <p class="govuk-body">On pages like ‘Create a Property’ and ‘Felling Details’, radio buttons are used to reveal additional content. These use the aria-expanded attribute but do not include a required ARIA role such as menuitemradio.</p>
+    <p class="govuk-body">This means the content may not be interpreted correctly by assistive technologies. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
+    <p class="govuk-body">We have followed the <a class="govuk-link" href="https://design-system.service.gov.uk/components/radios/#conditionally-revealing-radios">GOV.UK Design System guidance for radios with conditionally revealing content</a>, but recognise that this approach may result in invalid HTML.</p>
+    <p class="govuk-body">We are monitoring guidance and exploring alternatives.</p>
+
+    <h3 class="govuk-heading-m">Maps cannot be used with a keyboard</h3>
+    <p class="govuk-body">On the ‘Create a compartment’ page, users cannot interact with the map using a keyboard.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
+    
+    <h3 class="govuk-heading-m">Some links and dropdowns are not accessible by keyboard</h3>
+    <p class="govuk-body">On pages such as ‘Create a property’ and ‘Select felling options’, some links cannot be accessed without a mouse.</p>
+    <p class="govuk-body">This may prevent keyboard-only users from accessing essential content. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
+    
+    <h3 class="govuk-heading-m">Dropdowns and placeholder text may not work correctly with assistive technologies</h3>
+    <p class="govuk-body">On the ‘Felling details’ page, users navigating with VoiceOver or TalkBack cannot select species from the dropdown.</p>
+    <p class="govuk-body">Placeholder text in the ‘Estimated total felling volume’ input cannot be fully deleted using a mobile keyboard.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
+    
+    <h3 class="govuk-heading-m">File upload buttons may not work with Dragon NaturallySpeaking</h3>
+    <p class="govuk-body">On pages such as ‘Add agent authority form files’ and ‘Supporting documentation’, users of Dragon NaturallySpeaking may not be able to activate file upload buttons using voice commands.</p>
+    <p class="govuk-body">This is believed to be a known issue with Dragon and does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
+    
+    <p class="govuk-body">We will update this accessibility statement as we make progress on resolving these issues.</p>
 
     <h2 class="govuk-heading-l">Feedback and contact information</h2>
     <p class="govuk-body">If you need information on this website in a different format like accessible PDF, large print, easy read, audio recording or braille:</p>
@@ -112,7 +107,7 @@
     <p class="govuk-body">PDFs, documents and attachments to email notifications published before 23 September 2018 may not meet accessibility standards. For example, they may not be structured so they’re accessible to a screen reader.</p>
     
     <h3 class="govuk-heading-m">Third party content that’s under someone else’s control</h3>
-    <p class="govuk-body">Pages and websites that are linked to and from the probate service may not be fully accessible.</p>
+    <p class="govuk-body">Pages and websites that are linked to and from this service may not be fully accessible.</p>
     <p class="govuk-body">These include:</p>
     <ul class="govuk-list govuk-list--bullet">
         <li>external pages hosting PDF documents</li>

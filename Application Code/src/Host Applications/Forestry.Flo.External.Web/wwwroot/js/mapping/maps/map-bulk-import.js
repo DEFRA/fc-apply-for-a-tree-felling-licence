@@ -1022,19 +1022,20 @@ define(["require",
                                 var applicationId = document.getElementById("ApplicationId").value;
                                 var woodlandOwnerId = document.getElementById("WoodlandOwnerId").value;
                                 var agencyId = document.getElementById("AgencyId").value;
+
                                 if (applicationId === null || applicationId === "00000000-0000-0000-0000-000000000000" || applicationId === '') {
 
-                                    var woodlandOwnerParameter = '?woodlandOwnerId=' + woodlandOwnerId;
+                                    var woodlandOwnerParameter = '&woodlandOwnerId=' + woodlandOwnerId;
                                     var agencyParameter = '';
 
                                     if (agencyId !== null && agencyId !== "00000000-0000-0000-0000-000000000000" && agencyId !== '') {
                                         agencyParameter = '&agencyId=' + agencyId;
                                     }
 
-                                    window.location = window.origin + "/PropertyProfile/Edit/" + document.getElementById("PropertyProfileId").value + woodlandOwnerParameter + agencyParameter;
+                                    window.location = window.origin + "/PropertyProfile/Edit?id=" + document.getElementById("PropertyProfileId").value + woodlandOwnerParameter + agencyParameter;
                                 }
                                 else {
-                                    window.location = window.origin + "/FellingLicenceApplication/SelectCompartments/" + applicationId;
+                                    window.location = window.origin + `/FellingLicenceApplication/SelectCompartments?applicationId=${applicationId}`;
                                 }
                             }
                             catch (e) {

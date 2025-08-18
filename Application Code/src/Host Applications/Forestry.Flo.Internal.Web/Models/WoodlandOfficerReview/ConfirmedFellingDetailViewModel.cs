@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Services.FellingLicenceApplications.Models; // Add this for TreeSpeciesFactory
@@ -88,7 +89,7 @@ public class NewConfirmedFellingDetailViewModel
     /// </summary>
     public string? NoRestockingReason { get; set; }
 
-    public Dictionary<string, string> AmendedProperties { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, string?> AmendedProperties { get; set; } = new Dictionary<string, string?>();
 
     public object? OldValue(string propName, object? currentValue = null)
     {
@@ -126,4 +127,82 @@ public class ConfirmedFellingDetailViewModel : NewConfirmedFellingDetailViewMode
     /// </summary>
     [HiddenInput]
     public Guid ConfirmedFellingDetailsId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the identifier for the proposed felling details, if applicable.
+    /// </summary>
+    [HiddenInput]
+    public Guid? ProposedFellingDetailsId { get; set; }
+
+    /// <summary>
+    /// Determines the type of confirmed felling operation by comparing the current details to their proposed counterparts.
+    /// </summary>
+    /// <param name="containsDeletedRestocking">
+    /// Indicates whether any restocking details have been deleted.
+    /// </param>
+    /// <returns>
+    /// A <see cref="ConfirmedFellingType"/> value representing the type of confirmed felling operation:
+    /// <list type="bullet">
+    /// <item><see cref="ConfirmedFellingType.DeletedRestocking"/> if any restocking details have been deleted.</item>
+    /// <item><see cref="ConfirmedFellingType.NewFelling"/> if there is no corresponding proposed felling detail.</item>
+    /// <item><see cref="ConfirmedFellingType.NewRestocking"/> if any new restocking details have been added.</item>
+    /// <item><see cref="ConfirmedFellingType.Amended"/> if any felling details or associated restocking details have been amended.</item>
+    /// <item><see cref="ConfirmedFellingType.Unmodified"/> if none of the above conditions are met.</item>
+    /// </list>
+    /// </returns>
+    public ConfirmedFellingType GetConfirmedFellingType(bool containsDeletedRestocking)
+    {
+        if (containsDeletedRestocking)
+        {
+            return ConfirmedFellingType.DeletedRestocking;
+        }
+
+        if (ProposedFellingDetailsId.HasNoValue())
+        {
+            return ConfirmedFellingType.NewFelling;
+        }
+
+        if (ConfirmedRestockingDetails.Any(x => x.ProposedRestockingDetailsId.HasNoValue()))
+        {
+            return ConfirmedFellingType.NewRestocking;
+        }
+
+        if (AmendedProperties.Count > 0 ||
+            ConfirmedRestockingDetails.Any(x => x.AmendedProperties.Count > 0))
+        {
+            return ConfirmedFellingType.Amended;
+        }
+
+        return ConfirmedFellingType.Unmodified;
+    }
+}
+
+/// <summary>
+/// Represents the type of confirmed felling operation based on comparison to its respective proposed details.
+/// </summary>
+/// <remarks>
+/// Note this does not include the case where the felling operation is deleted, as there is no confirmed felling in that case.
+/// </remarks>
+public enum ConfirmedFellingType
+{
+    /// <summary>
+    /// The felling details have not been modified from the proposed details.
+    /// </summary>
+    Unmodified,
+    /// <summary>
+    /// At least one restocking detail has been deleted from the felling operation.
+    /// </summary>
+    DeletedRestocking,
+    /// <summary>
+    /// Either the felling operation or at least one restocking detail has been modified.
+    /// </summary>
+    Amended,
+    /// <summary>
+    /// The felling operation is new and does not have a corresponding proposed felling detail.
+    /// </summary>
+    NewFelling,
+    /// <summary>
+    /// At least one new restocking detail has been added to the felling operation.
+    /// </summary>
+    NewRestocking,
 }

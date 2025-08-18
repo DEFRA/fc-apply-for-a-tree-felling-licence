@@ -2,6 +2,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.DataImport.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports.Models;
@@ -52,12 +53,12 @@ public class ImportDataService : IImportData
     }
 
     /// <inheritdoc />
-    public async Task<Result<Dictionary<Guid, string>, List<string>>> ImportDataAsync(
+    public async Task<Result<ImportFileSetContents, List<string>>> ParseDataImportRequestAsync(
         DataImportRequest request, 
         CancellationToken cancellationToken)
     {
         Guard.Against.Null(request);
-        _logger.LogDebug("Attempting to perform data import for file collection containing {FileCount} files", request.ImportFileSet.Count);
+        _logger.LogDebug("Attempting to perform data parse for file collection containing {FileCount} files", request.ImportFileSet.Count);
 
         var importFilesResult = await _importFilesReader.ReadInputFormFileCollectionAsync(request.ImportFileSet, cancellationToken);
 
@@ -65,13 +66,13 @@ public class ImportDataService : IImportData
         {
             _logger.LogError("Could not read provided import file collection: {Error}", importFilesResult.Error);
             await PublishFailureEventAsync(
-                request.WoodlandOwnerId, 
-                request.UserAccessModel.UserAccountId, 
-                null, 
+                request.WoodlandOwnerId,
+                request.UserAccessModel.UserAccountId,
+                null,
                 importFilesResult.Error,
-                "Failed to read provided import file collection", 
+                "Failed to read provided import file collection",
                 cancellationToken);
-            return Result.Failure<Dictionary<Guid, string>, List<string>>(importFilesResult.Error);
+            return Result.Failure<ImportFileSetContents, List<string>>(importFilesResult.Error);
         }
 
         _logger.LogDebug("Attempting to retrieve properties for woodland owner {WoodlandOwnerId}", request.WoodlandOwnerId);
@@ -91,7 +92,7 @@ public class ImportDataService : IImportData
                 [propertiesResult.Error],
                 "Failed to retrieve properties for woodland owner",
                 cancellationToken);
-            return Result.Failure<Dictionary<Guid, string>, List<string>>(["Failed to retrieve properties for woodland owner"]);
+            return Result.Failure<ImportFileSetContents, List<string>>(["Failed to retrieve properties for woodland owner"]);
         }
 
         var numberApplicationsInImportFile = importFilesResult.Value.ApplicationSourceRecords?.Count ?? 0;
@@ -101,7 +102,7 @@ public class ImportDataService : IImportData
         var validationResult = await _importFileSetValidator.ValidateImportFileSetAsync(
             request.WoodlandOwnerId,
             propertiesResult.Value,
-            importFilesResult.Value, 
+            importFilesResult.Value,
             cancellationToken);
 
         if (validationResult.IsFailure)
@@ -109,22 +110,80 @@ public class ImportDataService : IImportData
             _logger.LogError("Validation failed for provided import file collection");
             var messages = validationResult.Error.Select(x => x.ErrorMessage).ToList();
             await PublishFailureEventAsync(
-                request.WoodlandOwnerId, 
+                request.WoodlandOwnerId,
                 request.UserAccessModel.UserAccountId,
-                numberApplicationsInImportFile, 
+                numberApplicationsInImportFile,
                 messages,
-                "Validation failed for provided import file collection", 
+                "Validation failed for provided import file collection",
+                cancellationToken);
+            return Result.Failure<ImportFileSetContents, List<string>>(messages);
+        }
+
+        _logger.LogDebug("Validation succeeded for provided import file collection, returning parsed data");
+        return Result.Success<ImportFileSetContents, List<string>>(importFilesResult.Value);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<Dictionary<Guid, string>, List<string>>> ImportDataAsync(
+        UserAccessModel userAccessModel,
+        Guid woodlandOwnerId,
+        ImportFileSetContents parsedData, 
+        CancellationToken cancellationToken)
+    {
+        Guard.Against.Null(parsedData);
+        _logger.LogDebug("Attempting to perform data import for import file set containing {ApplicationCount} applications", parsedData.ApplicationSourceRecords.Count);
+
+        _logger.LogDebug("Attempting to retrieve properties for woodland owner {WoodlandOwnerId}", woodlandOwnerId);
+
+        var propertiesResult = await _getPropertiesForWoodlandOwner.GetPropertiesForDataImport(
+            userAccessModel,
+            woodlandOwnerId,
+            cancellationToken);
+
+        if (propertiesResult.IsFailure)
+        {
+            _logger.LogError("Failed to retrieve properties for woodland owner {WoodlandOwnerId}", woodlandOwnerId);
+            await PublishFailureEventAsync(
+                woodlandOwnerId,
+                userAccessModel.UserAccountId,
+                null,
+                [propertiesResult.Error],
+                "Failed to retrieve properties for woodland owner",
+                cancellationToken);
+            return Result.Failure<Dictionary<Guid, string>, List<string>>(["Failed to retrieve properties for woodland owner"]);
+        }
+
+        var numberApplicationsInImportFile = parsedData.ApplicationSourceRecords?.Count ?? 0;
+
+        _logger.LogDebug("Attempting to revalidate the data in the provided parsed data");
+
+        var validationResult = await _importFileSetValidator.ValidateImportFileSetAsync(
+            woodlandOwnerId,
+            propertiesResult.Value,
+            parsedData,
+            cancellationToken);
+
+        if (validationResult.IsFailure)
+        {
+            _logger.LogError("Validation failed for provided parsed data");
+            var messages = validationResult.Error.Select(x => x.ErrorMessage).ToList();
+            await PublishFailureEventAsync(
+                woodlandOwnerId,
+                userAccessModel.UserAccountId,
+                numberApplicationsInImportFile,
+                messages,
+                "Validation failed for provided import file collection",
                 cancellationToken);
             return Result.Failure<Dictionary<Guid, string>, List<string>>(messages);
         }
 
         var applicationsRequest = new ImportApplicationsRequest
         {
-            UserId = request.UserAccessModel.UserAccountId,
-            WoodlandOwnerId = request.WoodlandOwnerId,
-            ApplicationRecords = importFilesResult.Value.ApplicationSourceRecords ?? [],
-            FellingRecords = importFilesResult.Value.ProposedFellingSourceRecords ?? [],
-            RestockingRecords = importFilesResult.Value.ProposedRestockingSourceRecords ?? [],
+            UserId = userAccessModel.UserAccountId,
+            WoodlandOwnerId = woodlandOwnerId,
+            ApplicationRecords = parsedData.ApplicationSourceRecords ?? [],
+            FellingRecords = parsedData.ProposedFellingSourceRecords ?? [],
+            RestockingRecords = parsedData.ProposedRestockingSourceRecords ?? [],
             PropertyIds = propertiesResult.Value
         };
 
@@ -136,28 +195,28 @@ public class ImportDataService : IImportData
         {
             _logger.LogError("Failed to import applications provided: " + importApplicationsResult.Error);
             await PublishFailureEventAsync(
-                request.WoodlandOwnerId,
-                request.UserAccessModel.UserAccountId,
+                woodlandOwnerId,
+                userAccessModel.UserAccountId,
                 numberApplicationsInImportFile,
                 null,
                 "Failed to import felling licence applications provided: " + importApplicationsResult.Error,
                 cancellationToken);
-            
+
             return Result.Failure<Dictionary<Guid, string>, List<string>>([importApplicationsResult.Error]);
         }
 
         var applicationsImported = importApplicationsResult.Value;
 
         await _auditService.PublishAuditEventAsync(new AuditEvent(
-            AuditEvents.ImportDataFromCsv,
-            request.WoodlandOwnerId,
-            request.UserAccessModel.UserAccountId,
-            _context,
-            new
-            {
-                FellingLicenceApplicationsInImportFile = numberApplicationsInImportFile,
-                FellingLicenceApplicationsImported = applicationsImported
-            }),
+                AuditEvents.ImportDataFromCsv,
+                woodlandOwnerId,
+                userAccessModel.UserAccountId,
+                _context,
+                new
+                {
+                    FellingLicenceApplicationsInImportFile = numberApplicationsInImportFile,
+                    FellingLicenceApplicationsImported = applicationsImported
+                }),
             cancellationToken);
 
         return Result.Success<Dictionary<Guid, string>, List<string>>(importApplicationsResult.Value);

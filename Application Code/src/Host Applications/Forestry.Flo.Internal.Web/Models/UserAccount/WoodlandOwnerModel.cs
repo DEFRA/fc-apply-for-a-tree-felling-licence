@@ -28,7 +28,12 @@ namespace Forestry.Flo.Internal.Web.Models.UserAccount
         /// Gets and sets the full name of the Woodland owner.
         /// </summary>
         public string? ContactName { get; set; }
-        
+
+        /// <summary>
+        /// Gets and sets the contact telephone number of the woodland owner.
+        /// </summary>
+        public string? ContactTelephone { get; set; }
+
         /// <summary>
         /// Gets and sets a flag indicating whether the woodland owner is an organisation.
         /// </summary>

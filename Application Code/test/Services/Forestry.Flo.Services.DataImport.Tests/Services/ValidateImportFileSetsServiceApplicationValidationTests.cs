@@ -22,12 +22,11 @@ public class ValidateImportFileSetsServiceApplicationValidationTests: Applicatio
         Assert.True(result.IsSuccess);
     }
 
+    //Remove this test if we decide to allow multiple applications in the source file
     [Theory, AutoData]
-    public async Task WhenApplicationsHaveSameId(Guid woodlandOwnerId)
+    public async Task WhenMoreThanOneApplicationInSource(Guid woodlandOwnerId)
     {
-        var input = GenerateValidImportSets(fellingPerApplication:0, restockingPerFelling:0);
-
-        input.ApplicationSourceRecords!.ForEach(x => x.ApplicationId = 1);
+        var input = GenerateValidImportSets(applicationsCount: 2, fellingPerApplication: 0, restockingPerFelling: 0);
 
         var sut = CreateSut();
 
@@ -36,8 +35,26 @@ public class ValidateImportFileSetsServiceApplicationValidationTests: Applicatio
         Assert.True(result.IsFailure);
         Assert.Single(result.Error);
 
-        Assert.Equal("There are repeated id values within the Application records source", result.Error.First().ErrorMessage);
+        Assert.Equal("There must be exactly one Application record in the source file", result.Error.First().ErrorMessage);
     }
+
+    //Restore this test if we decide to allow multiple applications in the source file
+    //[Theory, AutoData]
+    //public async Task WhenApplicationsHaveSameId(Guid woodlandOwnerId)
+    //{
+    //    var input = GenerateValidImportSets(fellingPerApplication:0, restockingPerFelling:0);
+
+    //    input.ApplicationSourceRecords!.ForEach(x => x.ApplicationId = 1);
+
+    //    var sut = CreateSut();
+
+    //    var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+    //    Assert.True(result.IsFailure);
+    //    Assert.Single(result.Error);
+
+    //    Assert.Equal("There are repeated id values within the Application records source", result.Error.First().ErrorMessage);
+    //}
 
     [Theory, AutoData]
     public async Task WhenApplicationHasUnknownPropertyName(Guid woodlandOwnerId)

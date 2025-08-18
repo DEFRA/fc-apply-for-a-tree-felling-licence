@@ -50,7 +50,7 @@ public class ImportDataServiceTests
             .Setup(x => x.ReadInputFormFileCollectionAsync(It.IsAny<FormFileCollection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ImportFileSetContents, List<string>>(errors));
 
-        var result = await sut.ImportDataAsync(request, CancellationToken.None);
+        var result = await sut.ParseDataImportRequestAsync(request, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(errors, result.Error);
@@ -100,7 +100,7 @@ public class ImportDataServiceTests
         _mockGetProperties.Setup(x => x.GetPropertiesForDataImport(It.IsAny<UserAccessModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(propertyIds));
 
-        var result = await sut.ImportDataAsync(request, CancellationToken.None);
+        var result = await sut.ParseDataImportRequestAsync(request, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(errors.Count, result.Error.Count);
@@ -135,16 +135,14 @@ public class ImportDataServiceTests
     
     [Theory, AutoMoqData]
     public async Task ShouldReturnFailureWhenApplicationImportFails(
-        DataImportRequest request,
+        UserAccessModel user,
+        Guid woodlandOwnerId,
         ImportFileSetContents fileSet,
         IEnumerable<PropertyIds> properties,
         string error)
     {
         var sut = CreateSut();
 
-        _mockFileReader
-            .Setup(x => x.ReadInputFormFileCollectionAsync(It.IsAny<FormFileCollection>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<ImportFileSetContents, List<string>>(fileSet));
         _mockValidator
             .Setup(x => x.ValidateImportFileSetAsync(It.IsAny<Guid>(), It.IsAny<List<PropertyIds>>(), It.IsAny<ImportFileSetContents>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<List<ValidationFailure>>());
@@ -154,22 +152,21 @@ public class ImportDataServiceTests
         _mockGetProperties.Setup(x => x.GetPropertiesForDataImport(It.IsAny<UserAccessModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(properties));
 
-        var result = await sut.ImportDataAsync(request, CancellationToken.None);
+        var result = await sut.ImportDataAsync(user, woodlandOwnerId, fileSet, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Single(result.Error);
         Assert.Equal(error, result.Error.Single());
 
-        _mockFileReader.Verify(x => x.ReadInputFormFileCollectionAsync(request.ImportFileSet, It.IsAny<CancellationToken>()), Times.Once);
         _mockFileReader.VerifyNoOtherCalls();
 
-        _mockValidator.Verify(x => x.ValidateImportFileSetAsync(request.WoodlandOwnerId, properties, fileSet, It.IsAny<CancellationToken>()), Times.Once);
+        _mockValidator.Verify(x => x.ValidateImportFileSetAsync(woodlandOwnerId, properties, fileSet, It.IsAny<CancellationToken>()), Times.Once);
         _mockValidator.VerifyNoOtherCalls();
 
         _mockImportApplications.Verify(x => x.RunDataImportAsync(
             It.Is<ImportApplicationsRequest>(i => 
-                i.UserId == request.UserAccessModel.UserAccountId
-                && i.WoodlandOwnerId == request.WoodlandOwnerId
+                i.UserId == user.UserAccountId
+                && i.WoodlandOwnerId == woodlandOwnerId
                 && i.PropertyIds == properties
                 && i.ApplicationRecords == fileSet.ApplicationSourceRecords
                 && i.FellingRecords == fileSet.ProposedFellingSourceRecords
@@ -178,10 +175,10 @@ public class ImportDataServiceTests
         _mockImportApplications.VerifyNoOtherCalls();
 
         _mockAudit.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.UserId == request.UserAccessModel.UserAccountId
+                a.UserId == user.UserAccountId
                 && a.ActorType == ActorType.ExternalApplicant
                 && a.CorrelationId == _correlationId
-                && a.SourceEntityId == request.WoodlandOwnerId
+                && a.SourceEntityId == woodlandOwnerId
                 && a.SourceEntityType == SourceEntityType.WoodlandOwner
                 && a.EventName == AuditEvents.ImportDataFromCsvFailure
                 && JsonSerializer.Serialize(a.AuditData, _serializerOptions) ==
@@ -197,16 +194,14 @@ public class ImportDataServiceTests
     
     [Theory, AutoMoqData]
     public async Task ShouldReturnSuccessWhenImportsSucceed(
-        DataImportRequest request,
+        UserAccessModel user,
+        Guid woodlandOwnerId,
         ImportFileSetContents fileSet,
         IEnumerable<PropertyIds> propertyIds,
         Dictionary<Guid, string> applicationsImported)
     {
         var sut = CreateSut();
 
-        _mockFileReader
-            .Setup(x => x.ReadInputFormFileCollectionAsync(It.IsAny<FormFileCollection>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<ImportFileSetContents, List<string>>(fileSet));
         _mockValidator
             .Setup(x => x.ValidateImportFileSetAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<PropertyIds>>(), It.IsAny<ImportFileSetContents>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<List<ValidationFailure>>());
@@ -216,15 +211,14 @@ public class ImportDataServiceTests
         _mockGetProperties.Setup(x => x.GetPropertiesForDataImport(It.IsAny<UserAccessModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(propertyIds));
 
-        var result = await sut.ImportDataAsync(request, CancellationToken.None);
+        var result = await sut.ImportDataAsync(user, woodlandOwnerId, fileSet, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(result.Value, applicationsImported);
 
-        _mockFileReader.Verify(x => x.ReadInputFormFileCollectionAsync(request.ImportFileSet, It.IsAny<CancellationToken>()), Times.Once);
         _mockFileReader.VerifyNoOtherCalls();
 
-        _mockValidator.Verify(x => x.ValidateImportFileSetAsync(request.WoodlandOwnerId, propertyIds, fileSet, It.IsAny<CancellationToken>()), Times.Once);
+        _mockValidator.Verify(x => x.ValidateImportFileSetAsync(woodlandOwnerId, propertyIds, fileSet, It.IsAny<CancellationToken>()), Times.Once);
         _mockValidator.VerifyNoOtherCalls();
 
         _mockImportApplications.Verify(x => x.RunDataImportAsync(
@@ -238,10 +232,10 @@ public class ImportDataServiceTests
         _mockImportApplications.VerifyNoOtherCalls();
 
         _mockAudit.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.UserId == request.UserAccessModel.UserAccountId
+                a.UserId == user.UserAccountId
                 && a.ActorType == ActorType.ExternalApplicant
                 && a.CorrelationId == _correlationId
-                && a.SourceEntityId == request.WoodlandOwnerId
+                && a.SourceEntityId == woodlandOwnerId
                 && a.SourceEntityType == SourceEntityType.WoodlandOwner
                 && a.EventName == AuditEvents.ImportDataFromCsv
                 && JsonSerializer.Serialize(a.AuditData, _serializerOptions) ==

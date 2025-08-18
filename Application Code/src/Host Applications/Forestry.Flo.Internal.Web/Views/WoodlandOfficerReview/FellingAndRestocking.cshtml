@@ -1,4 +1,4 @@
-﻿﻿@using NodaTime
+﻿@using NodaTime
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Forestry.Flo.Services.FellingLicenceApplications.Models
 @using Microsoft.AspNetCore.Mvc.TagHelpers
@@ -146,9 +146,8 @@
                     <thead class="govuk-table__head">
                         <tr class="govuk-table__row">
                             <td colspan="4" class="govuk-table__header">Cpt Record</td>
-                            <td colspan="8" class="govuk-table__header">Felling Details</td>
-                            <td colspan="9" class="govuk-table__header">Restocking Details</td>
-                            <td colspan="5" class="govuk-table__header"></td>
+                            <td colspan="15" class="govuk-table__header">Felling Details</td>
+                            <td colspan="10" class="govuk-table__header">Restocking Details</td>
                         </tr>
                         <tr class="govuk-table__row">
                             <th scope="col" class="govuk-table__header ">Cpt</th>
@@ -166,6 +165,10 @@
 							<td scope="col" class="govuk-table__header treemarking">Tree marking</td>
 							<td scope="col" class="govuk-table__header">IsRestocking</td>
 							<td scope="col" class="govuk-table__header">NoRestockingReason</td>
+							<td scope="col" class="govuk-table__header">TPO</td>
+							<td scope="col" class="govuk-table__header">TPO Reference</td>
+							<td scope="col" class="govuk-table__header">CA</td>
+							<td scope="col" class="govuk-table__header">CA Reference</td>
 							<td scope="col" class="govuk-table__header">Compartment</td>
 							<td scope="col" class="govuk-table__header">Restocking Proposal</td>
                             <td scope="col" class="govuk-table__header govuk-table__header--numeric">Restock area (Ha)</td>
@@ -176,10 +179,6 @@
                             <td scope="col" class="govuk-table__header govuk-table__header--numeric">Stocking Density (stems per Ha)</td>
                             <td scope="col" class="govuk-table__header govuk-table__header--numeric">Number Of Trees</td>
                             <td scope="col" class="govuk-table__header govuk-table__header--numeric">% natural regeneration</td>
-                            <td scope="col" class="govuk-table__header">TPO</td>
-                            <td scope="col" class="govuk-table__header">TPO Reference</td>
-                            <td scope="col" class="govuk-table__header">CA</td>
-                            <td scope="col" class="govuk-table__header">CA Reference</td>
                         </tr>
                     </thead>
                     <tbody class="govuk-table__body">
@@ -188,7 +187,7 @@
 
                             var confirmedFellingDetails = Model.Compartments[i].ConfirmedFellingDetails;
                             var fellingCount = Math.Max(confirmedFellingDetails.Length, 1);
-                            var compartmentSpan = Math.Max(fellingCount, confirmedFellingDetails.Select(x => x.ConfirmedRestockingDetails.Length).Sum());
+                            var compartmentSpan = Math.Max(fellingCount, confirmedFellingDetails.SelectMany(x => x.ConfirmedRestockingDetails).Count());
 
                             for (int j = 0; j < confirmedFellingDetails.Length; j++)
                             {
@@ -198,7 +197,7 @@
 
                                 for (int k = 0; k < displayRestockRows; k++)
                                 {
-                                    var restockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.Count() > 0 ? confirmedFellingDetail.ConfirmedRestockingDetails[k] : null;
+                                    var restockingDetail = (confirmedFellingDetail.ConfirmedRestockingDetails.Count() > 0) && (k < confirmedFellingDetail.ConfirmedRestockingDetails.Count()) ? confirmedFellingDetail.ConfirmedRestockingDetails[k] : null;
                                     <tr id="table-row-@i-@j" class="govuk-table__row">
                                         @if (j == 0 && k == 0)
                                         {
@@ -260,7 +259,6 @@
                                                 </div>
                                                 <button class="govuk-button" condition-disabled="@(!Model.Editable(user))" id="add-felling-species-btn-@i-@j" data-cpt-id="@i" data-fell-id="@j" data-id="@confirmedFellingDetail.ConfirmedFellingSpecies.Length">Add species</button>
 											</td>
-										}
                             <td class="govuk-table__cell govuk-table__cell--numeric" rowspan="@restockCount">
                                 <input class="govuk-input govuk-input--width-5" type="text" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].NumberOfTrees" />
                             </td>
@@ -274,19 +272,43 @@
                                 <td class="govuk-table__cell" rowspan="@restockCount">
                                 <input class="govuk-input" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].TreeMarking" />
                             </td>
+							<td class="govuk-table__cell" rowspan="@restockCount">
+								<select class="govuk-select" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].IsRestocking">
+									<option value="">Select ...</option>
+									<option value="True">Yes</option>
+									<option value="False">No</option>
+								</select>
+							</td>
+							<td class="govuk-table__cell govuk-table__cell--numeric" rowspan="@restockCount">
+								<input class="govuk-input govuk-input--width-5" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].NoRestockingReason" />
+							</td>
+							<td class="govuk-table__cell" rowspan="@restockCount">
+									<select class="govuk-select" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].IsPartOfTreePreservationOrder">
+										<option value="">Select ...</option>
+										<option value="True">Yes</option>
+										<option value="False">No</option>
+									</select>
+								</td>
+								<td class="govuk-table__cell govuk-table__cell--numeric" rowspan="@restockCount">
+									<input class="govuk-input govuk-input--width-5" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].TreePreservationOrderReference" />
+								</td>
+								<td class="govuk-table__cell" rowspan="@restockCount">
+									<select class="govuk-select" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].IsWithinConservationArea">
+										<option value="">Select ...</option>
+										<option value="True">Yes</option>
+										<option value="False">No</option>
+									</select>
+								</td>
+								<td class="govuk-table__cell govuk-table__cell--numeric" rowspan="@restockCount">
+									<input class="govuk-input govuk-input--width-5" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].ConservationAreaReference" />
+								</td>
+
+							}
 
 
-                            @* Restocking Details Cells *@
-                            <td class="govuk-table__cell" rowspan="@restockCount">
-                                <select class="govuk-select" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].IsRestocking">
-                                    <option value="">Select ...</option>
-                                    <option value="True">Yes</option>
-                                    <option value="False">No</option>
-                                </select>
-                            </td>
-                            <td class="govuk-table__cell govuk-table__cell--numeric" rowspan="@restockCount">
-                                <input class="govuk-input govuk-input--width-5" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].NoRestockingReason" />
-                            </td>
+			        @* Restocking Details Cells *@
+                    @if (k <= restockCount && (k < confirmedFellingDetail.ConfirmedRestockingDetails.Count()))
+                        {
                             <td class="govuk-table__cell">
                                 @Model.Compartments[i].ConfirmedFellingDetails[j].ConfirmedRestockingDetails[k].RestockingCompartmentNumber
                                 <input type="hidden" asp-for="Compartments[i].ConfirmedFellingDetails[j].ConfirmedRestockingDetails[k].RestockingCompartmentId" />
@@ -343,30 +365,19 @@
                             <td class="govuk-table__cell govuk-table__cell--numeric">
                                 <input class="govuk-input govuk-input--width-5" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].ConfirmedRestockingDetails[k].PercentNaturalRegeneration" />
                             </td>
-
-                            @if (k == 0)
-                                        {
-                                            <td class="govuk-table__cell" rowspan="@restockCount">
-                                                <select class="govuk-select" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].IsPartOfTreePreservationOrder">
-                                                    <option value="">Select ...</option>
-                                                    <option value="True">Yes</option>
-                                                    <option value="False">No</option>
-                                                </select>
-                                            </td>
-                                            <td class="govuk-table__cell govuk-table__cell--numeric" rowspan="@restockCount">
-                                                <input class="govuk-input govuk-input--width-5" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].TreePreservationOrderReference" />
-                                            </td>
-                                            <td class="govuk-table__cell" rowspan="@restockCount">
-                                                <select class="govuk-select" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].IsWithinConservationArea">
-                                                    <option value="">Select ...</option>
-                                                    <option value="True">Yes</option>
-                                                    <option value="False">No</option>
-                                                </select>
-                                            </td>
-                                            <td class="govuk-table__cell govuk-table__cell--numeric" rowspan="@restockCount">
-                                                <input class="govuk-input govuk-input--width-5" condition-disabled="@(!Model.Editable(user))" asp-for="Compartments[i].ConfirmedFellingDetails[j].ConservationAreaReference" />
-                                            </td>
-                                        }
+                        }
+                        else
+                        {
+                            <td class="govuk-table__cell"></td>
+                            <td class="govuk-table__cell"></td>
+                            <td class="govuk-table__cell govuk-table__cell--numeric"></td>
+                            <td class="govuk-table__cell govuk-table__cell--numeric"></td>
+                            <td class="govuk-table__cell govuk-table__cell--numeric"></td>
+                            <td class="govuk-table__cell species"></td>
+                            <td class="govuk-table__cell govuk-table__cell--numeric"></td>
+                            <td class="govuk-table__cell govuk-table__cell--numeric"></td>
+                            <td class="govuk-table__cell govuk-table__cell--numeric"></td>
+						}
                                         <input type="hidden" asp-for="Compartments[i].CompartmentId" />
                                         <input type="hidden" asp-for="Compartments[i].CompartmentNumber" />
                                         <input type="hidden" asp-for="Compartments[i].SubCompartmentName" />

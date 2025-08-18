@@ -256,6 +256,14 @@ public class AdminOfficerReviewUseCaseTests
 
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
+        _updateConfirmedFellingAndRestockingDetailsService.Verify(v => 
+            v.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                fellingLicenceApplication.Id,
+                user.UserAccountId.Value,
+                It.IsAny<CancellationToken>()), 
+            Times.Once);
+        _updateConfirmedFellingAndRestockingDetailsService.VerifyNoOtherCalls();
+
         //assert
         result.IsSuccess.Should().BeTrue();
     }
@@ -290,6 +298,64 @@ public class AdminOfficerReviewUseCaseTests
         _updateAdminOfficerReviewService.Verify(x => x.CompleteAdminOfficerReviewAsync(fellingLicenceApplication.Id, user.UserAccountId!.Value, now.ToDateTimeUtc(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Once);
         _updateAdminOfficerReviewService.VerifyNoOtherCalls();
 
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _externalFellingLicenceRepository.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+
+        _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
+                a.EventName == AuditEvents.ConfirmAdminOfficerReviewFailure
+                && a.ActorType == ActorType.InternalUser
+                && a.UserId == user.UserAccountId!.Value
+                && a.SourceEntityId == fellingLicenceApplication.Id
+                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && a.CorrelationId == _requestContextCorrelationId
+                && JsonSerializer.Serialize(a.AuditData, _serializerOptions) ==
+                JsonSerializer.Serialize(new
+                {
+                    error = error
+                }, _serializerOptions)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _mockAuditService.VerifyNoOtherCalls();
+
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldFailConfirmingReview_GivenProposedImportFails(
+        FellingLicenceApplication fellingLicenceApplication,
+        UserAccount adminOfficer,
+        string internalLinkToApplication,
+        string error,
+        DateTime dateReceived)
+    {
+        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            localAccountId: adminOfficer.Id,
+            accountTypeInternal: AccountTypeInternal.AdminOfficer);
+        var user = new InternalUser(userPrincipal);
+
+        _updateConfirmedFellingAndRestockingDetailsService
+            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                It.IsAny<Guid>(),
+                    It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<CompleteAdminOfficerReviewNotificationsModel>(error));
+
+        var now = new Instant();
+        _clock.Setup(x => x.GetCurrentInstant()).Returns(now);
+
+        var result =
+            await _sut.ConfirmAdminOfficerReview(fellingLicenceApplication.Id, user, internalLinkToApplication, dateReceived, false, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _updateConfirmedFellingAndRestockingDetailsService.Verify(v => 
+            v.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                fellingLicenceApplication.Id,
+                user.UserAccountId!.Value,
+                It.IsAny<CancellationToken>()), 
+            Times.Once);
+        _updateConfirmedFellingAndRestockingDetailsService.VerifyNoOtherCalls();
+        _updateAdminOfficerReviewService.VerifyNoOtherCalls();
         _internalUserAccountService.VerifyNoOtherCalls();
         _externalFellingLicenceRepository.VerifyNoOtherCalls();
         _sendNotifications.VerifyNoOtherCalls();
@@ -526,7 +592,7 @@ public class AdminOfficerReviewUseCaseTests
         // Setup fellingAndRestocking retrieval to succeed
         _updateConfirmedFellingAndRestockingDetailsService
             .Setup(x => x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CombinedConfirmedFellingAndRestockingDetailRecord([], true));
+            .ReturnsAsync(new CombinedConfirmedFellingAndRestockingDetailRecord([], [], true));
 
         // Setup HandleConfirmedFellingAndRestockingChangesAsync to fail
         _updateWoodlandOfficerReviewService
@@ -575,7 +641,7 @@ public class AdminOfficerReviewUseCaseTests
         // Setup fellingAndRestocking retrieval to succeed
         _updateConfirmedFellingAndRestockingDetailsService
             .Setup(x => x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CombinedConfirmedFellingAndRestockingDetailRecord([], true));
+            .ReturnsAsync(new CombinedConfirmedFellingAndRestockingDetailRecord([], [], true));
 
         // Setup HandleConfirmedFellingAndRestockingChangesAsync to succeed
         _updateWoodlandOfficerReviewService
@@ -667,7 +733,7 @@ public class AdminOfficerReviewUseCaseTests
         Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount applicant,
         string internalLinkToApplication,
         DateTime dateReceived,
-        List<ConfirmedFellingAndRestockingDetailModel> compartments,
+        List<FellingAndRestockingDetailModel> compartments,
         List<CalculatedCondition> calculatedConditions)
     {
         var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
@@ -688,7 +754,7 @@ public class AdminOfficerReviewUseCaseTests
         // Setup fellingAndRestocking retrieval to succeed
         _updateConfirmedFellingAndRestockingDetailsService
             .Setup(x => x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CombinedConfirmedFellingAndRestockingDetailRecord(compartments, true));
+            .ReturnsAsync(new CombinedConfirmedFellingAndRestockingDetailRecord(compartments, [], true));
 
         // Setup HandleConfirmedFellingAndRestockingChangesAsync to succeed
         _updateWoodlandOfficerReviewService

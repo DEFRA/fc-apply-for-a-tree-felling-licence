@@ -257,7 +257,8 @@ public class FellingLicenceApplicationController : Controller
             ApplicationId = viewModel.Value.Application.ApplicationSummary.Id,
             SelectedCompartmentIds = viewModel.Value.Application.SelectedCompartments.SelectedCompartmentIds,
             StepComplete = viewModel.Value.Application.SelectedCompartments.StepComplete,
-            ConstraintCheckStepComplete = viewModel.Value.Application.ConstraintCheck.StepComplete
+            ConstraintCheckStepComplete = viewModel.Value.Application.ConstraintCheck.StepComplete,
+            WoodlandOwnerId = viewModel.Value.Application.WoodlandOwnerId
         };
         model.SelectedCompartmentIds.Add(newCompartmentId);
 
@@ -346,7 +347,8 @@ public class FellingLicenceApplicationController : Controller
             FellingCompartmentName = fellingCompartmentName,
             FellingCompartmentId = fellingCompartmentId,
             ProposedFellingDetailsId = proposedFellingDetailsId,
-            ReturnToPlayback = returnToPlayback.HasValue && returnToPlayback.Value
+            ReturnToPlayback = returnToPlayback.HasValue && returnToPlayback.Value,
+            WoodlandOwnerId = viewModel.Value.Application.WoodlandOwnerId
         };
 
         //check if the application is currently read-only, if so redirect to the summary page

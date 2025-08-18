@@ -44,4 +44,25 @@ public static class StringExtensions
     /// <param name="value">The double value to format.</param>
     /// <returns>A string representation of the value with two decimal places.</returns>
     public static string FormatDoubleForDisplay(this double value) => $"{value:0.00}";
+
+    /// <summary>
+    /// Joins a collection of strings with commas, and uses "and" for the last item.
+    /// </summary>
+    /// <param name="items">The items to join.</param>
+    /// <returns>The joined collection of items.</returns>
+    public static string JoinWithCommasAnd(this IEnumerable<string>? items)
+    {
+        var workingItems = items?.ToList();
+
+        if (workingItems == null || workingItems.Count == 0)
+            return string.Empty;
+
+        if (workingItems.Count == 1)
+            return workingItems[0];
+
+        if (workingItems.Count == 2)
+            return string.Join(" and ", workingItems);
+
+        return string.Join(", ", workingItems.GetRange(0, workingItems.Count - 1)) + ", and " + workingItems[^1];
+    }
 }

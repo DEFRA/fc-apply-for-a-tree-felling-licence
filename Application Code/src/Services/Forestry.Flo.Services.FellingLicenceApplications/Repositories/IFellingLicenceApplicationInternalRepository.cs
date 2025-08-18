@@ -436,4 +436,14 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves all documents associated with a specific felling licence application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve all the documents for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of documents linked to the specified application.</returns>
+    Task<List<Document>> GetApplicationDocumentsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
 }
