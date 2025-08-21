@@ -59,7 +59,8 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
 
     /// <inheritdoc />
     public async Task<List<ConsulteeCommentModel>> RetrieveConsulteeCommentsForAuthorAsync(
-        Guid applicationId, string emailAddress,
+        Guid applicationId, 
+        string emailAddress,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to retrieve consultee comments for application id {ApplicationId} and contact email {ContactEmail}", applicationId, emailAddress);
@@ -71,12 +72,12 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
 
         return comments.Select(x => new ConsulteeCommentModel
         {
-            ApplicableToSection = x.ApplicableToSection,
             AuthorContactEmail = x.AuthorContactEmail,
             AuthorName = x.AuthorName,
             Comment = x.Comment,
             CreatedTimestamp = x.CreatedTimestamp,
-            FellingLicenceApplicationId = x.FellingLicenceApplicationId
+            FellingLicenceApplicationId = x.FellingLicenceApplicationId,
+            ConsulteeAttachmentIds = x.DocumentIds
         }).ToList();
     }
 
@@ -93,8 +94,8 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
             CreatedTimestamp = model.CreatedTimestamp,
             AuthorName = model.AuthorName,
             AuthorContactEmail = model.AuthorContactEmail,
-            ApplicableToSection = model.ApplicableToSection,
-            Comment = model.Comment
+            Comment = model.Comment,
+            DocumentIds = model.ConsulteeAttachmentIds.ToList()
         };
         var result = await _repository.AddConsulteeCommentAsync(comment, cancellationToken);
 

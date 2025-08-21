@@ -1,0 +1,176 @@
+﻿@using Forestry.Flo.Internal.Web.Extensions
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingAndRestockingDetail
+
+@{
+    var showRestocking = Model.FellingDetail.IsRestocking is true;
+}
+
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">@Model.FellingDetail.OperationType.GetDisplayName() in compartment @Model.CompartmentName</h2>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Estimated area to be felled
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.FellingDetail.AreaToBeFelled Ha
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Estimated number of trees to be felled
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.FellingDetail.NumberOfTrees
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Will you use tree marking?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @(string.IsNullOrWhiteSpace(Model.FellingDetail.TreeMarking) ? "No" : "Yes: " + Model.FellingDetail.TreeMarking)
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    What species of trees will be felled?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @(string.Join(", ", Model.FellingDetail.Species.Select(x => x.Value.SpeciesName)))
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Estimated felling volume
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.FellingDetail.EstimatedTotalFellingVolume m<sup>3</sup>
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Is there a Tree Preservation Order (TPO)?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @(Model.FellingDetail.IsPartOfTreePreservationOrder ? "Yes: " + Model.FellingDetail.TreePreservationOrderReference : "No")
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Is the property in a conservation area?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @(Model.FellingDetail.IsWithinConservationArea ? "Yes: " + Model.FellingDetail.ConservationAreaReference : "No")
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Do you want to restock?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @(!Model.FellingDetail.IsRestocking.HasValue 
+                        ? "N/A" 
+                        : (Model.FellingDetail.IsRestocking is true
+                            ? "Yes"
+                            : "No: " + Model.FellingDetail.NoRestockingReason))
+                </dd>
+            </div>
+
+            @if (showRestocking)
+            {
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Restocking compartments
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(string.Join(", ", Model.RestockingDetail.Select(x => x.RestockingCompartmentName).Distinct()))
+                    </dd>
+                </div>
+
+                @foreach (var restockingCptName in Model.RestockingDetail.Select(x => x.RestockingCompartmentName).Distinct())
+                {
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Restocking operations in @restockingCptName
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @(string.Join(", ", Model.RestockingDetail.Where(s => s.RestockingCompartmentName == restockingCptName).Select(x => x.RestockingProposal.GetDisplayName())))
+                        </dd>
+                    </div>
+                }
+            }
+        </dl>
+        
+        @if (showRestocking)
+        {
+            @foreach (var restocking in Model.RestockingDetail)
+            {
+                <div class="govuk-!-padding-bottom-4"></div>
+                <h3 class="govuk-heading-m">Restocking: @restocking.RestockingProposal.GetDisplayName() in compartment @restocking.RestockingCompartmentName</h3>
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Estimated area to be restocked
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @restocking.Area Ha
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Estimated percentage of the area that will be restocked
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @restocking.PercentageOfRestockArea%
+                        </dd>
+                    </div>
+                    @if (restocking.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround
+                            && restocking.RestockingProposal != TypeOfProposal.RestockWithIndividualTrees
+                            && restocking.RestockingProposal != TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Estimate of the restocking density
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @restocking.RestockingDensity Stems per Ha
+                            </dd>
+                        </div>
+                    }
+                    @if (restocking.RestockingProposal is TypeOfProposal.RestockWithIndividualTrees or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Estimate of the restocking number of trees
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @restocking.NumberOfTrees Trees
+                            </dd>
+                        </div>
+                    }
+                    @if (restocking.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Species and restocking percentage
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @foreach (var species in restocking.Species)
+                                {
+                                    @($"{species.Value.SpeciesName}: {species.Value.Percentage}%")
+                                    <br/>
+                                }
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            }
+        }
+    </div>
+</div>

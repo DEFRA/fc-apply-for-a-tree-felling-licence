@@ -30,6 +30,7 @@ using Forestry.Flo.Services.Common.Infrastructure;
 using MassTransit;
 using Microsoft.IO;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.Common.Analytics;
 
 namespace Forestry.Flo.Internal.Web.Infrastructure;
@@ -158,7 +159,10 @@ public static class ServiceCollectionExtensions
 
 
         services.AddSingleton<ValidationProvider>();
-        services.AddValidatorsFromAssemblyContaining<ValidationProvider>();
+        services.AddValidatorsFromAssemblyContaining<ValidationProvider>(filter: s => 
+            s.ValidatorType != typeof(ConfirmedFellingOperationCrossValidator)
+            && s.ValidatorType != typeof(ConfirmedRestockingOperationCrossValidator)
+            && s.ValidatorType != typeof(ConfirmedFellingAndRestockingCrossValidator));
         services.AddTransient<AppVersionService>();
         services.AddTransient<IUserAccountService, UserAccountService>();
 
@@ -167,6 +171,8 @@ public static class ServiceCollectionExtensions
         //as IHttpContextAccessor.HttpContext is scoped to the current request, and safe to be used in singleton services. 
         services.AddOptions<SiteAnalyticsSettings>().BindConfiguration(SiteAnalyticsSettings.ConfigurationKey);
         services.AddSingleton<SiteSiteAnalyticsService>();
+
+        services.AddScoped<BackLinkService>();
 
         RegisterUseCases(services, configuration);
 

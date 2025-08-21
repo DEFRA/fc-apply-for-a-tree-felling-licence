@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.AccessControl;
-using System.Threading;
-using System.Threading.Tasks;
-using AutoFixture.Xunit2;
-using Castle.Components.DictionaryAdapter;
+﻿using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -16,6 +9,11 @@ using Forestry.Flo.Services.Gis.Models.Esri.Responses.Common;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Forestry.Flo.Tests.Common;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
@@ -416,7 +414,7 @@ public class UpdateWoodlandOfficerReviewServiceSiteVisitNotesRetrievedTests: Upd
             .Setup(x => x.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<CaseNoteModel>(0));
         MockAddDocumentService.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+            .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
         var result = await sut.SiteVisitNotesRetrievedAsync(applicationId, userId, retrievedDateTime, notes, CancellationToken.None);
 

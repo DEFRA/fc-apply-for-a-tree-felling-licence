@@ -142,39 +142,6 @@ public class ApproverReviewController : Controller
         _logger.LogDebug("Saving approver review and generating PDF preview for application with ID {ApplicationId}", model.Id);
 
         var user = new InternalUser(User);
-        var result = await ValidateAndSaveApproverReview(model, useCase, user, cancellationToken);
-        if (result.IsFailure)
-        {
-            _logger.LogWarning("Validation failed for approver review for application with ID {ApplicationId}. Errors: {Errors}", model.Id, result.Error);
-
-            foreach (var modelError in result.Error)
-            {
-                ModelState.AddModelError(modelError.Key, modelError.Value);
-            }
-
-            var reloadModel = await useCase.RetrieveApproverReviewAsync(
-                model.Id,
-                new InternalUser(User),
-                cancellationToken);
-
-            if (reloadModel.HasNoValue)
-            {
-                _logger.LogError("Failed to reload approver review for application with ID {ApplicationId} after validation failure", model.Id);
-                return RedirectToAction("Error", "Home");
-            }
-
-            reloadModel.Value.ApproverReview = model.ApproverReview;
-            reloadModel.Value.Breadcrumbs = new BreadcrumbsModel
-            {
-                CurrentPage = "Approver Review",
-                Breadcrumbs = new List<BreadCrumb>() {
-                    new("Open applications", "Home", "Index", null),
-                    new(reloadModel.Value.FellingLicenceApplicationSummary!.ApplicationReference, "FellingLicenceApplication", "ApplicationSummary", model.Id.ToString())
-                }
-            };
-
-            return View(nameof(Index), reloadModel.Value);
-        }
 
         var resultPdfGenerated =
             await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(user, model.Id, false, cancellationToken);

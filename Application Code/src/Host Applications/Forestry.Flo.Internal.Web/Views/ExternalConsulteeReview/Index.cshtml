@@ -1,27 +1,91 @@
-﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+﻿@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Services.Common
+@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview.ExternalConsulteeReviewViewModel
 @{
-    ViewData["Title"] = "Application Summary";
+    ViewData["Title"] = "Have your say on a felling application";
 }
+<div class="govuk-grid-column-two-thirds" id="summary-container">
+    
+    <partial name="Partials/_PageErrors"/>
 
-<div class="govuk-grid-column-full" id="summary-container">
-    <table class="govuk-table" id="application-list-table">
-        <tbody class="govuk-table__body">
-        <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">Application Reference</th>
-            <td class="govuk-table__cell">@Model.ApplicationReference</td>
-        </tr>
-        <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">Property</th>
-            <td class="govuk-table__cell">@Model.PropertyName</td>
-        </tr>
-        </tbody>
-    </table> 
+    <h1 class="govuk-heading-l">@ViewData["Title"] @Model.ApplicationSummary.ApplicationReference</h1>
+    
+    <h2 class="govuk-heading-m">Review the application</h2>
+    
+    <div class="govuk-body">
+        <p>You've been invited to comment on this application.</p>
+        
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-visually-hidden">Warning</span>
+                The closing date is on @DateTimeDisplay.GetDateDisplayString(Model.AddConsulteeComment.LinkExpiryDateTime).
+            </strong>
+            <div class="govuk-!-padding-bottom-2"></div>
+            <p class="govuk-body">You must submit your comments before this date.</p>
+        </div>
+        
+        <p>Review the application information and supporting documents below and tell us if you have any feedback. You can comment on anything you think is relevant.</p>
+
+        <p>Your comments and any documents you upload will be visible to the applicant and other consultees.</p>
+    </div>
+    
+    <h2 class="govuk-heading-m">Application information</h2>
+    
+    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_WoodlandDetailsCard" model="@Model.ApplicationSummary"/>
+    
+    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingScheduleCard" model="@Model.ApplicationSummary" />
+    
+    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingOperationsCard" model="@Model.ApplicationSummary" />
+    
+    <input type="hidden" id="runningMode" value="felling" />
+    @if (Model.ApplicationSummary?.DetailsList is not null)
+    {
+        @foreach (var item in Model.ApplicationSummary?.DetailsList!)
+        {
+            <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling" />
+            @foreach (var restocking in item.RestockingDetail)
+            {
+                <input type="hidden" id="@restocking.RestockingCompartmentId" value="@restocking.GISData" data-label="@restocking.RestockingCompartmentName" data-group="compartments_GIS" data-type="restocking" />
+            }
+        }
+    }
+
+    <div>
+        <calcite-shell id="shell" content-behind>
+            <h2 id="header-title" slot="header">
+                Felling
+            </h2>
+            <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed>
+                <calcite-action-bar slot="action-bar" expanded>
+                    <calcite-action id="view"
+                                    icon="analysis"
+                                    text="View Restocking"
+                                    scale="l"></calcite-action>
+
+                </calcite-action-bar>
+            </calcite-shell-panel>
+            <div class="profileMap" id="viewDivMain"></div>
+
+        </calcite-shell>
+    </div>
+    <div class="govuk-!-padding-bottom-3"></div>
+    
+    
+    @foreach(var fellingDetail in Model.ApplicationSummary?.DetailsList ?? [])
+    {
+        <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingOperationCard" model="fellingDetail" />
+    }
+    
+    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_SupportingDocumentationCard" model="@Model"/>
+
+    <partial name="Partials/_ActivityFeed" model="@Model.ActivityFeed" />
+
+    <partial name="Partials/_AddConsulteeComment" model="@Model.AddConsulteeComment"/>
+    
 </div>
 
-<partial name="Partials/_AddConsulteeComment" model="@Model.AddConsulteeComment"/>
-
-<partial name="Partials/_ActivityFeed" model="@Model.ActivityFeed" />
 
 
 @section Scripts
@@ -29,9 +93,39 @@
     <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
     <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
     <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+    <script src="~/js/compartment-list.js" asp-append-version="true"></script>
+    <script src="~/js/supporting-documentation.js" asp-append-version="true"></script>
+    <script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
+
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+    <script type="module">
+        require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
+            var mapObj = new ProfileMap("viewDivMain", true);
+        });
+    </script>
 }
 
 @section Css{
     <link rel="stylesheet" href="~/css/assign-fla-select-user.css" aria-busyasp-append-version="true" />
     <link rel="stylesheet" href="~/css/application-summary.css" aria-busyasp-append-version="true" />
+    
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")" />
+    <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+    <style>
+            #shell{
+                position: unset !important;
+                height:600px;
+            }
+            #viewDivMain{
+                padding: 0;
+                margin: 0;
+                height: 100%;
+                width: 100%;
+            }
+
+            calcite-shell-panel[closed] {
+                display: none !important;
+            }
+        </style>
 }

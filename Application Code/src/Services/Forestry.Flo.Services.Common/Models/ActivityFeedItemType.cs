@@ -36,7 +36,7 @@ public enum ActivityFeedItemType
     [Display(Name = "Public register comment"), ActivityFeedItemType(ActivityFeedItemCategory.Notification)]
     PublicRegisterComment,
 
-    [Display(Name = "Consultee comment"), ActivityFeedItemType(ActivityFeedItemCategory.Notification)]
+    [Display(Name = "Consultation comment"), ActivityFeedItemType(ActivityFeedItemCategory.Notification)]
     ConsulteeComment,
 
     // Outgoing notifications

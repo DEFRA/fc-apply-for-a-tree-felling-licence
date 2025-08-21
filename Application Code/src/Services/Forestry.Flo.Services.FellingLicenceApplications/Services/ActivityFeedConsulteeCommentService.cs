@@ -4,6 +4,7 @@ using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -34,14 +35,13 @@ public class ActivityFeedConsulteeCommentService : IActivityFeedService
         var comments = await _fellingLicenceApplicationRepository.GetConsulteeCommentsAsync(
             providerModel.FellingLicenceId, null, cancellationToken);
 
+        var documents = await _fellingLicenceApplicationRepository.GetApplicationDocumentsAsync(
+            providerModel.FellingLicenceId, cancellationToken);
+
         var activityFeedItems = new List<ActivityFeedItemModel>(comments.Count);
 
         foreach (var consulteeComment in comments)
         {
-            var itemText = consulteeComment.ApplicableToSection.HasValue
-                ? $"Regarding {consulteeComment.ApplicableToSection.Value.GetDisplayName()}:\n{consulteeComment.Comment}"
-                : consulteeComment.Comment;
-
             activityFeedItems.Add(new ActivityFeedItemModel
             {
                 ActivityFeedItemType = ActivityFeedItemType.ConsulteeComment,
@@ -50,8 +50,9 @@ public class ActivityFeedConsulteeCommentService : IActivityFeedService
                 FellingLicenceApplicationId = consulteeComment.FellingLicenceApplicationId,
                 VisibleToConsultee = true,
                 VisibleToApplicant = true,
-                Text = itemText,
-                Source = $"{consulteeComment.AuthorName} ({consulteeComment.AuthorContactEmail})"
+                Text = consulteeComment.Comment,
+                Source = $"{consulteeComment.AuthorName} ({consulteeComment.AuthorContactEmail})",
+                Attachments = GetAttachments(consulteeComment.DocumentIds, documents)
             });
         }
 
@@ -65,5 +66,25 @@ public class ActivityFeedConsulteeCommentService : IActivityFeedService
         {
             ActivityFeedItemType.ConsulteeComment
         };
+    }
+
+    private static Dictionary<Guid, string> GetAttachments(IList<Guid>? consulteeAttachmentIds, IList<Document>? flaDocuments)
+    {
+        if (consulteeAttachmentIds == null || !consulteeAttachmentIds.Any() || flaDocuments == null || !flaDocuments.Any())
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var result = new Dictionary<Guid, string>();
+        foreach (var consulteeAttachmentId in consulteeAttachmentIds)
+        {
+            var document = flaDocuments.FirstOrDefault(x => x.Id == consulteeAttachmentId);
+            if (document != null)
+            {
+                result[consulteeAttachmentId] = document.FileName;
+            }
+        }
+
+        return result;
     }
 }

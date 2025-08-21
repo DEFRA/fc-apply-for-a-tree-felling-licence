@@ -223,6 +223,25 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
 
         var now = _clock.GetCurrentInstant().ToDateTimeUtc();
 
+        var importResult =
+            await _updateConfirmedFellingAndRestockingDetailsService.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                applicationId,
+                user.UserAccountId!.Value,
+                cancellationToken);
+
+        if (importResult.IsFailure)
+        {
+            _logger.LogError($"Unable to copy proposed felling details for application {applicationId}, error {importResult.Error}");
+            await AppendAuditFailure(
+                applicationId,
+                user.UserAccountId!.Value,
+                new
+                {
+                    importResult.Error
+                }, cancellationToken);
+            return Result.Failure($"Unable to copy proposed felling details for application {applicationId}, error {importResult.Error}");
+        }
+
         var updateDateReceivedResult =
             await _updateFellingLicenceApplication.UpdateDateReceivedAsync(
                 applicationId,
@@ -268,25 +287,6 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
         var CBWrequireWOReview = await _getAdminOfficerReview.GetCBWReviewStatusAsync( applicationId, cancellationToken) ?? true;
         if (CBWrequireWOReview == false)
         {
-            var importResult =
-                await _updateConfirmedFellingAndRestockingDetailsService.ConvertProposedFellingAndRestockingToConfirmedAsync(
-                    applicationId,
-                    user.UserAccountId!.Value,
-                    cancellationToken);
-
-            if (importResult.IsFailure)
-            {
-                _logger.LogError($"Unable to copy proposed felling details for application {applicationId}, error {importResult.Error}");
-                await AppendAuditFailure(
-                    applicationId,
-                    user.UserAccountId!.Value,
-                    new
-                    {
-                        importResult.Error
-                    }, cancellationToken);
-                return Result.Failure($"Unable to copy proposed felling details for application {applicationId}, error {importResult.Error}");
-            }
-
             var updateWoReviewResult = await _updateWoodlandOfficerReviewService.HandleConfirmedFellingAndRestockingChangesAsync(
                 applicationId,
                 user.UserAccountId!.Value,

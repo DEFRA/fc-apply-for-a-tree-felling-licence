@@ -34,7 +34,7 @@ public static class ConditionsExtensions
     /// <param name="compartments">The list of confirmed felling and restocking detail models.</param>
     /// <param name="applicationId">The ID of the felling licence application.</param>
     /// <returns>A <see cref="CalculateConditionsRequest"/> populated with restocking operations.</returns>
-    public static CalculateConditionsRequest GenerateCalculateConditionsRequest(this List<ConfirmedFellingAndRestockingDetailModel> compartments, Guid applicationId)
+    public static CalculateConditionsRequest GenerateCalculateConditionsRequest(this List<FellingAndRestockingDetailModel> compartments, Guid applicationId)
     {
         var treeSpeciesValues = TreeSpeciesFactory.SpeciesDictionary.Values;
         var restockingOperations = new List<RestockingOperationDetails>();

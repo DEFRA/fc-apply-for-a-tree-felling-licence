@@ -30,17 +30,31 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Reverts amendments made to a deleted confirmed felling detail by reimporting the proposed felling details.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="proposedFellingDetailsId">The id of the proposed felling details to reimport.</param>
+    /// <param name="userId">The id of the user reverting the amendments.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the deleted confirmed felling detail amendments have been reverted.</returns>
+    Task<Result> RevertConfirmedFellingDetailAmendmentsAsync(
+        Guid applicationId,
+        Guid proposedFellingDetailsId,
+        Guid userId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Saves amendments made to confirmed felling and restocking details.
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
     /// <param name="userId">The id of the user amending the details.</param>
-    /// <param name="confirmedFellingAndRestockingDetailModels">A collection of <see cref="ConfirmedFellingAndRestockingDetailModel"/> containing felling and restocking details for compartments.</param>
+    /// <param name="confirmedFellingAndRestockingDetailModels">A collection of <see cref="FellingAndRestockingDetailModel"/> containing felling and restocking details for compartments.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result indicating whether confirmed felling and restocking details have been updated.</returns>
     Task<Result> SaveChangesToConfirmedFellingAndRestockingAsync(
         Guid applicationId,
         Guid userId,
-        IList<ConfirmedFellingAndRestockingDetailModel> confirmedFellingAndRestockingDetailModels,
+        IList<FellingAndRestockingDetailModel> confirmedFellingAndRestockingDetailModels,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -48,14 +62,14 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
     /// <param name="userId">The id of the user amending the details.</param>
-    /// <param name="newFelling">A <see cref="IndividualConfirmedFellingRestockingDetailModel"/> containing felling and restocking details for a compartment.</param>
+    /// <param name="newFelling">A <see cref="IndividualFellingRestockingDetailModel"/> containing felling and restocking details for a compartment.</param>
     /// <param name="speciesModel">A dictionary of <see cref="SpeciesModel"/> keyed by species code, representing the species included in the confirmed felling details.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result indicating whether confirmed felling details have been updated.</returns>
     Task<Result> SaveChangesToConfirmedFellingDetailsAsync(
         Guid applicationId,
         Guid userId,
-        IndividualConfirmedFellingRestockingDetailModel newFelling,
+        IndividualFellingRestockingDetailModel newFelling,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 
@@ -72,6 +86,13 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Guid applicationId,
         Guid userId,
         NewConfirmedFellingDetailWithCompartmentId confirmedFellingDetailsModel,
+        Dictionary<string, SpeciesModel> speciesModel,
+        CancellationToken cancellationToken);
+
+    Task<Result> SaveChangesToConfirmedRestockingDetailsAsync(
+        Guid applicationId,
+        Guid userId,
+        IndividualRestockingDetailModel restockingDetailsModel,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 
@@ -97,6 +118,12 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
     Task<Result> DeleteConfirmedFellingDetailAsync(
         Guid applicationId,
         Guid confirmedFellingDetailId,
+        Guid userId,
+        CancellationToken cancellationToken);
+
+    Task<Result> DeleteConfirmedRestockingDetailAsync(
+        Guid applicationId,
+        Guid confirmedRestockingDetailId,
         Guid userId,
         CancellationToken cancellationToken);
 }

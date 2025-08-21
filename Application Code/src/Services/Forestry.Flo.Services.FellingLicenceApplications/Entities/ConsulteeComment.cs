@@ -36,7 +36,7 @@ public class ConsulteeComment
     public string Comment { get; set; }
 
     /// <summary>
-    /// Gets and sets the optional section of the felling licence application this comment applies to.
+    /// Gets and sets the list of document IDs associated with this consultee comment.
     /// </summary>
-    public ApplicationSection? ApplicableToSection { get; set; }
+    public List<Guid> DocumentIds { get; set; } = new List<Guid>();
 }

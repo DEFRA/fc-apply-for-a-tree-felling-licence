@@ -236,3 +236,7 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
     max-width: 20em;
     margin-bottom: 1rem;
 }
+
+.moj-timeline:has(:first-child.flo-timeline_item-casenote):before {
+    top: 22px;
+}

@@ -613,7 +613,6 @@ public class InternalUserContextFlaRepositoryTests
         FellingLicenceApplication application,
         string authorName,
         string contactEmail,
-        ApplicationSection section,
         string comment,
         DateTime timeStamp)
     {
@@ -623,7 +622,6 @@ public class InternalUserContextFlaRepositoryTests
 
         var newComment = new ConsulteeComment
         {
-            ApplicableToSection = section,
             AuthorContactEmail = contactEmail,
             AuthorName = authorName,
             CreatedTimestamp = timeStamp,
@@ -641,7 +639,6 @@ public class InternalUserContextFlaRepositoryTests
         Assert.Equal(application.Id, storedComment.FellingLicenceApplicationId);
         Assert.Equal(authorName, storedComment.AuthorName);
         Assert.Equal(contactEmail, storedComment.AuthorContactEmail);
-        Assert.Equal(section, storedComment.ApplicableToSection);
         Assert.Equal(comment, storedComment.Comment);
         Assert.Equal(timeStamp, storedComment.CreatedTimestamp);
     }
@@ -1498,5 +1495,37 @@ public class InternalUserContextFlaRepositoryTests
         // Assert
         Assert.True(result.IsFailure);
         Assert.Contains("not found", result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetApplicationDocuments_ReturnsNothingWhenNoDocumentsForApplication(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.Documents = new List<Document>();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetApplicationDocumentsAsync(application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetApplicationDocuments_ReturnsDocumentsForApplication(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.Documents = new List<Document>();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetApplicationDocumentsAsync(application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equivalent(application.Documents, result);
     }
 }

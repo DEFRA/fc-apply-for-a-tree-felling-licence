@@ -84,10 +84,18 @@ public class ConfirmedFellingDetailModel : NewConfirmedFellingDetailModel
     public Guid ConfirmedFellingDetailsId { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional ID of the proposed felling details associated with this confirmed felling detail.
+    /// </summary>
+    /// <remarks>
+    /// This will typically be null if the confirmed felling detail was created without a corresponding proposed felling detail.
+    /// </remarks>
+    public Guid? ProposedFellingDetailsId { get; set; }
+
+    /// <summary>
     /// Gets and sets a collection of confirmed restocking detail models for the felling detail.
     /// </summary>
     public IEnumerable<ConfirmedRestockingDetailModel> ConfirmedRestockingDetailModels { get; set; } = [];
-    public Dictionary<string, string> AmendedProperties { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, string?> AmendedProperties { get; set; } = new Dictionary<string, string?>();
 }
 
 /// <summary>

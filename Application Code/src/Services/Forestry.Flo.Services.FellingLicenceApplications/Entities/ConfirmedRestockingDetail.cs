@@ -69,4 +69,13 @@ public class ConfirmedRestockingDetail
     /// Gets and sets the confirmed restocking species.
     /// </summary>
     public IList<ConfirmedRestockingSpecies> ConfirmedRestockingSpecies { get; set; } = new List<ConfirmedRestockingSpecies>();
+
+    /// <summary>
+    /// Gets and sets the identifier for the proposed restocking detail linked to this confirmed restocking detail.
+    /// </summary>
+    /// <remarks>
+    /// This directly links a confirmed restocking detail to a proposed restocking detail.
+    /// </remarks>
+    public Guid? ProposedRestockingDetailId { get; set; }
+
 }

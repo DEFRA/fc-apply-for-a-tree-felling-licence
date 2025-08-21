@@ -1,23 +1,40 @@
-﻿@using Forestry.Flo.Services.Common.Extensions
+﻿@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee
+@using Forestry.Flo.Services.FileStorage.Configuration
+@using Forestry.Flo.Services.FileStorage.Services
+@using Microsoft.Extensions.Options
+@inject IOptions<UserFileUploadOptions> Settings
+@inject FileTypesProvider FileTypesProvider
 @model Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview.AddConsulteeCommentModel
+
+@{
+    var allowedTypes = (Settings?.Value ?? new UserFileUploadOptions()).AllowedFileTypes
+        .Where(x => x.FileUploadReasons.Contains(FileUploadReason.SupportingDocument));
+    var allowedExtensions = allowedTypes.SelectMany(x => x.Extensions).ToArray();
+    var maxFileSize = (Settings?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
+    var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
+    var currentNumberDocs = 0;
+}
+
 <div id="external-consultee-comment">
-    <h1 class="govuk-heading-m">Application Feedback</h1>
-    <form method="post" asp-action="Index" asp-controller="ExternalConsulteeReview">
-        
-        <partial name="Partials/_PageErrors"/>
+    <h1 class="govuk-heading-m">Leave a comment (optional)</h1>
+    <form method="post" enctype="multipart/form-data" asp-action="Index" asp-controller="ExternalConsulteeReview">
 
         <input asp-for="ApplicationId"/>
         <input asp-for="AccessCode"/>
         <input asp-for="AuthorContactEmail"/>
         <input asp-for="LinkExpiryDateTime"/>
         
+        <input id="allowed-extensions" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@string.Join(", ", allowedExtensions)" />
+        <input id="allowed-max-size" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxFileSize" />
+        <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)" />
+        <input id="allowed-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxNumberDocs" />
+        <input id="current-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@currentNumberDocs" />
+        
         <div class="govuk-hint">
-            Please enter your name and feedback below and click <b>Save feedback</b> to submit the form.  If your comments are 
-            about a particular section of the application, you may optionally specify this as well.  You may enter multiple comments - 
-            after clicking <b>Save feedback</b> you will be able to enter further comments, or you may return later to this
-            page using the link in your email until it expires on @(Model.LinkExpiryDateTime.ToString("dddd, dd MMMM yyyy")) at @(Model.LinkExpiryDateTime.ToString("h:mm tt")).
+            Tell us anything you'd like us to consider. Do not include personal or sensitive information.
         </div>
 
         <div class="govuk-form-group">
@@ -29,33 +46,21 @@
                     <input class="govuk-input" asp-for="AuthorName"/>
                 </div>
 
-
                 <div class="govuk-form-group">
-                    <label class="govuk-label" asp-for="ApplicableToSection"></label>
-                    <select class="govuk-select" asp-for="ApplicableToSection">
-                        <option value="" selected="selected">- Please select -</option>
-                        @foreach (var item in typeof(ApplicationSection).GetEnumValues())
-                        {
-                            <option value="@item">@(((ApplicationSection)item).GetDisplayName())</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="govuk-form-group">
-                    <h2 class="govuk-label-wrapper">
-                        <label class="govuk-label govuk-label--s" for="Comment">
-                            Feedback comments
-                        </label>
-                    </h2>
-                    <div id="comments-hint" class="govuk-hint">
-                        Please provide any feedback you have on this felling licence application.  Your comments will be seen by the applicant so
-                        please do not include any personal or financial information.
-                    </div>
                     <validation asp-for="Comment"/>
+                    <label class="govuk-label" asp-for="Comment"></label>
                     <textarea id="Comment" class="govuk-textarea govuk-js-character-count" rows="4" aria-describedby="comments-hint" asp-for="Comment"></textarea>
                     <div class="govuk-hint govuk-character-count__message">
                         You can enter up to @DataValueConstants.ConsulteeCommentMaxLength characters
                     </div>
+                </div>
+                
+                <div class="govuk-form-group" id="file-select-group">
+                    <label for="supporting-documentation-files" class="govuk-label">Upload a file</label>
+                    <p id="supporting-documentation-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
+                        <span class="govuk-visually-hidden">Error:</span><span id="file-upload-error-text"></span>
+                    </p>
+                    <input type="file" multiple class="custom-file-input govuk-file-upload" id="supporting-documentation-files" name="consulteeAttachmentFiles" runat="server" />
                 </div>
 
                 <div class="govuk-grid-row">

@@ -124,6 +124,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                 return CreateFailureResult(userFacingErrors);
             }
 
+            var documentIds = new List<Guid>();
             if (addDocumentsRequest.FileToStoreModels.Any())
             {
                 var exceedsMaximumDocumentsPerUser =
@@ -142,6 +143,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                         if (result.IsFailure)
                         {
                             _logger.LogWarning(result.Error);
+                        }
+                        else
+                        {
+                            documentIds.Add(result.Value);
                         }
                     }
                 }
@@ -164,10 +169,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             return userFacingErrors.Any() 
                 ? CreateFailureResult(userFacingErrors) 
-                : CreateSuccessResult(userFacingErrors);
+                : CreateSuccessResult(documentIds, userFacingErrors);
         }
 
-        private async Task<Result> AddFileAsync(
+        private async Task<Result<Guid>> AddFileAsync(
             AddDocumentsRequest addDocumentsRequest,
             FileToStoreModel fileToStore,
             ICollection<string> userFacingErrors,
@@ -195,16 +200,16 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                     fileToStore,
                     savedFile,
                     cancellationToken)
-                : await HandleFailureAsync(
+                : (await HandleFailureAsync(
                     addDocumentsRequest.UserAccountId,
                     addDocumentsRequest.FellingApplicationId,
                     error,
                     fileToStore,
                     userFacingErrors,
-                    cancellationToken);
+                    cancellationToken)).ConvertFailure<Guid>();
         }
 
-        private async Task<Result> HandleSuccessAsync(
+        private async Task<Result<Guid>> HandleSuccessAsync(
             AddDocumentsRequest addDocumentsRequest,
             FileToStoreModel fileToStore, 
             StoreFileSuccessResult savedFile,
@@ -229,7 +234,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                 cancellationToken);
 
             if (!updateDbResult.IsSuccess)
-                return Result.Failure(
+                return Result.Failure<Guid>(
                     $"Unable to save document entity as part of application having id of [{addDocumentsRequest.FellingApplicationId}].");
 
             await RaiseSuccessAuditEventAsync(
@@ -238,7 +243,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                 documentEntity,
                 cancellationToken);
 
-            return Result.Success();
+            return Result.Success(documentEntity.Id);
         }
 
         private async Task<Result> HandleFailureAsync(
@@ -420,10 +425,12 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                 new AddDocumentsFailureResult(userFacingErrors));
         }
 
-        private static Result<AddDocumentsSuccessResult, AddDocumentsFailureResult> CreateSuccessResult(IEnumerable<string> userFacingErrors)
+        private static Result<AddDocumentsSuccessResult, AddDocumentsFailureResult> CreateSuccessResult(
+            IEnumerable<Guid> documentIds,
+            IEnumerable<string> userFacingErrors)
         {
             return Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(
-                new AddDocumentsSuccessResult(userFacingErrors));
+                new AddDocumentsSuccessResult(documentIds, userFacingErrors));
         }
     }
 }

@@ -1,12 +1,12 @@
 ﻿using CSharpFunctionalExtensions;
-using FileSignatures.Formats;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Validation;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using System;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
@@ -16,6 +16,7 @@ public partial class WoodlandOfficerReviewController
     private const string AmendFellingPageName = "Amend confirmed felling details";
     private const string AddFellingPageName = "Add confirmed felling details";
     private const string CombinedPageName = "Confirmed felling and restocking";
+    private const string AmendRestockingPageName = "Amend confirmed restocking details";
 
     [HttpGet]
     public async Task<IActionResult> AmendConfirmedFellingDetails(
@@ -58,6 +59,7 @@ public partial class WoodlandOfficerReviewController
                     CompartmentId = specificFellingDetail.CompartmentId,
                     CompartmentNumber = specificFellingDetail.CompartmentNumber,
                     SubCompartmentName = specificFellingDetail.SubCompartmentName,
+                    SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
                     TotalHectares = specificFellingDetail.TotalHectares,
                     Designation = specificFellingDetail.Designation,
                     ConfirmedFellingDetails =
@@ -129,8 +131,7 @@ public partial class WoodlandOfficerReviewController
             return RedirectToAction("Index", new { id = model.ApplicationId });
         }
 
-        // todo: return to the summary page when implemented
-        return RedirectToAction("Index", new { id = model.ApplicationId });
+        return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = model.ApplicationId });
     }
 
 
@@ -314,6 +315,14 @@ public partial class WoodlandOfficerReviewController
             return RedirectToAction("Error", "Home");
         }
 
+        var validationResult = await new ConfirmedFellingAndRestockingCrossValidator().ValidateAsync(model.Value, cancellationToken);
+        foreach (var error in validationResult.Errors.DistinctBy(x => x.ErrorMessage))
+        {
+            ModelState.AddModelError(
+                error.FormattedMessagePlaceholderValues["PropertyName"]?.ToString() ?? error.PropertyName, 
+                error.ErrorMessage);
+        }
+
         return View(model.Value);
     }
 
@@ -339,5 +348,265 @@ public partial class WoodlandOfficerReviewController
         }
 
         return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+    }
+
+    public async Task<IActionResult> DeleteConfirmedRestockingDetails(
+    [FromQuery] Guid applicationId,
+    [FromQuery] Guid confirmedRestockingDetailId,
+    [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+    CancellationToken cancellationToken)
+    {
+        var (_, isFailure) = await useCase.DeleteConfirmedRestockingDetailAsync(
+            applicationId,
+            confirmedRestockingDetailId,
+            new InternalUser(User),
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not delete confirmed restocking details");
+        }
+        else
+        {
+            this.AddConfirmationMessage("Restocking details deleted");
+        }
+
+        return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+    }
+
+    public async Task<IActionResult> RevertAmendedConfirmedFellingDetails(
+        [FromQuery] Guid applicationId,
+        [FromQuery] Guid proposedFellingDetailsId,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+        ArgumentNullException.ThrowIfNull(user.UserAccountId);
+
+        var result = await useCase.RevertConfirmedFellingDetailAmendmentsAsync(
+            applicationId,
+            proposedFellingDetailsId,
+            user,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Could not revert confirmed felling details amendments");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+
+        this.AddConfirmationMessage("Reverted confirmed felling details amendments successfully");
+        return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AmendConfirmedRestockingDetails(
+        [FromQuery] Guid applicationId,
+        [FromQuery] Guid confirmedFellingDetailsId,
+        [FromQuery] Guid confirmedRestockingDetailsId,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        return await HandleGetConfirmedRestockingDetails(applicationId, confirmedFellingDetailsId, confirmedRestockingDetailsId, useCase, cancellationToken, isAdd: false);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AddConfirmedRestockingDetails(
+        [FromQuery] Guid applicationId,
+        [FromQuery] Guid compartmentId,
+        [FromQuery] Guid fellingDetailsId,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        return await HandleGetConfirmedRestockingDetails(applicationId, fellingDetailsId, null, useCase, cancellationToken, isAdd: true);
+    }
+
+    private async Task<IActionResult> HandleGetConfirmedRestockingDetails(
+        Guid applicationId,
+        Guid fellingDetailsId,
+        Guid? restockingDetailsId,
+        ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        CancellationToken cancellationToken,
+        bool isAdd)
+    {
+        var user = new InternalUser(User);
+        var (_, isFailure, confirmedFellingRestockingDetailsModel) = await useCase.GetConfirmedFellingAndRestockingDetailsAsync(applicationId, user, cancellationToken, AmendRestockingPageName);
+
+        const string retrievalErrorMessage = "Could not retrieve confirmed restocking details";
+
+        if (isFailure)
+        {
+            this.AddErrorMessage(retrievalErrorMessage);
+            return RedirectToAction("ConfirmedFellingAndRestocking", new { applicationId });
+        }
+
+
+        if (isAdd)
+        {
+            var specificFellingDetail = confirmedFellingRestockingDetailsModel.Compartments.FirstOrDefault(x => x.ConfirmedFellingDetails.Any(y => y.ConfirmedFellingDetailsId == fellingDetailsId));
+            if (specificFellingDetail is null)
+            {
+                this.AddErrorMessage(retrievalErrorMessage);
+                return RedirectToAction("ConfirmedFellingAndRestocking", new { applicationId });
+            }
+            var model = new AmendConfirmedRestockingDetailsViewModel
+            {
+                FellingLicenceApplicationSummary = confirmedFellingRestockingDetailsModel.FellingLicenceApplicationSummary,
+                ApplicationId = confirmedFellingRestockingDetailsModel.ApplicationId,
+                PotentialRestockingCompartments = confirmedFellingRestockingDetailsModel.PotentialRestockingCompartments,
+                ConfirmedFellingRestockingDetails =
+                    new IndividualConfirmedRestockingDetailModel
+                    {
+                        CompartmentId = specificFellingDetail.CompartmentId,
+                        CompartmentNumber = specificFellingDetail.CompartmentNumber,
+                        SubCompartmentName = specificFellingDetail.SubCompartmentName,
+                        SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
+                        TotalHectares = specificFellingDetail.TotalHectares,
+                        Designation = specificFellingDetail.Designation,
+                        ConfirmedRestockingDetails = new ConfirmedRestockingDetailViewModel()
+                        {
+                            ConfirmedFellingDetailsId = fellingDetailsId,
+                            OperationType = specificFellingDetail.ConfirmedFellingDetails.First(x =>
+                                x.ConfirmedFellingDetailsId == fellingDetailsId).OperationType??FellingOperationType.None
+                        },
+                    },
+                Breadcrumbs = confirmedFellingRestockingDetailsModel.Breadcrumbs
+            };
+            return View(model);
+        }
+        else
+        {
+            var specificFellingDetail = confirmedFellingRestockingDetailsModel.Compartments.FirstOrDefault(x => x.ConfirmedFellingDetails.Any(y => y.ConfirmedFellingDetailsId == fellingDetailsId));
+            if (specificFellingDetail is null)
+            {
+                this.AddErrorMessage(retrievalErrorMessage);
+                return RedirectToAction("ConfirmedFellingAndRestocking", new { applicationId });
+            }
+            var model = new AmendConfirmedRestockingDetailsViewModel
+            {
+                FellingLicenceApplicationSummary = confirmedFellingRestockingDetailsModel.FellingLicenceApplicationSummary,
+                ApplicationId = confirmedFellingRestockingDetailsModel.ApplicationId,
+                PotentialRestockingCompartments = confirmedFellingRestockingDetailsModel.PotentialRestockingCompartments,
+                ConfirmedFellingRestockingDetails =
+                    new IndividualConfirmedRestockingDetailModel
+                    {
+                        CompartmentId = specificFellingDetail.CompartmentId,
+                        CompartmentNumber = specificFellingDetail.CompartmentNumber,
+                        SubCompartmentName = specificFellingDetail.SubCompartmentName,
+                        SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
+                        Designation = specificFellingDetail.Designation,
+                        ConfirmedRestockingDetails =
+                            specificFellingDetail.ConfirmedFellingDetails.First(x =>
+                                x.ConfirmedFellingDetailsId == fellingDetailsId).ConfirmedRestockingDetails.First(x =>
+                                x.ConfirmedRestockingDetailsId == restockingDetailsId),
+                    },
+                Breadcrumbs = confirmedFellingRestockingDetailsModel.Breadcrumbs
+            };
+            return View(model);
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AmendConfirmedRestockingDetails(
+        AmendConfirmedRestockingDetailsViewModel model,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IValidator<AmendConfirmedRestockingDetailsViewModel> validator,
+        CancellationToken cancellationToken)
+    {
+        return await HandleConfirmedRestockingDetails(model, useCase, validator, cancellationToken, isAdd: false);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddConfirmedRestockingDetails(
+        AmendConfirmedRestockingDetailsViewModel model,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IValidator<AmendConfirmedRestockingDetailsViewModel> validator,
+        CancellationToken cancellationToken)
+    {
+        return await HandleConfirmedRestockingDetails(model, useCase, validator, cancellationToken, isAdd: true);
+    }
+
+    private async Task<IActionResult> HandleConfirmedRestockingDetails(
+        AmendConfirmedRestockingDetailsViewModel model,
+        ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        IValidator<AmendConfirmedRestockingDetailsViewModel> validator,
+        CancellationToken cancellationToken,
+        bool isAdd)
+    {
+        var rd = model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails;
+        var restockingProposal = rd.RestockingProposal;
+        if (restockingProposal == TypeOfProposal.CreateDesignedOpenGround)
+        {
+            model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies = Array.Empty<ConfirmedRestockingSpeciesModel>();
+            model.Species.Clear();
+        }
+
+        if (rd.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees || rd.RestockingProposal == TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
+        {
+            rd.RestockingDensity = null;
+        }
+        else
+        {
+            rd.NumberOfTrees = null;
+        }
+
+        var speciesList = model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies.ToList();
+        foreach (var species in model.Species.Where(species => speciesList.All(x => x.Species != species.Key)))
+        {
+            speciesList.Add(new ConfirmedRestockingSpeciesModel
+            {
+                Species = species.Key,
+                Deleted = false
+            });
+        }
+
+        foreach (var deletedSpecies in model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies
+                     .Where(x => model.Species.ContainsKey(x.Species ?? "") is false))
+        {
+            deletedSpecies.Deleted = true;
+        }
+
+        ValidateModel(model, validator);
+
+        if (ModelState.IsValid is false)
+        {
+            var user = new InternalUser(User);
+            var (_, retrievalFailure, confirmedFellingRestockingDetailsModel) = await useCase.GetConfirmedFellingAndRestockingDetailsAsync(model.ApplicationId, user, cancellationToken, AmendRestockingPageName);
+
+            var specificFellingDetail = confirmedFellingRestockingDetailsModel.Compartments
+                .FirstOrDefault(x => x.ConfirmedFellingDetails.Any(y => y.ConfirmedFellingDetailsId == model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedFellingDetailsId));
+            if (retrievalFailure || specificFellingDetail is null)
+            {
+                this.AddErrorMessage("Could not retrieve felling details");
+                return RedirectToAction("ConfirmedFellingAndRestocking", new { id = model.ApplicationId });
+            }
+
+            model.FellingLicenceApplicationSummary = confirmedFellingRestockingDetailsModel.FellingLicenceApplicationSummary;
+            model.Breadcrumbs = confirmedFellingRestockingDetailsModel.Breadcrumbs;
+            model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.OperationType = specificFellingDetail.ConfirmedFellingDetails.First(x =>
+                                                x.ConfirmedFellingDetailsId == model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedFellingDetailsId).OperationType ?? FellingOperationType.None;
+            model.PotentialRestockingCompartments = confirmedFellingRestockingDetailsModel.PotentialRestockingCompartments;
+
+            return View(model);
+        }
+
+        var userToSave = new InternalUser(User);
+        var result = await useCase.SaveConfirmedRestockingDetailsAsync(
+            model,
+            userToSave,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage(isAdd ? "Could not add confirmed restocking details" : "Could not save confirmed restocking details");
+            return RedirectToAction("ConfirmedFellingAndRestocking", new { id = model.ApplicationId });
+        }
+
+        if (isAdd)
+        {
+            this.AddConfirmationMessage("Confirmed restocking details added");
+        }
+
+        return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = model.ApplicationId });
     }
 }

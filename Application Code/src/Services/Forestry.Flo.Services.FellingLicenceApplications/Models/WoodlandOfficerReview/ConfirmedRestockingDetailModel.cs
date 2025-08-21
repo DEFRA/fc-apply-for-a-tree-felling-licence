@@ -13,6 +13,11 @@ public class ConfirmedRestockingDetailModel
     public Guid ConfirmedRestockingDetailsId { get; set; }
 
     /// <summary>
+    /// Gets and Sets the proposed restocking detail ID.
+    /// </summary>
+    public Guid? ProposedRestockingDetailsId { get; set; }
+
+    /// <summary>
     /// Gets and sets the type of the operation.
     /// </summary>
     public TypeOfProposal RestockingProposal { get; set; }
@@ -45,6 +50,11 @@ public class ConfirmedRestockingDetailModel
     public int? NumberOfTrees { get; set; }
 
     /// <summary>
+    /// Gets and sets the total hectares for the restocking compartment.
+    /// </summary>
+    public double RestockingCompartmentTotalHectares { get; set; }
+
+    /// <summary>
     /// Gets and sets the confirmed restocking species.
     /// </summary>
     public IList<ConfirmedRestockingSpecies>? ConfirmedRestockingSpecies { get; set; }
@@ -54,4 +64,8 @@ public class ConfirmedRestockingDetailModel
     public string? CompartmentNumber { get; set; }
 
     public string? SubCompartmentName { get; set; }
+
+    public Dictionary<string, string> AmendedProperties { get; set; } = new Dictionary<string, string>();
+
+    public Guid ConfirmedFellingDetailsId { get; set; }
 }

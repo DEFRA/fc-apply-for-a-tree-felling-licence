@@ -1,0 +1,42 @@
+﻿@using Forestry.Flo.Internal.Web.Extensions
+@using Forestry.Flo.Services.Common.Extensions
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingLicenceApplicationSummaryModel
+
+@{
+    var compartmentNames = Model.DetailsList.OrderByNameNumericOrAlpha()
+                .Select(x => x.CompartmentName)
+                .Distinct();
+}
+
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">Felling and restocking details</h2>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Felling compartments
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @string.Join(", ", compartmentNames)
+                </dd>
+            </div>
+            @foreach (var compartment in compartmentNames)
+            {
+                var operations = Model.DetailsList
+                    .Where(x => x.CompartmentName == compartment)
+                    .Select(x => x.FellingDetail.OperationType.GetDisplayName());
+
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Felling operations in compartment @compartment
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @string.Join(", ", operations)
+                    </dd>
+                </div>
+            }
+        </dl>
+    </div>
+</div>

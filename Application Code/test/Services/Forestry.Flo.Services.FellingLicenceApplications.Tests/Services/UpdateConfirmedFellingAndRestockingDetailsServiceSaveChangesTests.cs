@@ -246,7 +246,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
                 JsonSerializer.Serialize(new
                 {
                     Section = "Save Changes Confirmed Felling/Restocking Details",
-                    Error = $"User is not assigned Woodland Officer for application in SaveChangesToConfirmedFellingAndRestockingAsync, application id {fla.Id}, user id {userId2}"
+                    Error = $"User {userId2} is not permitted to amend felling licence application {fla.Id} in SaveChangesToConfirmedFellingAndRestockingAsync"
                 }, _options)),
             CancellationToken.None), Times.Once);
     }
@@ -254,7 +254,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
 
     [Theory, AutoMoqData]
 
-    public async Task ShouldReturnFailure_WhenApplicationNotFound(FellingLicenceApplication fla, List<ConfirmedFellingAndRestockingDetailModel> detailModelList)
+    public async Task ShouldReturnFailure_WhenApplicationNotFound(FellingLicenceApplication fla, List<FellingAndRestockingDetailModel> detailModelList)
     {
         // setup
 
@@ -595,7 +595,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
 
     [Theory, AutoMoqData]
     public async Task SaveChangesToConfirmedFellingDetailsAsync_ReturnsFailure_WhenApplicationNotFound(
-        FellingLicenceApplication fla, IndividualConfirmedFellingRestockingDetailModel detailModel)
+        FellingLicenceApplication fla, IndividualFellingRestockingDetailModel detailModel)
     {
         var userId = Guid.NewGuid();
         var sut = CreateSut();
@@ -612,10 +612,10 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
 
 
 
-    private static List<ConfirmedFellingAndRestockingDetailModel> ConstructConfirmedFellingAndRestockingDetailModels(
+    private static List<FellingAndRestockingDetailModel> ConstructConfirmedFellingAndRestockingDetailModels(
         FellingLicenceApplication fla, int speciesCount)
     {
-        var detailModels = new List<ConfirmedFellingAndRestockingDetailModel>();
+        var detailModels = new List<FellingAndRestockingDetailModel>();
 
         for (var i = 0; i < fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Count; i++)
         {
@@ -667,7 +667,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
                 IsRestocking = true,
             };
 
-            detailModels.Add(new ConfirmedFellingAndRestockingDetailModel()
+            detailModels.Add(new FellingAndRestockingDetailModel()
             {
                 ConfirmedFellingDetailModels = new List<ConfirmedFellingDetailModel>
                 {
@@ -682,7 +682,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
 
 
 
-    private static IndividualConfirmedFellingRestockingDetailModel ConstructIndividualConfirmedFellingAndRestockingDetailModels(
+    private static IndividualFellingRestockingDetailModel ConstructIndividualConfirmedFellingAndRestockingDetailModels(
         FellingLicenceApplication fla, int speciesCount)
     {
         var fellingSpecies = new List<ConfirmedFellingSpecies>();
@@ -706,7 +706,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
         Assert.NotNull(felling);
         var restocking = felling?.ConfirmedRestockingDetails.FirstOrDefault();
 
-        return new IndividualConfirmedFellingRestockingDetailModel
+        return new IndividualFellingRestockingDetailModel
         {
             CompartmentId = submittedPropertyCompartment.CompartmentId,
             ConfirmedFellingDetailModel = new ConfirmedFellingDetailModel

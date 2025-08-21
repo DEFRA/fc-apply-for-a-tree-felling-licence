@@ -46,4 +46,10 @@ public class ActivityFeedItemModel
     /// The recipients of a notification.
     /// </summary>
     public string[]? Recipients { get; set; }
+
+    /// <summary>
+    /// A dictionary of attachments associated with the activity feed item,
+    /// where the key is the attachment ID and the value is the attachment file name.
+    /// </summary>
+    public Dictionary<Guid, string> Attachments { get; set; }
 }

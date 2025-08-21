@@ -4,6 +4,7 @@
 @using Forestry.Flo.Services.Common;
 @using Forestry.Flo.Services.Common.Infrastructure
 @using Forestry.Flo.Services.Common.Models
+@using Forestry.Flo.Services.Common.User
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ActivityFeedModel;
 
 <div class="govuk-form-group" id="activity-feed">
@@ -117,6 +118,32 @@
                                 <div class="moj-timeline__description">
                                     <p class="show-line-breaks">@activityFeedItem.Text</p>
                                 </div>
+
+                                @if (activityFeedItem.Attachments?.Any() ?? false)
+                                {
+                                    <div>
+                                        <h3 class="govuk-heading-s">Attachments</h3>
+                                        <ul class="govuk-list--bullet">
+                                            @foreach (var attachment in activityFeedItem.Attachments)
+                                            {
+                                                <li>
+                                                    @if (Model.ViewingUserActorType == ActorType.ExternalConsultee)
+                                                    {
+                                                        <a class="govuk-link" asp-controller="ExternalConsulteeReview" asp-action="DownloadSupportingDocument" asp-route-applicationId="@activityFeedItem.FellingLicenceApplicationId" asp-route-accessCode="@Model.ViewingUserAuthenticationToken" asp-route-documentId="@attachment.Key" asp-route-emailAddress="@Model.ViewingUserEmail">
+                                                            @attachment.Value
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <a class="govuk-link" asp-controller="SupportingDocuments" asp-action="GetDocument" asp-route-id="@activityFeedItem.FellingLicenceApplicationId" asp-route-documentIdentifier="@attachment.Key">
+                                                            @attachment.Value
+                                                        </a>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
 
                             </div>
                             break;

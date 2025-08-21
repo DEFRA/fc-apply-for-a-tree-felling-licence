@@ -26,17 +26,6 @@ $(function () {
             $(this).text("Add species");
         }
     });
-    
-    $("#restocking-add-tree-species-btn").click(function () {
-        const $tableRows = $('#restocking-species-list-table tr');
-        const rowCount = $tableRows.length - 1;
-        if (rowCount > 0) {
-            $(this).text("Add another species");
-        } else {
-            $(this).text("Add species");
-        }
-        $(this).text("Add another species");
-    });
 
     $('#FellingDetail_OperationType').change(function () {
         canCompleteSection();
@@ -49,6 +38,26 @@ $(function () {
                 relatedElement.classList.remove('govuk-radios__conditional--hidden');
             } else {
                 relatedElement.classList.add('govuk-radios__conditional--hidden');
+            }
+        });
+    });
+
+    $('#delete-felling-details-button').click(function () {
+        Swal.fire({
+            title: 'Do you wish to delete this felling operation and associated restocking operations?',
+            icon: 'warning',
+            confirmButtonText: "Yes",
+            cancelButtonText: "No",
+            showCancelButton: true,
+            focusConfirm: true,
+            customClass: {
+                title: 'govuk-heading-s',
+                confirmButton: 'confirm-popup-button'
+            }
+
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#delete-felling-details").submit();
             }
         });
     });
