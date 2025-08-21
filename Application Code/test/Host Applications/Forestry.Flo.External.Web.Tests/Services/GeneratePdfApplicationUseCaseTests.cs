@@ -204,7 +204,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
             
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
             
 
             var result = await sut.GeneratePreviewDocumentAsync(_externalUser.UserAccountId!.Value, fla.Id, CancellationToken.None);
@@ -321,7 +321,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
 
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
 
             var result = await sut.GeneratePreviewDocumentAsync(_externalUser.UserAccountId!.Value, fla.Id, CancellationToken.None);
@@ -407,7 +407,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
             
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
 
             var result = await sut.GeneratePreviewDocumentAsync(_externalUser.UserAccountId!.Value, fla.Id, CancellationToken.None);
@@ -515,7 +515,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
 
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
 
             var result = await sut.GeneratePreviewDocumentAsync(_externalUser.UserAccountId!.Value, fla.Id, CancellationToken.None);

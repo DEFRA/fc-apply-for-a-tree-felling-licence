@@ -33,7 +33,6 @@ public class ExternalConsulteeReviewServiceAddCommentTests
         Assert.True(result.IsSuccess);
         MockRepository.Verify(x => x.AddConsulteeCommentAsync(It.Is<ConsulteeComment>(c => 
             c.CreatedTimestamp == model.CreatedTimestamp
-            && c.ApplicableToSection == model.ApplicableToSection
             && c.AuthorContactEmail == model.AuthorContactEmail
             && c.AuthorName == model.AuthorName
             && c.Comment == model.Comment
@@ -56,7 +55,6 @@ public class ExternalConsulteeReviewServiceAddCommentTests
         Assert.True(result.IsFailure);
         MockRepository.Verify(x => x.AddConsulteeCommentAsync(It.Is<ConsulteeComment>(c =>
                 c.CreatedTimestamp == model.CreatedTimestamp
-                && c.ApplicableToSection == model.ApplicableToSection
                 && c.AuthorContactEmail == model.AuthorContactEmail
                 && c.AuthorName == model.AuthorName
                 && c.Comment == model.Comment

@@ -10,5 +10,7 @@ public enum ActorType
     InternalUser,
     [Display(Name = "System")]
     System,
-   // ExternalSystem
+    [Display(Name = "External Consultee")]
+    ExternalConsultee
+    // ExternalSystem
 }

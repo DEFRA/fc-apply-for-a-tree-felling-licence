@@ -4,11 +4,10 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models; // Add this for T
 
 namespace Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 
-public class ConfirmedRestockingDetailViewModel
+public class NewConfirmedRestockingDetailViewModel
 {
     [HiddenInput]
-    public Guid ConfirmedRestockingDetailsId { get; set; }
-
+    public Guid ConfirmedFellingDetailsId { get; set; }
     public double? RestockArea { get; set; }
 
     public int? PercentOpenSpace { get; set; }
@@ -27,6 +26,28 @@ public class ConfirmedRestockingDetailViewModel
     public Guid RestockingCompartmentId { get; set; }
 
     public string? RestockingCompartmentNumber { get; set; }
+
+    public double? RestockingCompartmentTotalHectares { get; set; }
+
+    public FellingOperationType OperationType { get; set; }
+
+    /// <summary>
+    /// Gets and sets the unique identifier for the proposed restocking associated with this confirmed restocking detail.
+    /// </summary>
+    /// <remarks>
+    /// If this is null, it indicates that the confirmed restocking detail was created without a corresponding proposed restocking detail.
+    /// </remarks>
+    public Guid? ProposedRestockingDetailsId { get; set; }
+
+    public Dictionary<string, string> AmendedProperties { get; set; } = new Dictionary<string, string>();
+    public object? OldValue(string propName, object? currentValue = null)
+    {
+        if (AmendedProperties.TryGetValue(propName, out var oldValue))
+        {
+            return oldValue;
+        }
+        return currentValue;
+    }
 
     /// <summary>
     /// Returns a comma-separated list of actual species names and their percentages from ConfirmedRestockingSpecies,
@@ -50,4 +71,18 @@ public class ConfirmedRestockingDetailViewModel
                 })
         );
     }
+}
+
+/// <summary>
+/// Represents the view model for confirmed restocking details, including a unique identifier.
+/// </summary>
+/// <remarks>This class extends <see cref="NewConfirmedRestockingDetailViewModel"/> to include additional
+/// information specific to confirmed restocking details.</remarks>
+public class ConfirmedRestockingDetailViewModel : NewConfirmedRestockingDetailViewModel
+{
+    /// <summary>
+    /// Gets or sets the unique identifier for the confirmed restocking details.
+    /// </summary>
+    [HiddenInput]
+    public Guid ConfirmedRestockingDetailsId { get; set; }
 }

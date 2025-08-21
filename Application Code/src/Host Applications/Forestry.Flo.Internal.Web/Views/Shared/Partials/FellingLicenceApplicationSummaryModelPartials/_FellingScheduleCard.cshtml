@@ -1,0 +1,28 @@
+﻿@using Forestry.Flo.Services.Common
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingLicenceApplicationSummaryModel
+
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">Felling schedule</h2>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Felling start date
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @DateTimeDisplay.GetDateDisplayString(Model.ProposedStartDate)
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Felling completion date
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @DateTimeDisplay.GetDateDisplayString(Model.ProposedEndDate)
+                </dd>
+            </div>
+        </dl>
+    </div>
+</div>

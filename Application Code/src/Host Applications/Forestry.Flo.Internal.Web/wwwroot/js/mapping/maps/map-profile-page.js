@@ -7,6 +7,9 @@
     "esri/Graphic",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
+    "esri/Geometry/Polygon",
+    "esri/Geometry/Point",
+    "esri/Geometry/geometryEngine",
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now(),
@@ -22,6 +25,9 @@
         Graphic,
         locator,
         FeatureLayer,
+        Polygon,
+        Point,
+        geometryEngine,
         maps_html_Helper,
         Maps_common,
         GT_WGS84,
@@ -49,6 +55,7 @@
 
                 var button = document.getElementById("view");
                 var that = this;
+
                 if (button !== null) {
                     var items = maps_html_Helper.getCompartments("restocking");
 
@@ -360,6 +367,46 @@
                     console.error("Error:", error);
                 }
                 return returnString;
+            };
+
+            profileMap.prototype.focusOnCompartment = function (compartmentId) {
+                const compartments = maps_html_Helper.getCompartments();
+                const relevant = compartments.filter(x => x.Id === compartmentId);
+
+                if (relevant.length < 1) {
+                    console.warn("No matching compartment found");
+                    return;
+                }
+
+                var item = relevant[0];
+
+                const view = this.view;
+
+                if (!view) {
+                    console.error("Map view is undefined.");
+                    return;
+                }
+
+                var geometry = {
+                    type: "polygon",
+                    rings: item.GIS.rings,
+                    spatialReference: item.GIS.spatialReference.wkid,
+                };
+
+                let graphic = new Graphic({
+                    geometry: geometry,
+                    attributes: {
+                        compartmentName: item.label,
+                        compartmentRef: ""
+                    },
+                });
+
+                view.when(() => {
+                    setTimeout(() => {
+                        view.goTo({ target: graphic, zoom: 17 })
+                            .catch(err => console.error("goTo failed:", err));
+                    }, 200);
+                });
             };
 
             return profileMap;

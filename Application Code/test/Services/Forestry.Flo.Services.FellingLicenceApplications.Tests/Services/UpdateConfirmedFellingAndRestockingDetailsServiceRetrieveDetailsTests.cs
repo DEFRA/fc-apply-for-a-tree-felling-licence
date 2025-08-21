@@ -237,22 +237,10 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
     public void GetAmendedFellingDetailProperties_RestockingChanged_ReturnsRestocking()
     {
         var service = CreateSut();
-        var proposed = new ProposedFellingDetail
-        {
-            ProposedRestockingDetails = new List<ProposedRestockingDetail>
-            {
-                new ProposedRestockingDetail { Area = 1.0 }
-            }
-        };
-        var confirmed = new ConfirmedFellingDetail
-        {
-            ConfirmedRestockingDetails = new List<ConfirmedRestockingDetail>
-            {
-                new ConfirmedRestockingDetail { Area = 2.0 }
-            }
-        };
-        var result = service.GetAmendedFellingDetailProperties(proposed, confirmed);
-        result.Should().ContainKey("ProposedRestockingDetails[0].RestockArea");
-        result["ProposedRestockingDetails[0].RestockArea"].Should().Be("1");
+        var proposed = new ProposedRestockingDetail { Area = 1.0 };
+        var confirmed = new ConfirmedRestockingDetail { Area = 2.0 };
+        var result = service.GetAmendedRestockingProperties(proposed, confirmed, new Dictionary<Guid, string?>());
+        result.Should().ContainKey(nameof(proposed.Area));
+        result[nameof(proposed.Area)].Should().Be("1");
     }
 }

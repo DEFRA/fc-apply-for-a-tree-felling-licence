@@ -2,5 +2,8 @@
 
 public class DataImportViewModel: PageWithBreadcrumbsViewModel
 {
-    //TODO this view model is only for the breadcrumbs so if we remove those then this class can be deleted entirely
+    /// <summary>
+    /// The Woodland Owner Id the user is acting as.
+    /// </summary>
+    public Guid WoodlandOwnerId { get; set; }
 }

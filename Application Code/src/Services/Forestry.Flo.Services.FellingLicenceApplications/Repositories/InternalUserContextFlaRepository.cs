@@ -688,4 +688,12 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             ? Result.Failure<List<SubmittedFlaPropertyCompartment>>("SubmittedFlaPropertyDetail not found for applicationId.")
             : Result.Success(propertyDetail.SubmittedFlaPropertyCompartments?.ToList() ?? []);
     }
+
+    /// <inheritdoc />
+    public async Task<List<Document>> GetApplicationDocumentsAsync(Guid applicationId, CancellationToken cancellationToken)
+    {
+        return await Context.Documents
+            .Where(d => d.FellingLicenceApplicationId == applicationId)
+            .ToListAsync(cancellationToken);
+    }
 }

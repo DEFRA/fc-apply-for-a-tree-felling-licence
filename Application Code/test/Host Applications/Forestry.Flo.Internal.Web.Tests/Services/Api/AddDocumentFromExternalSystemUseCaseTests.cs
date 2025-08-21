@@ -1,27 +1,26 @@
-﻿using System.Text.Json;
-using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.User;
-using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.FileStorage.Configuration;
-using Forestry.Flo.Services.FileStorage.Services;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using AutoFixture;
+﻿using AutoFixture;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Infrastructure;
+using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FileStorage.Configuration;
 using Forestry.Flo.Services.FileStorage.ResultModels;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
-using NodaTime.Testing;
 using NodaTime;
+using NodaTime.Testing;
+using System.Text.Json;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.Api
 {
@@ -108,7 +107,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services.Api
             var application = FixtureInstance.Create<FellingLicenceApplication>();
 
             _addDocumentService.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
             application.StatusHistories.Add(
                     new StatusHistory
@@ -284,7 +283,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services.Api
             var application = FixtureInstance.Create<FellingLicenceApplication>();
 
             _addDocumentService.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
             application.StatusHistories.Add(
                 new StatusHistory

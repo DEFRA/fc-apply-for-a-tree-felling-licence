@@ -17,6 +17,7 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using ActivityFeedItemType = Forestry.Flo.Services.Common.Models.ActivityFeedItemType;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
+using AutoMapper;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
@@ -246,7 +247,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
                 ApplicationId = application.Value.Id,
                 ApplicationReference = application.Value.ApplicationReference,
                 ConfirmedFellingAndRestockingCompleted = (application.Value.WoodlandOfficerReview != null && application.Value.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete),
-                DetailsList = CreateFellingAndRestockingDetails(application.Value)
+                DetailsList = ModelMapping.RetrieveFellingAndRestockingDetails(application.Value).ToList()
             },
             ViewingUser = viewingUser,
             UserCanApproveRefuseReferApplication = false
@@ -375,49 +376,6 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
 
         foreach (var user in userAccounts.Value) if (!usernameDict.ContainsKey(user.Id)) usernameDict.Add(user.Id, user.FullName());
         return Result.Success<Dictionary<Guid, string>>(usernameDict);
-    }
-
-    private List<FellingAndRestockingDetail> CreateFellingAndRestockingDetails(Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication application)
-    {
-        if (application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments is null)
-        {
-            return new List<FellingAndRestockingDetail>();
-        }
-
-        var compartmentsDictionary = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ToDictionary(c => c.CompartmentId, c => c);
-
-        // Get all restocking details with their felling details
-        List<FellingAndRestockingDetail> fellingAndRestockingDetails = application.LinkedPropertyProfile!.ProposedFellingDetails!
-            .Where(x => x != null && x.ProposedRestockingDetails != null && x.ProposedRestockingDetails.Count > 0)
-            .SelectMany(selector: x => x.ProposedRestockingDetails)
-            .Select(restock => new FellingAndRestockingDetail
-            {
-                CompartmentId = restock.ProposedFellingDetail.PropertyProfileCompartmentId,
-                Felling = $"{restock.ProposedFellingDetail.OperationType.GetDisplayName()} in {compartmentsDictionary[restock.ProposedFellingDetail.PropertyProfileCompartmentId].DisplayName}",
-                RestockingCompartment = compartmentsDictionary[restock.PropertyProfileCompartmentId].DisplayName,
-                RestockingGISData =   compartmentsDictionary[restock.PropertyProfileCompartmentId].GISData,
-                CompartmentName = compartmentsDictionary[restock.ProposedFellingDetail.PropertyProfileCompartmentId].DisplayName,
-                GISData = compartmentsDictionary[restock.ProposedFellingDetail.PropertyProfileCompartmentId].GISData,
-                WoodlandId = restock.ProposedFellingDetail.LinkedPropertyProfileId,
-                FellingDetail = ModelMapping.ToProposedFellingDetailModel(restock.ProposedFellingDetail),
-                RestockingDetail = ModelMapping.ToProposedRestockingDetailModel(restock)
-            }).ToList();
-
-        // Get all felling details that do not have restocking details
-        fellingAndRestockingDetails.AddRange(application.LinkedPropertyProfile!.ProposedFellingDetails!
-            .Where(x => x != null && (x.ProposedRestockingDetails is null || x.ProposedRestockingDetails.Count == 0))
-            .Select(proposedFellingDetail =>
-                new FellingAndRestockingDetail
-                {
-                    CompartmentId = proposedFellingDetail.PropertyProfileCompartmentId,
-                    Felling = string.Empty,
-                    CompartmentName = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].DisplayName,
-                    GISData = compartmentsDictionary[proposedFellingDetail.PropertyProfileCompartmentId].GISData,
-                    WoodlandId = proposedFellingDetail.LinkedPropertyProfileId,
-                    FellingDetail = ModelMapping.ToProposedFellingDetailModel(proposedFellingDetail)
-                }));
-
-        return fellingAndRestockingDetails;
     }
 }
 

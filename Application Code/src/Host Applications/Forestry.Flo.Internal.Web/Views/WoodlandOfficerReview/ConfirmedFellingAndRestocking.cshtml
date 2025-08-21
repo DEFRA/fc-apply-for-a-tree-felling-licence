@@ -1,46 +1,43 @@
 ﻿@using Forestry.Flo.Services.Common.Extensions
-@using Forestry.Flo.Services.FellingLicenceApplications.Models
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.Internal.Web.Infrastructure.Display
 @using Forestry.Flo.Internal.Web.Infrastructure
-
-
-@{
-	ViewData["Title"] = "Confirm felling and restocking";
-}
+@using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
+@using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.ConfirmedFellingRestockingDetailsModel
-
-
 @{
-	var user = new InternalUser(User);
-	var treeSpeciesValues = TreeSpeciesFactory.SpeciesDictionary.Values;
+    ViewData["Title"] = "Confirm felling and restocking";
+    var user = new InternalUser(User);
+    const string newDetailClassName = "new-confirmed-detail";
+    const string deletedDetailClassName = "deleted-confirmed-detail";
 }
+
+
 <div class="govuk-grid-column-full">
 
-	<partial name="Partials/_ConfirmationMessageDisplay" />
-	<partial name="Partials/_UserGuideDisplay" />
-	<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
-	<partial name="Partials/_PageErrors" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+    <partial name="Partials/_PageErrors" />
 
-	<h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
-	@if (Model.FellingLicenceApplicationSummary?.DetailsList is not null)
-	{
-		@foreach (var item in Model.FellingLicenceApplicationSummary?.DetailsList!)
-		{
-			<input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" />
-		}
-	}
+    @foreach (var item in Model.Compartments)
+    {
+        <input type="hidden" id="@item.SubmittedFlaPropertyCompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" name="@item.SubmittedFlaPropertyCompartmentId" />
+    }
 
     @functions {
-        public void RenderSummaryRow(string key, string measure, object? value, object? oldValue = null)
+        public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
         {
-            bool hasValue = value != null && !string.IsNullOrWhiteSpace(value.ToString());
-            bool hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
-            bool hasMeasure = !string.IsNullOrEmpty(measure);
+            var hasValue = value != null && !string.IsNullOrWhiteSpace(value.ToString());
+            var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
+            var hasMeasure = !string.IsNullOrEmpty(measure);
 
-            if (!hasOldValue)
+            if (!hasOldValue || value == oldValue)
             {
                 <div class="govuk-summary-list__row">
                     <dt class="govuk-summary-list__key">@key</dt>
@@ -85,38 +82,94 @@
         }
     }
 
-	<form method="post">
-		@for (int i = 0; i < Model.Compartments.Length; i++)
-		{
-			var compartment = Model.Compartments[i];
-			for (int j = 0; j < compartment.ConfirmedFellingDetails.Length; j++)
-			{
-				var confirmedFellingDetail = compartment.ConfirmedFellingDetails[j];
-				var restockCount = confirmedFellingDetail.ConfirmedRestockingDetails.Where(x => x.RestockingProposal!=null).Count();
+	<form method="post" asp-action="FellingAndRestocking">
+		@for (var i = 0; i < Model.Compartments.Length; i++)
+        {
+            var compartment = Model.Compartments[i];
+            var deletedFellingDetails = Model.DeletedFellingOperations(compartment.CompartmentId);
+
+            for (var j = 0; j < compartment.ConfirmedFellingDetails.Length; j++)
+            {
+                var confirmedFellingDetail = compartment.ConfirmedFellingDetails[j];
+                var restockCount = confirmedFellingDetail.ConfirmedRestockingDetails.Count(x => x.RestockingProposal!=null);
+                var canAddRestocking = confirmedFellingDetail.OperationType!.Value
+                    .AllowedRestockingForFellingType(false)
+                    .Any(x => x != TypeOfProposal.DoNotIntendToRestock);
+
+                var deletedRestockingDetails = Model.DeletedRestockingOperations(confirmedFellingDetail.ProposedFellingDetailsId);
+                var confirmedFellingType = confirmedFellingDetail.GetConfirmedFellingType(deletedRestockingDetails.Any());
+
+                var shouldShowRevert = confirmedFellingType is not (ConfirmedFellingType.Unmodified or ConfirmedFellingType.NewFelling);
+
+                shouldShowRevert = shouldShowRevert && Model.CanCurrentUserAmend;
+                var fellingClassName = confirmedFellingType is ConfirmedFellingType.NewFelling 
+                    ? newDetailClassName 
+                    : string.Empty;
+
+                var headingSuffix = confirmedFellingType switch
+                {
+                    ConfirmedFellingType.NewFelling => "(new)",
+                    ConfirmedFellingType.Amended => "(amended)",
+                    _ => string.Empty
+                };
+
+                var viewDivId = $"viewDiv-{i}-{j}";
+
+                HashSet<Guid> relevantCompartmentIds = [ compartment.SubmittedFlaPropertyCompartmentId!.Value ];
+
+                foreach(var restockingDetail in confirmedFellingDetail.ConfirmedRestockingDetails)
+                { 
+                    relevantCompartmentIds.Add(restockingDetail.RestockingCompartmentId);
+                }
+
+                @foreach (var deletedRestocking in deletedRestockingDetails)
+                {
+                    var submittedCompartmentId = Model.PotentialRestockingCompartments.First(x => x.PropertyCompartmentId == deletedRestocking.CompartmentId).SubmittedCompartmentId;
+                    relevantCompartmentIds.Add(submittedCompartmentId);
+                }
+
+                <input type="hidden" 
+                       id='@($"{viewDivId}-filters")' 
+                       value="@(string.Join(",", relevantCompartmentIds.Select(x => x.ToString())))"/>
 
                 <div class="govuk-summary-card" id="felling-operation-card">
-                    <div class="govuk-summary-card__title-wrapper" style="background: #f3f2f1; display: flex; align-items: flex-start; justify-content: space-between;">
+                    <div class="govuk-summary-card__title-wrapper">
                         <div>
                             <span class="govuk-summary-card__title" style="font-size: 1.1rem;">
-                                <strong>@confirmedFellingDetail.OperationType!.GetDisplayName() with related restocking in compartment @compartment.CompartmentNumber</strong>
+                                <strong>@confirmedFellingDetail.OperationType!.GetDisplayName() with related restocking in compartment @compartment.CompartmentNumber @headingSuffix</strong>
                             </span>
-                            <div class="govuk-body-s govuk-!-margin-top-1">
-                                <strong>Location:</strong> Croydon
-                                <strong class="govuk-!-margin-left-3">Compartment size:</strong> 32 Ha
+                            <div class="govuk-body-s compartment-info">
+                                <strong condition="@compartment.NearestTown is not null">Location: @compartment.NearestTown</strong>
+                                <strong>Compartment size:</strong> @compartment.TotalHectares!.Value.FormatDoubleForDisplay() Ha
                             </div>
                         </div>
-                        <div>
-                            <a href="javascript:void(0);" id="hide-felling-card-link" class="govuk-link govuk-link--no-visited-state" aria-expanded="true">
-                                <svg style="vertical-align:middle;margin-right:2px;" width="16" height="16" viewBox="0 0 16 16" focusable="false" aria-hidden="true"><path d="M8 10.5l-4-4h8z" fill="#1d70b8" /></svg>
-                                Hide
-                            </a>
-                        </div>
+                        <ul condition="@shouldShowRevert" class="govuk-summary-card__actions">
+                            @{
+                                var visibleId = $"delete-amendments-visible-{confirmedFellingDetail.ConfirmedFellingDetailsId}";
+                                var invisibleId = $"delete-amendments-invisible-{confirmedFellingDetail.ConfirmedFellingDetailsId}";
+                            }
+                            <li class="govuk-summary-card__action">
+                                <a
+                                    class="delete-amendments-invisible"
+                                    id="@invisibleId"
+                                    hidden="hidden"
+                                    aria-hidden="true"
+                                    tabindex="-1"
+                                    asp-action="RevertAmendedConfirmedFellingDetails"
+                                    asp-route-applicationId="@Model.ApplicationId"
+                                    asp-route-proposedFellingDetailsId="@confirmedFellingDetail.ProposedFellingDetailsId">
+                                </a>
+                                <a id="@visibleId" href="#@visibleId" class="govuk-link delete-amendments-visible">
+                                    Delete amendments (revert to proposed felling and restocking)
+                                </a>
+                            </li>
+                        </ul>
                     </div>
 
                     <div class="govuk-summary-card__content" id="felling-card-content">
                         <div class="govuk-accordion" data-module="govuk-accordion" id="accordion-default">
                             <div id="compartments-display">
-                                <div class="govuk-accordion__section ">
+                                <div class="govuk-accordion__section govuk-accordion__section--expanded">
                                     <div class="govuk-accordion__section-header">
                                         <span class="govuk-accordion__section-heading">
                                             <span class="govuk-accordion__section-button" id="accordion-default-heading-1">
@@ -136,164 +189,223 @@
 								        </style>
 
                                         <div class="profileMap" id="viewDiv-@i-@j"></div>
-                                        <script type="module">
-									        require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
-										        var mapObj = new ProfileMap("viewDiv-@i-@j", true);
-									        });
-								        </script>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="govuk-grid-row govuk-!-margin-bottom-6">
                             <div class="govuk-grid-column-one-half">
-                                <div class="govuk-summary-card">
+                                <div class="govuk-summary-card @fellingClassName">
                                     <div class="govuk-summary-card__title-wrapper">
-                                        <h2 class="govuk-summary-card__title">Felling operation</h2>
+                                        <h2 class="govuk-summary-card__title">
+                                            @(confirmedFellingType is ConfirmedFellingType.NewFelling 
+                                                ? "Felling operation (new)" 
+                                                : "Felling operation")
+                                        </h2>
                                         <ul class="govuk-summary-card__actions">
                                             <li class="govuk-summary-card__action">
-                                                <a class="govuk-link govuk-link--no-visited-state" href="#">Show on map</a>
+                                                <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@compartment.SubmittedFlaPropertyCompartmentId')">Show on map</a>
                                             </li>
-                                            <li class="govuk-summary-card__action">
-                                                <a href="@Url.Action("AmendConfirmedFellingDetails", 
-                                                             new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId })" 
+                                            <li condition="@Model.CanCurrentUserAmend" class="govuk-summary-card__action">
+                                                <a id="amend-link-felling-@(confirmedFellingDetail.ConfirmedFellingDetailsId)"
+                                                   href="@Url.Action("AmendConfirmedFellingDetails", new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId })" 
                                                    aria-describedby="felling-and-restocking">
                                                     Amend
                                                 </a>
                                             </li>
                                         </ul>
                                     </div>
-                                    <div class="govuk-summary-card__content">
-                                        <dl class="govuk-summary-list">
-                                            @{
-                                                RenderSummaryRow("Felling operation type", null, confirmedFellingDetail.OperationType!.GetDisplayName(), confirmedFellingDetail.OldValue(nameof(confirmedFellingDetail.OperationType))); 
-                                            }
-                                            <div class="govuk-summary-list__row">
-                                                <dt class="govuk-summary-list__key">Compartment area</dt>
-                                                <dd class="govuk-summary-list__value">@compartment.ConfirmedTotalHectares Ha</dd>
-                                            </div>
-                                            <div class="govuk-summary-list__row">
-                                                <dt class="govuk-summary-list__key">Designations</dt>
-                                                <dd class="govuk-summary-list__value">@compartment.Designation</dd>
-                                            </div>
-                                            @{
-                                                RenderSummaryRow("Area to be felled", "Ha", confirmedFellingDetail.AreaToBeFelled, confirmedFellingDetail.OldValue(nameof(confirmedFellingDetail.AreaToBeFelled))); 
-                                            }
-
-                                            <div class="govuk-summary-list__row">
-                                                <dt class="govuk-summary-list__key">% compartment area to be felled</dt>
-                                                <dd class="govuk-summary-list__value">
-                                                    @(compartment.TotalHectares.HasValue
-                                                        ? Math.Round((confirmedFellingDetail.AreaToBeFelled ?? 0) / compartment.TotalHectares!.Value * 100, 2) + "%"
-                                                        : string.Empty)
-                                                </dd>
-                                            </div>
-                                            @{
-                                                RenderSummaryRow("Species", null, confirmedFellingDetail.ListFellingSpecies(), confirmedFellingDetail.OldValue("FellingSpecies"));
-
-                                                RenderSummaryRow("Estimated number of trees to be felled", "Trees", confirmedFellingDetail.NumberOfTrees, confirmedFellingDetail.OldValue(nameof(confirmedFellingDetail.NumberOfTrees)));
-
-                                                RenderSummaryRow("Estimated total felling volume", "m³", confirmedFellingDetail.EstimatedTotalFellingVolume, confirmedFellingDetail.OldValue(nameof(confirmedFellingDetail.EstimatedTotalFellingVolume)));
-
-                                                RenderSummaryRow("Will you use tree marking?", null,
-                                                    string.IsNullOrWhiteSpace(confirmedFellingDetail.TreeMarking)
-                                                        ? "No"
-                                                        : "Yes, " + confirmedFellingDetail.TreeMarking,
-                                                    confirmedFellingDetail.OldValue("TreeMarking") == null
-                                                        ? null
-                                                        : "Yes, " + confirmedFellingDetail.OldValue("TreeMarking"));
-
-                                                RenderSummaryRow("TPO", null, 
-                                                    confirmedFellingDetail.IsPartOfTreePreservationOrder == true ? "Yes" : "No", 
-                                                    confirmedFellingDetail.OldValue("IsPartOfTreePreservationOrder") == "True" ? "Yes" : null);
-
-                                                RenderSummaryRow("TPO Reference", null, 
-                                                    confirmedFellingDetail.IsPartOfTreePreservationOrder == true ? confirmedFellingDetail.TreePreservationOrderReference : "N/A", 
-                                                    confirmedFellingDetail.OldValue("IsPartOfTreePreservationOrder") == "True" ? confirmedFellingDetail.OldValue("TreePreservationOrderReference") : null);
-
-                                                RenderSummaryRow("CA", null, 
-                                                    confirmedFellingDetail.IsWithinConservationArea == true ? "Yes" : "No", 
-                                                    confirmedFellingDetail.OldValue("IsWithinConservationArea") == "True" ? "Yes" : null);
-
-                                                RenderSummaryRow("CA Reference", null, 
-                                                    confirmedFellingDetail.IsWithinConservationArea == true ? confirmedFellingDetail.ConservationAreaReference : "N/A", 
-                                                    confirmedFellingDetail.OldValue("IsWithinConservationArea") == "True" ? confirmedFellingDetail.OldValue("ConservationAreaReference") : null);
-
-                                                RenderSummaryRow("Do you want to restock", null, 
-                                                    confirmedFellingDetail.IsRestocking == true ? "Yes" : "No", 
-                                                    confirmedFellingDetail.OldValue("IsRestocking") == "True" ? "Yes" : null);
-                                            }
-                                        </dl>
-                                    </div>
+                                    @await Html.PartialAsync("_FellingDetailSummary", new FellingDetailViewModel(confirmedFellingDetail, compartment))
                                 </div>
                             </div>
                             <div class="govuk-grid-column-one-half">
-
-                                @for (int k = 0; k < restockCount; k++)
+                                @for (var k = 0; k < restockCount; k++)
                                 {
-                                    var restockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.Count() > 0 ? confirmedFellingDetail.ConfirmedRestockingDetails[k] : null;
+                                    var restockingDetail = confirmedFellingDetail.ConfirmedRestockingDetails.Any() ? confirmedFellingDetail.ConfirmedRestockingDetails[k] : null;
+                                    if (restockingDetail is null)
+                                    {
+                                        continue;
+                                    }
 
-                                    <div class="govuk-summary-card">
+                                    var isNew = restockingDetail?.ProposedRestockingDetailsId is null;
+                                    var restockingClassName = isNew ? newDetailClassName : string.Empty; 
+
+						            <div class="govuk-summary-card @restockingClassName">
+							            <div class="govuk-summary-card__title-wrapper">
+                                            <h2 class="govuk-summary-card__title">
+                                                @(isNew 
+                                                    ? "Restocking operation (new)" 
+                                                    : "Restocking operation")
+                                            </h2>
+								            <ul class="govuk-summary-card__actions">
+                                                <li class="govuk-summary-card__action">
+                                                    <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@restockingDetail!.RestockingCompartmentId')">Show on map</a>
+                                                </li>
+                                                <li condition="@Model.CanCurrentUserAmend" class="govuk-summary-card__action">
+										            <a id="amend-link-restocking-@(restockingDetail.ConfirmedRestockingDetailsId)" href="@Url.Action("AmendConfirmedRestockingDetails", 
+											            new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId, confirmedRestockingDetailsId = confirmedFellingDetail.ConfirmedRestockingDetails[k].ConfirmedRestockingDetailsId })" 
+										            aria-describedby="felling-and-restocking">
+											            Amend
+										            </a>
+									            </li>
+								            </ul>
+							            </div>
+                                        @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(restockingDetail!))
+                                    </div>
+						        }
+                                
+                                @foreach(var deletedRestocking in deletedRestockingDetails)
+                                {
+                                    var submittedCompartmentId = Model.PotentialRestockingCompartments.First(x => x.PropertyCompartmentId == deletedRestocking.CompartmentId).SubmittedCompartmentId;
+
+                                    <div class="govuk-summary-card @deletedDetailClassName">
                                         <div class="govuk-summary-card__title-wrapper">
-                                            <h2 class="govuk-summary-card__title">Restocking operation</h2>
+                                            <h2 class="govuk-summary-card__title">Restocking operation (deleted)</h2>
                                             <ul class="govuk-summary-card__actions">
                                                 <li class="govuk-summary-card__action">
-                                                    <a class="govuk-link govuk-link--no-visited-state" href="#">Show on map</a>
-                                                </li>
-                                                <li class="govuk-summary-card__action">
-                                                    <a class="govuk-link govuk-link--no-visited-state" href="#">Amend</a>
+                                                    <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@submittedCompartmentId')">Show on map</a>
                                                 </li>
                                             </ul>
                                         </div>
-                                        <div class="govuk-summary-card__content">
-                                            <dl class="govuk-summary-list">
-                                                @{
-                                                    RenderSummaryRow("Restocking operation type", "", restockingDetail!.RestockingProposal!.GetDisplayName(), confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingProposal"));
-                                                    RenderSummaryRow("Restocking compartment", "", restockingDetail.RestockingCompartmentNumber, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingCompartmentNumber"));
-                                                }
-                                                <div class="govuk-summary-list__row">
-                                                    <dt class="govuk-summary-list__key">Estimated percentage of the area that will be restocked</dt>
-                                                    <dd class="govuk-summary-list__value">
-                                                        @(compartment.TotalHectares.HasValue
-                                                            ? Math.Round((restockingDetail.RestockArea ?? 0) / compartment.TotalHectares!.Value * 100, 2) + "%"
-                                                            : string.Empty)
-                                                    </dd>
-                                                </div>
-                                                @{
-                                                    RenderSummaryRow("Estimated area to be restocked", " Ha", restockingDetail.RestockArea, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockArea"));
-                                                    RenderSummaryRow("Estimate of the restocking density", "", restockingDetail.RestockingDensity, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingDensity"));
-                                                    RenderSummaryRow("Estimated number of trees to be restocked", " Trees", restockingDetail.NumberOfTrees, confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].NumberOfTrees"));
-                                                    RenderSummaryRow("Species and restocking percentage", "", restockingDetail.ListRestockingSpecies(), confirmedFellingDetail.OldValue($"ProposedRestockingDetails[{k}].RestockingSpecies"));
-                                                }
-                                            </dl>
+                                        @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(deletedRestocking))
+                                    </div>
+                                }
+                                <div class="govuk-button-group">
+                                    <a
+                                        condition="@(Model.Editable(user) & canAddRestocking)"
+                                        id="add-felling-operation"
+                                        data-prevent-double-click="true"
+                                        asp-action="AddConfirmedRestockingDetails"
+                                        asp-route-applicationId="@Model.ApplicationId"
+                                        asp-route-compartmentId="@compartment.CompartmentId"
+                                        asp-route-fellingDetailsId="@confirmedFellingDetail.ConfirmedFellingDetailsId"
+                                        class="govuk-button govuk-button--secondary"
+                                        data-module="govuk-button">
+
+                                        Add restocking operation
+
+                                    </a>
+                                </div>
+                            </div>
+				        </div>
+			        </div>
+		        </div>
+			}
+
+            @foreach (var deletedFelling in deletedFellingDetails)
+            {
+                var viewDivId = $"viewDiv-{i}-{deletedFelling.Id}";
+
+                HashSet<Guid> relevantCompartmentIds = [ compartment.SubmittedFlaPropertyCompartmentId!.Value ];
+
+                foreach(var restockingDetail in deletedFelling.ProposedRestockingDetails)
+                { 
+                    relevantCompartmentIds.Add(restockingDetail.CompartmentId);
+                }
+
+                <input type="hidden" 
+                       id='@($"{viewDivId}-filters")' 
+                       value="@(string.Join(",", relevantCompartmentIds.Select(x => x.ToString())))"/>
+
+                <div class="govuk-summary-card" id="felling-operation-card">
+                    <div class="govuk-summary-card__title-wrapper">
+                        <div>
+                            <span class="govuk-summary-card__title" style="font-size: 1.1rem;">
+                                <strong>@deletedFelling.OperationType!.GetDisplayName() with related restocking in compartment @compartment.CompartmentNumber (deleted)</strong>
+                            </span>
+                            <div class="govuk-body-s compartment-info">
+                                <strong condition="@compartment.NearestTown is not null">Location: @compartment.NearestTown</strong>
+                                <strong>Compartment size:</strong> @compartment.TotalHectares!.Value.FormatDoubleForDisplay() Ha
+                            </div>
+                        </div>
+                        <ul condition="@Model.CanCurrentUserAmend" class="govuk-summary-card__actions">
+                            @{
+                                var visibleId = $"delete-amendments-visible-{deletedFelling.Id}";
+                                var invisibleId = $"delete-amendments-invisible-{deletedFelling.Id}";
+                            }
+                            <li class="govuk-summary-card__action">
+                                <a
+                                    class="delete-amendments-invisible"
+                                    id="@invisibleId"
+                                    hidden="hidden"
+                                    aria-hidden="true"
+                                    tabindex="-1"
+                                    asp-action="RevertAmendedConfirmedFellingDetails"
+                                    asp-route-applicationId="@Model.ApplicationId"
+                                    asp-route-proposedFellingDetailsId="@deletedFelling.Id">
+                                </a>
+                                <a id="@visibleId" href="#@visibleId" class="govuk-link delete-amendments-visible">
+                                    Delete amendments (revert to proposed felling and restocking)
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="govuk-summary-card__content" id="felling-card-content">
+                        <div class="govuk-accordion" data-module="govuk-accordion" id="accordion-default">
+                            <div id="compartments-display">
+                                <div class="govuk-accordion__section govuk-accordion__section--expanded">
+                                    <div class="govuk-accordion__section-header">
+                                        <span class="govuk-accordion__section-heading">
+                                            <span class="govuk-accordion__section-button" id="accordion-default-heading-1">
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div id="accordion-default-content" class="govuk-accordion__section-content" aria-labelledby="accordion-default-heading-1">
+                                        <style>
+									        #viewDiv-@i-@deletedFelling.Id {
+										        border-color: black;
+										        border-style: solid;
+										        border-width: 1px;
+										        padding: 0;
+										        margin: 0;
+										        height: 50vh !important;
+									        }
+								        </style>
+
+                                        <div class="profileMap" id="@viewDivId"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="govuk-grid-row govuk-!-margin-bottom-6">
+                            <div class="govuk-grid-column-one-half">
+                                <div class="govuk-summary-card @deletedDetailClassName">
+                                    <div class="govuk-summary-card__title-wrapper">
+                                        <h2 class="govuk-summary-card__title">Felling operation (deleted)</h2>
+                                        <ul class="govuk-summary-card__actions">
+                                            <li class="govuk-summary-card__action">
+                                                <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@compartment.SubmittedFlaPropertyCompartmentId')">Show on map</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    @await Html.PartialAsync("_FellingDetailSummary", new FellingDetailViewModel(deletedFelling, compartment))
+                                </div>
+                            </div>
+                            <div class="govuk-grid-column-one-half">          
+                                @foreach(var deletedRestocking in deletedFelling.ProposedRestockingDetails)
+                                {
+                                    <div class="govuk-summary-card @deletedDetailClassName">
+                                        <div class="govuk-summary-card__title-wrapper">
+                                            <h2 class="govuk-summary-card__title">Restocking operation (deleted)</h2>
+                                            <ul class="govuk-summary-card__actions">
+                                                <li class="govuk-summary-card__action">
+                                                    <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@deletedRestocking.CompartmentId')">Show on map</a>
+                                                </li>
+                                            </ul>
                                         </div>
+                                        @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(deletedRestocking))
                                     </div>
                                 }
                             </div>
                         </div>
-                    </div>
-                </div>
-			}
+			        </div>
+		        </div>
+            }
 		}
-		<script>
-			// Simple collapse/expand for the summary card
-			document.addEventListener('DOMContentLoaded', function () {
-			  var hideLink = document.getElementById('hide-felling-card-link');
-			  var cardContent = document.getElementById('felling-card-content');
-			  var expanded = true;
-			  hideLink.addEventListener('click', function () {
-				expanded = !expanded;
-				cardContent.style.display = expanded ? '' : 'none';
-				hideLink.innerHTML = (expanded
-				  ? '<svg style="vertical-align:middle;margin-right:2px;" width="16" height="16" viewBox="0 0 16 16" focusable="false" aria-hidden="true"><path d="M8 10.5l-4-4h8z" fill=\"#1d70b8\"/></svg>Hide'
-				  : '<svg style="vertical-align:middle;margin-right:2px;" width="16" height="16" viewBox="0 0 16 16" focusable="false" aria-hidden="true"><path d="M8 5.5l4 4H4z" fill=\"#1d70b8\"/></svg>Show');
-				hideLink.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-			  });
-			});
-		</script>
 		<input asp-for="ApplicationId" />
         <br />
-                    
+
         <div class="govuk-button-group">
             <a
                 condition="@(Model.Editable(user))"
@@ -310,30 +422,59 @@
         </div>
 
         <div class="govuk-form-group">
-			<fieldset class="govuk-fieldset">
-				<legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-					<h2 class="govuk-fieldset__heading">Review actions</h2>
-				</legend>
-				<div class="govuk-hint">
-					If there are any issues with the application that require changes from the applicant, click here.
-				</div>
-				<div class="govuk-button-group">
-					<button condition-disabled="@(Model.Editable(user) && !Model.IsAmended)" id="save-btn" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-						Send amendments to application for confirmation
-					</button>
-				</div>
-				<div class="govuk-button-group">
-					<button condition-disabled="@(Model.Editable(user) && Model.IsAmended)" id="save-btn" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-						Confirm felling and restocking
-					</button>
-				</div>
-				<div class="govuk-hint">
-					When you have completed your review and the application is ready to pass on to the assigned Approver, click Submit Review to progress the application.
-				</div>
-			</fieldset>
-		</div>
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">Review actions</h2>
+                </legend>
+                <div condition="@(Model.RelevantButton is RelevantFellingAndRestockingButton.SendAmendmentsToApplicant && Model.CanCurrentUserAmend)" class="govuk-hint">
+                    If there are any issues with the application that require changes from the applicant, click here.
+                </div>
+                <div class="govuk-button-group">
+                    <button 
+                        condition="@(Model.RelevantButton is RelevantFellingAndRestockingButton.SendAmendmentsToApplicant && Model.CanCurrentUserAmend)"
+                        condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
+                        id="save-btn" 
+                        data-prevent-double-click="true" 
+                        type="submit" 
+                        class="govuk-button" 
+                        data-module="govuk-button">
+                        Send amendments to application for confirmation
+                    </button>
+                </div>
+                <div class="govuk-button-group">
+                    <button 
+                        condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
+                        id="confirm-btn" 
+                        data-prevent-double-click="true"
+                        type="submit" 
+                        class="govuk-button" 
+                        condition="@(Model.RelevantButton is RelevantFellingAndRestockingButton.ConfirmFellingAndRestocking && Model.CanCurrentUserAmend)"
+                        data-module="govuk-button">
+                        Confirm felling and restocking
+                    </button>
+                </div>
+            </fieldset>
+        </div>
 
     </form>
+
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+    
+    @{
+        var activityFeedModel = new ActivityFeedModel
+        {
+            ActivityFeedTitle = "Woodland Officer Review Comments",
+            ActivityFeedItemModels = Model.ActivityFeedItems,
+            ShowAddCaseNote = true,
+            ShowFilters = false,
+            NewCaseNoteType = CaseNoteType.WoodlandOfficerReviewComment,
+            DefaultCaseNoteFilter = CaseNoteType.WoodlandOfficerReviewComment,
+            ApplicationId = Model.ApplicationId,
+            HostingPage = $"{Url.Action("ConfirmedFellingAndRestocking", new { id = Model.ApplicationId })!}#activity-feed"
+        };
+    }
+
+    <partial name="Partials/_ActivityFeed" model="@activityFeedModel"/>
 
 </div>
 
@@ -345,26 +486,21 @@
 
 	<!-- Other scripts follow -->
 	<script src="~/js/confirmed-felling-and-restocking.js" asp-append-version="true"></script>
-	<script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/confirmed-felling-and-restocking-revert-amendments.js" asp-append-version="true"></script>
+    <script src="~/js/confirmed-felling-and-restocking-mapping.js" asp-append-version="true"></script>
 
 	<!-- ArcGIS scripts and styles -->
 	<script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
 	<script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
 	<link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
 	<link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
-
-	<!-- Map script -->
-	<script type="module">
-		require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
-			var mapObj = new ProfileMap("viewDiv0", true);
-		});
-	</script>
 }
 
 @section Css
 {
 	<link async rel="stylesheet" href="~/css/felling-and-restocking.css?v1.1" aria-busyasp-append-version="true" />
-	<partial name="Partials/_DataTablesCss" />
+    <partial name="Partials/_DataTablesCss" />
 }
 
 

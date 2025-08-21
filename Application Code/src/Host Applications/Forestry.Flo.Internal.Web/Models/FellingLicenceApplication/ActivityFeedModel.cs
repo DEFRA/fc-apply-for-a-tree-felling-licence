@@ -1,4 +1,5 @@
 ﻿using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
 namespace Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
@@ -44,4 +45,21 @@ public class ActivityFeedModel
     /// The title to be displayed at the top of the activity feed partial.
     /// </summary>
     public string ActivityFeedTitle { get; set; } = "Activity feed";
+
+    /// <summary>
+    /// Gets and sets the actor type of the intended viewer of the activity feed items.
+    /// </summary>
+    public ActorType ViewingUserActorType { get; set; } = ActorType.InternalUser;
+
+    /// <summary>
+    /// Gets and sets the email of the intended viewer of the activity feed items.
+    /// Only required for Consultee actor types.
+    /// </summary>
+    public string? ViewingUserEmail { get; set; }
+
+    /// <summary>
+    /// Gets and sets the authentication token of the intended viewer of the activity feed items.
+    /// Only required for Consultee actor types.
+    /// </summary>
+    public Guid? ViewingUserAuthenticationToken { get; set; }
 }

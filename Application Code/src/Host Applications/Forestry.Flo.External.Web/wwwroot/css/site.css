@@ -207,3 +207,7 @@ table#application-list-table{
 .long-link {
     overflow-wrap: break-word;
 }
+
+.moj-timeline:has(:first-child.flo-timeline_item-casenote):before {
+    top: 22px;
+}

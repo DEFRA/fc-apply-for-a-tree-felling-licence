@@ -11,7 +11,6 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Migrations;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -32,7 +31,6 @@ using Moq;
 using Newtonsoft.Json;
 using NodaTime;
 using System.Text.Json;
-using System.Threading;
 using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccountModel;
 using InternalUserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -203,7 +201,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
 
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
 
             var result = await sut.GeneratePdfApplicationAsync(_internalUser, fla.Id, false, CancellationToken.None);
@@ -315,7 +313,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
 
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
 
             var result = await sut.GeneratePdfApplicationAsync(_internalUser, fla.Id, false, CancellationToken.None);
@@ -399,7 +397,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
 
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
 
             var result = await sut.GeneratePdfApplicationAsync(_internalUser, fla.Id, true, CancellationToken.None);
@@ -501,7 +499,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                 .ReturnsAsync(pdfGenerated);
 
             _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(new List<string>())));
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
 
             var result = await sut.GeneratePdfApplicationAsync(_internalUser, fla.Id, true, CancellationToken.None);

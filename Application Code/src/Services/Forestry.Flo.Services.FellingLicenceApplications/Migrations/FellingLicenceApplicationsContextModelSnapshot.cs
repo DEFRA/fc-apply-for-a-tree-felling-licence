@@ -442,8 +442,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SubmittedFlaPropertyCompartmentId", "OperationType")
-                        .IsUnique();
+                    b.HasIndex("SubmittedFlaPropertyCompartmentId");
 
                     b.ToTable("ConfirmedFellingDetail", "FellingLicenceApplications");
                 });
@@ -494,6 +493,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<double?>("PercentageOfRestockArea")
                         .HasColumnType("double precision");
 
+                    b.Property<Guid?>("ProposedRestockingDetailId")
+                        .HasColumnType("uuid");
+
                     b.Property<double?>("RestockingDensity")
                         .HasColumnType("double precision");
 
@@ -506,9 +508,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ConfirmedFellingDetailId");
-
-                    b.HasIndex("SubmittedFlaPropertyCompartmentId", "ConfirmedFellingDetailId", "RestockingProposal")
-                        .IsUnique();
 
                     b.ToTable("ConfirmedRestockingDetail", "FellingLicenceApplications");
                 });
@@ -544,9 +543,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
 
-                    b.Property<string>("ApplicableToSection")
-                        .HasColumnType("text");
-
                     b.Property<string>("AuthorContactEmail")
                         .IsRequired()
                         .HasColumnType("text");
@@ -561,6 +557,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
                     b.Property<DateTime>("CreatedTimestamp")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DocumentIds")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid>("FellingLicenceApplicationId")
                         .HasColumnType("uuid");

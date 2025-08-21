@@ -62,6 +62,25 @@ sup {
     gap: 10px;
 }
 
-    .form-control input {
-        min-width: 100px;
-    }
+.form-control input {
+    min-width: 100px;
+}
+
+.new-confirmed-detail .govuk-summary-card__content {
+    background-color: #fff3bf;
+}
+
+.deleted-confirmed-detail .govuk-summary-card__content {
+    background-color: #F3F2F1;
+}
+
+.new-confirmed-detail .govuk-summary-card__title-wrapper,
+.deleted-confirmed-detail .govuk-summary-card__title-wrapper {
+    border-bottom: 1px solid #b1b4b6;
+}
+
+.compartment-info{
+    margin-top: 5px;
+    display: flex;
+    gap: 15px;
+}
