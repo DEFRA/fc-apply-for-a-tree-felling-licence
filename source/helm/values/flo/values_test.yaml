@@ -317,7 +317,6 @@ internal-web-app:
       baseUrl: "https://testflo.ps.conneqt.cloud"
     woodlandOfficerReview:
       useDevPublicRegister: false
-      useNewConfirmedFellingRestocking: true
     cronJobs:
       apiKey:
         secret_key: cronJobs.apiKey

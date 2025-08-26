@@ -1,5 +1,9 @@
 ﻿using AutoFixture;
+using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.MassTransit.Messages;
+using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -10,6 +14,7 @@ using Forestry.Flo.Tests.Common;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
 using System;
@@ -18,9 +23,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.User;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.DataImports;
@@ -36,6 +38,7 @@ public class ImportApplicationsServiceTests
     private readonly Mock<IBus> _mockBus = new();
     private RequestContext Context;
     private readonly Mock<IAuditService<ImportApplicationsService>> _mockAuditService = new();
+    private const string ReferenceSuffix = "IMPORT";
 
     private static Fixture FixtureInstance = new();
 
@@ -112,7 +115,7 @@ public class ImportApplicationsServiceTests
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
         _mockClock.VerifyNoOtherCalls();
 
-        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, It.IsAny<string>(), It.IsAny<int>()), Times.Once);
+        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, ReferenceSuffix, It.IsAny<int>()), Times.Once);
         _mockReferenceGenerator.VerifyNoOtherCalls();
 
         _mockReferenceRepository.Verify(x => x.GetNextApplicationReferenceIdValueAsync(_now.ToDateTimeUtc().Year, It.IsAny<CancellationToken>()), Times.Once);
@@ -177,7 +180,7 @@ public class ImportApplicationsServiceTests
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
         _mockClock.VerifyNoOtherCalls();
 
-        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, It.IsAny<string>(), It.IsAny<int>()), Times.Once);
+        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, ReferenceSuffix, It.IsAny<int>()), Times.Once);
         _mockReferenceGenerator.VerifyNoOtherCalls();
 
         _mockReferenceRepository.Verify(x => x.GetNextApplicationReferenceIdValueAsync(_now.ToDateTimeUtc().Year, It.IsAny<CancellationToken>()), Times.Once);
@@ -249,7 +252,7 @@ public class ImportApplicationsServiceTests
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
         _mockClock.VerifyNoOtherCalls();
 
-        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, It.IsAny<string>(), It.IsAny<int>()), Times.Once);
+        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, ReferenceSuffix, It.IsAny<int>()), Times.Once);
         _mockReferenceGenerator.VerifyNoOtherCalls();
 
         _mockReferenceRepository.Verify(x => x.GetNextApplicationReferenceIdValueAsync(_now.ToDateTimeUtc().Year, It.IsAny<CancellationToken>()), Times.Once);
@@ -334,7 +337,7 @@ public class ImportApplicationsServiceTests
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
         _mockClock.VerifyNoOtherCalls();
 
-        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, It.IsAny<string>(), It.IsAny<int>()), Times.Exactly(applicationsToImport.Count()));
+        _mockReferenceGenerator.Verify(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), expectedReferenceNumber, ReferenceSuffix, It.IsAny<int>()), Times.Exactly(applicationsToImport.Count()));
         _mockReferenceGenerator.VerifyNoOtherCalls();
 
         _mockReferenceRepository.Verify(x => x.GetNextApplicationReferenceIdValueAsync(_now.ToDateTimeUtc().Year, It.IsAny<CancellationToken>()), Times.Exactly(applicationsToImport.Count()));
@@ -408,11 +411,17 @@ public class ImportApplicationsServiceTests
             _mockReferenceGenerator.Object,
             _mockReferenceRepository.Object);
 
+        var options = new FellingLicenceApplicationOptions
+        {
+            PostFix = ReferenceSuffix
+        };
+
         return new ImportApplicationsService(
             _repository,
             _mockAuditService.Object,
             _mockClock.Object,
             _mockBus.Object,
+            new OptionsWrapper<FellingLicenceApplicationOptions>(options),
             new NullLogger<ImportApplicationsService>());
     }
 
@@ -560,8 +569,6 @@ public class ImportApplicationsServiceTests
         Assert.Equal(_now.ToDateTimeUtc(), applicationEntity.DateReceived);
         Assert.Equal(applicationToImport.ProposedFellingStart.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), applicationEntity.ProposedFellingStart);
         Assert.Equal(applicationToImport.ProposedFellingEnd.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), applicationEntity.ProposedFellingEnd);
-        Assert.Equal(applicationToImport.Measures, applicationEntity.Measures);
-        Assert.Equal(applicationToImport.ProposedTiming, applicationEntity.ProposedTiming);
 
         if (fellingSource.Any())
         {

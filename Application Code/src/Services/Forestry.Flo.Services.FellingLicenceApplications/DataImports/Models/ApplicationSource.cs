@@ -24,14 +24,4 @@ public class ApplicationSource
     /// Gets and sets the proposed felling end date for the application.
     /// </summary>
     public DateOnly? ProposedFellingEnd { get; set; }
-
-    /// <summary>
-    /// Gets and sets any proposed measures to safeguard protected species or habitats as part of the application.
-    /// </summary>
-    public string? Measures { get; set; }
-
-    /// <summary>
-    /// Gets and sets optional extra details about the proposed timings for the application.
-    /// </summary>
-    public string? ProposedTiming { get; set; }
 }

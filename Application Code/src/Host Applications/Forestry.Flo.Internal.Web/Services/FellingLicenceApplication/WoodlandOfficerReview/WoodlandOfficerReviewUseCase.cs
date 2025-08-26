@@ -224,7 +224,7 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
 
 
     /// <summary>
-    /// Completes the mapping check task in the admin officer review.
+    /// Completes the mapping check task in the woodland officer review.
     /// </summary>
     /// <param name="applicationId">The identifier for the application.</param>
     /// <param name="performingUserId">The identifier for the internal user completing the check.</param>
@@ -257,6 +257,45 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
                 performingUserId,
                 _requestContext),
             cancellationToken);
+        return result;
+    }
+
+    /// <summary>
+    /// Completes the Confirmed F&R task in the woodland officer review.
+    /// </summary>
+    /// <param name="applicationId">The identifier for the application.</param>
+    /// <param name="user">The user performing the update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating success of the operation.</returns>
+    public async Task<Result> CompleteConfirmedFellingAndRestockingDetailsAsync(
+        Guid applicationId,
+        InternalUser user,
+        CancellationToken cancellationToken)
+    {
+        var result = await _updateWoodlandOfficerReviewService.HandleConfirmedFellingAndRestockingChangesAsync(
+            applicationId,
+            user.UserAccountId!.Value,
+            true,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.UpdateWoodlandOfficerReviewFailure,
+                    applicationId,
+                    user.UserAccountId!.Value,
+                    _requestContext),
+                cancellationToken);
+            return result;
+        }
+
+        await _auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.UpdateWoodlandOfficerReview,
+                applicationId,
+                user.UserAccountId!.Value,
+                _requestContext),
+            cancellationToken);
+        
         return result;
     }
 

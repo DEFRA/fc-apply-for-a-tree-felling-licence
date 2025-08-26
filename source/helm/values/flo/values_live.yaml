@@ -323,7 +323,6 @@ internal-web-app:
       baseUrl: "https://private-beta.tree-felling.forestrycommission.gov.uk/"
     woodlandOfficerReview:
       useDevPublicRegister: false
-      useNewConfirmedFellingRestocking: false
     cronJobs:
       apiKey:
         secret_key: cronJobs.apiKey

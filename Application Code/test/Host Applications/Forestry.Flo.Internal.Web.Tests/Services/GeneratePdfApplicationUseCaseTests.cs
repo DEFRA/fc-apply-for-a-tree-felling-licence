@@ -142,7 +142,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
         };
 
         [Theory, AutoMoqData]
-        public async Task ShouldAddPDFApplicaton_WhenNoFellingAndRestockingDetailsNotApproved(
+        public async Task ShouldAddPDFApplication_WhenNoFellingAndRestockingDetailsNotApproved(
             FellingLicenceApplication fla,
             ExternalAccountModel applicant,
             WoodlandOwnerModel woodlandOwner,
@@ -159,7 +159,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             // setup
             var sut = CreateSut();
 
-            fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
+            fla.LinkedPropertyProfile!.ProposedFellingDetails = new List<ProposedFellingDetail>();
 
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!) {
                 comp.Id = propertyProfile.Compartments[0].Id;
@@ -245,10 +245,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             _mockGetFcAreas.Verify();
         }
 
-
-
         [Theory, AutoMoqData]
-        public async Task ShouldAddPDFApplicaton_WhenGivenFellingAndRestockingDetailsNotApproved(
+        public async Task ShouldAddPDFApplication_WhenGivenFellingAndRestockingDetailsNotApproved(
             FellingLicenceApplication fla,
             ExternalAccountModel applicant,
             WoodlandOwnerModel woodlandOwner,
@@ -276,6 +274,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             foreach (var comp in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments) {
                 comp.Id = propertyProfile.Compartments.FirstOrDefault().Id;
                 comp.CompartmentId = propertyProfile.Compartments.FirstOrDefault().Id;
+                comp.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in comp.ConfirmedFellingDetails) {
                     if (felling.SubmittedFlaPropertyCompartment == null) {
                         felling.SubmittedFlaPropertyCompartment = new SubmittedFlaPropertyCompartment();
@@ -358,91 +357,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
         }
 
         [Theory, AutoMoqData]
-        public async Task ShouldAddPDFApplicaton_WhenNoFellingAndRestockingDetailsApproved(
-            FellingLicenceApplication fla,
-            ExternalAccountModel applicant,
-            WoodlandOwnerModel woodlandOwner,
-            InternalUserAccount approverAccount,
-            PropertyProfile propertyProfile,
-            WoodlandOfficerReviewStatusModel woodlandOfficerReviewStatus,
-            ConditionsStatusModel conditionsStatus,
-            ConditionsResponse restockingConditionsRetrieved,
-            Stream generatedMaps,
-            byte[] pdfGenerated, ApproverReviewModel approverReview)
-        {
-            // setup
-            var sut = CreateSut();
-
-            var currentDate = DateTime.UtcNow.Date;
-            fla.StatusHistories = new List<StatusHistory>
-            {
-                new()
-                {
-                    Created = currentDate,
-                    FellingLicenceApplication = fla,
-                    Status = FellingLicenceStatus.SentForApproval
-                }
-            };
-            fla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
-
-            foreach (var submittedFlaPropertyCompartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments) {
-                submittedFlaPropertyCompartment.ConfirmedFellingDetails = null;
-            }
-
-            SetUpReturns(fla, applicant, woodlandOwner, approverAccount, propertyProfile, woodlandOfficerReviewStatus, conditionsStatus, restockingConditionsRetrieved, generatedMaps, approverReview);
-
-            _createApplicationSnapshotDocumentServiceMock
-                .Setup(r => r.CreateApplicationSnapshotAsync(fla.Id, It.IsAny<PDFGeneratorRequest>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(pdfGenerated);
-
-            _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
-
-
-            var result = await sut.GeneratePdfApplicationAsync(_internalUser, fla.Id, true, CancellationToken.None);
-
-            // assert
-
-            result.IsSuccess.Should().BeTrue();
-
-            // verify
-
-            _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
-                fla.Id,
-                It.IsAny<PDFGeneratorRequest>(), It.IsAny<CancellationToken>()),
-                Times.Once);
-
-            _fellingLicenceApplicationRepositoryMock.Verify(v => v.GetAsync(
-                fla.Id,
-                CancellationToken.None)
-                , Times.AtLeastOnce);
-
-            _addDocumentsServiceMock.Verify(x => x.AddDocumentsAsInternalUserAsync(
-                It.Is<AddDocumentsRequest>(r => r.UserAccountId == _internalUser.UserAccountId
-                                                && r.ActorType == ActorType.InternalUser
-                                                && r.FellingApplicationId == fla.Id
-                                                && r.DocumentPurpose == DocumentPurpose.ApplicationDocument
-                                                && r.VisibleToApplicant == DocumentVisibilityOptions.ApplicationDocument.VisibleToApplicant
-                                                && r.VisibleToConsultee == DocumentVisibilityOptions.ApplicationDocument.VisibleToConsultees),
-                It.IsAny<CancellationToken>()), Times.Once());
-
-            _generatePdfApplicationAuditServiceMock.Verify(v =>
-                v.PublishAuditEventAsync(It.Is<AuditEvent>(
-                        e => e.EventName == AuditEvents.GeneratingPdfFellingLicence
-                        && JsonSerializer.Serialize(e.AuditData, _options) ==
-                        JsonSerializer.Serialize(new {
-                            ApplicationId = fla.Id,
-                            IsFinal = true
-                        }, _options)),
-                    CancellationToken.None
-                    ));
-
-            _mockGetFcAreas.Verify();
-        }
-
-        [Theory, AutoMoqData]
-        public async Task ShouldAddPDFApplicaton_WhenFellingAndRestockingDetailsApproved(
+        public async Task ShouldAddPDFApplication_WhenFellingAndRestockingDetailsApproved(
             FellingLicenceApplication fla,
             ExternalAccountModel applicant,
             WoodlandOwnerModel woodlandOwner,
@@ -461,11 +376,11 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments) {
                 compartment.CompartmentId = propertyProfile.Compartments.FirstOrDefault().Id;
                 compartment.Id = Guid.NewGuid();
+                compartment.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in compartment.ConfirmedFellingDetails) {
                     felling.SubmittedFlaPropertyCompartmentId = compartment.Id;
                     felling.SubmittedFlaPropertyCompartment = compartment;
                 }
-
             }
 
             foreach (var felling in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.SelectMany(x => x.ConfirmedFellingDetails)) {
@@ -541,6 +456,92 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                     ));
 
             _mockGetFcAreas.Verify();
+        }
+
+        [Theory, AutoMoqData]
+        public async Task ShouldDisplayTheCorrectCompartments_ForFellingAndRestocking(
+           FellingLicenceApplication fla,
+           ExternalAccountModel applicant,
+           WoodlandOwnerModel woodlandOwner,
+           InternalUserAccount approverAccount,
+           PropertyProfile propertyProfile,
+           WoodlandOfficerReviewStatusModel woodlandOfficerReviewStatus,
+           ConditionsStatusModel conditionsStatus,
+           ConditionsResponse restockingConditionsRetrieved,
+           Stream generatedMaps,
+           byte[] pdfGenerated,
+           Polygon gisData1,
+           Polygon gisData2,
+           ApproverReviewModel approverReview)
+        {
+            // setup
+            var sut = CreateSut();
+
+            var compartment1 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
+            var compartment2 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Skip(1).First();
+
+            foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
+            {
+                compartment.Id = Guid.NewGuid();
+                foreach (var felling in compartment.ConfirmedFellingDetails)
+                {
+                    felling.SubmittedFlaPropertyCompartmentId = compartment.Id;
+                    felling.SubmittedFlaPropertyCompartment = compartment;
+                }
+            }
+
+            compartment1.GISData = JsonConvert.SerializeObject(gisData1);
+            compartment2.GISData = JsonConvert.SerializeObject(gisData2);
+
+            foreach (var felling in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.SelectMany(x => x.ConfirmedFellingDetails))
+            {
+                felling.SubmittedFlaPropertyCompartmentId = compartment1.Id;
+
+                foreach (var restocking in felling.ConfirmedRestockingDetails)
+                {
+                    restocking.ConfirmedFellingDetail = felling;
+                    restocking.SubmittedFlaPropertyCompartmentId = compartment2.Id;
+                }
+            }
+
+            var currentDate = DateTime.UtcNow.Date;
+            fla.StatusHistories = new List<StatusHistory>
+            {
+                new()
+                {
+                    Created = currentDate.AddDays(-3),
+                    FellingLicenceApplication = fla,
+                    Status = FellingLicenceStatus.SentForApproval
+                }
+            };
+            fla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+
+            SetUpReturns(fla, applicant, woodlandOwner, approverAccount, propertyProfile, woodlandOfficerReviewStatus, conditionsStatus, restockingConditionsRetrieved, generatedMaps, approverReview);
+
+            _createApplicationSnapshotDocumentServiceMock
+                .Setup(r => r.CreateApplicationSnapshotAsync(fla.Id, It.IsAny<PDFGeneratorRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(pdfGenerated);
+
+            _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
+
+
+            var result = await sut.GeneratePdfApplicationAsync(_internalUser, fla.Id, true, CancellationToken.None);
+
+            // assert
+
+            result.IsSuccess.Should().BeTrue();
+
+            // verify
+
+            _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
+                fla.Id,
+                It.Is<PDFGeneratorRequest>(x => 
+                    x.data.operationsMaps.All(y => y == gisData1.ToString()) && 
+                    x.data.restockingMaps.All(y => y == gisData2.ToString())),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [Theory, AutoMoqData]

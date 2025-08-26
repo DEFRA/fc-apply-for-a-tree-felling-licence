@@ -749,4 +749,39 @@ public class ConfirmedFellingAndRestockingCrossValidatorTests
             .Without(x => x.AmendedProperties)
             .Create();
     }
+
+    [Fact]
+    public async Task AggregateCheck_NoFellingOperationsAcrossCompartments_AddsValidationError()
+    {
+        // Arrange: Two compartments, both with no valid felling operations
+        var compartment1 = Fixture.Build<CompartmentConfirmedFellingRestockingDetailsModel>()
+            .With(x => x.ConfirmedFellingDetails, new ConfirmedFellingDetailViewModel[]
+            {
+                Fixture.Build<ConfirmedFellingDetailViewModel>()
+                    .With(x => x.OperationType, FellingOperationType.None)
+                    .With(x => x.ConfirmedRestockingDetails, new ConfirmedRestockingDetailViewModel[0])
+                    .Create()
+            })
+            .Create();
+        var compartment2 = Fixture.Build<CompartmentConfirmedFellingRestockingDetailsModel>()
+            .With(x => x.ConfirmedFellingDetails, new ConfirmedFellingDetailViewModel[]
+            {
+                Fixture.Build<ConfirmedFellingDetailViewModel>()
+                    .With(x => x.OperationType, FellingOperationType.None)
+                    .With(x => x.ConfirmedRestockingDetails, new ConfirmedRestockingDetailViewModel[0])
+                    .Create()
+            })
+            .Create();
+        var model = Fixture.Build<ConfirmedFellingRestockingDetailsModel>()
+            .With(x => x.Compartments, new[] { compartment1, compartment2 })
+            .Create();
+        var validator = new ConfirmedFellingAndRestockingCrossValidator();
+
+        // Act
+        var result = await validator.ValidateAsync(model);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, x => x.ErrorMessage == "At least one felling operation must be present in the application." && x.FormattedMessagePlaceholderValues["PropertyName"].ToString() == "felling-operation-card");
+    }
 }

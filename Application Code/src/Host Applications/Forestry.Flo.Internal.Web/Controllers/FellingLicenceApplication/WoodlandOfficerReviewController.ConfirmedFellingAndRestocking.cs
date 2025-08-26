@@ -7,7 +7,6 @@ using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOffic
 using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -324,6 +323,45 @@ public partial class WoodlandOfficerReviewController
         }
 
         return View(model.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ConfirmFellingAndRestocking(
+        Guid applicationId,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
+        [FromServices] WoodlandOfficerReviewUseCase woReviewUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var model = await cfrUseCase.GetConfirmedFellingAndRestockingDetailsAsync(
+            applicationId,
+            user,
+            cancellationToken);
+
+        if (model.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        var validationResult = await new ConfirmedFellingAndRestockingCrossValidator().ValidateAsync(model.Value, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return RedirectToAction("ConfirmedFellingAndRestocking", new { id = applicationId });
+        }
+
+        var (_, isFailure, error) = await woReviewUseCase.CompleteConfirmedFellingAndRestockingDetailsAsync(
+            applicationId,
+            user,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not confirm felling and restocking details");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+
+        return RedirectToAction("Index", "WoodlandOfficerReview", new { id = applicationId });
     }
 
     public async Task<IActionResult> DeleteConfirmedFellingDetails(

@@ -85,7 +85,7 @@
         var createTemplate = function (file, counter) {
             var $template = $('' +
                 '<tr class="govuk-table__row">' +
-                '<th class="govuk-table__header"></th>' +
+                '<th scope="row" class="govuk-table__header"></th>' +
                 '<td class="govuk-table__cell"><a data-module="govuk-button" class="govuk-button govuk-button--warning" href="#">Remove<span class="govuk-visually-hidden"></span></a></td>' +
                 '</tr>'),
                 id = getIdForFile(file);
@@ -94,7 +94,7 @@
             $template.find('.govuk-table__header').text(file.name);
             $template.find('.govuk-visually-hidden').text(file.name);
 
-            $template.find('.govuk-link').click({ id: id }, removeFile);
+            $template.find('.govuk-button').click({ id: id }, removeFile);
 
             return $template;
         };

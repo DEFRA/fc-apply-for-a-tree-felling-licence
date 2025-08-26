@@ -3,7 +3,6 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.Gis.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Repositories;

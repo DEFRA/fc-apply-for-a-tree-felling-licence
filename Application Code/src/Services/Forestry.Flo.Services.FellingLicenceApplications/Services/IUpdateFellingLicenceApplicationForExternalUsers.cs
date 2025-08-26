@@ -27,7 +27,7 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
 
     /// <summary>
     /// Adds the given submitted FLA property detail to the application with the given id.
-    /// TODO this should take a Model as input, not the entity class
+    /// //TODO this should take a Model as input, not the entity class
     /// </summary>
     /// <param name="propertyDetail">The property details to add to the application.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
@@ -35,6 +35,43 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
     Task<Result> AddSubmittedFellingLicenceApplicationPropertyDetailAsync(
         SubmittedFlaPropertyDetail propertyDetail,
         CancellationToken cancellationToken);
-    Task<Result<SubmittedFlaPropertyCompartment>> GetSubmittedFlaPropertyCompartmentByIdAsync(Guid compartmentId, CancellationToken cancellationToken);
-    Task<Result> UpdateSubmittedFlaPropertyCompartmentZonesAsync(Guid compartmentId, bool zone1, bool zone2, bool zone3, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Retrieves a Submitted FLA Property Compartment entity by ID.
+    /// //TODO this method should be returning a model rather than an entity.
+    /// </summary>
+    /// <param name="compartmentId">The ID of the Submitted FLA Property Compartment to retrieve.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns></returns>
+    Task<Result<SubmittedFlaPropertyCompartment>> GetSubmittedFlaPropertyCompartmentByIdAsync(
+        Guid compartmentId, 
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Attempts to update the larch risk zones for a submitted FLA property compartment.
+    /// </summary>
+    /// <param name="compartmentId">The id of the compartment to update.</param>
+    /// <param name="zone1">A flag to indicate the compartment is in risk zone 1.</param>
+    /// <param name="zone2">A flag to indicate the compartment is in risk zone 2.</param>
+    /// <param name="zone3">A flag to indicate the compartment is in risk zone 3.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating whether the call was successful.</returns>
+    Task<Result> UpdateSubmittedFlaPropertyCompartmentZonesAsync(
+        Guid compartmentId, 
+        bool zone1, 
+        bool zone2, 
+        bool zone3, 
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Converts the proposed felling and restocking details for the application with the given id to confirmed details.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userAccessModel">A <see cref="UserAccessModel"/> representing the user performing the process.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating whether the call was successful.</returns>
+    Task<Result> ConvertProposedFellingAndRestockingToConfirmedAsync(
+        Guid applicationId,
+        UserAccessModel userAccessModel,
+        CancellationToken cancellationToken);
 }

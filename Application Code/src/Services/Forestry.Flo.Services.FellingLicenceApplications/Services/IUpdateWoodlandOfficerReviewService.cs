@@ -170,5 +170,16 @@ public interface IUpdateWoodlandOfficerReviewService
         Guid userId,
         bool complete,
         CancellationToken cancellationToken);
-    Task<Result> UpdateLarchCheckAsync(Guid applicationId, Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Completes the Larch check for an application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to be updated.</param>
+    /// <param name="userId">The id of the user performing the update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns></returns>
+    Task<Result> UpdateLarchCheckAsync(
+        Guid applicationId, 
+        Guid userId, 
+        CancellationToken cancellationToken);
 }
