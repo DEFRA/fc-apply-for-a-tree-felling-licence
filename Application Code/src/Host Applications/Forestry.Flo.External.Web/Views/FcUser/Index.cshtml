@@ -65,8 +65,19 @@
 
                     <td class="govuk-table__cell">
                         <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-WoodlandOwnerId="@fcManagedWoodlandOwner.Id">
-                            View
+                            View owner<span class="govuk-visually-hidden">&nbsp;@fcManagedWoodlandOwner.ContactName</span>
                         </a>
+                        <br/>
+                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="List" asp-route-woodlandOwnerId="@fcManagedWoodlandOwner.Id">
+                            View properties<span class="govuk-visually-hidden">&nbsp;for @fcManagedWoodlandOwner.ContactName</span>
+                        </a>
+                        @if (fcManagedWoodlandOwner.AgencyId.HasValue)
+                        {
+                            <br/>
+                            <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@fcManagedWoodlandOwner.AgencyId">
+                                View agency<span class="govuk-visually-hidden">&nbsp;@(fcManagedWoodlandOwner.AgencyName ?? @fcManagedWoodlandOwner.AgencyContactName)</span>
+                            </a>
+                        }
                     </td>
                 </tr>
             }
@@ -98,29 +109,40 @@
             </tr>
             </thead>
             <tbody class="govuk-table__body" data-module="moj-sortable-table">
-            @foreach (var externalWoodlandOwners in Model.AllExternalWoodlandOwners)
+            @foreach (var externalWoodlandOwner in Model.AllExternalWoodlandOwners)
             {
-                <tr data-id="@externalWoodlandOwners.Id" class="govuk-table__row">
+                <tr data-id="@externalWoodlandOwner.Id" class="govuk-table__row">
 
-                    @if (externalWoodlandOwners.IsOrganisation)
+                    @if (externalWoodlandOwner.IsOrganisation)
                     {
-                        <td class="govuk-table__cell" data-order="@externalWoodlandOwners.OrganisationName">@externalWoodlandOwners.OrganisationName</td>
+                        <td class="govuk-table__cell" data-order="@externalWoodlandOwner.OrganisationName">@externalWoodlandOwner.OrganisationName</td>
                     }
                     else
                     {
-                        <td class="govuk-table__cell" data-order="@externalWoodlandOwners.ContactName">@externalWoodlandOwners.ContactName</td>
+                        <td class="govuk-table__cell" data-order="@externalWoodlandOwner.ContactName">@externalWoodlandOwner.ContactName</td>
                     }
 
-                    <td class="govuk-table__cell" data-order="@externalWoodlandOwners.ContactEmail">@externalWoodlandOwners.ContactEmail</td>
+                    <td class="govuk-table__cell" data-order="@externalWoodlandOwner.ContactEmail">@externalWoodlandOwner.ContactEmail</td>
 
-                    <td class="govuk-table__cell" data-order="@externalWoodlandOwners.AgencyContactName">@externalWoodlandOwners.AgencyName</td>
+                    <td class="govuk-table__cell" data-order="@externalWoodlandOwner.AgencyContactName">@externalWoodlandOwner.AgencyName</td>
 
-                    <td class="govuk-table__cell" data-order="@externalWoodlandOwners.AgencyContactName">@externalWoodlandOwners.AgencyContactName</td>
+                    <td class="govuk-table__cell" data-order="@externalWoodlandOwner.AgencyContactName">@externalWoodlandOwner.AgencyContactName</td>
 
                     <td class="govuk-table__cell">
-                        <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-WoodlandOwnerId="@externalWoodlandOwners.Id">
-                            View
+                        <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-WoodlandOwnerId="@externalWoodlandOwner.Id">
+                            View owner<span class="govuk-visually-hidden">&nbsp;@externalWoodlandOwner.ContactName</span>
                         </a>
+                        <br />
+                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="List" asp-route-woodlandOwnerId="@externalWoodlandOwner.Id">
+                            View properties<span class="govuk-visually-hidden">&nbsp;for @externalWoodlandOwner.ContactName</span>
+                        </a>
+                            @if (externalWoodlandOwner.AgencyId.HasValue)
+                        {
+                            <br/>
+                                <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@externalWoodlandOwner.AgencyId">
+                                    View agency<span class="govuk-visually-hidden">&nbsp;@(externalWoodlandOwner.AgencyName ?? @externalWoodlandOwner.AgencyContactName)</span>
+                            </a>
+                        }
                     </td>
                 </tr>
             }
@@ -170,7 +192,7 @@
 
                     <td class="govuk-table__cell">
                         <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@externalAgency.Id">
-                            View
+                            View agency<span class="govuk-visually-hidden">&nbsp;@externalAgency.ContactName</span>
                         </a>
                     </td>
                 </tr>
@@ -217,7 +239,7 @@
 
                     <td class="govuk-table__cell">
                         <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@externalAgency.Id">
-                            View
+                            View agency<span class="govuk-visually-hidden">&nbsp;@externalAgency.ContactName</span>
                         </a>
                     </td>
                 </tr>

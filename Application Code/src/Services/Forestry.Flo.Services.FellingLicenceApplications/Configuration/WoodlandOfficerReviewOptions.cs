@@ -31,9 +31,4 @@ public class WoodlandOfficerReviewOptions : DevelopmentConfigOptions
     /// </summary>
     public bool UseDevMobileAppsLayer { get; set; } = false;
 
-    /// <summary>
-    /// Gets or sets a value indicating whether to use the new confirmed felling restocking feature.
-    /// </summary>
-    public bool UseNewConfirmedFellingRestocking { get; set; } = false;
-
 }

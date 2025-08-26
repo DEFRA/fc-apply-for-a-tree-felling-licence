@@ -2,6 +2,7 @@
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.Services.Common.Analytics
+@using Forestry.Flo.Services.Common.User
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @inject SiteSiteAnalyticsService SiteSiteAnalyticsService
 
@@ -11,7 +12,7 @@
     var user = new ExternalApplicant(User);
     var selectedWoodlandOwnerId = ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] as Guid? ?? null;
     var ignoreFeedback = ViewData["IgnoreFeedback"] as bool? ?? false;
-    var isAgent = user.AccountType == Forestry.Flo.Services.Common.User.AccountTypeExternal.Agent || user.AccountType == Forestry.Flo.Services.Common.User.AccountTypeExternal.AgentAdministrator || user.AccountType == Forestry.Flo.Services.Common.User.AccountTypeExternal.FcUser;
+    var isAgent = user.AccountType is AccountTypeExternal.Agent or AccountTypeExternal.AgentAdministrator or AccountTypeExternal.FcUser;
     var agencyId = user.AgencyId;
     var homeLabel = isAgent ? "Clients" : "Applications";
 }
@@ -101,7 +102,7 @@
                                     @homeLabel
                                 </a>
                             </li>
-                            @if (!isAgent || (user.HasSelectedAgentWoodlandOwner || selectedWoodlandOwnerId != null))
+                            @if (!isAgent)
                             {
                                 <li condition="user.HasCompletedAccountRegistration" class="govuk-service-navigation__item" id="site-nav-properties">
                                     <a class="govuk-service-navigation__link"

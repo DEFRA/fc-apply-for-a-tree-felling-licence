@@ -93,6 +93,9 @@
                     map: this.map,
                     container: location,
                     extent: fcconfig.englandExtent,
+                    constraints: {
+                        maxZoom: 20
+                    }
                 });
 
                 const splitIds = filter.split(",");

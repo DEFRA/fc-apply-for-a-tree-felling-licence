@@ -4,6 +4,7 @@ using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.MassTransit.Messages;
+using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
@@ -11,6 +12,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.PropertyProfiles.DataImports;
 using MassTransit;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NodaTime;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.DataImports;
@@ -24,6 +26,7 @@ public class ImportApplicationsService : IImportApplications
     private readonly IClock _clock;
     private readonly IBus _busControl;
     private readonly IAuditService<ImportApplicationsService> _auditService;
+    private readonly FellingLicenceApplicationOptions _options;
     private readonly ILogger<ImportApplicationsService> _logger;
 
     /// <summary>
@@ -39,12 +42,14 @@ public class ImportApplicationsService : IImportApplications
         IAuditService<ImportApplicationsService> auditService,
         IClock clock,
         IBus busControl,
+        IOptions<FellingLicenceApplicationOptions> options,
         ILogger<ImportApplicationsService> logger)
     {
         _repository = Guard.Against.Null(repository);
         _clock = Guard.Against.Null(clock);
         _busControl = Guard.Against.Null(busControl);
         _auditService = Guard.Against.Null(auditService);
+        _options = Guard.Against.Null(options).Value;
         _logger = logger;
     }
 
@@ -90,7 +95,7 @@ public class ImportApplicationsService : IImportApplications
 
             try
             {
-                await _repository.AddAsync(applicationEntity, null, 0, cancellationToken);
+                await _repository.AddAsync(applicationEntity, _options.PostFix, 0, cancellationToken);
 
                 if (applicationEntity.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus is true)
                 {
@@ -265,8 +270,6 @@ public class ImportApplicationsService : IImportApplications
             DateReceived = now,
             ProposedFellingStart = application.ProposedFellingStart?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
             ProposedFellingEnd = application.ProposedFellingEnd?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
-            Measures = application.Measures,
-            ProposedTiming = application.ProposedTiming,
             LinkedPropertyProfile = new LinkedPropertyProfile
             {
                 PropertyProfileId = propertyProfile.Id,

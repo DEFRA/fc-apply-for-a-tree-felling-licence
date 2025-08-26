@@ -691,6 +691,11 @@ public class UpdateWoodlandOfficerReviewService(
         bool complete,
         CancellationToken cancellationToken)
     {
+        if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+        {
+            return Result.Failure("Application woodland officer review unable to be updated");
+        }
+
         var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
             applicationId,
             userId,
@@ -714,6 +719,11 @@ public class UpdateWoodlandOfficerReviewService(
         Guid userId,
         CancellationToken cancellationToken)
     {
+        if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+        {
+            return Result.Failure("Application woodland officer review unable to be updated");
+        }
+
         var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
             applicationId,
             userId,
@@ -730,7 +740,6 @@ public class UpdateWoodlandOfficerReviewService(
 
         return Result.Success();
     }
-
 
     private async Task<Result<WoodlandOfficerReview>> UpdateWoodlandOfficerReviewLastUpdateDateAndBy(Guid applicationId, Guid userId, CancellationToken cancellationToken)
     {

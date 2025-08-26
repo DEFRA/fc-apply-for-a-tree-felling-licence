@@ -45,6 +45,9 @@
                 map: this.map,
                 container: location,
                 extent: mapSettings.englandExtent,
+                constraints: {
+                    maxZoom: 20
+                }
             });
             this.view
                 .when(this.mapLoadEvt.bind(this))

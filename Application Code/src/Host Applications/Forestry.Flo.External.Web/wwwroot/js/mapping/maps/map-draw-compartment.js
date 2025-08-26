@@ -130,7 +130,10 @@ define([
                 this.view = new MapView({
                     map: this.map,
                     container: location,
-                    extent: new Extent(mapSettings.englandExtent)
+                    extent: new Extent(mapSettings.englandExtent),
+                    constraints: {
+                        maxZoom: 20
+                    }
                 });
 
                 this.WireupDefaultOn();

@@ -68,8 +68,8 @@
                     <br/>
 
                     <div class="govuk-button-group" id="save-exemption-form">
-                        <button condition="@Model.Editable(user)" id="save-exemption-btn" class="govuk-button" data-module="govuk-button" type="submit">Save Exemption</button>
-                        <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to Woodland Officer Review</a>
+                        <button condition="@Model.Editable(user)" id="save-exemption-btn" class="govuk-button" data-module="govuk-button" type="submit">Save exemption</button>
+                        <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
                     </div>
                 </fieldset>
                 
@@ -106,17 +106,17 @@
 
                 <fieldset class="govuk-fieldset" id="publish-to-pr">
                     <div class="govuk-button-group">
-                        <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button govuk-button--start" data-module="govuk-button">
-                            Publish to Public Register
+                        <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
+                            Publish to public register
                         </button>
-                        <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to Woodland Officer Review</a>
+                        <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
                     </div>
                 </fieldset>
             </div>
         </form>
 
         <div class="govuk-button-group" id="back-link-no-forms">
-            <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to Woodland Officer Review</a>
+            <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
         </div>
     }
 
@@ -125,7 +125,7 @@
         <dl class="govuk-summary-list">
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">
-                    Published to Public Register Date
+                    Published to public register date
                 </dt>
                 <dd class="govuk-summary-list__value">
                     @Model.PublicRegister.ConsultationPublicRegisterPublicationTimestamp.Value.ToString("dd/MM/yyyy")
@@ -134,7 +134,7 @@
 
             <div condition="@Model.PublicRegister.ConsultationPublicRegisterRemovedTimestamp.HasValue" class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">
-                    Removed from Public Register Date
+                    Removed from public register date
                 </dt>
                 <dd class="govuk-summary-list__value">
                     @Model.PublicRegister.ConsultationPublicRegisterRemovedTimestamp!.Value.ToString("dd/MM/yyyy")
@@ -143,7 +143,7 @@
             
             <div condition="@isActiveOnRegister" class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">
-                    Expires on Public Register Date
+                    Expires on public register date
                 </dt>
                 <dd class="govuk-summary-list__value">
                     @Model.PublicRegister.ConsultationPublicRegisterExpiryTimestamp!.Value.ToString("dd/MM/yyyy")
@@ -164,7 +164,7 @@
                 <div class="govuk-grid-row">
                     <div class="govuk-grid-column-full govuk-button-group">
                         <button condition="@Model.Editable(user)" type="submit" class="govuk-button">
-                            Remove From Public Register
+                            Remove from public register
                         </button>
                     </div>
                 </div>
@@ -175,7 +175,7 @@
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-full">
                 <div>
-                    <h2 class="govuk-heading-m">Received Public Register Comments</h2>
+                    <h2 class="govuk-heading-m">Received public register comments</h2>
                     
                     @if (Model.ReceivedPublicRegisterComments.Any())
                     {
@@ -204,7 +204,7 @@
      
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-full">
-                <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to Woodland Officer Review</a>
+                <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
             </div>
         </div>
     }

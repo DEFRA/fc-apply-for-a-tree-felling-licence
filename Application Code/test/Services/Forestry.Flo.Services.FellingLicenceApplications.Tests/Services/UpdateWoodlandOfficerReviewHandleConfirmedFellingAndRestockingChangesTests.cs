@@ -41,6 +41,25 @@ public class UpdateWoodlandOfficerReviewHandleConfirmedFellingAndRestockingChang
 
         var sut = CreateSut();
 
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Status = FellingLicenceStatus.WoodlandOfficerReview,
+                CreatedById = performingUserId,
+                Created = DateTime.Today.ToUniversalTime()
+            }
+        ];
+        application.AssigneeHistories =
+        [
+            new AssigneeHistory
+            {
+                Role = AssignedUserRole.WoodlandOfficer,
+                AssignedUserId = performingUserId,
+                TimestampAssigned = DateTime.Today.ToUniversalTime()
+            }
+        ];
+
         application.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = false;
 
         _context.FellingLicenceApplications.Add(application);

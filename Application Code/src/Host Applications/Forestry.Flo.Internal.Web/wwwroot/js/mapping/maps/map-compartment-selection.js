@@ -42,6 +42,9 @@ define(["require",
                     map: this.map,
                     container: location,
                     extent: fcconfig.englandExtent,
+                    constraints: {
+                        maxZoom: 20
+                    }
                 });
 
                 this.commonTools = new Maps_common(this.view);

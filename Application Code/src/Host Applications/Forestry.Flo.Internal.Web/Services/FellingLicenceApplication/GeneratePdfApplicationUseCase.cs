@@ -304,9 +304,9 @@ public class GeneratePdfApplicationUseCase
 
         // Part 1 - Description of the trees to be felled
         // Part 2 - restocking Conditions & Set list of restocking and felling compartments for maps
-        IList<string> restockingConditions = new List<string>();
-        List<Guid> restockingCompartments;
-        List<Guid> fellingCompartments;
+        var restockingConditions = new List<string>();
+        HashSet<Guid> restockingCompartments = [];
+        HashSet<Guid> fellingCompartments = [];
 
         // For retrieving species names
         var speciesDictionary = TreeSpeciesFactory.SpeciesDictionary;
@@ -314,12 +314,14 @@ public class GeneratePdfApplicationUseCase
         var fellingDetails = new List<PDFGeneratorFellingDetails>();
         if (application.WoodlandOfficerReview is { ConfirmedFellingAndRestockingComplete: true })
         {
+            // generate from confirmed felling details
+
             if (application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Select(x => x.ConfirmedFellingDetails).Any(x => x != null && x.Any()))
             {
                 fellingDetails = application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments!.SelectMany(x => x.ConfirmedFellingDetails).Select(felling =>
                         new PDFGeneratorFellingDetails
                         {
-                            fellingSiteSubcompartment = propertyProfile.Value.Compartments.First(x => x.Id == felling!.SubmittedFlaPropertyCompartment.CompartmentId).CompartmentNumber,
+                            fellingSiteSubcompartment = $"{felling.SubmittedFlaPropertyCompartment!.CompartmentNumber} - {felling.SubmittedFlaPropertyCompartment.SubCompartmentName}",
                             typeOfOperation = felling!.OperationType.GetDisplayName(),
                             markingOfTrees = felling.TreeMarking?.ToString(),
                             digitisedArea = felling.AreaToBeFelled.ToString(CultureInfo.InvariantCulture),
@@ -330,16 +332,17 @@ public class GeneratePdfApplicationUseCase
                         })
                     .ToList();
             }
-                
-            fellingCompartments = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
-                .Where(x => x.ConfirmedFellingDetails != null)
-                .SelectMany(x => x.ConfirmedFellingDetails).Select(x => x!.SubmittedFlaPropertyCompartment.CompartmentId)
-                .ToList();
-            restockingCompartments = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
-                .Where(x => x.ConfirmedFellingDetails != null && x.ConfirmedFellingDetails.Any(f => f.ConfirmedRestockingDetails != null && f.ConfirmedRestockingDetails.Any()))
-                .SelectMany(x => x.ConfirmedFellingDetails).SelectMany(x => x.ConfirmedRestockingDetails)
-                .Select(x => application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments.FirstOrDefault(y => y.Id == x.SubmittedFlaPropertyCompartmentId).CompartmentId)
-                .Distinct().ToList();
+
+            foreach (var confirmedFelling in application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
+                         .SelectMany(x => x.ConfirmedFellingDetails))
+            {
+                fellingCompartments.Add(confirmedFelling.SubmittedFlaPropertyCompartmentId);
+
+                foreach (var restocking in confirmedFelling.ConfirmedRestockingDetails)
+                {
+                    restockingCompartments.Add(restocking.SubmittedFlaPropertyCompartmentId);
+                }
+            }
 
             // restocking conditions
             var conditionsStatus = await _getWoodlandOfficerReviewService.GetConditionsStatusAsync(application.Id, cancellationToken);
@@ -352,6 +355,7 @@ public class GeneratePdfApplicationUseCase
             {
                 var restockingConditionsRetrieved = await _calculateConditionsService.RetrieveExistingConditionsAsync(application.Id,
                     cancellationToken);
+
                 foreach (var condition in restockingConditionsRetrieved.Conditions)
                 {
                     restockingConditions.Add(string.Join("\n", condition.ToFormattedArray()));
@@ -360,25 +364,56 @@ public class GeneratePdfApplicationUseCase
         }
         else
         {
+            // generate from proposed felling details
+
             if (application.LinkedPropertyProfile.ProposedFellingDetails is not null && application.LinkedPropertyProfile.ProposedFellingDetails.Any())
             {
                 fellingDetails = application.LinkedPropertyProfile.ProposedFellingDetails.Select(felling =>
-                        new PDFGeneratorFellingDetails
+                    {
+                        var submittedCompartment = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
+                            .First(x => x.CompartmentId == felling.PropertyProfileCompartmentId);
+
+                        return new PDFGeneratorFellingDetails
                         {
-                            fellingSiteSubcompartment = propertyProfile.Value.Compartments.First(x => x.Id == felling.PropertyProfileCompartmentId).CompartmentNumber,
+                            fellingSiteSubcompartment = $"{submittedCompartment.CompartmentNumber} - {submittedCompartment.SubCompartmentName}",
                             typeOfOperation = felling.OperationType.GetDisplayName(),
                             markingOfTrees = felling.TreeMarking?.ToString(),
                             digitisedArea = felling.AreaToBeFelled.ToString(CultureInfo.InvariantCulture),
                             totalNumberOfTrees = felling.NumberOfTrees.ToString(),
                             estimatedVolume = felling.EstimatedTotalFellingVolume.ToString(),
                             species = string.Join(" / ", felling.FellingSpecies!.Select(x =>
-                                speciesDictionary.TryGetValue(x.Species, out var speciesModel) ? speciesModel.Name : x.Species))
-                        })
+                                speciesDictionary.TryGetValue(x.Species, out var speciesModel)
+                                    ? speciesModel.Name
+                                    : x.Species))
+                        };
+                    })
                     .ToList();
             }
 
-            fellingCompartments = application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(x => x.PropertyProfileCompartmentId).ToList();
-            restockingCompartments = application.LinkedPropertyProfile!.ProposedFellingDetails!.SelectMany(p => p.ProposedRestockingDetails!.Select(pr => pr.PropertyProfileCompartmentId)).ToList();
+            foreach (var proposedFelling in application.LinkedPropertyProfile!.ProposedFellingDetails!)
+            {
+                var submittedCompartmentId = application
+                    .SubmittedFlaPropertyDetail!
+                    .SubmittedFlaPropertyCompartments!
+                    .FirstOrDefault(x => x.CompartmentId == proposedFelling.PropertyProfileCompartmentId)?.Id;
+                if (submittedCompartmentId.HasValue)
+                {
+                    fellingCompartments.Add(submittedCompartmentId.Value);
+                }
+
+                foreach (var restocking in proposedFelling.ProposedRestockingDetails!)
+                {
+                    var restockingSubmittedCompartment = application
+                        .SubmittedFlaPropertyDetail!
+                        .SubmittedFlaPropertyCompartments!
+                        .FirstOrDefault(x => x.CompartmentId == restocking.PropertyProfileCompartmentId)?.Id;
+
+                    if (restockingSubmittedCompartment.HasValue)
+                    {
+                        restockingCompartments.Add(restockingSubmittedCompartment.Value);
+                    }
+                }
+            }
 
             restockingConditions.Add("To be confirmed\n");
         }
@@ -400,14 +435,16 @@ public class GeneratePdfApplicationUseCase
 
         _logger.LogDebug($"Generating Felling maps for application with id {application.Id}");
 
-        IList<string> operationsMaps = new List<string>();
-        if (fellingCompartments.Any()) {
-            var fellingCompartmentMap = propertyProfile.Value.Compartments.Where(x => fellingCompartments.Contains(x.Id)).Select(compartment => new InternalCompartmentDetails<BaseShape>() {
-                CompartmentNumber = compartment.CompartmentNumber,
-                CompartmentLabel = compartment.CompartmentNumber,
-                ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(compartment.GISData!)!,
-                SubCompartmentNo = compartment.SubCompartmentName!
-            }).ToList();
+        var operationsMaps = new List<string>();
+        if (fellingCompartments.Count > 0) {
+            var fellingCompartmentMap = 
+                application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
+                    .Where(x => fellingCompartments.Contains(x.Id)).Select(compartment => new InternalCompartmentDetails<BaseShape> { 
+                        CompartmentNumber = compartment.CompartmentNumber,
+                        CompartmentLabel = compartment.CompartmentNumber,
+                        ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(compartment.GISData!)!,
+                        SubCompartmentNo = compartment.SubCompartmentName!
+                    }).ToList();
 
 
             var generatedMainFellingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(fellingCompartmentMap, cancellationToken, 3000);
@@ -427,15 +464,17 @@ public class GeneratePdfApplicationUseCase
         _logger.LogDebug($"Generating Restocking maps for application with id {application.Id}");
 
  
-        IList<string> restockingMaps = new List<string>();
-        if (restockingCompartments.Any()) {
-            var restockingCompartmentsMaps = propertyProfile.Value.Compartments.Where(x => restockingCompartments.Contains(x.Id)).Select(compartment => new InternalCompartmentDetails<BaseShape>() {
-                CompartmentNumber = compartment.CompartmentNumber,
-                CompartmentLabel = compartment.CompartmentNumber,
-                ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(compartment.GISData!)!,
-                SubCompartmentNo = compartment.SubCompartmentName!
-            }).ToList();
-
+        var restockingMaps = new List<string>();
+        if (restockingCompartments.Count > 0) {
+            var restockingCompartmentsMaps =
+                application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
+                    .Where(x => restockingCompartments.Contains(x.Id)).Select(compartment => new InternalCompartmentDetails<BaseShape>
+                    {
+                        CompartmentNumber = compartment.CompartmentNumber,
+                        CompartmentLabel = compartment.CompartmentNumber,
+                        ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(compartment.GISData!)!,
+                        SubCompartmentNo = compartment.SubCompartmentName!
+                    }).ToList();
 
             var generatedMainRestockingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(restockingCompartmentsMaps, cancellationToken, 3000);
             if (generatedMainRestockingMap.IsFailure) {
@@ -482,6 +521,4 @@ public class GeneratePdfApplicationUseCase
         result.MakeSafeForPdfService();
         return result;
     }
-
-        
 }

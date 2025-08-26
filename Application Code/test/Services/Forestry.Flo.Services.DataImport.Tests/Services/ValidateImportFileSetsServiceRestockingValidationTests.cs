@@ -696,9 +696,11 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
 
         if (restockingToAlter.RestockingProposal == TypeOfProposal.CreateDesignedOpenGround)  // ignored for designed open ground
         {
+            var randomSpecies1 = SpeciesCodes.RandomElement();
+            var randomSpecies2 = SpeciesCodes.Where(x => x != randomSpecies1).RandomElement();
             restockingToAlter.RestockingProposal = TypeOfProposal.ReplantTheFelledArea;
             restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
-            restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},50,{SpeciesCodes.RandomElement()},50";  // in case original was create designed open ground
+            restockingToAlter.SpeciesAndPercentages = $"{randomSpecies1},50,{randomSpecies2},50";  // in case original was create designed open ground
         }
 
         var species = restockingToAlter.SpeciesAndPercentages.Split(',').ToList();
