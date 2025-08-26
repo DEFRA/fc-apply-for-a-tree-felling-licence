@@ -95,6 +95,9 @@
                     map: this.map,
                     container: location,
                     extent: fcconfig.englandExtent,
+                    constraints: {
+                        maxZoom: 20
+                    }
                 });
                 this.view
                     .when(this.mapLoadEvt.bind(this))

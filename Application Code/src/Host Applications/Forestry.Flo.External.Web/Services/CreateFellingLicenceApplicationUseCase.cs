@@ -2707,6 +2707,9 @@ public class CreateFellingLicenceApplicationUseCase(
                 return Result.Failure("Could not update Felling Licence Application to submitted state");
             }
 
+            //TODO Move the submitted fla property compartments and convert f&r processes into this service call
+            //so if they fail the whole application is not in already in a submitted state
+
             var updateResult = await _updateFellingLicenceApplicationService
                 .SubmitFellingLicenceApplicationAsync(applicationId, userAccess.Value, cancellationToken)
                 .ConfigureAwait(false);
@@ -2738,7 +2741,6 @@ public class CreateFellingLicenceApplicationUseCase(
             var propertyProfileCompartments = propertyProfile.Value.Compartments;
 
             // Get Selected compartments to use
-            // TODO this process should be in a service
             var relevantCompartments = GetRelevantCompartments(user, applicationId, cancellationToken);
 
             var relevantPropertyProfileCompartments = propertyProfileCompartments
@@ -2768,12 +2770,34 @@ public class CreateFellingLicenceApplicationUseCase(
                         new
                         {
                             Section = "Submit FLA (Submitted Property details)",
-                            Error = updateResult.Error
+                            Error = addPropertyResult.Error
                         }),
                     cancellationToken);
 
                 await PublishFailures(applicationId, user, cancellationToken, isResubmission, addPropertyResult.Error);
                 return Result.Failure("Could not update Felling Licence Application property details");
+            }
+
+            var convertFellingResult = await _updateFellingLicenceApplicationService
+                .ConvertProposedFellingAndRestockingToConfirmedAsync(applicationId, userAccess.Value, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (convertFellingResult.IsFailure)
+            {
+                await _auditService.PublishAuditEventAsync(new AuditEvent(
+                        AuditEvents.UpdateFellingLicenceApplicationFailure,
+                        applicationId,
+                        user.UserAccountId,
+                        _requestContext,
+                        new
+                        {
+                            Section = "Submit FLA (Confirmed felling and restocking details)",
+                            Error = convertFellingResult.Error
+                        }),
+                    cancellationToken);
+
+                await PublishFailures(applicationId, user, cancellationToken, isResubmission, convertFellingResult.Error);
+                return Result.Failure("Could not update Felling Licence Application confirmed felling and restocking details");
             }
 
             var reference = updateResult.Value.ApplicationReference;

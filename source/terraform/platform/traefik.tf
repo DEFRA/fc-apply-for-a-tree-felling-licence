@@ -47,8 +47,8 @@ resource "helm_release" "azuread-auth" {
   repository          = var.azuread_repository
   chart               = var.azuread_chart
   namespace           = kubernetes_namespace.traefik.metadata[0].name
-  repository_username = var.azuread_username
-  repository_password = var.azuread_password
+  repository_username = "qxprod"
+  repository_password = data.azurerm_key_vault_secret.qxprod_password.value
 
   values = [
     file("values/azuread-auth/values.yaml")
@@ -76,7 +76,7 @@ resource "kubernetes_secret" "traefik-dashboard-auth" {
   }
 
   data = {
-    users = "admin:$2y$12$CU9vX8df9Bs4SB2MhgJgsOdD4uzPAMfmuZHNgy2fZSCq51ClsyJBy"
+    users = data.azurerm_key_vault_secret.traefik_dashboard_users.value
   }
 
   depends_on = [

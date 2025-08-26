@@ -82,7 +82,7 @@
         }
     }
 
-	<form method="post" asp-action="FellingAndRestocking">
+	<form method="post">
 		@for (var i = 0; i < Model.Compartments.Length; i++)
         {
             var compartment = Model.Compartments[i];
@@ -94,7 +94,8 @@
                 var restockCount = confirmedFellingDetail.ConfirmedRestockingDetails.Count(x => x.RestockingProposal!=null);
                 var canAddRestocking = confirmedFellingDetail.OperationType!.Value
                     .AllowedRestockingForFellingType(false)
-                    .Any(x => x != TypeOfProposal.DoNotIntendToRestock);
+                    .Any(x => x != TypeOfProposal.DoNotIntendToRestock)
+                    && !Model.ConfirmedFellingAndRestockingComplete;
 
                 var deletedRestockingDetails = Model.DeletedRestockingOperations(confirmedFellingDetail.ProposedFellingDetailsId);
                 var confirmedFellingType = confirmedFellingDetail.GetConfirmedFellingType(deletedRestockingDetails.Any());
@@ -124,7 +125,10 @@
 
                 @foreach (var deletedRestocking in deletedRestockingDetails)
                 {
-                    var submittedCompartmentId = Model.PotentialRestockingCompartments.First(x => x.PropertyCompartmentId == deletedRestocking.CompartmentId).SubmittedCompartmentId;
+                    var submittedCompartmentId = Model.PotentialRestockingCompartments.First(x =>
+                        x.PropertyCompartmentId == deletedRestocking.CompartmentId ||
+                        x.SubmittedCompartmentId == deletedRestocking.CompartmentId)
+                        .SubmittedCompartmentId;
                     relevantCompartmentIds.Add(submittedCompartmentId);
                 }
 
@@ -273,7 +277,7 @@
                                 <div class="govuk-button-group">
                                     <a
                                         condition="@(Model.Editable(user) & canAddRestocking)"
-                                        id="add-felling-operation"
+                                        id="add-button-restocking-@confirmedFellingDetail.ConfirmedFellingDetailsId"
                                         data-prevent-double-click="true"
                                         asp-action="AddConfirmedRestockingDetails"
                                         asp-route-applicationId="@Model.ApplicationId"
@@ -300,7 +304,11 @@
 
                 foreach(var restockingDetail in deletedFelling.ProposedRestockingDetails)
                 { 
-                    relevantCompartmentIds.Add(restockingDetail.CompartmentId);
+                    var submittedCompartmentId = Model.PotentialRestockingCompartments
+                        .First(x => x.PropertyCompartmentId == restockingDetail.CompartmentId)
+                        .SubmittedCompartmentId;
+
+                    relevantCompartmentIds.Add(submittedCompartmentId);
                 }
 
                 <input type="hidden" 
@@ -385,12 +393,16 @@
                             <div class="govuk-grid-column-one-half">          
                                 @foreach(var deletedRestocking in deletedFelling.ProposedRestockingDetails)
                                 {
+                                    var submittedCompartmentId = Model.PotentialRestockingCompartments
+                                        .First(x => x.PropertyCompartmentId == deletedRestocking.CompartmentId)
+                                        .SubmittedCompartmentId;
+
                                     <div class="govuk-summary-card @deletedDetailClassName">
                                         <div class="govuk-summary-card__title-wrapper">
                                             <h2 class="govuk-summary-card__title">Restocking operation (deleted)</h2>
                                             <ul class="govuk-summary-card__actions">
                                                 <li class="govuk-summary-card__action">
-                                                    <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@deletedRestocking.CompartmentId')">Show on map</a>
+                                                    <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@submittedCompartmentId')">Show on map</a>
                                                 </li>
                                             </ul>
                                         </div>
@@ -408,7 +420,7 @@
 
         <div class="govuk-button-group">
             <a
-                condition="@(Model.Editable(user))"
+                condition="@(Model.Editable(user) && !Model.ConfirmedFellingAndRestockingComplete)"
                 id="add-felling-operation"
                 data-prevent-double-click="true"
                 asp-action="SelectFellingCompartment"
@@ -421,7 +433,7 @@
             </a>
         </div>
 
-        <div class="govuk-form-group">
+        <div class="govuk-form-group" condition="@(Model.RelevantButton != RelevantFellingAndRestockingButton.None)">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                     <h2 class="govuk-fieldset__heading">Review actions</h2>
@@ -444,6 +456,8 @@
                 <div class="govuk-button-group">
                     <button 
                         condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
+                        asp-controller="WoodlandOfficerReview"
+                        asp-action="ConfirmFellingAndRestocking"
                         id="confirm-btn" 
                         data-prevent-double-click="true"
                         type="submit" 

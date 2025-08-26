@@ -18,18 +18,6 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Converts proposed felling and restocking details into confirmed felling and restocking details.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to update.</param>
-    /// <param name="userId">The id of the user importing the details.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether confirmed felling and restocking details have been updated.</returns>
-    Task<Result> ConvertProposedFellingAndRestockingToConfirmedAsync(
-        Guid applicationId, 
-        Guid userId,
-        CancellationToken cancellationToken);
-
-    /// <summary>
     /// Reverts amendments made to a deleted confirmed felling detail by reimporting the proposed felling details.
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
@@ -41,20 +29,6 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Guid applicationId,
         Guid proposedFellingDetailsId,
         Guid userId,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Saves amendments made to confirmed felling and restocking details.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to update.</param>
-    /// <param name="userId">The id of the user amending the details.</param>
-    /// <param name="confirmedFellingAndRestockingDetailModels">A collection of <see cref="FellingAndRestockingDetailModel"/> containing felling and restocking details for compartments.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether confirmed felling and restocking details have been updated.</returns>
-    Task<Result> SaveChangesToConfirmedFellingAndRestockingAsync(
-        Guid applicationId,
-        Guid userId,
-        IList<FellingAndRestockingDetailModel> confirmedFellingAndRestockingDetailModels,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -121,6 +95,14 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Guid userId,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Deletes a confirmed restocking detail from a confirmed felling detail of an application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application containing the confirmed felling detail to delete the restocking from.</param>
+    /// <param name="confirmedRestockingDetailId">The id of the confirmed restocking detail to delete.</param>
+    /// <param name="userId">The id of the user performing the deletion.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the confirmed restocking detail has been deleted.</returns>
     Task<Result> DeleteConfirmedRestockingDetailAsync(
         Guid applicationId,
         Guid confirmedRestockingDetailId,

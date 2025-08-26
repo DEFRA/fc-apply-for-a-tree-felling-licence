@@ -16,7 +16,7 @@ resource "kubernetes_secret" "external-dns-cloudflare-api-token" {
   }
 
   data = {
-    cloudflare_api_token = "${var.cloudflare_api_token}"
+    cloudflare_api_token = data.azurerm_key_vault_secret.cloudflare_api_access_token.value
   }
 
   type = "opaque"

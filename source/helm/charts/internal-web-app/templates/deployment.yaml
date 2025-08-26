@@ -315,9 +315,6 @@ spec:
             - name: AdminOfficerReview__CitizensCharterDateLength
               value: {{ .Values.config.adminOfficerReview.citizensCharterDateLength }}
             {{- end }}
-            # ------------------- Woodland Officer Review start -------------------
-            - name: WoodlandOfficerReview__UseNewConfirmedFellingRestocking
-              value: {{ .Values.config.woodlandOfficerReview.useNewConfirmedFellingRestocking | quote }}
             # ------------------- public register expiry start -------------------
             {{- if .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
             - name: PublicRegisterExpiry__ThresholdBeforePublicRegisterPeriodEnd

@@ -1,5 +1,7 @@
 ﻿@using Forestry.Flo.Services.Common.Extensions
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.FellingDetailViewModel
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 
 @functions {
     public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
@@ -69,6 +71,7 @@
            oldValue switch
            {
                null => null,
+               "N/A" => "N/A",
                "True" => "Yes",
                _ => "No"
            });
@@ -150,15 +153,20 @@
                 Model.ConservationAreaReference,
                 Model.OldValue("ConservationAreaReference")?.ToString());
 
-            RenderSummaryRow(
-                "Do you want to restock", 
-                Model.IsRestocking, 
-                Model.OldValue("IsRestocking")?.ToString());
+            // Only show restocking fields if allowed
+            var showRestocking = (Model.OperationType ?? FellingOperationType.None).AllowedRestockingForFellingType(false).Any(x => x != TypeOfProposal.DoNotIntendToRestock);
+            if (showRestocking)
+            {
+                RenderSummaryRow(
+                    "Do you want to restock", 
+                    Model.IsRestocking, 
+                    Model.OldValue("IsRestocking")?.ToString());
 
-            RenderStringSummaryRow(
-                "No restocking reason", 
-                Model.NoRestockingReason, 
-                Model.OldValue("NoRestockingReason")?.ToString());
+                RenderStringSummaryRow(
+                    "No restocking reason", 
+                    Model.NoRestockingReason, 
+                    Model.OldValue("NoRestockingReason")?.ToString());
+            }
         }
     </dl>
 </div>

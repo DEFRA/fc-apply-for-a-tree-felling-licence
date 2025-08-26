@@ -808,7 +808,13 @@ public class CreateFellingLicenceApplicationUseCaseTests
         _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
             It.IsAny<Guid>(),
             It.IsAny<UserAccessModel>(),
-            It.IsAny<CancellationToken>()));
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submitResponse));
+
+        _updateFellingLicenceService
+            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
 
         await _sut.SubmitFellingLicenceApplicationAsync(applicationId, externalApplicant, "link",
             CancellationToken.None);
@@ -818,6 +824,89 @@ public class CreateFellingLicenceApplicationUseCaseTests
         _updateFellingLicenceService.Verify(x => x
                 .SubmitFellingLicenceApplicationAsync(applicationId, userAccessModel, It.IsAny<CancellationToken>()),
             Times.Once);
+
+        _updateFellingLicenceService.Verify(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+            applicationId, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldFail_IfUnableToConvertProposedFAndR(
+        Guid applicationId,
+        SubmitFellingLicenceApplicationResponse submitResponse,
+        UserAccessModel userAccessModel)
+    {
+        // Arrange
+
+        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _fixture.Create<Guid>(),
+            AccountTypeExternal.WoodlandOwnerAdministrator);
+        var externalApplicant = new ExternalApplicant(user);
+
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus),
+            Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.Draft);
+
+        // Create dummy dependencies
+
+        var propertyProfile = new PropertyProfile(
+            "Test",
+            "Test",
+            "Test",
+            "Test",
+            false,
+            "Test",
+            false,
+            "Test",
+            Guid.NewGuid(),
+            new List<Compartment>());
+
+        var linkedPropertyProfile = new LinkedPropertyProfile();
+
+        _mockRetrieveUserAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccessModel));
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(propertyProfile);
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetLinkedPropertyProfileAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(linkedPropertyProfile);
+
+        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_woodlandOwner);
+
+        _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<UserAccessModel>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submitResponse));
+
+        _updateFellingLicenceService
+            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure("error"));
+
+        var result = await _sut.SubmitFellingLicenceApplicationAsync(applicationId, externalApplicant, "link",
+            CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+
+        _auditService.Verify(s =>
+            s.PublishAuditEventAsync(
+                It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplicationFailure),
+                It.IsAny<CancellationToken>()));
+
+        _updateFellingLicenceService.Verify(x => x
+                .SubmitFellingLicenceApplicationAsync(applicationId, userAccessModel, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _updateFellingLicenceService.Verify(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+            applicationId, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -851,6 +940,10 @@ public class CreateFellingLicenceApplicationUseCaseTests
                     It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(submitResponse));
 
+        _updateFellingLicenceService
+            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
 
         // Create dummy dependencies
 
@@ -966,6 +1059,9 @@ public class CreateFellingLicenceApplicationUseCaseTests
 
         _updateFellingLicenceService.Verify(r => r.AddSubmittedFellingLicenceApplicationPropertyDetailAsync(
             capturedDetail, It.IsAny<CancellationToken>()), Times.Once);
+
+        _updateFellingLicenceService.Verify(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+            application.Id, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]

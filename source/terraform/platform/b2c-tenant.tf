@@ -1,5 +1,5 @@
 resource "azurerm_aadb2c_directory" "dev" {
-  provider                = azurerm.cli
+  provider                = azurerm
   country_code            = "GB"
   data_residency_location = "Europe"
   display_name            = "DEV FLOv2"
@@ -89,7 +89,7 @@ resource "azurerm_aadb2c_directory" "dev" {
 # }
 
 resource "azurerm_aadb2c_directory" "test" {
-  provider                = azurerm.cli
+  provider                = azurerm
   country_code            = "GB"
   data_residency_location = "Europe"
   display_name            = "TEST FLOv2"
@@ -179,7 +179,7 @@ resource "azurerm_aadb2c_directory" "test" {
 # }
 
 resource "azurerm_aadb2c_directory" "staging" {
-  provider                = azurerm.cli
+  provider                = azurerm
   country_code            = "GB"
   data_residency_location = "Europe"
   display_name            = "STAGING FLOv2"
@@ -269,7 +269,7 @@ resource "azurerm_aadb2c_directory" "staging" {
 # }
 
 resource "azurerm_aadb2c_directory" "live" {
-  provider                = azurerm.cli
+  provider                = azurerm
   country_code            = "GB"
   data_residency_location = "Europe"
   display_name            = "LIVE FLOv2"
@@ -359,7 +359,7 @@ resource "azurerm_aadb2c_directory" "live" {
 # }
 
 resource "azurerm_aadb2c_directory" "migrate" {
-  provider                = azurerm.cli
+  provider                = azurerm
   country_code            = "GB"
   data_residency_location = "Europe"
   display_name            = "MIGRATE FLOv2"

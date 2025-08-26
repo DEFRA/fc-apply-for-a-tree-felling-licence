@@ -44,7 +44,10 @@ define([
                 this.view = new MapView({
                     map: this.map,
                     container: location,
-                    extent: mapSettings.englandExtent
+                    extent: mapSettings.englandExtent,
+                    constraints: {
+                        maxZoom: 20
+                    }
                 });
                 this.drawinglayer = new GraphicLayer();
                 this.map.add(this.drawinglayer)

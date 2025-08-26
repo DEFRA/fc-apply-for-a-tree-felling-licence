@@ -6,12 +6,6 @@ variable "prefix" {
 }
 
 # Azure Variables
-variable "azure_token" {
-  type        = string
-  description = "Azure SP token"
-  default     = "" # see bitwarden
-}
-
 variable "azure_location" {
   type        = string
   description = "Azure region to store azure resoruces"
@@ -243,18 +237,6 @@ variable "cloudflare_email" {
   default     = "accounts@qxlva.com"
 }
 
-variable "cloudflare_api_token" {
-  type        = string
-  description = "Cloudflare api access token"
-  default     = "5i8Eqx5_D-lOT3uSBntGmeqvWXhrzarsk5h_SBUT"
-}
-
-variable "cloudflare_domain_name" {
-  type        = string
-  description = "Cloudflare domain name"
-  default     = "qxlva.io"
-}
-
 #External DNS Variables
 variable "externaldns_chart" {
   type        = string
@@ -317,11 +299,4 @@ variable "azuread_username" {
   type        = string
   description = "AzureAD Helm repository username."
   default     = "qxprod"
-}
-
-#Used by azure auth
-variable "azuread_password" {
-  type        = string
-  description = "AzureAD Helm repository password."
-  default     = "" # see bitwarden
 }

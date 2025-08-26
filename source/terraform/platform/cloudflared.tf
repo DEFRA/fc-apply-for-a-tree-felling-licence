@@ -40,7 +40,7 @@ resource "kubernetes_deployment" "cloudflared" {
           name  = "cloudflared"
 
           command = ["cloudflared", "tunnel", "--metrics", "0.0.0.0:2000", "run"]
-          args    = ["--token", "eyJhIjoiMzk3OWY4NTNmY2ZhYjBjNzY5YTE5YWE5Nzk3NThkNTgiLCJ0IjoiN2YwYmU2MTktZGI4YS00N2E0LTg1YzctOWJkNDM4MDQ1ZjIzIiwicyI6Ill6UXlZbVpoWkdNdFpUUmpPUzAwT0RkbUxXRTVORGd0TkRjMk0yVTVaalE1TW1FNCJ9"]
+          args    = ["--token", data.azurerm_key_vault_secret.cloudflare_token.value]
 
           resources {
             limits = {

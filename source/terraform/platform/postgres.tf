@@ -32,7 +32,7 @@ resource "azurerm_postgresql_flexible_server" "staging" {
   private_dns_zone_id           = azurerm_private_dns_zone.database.id
   geo_redundant_backup_enabled  = true
   administrator_login           = "qxlva"
-  administrator_password        = "H*VsS^$&mBHywkKXt$yrVQF5"
+  administrator_password        = data.azurerm_key_vault_secret.pg_staging_pass.value
   zone                          = "1"
   public_network_access_enabled = false
 
@@ -57,7 +57,7 @@ resource "azurerm_postgresql_flexible_server" "live" {
   private_dns_zone_id           = azurerm_private_dns_zone.database.id
   geo_redundant_backup_enabled  = true
   administrator_login           = "qxlva"
-  administrator_password        = "#yk*gXsc!ocZ6teChg"
+  administrator_password        = data.azurerm_key_vault_secret.pg_live_pass.value
   zone                          = "1"
   public_network_access_enabled = false
 
@@ -82,7 +82,7 @@ resource "azurerm_postgresql_flexible_server" "migrate" {
   private_dns_zone_id           = azurerm_private_dns_zone.database.id
   geo_redundant_backup_enabled  = true
   administrator_login           = "qxlva"
-  administrator_password        = "2GgNq596p9VRgv7fWK"
+  administrator_password        = data.azurerm_key_vault_secret.pg_migrate_pass.value
   zone                          = "1"
   public_network_access_enabled = false
 

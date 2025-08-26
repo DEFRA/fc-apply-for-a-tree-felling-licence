@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
 namespace Forestry.Flo.Internal.Web.Services.Validation;
 
@@ -16,10 +17,31 @@ public class ConfirmedFellingAndRestockingCrossValidator : AbstractValidator<Con
     {
         var baseResult = await base.ValidateAsync(context, cancellation);
 
+        // Aggregate check: at least one felling operation in all compartments
+        var allFellingDetails = context.InstanceToValidate.Compartments?
+            .SelectMany(cpt => cpt.ConfirmedFellingDetails ?? Array.Empty<ConfirmedFellingDetailViewModel>())
+            .ToList();
+
+        if (allFellingDetails == null || !allFellingDetails.Any(x => x.OperationType != FellingOperationType.None))
+        {
+            baseResult.Errors.Add(new ValidationFailure(
+                "#delete-amendments-visible",
+                "At least one felling operation must be present in the application."
+            )
+            {
+                FormattedMessagePlaceholderValues = new Dictionary<string, object?>
+                {
+                    { "PropertyName", "felling-operation-card" }
+                }
+            });
+        }
+
         var index = 0;
         foreach (var cpt in context.InstanceToValidate.Compartments)
         {
             index++;
+            // Per-compartment validation logic (other than the aggregate check) remains here
+
             foreach (var fellingDetail in cpt.ConfirmedFellingDetails)
             {
                 var otherFelling = cpt.ConfirmedFellingDetails

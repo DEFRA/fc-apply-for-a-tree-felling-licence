@@ -250,7 +250,10 @@ define(["require",
                 this.view = new MapView({
                     map: this.map,
                     container: location,
-                    extent: mapSettings.englandExtent
+                    extent: mapSettings.englandExtent,
+                    constraints: {
+                        maxZoom: 20
+                    }
                 });
 
 
