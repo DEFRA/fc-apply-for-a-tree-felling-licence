@@ -192,6 +192,40 @@ public class GetAdminOfficerReviewServiceTests
         _mockRepository.Verify(x => x.GetAdminOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task GetAdminOfficerReviewStatus_LarchFlyover_NotRequired_When_ConfirmInspectionLog_Is_False()
+    {
+        var applicationId = Guid.NewGuid();
+        var review = new Entities.AdminOfficerReview
+        {
+            LarchChecked = true,
+            FellingLicenceApplication = new Entities.FellingLicenceApplication
+            {
+                LarchCheckDetails = new Entities.LarchCheckDetails
+                {
+                    ConfirmInspectionLog = false
+                }
+            }
+        };
+
+        var sut = CreateSut();
+
+        _mockRepository
+            .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(review.AsMaybe);
+
+        var result = await sut.GetAdminOfficerReviewStatusAsync(
+            applicationId,
+            isAgentApplication: false,
+            isLarchApplication: true,
+            isAssignedWoodlandOfficer: false,
+            isCBWApplication: false,
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(InternalReviewStepStatus.NotRequired, result.AdminOfficerReviewTaskListStates.LarchFlyoverStatus);
+        _mockRepository.Verify(x => x.GetAdminOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private GetAdminOfficerReviewService CreateSut()
     {
         _mockRepository.Reset();

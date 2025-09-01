@@ -162,15 +162,15 @@ public class WoodlandOfficerReview
     /// <summary>
     /// Gets and sets whether the Woodland Officer has indicated that a site visit is not needed.
     /// </summary>
-    public bool SiteVisitNotNeeded { get; set; }
+    public bool? SiteVisitNeeded { get; set; }
 
     /// <summary>
-    /// Gets and sets the date and time that the site visit artefacts were created, or null if they have not been.
+    /// Gets and sets a flag indicating that the site visit arrangements have been made.
     /// </summary>
-    public DateTime? SiteVisitArtefactsCreated { get; set; }
+    public bool? SiteVisitArrangementsMade { get; set; }
 
     /// <summary>
-    /// Gets and sets the date and time that the site visit notes were retrieved from ESRI, or null if they have not been.
+    /// Gets and sets a flag indicating that the site visit has been completed and resulting notes/attachments have been uploaded.
     /// </summary>
-    public DateTime? SiteVisitNotesRetrieved { get; set; }
+    public bool SiteVisitComplete { get; set; }
 }

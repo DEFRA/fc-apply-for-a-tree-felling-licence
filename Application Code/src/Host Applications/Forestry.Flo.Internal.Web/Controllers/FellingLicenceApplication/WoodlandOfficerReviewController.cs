@@ -257,10 +257,27 @@ public partial class WoodlandOfficerReviewController : Controller
         [FromServices] SiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var user = new InternalUser(User);
         var hostingPage = Url.Action("SiteVisit", new { id = id });
 
-        var model = await useCase.GetSiteVisitDetailsAsync(id, user, hostingPage, cancellationToken);
+        var model = await useCase.GetSiteVisitDetailsAsync(id, hostingPage, cancellationToken);
+
+        if (model.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        return View(model.Value);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SiteVisitSummary(
+        Guid id,
+        [FromServices] SiteVisitUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var hostingPage = Url.Action("SiteVisitSummary", new { id = id });
+
+        var model = await useCase.GetSiteVisitSummaryAsync(id, hostingPage, cancellationToken);
 
         if (model.IsFailure)
         {
@@ -271,92 +288,83 @@ public partial class WoodlandOfficerReviewController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SiteVisitNotNeeded(
+    public async Task<IActionResult> SiteVisit(
         SiteVisitViewModel model,
         [FromServices] SiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
+        var hostingPage = Url.Action("SiteVisit", new { id = model.ApplicationId });
 
-        if (string.IsNullOrWhiteSpace(model.SiteVisitNotNeededReason))
+        // site visit not needed scenario
+        if (model.SiteVisitNeeded is false)
         {
-            this.AddErrorMessage("A reason must be provided when a site visit is not required", nameof(model.SiteVisitNotNeededReason));
-            return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
-        }
-
-        var result = await useCase.SiteVisitIsNotNeededAsync(
-            model.ApplicationId,
-            user,
-            model.SiteVisitNotNeededReason,
-            cancellationToken);
-
-        if (result.IsFailure)
-        {
-            this.AddErrorMessage("Something went wrong saving the site visit details, please try again");
-            return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
-        }
-
-        this.AddConfirmationMessage("Site visit not needed reason saved");
-        return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> GenerateSiteVisitArtefacts(
-        SiteVisitViewModel model,
-        [FromServices] GeneratePdfApplicationUseCase pdfUseCase,
-        [FromServices] SiteVisitUseCase useCase,
-        CancellationToken cancellationToken)
-    {
-        var user = new InternalUser(User);
-
-        // If no application document has been generated yet, then do so.
-        if (model.ApplicationDocumentHasBeenGenerated == false)
-        {
-            var createDocResult = await pdfUseCase.GeneratePdfApplicationAsync(
-                user, model.ApplicationId, false, cancellationToken);
-            if (createDocResult.IsFailure)
+            if (string.IsNullOrWhiteSpace(model.SiteVisitNotNeededReason.CaseNote))
             {
-                return RedirectToAction("Error", "Home");
+                var reloadModel = await useCase.GetSiteVisitDetailsAsync(model.ApplicationId, hostingPage, cancellationToken);
+                if (reloadModel.IsFailure)
+                {
+                    return RedirectToAction("Error", "Home");
+                }
+
+                reloadModel.Value.SiteVisitNeeded = model.SiteVisitNeeded;
+
+                this.AddErrorMessage("A reason must be provided when a site visit is not required", nameof(model.SiteVisitNotNeededReason));
+                return View(reloadModel.Value);
             }
+
+            var result = await useCase.SiteVisitIsNotNeededAsync(
+                model.ApplicationId,
+                user,
+                model.SiteVisitNotNeededReason,
+                cancellationToken);
+
+            if (result.IsFailure)
+            {
+                this.AddErrorMessage("Something went wrong saving the site visit details, please try again");
+                return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
+            }
+
+            this.AddConfirmationMessage("Site visit not needed reason saved");
+            return RedirectToAction("Index", new { id = model.ApplicationId });
         }
 
-        var result = await useCase.GenerateSiteVisitArtefactsAsync(
-            model.ApplicationId,
-            user,
-            cancellationToken);
-
-        if (result.IsFailure)
+        // site visit needed scenario
+        if (model.SiteVisitNeeded is true)
         {
-            this.AddErrorMessage("Something went wrong starting the site visit process, please try again");
+            if (model.SiteVisitArrangementsMade.HasNoValue())
+            {
+                var reloadModel = await useCase.GetSiteVisitDetailsAsync(model.ApplicationId, hostingPage, cancellationToken);
+                if (reloadModel.IsFailure)
+                {
+                    return RedirectToAction("Error", "Home");
+                }
+
+                reloadModel.Value.SiteVisitNeeded = model.SiteVisitNeeded;
+                reloadModel.Value.SiteVisitArrangementNotes = model.SiteVisitArrangementNotes;
+
+                this.AddErrorMessage("Select if site visit arrangements have been made", nameof(model.SiteVisitNotNeededReason));
+                return View(reloadModel.Value);
+            }
+
+            var result = await useCase.SetSiteVisitArrangementsAsync(
+                model.ApplicationId,
+                user,
+                model.SiteVisitArrangementsMade,
+                model.SiteVisitArrangementNotes,
+                cancellationToken);
+
+            if (result.IsFailure)
+            {
+                this.AddErrorMessage("Something went wrong saving the site visit details, please try again");
+                return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
+            }
+
+            this.AddConfirmationMessage("Site visit arrangements saved");
             return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
         }
 
-        this.AddConfirmationMessage("Site visit process started");
         return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> RetrieveSiteVisitNotes(
-        SiteVisitViewModel model,
-        [FromServices] SiteVisitUseCase useCase,
-        CancellationToken cancellationToken)
-    {
-        var user = new InternalUser(User);
-
-        var result = await useCase.RetrieveSiteVisitNotesAsync(
-            model.ApplicationId,
-            model.ApplicationReference,
-            user,
-            cancellationToken);
-
-        if (result.IsFailure)
-        {
-            this.AddErrorMessage("Something went wrong completing the site visit process, please try again");
-            return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
-        }
-
-        this.AddConfirmationMessage("Site visit notes retrieved");
-        return RedirectToAction("Index", new { id = model.ApplicationId });
     }
 
     [HttpGet]

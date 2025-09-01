@@ -2,6 +2,7 @@
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore;
 
@@ -98,6 +99,28 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         Guid userId,
         IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lists submitted felling licence applications according to user options selection, with paging and ordering.
+    /// </summary>
+    /// <param name="assignedToUserAccountIdOnly">If true, results are restricted to applications currently assigned to the specified <paramref name="userId"/>. If false, all applications that match the other criteria are included.</param>
+    /// <param name="userId">The internal user account identifier used when filtering by assignment (see <paramref name="assignedToUserAccountIdOnly"/>).</param>
+    /// <param name="userFellingLicenceSelectionOptions">The set of application statuses to include in the results.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="pageNumber">The 1-based page number to retrieve.</param>
+    /// <param name="pageSize">The number of items to include on a page.</param>
+    /// <param name="orderBy">The field to order by (supported fields depend on the repository implementation).</param>
+    /// <param name="sortDirection">The sort direction, typically "asc" for ascending or "desc" for descending.</param>
+    /// <returns>A list of applications for the requested page that match the filter criteria.</returns>
+    Task<IList<FellingLicenceApplication>> ListByIncludedStatus(
+        bool assignedToUserAccountIdOnly,
+        Guid userId,
+        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
+        CancellationToken cancellationToken,
+        int pageNumber,
+        int pageSize,
+        string orderBy,
+        string sortDirection);
 
     /// <summary>
     /// Adds an external access link for an invited external consultee.
@@ -445,5 +468,19 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <returns>A list of documents linked to the specified application.</returns>
     Task<List<Document>> GetApplicationDocumentsAsync(
         Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a summary for submitted felling licence applications based on the user's included status selection.
+    /// </summary>
+    /// <param name="assignedToUserAccountIdOnly">Indicates if the results should be filtered to only those assigned to the user's account ID.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="userFellingLicenceSelectionOptions">The user's selected felling licence status options.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Summary containing total, assigned-to-user count, and status distribution.</returns>
+    Task<IncludedApplicationsSummary> TotalIncludedApplicationsAsync(
+        bool assignedToUserAccountIdOnly,
+        Guid userId,
+        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
         CancellationToken cancellationToken);
 }

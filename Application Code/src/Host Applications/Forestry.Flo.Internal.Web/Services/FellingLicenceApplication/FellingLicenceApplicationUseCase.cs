@@ -4,20 +4,16 @@ using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
+using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
-using System.Linq;
-using System.Runtime.Intrinsics.X86;
-using Forestry.Flo.Services.Common.User;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using ActivityFeedItemType = Forestry.Flo.Services.Common.Models.ActivityFeedItemType;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
-using AutoMapper;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
@@ -83,41 +79,59 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
     /// <param name="assignedToUserAccountId">The identifier for the logged-in user account.</param>
     /// <param name="includeFellingLicenceStatuses">A collection of <see cref="FellingLicenceStatus"/> to filter applications by.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="pageNumber">The page number to retrieve.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="sortColumn">The column to sort the results by.</param>
+    /// <param name="sortDirection">The direction to sort the results (ascending or descending).</param>
     /// <returns>A populated <see cref="FellingLicenceApplicationAssignmentListModel"/> containing a filtered collection of applications, or an error if unsuccessful.</returns>
     public async Task<Result<FellingLicenceApplicationAssignmentListModel>> GetFellingLicenceApplicationAssignmentListModelAsync(
         bool assignedToUserAccountIdOnly,
         Guid assignedToUserAccountId,
         IList<FellingLicenceStatus> includeFellingLicenceStatuses,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int pageNumber,
+        int pageSize,
+        string sortColumn,
+        string sortDirection)
     {
         if (!includeFellingLicenceStatuses.Any())
         {
-            // If no FellingLicenceStatus selected, allow all from post-submitted status list
-
             includeFellingLicenceStatuses = PostSubmittedStatuses;
         }
         else
         {
-            // Calculate the intersection of the user requested statuses and list of post submitted status FellingLicenceStatus.
-            // This is to prevent the request parameters from being tampered with to allow for other statuses
-
             includeFellingLicenceStatuses = includeFellingLicenceStatuses.Where(x => PostSubmittedStatuses.Contains(x)).ToList();
         }
 
-        var fellingLicenceApplications = await _fellingLicenceApplicationInternalRepository.ListByIncludedStatus(assignedToUserAccountIdOnly, assignedToUserAccountId, includeFellingLicenceStatuses, cancellationToken);
+        // Get all for count and summary
+        var summary = await _fellingLicenceApplicationInternalRepository.TotalIncludedApplicationsAsync(
+            assignedToUserAccountIdOnly,
+            assignedToUserAccountId,
+            includeFellingLicenceStatuses,
+            cancellationToken);
+
+        int totalCount = summary.TotalCount;
+
+        int actualPageNumber = pageNumber;
+        int actualPageSize = pageSize;
+
+        // Get paged
+        var fellingLicenceApplications = await _fellingLicenceApplicationInternalRepository.ListByIncludedStatus(
+            assignedToUserAccountIdOnly,
+            assignedToUserAccountId,
+            includeFellingLicenceStatuses,
+            cancellationToken,
+            actualPageNumber,
+            actualPageSize,
+            sortColumn,
+            sortDirection);
 
         var linkedPropertyProfilesIdList = fellingLicenceApplications.Select(x => x.LinkedPropertyProfile.PropertyProfileId).ToList();
-
         var propertyProfiles = await _propertyProfileRepository.ListAsync(linkedPropertyProfilesIdList, cancellationToken);
-
-        // Filter to last assignee histories (current assignees)
-
         var currentAssigneeHistories = fellingLicenceApplications.SelectMany(x => x.AssigneeHistories.Where(y => !y.TimestampUnassigned.HasValue));
-
         var briefAssigneeHistories = await base.GetBriefAssigneeHistory(currentAssigneeHistories, cancellationToken);
 
         IList<FellingLicenceAssignmentListItemModel> fellingLicenceAssignmentListItemModels =
-
             fellingLicenceApplications.Select(x => new FellingLicenceAssignmentListItemModel
             {
                 AssignedUserIds = briefAssigneeHistories.Value.Where(y => y.FellingLicenceApplicationId == x.Id).DistinctBy(y => y.UserId).Select(y => y.UserId).ToList(),
@@ -129,18 +143,18 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
                 UserFirstLastNames = briefAssigneeHistories.Value.Where(y => y.FellingLicenceApplicationId == x.Id).DistinctBy(y => y.UserId).Select(y => y.UserName).ToList(),
                 SubmittedDate = x.StatusHistories.Any(sh => sh.Status == FellingLicenceStatus.Submitted) ? x.StatusHistories.Where(sh => sh.Status == FellingLicenceStatus.Submitted).Max(x => x.Created) : null,
                 CitizensCharterDate = x.CitizensCharterDate
-            }).OrderBy(x => x.Deadline).ToList();
+            }).ToList();
 
         var model = new FellingLicenceApplicationAssignmentListModel
         {
-            AssignedToUserCount = fellingLicenceAssignmentListItemModels.Count(x => x.AssignedUserIds != null && x.AssignedUserIds.Contains(assignedToUserAccountId)),
+            AssignedToUserCount = summary.AssignedToUserCount,
             AssignedFellingLicenceApplicationModels = fellingLicenceAssignmentListItemModels,
-            FellingLicenceStatusCount = fellingLicenceAssignmentListItemModels.GroupBy(x => x.FellingLicenceStatus)
-                                                                              .Select(x => new FellingLicenceStatusCount
-                                                                              {
-                                                                                  FellingLicenceStatus = x.Key,
-                                                                                  Count = x.Count()
-                                                                              }).ToList()
+            FellingLicenceStatusCount = summary.StatusCounts
+                .Select(x => new FellingLicenceStatusCount { FellingLicenceStatus = x.Status, Count = x.Count })
+                .ToList(),
+            PageNumber = actualPageNumber,
+            PageSize = actualPageSize,
+            TotalCount = totalCount
         };
 
         return Result.Success(model);

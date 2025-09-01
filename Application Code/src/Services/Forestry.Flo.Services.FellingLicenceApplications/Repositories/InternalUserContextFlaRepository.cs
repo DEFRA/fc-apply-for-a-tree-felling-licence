@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
 using Microsoft.EntityFrameworkCore;
 
@@ -171,6 +172,83 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     /// <inheritdoc />
+    public async Task<IList<FellingLicenceApplication>> ListByIncludedStatus(
+        bool assignedToUserAccountIdOnly,
+        Guid userId,
+        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
+        CancellationToken cancellationToken,
+        int pageNumber,
+        int pageSize,
+        string sortColumn,
+        string sortDirection)
+    {
+        IQueryable<FellingLicenceApplication> query = Context.FellingLicenceApplications
+            .Include(a => a.StatusHistories)
+            .Include(a => a.AssigneeHistories)
+            .Include(a => a.LinkedPropertyProfile)
+            .Include(a => a.SubmittedFlaPropertyDetail)
+            .Where(app =>
+                userFellingLicenceSelectionOptions.Contains(
+                    app.StatusHistories
+                        .OrderByDescending(sh => sh.Created)
+                        .Select(sh => sh.Status)
+                        .FirstOrDefault()
+                )
+                && (!assignedToUserAccountIdOnly ||
+                    app.AssigneeHistories.Any(y => y.AssignedUserId == userId && !y.TimestampUnassigned.HasValue))
+            );
+
+        bool descending = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase);
+
+        // Dynamic ordering
+        switch (sortColumn)
+        {
+            case "Reference":
+                query = descending ? query.OrderByDescending(x => x.ApplicationReference) : query.OrderBy(x => x.ApplicationReference);
+                break;
+            case "Property":
+                query = descending ? query.OrderByDescending(x => x.SubmittedFlaPropertyDetail.Name) : query.OrderBy(x => x.SubmittedFlaPropertyDetail.Name);
+                break;
+            case "SubmittedDate":
+                query = descending
+                    ? query.OrderByDescending(x => x.StatusHistories
+                        .Where(sh => sh.Status == FellingLicenceStatus.Submitted)
+                        .Select(sh => sh.Created)
+                        .Max())
+                    : query.OrderBy(x => x.StatusHistories
+                        .Where(sh => sh.Status == FellingLicenceStatus.Submitted)
+                        .Select(sh => sh.Created)
+                        .Max());
+                break;
+            case "CitizensCharterDate":
+                query = descending ? query.OrderByDescending(x => x.CitizensCharterDate) : query.OrderBy(x => x.CitizensCharterDate);
+                break;
+            case "Status":
+                query = descending
+                    ? query.OrderByDescending(x => x.StatusHistories
+                        .OrderByDescending(sh => sh.Created)
+                        .Select(sh => sh.Status)
+                        .FirstOrDefault())
+                    : query.OrderBy(x => x.StatusHistories
+                        .OrderByDescending(sh => sh.Created)
+                        .Select(sh => sh.Status)
+                        .FirstOrDefault());
+                break;
+            default:
+                query = descending ? query.OrderByDescending(x => x.FinalActionDate) : query.OrderBy(x => x.FinalActionDate);
+                break;
+        }
+
+        if (pageNumber > 0 && pageSize > 0)
+        {
+            int skip = (pageNumber - 1) * pageSize;
+            query = query.Skip(skip).Take(pageSize);
+        }
+        var results = await query.ToListAsync(cancellationToken);
+        return results;
+    }
+
+    /// <inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> UpdateExternalAccessLinkAsync(ExternalAccessLink accessLink, CancellationToken cancellationToken)
     {
         var existingLink = await Context.ExternalAccessLinks.FindAsync(new object?[] { accessLink.Id }, cancellationToken: cancellationToken);
@@ -252,8 +330,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Include(s => s.SubmittedFlaPropertyDetail)
                 .ThenInclude(c => c.SubmittedFlaPropertyCompartments)!
                 .ThenInclude(f => f.ConfirmedFellingDetails)!
-                .ThenInclude(r => r!.ConfirmedRestockingDetails)!
-                .ThenInclude(s => s!.ConfirmedRestockingSpecies)
+                .ThenInclude(r => r.ConfirmedRestockingDetails)!
+                .ThenInclude(s => s.ConfirmedRestockingSpecies)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (fla == null)
@@ -300,7 +378,10 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     public async Task<Maybe<AdminOfficerReview>> GetAdminOfficerReviewAsync(Guid applicationId, CancellationToken cancellationToken)
     {
         var result = 
-            await Context.AdminOfficerReviews.SingleOrDefaultAsync(
+            await Context.AdminOfficerReviews
+                .Include(x => x.FellingLicenceApplication)
+                .ThenInclude(a => a.LarchCheckDetails)
+                .SingleOrDefaultAsync(
                 x => x.FellingLicenceApplicationId == applicationId,
                 cancellationToken: cancellationToken);
 
@@ -695,5 +776,52 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return await Context.Documents
             .Where(d => d.FellingLicenceApplicationId == applicationId)
             .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IncludedApplicationsSummary> TotalIncludedApplicationsAsync(
+        bool assignedToUserAccountIdOnly,
+        Guid userId,
+        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
+        CancellationToken cancellationToken)
+    {
+        var baseQuery = Context.FellingLicenceApplications
+            .Include(a => a.StatusHistories)
+            .Include(a => a.AssigneeHistories)
+            .Where(app =>
+                userFellingLicenceSelectionOptions.Contains(
+                    app.StatusHistories
+                        .OrderByDescending(sh => sh.Created)
+                        .Select(sh => sh.Status)
+                        .FirstOrDefault()
+                )
+            );
+
+        var assignedFilterQuery = assignedToUserAccountIdOnly
+            ? baseQuery.Where(app => app.AssigneeHistories.Any(y => y.AssignedUserId == userId && !y.TimestampUnassigned.HasValue))
+            : baseQuery;
+
+        var totalCount = await assignedFilterQuery.CountAsync(cancellationToken);
+
+        // Always compute assigned to user count from the unfiltered base query (within status scope)
+        var assignedToUserCount = await baseQuery
+            .Where(app => app.AssigneeHistories.Any(y => y.AssignedUserId == userId && !y.TimestampUnassigned.HasValue))
+            .CountAsync(cancellationToken);
+
+        var statusCounts = await assignedFilterQuery
+            .Select(app => app.StatusHistories
+                .OrderByDescending(sh => sh.Created)
+                .Select(sh => sh.Status)
+                .FirstOrDefault())
+            .GroupBy(status => status)
+            .Select(g => new IncludedStatusCount { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        return new IncludedApplicationsSummary
+        {
+            TotalCount = totalCount,
+            AssignedToUserCount = assignedToUserCount,
+            StatusCounts = statusCounts
+        };
     }
 }

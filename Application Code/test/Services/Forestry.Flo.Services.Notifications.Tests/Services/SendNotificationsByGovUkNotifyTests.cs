@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture.Xunit2;
@@ -13,6 +14,7 @@ using Forestry.Flo.Services.Notifications.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json;
 using NodaTime;
 using Notify.Interfaces;
 using Notify.Models.Responses;
@@ -65,6 +67,13 @@ public class SendNotificationsByGovUkNotifyTests
             It.IsAny<string?>(),
             It.IsAny<string?>(),
             It.IsAny<string?>()), Times.Once);
+
+        _mockNotificationHistoryRepository.Verify(x => x.Add(It.Is<NotificationHistory>(n =>
+            n.ApplicationReference == model.ApplicationReference
+            && n.NotificationType == expectedTemplateId.Key
+            && n.Recipients == JsonConvert.SerializeObject(new List<NotificationRecipient> { recipient })
+            && n.Text == JsonConvert.SerializeObject(model)
+        )), Times.Once);
     }
 
     [Theory, AutoData]
@@ -158,6 +167,14 @@ public class SendNotificationsByGovUkNotifyTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>()), Times.Once);
         }
+
+        List<NotificationRecipient> expectedRecipients = [recipient, ..copyTos];
+        _mockNotificationHistoryRepository.Verify(x => x.Add(It.Is<NotificationHistory>(n =>
+            n.ApplicationReference == model.ApplicationReference
+            && n.NotificationType == expectedTemplateId.Key
+            && n.Recipients == JsonConvert.SerializeObject(expectedRecipients)
+            && n.Text == JsonConvert.SerializeObject(model)
+        )), Times.Once);
     }
 
     [Theory, AutoData]
@@ -218,6 +235,12 @@ public class SendNotificationsByGovUkNotifyTests
             It.IsAny<string?>(),
             It.IsAny<string?>()), Times.Once);
 
+        _mockNotificationHistoryRepository.Verify(x => x.Add(It.Is<NotificationHistory>(n =>
+            n.ApplicationReference == model.ApplicationReference
+            && n.NotificationType == expectedTemplateId.Key
+            && n.Recipients == JsonConvert.SerializeObject(new List<NotificationRecipient> {recipient})
+            && n.Text == JsonConvert.SerializeObject(model)
+            )), Times.Once);
     }
 
     private bool AllMatch(Dictionary<string, dynamic> expected, Dictionary<string, dynamic> actual)

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 {
     [DbContext(typeof(FellingLicenceApplicationsContext))]
-    [Migration("20250812110602_RemoveConfirmedFellingRestockingIndexes")]
-    partial class RemoveConfirmedFellingRestockingIndexes
+    [Migration("20250821125405_InitialSiteVisitChanges")]
+    partial class InitialSiteVisitChanges
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -560,6 +560,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
                     b.Property<DateTime>("CreatedTimestamp")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DocumentIds")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid>("FellingLicenceApplicationId")
                         .HasColumnType("uuid");
@@ -1324,14 +1328,14 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<string>("RecommendedLicenceDuration")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("SiteVisitArtefactsCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("SiteVisitNotNeeded")
+                    b.Property<bool?>("SiteVisitArrangementsMade")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("SiteVisitNotesRetrieved")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<bool>("SiteVisitComplete")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("SiteVisitNeeded")
+                        .HasColumnType("boolean");
 
                     b.Property<bool?>("Stage1HabitatRegulationsAssessmentRequired")
                         .HasColumnType("boolean");

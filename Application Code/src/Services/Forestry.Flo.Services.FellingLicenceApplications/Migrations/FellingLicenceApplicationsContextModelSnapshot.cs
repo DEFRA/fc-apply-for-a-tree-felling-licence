@@ -1325,14 +1325,14 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<string>("RecommendedLicenceDuration")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("SiteVisitArtefactsCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("SiteVisitNotNeeded")
+                    b.Property<bool?>("SiteVisitArrangementsMade")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("SiteVisitNotesRetrieved")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<bool>("SiteVisitComplete")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("SiteVisitNeeded")
+                        .HasColumnType("boolean");
 
                     b.Property<bool?>("Stage1HabitatRegulationsAssessmentRequired")
                         .HasColumnType("boolean");

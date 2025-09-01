@@ -116,9 +116,13 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 : IsFellingLarchSpecies(confirmedFellingAndRestockingDetails.Value.Item1);
 
             var LarchFlyoverComplete = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.FellingLicenceApplication?.LarchCheckDetails?.FlightDate != null;
-            var LarchFlyoverStatus = larchCheckStatus != InternalReviewStepStatus.Completed
-                ? InternalReviewStepStatus.CannotStartYet
-                : LarchFlyoverComplete
+            // Flyover is required only when it's a larch application AND the inspection log was confirmed true during larch check
+            var isFlyoverRequired = isLarchApplication && (woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.FellingLicenceApplication?.LarchCheckDetails?.ConfirmInspectionLog == true);
+            var LarchFlyoverStatus = !isFlyoverRequired
+                ? InternalReviewStepStatus.NotRequired
+                : larchCheckStatus != InternalReviewStepStatus.Completed
+                    ? InternalReviewStepStatus.CannotStartYet
+                    : LarchFlyoverComplete
                         ? InternalReviewStepStatus.Completed
                         : InternalReviewStepStatus.NotStarted;
 
@@ -130,7 +134,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 conditionsStatus,
                 InternalReviewStepStatus.NotStarted,
                 isLarchApplication ? larchCheckStatus : InternalReviewStepStatus.NotRequired,
-                isLarchApplication ? LarchFlyoverStatus : InternalReviewStepStatus.NotRequired,
+                LarchFlyoverStatus,
                 InternalReviewStepStatus.NotStarted);
 
             var result = new WoodlandOfficerReviewStatusModel
@@ -225,9 +229,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
             var result = new SiteVisitModel
             {
-                SiteVisitArtefactsCreated = woodlandOfficerReview.HasValue ? woodlandOfficerReview.Value.SiteVisitArtefactsCreated : null,
-                SiteVisitNotNeeded = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.SiteVisitNotNeeded,
-                SiteVisitNotesRetrieved = woodlandOfficerReview.HasValue ? woodlandOfficerReview.Value.SiteVisitNotesRetrieved : null,
+                SiteVisitNeeded = woodlandOfficerReview.HasValue ? woodlandOfficerReview.Value?.SiteVisitNeeded : null,
+                SiteVisitArrangementsMade = woodlandOfficerReview.HasValue ? woodlandOfficerReview.Value?.SiteVisitArrangementsMade : null,
+                SiteVisitComplete = woodlandOfficerReview is { HasValue: true, Value.SiteVisitComplete: true },
                 SiteVisitComments = caseNotes
             };
 
@@ -353,41 +357,6 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
         {
             _logger.LogError(ex, "Exception caught in GetApplicationDetailsForPublicRegisterAsync");
             return Result.Failure<ApplicationDetailsForPublicRegisterModel>(ex.Message);
-        }
-    }
-
-    /// <inheritdoc/>
-    public async Task<Result<ApplicationDetailsForSiteVisitMobileLayers>> GetApplicationDetailsForSiteVisitMobileLayersAsync(Guid applicationId, CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("Attempting to get application details to publish application with id {ApplicationId} to the mobile apps layers", applicationId);
-
-        try
-        {
-            var fla = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
-
-            if (fla.HasNoValue
-                || fla.Value.SubmittedFlaPropertyDetail == null
-                || fla.Value.LinkedPropertyProfile == null)
-            {
-                _logger.LogError("Could not retrieve application with id {ApplicationId}", applicationId);
-                return Result.Failure<ApplicationDetailsForSiteVisitMobileLayers>("Could not retrieve application with given id");
-            }
-
-            var compartmentDetails = fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments
-                .Select(x => x.ToInternalFullCompartmentDetails())
-                .ToList();
-            var result = new ApplicationDetailsForSiteVisitMobileLayers
-            {
-                CaseReference = fla.Value.ApplicationReference,
-                Compartments = compartmentDetails
-            };
-
-            return Result.Success(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Exception caught in GetInternalCompartmentDetailsForApplicationAsync");
-            return Result.Failure<ApplicationDetailsForSiteVisitMobileLayers>(ex.Message);
         }
     }
 

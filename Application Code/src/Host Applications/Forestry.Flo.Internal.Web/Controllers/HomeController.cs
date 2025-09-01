@@ -1,14 +1,14 @@
 using Forestry.Flo.Internal.Web.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using System.Threading;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
 
 namespace Forestry.Flo.Internal.Web.Controllers;
@@ -18,6 +18,16 @@ public class HomeController : Controller
     private readonly FellingLicenceApplicationUseCase _fellingLicenceApplicationUseCase;
     private readonly IUserAccountService _userAccountService;
     private readonly ILogger<HomeController> _logger;
+    private readonly List<BreadCrumb> _breadCrumbsRoot = new()
+    {
+        new ("Home", "Home", "Index", null)
+    };
+
+    // Pagination & sorting input constraints
+    private const int MaxPageSize = 100;
+    private static readonly HashSet<string> AllowedSortColumns = new(
+        new[] { "Status", "Reference", "Property", "SubmittedDate", "CitizensCharterDate", "FinalActionDate" },
+        StringComparer.OrdinalIgnoreCase);
 
     public HomeController(FellingLicenceApplicationUseCase fellingLicenceApplicationUseCase, IUserAccountService userAccountService, ILogger<HomeController> logger)
     {
@@ -30,8 +40,18 @@ public class HomeController : Controller
     public async Task<IActionResult> Index(
         bool assignedToUserOnly,
         FellingLicenceStatus[] fellingLicenceStatusArray,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int page = 1,
+        int pageSize = 12,
+        string column = "FinalActionDate",
+        string dir = "asc")
     {
+        // Sanitize inputs
+        var safePage = page < 1 ? 1 : page;
+        var safePageSize = pageSize < 1 ? 1 : Math.Min(pageSize, MaxPageSize);
+        var safeColumn = AllowedSortColumns.Contains(column) ? column : "FinalActionDate";
+        var safeDir = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase) ? "desc" : "asc";
+
         HomePageModel homePageModel = new HomePageModel();
 
         var internalUser = new InternalUser(User);
@@ -41,8 +61,12 @@ public class HomeController : Controller
             var listUserAssignedFellingLicenceApplicationsModelResult = await _fellingLicenceApplicationUseCase.GetFellingLicenceApplicationAssignmentListModelAsync(
                 assignedToUserOnly,
                 internalUser.UserAccountId.Value,
-                fellingLicenceStatusArray.ToList(),
-                cancellationToken);
+                (fellingLicenceStatusArray ?? Array.Empty<FellingLicenceStatus>()).ToList(),
+                cancellationToken,
+                pageNumber: safePage,
+                pageSize: safePageSize,
+                sortColumn: safeColumn,
+                sortDirection: safeDir);
 
             if (listUserAssignedFellingLicenceApplicationsModelResult.IsFailure)
             {
@@ -126,6 +150,36 @@ public class HomeController : Controller
 
     public IActionResult Cookies()
     {
+        return View();
+    }
+
+    public async Task<IActionResult> UserManagement(CancellationToken cancellationToken)
+    {
+        var internalUser = new InternalUser(User);
+
+        if (internalUser.UserAccountId != null)
+        {
+
+            var signedInUserAccount = await _userAccountService.GetUserAccountAsync(internalUser.UserAccountId!.Value, cancellationToken);
+
+            if (signedInUserAccount.HasNoValue)
+            {
+                _logger.LogError("Could not retrieve current user account from user service");
+
+                return RedirectToAction("Error", "Home");
+            }
+
+            var signedInUserRoles = RolesService.RolesListFromString(signedInUserAccount.Value.Roles);
+
+            ViewData["SignedInUserRoles"]  = signedInUserRoles;
+        }
+
+
+        ViewBag.Breadcrumbs = new BreadcrumbsModel
+        {
+            Breadcrumbs = _breadCrumbsRoot,
+            CurrentPage = "User management"
+        };
         return View();
     }
 }

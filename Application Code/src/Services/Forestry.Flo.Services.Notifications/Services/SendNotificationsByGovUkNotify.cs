@@ -12,6 +12,7 @@ using Notify.Client;
 using Notify.Exceptions;
 using System.Diagnostics.CodeAnalysis;
 using Notify.Interfaces;
+using Newtonsoft.Json;
 
 namespace Forestry.Flo.Services.Notifications.Services;
 
@@ -85,7 +86,7 @@ public class SendNotificationsByGovUkNotify : SendNotificationsBase
                     .ConfigureAwait(false);
             }
 
-            return Result.Success("Email sent successfully");
+            return Result.Success(JsonConvert.SerializeObject(model));
         }
         catch (NotifyClientException e)
         {

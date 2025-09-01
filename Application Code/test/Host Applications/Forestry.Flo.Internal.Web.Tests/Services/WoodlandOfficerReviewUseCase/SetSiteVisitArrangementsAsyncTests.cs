@@ -1,4 +1,5 @@
-﻿using AutoFixture.Xunit2;
+﻿using System.Text.Json;
+using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
@@ -8,30 +9,30 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using System.Text.Json;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
-public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsBase<SiteVisitUseCase>
+public class SetSiteVisitArrangementsAsyncTests : WoodlandOfficerReviewUseCaseTestsBase<SiteVisitUseCase>
 {
     [Theory, AutoData]
     public async Task ShouldStoreCorrectAuditOnSuccessfulUpdate(
         Guid applicationId,
-        FormLevelCaseNote reason)
+        bool? arrangementsMade,
+        FormLevelCaseNote arrangements)
     {
         var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
         var user = new InternalUser(userPrincipal);
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
+            .Setup(x => x.SaveSiteVisitArrangementsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
 
-        var result = await sut.SiteVisitIsNotNeededAsync(applicationId, user, reason, CancellationToken.None);
+        var result = await sut.SetSiteVisitArrangementsAsync(applicationId, user, arrangementsMade, arrangements, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.SetSiteVisitNotNeededAsync(applicationId, RequestContextUserId, reason, It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.SaveSiteVisitArrangementsAsync(applicationId, RequestContextUserId, arrangementsMade, arrangements, It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -47,6 +48,7 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
                 section = "Site Visit",
             }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
+
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                     a.EventName == AuditEvents.UpdateSiteVisit
                     && a.ActorType == ActorType.InternalUser
@@ -57,39 +59,19 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
                     && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
                     JsonSerializer.Serialize(new
                     {
-                        notNeededReason = reason
+                        arrangementsMade,
+                        arrangementsNotes = arrangements.CaseNote
                     }, SerializerOptions)),
+
                 It.IsAny<CancellationToken>()), Times.Once);
-        AuditingService.VerifyNoOtherCalls();
-    }
-
-    [Theory, AutoData]
-    public async Task ShouldNotStoreAuditOnSuccessButNoUpdate(
-        Guid applicationId,
-        FormLevelCaseNote reason)
-    {
-        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
-        var user = new InternalUser(userPrincipal);
-        var sut = CreateSut();
-
-        UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(false));
-
-        var result = await sut.SiteVisitIsNotNeededAsync(applicationId, user, reason, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-
-        UpdateWoodlandOfficerReviewService.Verify(x => x.SetSiteVisitNotNeededAsync(applicationId, RequestContextUserId, reason, It.IsAny<CancellationToken>()), Times.Once);
-        UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
-
         AuditingService.VerifyNoOtherCalls();
     }
 
     [Theory, AutoData]
     public async Task ShouldStoreCorrectFailureAuditOnUnsuccessfulUpdate(
         Guid applicationId,
-        FormLevelCaseNote reason,
+        bool? arrangementsMade,
+        FormLevelCaseNote arrangements,
         string error)
     {
         var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
@@ -97,14 +79,14 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<bool>(error));
+            .Setup(x => x.SaveSiteVisitArrangementsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool?>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(error));
 
-        var result = await sut.SiteVisitIsNotNeededAsync(applicationId, user, reason, CancellationToken.None);
+        var result = await sut.SetSiteVisitArrangementsAsync(applicationId, user, arrangementsMade, arrangements, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.SetSiteVisitNotNeededAsync(applicationId, RequestContextUserId, reason, It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.SaveSiteVisitArrangementsAsync(applicationId, RequestContextUserId, arrangementsMade, arrangements, It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>

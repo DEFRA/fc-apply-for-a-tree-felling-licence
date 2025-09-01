@@ -1,9 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.FellingLicenceApplications.Models.AdminOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
-using Forestry.Flo.Services.Gis.Models.Internal;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -61,16 +58,6 @@ public interface IGetWoodlandOfficerReviewService
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A populated <see cref="ApplicationDetailsForPublicRegisterModel"/> instance.</returns>
     Task<Result<ApplicationDetailsForPublicRegisterModel>> GetApplicationDetailsToSendToPublicRegisterAsync(
-        Guid applicationId,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Gets the details of an application required to publish the application to the mobile apps layers.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to retrieve data for.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A populated <see cref="ApplicationDetailsForSiteVisitMobileLayers"/> instance.</returns>
-    Task<Result<ApplicationDetailsForSiteVisitMobileLayers>> GetApplicationDetailsForSiteVisitMobileLayersAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
 
