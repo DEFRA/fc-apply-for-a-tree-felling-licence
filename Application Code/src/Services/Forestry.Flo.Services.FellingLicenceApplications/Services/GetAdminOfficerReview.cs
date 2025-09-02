@@ -43,6 +43,10 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
         var LarchFlyoverComplete = adminOfficerReview != null && adminOfficerReview.LarchChecked == true &&
                                    adminOfficerReview.FellingLicenceApplication?.LarchCheckDetails?.FlightDate != null;
 
+        // Determine if flyover is required: only required when it's a larch application AND inspection log was confirmed true
+        var isFlyoverRequired = isLarchApplication &&
+                                (adminOfficerReview?.FellingLicenceApplication?.LarchCheckDetails?.ConfirmInspectionLog == true);
+
         return new AdminOfficerReviewStatusModel
         {
             AdminOfficerReviewTaskListStates = new AdminOfficerReviewTaskListStates(
@@ -55,12 +59,12 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
                     ? InternalReviewStepStatus.Completed
                     : InternalReviewStepStatus.NotStarted,
                 CalculateLarchCheckStatus(isLarchApplication, adminOfficerReview),
-                isLarchApplication
-                    ? adminOfficerReview?.LarchChecked != true
+                isFlyoverRequired
+                    ? (adminOfficerReview?.LarchChecked != true
                         ? InternalReviewStepStatus.CannotStartYet
                         : LarchFlyoverComplete
                             ? InternalReviewStepStatus.Completed
-                            : InternalReviewStepStatus.NotStarted
+                            : InternalReviewStepStatus.NotStarted)
                     : InternalReviewStepStatus.NotRequired,
                 CalculateCBWStatus(isCBWApplication, adminOfficerReview),
                 isAgentApplication),

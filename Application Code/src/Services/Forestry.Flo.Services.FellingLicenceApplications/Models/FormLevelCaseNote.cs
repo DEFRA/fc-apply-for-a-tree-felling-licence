@@ -21,4 +21,9 @@ public record FormLevelCaseNote
     /// Indicates whether the case note is visible to the consultee.
     /// </summary>
     public bool VisibleToConsultee { get; init; }
+
+    /// <summary>
+    /// The heading for the inset text section where the case note is displayed.
+    /// </summary>
+    public string InsetTextHeading { get; init; } = "Use this section to record internal notes.";
 }

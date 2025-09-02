@@ -7,3 +7,27 @@ div#filter-section {
 #keywords-container{
     min-width: 30%;
 }
+
+/* Table header sort links - reusable class */
+.sort-header {
+    color: #16629c;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* Moved from inline styles: clickable tags and filters */
+.govuk-tag.app-task-list__tag[fla-status-filter],
+#fla-assigned-to-user-filter {
+    float: left;
+    cursor: pointer;
+}
+
+/* Moved from inline style: clear all filters link */
+#clear-all-filters {
+    cursor: pointer;
+}
+
+/* Moved from inline styles: status tag inside table cell */
+#application-list-table .govuk-table__cell .govuk-tag.app-task-list__tag {
+    float: left;
+}

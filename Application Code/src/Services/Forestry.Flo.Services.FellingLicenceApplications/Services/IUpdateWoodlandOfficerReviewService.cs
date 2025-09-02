@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 
@@ -88,39 +89,24 @@ public interface IUpdateWoodlandOfficerReviewService
     Task<Result<bool>> SetSiteVisitNotNeededAsync(
         Guid applicationId,
         Guid userId,
-        string siteVisitNotNeededReason,
+        FormLevelCaseNote siteVisitNotNeededReason,
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Updates the <see cref="WoodlandOfficerReview"/> to indicate that the site visit artefacts have been
-    /// created and the application published to the mobile app layers.
+    /// Updates the <see cref="WoodlandOfficerReview"/> entity for an application to set the site visit as needed
+    /// with the given arrangements flag and arrangements case note.
     /// </summary>
-    /// <param name="applicationId">The id of the application.</param>
-    /// <param name="userId">The id of the user.</param>
-    /// <param name="publishedDateTime">The date and time the application site visit artefacts were generated.</param>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userId">The id of the user making the update.</param>
+    /// <param name="siteVisitArrangementsMade">A flag indicating whether arrangements for the site visit have been made.</param>
+    /// <param name="siteVisitArrangements">A case note describing the arrangements.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
-    Task<Result> PublishedToSiteVisitMobileLayersAsync(
+    /// <returns>A <see cref="Result"/> indicating whether the update was successful.</returns>
+    Task<Result> SaveSiteVisitArrangementsAsync(
         Guid applicationId,
         Guid userId,
-        DateTime publishedDateTime,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Updates the <see cref="WoodlandOfficerReview"/> to indicate that site visit notes have been retrieved
-    /// for an application.
-    /// </summary>
-    /// <param name="applicationId">The id of the application.</param>
-    /// <param name="userId">The id of the user.</param>
-    /// <param name="retrievedDateTime">The date and time that the site visit notes were retrieved.</param>
-    /// <param name="retrievedNotes">A list of site visit notes retrieved from the mobile app layers.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
-    Task<Result> SiteVisitNotesRetrievedAsync(
-        Guid applicationId,
-        Guid userId,
-        DateTime retrievedDateTime,
-        List<SiteVisitNotes<Guid>> retrievedNotes,
+        bool? siteVisitArrangementsMade,
+        FormLevelCaseNote siteVisitArrangements,
         CancellationToken cancellationToken);
 
     /// <summary>

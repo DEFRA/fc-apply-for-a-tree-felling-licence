@@ -1,16 +1,12 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common.Infrastructure;
-using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.FileStorage.Model;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses.Common;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NodaTime;
@@ -294,7 +290,7 @@ public class UpdateWoodlandOfficerReviewService(
     public async Task<Result<bool>> SetSiteVisitNotNeededAsync(
         Guid applicationId, 
         Guid userId, 
-        string siteVisitNotNeededReason,
+        FormLevelCaseNote siteVisitNotNeededReason,
         CancellationToken cancellationToken)
     {
         logger.LogDebug("Attempting to update the woodland officer review for an application with id {ApplicationId} to set to site visit as not needed", applicationId);
@@ -316,7 +312,7 @@ public class UpdateWoodlandOfficerReviewService(
             if (maybeExistingWoodlandOfficerReview.HasValue)
             {
                 // check if site visit not needed flag already set, if so check if there's an existing comment with the same text
-                if (maybeExistingWoodlandOfficerReview.Value.SiteVisitNotNeeded)
+                if (maybeExistingWoodlandOfficerReview.Value.SiteVisitNeeded is false)
                 {
                     var existingComments = await _internalFlaRepository.GetCaseNotesAsync(
                         applicationId,
@@ -324,7 +320,7 @@ public class UpdateWoodlandOfficerReviewService(
                         cancellationToken);
 
                     if (existingComments.Any(x => !string.IsNullOrWhiteSpace(x.Text) 
-                                                  && x.Text.Equals(siteVisitNotNeededReason, StringComparison.OrdinalIgnoreCase)))
+                                                  && x.Text.Equals(siteVisitNotNeededReason.CaseNote, StringComparison.OrdinalIgnoreCase)))
                     {
                         logger.LogWarning("Woodland officer review for application with id {ApplicationId} already set to site visit not needed and a case note exists with the given reason.", applicationId);
                         return Result.Success(false);
@@ -334,17 +330,17 @@ public class UpdateWoodlandOfficerReviewService(
                 entity = maybeExistingWoodlandOfficerReview.Value;
             }
 
-            entity.SiteVisitNotNeeded = true;
+            entity.SiteVisitNeeded = false;
             entity.LastUpdatedById = userId;
             entity.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
 
             var caseNote = new CaseNote
             {
                 FellingLicenceApplicationId = applicationId,
-                Text = siteVisitNotNeededReason,
+                Text = siteVisitNotNeededReason.CaseNote,
                 Type = CaseNoteType.SiteVisitComment,
-                VisibleToApplicant = false,
-                VisibleToConsultee = false,
+                VisibleToApplicant = siteVisitNotNeededReason.VisibleToApplicant,
+                VisibleToConsultee = siteVisitNotNeededReason.VisibleToConsultee,
                 CreatedByUserId = userId,
                 CreatedTimestamp = _clock.GetCurrentInstant().ToDateTimeUtc()
             };
@@ -372,13 +368,14 @@ public class UpdateWoodlandOfficerReviewService(
     }
 
     /// <inheritdoc />
-    public async Task<Result> PublishedToSiteVisitMobileLayersAsync(
+    public async Task<Result> SaveSiteVisitArrangementsAsync(
         Guid applicationId, 
-        Guid userId,
-        DateTime publishedDateTime,
+        Guid userId, 
+        bool? siteVisitArrangementsMade,
+        FormLevelCaseNote siteVisitArrangements, 
         CancellationToken cancellationToken)
     {
-        logger.LogDebug("Attempting to update the woodland officer review for an application with id {ApplicationId} for the site visit artefacts being generated", applicationId);
+        logger.LogDebug("Attempting to update the woodland officer review for an application with id {ApplicationId} to set to site visit arrangements", applicationId);
 
         try
         {
@@ -399,128 +396,26 @@ public class UpdateWoodlandOfficerReviewService(
                 entity = maybeExistingWoodlandOfficerReview.Value;
             }
 
-            entity.SiteVisitNotNeeded = false;
-            entity.SiteVisitArtefactsCreated = publishedDateTime;
+            entity.SiteVisitNeeded = true;
+            entity.SiteVisitArrangementsMade = siteVisitArrangementsMade;
             entity.LastUpdatedById = userId;
-            entity.LastUpdatedDate = publishedDateTime;
+            entity.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+
+            var caseNote = new CaseNote
+            {
+                FellingLicenceApplicationId = applicationId,
+                Text = siteVisitArrangements.CaseNote,
+                Type = CaseNoteType.SiteVisitComment,
+                VisibleToApplicant = siteVisitArrangements.VisibleToApplicant,
+                VisibleToConsultee = siteVisitArrangements.VisibleToConsultee,
+                CreatedByUserId = userId,
+                CreatedTimestamp = _clock.GetCurrentInstant().ToDateTimeUtc()
+            };
+            await _internalFlaRepository.AddCaseNoteAsync(caseNote, cancellationToken);
 
             if (maybeExistingWoodlandOfficerReview.HasNoValue)
             {
                 await _internalFlaRepository.AddWoodlandOfficerReviewAsync(entity, cancellationToken);
-            }
-
-            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
-            if (saveResult.IsFailure)
-            {
-                logger.LogError("Could not save changes to woodland officer review, error: {Error}", saveResult.Error);
-                return Result.Failure(saveResult.Error.ToString());
-            }
-
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Exception caught in PublishedToSiteVisitMobileLayersAsync");
-            return Result.Failure(ex.Message);
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<Result> SiteVisitNotesRetrievedAsync(
-        Guid applicationId, 
-        Guid userId, 
-        DateTime retrievedDateTime, 
-        List<SiteVisitNotes<Guid>> retrievedNotes,
-        CancellationToken cancellationToken)
-    {
-        logger.LogDebug("Attempting to update the woodland officer review for an application with id {ApplicationId} for the site visit notes being retrieved", applicationId);
-
-        try
-        {
-            if (await AssertApplication(applicationId, userId, cancellationToken) == false)
-            {
-                return Result.Failure("Application woodland officer review unable to be updated");
-            }
-
-            var maybeExistingReview = await _internalFlaRepository.GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
-
-            if (maybeExistingReview.HasNoValue || maybeExistingReview.Value.SiteVisitArtefactsCreated.HasValue is false)
-            {
-                logger.LogWarning("Attempt to set site visit notes retrieved date but no prior site visit artefacts generated date exists, returning failure");
-                return Result.Failure("Woodland Officer review does not have a site visit artefacts generated date.");
-            }
-
-            var entity = maybeExistingReview.Value;
-
-            entity.SiteVisitNotNeeded = false;
-            entity.SiteVisitNotesRetrieved = retrievedDateTime;
-            entity.LastUpdatedById = userId;
-            entity.LastUpdatedDate = retrievedDateTime;
-
-            if (retrievedNotes?.Any() ?? false)
-            {
-                var attachments = new List<FileToStoreModel>();
-
-                var existingSiteVisitCaseNotes = await _caseNotesService.GetSpecificCaseNotesAsync(
-                    applicationId, new[] { CaseNoteType.SiteVisitComment }, cancellationToken);
-                var existingSiteVisitCaseNoteIds = existingSiteVisitCaseNotes.Select(x => x.Id).ToList();
-                foreach (var newSiteVisitComment in retrievedNotes.Where(x =>
-                             existingSiteVisitCaseNoteIds.Contains(x.ObjectID) == false))
-                {
-                    var newCaseNote = new CaseNote
-                    {
-                        Id = newSiteVisitComment.ObjectID,
-                        CreatedTimestamp = retrievedDateTime,
-                        CreatedByUserId = userId,
-                        Type = CaseNoteType.SiteVisitComment,
-                        VisibleToApplicant = true,
-                        VisibleToConsultee = true,
-                        Text = newSiteVisitComment.Notes,
-                        FellingLicenceApplicationId = applicationId
-                    };
-                    await _internalFlaRepository.AddCaseNoteAsync(newCaseNote, cancellationToken);
-
-                    (newSiteVisitComment.AttachmentDetails ?? new List<AttachmentDetails<Guid>>())
-                        .ForEach(x => attachments.Add(new FileToStoreModel
-                        {
-                            ContentType = x.ContentType,
-                            FileBytes = x.File,
-                            FileName = x.Name
-                        }));
-                }
-
-                if (attachments.Any())
-                {
-                    var application = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
-                    if (application.HasNoValue)
-                    {
-                        logger.LogWarning("Attempt to store retrieved site visit attachments but could not load application from repository");
-                        return Result.Failure("Could not load felling licence application to store retrieved site visit attachments.");
-                    }
-
-                    var addDocumentRequest = new AddDocumentsRequest
-                    {
-                        ActorType = ActorType.InternalUser,
-                        ApplicationDocumentCount = application.Value.Documents!.Count(x => x.DeletionTimestamp is null),
-                        DocumentPurpose = DocumentPurpose.SiteVisitAttachment,
-                        FellingApplicationId = applicationId,
-                        FileToStoreModels = attachments,
-                        ReceivedByApi = false,
-                        UserAccountId = userId,
-                        VisibleToApplicant = _options.SiteVisitAttachment.VisibleToApplicant,
-                        VisibleToConsultee = _options.SiteVisitAttachment.VisibleToConsultees
-                    };
-
-                    var attachmentsResult = await _addDocumentService.AddDocumentsAsInternalUserAsync(
-                        addDocumentRequest,
-                        cancellationToken);
-
-                    if (attachmentsResult.IsFailure)
-                    {
-                        logger.LogError("Could not attach site visit comment attachments as supporting documents");
-                        return Result.Failure("Could not save site visit comment attachments");
-                    }
-                }
             }
 
             var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
@@ -534,7 +429,7 @@ public class UpdateWoodlandOfficerReviewService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Exception caught in SiteVisitNotesRetrievedAsync");
+            logger.LogError(ex, "Exception caught in SaveSiteVisitArrangementsAsync");
             return Result.Failure(ex.Message);
         }
     }

@@ -6,16 +6,24 @@
 $(function () {
     $('#site-nav-home').removeClass('govuk-service-navigation__item--active');
     $('#site-nav-profile').removeClass('govuk-service-navigation__item--active');
+    $('#site-nav-reports').removeClass('govuk-service-navigation__item--active');
+    $('#site-nav-user-management').removeClass('govuk-service-navigation__item--active');
 
-    if (window.location.pathname === "/") {
+    let path = window.location.pathname.toLowerCase();
+    if (path.includes("user") || path.includes("account") || path.includes("adminhub")) {
+        $('#site-nav-user-management').addClass('govuk-service-navigation__item--active');
+    } else if (path === "/") {
         $('#site-nav-home').addClass('govuk-service-navigation__item--active');
     } else {
-        switch (window.location.pathname.split("/")[1].toLowerCase()) {
+        switch (path.split("/")[1]) {
             case "home":
                 $('#site-nav-home').addClass('govuk-service-navigation__item--active');
                 break;
             case "account":
                 $('#site-nav-profile').addClass('govuk-service-navigation__item--active');
+                break;
+            case "reports":
+                $('#site-nav-reports').addClass('govuk-service-navigation__item--active');
                 break;
             default:
                 break;

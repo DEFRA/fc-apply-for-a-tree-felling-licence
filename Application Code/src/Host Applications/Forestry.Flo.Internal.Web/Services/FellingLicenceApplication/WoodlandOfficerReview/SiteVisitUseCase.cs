@@ -20,6 +20,9 @@ using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 
+/// <summary>
+/// Usecase class for managing site visits in the woodland officer review process of a felling licence application.
+/// </summary>
 public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
 {
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
@@ -27,11 +30,23 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
     private readonly IAuditService<SiteVisitUseCase> _auditService;
     private readonly RequestContext _requestContext;
-    private readonly IForestryServices _forestryServices;
-    private readonly IForesterServices _iForesterServices;
-    private readonly IClock _clock;
     private readonly ILogger<SiteVisitUseCase> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SiteVisitUseCase"/> class.
+    /// </summary>
+    /// <param name="internalUserAccountService">A <see cref="IUserAccountService"/> to deal with internal user accounts.</param>
+    /// <param name="externalUserAccountService">A <see cref="IRetrieveUserAccountsService"/> to retrieve external user accounts.</param>
+    /// <param name="fellingLicenceApplicationInternalRepository">A <see cref="IFellingLicenceApplicationInternalRepository"/> to retrieve applications from the repository.</param>
+    /// <param name="woodlandOwnerService">A <see cref="IRetrieveWoodlandOwners"/> to retrieve woodland owner details.</param>
+    /// <param name="getWoodlandOfficerReviewService">A <see cref="IGetWoodlandOfficerReviewService"/> to retrieve woodland officer review details.</param>
+    /// <param name="updateWoodlandOfficerReviewService">A <see cref="IUpdateWoodlandOfficerReviewService"/> to update woodland officer review details.</param>
+    /// <param name="activityFeedItemProvider">A <see cref="IActivityFeedItemProvider"/> to retrieve site visit comment case notes.</param>
+    /// <param name="auditService">A <see cref="IAuditService{T}"/> to raise audit events.</param>
+    /// <param name="agentAuthorityService">A <see cref="IAgentAuthorityService"/> to retrieve AAF details.</param>
+    /// <param name="getConfiguredFcAreasService">A <see cref="IGetConfiguredFcAreas"/> to get FC area config.</param>
+    /// <param name="requestContext">The <see cref="RequestContext"/> for the current operation.</param>
+    /// <param name="logger">A <see cref="ILogger{T}"/> logging implementation.</param>
     public SiteVisitUseCase(
         IUserAccountService internalUserAccountService,
         IRetrieveUserAccountsService externalUserAccountService,
@@ -40,13 +55,10 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
         IUpdateWoodlandOfficerReviewService updateWoodlandOfficerReviewService,
         IActivityFeedItemProvider activityFeedItemProvider,
-        IForestryServices forestryServices,
-        IForesterServices iForesterServices,
         IAuditService<SiteVisitUseCase> auditService,
         IAgentAuthorityService agentAuthorityService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
         RequestContext requestContext,
-        IClock clock,
         ILogger<SiteVisitUseCase> logger) 
         : base(internalUserAccountService,
             externalUserAccountService, 
@@ -60,14 +72,18 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
-        _forestryServices = Guard.Against.Null(forestryServices);
-        _clock = Guard.Against.Null(clock);
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves the site visit details for a felling licence application, including comments and summary information.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve details for.</param>
+    /// <param name="hostingPage">The hosting page.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="SiteVisitViewModel"/> representing the current state of the site visit.</returns>
     public async Task<Result<SiteVisitViewModel>> GetSiteVisitDetailsAsync(
         Guid applicationId,
-        InternalUser user,
         string hostingPage,
         CancellationToken cancellationToken)
     {
@@ -93,11 +109,11 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
             ? siteVisitModel.Value.Value
             : new SiteVisitModel { SiteVisitComments = new List<CaseNoteModel>(0) };
 
-        var providerModel = new ActivityFeedItemProviderModel()
+        var providerModel = new ActivityFeedItemProviderModel
         {
             FellingLicenceId = applicationId,
             FellingLicenceReference = application.Value.ApplicationReference,
-            ItemTypes = new[] { ActivityFeedItemType.SiteVisitComment },
+            ItemTypes = [ActivityFeedItemType.SiteVisitComment],
         };
 
         var activityFeedItems = await _activityFeedItemProvider.RetrieveAllRelevantActivityFeedItemsAsync(
@@ -107,7 +123,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
 
         if (activityFeedItems.IsFailure)
         {
-            _logger.LogError("Failed to retrieve activity feed items with error {Error}", application.Error);
+            _logger.LogError("Failed to retrieve activity feed items with error {Error}", activityFeedItems.Error);
             return activityFeedItems.ConvertFailure<SiteVisitViewModel>();
         }
 
@@ -116,39 +132,53 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
             FellingLicenceApplicationSummary = application.Value,
             ApplicationId = applicationId,
             ApplicationReference = application.Value.ApplicationReference,
-            SiteVisitNotNeeded = siteVisit.SiteVisitNotNeeded,
-            SiteVisitArtefactsCreated = siteVisit.SiteVisitArtefactsCreated,
-            SiteVisitNotesRetrieved = siteVisit.SiteVisitNotesRetrieved,
-            ApplicationDocumentHasBeenGenerated = application.Value.MostRecentApplicationDocument.HasValue,
+            SiteVisitNeeded = siteVisit.SiteVisitNeeded,
+            SiteVisitArrangementsMade = siteVisit.SiteVisitArrangementsMade,
+            SiteVisitComplete = siteVisit.SiteVisitComplete,
+            SiteVisitNotNeededReason = new FormLevelCaseNote
+            {
+                InsetTextHeading = "Explain why a site visit is not needed for this application"
+            },
+            SiteVisitArrangementNotes = new FormLevelCaseNote
+            {
+                InsetTextHeading = "Describe any site visit arrangements, or give a reason why none are required"
+            },
             SiteVisitComments = new ActivityFeedModel
             {
                 ApplicationId = applicationId,
-                NewCaseNoteType = CaseNoteType.SiteVisitComment,
                 DefaultCaseNoteFilter = CaseNoteType.SiteVisitComment,
                 ActivityFeedItemModels = activityFeedItems.Value,
                 HostingPage = hostingPage,
                 ShowFilters = false,
-                ActivityFeedTitle = "Site visit comments"
+                ActivityFeedTitle = "Site visit comments",
+                ShowAddCaseNote = false
             }
         };
-        result.SiteVisitComments.ShowAddCaseNote = result.Editable(user);
 
         SetBreadcrumbs(result);
 
         return Result.Success(result);
     }
 
+    /// <summary>
+    /// Updates the site visit status for a felling licence application, indicating that a site visit is not needed.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to update site visit details for.</param>
+    /// <param name="user">The user making the update.</param>
+    /// <param name="siteVisitNotNeededReason">The reason for not needing a site visit, to be stored as a case note.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating success or failure.</returns>
     public async Task<Result> SiteVisitIsNotNeededAsync(
         Guid applicationId,
         InternalUser user,
-        string siteVisitNotNeededReason,
+        FormLevelCaseNote siteVisitNotNeededReason,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to update site visit not needed for application with id {ApplicationId}", applicationId);
 
         var updateResult = await _updateWoodlandOfficerReviewService.SetSiteVisitNotNeededAsync(
             applicationId,
-            user.UserAccountId.Value,
+            user.UserAccountId!.Value,
             siteVisitNotNeededReason,
             cancellationToken);
 
@@ -183,124 +213,122 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Failure(updateResult.Error);
     }
 
-    public async Task<Result> GenerateSiteVisitArtefactsAsync(
+    /// <summary>
+    /// Updates the site visit arrangements for a felling licence application, including whether arrangements have been made and any notes about the arrangements.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to update.</param>
+    /// <param name="user">The user making the update.</param>
+    /// <param name="siteVisitArrangementsMade">A flag indicating if any arrangements have been made.</param>
+    /// <param name="siteVisitArrangements">Details of the arrangements, to be stored as a case note.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating success or failure.</returns>
+    public async Task<Result> SetSiteVisitArrangementsAsync(
         Guid applicationId,
         InternalUser user,
+        bool? siteVisitArrangementsMade,
+        FormLevelCaseNote siteVisitArrangements,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Attempting to generate site visit artefacts for application with id {ApplicationId}", applicationId);
+        _logger.LogDebug("Attempting to update site visit arrangements for application with id {ApplicationId}", applicationId);
 
-        // Publish application to mobile apps data layer
-        var applicationDetails = await _getWoodlandOfficerReviewService.GetApplicationDetailsForSiteVisitMobileLayersAsync(
-            applicationId, cancellationToken);
-
-        if (applicationDetails.IsFailure)
-        {
-            _logger.LogError("Could not get application details for mobile layers for application with id {ApplicationId} with error {Error}", applicationId, applicationDetails.Error);
-            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, applicationDetails.Error, cancellationToken);
-            await AuditSiteVisitFailureEvent(applicationId, user, applicationDetails.Error, cancellationToken);
-            return Result.Failure(applicationDetails.Error);
-        }
-
-        var publishResult = await _forestryServices.SavesCaseToMobileLayersAsync(
-            applicationDetails.Value.CaseReference,
-            applicationDetails.Value.Compartments,
-            cancellationToken);
-
-        if (publishResult.IsFailure)
-        {
-            _logger.LogError("Could not publish application to mobile layers for application with id {ApplicationId} with error {Error}", applicationId, publishResult.Error);
-            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, publishResult.Error, cancellationToken);
-            await AuditSiteVisitFailureEvent(applicationId, user, publishResult.Error, cancellationToken);
-            return Result.Failure(publishResult.Error);
-        }
-
-        // update woodland officer review entity
-        var now = _clock.GetCurrentInstant().ToDateTimeUtc();
-        var updateResult = await _updateWoodlandOfficerReviewService.PublishedToSiteVisitMobileLayersAsync(
-            applicationId, user.UserAccountId.Value, now, cancellationToken);
-        if (updateResult.IsFailure)
-        {
-            _logger.LogError("Could not update woodland officer review for published application to mobile layers for application with id {ApplicationId} with error {Error}", applicationId, updateResult.Error);
-            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, updateResult.Error, cancellationToken);
-            await AuditSiteVisitFailureEvent(applicationId, user, updateResult.Error, cancellationToken);
-            return Result.Failure(updateResult.Error);
-        }
-
-        //audit successful completion
-        await _auditService.PublishAuditEventAsync(new AuditEvent(
-                AuditEvents.UpdateWoodlandOfficerReview,
-                applicationId,
-                user.UserAccountId,
-                _requestContext,
-                new { Section = "Site Visit" }),
-            cancellationToken);
-        await _auditService.PublishAuditEventAsync(new AuditEvent(
-                AuditEvents.UpdateSiteVisit,
-                applicationId,
-                user.UserAccountId,
-                _requestContext,
-                new { ProcessStartedDate = now }),
-            cancellationToken);
-
-        return Result.Success();
-    }
-
-    public async Task<Result> RetrieveSiteVisitNotesAsync(
-        Guid applicationId,
-        string applicationReference,
-        InternalUser user,
-        CancellationToken cancellationToken)
-    {
-
-        _logger.LogDebug("Attempting to retrieve site visit notes and complete process for application with id {ApplicationId}", applicationId);
-
-        var now = _clock.GetCurrentInstant().ToDateTimeUtc();
-        var notesResult = await _forestryServices.GetVisitNotesAsync(applicationReference, cancellationToken);
-
-        if (notesResult.IsFailure)
-        {
-            _logger.LogError("Could not retrieve site visit notes from mobile layers for application with id {ApplicationId} with error {Error}", applicationId, notesResult.Error);
-            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, notesResult.Error, cancellationToken);
-            await AuditSiteVisitFailureEvent(applicationId, user, notesResult.Error, cancellationToken);
-            return Result.Failure(notesResult.Error);
-        }
-
-        var updateResult = await _updateWoodlandOfficerReviewService.SiteVisitNotesRetrievedAsync(
+        var updateResult = await _updateWoodlandOfficerReviewService.SaveSiteVisitArrangementsAsync(
             applicationId,
-            user.UserAccountId.Value,
-            now,
-            notesResult.Value,
+            user.UserAccountId!.Value,
+            siteVisitArrangementsMade,
+            siteVisitArrangements,
             cancellationToken);
 
-        if (updateResult.IsFailure)
+        if (updateResult.IsSuccess)
         {
-            _logger.LogError("Could not update woodland officer review for retrieval of site visit notes for application with id {ApplicationId} with error {Error}", applicationId, updateResult.Error);
-            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, updateResult.Error, cancellationToken);
-            await AuditSiteVisitFailureEvent(applicationId, user, updateResult.Error, cancellationToken);
-            return updateResult;
-        }
-        
-        //audit successful completion
-        await _auditService.PublishAuditEventAsync(new AuditEvent(
-                AuditEvents.UpdateWoodlandOfficerReview,
-                applicationId,
-                user.UserAccountId,
-                _requestContext,
-                new { Section = "Site Visit" }),
-            cancellationToken);
-        await _auditService.PublishAuditEventAsync(new AuditEvent(
-                AuditEvents.UpdateSiteVisit,
-                applicationId,
-                user.UserAccountId,
-                _requestContext,
-                new { ProcessCompletedDate = now }),
-            cancellationToken);
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.UpdateWoodlandOfficerReview,
+                    applicationId,
+                    user.UserAccountId,
+                    _requestContext,
+                    new { Section = "Site Visit" }),
+                cancellationToken);
 
-        return Result.Success();
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.UpdateSiteVisit,
+                    applicationId,
+                    user.UserAccountId,
+                    _requestContext,
+                    new
+                    {
+                        ArrangementsMade = siteVisitArrangementsMade,
+                        ArrangementsNotes = siteVisitArrangements.CaseNote
+                    }),
+                cancellationToken);
+
+            return Result.Success();
+        }
+
+        _logger.LogError("Failed to update site visit arrangements with error {Error}", updateResult.Error);
+        await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, updateResult.Error, cancellationToken);
+        await AuditSiteVisitFailureEvent(applicationId, user, updateResult.Error, cancellationToken);
+
+        return Result.Failure(updateResult.Error);
     }
 
-    private void SetBreadcrumbs(FellingLicenceApplicationPageViewModel model)
+    /// <summary>
+    /// Retrieves the site visit summary for a felling licence application, including comments and summary information.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve a summary for.</param>
+    /// <param name="hostingPage">The hosting page.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="SiteVisitSummaryModel"/> representing the application details required for a site visit summary document.</returns>
+    public async Task<Result<SiteVisitSummaryModel>> GetSiteVisitSummaryAsync(
+        Guid applicationId,
+        string hostingPage,
+        CancellationToken cancellationToken)
+    {
+        var summaryInfo = await GetFellingLicenceDetailsAsync(applicationId, cancellationToken);
+
+        if (summaryInfo.IsFailure)
+        {
+            _logger.LogError("Failed to retrieve felling licence application summary with error {Error}", summaryInfo.Error);
+            return summaryInfo.ConvertFailure<SiteVisitSummaryModel>();
+        }
+
+        var providerModel = new ActivityFeedItemProviderModel
+        {
+            FellingLicenceId = applicationId,
+            FellingLicenceReference = summaryInfo.Value.ApplicationReference,
+            ItemTypes = [ActivityFeedItemType.SiteVisitComment],
+        };
+
+        var activityFeedItems = await _activityFeedItemProvider.RetrieveAllRelevantActivityFeedItemsAsync(
+            providerModel,
+            ActorType.InternalUser,
+            cancellationToken);
+
+        if (activityFeedItems.IsFailure)
+        {
+            _logger.LogError("Failed to retrieve activity feed items with error {Error}", activityFeedItems.Error);
+            return activityFeedItems.ConvertFailure<SiteVisitSummaryModel>();
+        }
+
+        var result = new SiteVisitSummaryModel
+        {
+            FellingLicenceApplicationSummary = summaryInfo.Value,
+            SiteVisitComments = new ActivityFeedModel
+            {
+                ApplicationId = applicationId,
+                DefaultCaseNoteFilter = CaseNoteType.SiteVisitComment,
+                ActivityFeedItemModels = activityFeedItems.Value,
+                HostingPage = hostingPage,
+                ShowFilters = false,
+                ActivityFeedTitle = "Site visit comments",
+                ShowAddCaseNote = false
+            }
+        };
+
+        SetBreadcrumbs(result, "Site Visit Summary");
+
+        return Result.Success(result);
+    }
+
+    private void SetBreadcrumbs(FellingLicenceApplicationPageViewModel model, string currentPage = "Site Visit")
     {
         var breadCrumbs = new List<BreadCrumb>
         {

@@ -21,13 +21,10 @@ public static class EntityExtensions
 
     public static InternalReviewStepStatus GetSiteVisitStatus(this Maybe<WoodlandOfficerReview> review)
     {
-        if (review.HasNoValue)
+        if (review.HasNoValue || review.Value.SiteVisitNeeded.HasNoValue())
             return InternalReviewStepStatus.NotStarted;
 
-        if (review.Value.SiteVisitNotNeeded == false && review.Value.SiteVisitArtefactsCreated.HasValue == false)
-            return InternalReviewStepStatus.NotStarted;
-
-        if (review.Value.SiteVisitNotNeeded || review.Value.SiteVisitNotesRetrieved.HasValue)
+        if (review.Value.SiteVisitNeeded is false || review.Value.SiteVisitComplete)
             return InternalReviewStepStatus.Completed;
 
         return InternalReviewStepStatus.InProgress;

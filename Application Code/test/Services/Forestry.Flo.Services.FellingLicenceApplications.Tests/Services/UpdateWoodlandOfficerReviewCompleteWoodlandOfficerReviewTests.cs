@@ -253,9 +253,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -322,9 +322,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -397,9 +397,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // site visit not started
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = null;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = null;
+        woodlandOfficerReview.SiteVisitNeeded = null;
+        woodlandOfficerReview.SiteVisitArrangementsMade = null;
+        woodlandOfficerReview.SiteVisitComplete = false;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -473,9 +473,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // site visit in progress
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = null;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = false;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -548,10 +548,10 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
-        
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
+
         // incomplete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = false;
         
@@ -624,9 +624,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -700,9 +700,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -779,9 +779,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -860,9 +860,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -945,9 +945,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;

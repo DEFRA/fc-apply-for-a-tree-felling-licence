@@ -1,0 +1,36 @@
+﻿@using NodaTime
+
+@{
+    ViewData["Title"] = "Site visit application summary";
+    var user = new InternalUser(User);
+}
+
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SiteVisitSummaryModel
+
+<div class="govuk-grid-column-full">
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+    <partial name="Partials/_PageErrors" />
+</div>
+
+<div class="govuk-grid-column-two-thirds">
+    
+    <h1 class="govuk-heading-l">
+        @ViewData["Title"]
+    </h1>
+
+    <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

@@ -3,6 +3,7 @@
 @using Forestry.Flo.Internal.Web.Infrastructure.Display
 @using Forestry.Flo.Services.Common.Analytics
 @using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Services.Common.User
 @inject SiteSiteAnalyticsService SiteSiteAnalyticsService
 
 <!DOCTYPE html>
@@ -92,7 +93,24 @@
                                     Home
                                 </a>
                             </li>
-                            <li class="govuk-service-navigation__item">
+							<li class="govuk-service-navigation__item" id="site-nav-reports">
+                                <a class="govuk-service-navigation__link" asp-controller="Reports" asp-action="Index" role="menuitem">
+                                    Reporting
+								</a>
+							</li>
+                            @{
+                                var internalUser = new InternalUser(User);
+
+                                if (internalUser.AccountType == AccountTypeInternal.AccountAdministrator || internalUser.AccountType == AccountTypeInternal.AdminHubManager)
+                                {
+                                    <li class="govuk-service-navigation__item" id="site-nav-user-management">
+                                        <a class="govuk-service-navigation__link" asp-controller="Home" asp-action="UserManagement" role="menuitem">
+                                            User management
+                                        </a>
+                                    </li>
+                                }
+                            }
+							<li class="govuk-service-navigation__item">
                                 <a id="signout" class="govuk-service-navigation__link" asp-controller="Home" asp-action="Logout" role="menuitem">
                                     Sign out
                                 </a>

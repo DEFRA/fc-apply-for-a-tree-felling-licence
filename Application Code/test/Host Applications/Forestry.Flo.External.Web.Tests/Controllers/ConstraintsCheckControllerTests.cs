@@ -1,13 +1,9 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using AutoFixture;
+﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Models;
-using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
@@ -21,6 +17,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Net;
+using System.Net.Http.Headers;
 using ExternalUserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.External.Web.Tests.Controllers;

@@ -21,13 +21,6 @@
                         <a class="govuk-breadcrumbs__link" asp-controller="@breadCrumb.Controller" asp-action="@breadCrumb.Action" asp-route-id="@breadCrumb.RouteId">@breadCrumb.Text</a>    
                     }
                 }
-                
-            </li>
-        }
-        @if (string.IsNullOrWhiteSpace(Model.CurrentPage) == false)
-        {
-            <li class="govuk-breadcrumbs__list-item">
-                <a class="govuk-breadcrumbs__link" href="#">@Model.CurrentPage</a>
             </li>
         }
     </ol>

@@ -68,77 +68,118 @@
         <div class="govuk-grid-row">
 
             <div class="govuk-grid-column-full">
-                <h1 class="govuk-heading-l">Applications</h1>
+                <h2 class="govuk-heading-m">Process stage</h2>
             </div>
 
         </div>
 
         <div class="govuk-!-text-align-left govuk-grid-row">
             <div class="govuk-grid-column-full">
-                <p>Include</p>
+                <div class="govuk-hint">
+                    Filter applications by where they are in the process.
+                </div>
 
                 @foreach (var fellingLicenceStatus in FellingLicenceApplicationUseCase.PostSubmittedStatuses)
                 {
-                    <strong fla-status-filter="@fellingLicenceStatus" style="float: left; cursor: pointer" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 @GetStatusStyleName(fellingLicenceStatus)" id="company-information-status">
+                    <strong fla-status-filter="@fellingLicenceStatus" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 @GetStatusStyleName(fellingLicenceStatus)" id="company-information-status">
                         @fellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)
 
-                        (@Model.FellingLicenceApplicationAssignmentListModel.AssignedFellingLicenceApplicationModels.Count(x => x.FellingLicenceStatus == fellingLicenceStatus))
+                        (@(Model.FellingLicenceApplicationAssignmentListModel.FellingLicenceStatusCount.FirstOrDefault(x => x.FellingLicenceStatus == fellingLicenceStatus)?.Count ?? 0))
                     </strong>
                 }
             </div>
         </div>
 
         <div class="govuk-!-text-align-left govuk-grid-row">
-            <div class="govuk-grid-column-full" id="filter-section">
+            <div class="govuk-grid-column-one-third" id="filter-section">
                 <div>
-
                     <p>Filter by</p>
-
-                    <strong id="fla-assigned-to-user-filter" style="float: left; cursor: pointer" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 govuk-tag--grey" id="company-information-status">
-                        Assigned to me (@Model.FellingLicenceApplicationAssignmentListModel.AssignedToUserCount)
+                    <strong id="fla-assigned-to-user-filter" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 govuk-tag--grey" id="company-information-status">
+                        My cases (@Model.FellingLicenceApplicationAssignmentListModel.AssignedToUserCount)
                     </strong>
-
                 </div>
-
-                <div id="keywords-container">
-
-                    <p>Search</p>
-
-                    <input class="govuk-input" id="keywords-text" name="keywords-text" type="text" title="Search terms">
-
+            </div>
+            <div class="govuk-grid-column-two-thirds">
+                <label class="govuk-label--s" for="keywords-text">Search for an application</label>
+                <div class="govuk-hint">
+                    Search by application reference number, property or user.
                 </div>
+                <input class="govuk-input" id="keywords-text" name="keywords-text" type="text" title="Search terms" />
             </div>
         </div>
 
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-full">
-                <p>Showing @Model.FellingLicenceApplicationAssignmentListModel.AssignedFellingLicenceApplicationModels.Count applications | <a class="govuk-link govuk-link--no-visited-state" style="cursor: pointer" id="clear-all-filters">Clear all filters</a></p>
+                <p>Showing @Model.FellingLicenceApplicationAssignmentListModel.TotalCount applications | <a class="govuk-link govuk-link--no-visited-state" id="clear-all-filters">Clear all filters</a></p>
             </div>
         </div>
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-full">
-                <table class="govuk-table" data-module="moj-sortable-table" id="application-list-table">
+                @* Add sorting support to table headers using column/dir and pagination using page *@
+                @{
+                    string currentSortColumn = Context.Request.Query["column"];
+                    string currentSortDirection = Context.Request.Query["dir"];
+                    if (string.IsNullOrWhiteSpace(currentSortColumn))
+                    {
+                        currentSortColumn = "FinalActionDate";
+                    }
+                    if (string.IsNullOrWhiteSpace(currentSortDirection))
+                    {
+                        currentSortDirection = "asc";
+                    }
+                    Func<string, string> getSortUrl = (column) => {
+                        var direction = (currentSortColumn == column && currentSortDirection == "asc") ? "desc" : "asc";
+                        var query = Context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
+                        query["column"] = column;
+                        query["dir"] = direction;
+                        var queryString = string.Join("&", query.Select(x => $"{x.Key}={x.Value}"));
+                        return $"?{queryString}";
+                    };
+                    Func<string, string> getSortArrow = (column) => {
+                        if (currentSortColumn == column)
+                            return currentSortDirection == "asc" ? "▲" : "▼";
+                        return "⇵";
+                    };
+                    Func<int, string> getPageUrl = (page) => {
+                        var query = Context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
+                        query["page"] = page.ToString();
+                        var queryString = string.Join("&", query.Select(x => $"{x.Key}={x.Value}"));
+                        return $"?{queryString}";
+                    };
+                }
+
+                <table class="govuk-table" id="application-list-table">
 
                     <thead class="govuk-table__head">
 
                     <tr class="govuk-table__row">
 
-                        <th scope="col" class="govuk-table__header" aria-sort="none">Status</th>
-
-                        <th scope="col" class="govuk-table__header" aria-sort="none">Reference</th>
-
-                        <th scope="col" class="govuk-table__header" aria-sort="none">Property</th>
-
-                        <th scope="col" class="govuk-table__header" aria-sort="none">User</th>
-
-                        <th scope="col" class="govuk-table__header" aria-sort="none">Date submitted</th>
-
-                        <th scope="col" class="govuk-table__header" aria-sort="none">Citizen charter date</th>
-
-                        <th scope="col" class="govuk-table__header" aria-sort="ascending">Final action date</th>
+                        <th scope="col" class="govuk-table__header">
+                            <a class="sort-header" href="@getSortUrl("Status")">Status @getSortArrow("Status")</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            <a class="sort-header" href="@getSortUrl("Reference")">Reference @getSortArrow("Reference")</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            <a class="sort-header" href="@getSortUrl("Property")">Property @getSortArrow("Property")</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            <a class="sort-header" href="@getSortUrl("SubmittedDate")">Date submitted @getSortArrow("SubmittedDate")</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            <a class="sort-header" href="@getSortUrl("CitizensCharterDate")">Citizen charter date @getSortArrow("CitizensCharterDate")</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            <a class="sort-header" href="@getSortUrl("FinalActionDate")">Final action date @getSortArrow("FinalActionDate")</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            Assigned users
+                        </th>
 
                         <require-user-account-type required-account-type="AccountAdministrator">
-                            <th scope="col" class="govuk-table__header" aria-sort="ascending">Options</th>
+                            <th scope="col" class="govuk-table__header">
+                                Options
+                            </th>
                         </require-user-account-type>
                     </tr>
 
@@ -152,7 +193,7 @@
                             <tr class="govuk-table__row data-row">
 
                                 <td class="govuk-table__cell" style="width: @(14 + offset)%">
-                                    <strong style="float: left" class="govuk-tag app-task-list__tag @GetStatusStyleName(assignedFellingLicenceApplicationModel.FellingLicenceStatus)" id="company-information-status">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
+                                    <strong class="govuk-tag app-task-list__tag @GetStatusStyleName(assignedFellingLicenceApplicationModel.FellingLicenceStatus)" id="company-information-status">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
                                 </td>
 
                                 <td class="govuk-table__cell" style="width: @(10 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.Reference)">
@@ -162,19 +203,8 @@
                                 </td>
 
                                 <td class="govuk-table__cell" style="width: @(14 + offset)%;">
+
                                     @assignedFellingLicenceApplicationModel.Property
-                                </td>
-
-                                <td class="govuk-table__cell" style="width: @(20 + offset)%;">
-
-                                    @{
-                                        // Display comma separated list of users
-
-                                        if (assignedFellingLicenceApplicationModel.UserFirstLastNames != null)
-                                        {
-                                            @(string.Join(", ", assignedFellingLicenceApplicationModel.UserFirstLastNames))
-                                        }
-                                    }
                                 </td>
 
                                 <td class="govuk-table__cell" style="width: @(14 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.SubmittedDate.HasValue ? assignedFellingLicenceApplicationModel.SubmittedDate.Value.ToString("yyyyMMdd") : "")">
@@ -187,6 +217,18 @@
 
                                 <td class="govuk-table__cell" style="width: @(14 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.Deadline.HasValue ? assignedFellingLicenceApplicationModel.Deadline.Value.ToString("yyyyMMdd") : "")">
                                     @(assignedFellingLicenceApplicationModel.Deadline.HasValue ? assignedFellingLicenceApplicationModel.Deadline.Value.ToString("dd/MM/yyyy") : "")
+                                </td>
+
+                                <td class="govuk-table__cell" style="width: @(20 + offset)%;">
+
+                                    @{
+                                        // Display comma separated list of users
+
+                                        if (assignedFellingLicenceApplicationModel.UserFirstLastNames != null)
+                                        {
+                                            @(string.Join(", ", assignedFellingLicenceApplicationModel.UserFirstLastNames))
+                                        }
+                                    }
                                 </td>
 
                                 <require-user-account-type required-account-type="AccountAdministrator">
@@ -212,47 +254,33 @@
                 </table>
             </div>
         </div>
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-full">
+                <nav aria-label="Pagination">
+                    <ul class="govuk-pagination">
+                        @if (Model.FellingLicenceApplicationAssignmentListModel.HasPreviousPage)
+                        {
+                            <li class="govuk-pagination__item govuk-pagination__item--prev">
+                                <a class="govuk-link govuk-pagination__link" href="@getPageUrl(Model.FellingLicenceApplicationAssignmentListModel.PageNumber - 1)" rel="prev">Previous</a>
+                            </li>
+                        }
+                        @for (int i = 1; i <= Model.FellingLicenceApplicationAssignmentListModel.TotalPages; i++)
+                        {
+                            <li class="govuk-pagination__item @(i == Model.FellingLicenceApplicationAssignmentListModel.PageNumber ? "govuk-pagination__item--current" : "")">
+                                <a class="govuk-link govuk-pagination__link" href="@getPageUrl(i)">@i</a>
+                            </li>
+                        }
+                        @if (Model.FellingLicenceApplicationAssignmentListModel.HasNextPage)
+                        {
+                            <li class="govuk-pagination__item govuk-pagination__item--next">
+                                <a class="govuk-link govuk-pagination__link" href="@getPageUrl(Model.FellingLicenceApplicationAssignmentListModel.PageNumber + 1)" rel="next">Next</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        </div>
 
-    </div>
-
-    <div>
-        <h2 class="govuk-heading-m">Navigation</h2>
-
-        <ul class="govuk-body">
-
-            <li>
-                <a href="@Url.Action("Index", "Home")">Home</a>
-            </li>
-
-            @{
-                if (Model.SignedInUserRoles.Contains(Roles.FcAdministrator))
-                {
-                    <li>
-                        <a href="@Url.Action("UnconfirmedUserAccounts", "AdminAccount")">Unconfirmed user accounts</a>
-                    </li>
-
-                    <li>
-                        <a href="@Url.Action("FcStaffList", "AccountAdministration")">Manage FC user accounts in the system</a>
-                    </li>
-
-                    <li>
-                        <a href="@Url.Action("ExternalUserList", "ExternalAccountAdministration")">Manage applicant and FC user accounts in external applicant system</a>
-                    </li>
-                }
-            }
-
-            <li>
-                <a href="@Url.Action("Index", "Reports")">Reports</a>
-            </li>
-
-            <require-user-account-type required-account-type="AdminHubManager">
-                <li>
-                    <a href="@Url.Action("AdminHubSummary", "AdminHub")">Manage admin hub</a>
-                </li>
-            </require-user-account-type>
-
-        </ul>
-    </div>
 </logged-in>
 
 

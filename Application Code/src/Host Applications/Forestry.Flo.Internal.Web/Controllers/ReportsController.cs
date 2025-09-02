@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.Reports;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.Reports;
@@ -15,6 +16,10 @@ namespace Forestry.Flo.Internal.Web.Controllers;
 public class ReportsController : Controller
 {
     private readonly ILogger<ReportsController> _logger;
+    private readonly List<BreadCrumb> _breadCrumbsRoot = new()
+    {
+        new ("Home", "Home", "Index", null)
+    };
 
     public ReportsController(ILogger<ReportsController> logger)
     {
@@ -24,6 +29,11 @@ public class ReportsController : Controller
     [HttpGet]
     public IActionResult Index()
     {
+        ViewBag.Breadcrumbs = new BreadcrumbsModel
+        {
+            Breadcrumbs = _breadCrumbsRoot,
+            CurrentPage = "User management"
+        };
         return View();
     }
 

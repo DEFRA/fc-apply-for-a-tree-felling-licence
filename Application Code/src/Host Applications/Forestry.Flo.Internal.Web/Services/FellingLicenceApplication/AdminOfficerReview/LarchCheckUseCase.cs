@@ -144,7 +144,7 @@ public class LarchCheckUseCase(
             Zone2 = viewModel.Zone2,
             Zone3 = viewModel.Zone3,
             ConfirmMoratorium = viewModel.ConfirmMoratorium,
-            ConfirmInspectionLog = viewModel.ConfirmInspectionLog,
+            ConfirmInspectionLog = viewModel.Zone1 ? viewModel.ConfirmInspectionLog : false,
             RecommendSplitApplicationDue = viewModel.RecommendSplitApplicationDue.HasValue
                 ? (int)viewModel.RecommendSplitApplicationDue.Value
                 : 0

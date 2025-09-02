@@ -290,7 +290,7 @@ public class GetWoodlandOfficerReviewServiceTests
     {
         var review = new WoodlandOfficerReview
         {
-            SiteVisitNotNeeded = true
+            SiteVisitNeeded = false
         };
 
         var sut = CreateSut();
@@ -324,12 +324,13 @@ public class GetWoodlandOfficerReviewServiceTests
     }
 
     [Theory, AutoData]
-    public async Task ShouldReturnSuccess_SiteVisitCompleted_NotesRetrieved(Guid applicationId)
+    public async Task ShouldReturnSuccess_SiteVisitCompleted(Guid applicationId, [CombinatorialValues]bool? arrangementsMade)
     {
         var review = new WoodlandOfficerReview
         {
-            SiteVisitArtefactsCreated = DateTime.UtcNow.AddDays(-3),
-            SiteVisitNotesRetrieved = DateTime.UtcNow.AddDays(-1)
+            SiteVisitNeeded = true,
+            SiteVisitArrangementsMade = arrangementsMade,
+            SiteVisitComplete = true
         };
 
         var sut = CreateSut();
@@ -363,11 +364,13 @@ public class GetWoodlandOfficerReviewServiceTests
     }
 
     [Theory, AutoData]
-    public async Task ShouldReturnSuccess_SiteVisitInProgress(Guid applicationId)
+    public async Task ShouldReturnSuccess_SiteVisitInProgress(Guid applicationId, [CombinatorialValues]bool? arrangementsMade)
     {
         var review = new WoodlandOfficerReview
         {
-            SiteVisitArtefactsCreated = DateTime.UtcNow.AddDays(-3)
+            SiteVisitNeeded = true,
+            SiteVisitArrangementsMade = arrangementsMade,
+            SiteVisitComplete = false
         };
 
         var sut = CreateSut();
@@ -1052,9 +1055,9 @@ public class GetWoodlandOfficerReviewServiceTests
 
         var model = result.Value.Value;
 
-        Assert.Null(model.SiteVisitArtefactsCreated);
-        Assert.Null(model.SiteVisitNotesRetrieved);
-        Assert.False(model.SiteVisitNotNeeded);
+        Assert.Null(model.SiteVisitNeeded);
+        Assert.Null(model.SiteVisitArrangementsMade);
+        Assert.False(model.SiteVisitComplete);
         Assert.Equal(comments, model.SiteVisitComments);
 
         _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
@@ -1083,9 +1086,9 @@ public class GetWoodlandOfficerReviewServiceTests
 
         var model = result.Value.Value;
 
-        Assert.Equal(reviewEntity.SiteVisitArtefactsCreated, model.SiteVisitArtefactsCreated);
-        Assert.Equal(reviewEntity.SiteVisitNotesRetrieved, model.SiteVisitNotesRetrieved);
-        Assert.Equal(reviewEntity.SiteVisitNotNeeded, model.SiteVisitNotNeeded);
+        Assert.Equal(reviewEntity.SiteVisitNeeded, model.SiteVisitNeeded);
+        Assert.Equal(reviewEntity.SiteVisitArrangementsMade, model.SiteVisitArrangementsMade);
+        Assert.Equal(reviewEntity.SiteVisitComplete, model.SiteVisitComplete);
         Assert.Equal(comments, model.SiteVisitComments);
 
         _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
@@ -1136,95 +1139,6 @@ public class GetWoodlandOfficerReviewServiceTests
         _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Theory, AutoData]
-    public async Task GetForMobileAppsShouldReturnFailureIfApplicationNotFound(Guid applicationId)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<FellingLicenceApplication>.None);
-
-        var result = await sut.GetApplicationDetailsForSiteVisitMobileLayersAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetForMobileAppsShouldReturnFailureIfApplicationHasNoSubmittedPropertyDetail(
-        Guid applicationId,
-        FellingLicenceApplication application)
-    {
-        var sut = CreateSut();
-
-        application.SubmittedFlaPropertyDetail = null;
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
-
-        var result = await sut.GetApplicationDetailsForSiteVisitMobileLayersAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetForMobileAppsShouldReturnFailureIfApplicationHasNoLinkedPropertyProfile(
-        Guid applicationId,
-        FellingLicenceApplication application)
-    {
-        var sut = CreateSut();
-
-        application.LinkedPropertyProfile = null;
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
-
-        var result = await sut.GetApplicationDetailsForSiteVisitMobileLayersAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetForMobileAppsShouldReturnExpectedDetails(
-        Guid applicationId,
-        FellingLicenceApplication application,
-        Polygon gisData)
-    {
-        var sut = CreateSut();
-
-        foreach (var submittedFlaPropertyCompartment in application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
-        {
-            submittedFlaPropertyCompartment.GISData = JsonConvert.SerializeObject(gisData);
-        }
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
-
-        var result = await sut.GetApplicationDetailsForSiteVisitMobileLayersAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-
-        Assert.Equal(application.ApplicationReference, result.Value.CaseReference);
-
-        var expectedCompartmentDetails = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments
-            .Select(x => x.ToInternalFullCompartmentDetails())
-            .ToList();
-        Assert.Equal(expectedCompartmentDetails.Count, result.Value.Compartments.Count);
-        expectedCompartmentDetails.ForEach(x =>
-        {
-            Assert.Contains(result.Value.Compartments, y => 
-                y.CompartmentNumber == x.CompartmentNumber
-                && y.WoodlandName == x.WoodlandName
-                && y.Designation == x.Designation
-                && y.GISData == x.GISData);
-        });
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
     [Theory, AutoMoqData]
     public async Task GetDetailsForConditionsNotification_WhenApplicationNotFound(
         Guid applicationId)
@@ -1261,6 +1175,63 @@ public class GetWoodlandOfficerReviewServiceTests
 
         _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task ShouldReturnSuccess_LarchFlyoverNotRequired_WhenConfirmInspectionLogIsFalse(Guid applicationId)
+    {
+        var sut = CreateSut();
+
+        // Arrange larch species in confirmed details so it's a larch application
+        var species = _fixture.Build<ConfirmedFellingSpecies>()
+            .With(x => x.Species, "EL")
+            .Without(x => x.ConfirmedFellingDetail)
+            .Create();
+
+        var felling = _fixture.Build<ConfirmedFellingDetail>()
+            .With(x => x.ConfirmedFellingSpecies, new List<ConfirmedFellingSpecies> { species })
+            .Without(x => x.SubmittedFlaPropertyCompartment)
+            .With(x => x.ConfirmedRestockingDetails, new List<ConfirmedRestockingDetail>())
+            .Create();
+
+        var review = new WoodlandOfficerReview
+        {
+            ConfirmedFellingAndRestockingComplete = true,
+            LarchCheckComplete = true,
+            FellingLicenceApplication = new FellingLicenceApplication
+            {
+                LarchCheckDetails = new LarchCheckDetails
+                {
+                    ConfirmInspectionLog = false // not true => flyover is not required
+                }
+            }
+        };
+
+        _fellingLicenceApplicationRepository.Setup(x =>
+                x.GetProposedFellingAndRestockingDetailsForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success((new List<ProposedFellingDetail>(0), new List<ProposedRestockingDetail>(0))));
+
+        _fellingLicenceApplicationRepository.Setup(x =>
+                x.GetConfirmedFellingAndRestockingDetailsForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success((new List<ConfirmedFellingDetail> { felling }, new List<ConfirmedRestockingDetail>(0))));
+
+        _fellingLicenceApplicationRepository.Setup(x =>
+                x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<WoodlandOfficerReview>.From(review));
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<PublicRegister>.None);
+
+        _viewCaseNotesService.Setup(x =>
+                x.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<CaseNoteModel>(0));
+
+        // Act
+        var result = await sut.GetWoodlandOfficerReviewStatusAsync(applicationId, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(InternalReviewStepStatus.NotRequired, result.Value.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus);
     }
 
     private GetWoodlandOfficerReviewService CreateSut()
