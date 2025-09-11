@@ -46,11 +46,11 @@
                 //This is the default map for the FC system
                 var baseMap = new Basemap({
                     portalItem: {
-                        id: fcconfig.baseMapForUK,
-                    },
+                        id: fcconfig.baseMapForUK
+                    }
                 });
                 this.map = new Map({
-                    basemap: baseMap,
+                    basemap: baseMap
                 });
 
                 var button = document.getElementById("view");
@@ -62,7 +62,7 @@
                     if (items && items.length > 0) {
                         const panelMenu = document.getElementById("panelMenu");
                         if (!panelMenu) {
-                            return
+                            return;
                         }
 
                         panelMenu.removeAttribute("closed");
@@ -105,7 +105,9 @@
                     .then(() => this.loadCompartments(splitIds))
                     .then(this.GetStartingPoint.bind(this));
             }
+
             confirmedFellingMap.prototype.loadCompartments = async function (includeIds) {
+
                 var items = maps_html_Helper.getCompartments();
 
                 if (includeIds !== undefined && includeIds !== null && includeIds.length > 0) {

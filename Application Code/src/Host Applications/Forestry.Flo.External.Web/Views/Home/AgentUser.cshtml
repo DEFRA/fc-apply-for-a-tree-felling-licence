@@ -6,6 +6,8 @@
     var breadcrumbs = new BreadcrumbsModel { Breadcrumbs = new List<BreadCrumb>(0), CurrentPage = "Home" };
 
     const bool legacyDocuments = false;  //FLOV2-2143 - hide this link
+
+    var user = new ExternalApplicant(User);
 }
 
 <div class="govuk-grid-column-full">
@@ -31,14 +33,14 @@
         </a>
     </user-is-in-role>
 
-@*    <user-is-in-role role-name="AgentAdministrator">
+    <user-is-in-role role-name="AgentAdministrator">
         <br />
         <form asp-action="InviteAgentToOrganisation" asp-controller="Account" method="Get">
             <button class="govuk-button govuk-button--secondary" data-module="govuk-button">
                 Invite another user to your organisation
             </button>
         </form>
-    </user-is-in-role>*@
+    </user-is-in-role>
 </div>
 
 @section breadcrumbs

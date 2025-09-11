@@ -8,6 +8,13 @@ div#filter-section {
     min-width: 30%;
 }
 
+/* Place search input and button inline */
+.search-input-container {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start; /* align items to the top vertically */
+}
+
 /* Table header sort links - reusable class */
 .sort-header {
     color: #16629c;
@@ -30,4 +37,10 @@ div#filter-section {
 /* Moved from inline styles: status tag inside table cell */
 #application-list-table .govuk-table__cell .govuk-tag.app-task-list__tag {
     float: left;
+}
+
+/* Limit search input width while staying responsive */
+.search-input-container #search {
+    max-width: 630px;
+    width: 100%;
 }

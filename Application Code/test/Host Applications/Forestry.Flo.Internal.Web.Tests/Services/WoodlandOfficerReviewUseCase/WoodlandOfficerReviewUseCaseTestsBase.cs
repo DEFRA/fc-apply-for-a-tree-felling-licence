@@ -28,6 +28,9 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
     protected readonly Mock<IAuditService<T>> AuditingService = new();
     protected readonly Mock<IAgentAuthorityService> MockAgentAuthorityService = new();
 
+    protected readonly Mock<IAddDocumentService> MockAddDocumentService = new();
+    protected readonly Mock<IRemoveDocumentService> MockRemoveDocumentService = new();
+
     protected readonly Mock<IPublicRegister> PublicRegisterService = new();
     protected readonly string RequestContextCorrelationId = Guid.NewGuid().ToString();
     protected readonly Guid RequestContextUserId = Guid.NewGuid();
@@ -73,29 +76,16 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
         UpdateWoodlandOfficerReviewService.Reset();
         PublicRegisterService.Reset();
         _forestryServices.Reset();
+        _foresterServices.Reset();
         Clock.Reset();
         Clock.Setup(x => x.GetCurrentInstant()).Returns(Now);
         NotificationService.Reset();
         MockAgentAuthorityService.Reset();
         GetConfiguredFcAreas.Reset();
+        MockAddDocumentService.Reset();
+        MockRemoveDocumentService.Reset();
 
         GetConfiguredFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(AdminHubAddress);
-
-        //return new Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase(
-        //    InternalUserAccountService.Object,
-        //    ExternalUserAccountRepository.Object,
-        //    FlaRepository.Object,
-        //    WoodlandOwnerService.Object,
-        //    WoodlandOfficerReviewService.Object,
-        //    UpdateWoodlandOfficerReviewService.Object,
-        //    AuditingService.Object,
-        //    RequestContext,
-        //    Clock.Object,
-        //    new OptionsWrapper<WoodlandOfficerReviewOptions>(WoodlandOfficerReviewOptions),
-        //    ActivityFeedItemProvider.Object,
-        //    MockCreateApplicationDocument.Object,
-        //    MockAgolAccess.Object,
-        //    new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

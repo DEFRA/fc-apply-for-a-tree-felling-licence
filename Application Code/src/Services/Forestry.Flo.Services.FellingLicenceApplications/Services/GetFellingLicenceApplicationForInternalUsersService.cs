@@ -199,4 +199,12 @@ public class GetFellingLicenceApplicationForInternalUsersService : IGetFellingLi
         await _fellingLicenceApplicationInternalRepository
             .GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, cancellationToken)
             .ConfigureAwait(false);
+
+    ///<inheritdoc />
+    public Task<Result<EnvironmentalImpactAssessment>> GetEnvironmentalImpactAssessmentAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken) 
+        => _fellingLicenceApplicationInternalRepository.GetEnvironmentalImpactAssessmentAsync(
+            applicationId,
+            cancellationToken);
 }

@@ -1,4 +1,6 @@
-﻿namespace Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
+﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+
+namespace Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 
 public record ExternalInviteLink
 {
@@ -18,6 +20,11 @@ public record ExternalInviteLink
     public DateTime ExpiresTimeStamp { get; init; }
 
     /// <summary>
+    /// Gets and Sets the application access code.
+    /// </summary>
+    public Guid AccessCode { get; init; }
+
+    /// <summary>
     /// Gets and Sets the link owner name.
     /// </summary>
     public string Name { get; init; } = null!;
@@ -32,6 +39,18 @@ public record ExternalInviteLink
     /// </summary>
     public string Purpose { get; init; } = null!;
 
-    //TODO: The property will be set when the Consultee Comments table is created 
-    public bool AreCommentsProvided { get; set; }
+    /// <summary>
+    /// Gets and inits the type of the external access link.
+    /// </summary>
+    public ExternalAccessLinkType LinkType { get; init; }
+
+    /// <summary>
+    /// Gets and inits the list of shared supporting document Ids.
+    /// </summary>
+    public List<Guid> SharedSupportingDocuments { get; init; }
+
+    /// <summary>
+    /// Gets and sets whether the consultee has responded using this link.
+    /// </summary>
+    public bool HasResponded { get; set; }
 }

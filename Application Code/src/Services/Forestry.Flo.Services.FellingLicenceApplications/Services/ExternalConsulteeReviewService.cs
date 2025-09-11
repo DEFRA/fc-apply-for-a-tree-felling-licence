@@ -52,22 +52,24 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
             link.Value.Purpose,
             link.Value.CreatedTimeStamp,
             link.Value.ExpiresTimeStamp,
-            applicationId);
+            applicationId,
+            link.Value.LinkType,
+            link.Value.SharedSupportingDocuments);
 
         return Maybe<ExternalAccessLinkModel>.From(result);
     }
 
     /// <inheritdoc />
-    public async Task<List<ConsulteeCommentModel>> RetrieveConsulteeCommentsForAuthorAsync(
+    public async Task<List<ConsulteeCommentModel>> RetrieveConsulteeCommentsForAccessCodeAsync(
         Guid applicationId, 
-        string emailAddress,
+        Guid accessCode,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Attempting to retrieve consultee comments for application id {ApplicationId} and contact email {ContactEmail}", applicationId, emailAddress);
+        _logger.LogDebug("Attempting to retrieve consultee comments for application id {ApplicationId} and access code {AccessCode}", applicationId, accessCode);
 
         var comments = await _repository.GetConsulteeCommentsAsync(
             applicationId,
-            emailAddress,
+            accessCode,
             cancellationToken);
 
         return comments.Select(x => new ConsulteeCommentModel
@@ -95,7 +97,8 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
             AuthorName = model.AuthorName,
             AuthorContactEmail = model.AuthorContactEmail,
             Comment = model.Comment,
-            DocumentIds = model.ConsulteeAttachmentIds.ToList()
+            DocumentIds = model.ConsulteeAttachmentIds.ToList(),
+            AccessCode = model.AccessCode
         };
         var result = await _repository.AddConsulteeCommentAsync(comment, cancellationToken);
 

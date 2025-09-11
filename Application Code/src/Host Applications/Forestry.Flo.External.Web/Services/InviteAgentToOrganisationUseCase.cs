@@ -136,15 +136,13 @@ public class InviteAgentToOrganisationUseCase : InviteUserBaseUseCase
             return Result.Failure<AgencyDetails>("You do not have permissions to manage agents");
         }
 
-        return await _agencyRepository.GetAsync(Guid.Parse(user.AgencyId!),
-                cancellationToken).MapError(_ =>
+        return await _agencyRepository.GetAsync(Guid.Parse(user.AgencyId!), cancellationToken)
+            .MapError(_ =>
             {
                 _logger.LogError("The agency with id: {UserAgencyId} has not been found", user.AgencyId);
                 return "The agency organisation does not exists";
             })
-            .Ensure(agency => !string.IsNullOrEmpty(agency.OrganisationName),
-                "Please check the agency organisation name")
-            .Map(agency => new AgencyDetails(agency.Id, agency.OrganisationName!));
+            .Map(agency => new AgencyDetails(agency.Id, string.IsNullOrWhiteSpace(agency.OrganisationName) ? agency.ContactName : agency.OrganisationName));
     }
 
     protected override async Task<Result> SendInvitationEmail(IInvitedUser agencyUserModel,

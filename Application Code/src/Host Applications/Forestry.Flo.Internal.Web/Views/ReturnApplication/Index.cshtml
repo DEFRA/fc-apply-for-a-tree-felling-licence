@@ -1,7 +1,4 @@
-﻿@using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Forestry.Flo.Services.Common.Extensions
+﻿@using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.Common.User
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ReturnApplicationModel
 
@@ -12,51 +9,21 @@
 <div class="govuk-grid-column-full govuk-body">
     <partial name="Partials/_PageErrors" />
     <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
-    <h1 class="govuk-heading-l">Return for <b>@Model.RequestedStatus.GetDisplayNameByActorType(ActorType.ExternalApplicant)</b></h1>
+    <h1 class="govuk-heading-l">Return to <b>@Model.RequestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)</b></h1>
     <p>
-        Use this page to return the application for @Model.RequestedStatus.GetDisplayNameByActorType(ActorType.InternalUser) and add any relevant case notes.
+        Use this page to return the application to @Model.RequestedStatus.GetDisplayNameByActorType(ActorType.InternalUser) and add any relevant case notes.
     </p>
 	<form asp-action="ReturnApplication" method="post">
 
-        <div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
-            <fieldset class="govuk-fieldset">
-                <legend class="govuk-label--m">Case Note</legend>
-                <div class="govuk-inset-text">
-                    <p class="govuk-heading-s">
-                        Use this section to record internal notes.
-                    </p>
-                    <ul class="govuk-list govuk-list--bullet">
-                        <li>
-                            Notes are saved immediately
-                        </li>
-                        <li>
-                            You cannot delete them once saved
-                        </li>
-                        <li>
-                            They may be shared in response to Freedom of Information (FOI) requests.
-                        </li>
-                    </ul>
-                </div>
-                <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="CaseNote" id="add-case-note-text"></textarea>
-                <div id="add-case-note-text-info" class="govuk-hint govuk-character-count__message">
-                    You can enter up to 65,535 characters
-                </div>
-                <div class="govuk-grid-row">
-                    <div class="govuk-grid-column-one-third">
-                        <div class="govuk-checkboxes__item">
-                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant" />
-                            <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
-                        </div>
-                    </div>
-                    <div class="govuk-grid-column-one-third">
-                        <div class="govuk-checkboxes__item">
-                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee" />
-                            <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
-                        </div>
-                    </div>
-                </div>
-            </fieldset>
-        </div>
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                <h2 class="govuk-fieldset__heading">
+                    Case note
+                </h2>
+            </legend>
+            @Html.EditorFor(m => m.ReturnReason)
+            <br />
+        </fieldset>
 
         <div class="govuk-form-group">
             <div class="govuk-button-group">

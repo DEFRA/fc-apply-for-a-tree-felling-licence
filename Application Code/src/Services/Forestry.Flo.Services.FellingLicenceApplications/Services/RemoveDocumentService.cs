@@ -104,16 +104,16 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             var document = documentMaybe.Value;
 
-            if (document.Purpose is not DocumentPurpose.Attachment)
+            if (document.Purpose is not (DocumentPurpose.Attachment or DocumentPurpose.EiaAttachment))
             {
-                _logger.LogWarning("Only attachments may be deleted, document id: [{documentIdentifier}, document purpose: [{purpose}]]", documentIdentifier, document.Purpose);
+                _logger.LogWarning("Only attachments and EIA attachments may be deleted, document id: [{documentIdentifier}, document purpose: [{purpose}]]", documentIdentifier, document.Purpose);
 
                 return await HandleFileRemovalFailureAsync(
                     userAccountId,
                     applicationId,
                     documentIdentifier,
                     document.Purpose,
-                    "Only attachments may be deleted",
+                    "Only attachments and EIA attachments may be deleted",
                     cancellationToken);
             }
 

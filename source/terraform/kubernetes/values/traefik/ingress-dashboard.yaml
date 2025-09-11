@@ -1,0 +1,19 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: websecure-dashboard
+  namespace: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`devflo.ps.conneqt.cloud`) && (PathPrefix(`/dashboard`)
+      kind: Rule
+      middlewares:
+        - name: traefik-dashboard-basicauth
+        #- name: auth
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    secretName: traefik-web-secret

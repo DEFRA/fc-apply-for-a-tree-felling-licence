@@ -190,6 +190,14 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                         true,
                         CancellationToken.None)
                     .ConfigureAwait(false),
+            UpdateAdminOfficerReviewService.AdminOfficerReviewSections.EiaCheck =>
+                await Sut.SetEiaCheckCompletionAsync(
+                        application.Id,
+                        isAgencyApplication,
+                        _userId,
+                        true,
+                        CancellationToken.None)
+                    .ConfigureAwait(false),
             _ => throw new ArgumentOutOfRangeException(nameof(section), section, null)
         };
         

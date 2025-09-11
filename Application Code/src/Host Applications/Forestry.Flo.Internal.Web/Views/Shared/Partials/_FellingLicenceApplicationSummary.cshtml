@@ -20,7 +20,7 @@
 
     var returnUrl = Url.ActionContext.HttpContext.Request.Query.Any(x => x.Key == "returnUrl")
         ? Url.ActionContext.HttpContext.Request.Query["returnUrl"].ToString()
-        : Url.ActionContext.HttpContext.Request.Path.ToString();
+        : Url.ActionContext.HttpContext.Request.Path.ToString() + Url.ActionContext.HttpContext.Request.QueryString;
 }
 
 <table class="govuk-table" id="application-list-table">

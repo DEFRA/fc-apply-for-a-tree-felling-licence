@@ -1,4 +1,5 @@
-﻿using Forestry.Flo.Internal.Web.Infrastructure;
+﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
@@ -22,7 +23,6 @@ public class ReturnApplicationController : Controller
     public async Task<IActionResult> Index(
         Guid id,
         [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
-        [FromServices] ReturnApplicationUseCase approvalRefusalUseCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -33,41 +33,14 @@ public class ReturnApplicationController : Controller
             return RedirectToAction("Index", new { id });
         }
 
-        var summary = await applicationUseCase.RetrieveFellingLicenceApplicationReviewSummaryAsync(
-            id,
-            user,
-            cancellationToken);
+        var (_, isFailure, model) = await LoadViewModel(applicationUseCase, id, user, cancellationToken);
 
-        if (summary.HasNoValue)
+        if (isFailure)
         {
             return RedirectToAction("Error", "Home");
         }
 
-        if (summary.Value.FellingLicenceApplicationSummary!.Status is not FellingLicenceStatus.SentForApproval
-            || summary.Value.FellingLicenceApplicationSummary.AssigneeHistories.NotAny(x => x.UserAccount?.Id == summary.Value.ViewingUser?.UserAccountId && x.Role is AssignedUserRole.FieldManager))
-        {
-            return RedirectToAction("Index", new { id });
-        }
-
-        var confirmationModel = new ReturnApplicationModel
-        {
-            FellingLicenceApplicationSummary = summary.Value.FellingLicenceApplicationSummary,
-            RequestedStatus = summary.Value.FellingLicenceApplicationSummary.PreviousStatus, 
-            Breadcrumbs = new BreadcrumbsModel
-            {
-                CurrentPage = "Return Application",
-                Breadcrumbs = new List<BreadCrumb>
-                {
-                    new(summary.Value.FellingLicenceApplicationSummary!.ApplicationReference,
-                        "FellingLicenceApplication", "ApplicationSummary", id.ToString()),
-                    new("Approver Review",
-                        "ApproverReview", "Index", id.ToString())
-
-                }
-            }
-        };
-
-        return View(confirmationModel);
+        return View(model);
     }
 
     [HttpPost("")]
@@ -76,7 +49,6 @@ public class ReturnApplicationController : Controller
         ReturnApplicationModel model,
         [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
         [FromServices] ReturnApplicationUseCase approvalRefusalUseCase,
-        [FromServices] IAmendCaseNotes amendCaseNotes,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -87,51 +59,23 @@ public class ReturnApplicationController : Controller
             return RedirectToAction("Index", new { id });
         }
 
-        var summary = await applicationUseCase.RetrieveFellingLicenceApplicationReviewSummaryAsync(
-            id,
-            user,
-            cancellationToken);
-
-        if (summary.HasNoValue)
+        if (string.IsNullOrWhiteSpace(model.ReturnReason.CaseNote))
         {
-            return RedirectToAction("Error", "Home");
-        }
+            (_, var isFailure, model) = await LoadViewModel(applicationUseCase, id, user, cancellationToken);
 
-        var previousStatus = summary.Value.FellingLicenceApplicationSummary!.PreviousStatus;
-
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
-        {
-            CaseNoteType caseNoteType = previousStatus switch
+            if (isFailure)
             {
-                FellingLicenceStatus.WoodlandOfficerReview => CaseNoteType.WoodlandOfficerReviewComment,
-                FellingLicenceStatus.AdminOfficerReview => CaseNoteType.AdminOfficerReviewComment,
-                _ => CaseNoteType.CaseNote
-            };
-
-            var caseNoteRecord = new AddCaseNoteRecord(
-                FellingLicenceApplicationId: id,
-                Type: caseNoteType,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
-            );
-            var caseNoteresult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
-
-            if (caseNoteresult.IsFailure)
-            {
-                this.AddErrorMessage(caseNoteresult.Error);
-                return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id });
+                return RedirectToAction("Error", "Home");
             }
-        }
-        else
-        {
-            this.AddErrorMessage("A case note is required to return application");
-            return RedirectToAction("Index", new { id });
+
+            ModelState.AddModelError(nameof(ReturnApplicationModel.ReturnReason.CaseNote), "Enter a reason for the application being returned");
+            return View(nameof(Index), model);
         }
 
         var result = await approvalRefusalUseCase.ReturnApplication(
                 user,
                 id,
+                model.ReturnReason,
                 cancellationToken);
 
         if (result is { IsSuccess: true, SubProcessFailures.Count: > 0 })
@@ -147,5 +91,50 @@ public class ReturnApplicationController : Controller
         return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id });
     }
 
+
+    private async Task<Result<ReturnApplicationModel>> LoadViewModel(
+        FellingLicenceApplicationUseCase applicationUseCase,
+        Guid id,
+        InternalUser user,
+        CancellationToken cancellationToken)
+    {
+        var summary = await applicationUseCase.RetrieveFellingLicenceApplicationReviewSummaryAsync(
+        id,
+            user,
+            cancellationToken);
+
+        if (summary.HasNoValue)
+        {
+            return Result.Failure<ReturnApplicationModel>("Could not load application");
+        }
+
+        if (summary.Value.FellingLicenceApplicationSummary!.Status is not FellingLicenceStatus.SentForApproval
+            || summary.Value.FellingLicenceApplicationSummary.AssigneeHistories.NotAny(x => x.UserAccount?.Id == summary.Value.ViewingUser?.UserAccountId && x.Role is AssignedUserRole.FieldManager))
+        {
+            return Result.Failure<ReturnApplicationModel>("User not authorised to return this application");
+        }
+
+        return Result.Success(new ReturnApplicationModel
+        {
+            FellingLicenceApplicationSummary = summary.Value.FellingLicenceApplicationSummary,
+            RequestedStatus = summary.Value.FellingLicenceApplicationSummary.PreviousStatus,
+            ReturnReason = new FormLevelCaseNote
+            {
+                InsetTextHeading = "Reason for returning the application"
+            },
+            Breadcrumbs = new BreadcrumbsModel
+            {
+                CurrentPage = "Return Application",
+                Breadcrumbs = new List<BreadCrumb>
+                {
+                    new(summary.Value.FellingLicenceApplicationSummary!.ApplicationReference,
+                        "FellingLicenceApplication", "ApplicationSummary", id.ToString()),
+                    new("Approver Review",
+                        "ApproverReview", "Index", id.ToString())
+
+                }
+            }
+        });
+    }
 }
 

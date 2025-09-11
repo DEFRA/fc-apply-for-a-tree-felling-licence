@@ -17,6 +17,7 @@ public interface IGetAdminOfficerReview
     /// <param name="isAgentApplication">A flag indicating whether or not an agent created this application.</param>
     /// <param name="isLarchApplication">A flag indicating whether or not this is a larch application.</param>
     /// <param name="isAssignedWoodlandOfficer">A flag indicating whether or not the application has been assigned to a woodland officer.</param>
+    /// <param name="isEiaApplication">A flag indicating whether or not this is an EIA application.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A populated <see cref="AdminOfficerReviewStatusModel"/> instance.</returns>
     Task<AdminOfficerReviewStatusModel> GetAdminOfficerReviewStatusAsync(
@@ -25,6 +26,7 @@ public interface IGetAdminOfficerReview
         bool isLarchApplication,
         bool isAssignedWoodlandOfficer,
         bool isCBWApplication,
+        bool isEiaApplication,
         CancellationToken cancellationToken);
 
     /// <summary>

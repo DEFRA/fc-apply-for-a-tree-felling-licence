@@ -81,7 +81,7 @@
 
                 @foreach (var fellingLicenceStatus in FellingLicenceApplicationUseCase.PostSubmittedStatuses)
                 {
-                    <strong fla-status-filter="@fellingLicenceStatus" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 @GetStatusStyleName(fellingLicenceStatus)" id="company-information-status">
+                    <strong fla-status-filter="@fellingLicenceStatus" class="govuk-tag app-task-list__tag govuk-!-margin-right-2  @GetStatusStyleName(fellingLicenceStatus)" id="company-information-status">
                         @fellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)
 
                         (@(Model.FellingLicenceApplicationAssignmentListModel.FellingLicenceStatusCount.FirstOrDefault(x => x.FellingLicenceStatus == fellingLicenceStatus)?.Count ?? 0))
@@ -91,7 +91,7 @@
         </div>
 
         <div class="govuk-!-text-align-left govuk-grid-row">
-            <div class="govuk-grid-column-one-third" id="filter-section">
+            <div class="govuk-grid-column-full" id="filter-section">
                 <div>
                     <p>Filter by</p>
                     <strong id="fla-assigned-to-user-filter" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 govuk-tag--grey" id="company-information-status">
@@ -99,18 +99,33 @@
                     </strong>
                 </div>
             </div>
-            <div class="govuk-grid-column-two-thirds">
-                <label class="govuk-label--s" for="keywords-text">Search for an application</label>
+        </div>
+        <div class="govuk-!-text-align-left govuk-grid-row govuk-!-margin-top-2">
+            <div class="govuk-grid-column-full">
+                <label class="govuk-label--s" for="search-text">Search for an application</label>
                 <div class="govuk-hint">
                     Search by application reference number, property or user.
                 </div>
-                <input class="govuk-input" id="keywords-text" name="keywords-text" type="text" title="Search terms" />
+                <div class="search-input-container">
+                    <input class="govuk-input" id="search" name="search" type="text" title="Search terms" />
+                    @{
+                        var initialSearch = Context.Request.Query["search"].ToString();
+                        var hasInitialSearch = !string.IsNullOrWhiteSpace(initialSearch);
+                    }
+                    <button type="button"
+                            id="searchButton"
+                            data-module="govuk-button"
+							class="govuk-button save-button-padding govuk-button govuk-!-margin-bottom-0 @(hasInitialSearch ? "" : "govuk-button--disabled")"
+                            @(hasInitialSearch ? "" : "disabled")>
+                        Search
+                    </button>
+                </div>
             </div>
         </div>
 
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-full">
-                <p>Showing @Model.FellingLicenceApplicationAssignmentListModel.TotalCount applications | <a class="govuk-link govuk-link--no-visited-state" id="clear-all-filters">Clear all filters</a></p>
+                <p>Showing @Model.FellingLicenceApplicationAssignmentListModel.TotalCount applications | <a class="govuk-link govuk-link--no-visited-state" id="clear-all-filters">Clear all filters and search terms</a></p>
             </div>
         </div>
         <div class="govuk-grid-row">
@@ -148,6 +163,12 @@
                     };
                 }
 
+                @if (Model.FellingLicenceApplicationAssignmentListModel.TotalCount == 0)
+                {
+                    <p class="govuk-body">No applications found.</p>
+                }
+                else
+                {
                 <table class="govuk-table" id="application-list-table">
 
                     <thead class="govuk-table__head">
@@ -252,6 +273,7 @@
                     }
                     </tbody>
                 </table>
+                }
             </div>
         </div>
         <div class="govuk-grid-row">
@@ -280,7 +302,7 @@
                 </nav>
             </div>
         </div>
-
+    </div>
 </logged-in>
 
 

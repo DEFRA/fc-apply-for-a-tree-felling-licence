@@ -1,0 +1,69 @@
+﻿@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SiteVisitSummaryModel
+
+<table class="govuk-table" id="application-list-table">
+    <tbody class="govuk-table__body">
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Application reference</th>
+        <td class="govuk-table__cell">@Model.FellingLicenceApplicationSummary.ApplicationReference</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Application Property Name</th>
+            <td class="govuk-table__cell">@Model.FellingLicenceApplicationSummary.PropertyName @(Model.FellingLicenceApplicationSummary.NameOfWood != null ? " - " + Model.FellingLicenceApplicationSummary.NameOfWood : "")</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Woodland Owner</th>
+        <td class="govuk-table__cell">
+            @Model.FellingLicenceApplicationSummary.WoodlandOwnerName <br/>
+            @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line1))
+            {
+                    @Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line1 <br />
+            }
+                @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line2))
+            {
+                    @Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line2 <br />
+            }
+                @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line3))
+            {
+                    @Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line3 <br />
+            }
+                @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line4))
+            {
+                    @Model.ApplicationOwner.WoodlandOwner.ContactAddress?.Line4 <br />
+            }
+                @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.WoodlandOwner.ContactAddress?.PostalCode))
+            {
+                    @Model.ApplicationOwner.WoodlandOwner.ContactAddress?.PostalCode <br />
+            }
+        </td>
+    </tr>
+        @if (!string.IsNullOrWhiteSpace(Model.FellingLicenceApplicationSummary.AgentOrAgencyName))
+        {
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Agency</th>
+                <td class="govuk-table__cell">
+                    @Model.FellingLicenceApplicationSummary.AgentOrAgencyName <br/>
+                        @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.Agency.Address?.Line1))
+                    {
+                            @Model.ApplicationOwner.Agency.Address?.Line1 <br />
+                    }
+                        @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.Agency.Address?.Line2))
+                    {
+                            @Model.ApplicationOwner.Agency.Address?.Line2 <br />
+                    }
+                        @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.Agency.Address?.Line3))
+                    {
+                            @Model.ApplicationOwner.Agency.Address?.Line3 <br />
+                    }
+                        @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.Agency.Address?.Line4))
+                    {
+                            @Model.ApplicationOwner.Agency.Address?.Line4 <br />
+                    }
+                        @if (!string.IsNullOrWhiteSpace(Model.ApplicationOwner.Agency.Address?.PostalCode))
+                    {
+                            @Model.ApplicationOwner.Agency.Address?.PostalCode <br />
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table> 

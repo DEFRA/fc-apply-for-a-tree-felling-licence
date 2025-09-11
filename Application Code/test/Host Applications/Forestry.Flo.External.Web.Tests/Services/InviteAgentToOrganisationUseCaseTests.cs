@@ -559,7 +559,7 @@ public class InviteAgentUserToOrganisationUseCaseTests
     }
 
     [Fact]
-    public async Task ShouldFailedResult_GivenSystemUserAgencyOrganisationDoesNotHaveName()
+    public async Task ShouldUseContactName_GivenSystemUserAgencyOrganisationDoesNotHaveName()
     {
         //arrange
         var agency = _fixture.Build<Agency>()
@@ -582,6 +582,7 @@ public class InviteAgentUserToOrganisationUseCaseTests
         var result = await _sut.RetrieveUserAgencyAsync(externalApplicant,CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().Be(agency.ContactName);
     }
 }

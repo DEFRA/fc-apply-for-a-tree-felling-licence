@@ -15,7 +15,6 @@ namespace Forestry.Flo.External.Web.Controllers;
 [Authorize]
 [AutoValidateAntiforgeryToken]
 [TypeFilter(typeof(ApplicationExceptionFilter))]
-[UserIsInRole(roleName = AccountTypeExternal.WoodlandOwnerAdministrator)]  // TODO make this available to agents again when agent organisations are implemented
 public class AccountAdministrationController : Controller
 {
     private readonly List<BreadCrumb> _breadCrumbsRoot;
@@ -37,9 +36,6 @@ public class AccountAdministrationController : Controller
         [FromServices] ListWoodlandOwnerUsersUseCase useCase,
         CancellationToken cancellationToken)
     {
-        // FLOV2-2154 hide this functionality for the time being
-        return RedirectToAction("Index", "Home");
-
         var user = new ExternalApplicant(User);
 
         if (user.AccountType is not AccountTypeExternal.WoodlandOwnerAdministrator)

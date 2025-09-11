@@ -237,7 +237,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
     {
         var sut = CreateSut();
 
-        var request = FixtureInstance.Create<ReturnToApplicantRequest>();
+        var request = FixtureInstance.Build<ReturnToApplicantRequest>().With(x => x.PerformingUserIsAccountAdmin, true).Create();
 
         var statuses = new List<StatusHistory>
         {
@@ -312,7 +312,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
     {
         var sut = CreateSut();
 
-        var request = FixtureInstance.Create<ReturnToApplicantRequest>();
+        var request = FixtureInstance.Build<ReturnToApplicantRequest>().With(x => x.PerformingUserIsAccountAdmin, true).Create();
 
         var statuses = new List<StatusHistory>
         {

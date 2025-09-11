@@ -40,4 +40,10 @@ public enum FinaliseFellingLicenceApplicationProcessOutcomes
     /// it in the local system, such as the published date and expiry date.
     /// </summary>
     CouldNotStoreDecisionDetailsLocally,
+
+    /// <summary>
+    /// Unable to store the case note associated with the finalisation of the application.
+    /// </summary>
+    CouldNotStoreCaseNote
+
 }

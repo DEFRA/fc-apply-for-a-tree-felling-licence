@@ -1,4 +1,5 @@
-﻿using Forestry.Flo.Services.FellingLicenceApplications.Models;
+﻿using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication;
@@ -15,13 +16,18 @@ public class FellingLicenceApplicationModel
         _steps.Add(FellingLicenceApplicationSection.FellingAndRestockingDetails, new FellingAndRestockingDetails());
         _steps.Add(FellingLicenceApplicationSection.SupportingDocumentation, new SupportingDocumentationModel());
         _steps.Add(FellingLicenceApplicationSection.FlaTermsAndConditionsViewModel, new FlaTermsAndConditionsViewModel());
+        _steps.Add(FellingLicenceApplicationSection.EnvironmentalImpactAssessment, new EnvironmentalImpactAssessmentViewModel());
     }
     
-    public bool IsComplete => _steps.Values.All(s => s.Status == ApplicationStepStatus.Completed);
+    public bool IsComplete => _steps.Values
+        .Where(x => x.StepRequiredForApplication)
+        .All(s => s.Status == ApplicationStepStatus.Completed);
     
-    public int StepsCount => _steps.Values.Count;
+    public int StepsCount => _steps.Values.Count(x => x.StepRequiredForApplication);
     
-    public int CompletedStepsCount => _steps.Values.Count(s => s.Status == ApplicationStepStatus.Completed);
+    public int CompletedStepsCount => _steps.Values
+        .Where(x => x.StepRequiredForApplication)
+        .Count(s => s.Status == ApplicationStepStatus.Completed);
     
     public FellingLicenceApplicationSummary ApplicationSummary { get; set; } = null!;
 
@@ -59,6 +65,12 @@ public class FellingLicenceApplicationModel
     {
         get => (_steps[FellingLicenceApplicationSection.SupportingDocumentation] as SupportingDocumentationModel)!;
         set =>_steps[FellingLicenceApplicationSection.SupportingDocumentation] = value;
+    }
+
+    public EnvironmentalImpactAssessmentViewModel EnvironmentalImpactAssessment
+    {
+        get => (_steps[FellingLicenceApplicationSection.EnvironmentalImpactAssessment] as EnvironmentalImpactAssessmentViewModel)!;
+        set => _steps[FellingLicenceApplicationSection.EnvironmentalImpactAssessment] = value;
     }
 
     [HiddenInput]

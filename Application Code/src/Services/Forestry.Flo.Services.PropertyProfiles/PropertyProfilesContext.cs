@@ -107,6 +107,11 @@ public class PropertyProfilesContext : DbContext, IUnitOfWork
                     .IsUnique();
             }
         );
+
+        modelBuilder.Entity<Compartment>()
+            .Property(p => p.TotalHectares)
+            .HasPrecision(18, 2);
+
         modelBuilder.HasDefaultSchema(SchemaName);
     }
     

@@ -808,6 +808,19 @@ spec:
               value: {{ .Values.config.esriConfig.LayoutTemplate | quote }}
             {{- end }}
             {{- end }}
+            # ------------------- EIA Options-------------------
+            {{- if .Values.config.eiaOptions.eiaApplicationExternalUri }}
+            - name: EiaOptions__EiaApplicationExternalUri
+              value: {{ .Values.config.eiaOptions.eiaApplicationExternalUri | quote }}
+            {{- end }}
+            {{- if .Values.config.eiaOptions.eiaContactEmail }}
+            - name: EiaOptions__EiaContactEmail
+              value: {{ .Values.config.eiaOptions.eiaContactEmail | quote }}
+            {{- end }}
+            {{- if .Values.config.eiaOptions.eiaContactPhone }}
+            - name: EiaOptions__EiaContactPhone
+              value: {{ .Values.config.eiaOptions.eiaContactPhone | quote }}
+            {{- end }}
             # ------------------- Environment Variables End -------------------
           ports:
             - name: http

@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -128,4 +129,47 @@ public interface IUpdateFellingLicenceApplication
         Guid applicationId,
         Guid? approverId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the environmental impact assessment status for an application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="status">The environmental impact assessment status to set.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the environmental impact assessment status was successfully updated, or an error if unsuccessful.</returns>
+    Task<Result> UpdateEnvironmentalImpactAssessmentStatusAsync(
+        Guid applicationId,
+        bool status,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the environmental impact assessment record for a specified application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="eiaRecord">The environmental impact assessment record containing updated values.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the environmental impact assessment record was successfully updated, or an error if unsuccessful.</returns>
+    Task<Result> UpdateEnvironmentalImpactAssessmentAsync(
+        Guid applicationId,
+        EnvironmentalImpactAssessmentRecord eiaRecord,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the environmental impact assessment record for a specified application as an Admin Officer.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="eiaRecord">The environmental impact assessment record containing updated values for the Admin Officer.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the environmental impact assessment record was successfully updated, or an error if unsuccessful.</returns>
+    Task<Result> UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(
+        Guid applicationId,
+        EnvironmentalImpactAssessmentAdminOfficerRecord eiaRecord,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Begins a new database transaction.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task that represents the asynchronous operation, containing the database transaction.</returns>
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
 }

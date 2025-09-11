@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
@@ -39,11 +40,13 @@ public class ProposedRestockingDetail
     /// <summary>
     /// Gets or sets the area.
     /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
     public double? Area { get; set; }
 
     /// <summary>
     /// Gets or sets the percentage of restock area.
     /// </summary>
+    [Column(TypeName = "decimal(5,2)")]
     public double? PercentageOfRestockArea { get; set; }
 
     /// <summary>

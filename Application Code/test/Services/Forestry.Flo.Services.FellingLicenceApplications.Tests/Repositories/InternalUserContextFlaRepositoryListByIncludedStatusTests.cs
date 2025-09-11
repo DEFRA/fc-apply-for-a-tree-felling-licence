@@ -96,6 +96,25 @@ public class InternalUserContextFlaRepositoryListByIncludedStatusTests
         Assert.Equal(sorted, latestStatuses);
     }
 
+    [Fact]
+    public async Task When_SearchText_Is_Whitespace_Results_Are_Unfiltered()
+    {
+        // Arrange
+        var includeStatuses = SeedApplicationsForOrdering();
+
+        // Baseline without search
+        var baseline = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
+            pageNumber: 1, pageSize: 100, sortColumn: "Reference", sortDirection: "asc");
+
+        // Act: pass whitespace search text (should behave like no search)
+        var withWhitespaceSearch = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
+            pageNumber: 1, pageSize: 100, sortColumn: "Reference", sortDirection: "asc", searchText: "   ");
+
+        // Assert
+        Assert.Equal(baseline.Count, withWhitespaceSearch.Count);
+        Assert.Equal(baseline.Select(x => x.Id), withWhitespaceSearch.Select(x => x.Id));
+    }
+
     private List<FellingLicenceStatus> SeedApplicationsForOrdering()
     {
         // Clear DB

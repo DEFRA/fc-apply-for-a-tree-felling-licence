@@ -1,5 +1,6 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
@@ -50,6 +51,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Include(a => a.PublicRegister)
             .Include(a => a.LarchCheckDetails)
             .Include(x => x.WoodlandOfficerReview)
+            .Include(x => x.ConsulteeComments)
             .AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
         return application is null ? Maybe<FellingLicenceApplication>.None : Maybe<FellingLicenceApplication>.From(application);
@@ -171,7 +173,9 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return await conditionalActiveFellingLicenceApplicationsQuery.ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Lists submitted felling licence applications with paging, ordering and optional search across reference, property and assignee names.
+    /// </summary>
     public async Task<IList<FellingLicenceApplication>> ListByIncludedStatus(
         bool assignedToUserAccountIdOnly,
         Guid userId,
@@ -180,7 +184,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         int pageNumber,
         int pageSize,
         string sortColumn,
-        string sortDirection)
+        string sortDirection,
+        string? searchText = null)
     {
         IQueryable<FellingLicenceApplication> query = Context.FellingLicenceApplications
             .Include(a => a.StatusHistories)
@@ -198,6 +203,28 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
                     app.AssigneeHistories.Any(y => y.AssignedUserId == userId && !y.TimestampUnassigned.HasValue))
             );
 
+        // Optional search across Reference, Property name, and current assignee names
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var internalUsers = Context.Set<InternalUsers.Entities.UserAccount.UserAccount>();
+            var pattern = $"%{searchText.Trim()}%";
+
+            query = query.Where(app =>
+                EF.Functions.ILike(app.ApplicationReference, pattern)
+                || EF.Functions.ILike(app.SubmittedFlaPropertyDetail!.Name ?? string.Empty, pattern)
+                || Context.AssigneeHistories
+                    .Where(ah => ah.FellingLicenceApplicationId == app.Id && ah.TimestampUnassigned == null)
+                    .Join(internalUsers,
+                        ah => ah.AssignedUserId,
+                        ua => ua.Id,
+                        (ah, ua) => new { ua.FirstName, ua.LastName })
+                    .Any(u =>
+                        EF.Functions.ILike(((u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty)).Trim(), pattern)
+                        || EF.Functions.ILike(u.FirstName ?? string.Empty, pattern)
+                        || EF.Functions.ILike(u.LastName ?? string.Empty, pattern))
+            );
+        }
+
         bool descending = string.Equals(sortDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
         // Dynamic ordering
@@ -207,7 +234,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
                 query = descending ? query.OrderByDescending(x => x.ApplicationReference) : query.OrderBy(x => x.ApplicationReference);
                 break;
             case "Property":
-                query = descending ? query.OrderByDescending(x => x.SubmittedFlaPropertyDetail.Name) : query.OrderBy(x => x.SubmittedFlaPropertyDetail.Name);
+                query = descending ? query.OrderByDescending(x => x.SubmittedFlaPropertyDetail!.Name) : query.OrderBy(x => x.SubmittedFlaPropertyDetail!.Name);
                 break;
             case "SubmittedDate":
                 query = descending
@@ -269,21 +296,13 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     
     /// <inheritdoc />
     public async Task<IList<ExternalAccessLink>> GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(
-        Guid applicationId, 
-        string name,
-        string userEmail, 
-        string purpose, 
+        Guid applicationId,
+        ExternalAccessLinkType purpose,
         CancellationToken cancellationToken)
     {
-        var accessLinksForApplication = await Context.ExternalAccessLinks
-            .Where(x => x.FellingLicenceApplicationId == applicationId)
+        return await Context.ExternalAccessLinks
+            .Where(x => x.FellingLicenceApplicationId == applicationId && x.LinkType == purpose)
             .ToListAsync(cancellationToken);
-        
-        return accessLinksForApplication
-            .Where(l => string.Equals(l.ContactEmail, userEmail, StringComparison.CurrentCultureIgnoreCase)
-                        && l.Purpose == purpose 
-                        && l.Name == name)
-            .ToList();
     }
 
     /// <inheritdoc />
@@ -360,7 +379,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         var result = await Context.WoodlandOfficerReviews
            .Include(x => x.FellingLicenceApplication)
            .ThenInclude(x => x.LarchCheckDetails)  
-           .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId);
+           .Include(x => x.SiteVisitEvidences)
+           .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken);
 
         return result != null ? Maybe.From(result) : Maybe<WoodlandOfficerReview>.None;
     }
@@ -565,16 +585,19 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     /// <inheritdoc />
-    public async Task<IList<ConsulteeComment>> GetConsulteeCommentsAsync(Guid applicationId, string? emailAddress, CancellationToken cancellationToken)
+    public async Task<IList<ConsulteeComment>> GetConsulteeCommentsAsync(
+        Guid applicationId, 
+        Guid? accessCode, 
+        CancellationToken cancellationToken)
     {
         var commentsForApplication = await Context.ConsulteeComments
             .Where(x => x.FellingLicenceApplicationId == applicationId)
             .ToListAsync(cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(emailAddress) == false)
+        if (accessCode.HasValue)
         {
             commentsForApplication = commentsForApplication
-                .Where(x => string.Equals(x.AuthorContactEmail, emailAddress, StringComparison.CurrentCultureIgnoreCase))
+                .Where(x => x.AccessCode == accessCode.Value)
                 .ToList();
         }
 
@@ -774,11 +797,17 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     public async Task<List<Document>> GetApplicationDocumentsAsync(Guid applicationId, CancellationToken cancellationToken)
     {
         return await Context.Documents
-            .Where(d => d.FellingLicenceApplicationId == applicationId)
+            .Where(d => d.FellingLicenceApplicationId == applicationId && d.DeletionTimestamp == null)
             .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
+    public void RemoveSiteVisitEvidenceAsync(SiteVisitEvidence evidence)
+    {
+        Context.SiteVisitEvidences.Remove(evidence);
+	}
+
+	/// <inheritdoc />
     public async Task<IncludedApplicationsSummary> TotalIncludedApplicationsAsync(
         bool assignedToUserAccountIdOnly,
         Guid userId,
@@ -823,5 +852,218 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             AssignedToUserCount = assignedToUserCount,
             StatusCounts = statusCounts
         };
+    }
+
+    /// <inheritdoc />
+    public async Task<IncludedApplicationsSummary> TotalIncludedApplicationsAsync(
+        bool assignedToUserAccountIdOnly,
+        Guid userId,
+        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
+        string? searchText,
+        CancellationToken cancellationToken)
+    {
+        var baseQuery = Context.FellingLicenceApplications
+            .Include(a => a.StatusHistories)
+            .Include(a => a.AssigneeHistories)
+            .Include(a => a.SubmittedFlaPropertyDetail)
+            .Where(app =>
+                userFellingLicenceSelectionOptions.Contains(
+                    app.StatusHistories
+                        .OrderByDescending(sh => sh.Created)
+                        .Select(sh => sh.Status)
+                        .FirstOrDefault()
+                )
+            );
+
+        // Optional search across Reference, Property name, and current assignee names
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var internalUsers = Context.Set<InternalUsers.Entities.UserAccount.UserAccount>();
+            var pattern = $"%{searchText.Trim()}%";
+
+            baseQuery = baseQuery.Where(app =>
+                EF.Functions.ILike(app.ApplicationReference, pattern)
+                || EF.Functions.ILike(app.SubmittedFlaPropertyDetail!.Name ?? string.Empty, pattern)
+                || Context.AssigneeHistories
+                    .Where(ah => ah.FellingLicenceApplicationId == app.Id && ah.TimestampUnassigned == null)
+                    .Join(internalUsers,
+                        ah => ah.AssignedUserId,
+                        ua => ua.Id,
+                        (ah, ua) => new { ua.FirstName, ua.LastName })
+                    .Any(u =>
+                        EF.Functions.ILike(((u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty)).Trim(), pattern)
+                        || EF.Functions.ILike(u.FirstName ?? string.Empty, pattern)
+                        || EF.Functions.ILike(u.LastName ?? string.Empty, pattern))
+            );
+        }
+
+        var assignedFilterQuery = assignedToUserAccountIdOnly
+            ? baseQuery.Where(app => app.AssigneeHistories.Any(y => y.AssignedUserId == userId && !y.TimestampUnassigned.HasValue))
+            : baseQuery;
+
+        var totalCount = await assignedFilterQuery.CountAsync(cancellationToken);
+
+        // Always compute assigned to user count from the unfiltered base query (within status scope & search scope)
+        var assignedToUserCount = await baseQuery
+            .Where(app => app.AssigneeHistories.Any(y => y.AssignedUserId == userId && !y.TimestampUnassigned.HasValue))
+            .CountAsync(cancellationToken);
+
+        var statusCounts = await assignedFilterQuery
+            .Select(app => app.StatusHistories
+                .OrderByDescending(sh => sh.Created)
+                .Select(sh => sh.Status)
+                .FirstOrDefault())
+            .GroupBy(status => status)
+            .Select(g => new IncludedStatusCount { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        return new IncludedApplicationsSummary
+        {
+            TotalCount = totalCount,
+            AssignedToUserCount = assignedToUserCount,
+            StatusCounts = statusCounts
+        };
+    }
+
+    public async Task<UnitResult<UserDbErrorReason>> UpdateEnvironmentalImpactAssessmentAsync(
+        Guid applicationId, 
+        EnvironmentalImpactAssessmentRecord eiaRecord,
+        CancellationToken cancellationToken)
+    {
+        var existingFla = await Context.FellingLicenceApplications
+            .Include(x => x.EnvironmentalImpactAssessment)
+            .Include(x => x.FellingLicenceApplicationStepStatus)
+            .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
+
+        if (existingFla is null)
+        {
+            return UnitResult.Failure(UserDbErrorReason.NotFound);
+        }
+
+        existingFla.EnvironmentalImpactAssessment ??= new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = applicationId,
+            FellingLicenceApplication = existingFla,
+        };
+
+        var eia = existingFla.EnvironmentalImpactAssessment;
+        eia.HasApplicationBeenCompleted = eiaRecord.HasApplicationBeenCompleted;
+        eia.HasApplicationBeenSent = eiaRecord.HasApplicationBeenSent;
+
+        existingFla.FellingLicenceApplicationStepStatus.EnvironmentalImpactAssessmentStatus = true;
+
+        return await Context.SaveEntitiesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(
+        Guid applicationId,
+        EnvironmentalImpactAssessmentAdminOfficerRecord eiaRecord,
+        CancellationToken cancellationToken)
+    {
+        if (eiaRecord.IsValid is false)
+        {
+            return UnitResult.Failure(UserDbErrorReason.General);
+        }
+
+        var existingFla = await Context.FellingLicenceApplications
+            .Include(x => x.EnvironmentalImpactAssessment)
+            .Include(x => x.FellingLicenceApplicationStepStatus)
+            .Include(x => x.AdminOfficerReview!)
+            .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
+
+        if (existingFla?.EnvironmentalImpactAssessment is null)
+        {
+            return UnitResult.Failure(UserDbErrorReason.NotFound);
+        }
+
+        var eia = existingFla.EnvironmentalImpactAssessment;
+
+        if (eiaRecord.AreAttachedFormsCorrect.HasValue)
+        {
+            eia.AreAttachedFormsCorrect = eiaRecord.AreAttachedFormsCorrect.Value;
+            eia.HasTheEiaFormBeenReceived = null;
+
+            if (eiaRecord.AreAttachedFormsCorrect.Value is false)
+            {
+                eia.EiaTrackerReferenceNumber = null;
+            }
+        }
+
+        if (eiaRecord.HasTheEiaFormBeenReceived.HasValue)
+        {
+            eia.HasTheEiaFormBeenReceived = eiaRecord.HasTheEiaFormBeenReceived.Value;
+            eia.AreAttachedFormsCorrect = null;
+
+            if (eiaRecord.HasTheEiaFormBeenReceived.Value is false)
+            {
+                eia.EiaTrackerReferenceNumber = null;
+            }
+        }
+
+        if (eiaRecord.EiaTrackerReferenceNumber.HasValue)
+        {
+            eia.EiaTrackerReferenceNumber = eiaRecord.EiaTrackerReferenceNumber.Value;
+        }
+
+        // As the EIA is not mandatory, we set the step status to complete when the admin officer has reviewed it
+        // to allow the OAO review to continue
+        existingFla.AdminOfficerReview!.EiaChecked = true;
+
+        return await Context.SaveEntitiesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<EnvironmentalImpactAssessment>> GetEnvironmentalImpactAssessmentAsync(Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var application = await Context.FellingLicenceApplications
+                .Include(x => x.EnvironmentalImpactAssessment)
+                .ThenInclude(x => x.EiaRequests)
+                .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
+
+            if (application is null)
+            {
+                return Result.Failure<EnvironmentalImpactAssessment>(
+                    "FellingLicenceApplication not found for applicationId.");
+            }
+
+            return application.EnvironmentalImpactAssessment is null
+                ? Result.Failure<EnvironmentalImpactAssessment>(
+                    "EnvironmentalImpactAssessment not found for applicationId.")
+                : Result.Success(application.EnvironmentalImpactAssessment);
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<EnvironmentalImpactAssessment>(
+                $"Error retrieving EnvironmentalImpactAssessment: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> AddEnvironmentalImpactAssessmentRequestHistoryAsync(
+        EnvironmentalImpactAssessmentRequestHistoryRecord record,
+        CancellationToken cancellationToken)
+    {
+        var eia = Context.EnvironmentalImpactAssessments.FirstOrDefault(x =>
+            x.FellingLicenceApplicationId == record.ApplicationId);
+
+        if (eia is null)
+        {
+            return UserDbErrorReason.NotFound;
+        }
+
+        eia.EiaRequests.Add(new EnvironmentalImpactAssessmentRequestHistory
+        {
+            EnvironmentalImpactAssessmentId = eia.Id,
+            EnvironmentalImpactAssessment = eia,
+            RequestingUserId = record.RequestingUserId,
+            NotificationTime = record.NotificationTime,
+            RequestType = record.RequestType
+        });
+
+        return await Context.SaveEntitiesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

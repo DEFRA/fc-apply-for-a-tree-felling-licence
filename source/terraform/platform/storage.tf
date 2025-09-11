@@ -1,7 +1,7 @@
 resource "azurerm_storage_account" "dev" {
   name                             = "devflo"
   resource_group_name              = azurerm_resource_group.fs_flov2.name
-  location                         = var.azure_location
+  location                         = module.shared.azure_location
   account_tier                     = "Standard"
   account_replication_type         = "GRS"
   cross_tenant_replication_enabled = true
@@ -21,7 +21,7 @@ resource "azurerm_storage_container" "dev" {
 resource "azurerm_storage_account" "test" {
   name                             = "testingflo"
   resource_group_name              = azurerm_resource_group.fs_flov2.name
-  location                         = var.azure_location
+  location                         = module.shared.azure_location
   account_tier                     = "Standard"
   account_replication_type         = "GRS"
   cross_tenant_replication_enabled = true
@@ -41,7 +41,7 @@ resource "azurerm_storage_container" "test" {
 resource "azurerm_storage_account" "stage" {
   name                             = "stageflo"
   resource_group_name              = azurerm_resource_group.fs_flov2.name
-  location                         = var.azure_location
+  location                         = module.shared.azure_location
   account_tier                     = "Standard"
   account_replication_type         = "GRS"
   cross_tenant_replication_enabled = true
@@ -61,7 +61,7 @@ resource "azurerm_storage_container" "stage" {
 resource "azurerm_storage_account" "live" {
   name                             = "liveflo"
   resource_group_name              = azurerm_resource_group.fs_flov2.name
-  location                         = var.azure_location
+  location                         = module.shared.azure_location
   account_tier                     = "Standard"
   account_replication_type         = "GRS"
   cross_tenant_replication_enabled = true
@@ -81,7 +81,7 @@ resource "azurerm_storage_container" "live" {
 resource "azurerm_storage_account" "migrate" {
   name                             = "migrateflo"
   resource_group_name              = azurerm_resource_group.fs_flov2.name
-  location                         = var.azure_location
+  location                         = module.shared.azure_location
   account_tier                     = "Standard"
   account_replication_type         = "GRS"
   cross_tenant_replication_enabled = true

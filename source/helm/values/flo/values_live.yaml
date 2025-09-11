@@ -115,6 +115,8 @@ external-web-app:
         InformInternalUserOfAccountApproval: "76b887be-3e6c-47bb-9522-335a70fa02f5"
         InviteWoodlandOwnerUserToOrganisation: "9d1b50c3-b180-4fba-8fed-95fd46434b46"
         InviteAgentUserToOrganisation: "c45250a6-da09-4653-b30b-24fe4f721864"
+        EiaReminderMissingDocuments: "a5d3ef14-28ad-4a93-8a57-4ad5aa2b7eb5"
+        EiaReminderToSendDocuments: "f767d060-9ba4-485c-95e9-d4c8f148cac5"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
@@ -319,6 +321,8 @@ internal-web-app:
       connectionString: 
         secret_key: blob.connectionString
       container: liveflo
+    userInvite:
+      inviteLinkExpiryDays: 28
     externalApplicantSite:
       baseUrl: "https://private-beta.tree-felling.forestrycommission.gov.uk/"
     woodlandOfficerReview:
@@ -408,6 +412,8 @@ internal-web-app:
         InformApplicantOfReturnedApplicationMixLarchZone1: "ba497334-da76-4861-b054-0ab9dea286b3"
         InformApplicantOfReturnedApplicationMixLarchMixZone: "2cc8767f-8633-4818-9570-1f040052e02c"
         InformApplicantOfReturnedApplicationLarchOnlyMixZone: "f64e9c3e-2f15-4a7a-83f9-8955d6e6bbb2"
+        EiaReminderMissingDocuments: "a5d3ef14-28ad-4a93-8a57-4ad5aa2b7eb5"
+        EiaReminderToSendDocuments: "f767d060-9ba4-485c-95e9-d4c8f148cac5"
     permittedRegisteredUser:
       enabled: true
       permittedEmailDomainsForRegisteredUser:

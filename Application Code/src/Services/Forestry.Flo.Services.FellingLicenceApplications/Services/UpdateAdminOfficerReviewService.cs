@@ -1,8 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Microsoft.Extensions.Logging;
 using NodaTime;
 
@@ -193,6 +193,21 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             AdminOfficerReviewSections.CBWCheck,
             cancellationToken);
 
+    public async Task<Result> SetEiaCheckCompletionAsync(
+        Guid applicationId,
+        bool isAgencyApplication,
+        Guid performingUserId,
+        bool complete,
+        CancellationToken cancellationToken) =>
+        await SetCompletionFlagAsync(
+            applicationId,
+            isAgencyApplication,
+            performingUserId,
+            complete,
+            AdminOfficerReviewSections.EiaCheck,
+            cancellationToken);
+
+
     public async Task<Result> UpdateAgentAuthorityFormDetailsAsync(
         Guid applicationId,
         Guid performingUserId,
@@ -257,13 +272,33 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             : Result.Success();
     }
 
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> AddEnvironmentalImpactAssessmentRequestHistoryAsync(
+        EnvironmentalImpactAssessmentRequestHistoryRecord record,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Adding EIA request history record for application with id {ApplicationId}", record.ApplicationId);
+
+        var result = await _internalFlaRepository.AddEnvironmentalImpactAssessmentRequestHistoryAsync(record, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            _logger.LogError("Could not add EIA request history record for application with id {ApplicationId}, error: {Error}", record.ApplicationId, result.Error);
+            return UnitResult.Failure(result.Error);
+        }
+
+        _logger.LogInformation("Successfully added EIA request history record for application with id {ApplicationId}", record.ApplicationId);
+        return UnitResult.Success<UserDbErrorReason>();
+    }
+
     public enum AdminOfficerReviewSections
     {
         AgentAuthorityForm,
         MappingCheck,
         ConstraintsCheck,
         LarchCheck,
-        CBWCheck
+        CBWCheck,
+        EiaCheck
     }
 
     private async Task<Result> SetCompletionFlagAsync(
@@ -321,6 +356,9 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
                 break;
             case AdminOfficerReviewSections.CBWCheck:
                 adminOfficerReview.CBWChecked = complete;
+                break;
+            case AdminOfficerReviewSections.EiaCheck:
+                adminOfficerReview.EiaChecked = complete;
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(section), section, null);

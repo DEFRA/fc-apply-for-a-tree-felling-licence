@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -384,38 +385,32 @@ public class UpdateWoodlandOfficerReviewService(
                 return Result.Failure("Application woodland officer review unable to be updated");
             }
 
-            var entity = new WoodlandOfficerReview
-            {
-                FellingLicenceApplicationId = applicationId
-            };
+            var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+                applicationId,
+                userId,
+                cancellationToken);
 
-            var maybeExistingWoodlandOfficerReview = await _internalFlaRepository.GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
-
-            if (maybeExistingWoodlandOfficerReview.HasValue)
+            if (isFailure)
             {
-                entity = maybeExistingWoodlandOfficerReview.Value;
+                return Result.Failure(error);
             }
 
-            entity.SiteVisitNeeded = true;
-            entity.SiteVisitArrangementsMade = siteVisitArrangementsMade;
-            entity.LastUpdatedById = userId;
-            entity.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+            review.SiteVisitNeeded = true;
+            review.SiteVisitArrangementsMade = siteVisitArrangementsMade;
 
-            var caseNote = new CaseNote
+            if (!string.IsNullOrWhiteSpace(siteVisitArrangements.CaseNote))
             {
-                FellingLicenceApplicationId = applicationId,
-                Text = siteVisitArrangements.CaseNote,
-                Type = CaseNoteType.SiteVisitComment,
-                VisibleToApplicant = siteVisitArrangements.VisibleToApplicant,
-                VisibleToConsultee = siteVisitArrangements.VisibleToConsultee,
-                CreatedByUserId = userId,
-                CreatedTimestamp = _clock.GetCurrentInstant().ToDateTimeUtc()
-            };
-            await _internalFlaRepository.AddCaseNoteAsync(caseNote, cancellationToken);
-
-            if (maybeExistingWoodlandOfficerReview.HasNoValue)
-            {
-                await _internalFlaRepository.AddWoodlandOfficerReviewAsync(entity, cancellationToken);
+                var caseNote = new CaseNote
+                {
+                    FellingLicenceApplicationId = applicationId,
+                    Text = siteVisitArrangements.CaseNote,
+                    Type = CaseNoteType.SiteVisitComment,
+                    VisibleToApplicant = siteVisitArrangements.VisibleToApplicant,
+                    VisibleToConsultee = siteVisitArrangements.VisibleToConsultee,
+                    CreatedByUserId = userId,
+                    CreatedTimestamp = _clock.GetCurrentInstant().ToDateTimeUtc()
+                };
+                await _internalFlaRepository.AddCaseNoteAsync(caseNote, cancellationToken);
             }
 
             var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
@@ -440,6 +435,7 @@ public class UpdateWoodlandOfficerReviewService(
         Guid performingUserId, 
         RecommendedLicenceDuration? recommendedLicenceDuration,
         bool? recommendationForDecisionPublicRegister,
+        string recommendationForDecisionPublicRegisterReason,
         DateTime completedDateTime,
         CancellationToken cancellationToken)
     {
@@ -475,7 +471,11 @@ public class UpdateWoodlandOfficerReviewService(
 
             var woodlandOfficerReview = await _internalFlaRepository.GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
 
-            if (await AssertWoodlandOfficerReviewTasksComplete(applicationId, woodlandOfficerReview, cancellationToken) == false)
+            if (await AssertWoodlandOfficerReviewTasksComplete(
+                    applicationId, 
+                    woodlandOfficerReview, 
+                    applicationMaybe.Value.ShouldApplicationRequireEia(), 
+                    cancellationToken) == false)
             {
                 return Result.Failure<CompleteWoodlandOfficerReviewNotificationsModel>("Unable to complete Woodland Officer review for given application");
             }
@@ -503,6 +503,7 @@ public class UpdateWoodlandOfficerReviewService(
             woodlandOfficerReview.Value.WoodlandOfficerReviewComplete = true;
             woodlandOfficerReview.Value.RecommendedLicenceDuration = recommendedLicenceDuration;
             woodlandOfficerReview.Value.RecommendationForDecisionPublicRegister = recommendationForDecisionPublicRegister;
+            woodlandOfficerReview.Value.RecommendationForDecisionPublicRegisterReason = recommendationForDecisionPublicRegisterReason;
             woodlandOfficerReview.Value.LastUpdatedById = performingUserId;
             woodlandOfficerReview.Value.LastUpdatedDate = completedDateTime;
 
@@ -636,6 +637,231 @@ public class UpdateWoodlandOfficerReviewService(
         return Result.Success();
     }
 
+    /// <inheritdoc />
+    public async Task<Result> CompleteEiaScreeningCheckAsync(
+        Guid applicationId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+
+        if (await AssertApplication(applicationId, userId, cancellationToken) is false)
+        {
+            return Result.Failure("Application woodland officer review unable to be updated");
+        }
+
+        var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+            applicationId,
+            userId,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            return Result.Failure(error);
+        }
+
+        review.EiaScreeningComplete = true;
+
+        var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+        if (saveResult.IsFailure)
+        {
+            logger.LogError("Could not save changes to woodland officer review, error: {Error}", saveResult.Error);
+            return Result.Failure(saveResult.Error.ToString());
+        }
+
+        return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateSiteVisitEvidenceAsync(
+        Guid applicationId,
+        Guid userId,
+        SiteVisitEvidenceDocument[] evidence,
+        FormLevelCaseNote observations,
+        bool isComplete,
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Attempting to update site visit evidence for application id {ApplicationId}", applicationId);
+
+        try
+        {
+            if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+            {
+                return Result.Failure("Application site visit evidence unable to be updated");
+            }
+
+            var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+                applicationId,
+                userId,
+                cancellationToken);
+
+            if (isFailure)
+            {
+                return Result.Failure(error);
+            }
+
+            var applicationDocuments =
+                await _internalFlaRepository.GetApplicationDocumentsAsync(applicationId, cancellationToken);
+
+            applicationDocuments = applicationDocuments
+                .Where(x => x.Purpose == DocumentPurpose.SiteVisitAttachment)
+                .ToList();
+
+            // remove any existing site visit evidence documents not in the new list
+            var docsToRemove = review.SiteVisitEvidences!
+                .Where(o => evidence.Any(n => n.DocumentId == o.DocumentId) == false)
+                .ToList();
+
+            foreach (var doc in docsToRemove)
+            {
+                review.SiteVisitEvidences!.Remove(doc);
+                _internalFlaRepository.RemoveSiteVisitEvidenceAsync(doc);
+
+                //mark the supporting doc as removed also
+                var appDoc = applicationDocuments.FirstOrDefault(x =>
+                    x.Id == doc.DocumentId && x.Purpose == DocumentPurpose.SiteVisitAttachment);
+                if (appDoc != null)
+                {
+                    appDoc.DeletionTimestamp = review.LastUpdatedDate;
+                    appDoc.DeletedByUserId = userId;
+                }
+            }
+
+            // update the existing ones and add any new ones
+            foreach (var siteVisitEvidence in evidence)
+            {
+                var existing = review.SiteVisitEvidences!
+                    .FirstOrDefault(x => x.DocumentId == siteVisitEvidence.DocumentId);
+
+                if (existing == null)
+                {
+                    existing = new SiteVisitEvidence
+                    {
+                        DocumentId = siteVisitEvidence.DocumentId,
+                        WoodlandOfficerReviewId = review.Id,
+                        LastUpdatedById = userId,
+                        LastUpdatedDate = review.LastUpdatedDate
+                    };
+                    review.SiteVisitEvidences!.Add(existing);
+                }
+
+                if (existing.Label != siteVisitEvidence.Label ||
+                    existing.Comment != siteVisitEvidence.Comment)
+                {
+                    existing.LastUpdatedById = userId;
+                    existing.LastUpdatedDate = review.LastUpdatedDate;
+                    existing.Label = siteVisitEvidence.Label;
+                    existing.Comment = siteVisitEvidence.Comment;
+                }
+
+                // update visibility flags on the supporting document
+                var appDoc = applicationDocuments.FirstOrDefault(x =>
+                    x.Id == siteVisitEvidence.DocumentId && x.Purpose == DocumentPurpose.SiteVisitAttachment);
+                if (appDoc != null)
+                {
+                    appDoc.VisibleToApplicant = siteVisitEvidence.VisibleToApplicant;
+                    appDoc.VisibleToConsultee = siteVisitEvidence.VisibleToConsultee;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(observations.CaseNote))
+            {
+                var caseNote = new CaseNote
+                {
+                    FellingLicenceApplicationId = applicationId,
+                    Text = observations.CaseNote,
+                    Type = CaseNoteType.SiteVisitComment,
+                    VisibleToApplicant = observations.VisibleToApplicant,
+                    VisibleToConsultee = observations.VisibleToConsultee,
+                    CreatedByUserId = userId,
+                    CreatedTimestamp = _clock.GetCurrentInstant().ToDateTimeUtc()
+                };
+                await _internalFlaRepository.AddCaseNoteAsync(caseNote, cancellationToken);
+            }
+
+            review.SiteVisitComplete = isComplete;
+
+            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (saveResult.IsFailure)
+            {
+                logger.LogError("Could not save changes to site visit evidence for application id {ApplicationId}, error: {Error}", applicationId, saveResult.Error);
+                return Result.Failure(saveResult.Error.ToString());
+            }
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception caught in UpdateSiteVisitEvidenceAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    public async Task<Result> UpdateConsultationsStatusAsync(
+        Guid applicationId,
+        Guid userId,
+        bool? isNeeded,
+        bool? isComplete,
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Updating consultations status for application id {ApplicationId}", applicationId);
+
+        try
+        {
+            if (isNeeded.HasNoValue() && isComplete.HasNoValue())
+            {
+                logger.LogDebug("Neither flag provided has a new value, returning.");
+                return Result.Success();
+            }
+
+            if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+            {
+                return Result.Failure("Application woodland officer review unable to be updated");
+            }
+
+            var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+                applicationId,
+                userId,
+                cancellationToken);
+
+            if (isFailure)
+            {
+                return Result.Failure(error);
+            }
+
+            if (isNeeded.HasValue)
+            {
+                if (isNeeded is false)
+                {
+                    var consultationLinks = await _internalFlaRepository
+                        .GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(applicationId, ExternalAccessLinkType.ConsulteeInvite, cancellationToken);
+
+                    if (consultationLinks.Any())
+                    {
+                        logger.LogError("Cannot set consultations as not needed for application id {ApplicationId} as there are existing consultation links", applicationId);
+                        return Result.Failure("Cannot set consultations as not needed as there are existing consultation links");
+                    }
+                }
+
+                review.ApplicationNeedsConsultations = isNeeded!.Value;
+            }
+                
+            if (isComplete.HasValue)
+            {
+                review.ConsultationsComplete = isComplete.Value;
+            }
+
+            await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception caught in UpdateConsultationsStatusAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
     private async Task<Result<WoodlandOfficerReview>> UpdateWoodlandOfficerReviewLastUpdateDateAndBy(Guid applicationId, Guid userId, CancellationToken cancellationToken)
     {
         try
@@ -725,7 +951,11 @@ public class UpdateWoodlandOfficerReviewService(
             x.Role == AssignedUserRole.FieldManager&& x.TimestampUnassigned.HasValue == false);
     }
 
-    private async Task<bool> AssertWoodlandOfficerReviewTasksComplete(Guid applicationId, Maybe<WoodlandOfficerReview> woodlandOfficerReview, CancellationToken cancellationToken)
+    private async Task<bool> AssertWoodlandOfficerReviewTasksComplete(
+        Guid applicationId, 
+        Maybe<WoodlandOfficerReview> woodlandOfficerReview, 
+        bool requiresEia, 
+        CancellationToken cancellationToken)
     {
         if (woodlandOfficerReview.HasNoValue)
         {
@@ -767,6 +997,12 @@ public class UpdateWoodlandOfficerReviewService(
         if (woodlandOfficerReview.Value.LarchCheckComplete == false)
         {
             logger.LogError("Confirmed larch check details incomplete for application with id {ApplicationId}", applicationId);
+            return false;
+        }
+
+        if (requiresEia && woodlandOfficerReview.Value.EiaScreeningComplete is not true)
+        {
+            logger.LogError("EIA screening incomplete for application with id {ApplicationId}", applicationId);
             return false;
         }
 

@@ -32,6 +32,8 @@ public class ApplicationStepBase : IApplicationStep
 
     public virtual bool? StepComplete { get; set; }
 
+    public virtual bool StepRequiredForApplication { get; set; } = true;
+
     public bool ReturnToApplicationSummary { get; set; }
 
     public bool ReturnToPlayback { get; set; }

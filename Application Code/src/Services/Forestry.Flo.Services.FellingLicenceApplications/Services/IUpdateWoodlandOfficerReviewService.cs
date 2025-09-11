@@ -118,6 +118,8 @@ public interface IUpdateWoodlandOfficerReviewService
     /// <param name="recommendedLicenceDuration">The chosen <see cref="RecommendedLicenceDuration"/> value from the woodland officer.</param>
     /// <param name="recommendationForDecisionPublicRegister">The woodland officer's recommendation for whether to publish this application
     /// to the decision public register.</param>
+    /// <param name="recommendationForDecisionPublicRegisterReason">The woodland officer's reason for their recommendation for
+    /// whether to publish this application to the decision public register.</param>
     /// <param name="completedDateTime">The date and time that the review was completed.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A populated <see cref="CompleteWoodlandOfficerReviewNotificationsModel"/> providing the ids of the
@@ -127,6 +129,7 @@ public interface IUpdateWoodlandOfficerReviewService
         Guid performingUserId,
         RecommendedLicenceDuration? recommendedLicenceDuration,
         bool? recommendationForDecisionPublicRegister,
+        string recommendationForDecisionPublicRegisterReason,
         DateTime completedDateTime,
         CancellationToken cancellationToken);
 
@@ -168,4 +171,53 @@ public interface IUpdateWoodlandOfficerReviewService
         Guid applicationId, 
         Guid userId, 
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Completes the EIA (Environmental Impact Assessment) screening check for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to be updated.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating the success or failure of the operation.
+    /// </returns>
+    Task<Result> CompleteEiaScreeningCheckAsync(
+        Guid applicationId,
+        Guid userId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the site visit evidence documents for an application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to be updated.</param>
+    /// <param name="userId">The id of the user performing the update.</param>
+    /// <param name="evidence">An array of <see cref="SiteVisitEvidenceDocument"/> models representing the documents</param>
+    /// <param name="observations">A <see cref="FormLevelCaseNote"/> with any additional observations from the woodland officer.</param>
+    /// <param name="isComplete">A flag indicating whether the site visit is confirmed as complete.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>An awaitable task.</returns>
+    Task<Result> UpdateSiteVisitEvidenceAsync(
+        Guid applicationId,
+        Guid userId,
+        SiteVisitEvidenceDocument[] evidence,
+        FormLevelCaseNote observations,
+        bool isComplete,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the status of consultations for an application.
+    /// </summary>
+    /// <param name="applicationId">The application to update.</param>
+    /// <param name="userId">The id of the user making the update.</param>
+    /// <param name="isNeeded">An optional flag indicating whether consultations are needed.</param>
+    /// <param name="isComplete">An optional flag indicating if the consultations phase is complete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating if the operation was successful.</returns>
+    Task<Result> UpdateConsultationsStatusAsync(
+        Guid applicationId,
+        Guid userId,
+        bool? isNeeded,
+        bool? isComplete,
+        CancellationToken cancellationToken);
+
 }

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Text;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
@@ -169,7 +170,8 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AuthorName == model.AuthorName
                 && c.AuthorContactEmail == model.AuthorContactEmail
                 && c.Comment == model.Comment
-                && !c.ConsulteeAttachmentIds.Any()),
+                && !c.ConsulteeAttachmentIds.Any()
+                && c.AccessCode == model.AccessCode),
             It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
@@ -226,7 +228,8 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AuthorContactEmail == model.AuthorContactEmail
                 && c.Comment == model.Comment
                 && c.ConsulteeAttachmentIds.Count() == addDocumentsResult.DocumentIds.Count()
-                && c.ConsulteeAttachmentIds.All(a => addDocumentsResult.DocumentIds.Any(z => z == a))), 
+                && c.ConsulteeAttachmentIds.All(a => addDocumentsResult.DocumentIds.Any(z => z == a))
+                && c.AccessCode == model.AccessCode), 
             It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
@@ -292,7 +295,8 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AuthorName == model.AuthorName
                 && c.AuthorContactEmail == model.AuthorContactEmail
                 && c.Comment == model.Comment
-                && c.ConsulteeAttachmentIds.Single() == addDocumentsResult.DocumentIds.Single()), It.IsAny<CancellationToken>()), Times.Once);
+                && c.ConsulteeAttachmentIds.Single() == addDocumentsResult.DocumentIds.Single()
+                && c.AccessCode == model.AccessCode), It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
         _mockClock.VerifyNoOtherCalls();
@@ -451,13 +455,23 @@ public class ExternalConsulteeReviewUseCaseTests
         WoodlandOwnerModel woodlandOwnerModel,
         UserAccount externalUserAccount,
         Flo.Services.InternalUsers.Entities.UserAccount.UserAccount internalUserAccount,
-        Guid accessCode,
-        ExternalInviteLink externalInviteLink)
+        Guid accessCode)
     {
         SyncApplicationCompartmentData(fellingLicenceApplication);
-        fellingLicenceApplication.Documents.ForEach(d => d.VisibleToConsultee = true);
-        fellingLicenceApplication.Documents.ForEach(d => d.DeletionTimestamp = null);
+        fellingLicenceApplication.Documents.ForEach(d =>
+        {
+            d.VisibleToConsultee = true;
+            d.DeletionTimestamp = null;
+            typeof(Document)
+                .GetProperty("Id", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .SetValue(d, Guid.NewGuid());
+        });
 
+        ExternalInviteLink externalInviteLink = new Fixture()
+            .Build<ExternalInviteLink>()
+            .With(c => c.SharedSupportingDocuments, fellingLicenceApplication.Documents.Take(2).Select(x => x.Id).ToList())
+            .Create();
+        
         var sut = CreateSut();
 
         _mockFellingLicenceApplicationInternalRepository.Setup(x =>
@@ -476,7 +490,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe.From(internalUserAccount));
 
         _mockExternalConsulteeReviewService.Setup(x => 
-                x.RetrieveConsulteeCommentsForAuthorAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var result = await sut.GetApplicationSummaryForConsulteeReviewAsync(applicationId, externalInviteLink, accessCode, CancellationToken.None);
@@ -489,7 +503,7 @@ public class ExternalConsulteeReviewUseCaseTests
         result.Value.ApplicationSummary.ApplicationReference.Should().Be(fellingLicenceApplication.ApplicationReference);
 
         result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
-            fellingLicenceApplication.Documents.Where(x => x.VisibleToConsultee), o => o.ExcludingMissingMembers());
+            fellingLicenceApplication.Documents.Take(2), o => o.ExcludingMissingMembers());
 
         result.Value.ActivityFeed.Should().NotBeNull();
         result.Value.ActivityFeed.ActivityFeedItemModels.Should().BeEmpty();
@@ -522,7 +536,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockInternalUserAccountService.VerifyNoOtherCalls();
 
         _mockExternalConsulteeReviewService.Verify(x =>
-                x.RetrieveConsulteeCommentsForAuthorAsync(applicationId, externalInviteLink.ContactEmail, It.IsAny<CancellationToken>()), Times.Once);
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(applicationId, accessCode, It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
     }
 
@@ -533,12 +547,22 @@ public class ExternalConsulteeReviewUseCaseTests
         WoodlandOwnerModel woodlandOwnerModel,
         UserAccount externalUserAccount,
         Flo.Services.InternalUsers.Entities.UserAccount.UserAccount internalUserAccount,
-        Guid accessCode,
-        ExternalInviteLink externalInviteLink)
+        Guid accessCode)
     {
         SyncApplicationCompartmentData(fellingLicenceApplication);
-        fellingLicenceApplication.Documents.ForEach(d => d.VisibleToConsultee = true);
-        fellingLicenceApplication.Documents.ForEach(d => d.DeletionTimestamp = null);
+        fellingLicenceApplication.Documents.ForEach(d =>
+        {
+            d.VisibleToConsultee = true;
+            d.DeletionTimestamp = null;
+            typeof(Document)
+                .GetProperty("Id", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .SetValue(d, Guid.NewGuid());
+        });
+
+        ExternalInviteLink externalInviteLink = new Fixture()
+            .Build<ExternalInviteLink>()
+            .With(c => c.SharedSupportingDocuments, fellingLicenceApplication.Documents.Take(2).Select(x => x.Id).ToList())
+            .Create();
 
         var authoredComments = Fixture.Build<ConsulteeCommentModel>()
             .With(x => x.AuthorContactEmail, externalInviteLink.ContactEmail)
@@ -577,7 +601,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe.From(internalUserAccount));
 
         _mockExternalConsulteeReviewService.Setup(x =>
-                x.RetrieveConsulteeCommentsForAuthorAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(authoredComments);
 
         var result = await sut.GetApplicationSummaryForConsulteeReviewAsync(applicationId, externalInviteLink, accessCode, CancellationToken.None);
@@ -590,7 +614,7 @@ public class ExternalConsulteeReviewUseCaseTests
         result.Value.ApplicationSummary.ApplicationReference.Should().Be(fellingLicenceApplication.ApplicationReference);
 
         result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
-            fellingLicenceApplication.Documents.Where(x => x.VisibleToConsultee), o => o.ExcludingMissingMembers());
+            fellingLicenceApplication.Documents.Take(2), o => o.ExcludingMissingMembers());
 
         result.Value.ActivityFeed.Should().NotBeNull();
         result.Value.ActivityFeed.ActivityFeedItemModels.Should().BeEquivalentTo(expectedItemFeedItems);
@@ -623,7 +647,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockInternalUserAccountService.VerifyNoOtherCalls();
 
         _mockExternalConsulteeReviewService.Verify(x =>
-                x.RetrieveConsulteeCommentsForAuthorAsync(applicationId, externalInviteLink.ContactEmail, It.IsAny<CancellationToken>()), Times.Once);
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(applicationId, accessCode, It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
     }
 

@@ -177,9 +177,12 @@ public class SubmitFellingLicenceService : ISubmitFellingLicenceService
 
     private async Task<Maybe<UserAccount>> DetermineInternalUserFromFullName(string fullname, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrEmpty(fullname))
+        {
+            return Maybe<UserAccount>.None;
+        }
 
         // Attempt all permutations of the full name string split into first and last names.
-
         var names = fullname.Trim().Split(' ');
 
         var locatedAccount = Maybe<UserAccount>.None;
@@ -194,7 +197,7 @@ public class SubmitFellingLicenceService : ISubmitFellingLicenceService
             if (!locatedAccounts.Any())
             {
                 continue;
-            };
+            }
 
             if (locatedAccounts.Count > 1)
             {
@@ -202,7 +205,6 @@ public class SubmitFellingLicenceService : ISubmitFellingLicenceService
             }
 
             locatedAccount = Maybe<UserAccount>.From(locatedAccounts.First());
-
             break;
         }
 

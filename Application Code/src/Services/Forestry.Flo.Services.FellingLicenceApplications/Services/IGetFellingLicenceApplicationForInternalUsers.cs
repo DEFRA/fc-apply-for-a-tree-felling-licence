@@ -96,4 +96,17 @@ public interface IGetFellingLicenceApplicationForInternalUsers
     Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the Environmental Impact Assessment entity for the application with the given id.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to retrieve the EIA details for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The Environmental Impact Assessment entity for the application.</returns>
+    /// <remarks>
+    /// If an application does not have an associated EIA, a failure result will be returned.
+    /// </remarks>
+    Task<Result<EnvironmentalImpactAssessment>> GetEnvironmentalImpactAssessmentAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
 }

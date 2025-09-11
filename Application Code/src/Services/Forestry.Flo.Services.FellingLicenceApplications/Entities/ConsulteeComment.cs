@@ -16,6 +16,12 @@ public class ConsulteeComment
     public Guid FellingLicenceApplicationId { get; set; }
 
     /// <summary>
+    /// Gets and sets the access code that was used to add this consultee comment.
+    /// </summary>
+    [Required]
+    public Guid AccessCode { get; set; }
+
+    /// <summary>
     /// Gets and sets the point in time this comment was added.
     /// </summary>
     public DateTime CreatedTimestamp { get; set; }

@@ -27,6 +27,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
 
         public bool? TermsAndConditionsStatus { get; set; }
 
+        /// <summary>
+        /// Gets and sets a value indicating the status of the Environmental Impact Assessment step.
+        /// </summary>
+        public bool? EnvironmentalImpactAssessmentStatus { get; set; }
+
         // https://stackoverflow.com/questions/44829824/how-to-store-json-in-an-entity-field-with-ef-core
 
         // Note: There is no FellingAndRestockingDetailsStatus, instead we use the aggregation represented by CompartmentFellingRestockingStatuses

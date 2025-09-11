@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
@@ -34,11 +35,13 @@ public class SubmittedFlaPropertyCompartment
     /// <summary>
     /// Gets and Sets the total hectares number
     /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
     public double? TotalHectares { get; set; }
 
     /// <summary>
     /// Gets and Sets the confirmed (digitised) total hectares number
     /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
     public double? ConfirmedTotalHectares { get; set; }
 
     /// <summary>

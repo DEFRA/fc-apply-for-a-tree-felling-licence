@@ -1,8 +1,10 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Controllers;
+using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Repositories;
@@ -31,6 +33,7 @@ using Forestry.Flo.Services.PropertyProfiles.Entities;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Forestry.Flo.Services.PropertyProfiles.Services;
 using MassTransit;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -68,6 +71,7 @@ public class CreateFellingLicenceApplicationUseCase(
     IForesterServices foresterServices,
     IApplicationReferenceHelper applicationHelper,
     IPublicRegister publicRegisterService,
+    IOptions<EiaOptions> eiaOptions,
     IGetConfiguredFcAreas getConfiguredFcAreasService) 
     : ApplicationUseCaseCommon(retrieveUserAccountsService,
         retrieveWoodlandOwnersService,
@@ -1253,6 +1257,7 @@ public class CreateFellingLicenceApplicationUseCase(
     /// </summary>
     /// <param name="user">A current application user</param>
     /// <param name="applicationId">An application id</param>
+    /// <param name="eiaOptions"> EIA options</param>
     /// <param name="cancellationToken">A cancellation token</param>
     /// <returns></returns>
     public async Task<Maybe<FellingLicenceApplicationModel>> RetrieveFellingLicenceApplication(
@@ -1260,6 +1265,8 @@ public class CreateFellingLicenceApplicationUseCase(
         Guid applicationId,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(eiaOptions.Value);
+
         var application = await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
 
         if (application.IsFailure)
@@ -1294,6 +1301,8 @@ public class CreateFellingLicenceApplicationUseCase(
         var woodlandOwnerNameAndAgencyDetails =
             await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, cancellationToken);
         var agency = await GetAgencyModelForWoodlandOwnerAsync(application.Value.WoodlandOwnerId, cancellationToken);
+
+        var requiresEia = application.Value.ShouldApplicationRequireEia();
 
         var applicationModel = new FellingLicenceApplicationModel
         {
@@ -1378,6 +1387,22 @@ public class CreateFellingLicenceApplicationUseCase(
                 SelectCompartmentStep = application.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus,
                 ExternalLisAccessedTimestamp = application.Value.ExternalLisAccessedTimestamp,
                 NotRunningExternalLisReport = application.Value.NotRunningExternalLisReport
+            },
+            EnvironmentalImpactAssessment = new EnvironmentalImpactAssessmentViewModel
+            {
+                ApplicationId = applicationId,
+                StepComplete = application.Value.FellingLicenceApplicationStepStatus.EnvironmentalImpactAssessmentStatus,
+                FellingLicenceStatus = application.Value.GetCurrentStatus(),
+                EiaDocuments = ModelMapping.ToDocumentsModelForApplicantView(
+                    application.Value.Documents?.Where(x =>
+                            x.Purpose is DocumentPurpose.EiaAttachment &&
+                            x.DeletionTimestamp is null)
+                        .ToList()).ToArray(),
+                HasApplicationBeenCompleted = application.Value.EnvironmentalImpactAssessment?.HasApplicationBeenCompleted,
+                HasApplicationBeenSent = application.Value.EnvironmentalImpactAssessment?.HasApplicationBeenSent,
+                ApplicationReference = application.Value.ApplicationReference,
+                EiaApplicationExternalUri = eiaOptions.Value.EiaApplicationExternalUri,
+                StepRequiredForApplication = requiresEia
             }
         };
 
@@ -1508,6 +1533,8 @@ public class CreateFellingLicenceApplicationUseCase(
 
         var controllerName = "FellingLicenceApplication";
 
+        var requiresEia = application.ShouldApplicationRequireEia();
+
         var fellingAndRestockingPlaybackViewModel = new FellingAndRestockingPlaybackViewModel()
         {
             ApplicationId = applicationID,
@@ -1520,7 +1547,21 @@ public class CreateFellingLicenceApplicationUseCase(
                 Values = new
                     { applicationId = application.Id, isForRestockingCompartmentSelection = false, returnToPlayback = true }
             },
-            FellingLicenceStatus = application.GetCurrentStatus()
+            FellingLicenceStatus = application.GetCurrentStatus(),
+            SaveAndContinueContext = new UrlActionContext
+            {
+                Action = requiresEia
+                    ? nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment) 
+                    : nameof(FellingLicenceApplicationController.ConstraintsCheck),
+                Controller = controllerName,
+                Values = new Dictionary<string, string>
+                {
+                    {
+                        "applicationId",
+                        application.Id.ToString()
+                    }
+                }
+            }
         };
 
         var fellingCompartmentPlaybackViewModels = new List<FellingCompartmentPlaybackViewModel>();

@@ -118,12 +118,10 @@
 
                     if (extension !== "csv") {
                         addError(file.name + ' - selected files must be a .csv template file');
-                    }
-                    else {
+                    } else {
                         if (selectedFiles.length === 0) {
                             addFile(file);
-                        }
-                        else {
+                        } else {
                             $.each(selectedFiles, function (index, existingFile) {
                                 if (existingFile.name === fileName) {
                                     fileExists = true;

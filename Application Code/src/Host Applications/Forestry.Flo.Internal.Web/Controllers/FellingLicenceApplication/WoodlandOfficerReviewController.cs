@@ -16,21 +16,20 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerRev
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
+using Forestry.Flo.Internal.Web.Models;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
 [Authorize]
 [AutoValidateAntiforgeryToken]
-public partial class WoodlandOfficerReviewController : Controller
+public partial class WoodlandOfficerReviewController(
+    IValidator<CompartmentConfirmedFellingRestockingDetailsModel> fellingAndRestockingDetailsModelValidator,
+    EnvironmentalImpactAssessmentAdminOfficerUseCase eiaUseCase,
+    WoodlandOfficerReviewUseCase woReviewUseCase)
+    : Controller
 {
-    private readonly IValidator<CompartmentConfirmedFellingRestockingDetailsModel> _fellingAndRestockingDetailsModelValidator;
-
-    public WoodlandOfficerReviewController(
-        IValidator<CompartmentConfirmedFellingRestockingDetailsModel> fellingAndRestockingDetailsModelValidator)
-    {
-        _fellingAndRestockingDetailsModelValidator = fellingAndRestockingDetailsModelValidator;
-    }
+    private readonly IValidator<CompartmentConfirmedFellingRestockingDetailsModel> _fellingAndRestockingDetailsModelValidator = fellingAndRestockingDetailsModelValidator;
 
     [HttpGet]
     public async Task<IActionResult> Index(
@@ -71,6 +70,12 @@ public partial class WoodlandOfficerReviewController : Controller
             return RedirectToAction("Index", new { id = model.ApplicationId });
         }
 
+        if (string.IsNullOrWhiteSpace(model.RecommendationForDecisionPublicRegisterReason))
+        {
+            this.AddErrorMessage("A reason for the recommendation for whether to publish to the decision public register must be provided");
+            return RedirectToAction("Index", new { id = model.ApplicationId });
+        }
+
         if (model.RecommendedLicenceDuration is null or RecommendedLicenceDuration.None)
         {
             this.AddErrorMessage("A recommended licence duration must be provided");
@@ -96,7 +101,7 @@ public partial class WoodlandOfficerReviewController : Controller
         var internalLinkToApplication = Url.Action("ApplicationSummary", "FellingLicenceApplication", new { id = model.ApplicationId }, this.Request.Scheme);
 
         var result = await useCase.CompleteWoodlandOfficerReviewAsync(
-            model.ApplicationId, model.RecommendedLicenceDuration, model.RecommendationForDecisionPublicRegister, internalLinkToApplication, user, cancellationToken);
+            model.ApplicationId, model.RecommendedLicenceDuration, model.RecommendationForDecisionPublicRegister, model.RecommendationForDecisionPublicRegisterReason, internalLinkToApplication, user, cancellationToken);
 
         if (result.IsFailure)
         {
@@ -257,13 +262,20 @@ public partial class WoodlandOfficerReviewController : Controller
         [FromServices] SiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var hostingPage = Url.Action("SiteVisit", new { id = id });
+        var hostingPage = Url.Action(nameof(SiteVisit), new { id = id });
 
         var model = await useCase.GetSiteVisitDetailsAsync(id, hostingPage, cancellationToken);
 
         if (model.IsFailure)
         {
             return RedirectToAction("Error", "Home");
+        }
+
+        if (model.Value.SiteVisitArrangementsMade.HasValue)  // this page is already completed, so redirect to evidence upload/review
+        {
+            return model.Value.SiteVisitComplete
+                ? RedirectToAction(nameof(ReviewSiteVisitEvidence), new { id })
+                : RedirectToAction(nameof(AddSiteVisitEvidence), new { id });
         }
 
         return View(model.Value);
@@ -275,7 +287,7 @@ public partial class WoodlandOfficerReviewController : Controller
         [FromServices] SiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var hostingPage = Url.Action("SiteVisitSummary", new { id = id });
+        var hostingPage = Url.Action(nameof(SiteVisitSummary), new { id = id });
 
         var model = await useCase.GetSiteVisitSummaryAsync(id, hostingPage, cancellationToken);
 
@@ -294,7 +306,7 @@ public partial class WoodlandOfficerReviewController : Controller
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
-        var hostingPage = Url.Action("SiteVisit", new { id = model.ApplicationId });
+        var hostingPage = Url.Action(nameof(SiteVisit), new { id = model.ApplicationId });
 
         // site visit not needed scenario
         if (model.SiteVisitNeeded is false)
@@ -322,11 +334,11 @@ public partial class WoodlandOfficerReviewController : Controller
             if (result.IsFailure)
             {
                 this.AddErrorMessage("Something went wrong saving the site visit details, please try again");
-                return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
+                return RedirectToAction(nameof(SiteVisit), new { id = model.ApplicationId });
             }
 
             this.AddConfirmationMessage("Site visit not needed reason saved");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
+            return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
         }
 
         // site visit needed scenario
@@ -357,14 +369,81 @@ public partial class WoodlandOfficerReviewController : Controller
             if (result.IsFailure)
             {
                 this.AddErrorMessage("Something went wrong saving the site visit details, please try again");
-                return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
+                return RedirectToAction(nameof(SiteVisit), new { id = model.ApplicationId });
             }
 
             this.AddConfirmationMessage("Site visit arrangements saved");
-            return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
+            return RedirectToAction(nameof(AddSiteVisitEvidence), new { id = model.ApplicationId });
         }
 
-        return RedirectToAction("SiteVisit", new { id = model.ApplicationId });
+        return RedirectToAction(nameof(SiteVisit), new { id = model.ApplicationId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AddSiteVisitEvidence(
+        Guid id,
+        [FromServices] SiteVisitUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var hostingPage = Url.Action(nameof(AddSiteVisitEvidence), new { id = id });
+
+        var model = await useCase.GetSiteVisitEvidenceModelAsync(id, hostingPage, cancellationToken);
+
+        if (model.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        if (model.Value.SiteVisitComplete)  // this page is already completed, so redirect to evidence review
+        {
+            return RedirectToAction(nameof(ReviewSiteVisitEvidence), new { id });
+        }
+
+        return View(model.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddSiteVisitEvidence(
+        AddSiteVisitEvidenceModel model,
+        FormFileCollection siteVisitAttachmentFiles,
+        [FromServices] SiteVisitUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var result = await useCase.AddSiteVisitEvidenceAsync(
+            model,
+            siteVisitAttachmentFiles,
+            user,
+            cancellationToken);
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Something went wrong saving the site visit evidence, please try again");
+            return RedirectToAction(nameof(AddSiteVisitEvidence), new { id = model.ApplicationId });
+        }
+        this.AddConfirmationMessage("Site visit evidence saved");
+        
+        return model.SiteVisitComplete 
+            ? RedirectToAction(nameof(ReviewSiteVisitEvidence), new { id = model.ApplicationId })
+            : RedirectToAction(nameof(AddSiteVisitEvidence), new { id = model.ApplicationId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ReviewSiteVisitEvidence(
+        Guid id,
+        [FromServices] SiteVisitUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var hostingPage = Url.Action(nameof(ReviewSiteVisitEvidence), new { id = id });
+
+        var model = await useCase.GetSiteVisitEvidenceModelAsync(id, hostingPage, cancellationToken);
+
+        if (model.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        return View(model.Value);
     }
 
     [HttpGet]
@@ -700,6 +779,120 @@ public partial class WoodlandOfficerReviewController : Controller
         return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> EiaScreening(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure, viewModel) = await LoadEiaScreeningViewModel(id, cancellationToken);
+
+        if (isFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        SetEiaBreadcrumbs(viewModel);
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> EiaScreening(
+        EiaScreeningViewModel model,
+        [FromServices] WoodlandOfficerReviewUseCase useCase,
+        [FromServices] IValidator<EiaScreeningViewModel> validator,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        ValidateModel(model, validator);
+
+        if (ModelState.IsValid is false)
+        {
+            var (_, isFailure, viewModel) = await LoadEiaScreeningViewModel(model.ApplicationId, cancellationToken);
+
+            if (isFailure)
+            {
+                return RedirectToAction(nameof(HomeController.Error), "Home");
+            }
+
+            model.RequestHistoryItems = viewModel.RequestHistoryItems;
+            model.EiaDocumentModels = viewModel.EiaDocumentModels;
+            model.FellingLicenceApplicationSummary = viewModel.FellingLicenceApplicationSummary;
+
+            SetEiaBreadcrumbs(model);
+
+            return View(model);
+        }
+
+        var result = await useCase.CompleteEiaScreeningAsync(
+            model.ApplicationId,
+            user,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Unable to complete EIA screening");
+            return RedirectToAction(nameof(EiaScreening), new { id = model.ApplicationId });
+        }
+
+        this.AddConfirmationMessage("Successfully completed the EIA screening");
+        return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
+    }
+
+    private async Task<Result<EiaScreeningViewModel>> LoadEiaScreeningViewModel(Guid id, CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var woReview = await woReviewUseCase.WoodlandOfficerReviewAsync(
+            id,
+            user,
+            string.Empty,
+            cancellationToken);
+
+        if (woReview.IsFailure)
+        {
+            return Result.Failure<EiaScreeningViewModel>("Unable to retrieve WO review");
+        }
+
+        var environmentalImpactAssessment = await eiaUseCase.GetEnvironmentalImpactAssessmentAsync(id, cancellationToken);
+
+        if (environmentalImpactAssessment.IsFailure)
+        {
+            return Result.Failure<EiaScreeningViewModel>("Unable to retrieve EIA details");
+        }
+
+        var authorRequests =
+            await eiaUseCase.RetrieveUserAccountsByIdsAsync(
+                environmentalImpactAssessment.Value.EiaRequests
+                    .Where(y => y.RequestingUserId is not null)
+                    .Select(x => x.RequestingUserId!.Value).ToList(),
+                cancellationToken);
+
+        if (authorRequests.IsFailure ||
+            environmentalImpactAssessment.Value.EiaRequests
+                .Any(x => 
+                    x.RequestingUserId is not null && 
+                    authorRequests.Value.Select(y => y.UserAccountId).Contains(x.RequestingUserId!.Value) is false))
+        {
+            return Result.Failure<EiaScreeningViewModel>("Unable to retrieve EIA request authors");
+        }
+
+        var nameDictionary = authorRequests.Value.ToDictionary(x => x.UserAccountId, x => x.FullName);
+
+        return new EiaScreeningViewModel
+        {
+            ScreeningCompleted = woReview.Value.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus is InternalReviewStepStatus.Completed,
+            RequestHistoryItems = environmentalImpactAssessment.Value.EiaRequests.Select(x => new RequestHistoryItem(
+                nameDictionary[x.RequestingUserId!.Value],
+                x.NotificationTime,
+                x.RequestType)),
+            EiaDocumentModels = environmentalImpactAssessment.Value.EiaDocuments,
+            ApplicationId = id,
+            FellingLicenceApplicationSummary = woReview.Value.FellingLicenceApplicationSummary
+        };
+    }
+
     private void ValidateModel<T>(T model, IValidator<T> validator, bool createErrors = true)
     {
         if (createErrors)
@@ -730,6 +923,21 @@ public partial class WoodlandOfficerReviewController : Controller
 
             ModelState.AddModelError(validationFailure.PropertyName, validationFailure.ErrorMessage);
         }
+    }
+
+    private void SetEiaBreadcrumbs(FellingLicenceApplicationPageViewModel model)
+    {
+        var breadCrumbs = new List<BreadCrumb>
+        {
+            new BreadCrumb("Home", "Home", "Index", null),
+            new BreadCrumb(model.FellingLicenceApplicationSummary.ApplicationReference, "FellingLicenceApplication", "ApplicationSummary", model.FellingLicenceApplicationSummary.Id.ToString()),
+            new BreadCrumb("Woodland officer review", "WoodlandOfficerReview", "Index", model.FellingLicenceApplicationSummary.Id.ToString())
+        };
+        model.Breadcrumbs = new BreadcrumbsModel
+        {
+            Breadcrumbs = breadCrumbs,
+            CurrentPage = "EIA screening"
+        };
     }
 
     [GeneratedRegex(@"Species\[\d+\]\.Value", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

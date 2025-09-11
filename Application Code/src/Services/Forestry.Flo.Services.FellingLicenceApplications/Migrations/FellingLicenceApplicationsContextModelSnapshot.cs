@@ -247,6 +247,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<bool?>("ConstraintsChecked")
                         .HasColumnType("boolean");
 
+                    b.Property<bool?>("EiaChecked")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("FellingLicenceApplicationId")
                         .HasColumnType("uuid");
 
@@ -402,7 +405,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasDefaultValueSql("uuid_generate_v4()");
 
                     b.Property<double>("AreaToBeFelled")
-                        .HasColumnType("double precision");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ConservationAreaReference")
                         .HasColumnType("text");
@@ -476,7 +480,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasDefaultValueSql("uuid_generate_v4()");
 
                     b.Property<double?>("Area")
-                        .HasColumnType("double precision");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("ConfirmedFellingDetailId")
                         .HasColumnType("uuid");
@@ -491,7 +496,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("integer");
 
                     b.Property<double?>("PercentageOfRestockArea")
-                        .HasColumnType("double precision");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<Guid?>("ProposedRestockingDetailId")
                         .HasColumnType("uuid");
@@ -542,6 +548,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<Guid>("AccessCode")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AuthorContactEmail")
                         .IsRequired()
@@ -636,6 +645,67 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.ToTable("Document", "FellingLicenceApplications");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.EnvironmentalImpactAssessment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<bool?>("AreAttachedFormsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("EiaTrackerReferenceNumber")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FellingLicenceApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("HasApplicationBeenCompleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("HasApplicationBeenSent")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("HasTheEiaFormBeenReceived")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FellingLicenceApplicationId")
+                        .IsUnique();
+
+                    b.ToTable("EnvironmentalImpactAssessment", "FellingLicenceApplications");
+                });
+
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.EnvironmentalImpactAssessmentRequestHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<Guid>("EnvironmentalImpactAssessmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("NotificationTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequestType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("RequestingUserId")
+                        .IsRequired()
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnvironmentalImpactAssessmentId");
+
+                    b.ToTable("EnvironmentalImpactAssessmentRequestHistory", "FellingLicenceApplications");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.ExternalAccessLink", b =>
                 {
                     b.Property<Guid>("Id")
@@ -664,11 +734,19 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<string>("LinkType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SharedSupportingDocuments")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -783,6 +861,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool?>("ConstraintCheckStatus")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("EnvironmentalImpactAssessmentStatus")
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("FellingLicenceApplicationId")
@@ -942,7 +1023,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasDefaultValueSql("uuid_generate_v4()");
 
                     b.Property<double>("AreaToBeFelled")
-                        .HasColumnType("double precision");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ConservationAreaReference")
                         .HasColumnType("text");
@@ -997,13 +1079,15 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasDefaultValueSql("uuid_generate_v4()");
 
                     b.Property<double?>("Area")
-                        .HasColumnType("double precision");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("NumberOfTrees")
                         .HasColumnType("integer");
 
                     b.Property<double?>("PercentageOfRestockArea")
-                        .HasColumnType("double precision");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<Guid>("PropertyProfileCompartmentId")
                         .HasColumnType("uuid");
@@ -1125,6 +1209,38 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.ToTable("RestockingSpecies", "FellingLicenceApplications");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SiteVisitEvidence", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastUpdatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WoodlandOfficerReviewId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WoodlandOfficerReviewId");
+
+                    b.ToTable("SiteVisitEvidence", "FellingLicenceApplications");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.StatusHistory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1167,7 +1283,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("text");
 
                     b.Property<double?>("ConfirmedTotalHectares")
-                        .HasColumnType("double precision");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Designation")
                         .HasColumnType("text");
@@ -1185,7 +1302,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<double?>("TotalHectares")
-                        .HasColumnType("double precision");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("WoodlandName")
                         .HasColumnType("text");
@@ -1259,6 +1377,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
 
+                    b.Property<bool?>("ApplicationNeedsConsultations")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("AreProposalsUkfsCompliant")
                         .HasColumnType("boolean");
 
@@ -1271,7 +1392,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<bool>("ConfirmedFellingAndRestockingComplete")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("ConsultationsComplete")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("EiaChecklistDone")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("EiaScreeningComplete")
                         .HasColumnType("boolean");
 
                     b.Property<bool?>("EiaThresholdExceeded")
@@ -1322,6 +1449,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<bool?>("RecommendationForDecisionPublicRegister")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("RecommendationForDecisionPublicRegisterReason")
+                        .HasColumnType("text");
+
                     b.Property<string>("RecommendedLicenceDuration")
                         .HasColumnType("text");
 
@@ -1351,6 +1481,52 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.ToTable("WoodlandOfficerReview", "FellingLicenceApplications");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AccountType")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("AccountTypeOther")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("CanApproveApplications")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IdentityProviderId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Roles")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserAccount", "InternalUsers", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.PropertyProfiles.Entities.Compartment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1374,7 +1550,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("text");
 
                     b.Property<double?>("TotalHectares")
-                        .HasColumnType("double precision");
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -1675,6 +1851,28 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Navigation("FellingLicenceApplication");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.EnvironmentalImpactAssessment", b =>
+                {
+                    b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", "FellingLicenceApplication")
+                        .WithOne("EnvironmentalImpactAssessment")
+                        .HasForeignKey("Forestry.Flo.Services.FellingLicenceApplications.Entities.EnvironmentalImpactAssessment", "FellingLicenceApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FellingLicenceApplication");
+                });
+
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.EnvironmentalImpactAssessmentRequestHistory", b =>
+                {
+                    b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.EnvironmentalImpactAssessment", "EnvironmentalImpactAssessment")
+                        .WithMany("EiaRequests")
+                        .HasForeignKey("EnvironmentalImpactAssessmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("EnvironmentalImpactAssessment");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.ExternalAccessLink", b =>
                 {
                     b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", null)
@@ -1794,6 +1992,17 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Navigation("ProposedRestockingDetail");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SiteVisitEvidence", b =>
+                {
+                    b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.WoodlandOfficerReview", "WoodlandOfficerReview")
+                        .WithMany("SiteVisitEvidences")
+                        .HasForeignKey("WoodlandOfficerReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WoodlandOfficerReview");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.StatusHistory", b =>
                 {
                     b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", "FellingLicenceApplication")
@@ -1861,6 +2070,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Navigation("ConfirmedRestockingSpecies");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.EnvironmentalImpactAssessment", b =>
+                {
+                    b.Navigation("EiaRequests");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", b =>
                 {
                     b.Navigation("AdminOfficerReview");
@@ -1874,6 +2088,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Navigation("ConsulteeComments");
 
                     b.Navigation("Documents");
+
+                    b.Navigation("EnvironmentalImpactAssessment");
 
                     b.Navigation("ExternalAccessLinks");
 
@@ -1922,6 +2138,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedFlaPropertyDetail", b =>
                 {
                     b.Navigation("SubmittedFlaPropertyCompartments");
+                });
+
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.WoodlandOfficerReview", b =>
+                {
+                    b.Navigation("SiteVisitEvidences");
                 });
 
             modelBuilder.Entity("Forestry.Flo.Services.PropertyProfiles.Entities.PropertyProfile", b =>

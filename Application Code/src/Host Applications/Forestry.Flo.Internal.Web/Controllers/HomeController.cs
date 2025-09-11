@@ -44,13 +44,15 @@ public class HomeController : Controller
         int page = 1,
         int pageSize = 12,
         string column = "FinalActionDate",
-        string dir = "asc")
+        string dir = "asc",
+        string? search = null)
     {
         // Sanitize inputs
         var safePage = page < 1 ? 1 : page;
         var safePageSize = pageSize < 1 ? 1 : Math.Min(pageSize, MaxPageSize);
         var safeColumn = AllowedSortColumns.Contains(column) ? column : "FinalActionDate";
         var safeDir = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase) ? "desc" : "asc";
+        var safeSearch = string.IsNullOrWhiteSpace(search) ? null : search!.Trim();
 
         HomePageModel homePageModel = new HomePageModel();
 
@@ -66,7 +68,8 @@ public class HomeController : Controller
                 pageNumber: safePage,
                 pageSize: safePageSize,
                 sortColumn: safeColumn,
-                sortDirection: safeDir);
+                sortDirection: safeDir,
+                searchText: safeSearch);
 
             if (listUserAssignedFellingLicenceApplicationsModelResult.IsFailure)
             {

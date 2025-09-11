@@ -17,6 +17,7 @@ public record AdminOfficerReviewTaskListStates(
     InternalReviewStepStatus LarchApplicationStatus,
     InternalReviewStepStatus LarchFlyoverStatus,
     InternalReviewStepStatus CBWStatus,
+    InternalReviewStepStatus EiaStatus,
     bool AgentApplication = false) : ICompletable
 {
     /// <summary>
@@ -57,6 +58,14 @@ public record AdminOfficerReviewTaskListStates(
     [Display(Name = "Cricket bat willow")]
     public InternalReviewStepStatus CBWStatus = CBWStatus;
 
+
+    /// <summary>
+    /// Gets the EIA step status of the admin officer review.
+    /// </summary>
+    [Display(Name = "EIA check")]
+    public InternalReviewStepStatus EiaStatus = EiaStatus;
+
+
     /// <summary>
     /// Gets the Assign Woodland Officer step status of the admin officer review.
     /// </summary>
@@ -69,5 +78,6 @@ public record AdminOfficerReviewTaskListStates(
         ConstraintsCheckStepStatus is InternalReviewStepStatus.Completed &&
         (LarchApplicationStatus is InternalReviewStepStatus.Completed || LarchApplicationStatus is InternalReviewStepStatus.NotRequired) &&
         (CBWStatus is InternalReviewStepStatus.Completed || CBWStatus is InternalReviewStepStatus.NotRequired) &&
-        AssignWoodlandOfficerStatus is InternalReviewStepStatus.Completed;
+        AssignWoodlandOfficerStatus is InternalReviewStepStatus.Completed &&
+        EiaStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.Completed;
 }

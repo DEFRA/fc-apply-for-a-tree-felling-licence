@@ -34,4 +34,9 @@ public record ConsulteeCommentModel
     /// A collection of attachment IDs associated with the consultee comment.
     /// </summary>
     public IEnumerable<Guid> ConsulteeAttachmentIds { get; set; }
+
+    /// <summary>
+    /// Gets and sets the external access link access code that was used to add this comment.
+    /// </summary>
+    public Guid AccessCode { get; set; }
 }

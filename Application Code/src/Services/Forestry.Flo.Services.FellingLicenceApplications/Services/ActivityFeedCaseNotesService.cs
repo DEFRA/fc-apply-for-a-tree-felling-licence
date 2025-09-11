@@ -71,7 +71,7 @@ public class ActivityFeedCaseNotesService : IActivityFeedService
 
             var assigneeActivityFeedItem = new ActivityFeedItemModel
             {
-                ActivityFeedItemType = (ActivityFeedItemType)caseNote.Type,
+                ActivityFeedItemType = CaseNoteTypeToActivityItemType(caseNote.Type),
                 AssociatedId = caseNote.Id,
                 VisibleToApplicant = caseNote.VisibleToApplicant,
                 VisibleToConsultee = caseNote.VisibleToConsultee,
@@ -98,6 +98,8 @@ public class ActivityFeedCaseNotesService : IActivityFeedService
             ActivityFeedItemType.SiteVisitComment,
             ActivityFeedItemType.ReturnToApplicantComment,
             ActivityFeedItemType.LarchCheckComment,
+            ActivityFeedItemType.CBWCheckComment,
+            ActivityFeedItemType.ApproverReviewComment
         ];
     }
 
@@ -105,5 +107,10 @@ public class ActivityFeedCaseNotesService : IActivityFeedService
     private static CaseNoteType ActivityItemTypeToCaseNoteType(ActivityFeedItemType activityFeedItemType)
     {
         return (CaseNoteType)Enum.Parse(typeof(CaseNoteType), activityFeedItemType.ToString());
+    }
+
+    private static ActivityFeedItemType CaseNoteTypeToActivityItemType(CaseNoteType caseNoteType)
+    {
+        return (ActivityFeedItemType)Enum.Parse(typeof(ActivityFeedItemType), caseNoteType.ToString());
     }
 }

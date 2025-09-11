@@ -17,7 +17,7 @@ namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
 [Authorize]
 [AutoValidateAntiforgeryToken]
-public class AdminOfficerReviewController : Controller
+public partial class AdminOfficerReviewController : Controller
 {
     public async Task<IActionResult> Index(
         Guid id,

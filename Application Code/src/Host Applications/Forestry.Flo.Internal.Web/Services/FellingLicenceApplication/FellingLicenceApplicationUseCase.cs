@@ -83,6 +83,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
     /// <param name="pageSize">The number of items per page.</param>
     /// <param name="sortColumn">The column to sort the results by.</param>
     /// <param name="sortDirection">The direction to sort the results (ascending or descending).</param>
+    /// <param name="searchText">The text to search for in the application references.</param>
     /// <returns>A populated <see cref="FellingLicenceApplicationAssignmentListModel"/> containing a filtered collection of applications, or an error if unsuccessful.</returns>
     public async Task<Result<FellingLicenceApplicationAssignmentListModel>> GetFellingLicenceApplicationAssignmentListModelAsync(
         bool assignedToUserAccountIdOnly,
@@ -92,7 +93,8 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         int pageNumber,
         int pageSize,
         string sortColumn,
-        string sortDirection)
+        string sortDirection,
+        string? searchText)
     {
         if (!includeFellingLicenceStatuses.Any())
         {
@@ -103,11 +105,12 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
             includeFellingLicenceStatuses = includeFellingLicenceStatuses.Where(x => PostSubmittedStatuses.Contains(x)).ToList();
         }
 
-        // Get all for count and summary
+        // Get all for count and summary (respecting search)
         var summary = await _fellingLicenceApplicationInternalRepository.TotalIncludedApplicationsAsync(
             assignedToUserAccountIdOnly,
             assignedToUserAccountId,
             includeFellingLicenceStatuses,
+            searchText,
             cancellationToken);
 
         int totalCount = summary.TotalCount;
@@ -115,7 +118,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         int actualPageNumber = pageNumber;
         int actualPageSize = pageSize;
 
-        // Get paged
+        // Get paged (respecting search)
         var fellingLicenceApplications = await _fellingLicenceApplicationInternalRepository.ListByIncludedStatus(
             assignedToUserAccountIdOnly,
             assignedToUserAccountId,
@@ -124,7 +127,8 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
             actualPageNumber,
             actualPageSize,
             sortColumn,
-            sortDirection);
+            sortDirection,
+            searchText);
 
         var linkedPropertyProfilesIdList = fellingLicenceApplications.Select(x => x.LinkedPropertyProfile.PropertyProfileId).ToList();
         var propertyProfiles = await _propertyProfileRepository.ListAsync(linkedPropertyProfilesIdList, cancellationToken);
@@ -234,7 +238,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         if (activityFeedNotes.IsFailure)
         {
             _logger.LogError("Unable to retrieve activity feed items for FLA {id}, error: {Error}",
-               applicationId, woodlandOwner.Error);
+               applicationId, activityFeedNotes.Error);
             return Maybe<FellingLicenceApplicationReviewSummaryModel>.None;
         }
 

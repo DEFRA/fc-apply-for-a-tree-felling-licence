@@ -6,6 +6,10 @@
 
     const _currentPath = window.location.href.split('?')[0];
 
+    // Search elements
+    const $searchInput = $('#search');
+    const $searchButton = $('#searchButton');
+
     if (localStorage['currentPageUrl'] === _currentPath) {
         $(document).scrollTop(localStorage['flaAssignmentsScrollPosition']);
     }
@@ -15,10 +19,53 @@
         localStorage['flaAssignmentsScrollPosition'] = $(document).scrollTop();
     });
 
-    $(document).ready(tableInfo);
-
     // Iterate through parameters as read on load and do CSS styling for active filters
     renderUrlParameterSelections();
+
+    // Search handling
+    function updateSearchButtonState() {
+        const hasText = ($searchInput.val() || '').trim().length > 0;
+        const hasSearchParam = params.has('search');
+        const shouldEnable = hasText || hasSearchParam; // if a search param exists, keep button enabled
+        if (shouldEnable) {
+            $searchButton.removeClass('govuk-button--disabled')
+                .removeAttr('aria-disabled')
+                .prop('disabled', false);
+        } else {
+            $searchButton.addClass('govuk-button--disabled')
+                .attr('aria-disabled', 'true')
+                .prop('disabled', true);
+        }
+    }
+
+    function applySearchAndRedirect() {
+        const term = ($searchInput.val() || '').trim();
+        if (term.length > 0) {
+            params.set('search', term);
+        } else {
+            params.delete('search');
+        }
+        redirectOnNewParameters(true);
+    }
+
+    $searchInput.on('input change keyup', function () {
+        updateSearchButtonState();
+    });
+
+    $searchInput.on('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // Allow sending empty when a search param exists to clear it
+            if ($searchButton.hasClass('govuk-button--disabled') && !params.has('search')) return;
+            applySearchAndRedirect();
+        }
+    });
+
+    $searchButton.on('click', function (e) {
+        e.preventDefault();
+        if ($searchButton.hasClass('govuk-button--disabled')) return;
+        applySearchAndRedirect();
+    });
 
     $('[fla-status-filter]').click(function (e) {
         e.preventDefault();
@@ -50,19 +97,6 @@
         redirectOnNewParameters(true);
     });
 
-    $("#keywords-text").on("input", function () {
-        const filterString = $("#keywords-text").val();
-        $('#application-list-table tbody tr').not('#no-applications-found').filter(function () {
-            if ($.trim($(this).text().toLowerCase()).indexOf(filterString.toLowerCase()) >= 0) {
-                $(this).show();
-                return;
-            }
-            $(this).hide();
-        });
-
-        tableInfo();
-    });
-
     $('#clear-all-filters').click(function(e) {
         e.preventDefault();
         const currentPathUrl = window.location.href.split('?')[0];
@@ -88,6 +122,11 @@
             applySelectionCss($('#fla-assigned-to-user-filter'), false);
             _assignedToUserOnly = false;
         }
+
+        // Sync search input from URL and set initial button state
+        const searchTerm = params.get('search') || '';
+        $searchInput.val(searchTerm);
+        updateSearchButtonState();
     }
 
     /*
@@ -112,18 +151,4 @@
             $selector.css('outline', 'none');
         }
     }
-
-    function tableInfo() {
-        const totalDataRows = $('#application-list-table tbody').find('tr.data-row:visible').length;
-        const colSpan = $('#application-list-table thead th').length || 5;
-        if (totalDataRows === 0 && $('#no-applications-found').length === 0) {
-            $('#application-list-table > tbody').append('<tr class="govuk-table__row" id="no-applications-found"><td valign="top" colspan="' + colSpan + '" class="govuk-table__cell">No applications found.</td></tr>');
-            return;
-        }
-        if (totalDataRows > 0) {
-            if ($('#no-applications-found').length > 0) {
-                $('#no-applications-found').remove();
-            }
-        }
-    };
 });

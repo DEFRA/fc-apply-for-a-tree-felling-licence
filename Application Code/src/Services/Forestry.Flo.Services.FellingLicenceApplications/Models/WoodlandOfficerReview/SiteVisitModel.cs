@@ -25,4 +25,9 @@ public class SiteVisitModel
     /// Gets and sets a list of <see cref="CaseNoteModel"/> containing the site visit comments.
     /// </summary>
     public IList<CaseNoteModel> SiteVisitComments { get; set; }
+
+    /// <summary>
+    /// Gets and sets the list of site visit attachments uploaded by the woodland officer.
+    /// </summary>
+    public IList<SiteVisitEvidenceDocument> SiteVisitAttachments { get; set; }
 }

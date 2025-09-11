@@ -23,7 +23,7 @@ using FellingLicenceStatusConstants = Forestry.Flo.External.Web.Models.FellingLi
 namespace Forestry.Flo.External.Web.Controllers;
 
 [Authorize, RequireCompletedRegistration, AutoValidateAntiforgeryToken]
-public class FellingLicenceApplicationController : Controller
+public partial class FellingLicenceApplicationController : Controller
 {
     private readonly ILogger<FellingLicenceApplicationController> _logger;
     private readonly CreateFellingLicenceApplicationUseCase _createFellingLicenceApplicationUseCase;

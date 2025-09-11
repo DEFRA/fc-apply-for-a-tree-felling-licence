@@ -81,6 +81,23 @@
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
+                    @if (Model.AdminOfficerReviewTaskListStates.EiaStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
+                    {
+                        <a aria-describedby="eia-check">
+                            EIA check
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action(nameof(AdminOfficerReviewController.EiaCheck), new { applicationId = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="eia-check">
+                            EIA check
+                        </a>
+                    }
+                </span>
+                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.EiaStatus.GetStatusStyleName() app-task-list__tag" id="eia-check">@Model.AdminOfficerReviewTaskListStates.EiaStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
                     @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired || Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.CannotStartYet)
                     {
                         <a aria-describedby="larch-check">

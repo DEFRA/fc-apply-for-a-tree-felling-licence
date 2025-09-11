@@ -119,6 +119,8 @@ external-web-app:
         InformApplicantOfReturnedApplicationMixLarchZone1: "8ad474f1-5a93-44bd-b06a-ed79f88da44b"
         InformApplicantOfReturnedApplicationMixLarchMixZone: "fd331395-e8a4-4394-b61c-61cf27e7fb0f"
         InformApplicantOfReturnedApplicationLarchOnlyMixZone: "59380bf2-28fb-4c70-9c6e-8f47cfdc8bd3"
+        EiaReminderMissingDocuments: "e189fead-f4b8-4b0b-8431-8fd04958a288"
+        EiaReminderToSendDocuments: "e6445f8b-93cb-4d7e-bfe1-722ebf56a576"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
@@ -323,6 +325,8 @@ internal-web-app:
       connectionString: 
         secret_key: blob.connectionString
       container: stageflo
+    userInvite:
+      inviteLinkExpiryDays: 28
     externalApplicantSite:
       baseUrl: "https://private-beta-staging.tree-felling.forestrycommission.gov.uk/"
     woodlandOfficerReview:
@@ -408,6 +412,8 @@ internal-web-app:
         InformInternalUserOfAccountApproval: "de00a309-81cd-4525-8218-f3a1e1b0eeb1"
         InviteWoodlandOwnerUserToOrganisation: "ae780279-31d0-419b-a35e-39edca775c51"
         InviteAgentUserToOrganisation: "4506918c-4666-4bbc-9c02-43ebe98804fb"
+        EiaReminderMissingDocuments: "e189fead-f4b8-4b0b-8431-8fd04958a288"
+        EiaReminderToSendDocuments: "e6445f8b-93cb-4d7e-bfe1-722ebf56a576"
     permittedRegisteredUser:
       enabled: true
       permittedEmailDomainsForRegisteredUser:
