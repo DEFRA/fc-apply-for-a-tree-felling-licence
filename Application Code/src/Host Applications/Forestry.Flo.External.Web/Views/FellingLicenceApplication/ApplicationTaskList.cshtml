@@ -1,4 +1,5 @@
-﻿@using Forestry.Flo.External.Web.Infrastructure
+﻿@using Forestry.Flo.External.Web.Controllers
+@using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.External.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.Common.Extensions
@@ -13,7 +14,7 @@
     ViewData.ShowBackLink();
 }
 
-@functions 
+@functions
 {
     public string GetStatusStyleName(ApplicationStepStatus status)
     {
@@ -28,13 +29,13 @@
 }
 
 <div class="govuk-grid-column-full">
-    <partial name="Partials/_PageErrors"/>
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_PageErrors" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
 
     <h1 class="govuk-heading-xl">Your application</h1>
 
-    <partial name="_ApplicationSummaryNotes" model="@Model.ApplicationSummary"/>
+    <partial name="_ApplicationSummaryNotes" model="@Model.ApplicationSummary" />
 
     <h2 class="govuk-heading-s govuk-!-margin-bottom-2">Application @(Model.IsComplete ? "complete" : "incomplete")</h2>
     <p class="govuk-body">You have completed @(Model.CompletedStepsCount) of @(Model.StepsCount) tasks.</p>
@@ -76,7 +77,7 @@
                 {
                     <span class="app-task-list__task-name">
                         <a aria-describedby="felling-and-restocking-details-status">
-                            Felling and restocking details 
+                            Felling and restocking details
                         </a>
                     </span>
                     <strong class="govuk-tag @GetStatusStyleName(Model.FellingAndRestockingDetails.Status) app-task-list__tag" id="felling-and-restocking-details-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</strong>
@@ -108,6 +109,16 @@
                     </span>
                     <strong class="govuk-tag @GetStatusStyleName(Model.FellingAndRestockingDetails.Status) app-task-list__tag" id="felling-and-restocking-details-status">@(Model.FellingAndRestockingDetails.Status.GetDescription())</strong>
                 }
+            </li>
+            <li class="app-task-list__item" condition="@Model.EnvironmentalImpactAssessment.StepRequiredForApplication">
+                <span class="app-task-list__task-name">
+                    <a 
+                        href="@Url.Action(nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" 
+                        aria-describedby="felling-and-restocking-details-status">
+                        Environmental Impact Assessment
+                    </a>
+                </span>
+                <strong class="govuk-tag @GetStatusStyleName(Model.EnvironmentalImpactAssessment.Status) app-task-list__tag" id="eia-status">@(Model.EnvironmentalImpactAssessment.Status.GetDescription())</strong>
             </li>
             <li class="app-task-list__item">
                 @if (Model.SelectedCompartments.Status != ApplicationStepStatus.Completed && Model.ConstraintCheck.Status == ApplicationStepStatus.NotStarted)
@@ -155,7 +166,7 @@
         @{
             FellingLicenceStatus[] enabledStatuses =
             [
-                FellingLicenceStatus.Draft,
+            FellingLicenceStatus.Draft,
                 ..FellingLicenceStatusConstants.WithdrawalStatuses
             ];
 
@@ -190,8 +201,8 @@
             else
             {
                 var text = Model.ApplicationSummary.Status == FellingLicenceStatus.ReferredToLocalAuthority
-                    ? "is in consultation with your local authority."
-                    : $"has been {Model.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
+                ? "is in consultation with your local authority."
+                : $"has been {Model.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
 
                 <p class="govuk-body">This application @text</p>
             }

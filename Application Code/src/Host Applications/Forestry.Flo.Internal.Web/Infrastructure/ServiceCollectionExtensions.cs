@@ -237,6 +237,7 @@ public static class ServiceCollectionExtensions
         services.Configure<PublicRegisterExpiryOptions>(configuration.GetSection("PublicRegisterExpiry"));
         services.Configure<VoluntaryWithdrawalNotificationOptions>(configuration.GetSection("VoluntaryWithdrawApplication"));
         services.Configure<LarchOptions>(configuration.GetSection("LarchOptions"));
+        services.AddOptions<EiaOptions>().BindConfiguration(EiaOptions.ConfigurationKey);
 
         services.AddScoped<RegisterUserAccountUseCase>();
         services.AddScoped<ExternalConsulteeInviteUseCase>();
@@ -277,5 +278,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ConstraintsCheckUseCase>();
         services.AddScoped<ApproverReviewUseCase>();
         services.AddScoped<RevertApplicationFromWithdrawnUseCase>();
+        services.AddScoped<EnvironmentalImpactAssessmentAdminOfficerUseCase>();
     }
 }

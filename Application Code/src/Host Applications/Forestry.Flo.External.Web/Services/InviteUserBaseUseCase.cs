@@ -58,8 +58,8 @@ public abstract class InviteUserBaseUseCase
             .Map(userAccount =>
                 new InvitedUserModel(userAccount.Email,
                     userAccount.AccountType is AccountTypeExternal.WoodlandOwner or AccountTypeExternal.WoodlandOwner
-                        ? userAccount.WoodlandOwner?.OrganisationName
-                        : userAccount.Agency?.OrganisationName, token));
+                        ? userAccount.WoodlandOwner?.OrganisationName ?? userAccount.WoodlandOwner?.ContactName
+                        : userAccount.Agency?.OrganisationName ?? userAccount.Agency?.ContactName, token));
     }
 
     protected async Task<Result<UserAccount, InviteUserErrorDetails>> InviteUserToOrganisationAsync(

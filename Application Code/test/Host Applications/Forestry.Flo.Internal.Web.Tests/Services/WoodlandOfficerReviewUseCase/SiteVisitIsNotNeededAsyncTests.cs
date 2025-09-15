@@ -152,6 +152,9 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
             AuditingService.Object,
             MockAgentAuthorityService.Object,
             GetConfiguredFcAreas.Object,
+            MockAddDocumentService.Object,
+            MockRemoveDocumentService.Object,
+            _foresterServices.Object,
             RequestContext,
             new NullLogger<SiteVisitUseCase>());
     }

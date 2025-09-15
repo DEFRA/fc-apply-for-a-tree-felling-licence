@@ -75,6 +75,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .ThenInclude(r => r.RestockingSpecies)
             .Include(p => p.FellingLicenceApplicationStepStatus)
             .Include(x => x.PublicRegister)
+            .Include(x => x.EnvironmentalImpactAssessment)
             .Where(a => a.Id == applicationId)
             .FirstOrDefaultAsync(cancellationToken);
         return application is null ? Maybe<FellingLicenceApplication>.None : Maybe<FellingLicenceApplication>.From(application);

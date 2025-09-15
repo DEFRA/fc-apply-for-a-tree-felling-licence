@@ -30,5 +30,4 @@ public class WoodlandOfficerReviewOptions : DevelopmentConfigOptions
     /// rather than publishing to a real ESRI endpoint - for development.
     /// </summary>
     public bool UseDevMobileAppsLayer { get; set; } = false;
-
 }

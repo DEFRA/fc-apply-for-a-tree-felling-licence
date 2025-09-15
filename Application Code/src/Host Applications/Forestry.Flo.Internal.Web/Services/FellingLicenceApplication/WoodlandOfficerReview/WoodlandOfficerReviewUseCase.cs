@@ -2,6 +2,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -21,48 +22,35 @@ using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 
-public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
+public class WoodlandOfficerReviewUseCase(
+    IUserAccountService internalUserAccountService,
+    IRetrieveUserAccountsService externalUserAccountService,
+    IFellingLicenceApplicationInternalRepository fellingLicenceApplicationRepository,
+    IRetrieveWoodlandOwners woodlandOwnerService,
+    IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
+    IUpdateWoodlandOfficerReviewService updateWoodlandOfficerReviewService,
+    IActivityFeedItemProvider activityFeedItemProvider,
+    IAuditService<WoodlandOfficerReviewUseCase> auditService,
+    ISendNotifications emailService,
+    IAgentAuthorityService agentAuthorityService,
+    IGetConfiguredFcAreas getConfiguredFcAreasService,
+    IClock clock,
+    RequestContext requestContext,
+    ILogger<WoodlandOfficerReviewUseCase> logger)
+    : FellingLicenceApplicationUseCaseBase(internalUserAccountService,
+        externalUserAccountService,
+        fellingLicenceApplicationRepository,
+        woodlandOwnerService,
+        agentAuthorityService,
+        getConfiguredFcAreasService)
 {
-    private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
-    private readonly IClock _clock;
-    private readonly IAuditService<WoodlandOfficerReviewUseCase> _auditService;
-    private readonly RequestContext _requestContext;
-    private readonly ISendNotifications _emailService;
-    private readonly ILogger<WoodlandOfficerReviewUseCase> _logger;
-    private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
-    private readonly IActivityFeedItemProvider _activityFeedItemProvider;
-
-    public WoodlandOfficerReviewUseCase(
-        IUserAccountService internalUserAccountService,
-        IRetrieveUserAccountsService externalUserAccountService,
-        IFellingLicenceApplicationInternalRepository fellingLicenceApplicationRepository,
-        IRetrieveWoodlandOwners woodlandOwnerService,
-        IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
-        IUpdateWoodlandOfficerReviewService updateWoodlandOfficerReviewService,
-        IActivityFeedItemProvider activityFeedItemProvider,
-        IAuditService<WoodlandOfficerReviewUseCase> auditService,
-        ISendNotifications emailService,
-        IAgentAuthorityService agentAuthorityService,
-        IGetConfiguredFcAreas getConfiguredFcAreasService,
-        IClock clock,
-        RequestContext requestContext,
-        ILogger<WoodlandOfficerReviewUseCase> logger)
-        : base(internalUserAccountService, 
-            externalUserAccountService,
-            fellingLicenceApplicationRepository,
-            woodlandOwnerService,
-            agentAuthorityService, 
-            getConfiguredFcAreasService)
-    {
-        _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
-        _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
-        _clock = Guard.Against.Null(clock);
-        _auditService = Guard.Against.Null(auditService);
-        _requestContext = Guard.Against.Null(requestContext);
-        _emailService = Guard.Against.Null(emailService);
-        _logger = logger;
-        _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
-    }
+    private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
+    private readonly IClock _clock = Guard.Against.Null(clock);
+    private readonly IAuditService<WoodlandOfficerReviewUseCase> _auditService = Guard.Against.Null(auditService);
+    private readonly RequestContext _requestContext = Guard.Against.Null(requestContext);
+    private readonly ISendNotifications _emailService = Guard.Against.Null(emailService);
+    private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
+    private readonly IActivityFeedItemProvider _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
 
     public async Task<Result<WoodlandOfficerReviewModel>> WoodlandOfficerReviewAsync(
         Guid applicationId,
@@ -70,14 +58,14 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
         string hostingPage,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Attempting to retrieve woodland officer review status for application with id {ApplicationId}", applicationId);
+        logger.LogDebug("Attempting to retrieve woodland officer review status for application with id {ApplicationId}", applicationId);
 
         var woodlandOfficerReviewStatus = await _getWoodlandOfficerReviewService.GetWoodlandOfficerReviewStatusAsync(
             applicationId, cancellationToken);
 
         if (woodlandOfficerReviewStatus.IsFailure)
         {
-            _logger.LogError("Failed to retrieve woodland officer review details with error {Error}", woodlandOfficerReviewStatus.Error);
+            logger.LogError("Failed to retrieve woodland officer review details with error {Error}", woodlandOfficerReviewStatus.Error);
             return woodlandOfficerReviewStatus.ConvertFailure<WoodlandOfficerReviewModel>();
         }
 
@@ -85,7 +73,7 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
 
         if (application.IsFailure)
         {
-            _logger.LogError("Failed to retrieve application summary with error {Error}", application.Error);
+            logger.LogError("Failed to retrieve application summary with error {Error}", application.Error);
             return application.ConvertFailure<WoodlandOfficerReviewModel>();
         }
 
@@ -103,7 +91,7 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
 
         if (activityFeedItems.IsFailure)
         {
-            _logger.LogError("Failed to retrieve activity feed items with error {Error}", application.Error);
+            logger.LogError("Failed to retrieve activity feed items with error {Error}", application.Error);
             return activityFeedItems.ConvertFailure<WoodlandOfficerReviewModel>();
         }
 
@@ -125,7 +113,8 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
             },
             WoodlandOfficerReviewTaskListStates = woodlandOfficerReviewStatus.Value.WoodlandOfficerReviewTaskListStates,
             RecommendedLicenceDuration = woodlandOfficerReviewStatus.Value.RecommendedLicenceDuration,
-            RecommendationForDecisionPublicRegister = woodlandOfficerReviewStatus.Value.RecommendationForDecisionPublicRegister
+            RecommendationForDecisionPublicRegister = woodlandOfficerReviewStatus.Value.RecommendationForDecisionPublicRegister,
+            RecommendationForDecisionPublicRegisterReason = woodlandOfficerReviewStatus.Value.RecommendationForDecisionPublicRegisterReason
         };
         result.WoodlandOfficerReviewCommentsFeed.ShowAddCaseNote = result.Editable(user);
 
@@ -138,13 +127,14 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
         Guid applicationId, 
         RecommendedLicenceDuration? recommendedLicenceDuration,
         bool? recommendationForDecisionPublicRegister,
+        string recommendationForPublicRegisterReason,
         string internalLinkToApplication,
         InternalUser user, 
         CancellationToken cancellationToken)
     {
         const string notificationsError = "The Woodland Officer Review has been completed but the system was unable to send notifications";
 
-        _logger.LogDebug("Attempting to complete the woodland officer review for application with id {ApplicationId}", applicationId);
+        logger.LogDebug("Attempting to complete the woodland officer review for application with id {ApplicationId}", applicationId);
 
         var now = _clock.GetCurrentInstant().ToDateTimeUtc();
 
@@ -153,12 +143,13 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
             user.UserAccountId!.Value,
             recommendedLicenceDuration,
             recommendationForDecisionPublicRegister,
+            recommendationForPublicRegisterReason,
             now,
             cancellationToken);
 
         if (result.IsFailure)
         {
-            _logger.LogError("Failed to complete woodland officer review for application with id {ApplicationId} with error {Error}", applicationId, result.Error);
+            logger.LogError("Failed to complete woodland officer review for application with id {ApplicationId} with error {Error}", applicationId, result.Error);
             await AppendAuditFailure(
                 applicationId, 
                 user.UserAccountId!.Value, 
@@ -184,7 +175,7 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
 
         if (applicant.IsFailure)
         {
-            _logger.LogError("Unable to determine applicant for notification");
+            logger.LogError("Unable to determine applicant for notification");
             await AppendAuditFailure(applicationId, user.UserAccountId.Value, new { Error = applicant.Error }, cancellationToken);
             return Result.Failure(notificationsError);
         }
@@ -192,7 +183,7 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
         var woodlandOfficer = await InternalUserAccountService.GetUserAccountAsync(user.UserAccountId!.Value, cancellationToken);
         if (woodlandOfficer.HasNoValue)
         {
-            _logger.LogError("Unable to find a user with the id of {Id}", user.UserAccountId!.Value);
+            logger.LogError("Unable to find a user with the id of {Id}", user.UserAccountId!.Value);
             await AppendAuditFailure(applicationId, user.UserAccountId.Value,
                 new { Error = "Unable to find woodland officer to notify" }, cancellationToken);
             return Result.Failure(notificationsError);
@@ -201,7 +192,7 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
         var fieldManager = await InternalUserAccountService.GetUserAccountAsync(result.Value.FieldManagerId, cancellationToken);
         if (fieldManager.HasNoValue)
         {
-            _logger.LogError("Unable to find a user with the id of {Id}", result.Value.FieldManagerId);
+            logger.LogError("Unable to find a user with the id of {Id}", result.Value.FieldManagerId);
             await AppendAuditFailure(applicationId, user.UserAccountId.Value,
                 new { Error = "Unable to find field manager to notify" }, cancellationToken);
             return Result.Failure(notificationsError);
@@ -299,6 +290,77 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
         return result;
     }
 
+    /// <summary>
+    /// Completes the Environmental Impact Assessment (EIA) screening check for the specified application.
+    /// Publishes an audit event indicating success or failure of the operation.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the application to update.</param>
+    /// <param name="user">The internal user performing the update.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Task{Result}"/> representing the asynchronous operation, containing a <see cref="Result"/>
+    /// indicating the success or failure of the EIA screening completion.
+    /// </returns>
+    public async Task<Result> CompleteEiaScreeningAsync(
+        Guid applicationId,
+        InternalUser user,
+        CancellationToken cancellationToken)
+    {
+        var result = await _updateWoodlandOfficerReviewService.CompleteEiaScreeningCheckAsync(
+            applicationId,
+            user.UserAccountId!.Value,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.UpdateWoodlandOfficerReviewFailure,
+                    applicationId,
+                    user.UserAccountId!.Value,
+                    _requestContext,
+                    new
+                    {
+                        Section = "EIA screening",
+                        Error = result.Error
+                    }),
+                cancellationToken);
+
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.WoodlandOfficerReviewEiaScreeningFailure,
+                    applicationId,
+                    user.UserAccountId!.Value,
+                    _requestContext,
+                    new
+                    {
+                        Error = result.Error
+                    }),
+                cancellationToken);
+
+            return result;
+        }
+
+        await _auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.UpdateWoodlandOfficerReview,
+                applicationId,
+                user.UserAccountId!.Value,
+                _requestContext,
+                new
+                {
+                    Section = "EIA screening"
+                }),
+            cancellationToken);
+
+
+        await _auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.WoodlandOfficerReviewEiaScreening,
+                applicationId,
+                user.UserAccountId!.Value,
+                _requestContext),
+            cancellationToken);
+
+        return result;
+    }
+
     private void SetBreadcrumbs(FellingLicenceApplicationPageViewModel model)
     {
         var breadCrumbs = new List<BreadCrumb>
@@ -364,7 +426,7 @@ public class WoodlandOfficerReviewUseCase : FellingLicenceApplicationUseCaseBase
 
         if (result1.IsFailure)
         {
-            _logger.LogError("Unable to send woodland officer review confirmation notification to field manager with id {id}", fieldManager.Id);
+            logger.LogError("Unable to send woodland officer review confirmation notification to field manager with id {id}", fieldManager.Id);
             await AppendNotificationAuditFailure(
                 applicationId, performingUser.Id, new { error = "Failed to send notification to field manager" }, cancellationToken);
             return Result.Failure("Unable to send woodland officer review confirmation notification to field manager");

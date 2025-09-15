@@ -209,18 +209,16 @@
                             <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes publish to the Decision Public Register</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input class="govuk-radios__input" id="dpr-no" asp-for="ApproverReview.PublicRegisterPublish" type="radio" value="false"/>
+                            <input class="govuk-radios__input" id="dpr-no" asp-for="ApproverReview.PublicRegisterPublish" type="radio" value="false" data-aria-controls="conditional-exempt"/>
                             <label class="govuk-label govuk-radios__label" for="dpr-no">No this application is exempt</label>
                         </div>
-                        <fieldset class="govuk-fieldset" id="conditional-exempt">
-                            <div class="govuk-radios__conditional">
-                                <div class="govuk-form-group" id="dpr-reason">
-                                    <label class="govuk-label" asp-for="ApproverReview.PublicRegisterExemptionReason">Explain why this application is exempt</label>
-                                    <validation asp-for="ApproverReview.PublicRegisterExemptionReason"></validation>
-                                    <textarea class="govuk-textarea" rows="4" asp-for="ApproverReview.PublicRegisterExemptionReason"></textarea>
-                                </div>
+                        <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-exempt">
+                            <div class="govuk-form-group" id="dpr-reason">
+                                <label class="govuk-label" asp-for="ApproverReview.PublicRegisterExemptionReason">Explain why this application is exempt</label>
+                                <validation asp-for="ApproverReview.PublicRegisterExemptionReason"></validation>
+                                <textarea class="govuk-textarea" rows="4" asp-for="ApproverReview.PublicRegisterExemptionReason"></textarea>
 						    </div>
-					    </fieldset>
+					    </div>
                     </div>
                 </fieldset>
             </div>

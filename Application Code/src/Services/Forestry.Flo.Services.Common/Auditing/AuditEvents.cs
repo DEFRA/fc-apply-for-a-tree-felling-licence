@@ -226,6 +226,17 @@ public static class AuditEvents
 
     public const string DecisionPublicRegisterApplicationRemovalNotification = "Decision Public Register Application Removal Notification";
 
+    // EIA
+    public const string ApplicantUploadEiaDocumentsSuccess = "Applicant Upload EIA Documents Success";
+    public const string ApplicantUploadEiaDocumentsFailure = "Applicant Upload EIA Documents Failure";
+    public const string ApplicantCompleteEiaSection = "Applicant Complete EIA Section";
+    public const string ApplicantCompleteEiaSectionFailure = "Applicant Complete EIA Section Failure";
+    public const string AdminOfficerCompleteEiaCheck = "Admin Officer Complete EIA Check";
+    public const string AdminOfficerCompleteEiaCheckFailure = "Admin Officer Complete EIA Check Failure";
+    public const string WoodlandOfficerReviewEiaScreening = "Woodland Officer Review EIA Screening";
+    public const string WoodlandOfficerReviewEiaScreeningFailure = "Woodland Officer Review EIA Screening Failure";
+
+
     /// <summary>
     /// Returns the source entity type by a given audit event name.
     /// </summary>
@@ -422,6 +433,17 @@ public static class AuditEvents
 
             RevertApplicationFromWithdrawnSuccess => SourceEntityType.FellingLicenceApplication,
             RevertApplicationFromWithdrawnFailure => SourceEntityType.FellingLicenceApplication,
+
+            ApplicantUploadEiaDocumentsSuccess => SourceEntityType.FellingLicenceApplication,
+            ApplicantUploadEiaDocumentsFailure => SourceEntityType.FellingLicenceApplication,
+            ApplicantCompleteEiaSection => SourceEntityType.FellingLicenceApplication,
+            ApplicantCompleteEiaSectionFailure => SourceEntityType.FellingLicenceApplication,
+
+            AdminOfficerCompleteEiaCheck => SourceEntityType.FellingLicenceApplication,
+            AdminOfficerCompleteEiaCheckFailure => SourceEntityType.FellingLicenceApplication,
+
+            WoodlandOfficerReviewEiaScreening => SourceEntityType.FellingLicenceApplication,
+            WoodlandOfficerReviewEiaScreeningFailure => SourceEntityType.FellingLicenceApplication,
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

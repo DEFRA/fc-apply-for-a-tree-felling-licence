@@ -1,19 +1,12 @@
 ﻿@using Forestry.Flo.External.Web.Models.UserAccount
-@using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.Applicants.Configuration
 @using Forestry.Flo.Services.Common
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Microsoft.Extensions.Options
 @model Forestry.Flo.External.Web.Models.UserAccount.AgencyUserModel
-@inject IOptions<FcAgencyOptions> _fcAgencyOptions;
 
 @{
     ViewBag.Title = "Invite agent user to organisation";
     Layout = "_Layout";
-}
-
-@{
-    var user = new ExternalApplicant(User);
 }
 
 <div class="govuk-grid-column-two-thirds">
@@ -21,19 +14,6 @@
     <h1 class="govuk-heading-xl">Invite a new user to manage applications for your agency</h1>
 
     <partial name="Partials/_PageErrors" />
-    
-    @if (user.IsFcUser)
-    {
-        var domains = string.Join(", ", _fcAgencyOptions.Value.PermittedEmailDomainsForFcAgent.Distinct());
-
-        <div class="govuk-warning-text">
-            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text">
-                <span class="govuk-warning-text__assistive">Note</span>
-                Only users with email addresses in the following domains may be invited: @domains
-            </strong>
-        </div>
-    }
 
     <form method="post">
         <fieldset class="govuk-fieldset">

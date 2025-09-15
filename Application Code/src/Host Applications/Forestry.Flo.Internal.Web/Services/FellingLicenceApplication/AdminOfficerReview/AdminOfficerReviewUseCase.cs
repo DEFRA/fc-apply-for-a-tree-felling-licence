@@ -169,6 +169,9 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
 
         var isAgencyApplication = summaryModel.AgentOrAgencyName is not null;
 
+        var eiaModel =
+            await GetFellingLicenceApplication.GetEnvironmentalImpactAssessmentAsync(applicationId, cancellationToken);
+
         var adminOfficerReviewStatus = await
             _getAdminOfficerReview.GetAdminOfficerReviewStatusAsync(
                 applicationId,
@@ -176,6 +179,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
                 summaryModel.AreAnyLarchSpecies && summaryModel.DetailsList.Any(x => x.Zone1),
                 assignedWoodlandOfficer != null || assignedApprover != null,
                 summaryModel.IsCBWapplication,
+                eiaModel.IsSuccess,
                 cancellationToken);
 
         var result = new AdminOfficerReviewModel

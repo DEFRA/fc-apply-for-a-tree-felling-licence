@@ -12,13 +12,13 @@
         public AllowedFileType[] AllowedFileTypes { get; set; } = {
             new()
             {
-                FileUploadReasons = [FileUploadReason.AgentAuthorityForm, FileUploadReason.SupportingDocument], 
+                FileUploadReasons = [FileUploadReason.AgentAuthorityForm, FileUploadReason.SupportingDocument, FileUploadReason.EiaDocument], 
                 Extensions = ["JPG", "JPEG", "PNG"], 
                 Description = "Image"
             },
             new()
             {
-                FileUploadReasons = [FileUploadReason.AgentAuthorityForm, FileUploadReason.SupportingDocument],
+                FileUploadReasons = [FileUploadReason.AgentAuthorityForm, FileUploadReason.SupportingDocument, FileUploadReason.EiaDocument],
                 Extensions = ["DOC", "DOCX"], 
                 Description = "Word document"
             },
@@ -42,7 +42,7 @@
             },
             new()
             {
-                FileUploadReasons = [FileUploadReason.AgentAuthorityForm, FileUploadReason.SupportingDocument],
+                FileUploadReasons = [FileUploadReason.AgentAuthorityForm, FileUploadReason.SupportingDocument, FileUploadReason.EiaDocument],
                 Extensions = ["PDF"], 
                 Description = "PDF document"
             },
@@ -65,7 +65,7 @@
     public enum FileUploadReason
     {
         AgentAuthorityForm,
-        SupportingDocument
+        SupportingDocument,
+        EiaDocument
     }
-
 }

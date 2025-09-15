@@ -1,0 +1,116 @@
+﻿@{
+    ViewData["Title"] = "Check Environmental Impact Assessment (EIA) details";
+    var user = new InternalUser(User);
+}
+@model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.EiaWithFormsAbsentViewModel
+
+<div class="govuk-grid-column-two-thirds">
+
+    <partial name="Partials/_EiaWarning" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_PageErrors" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <form method="post" asp-action="EiaWithFormsAbsent">
+        <input hidden="hidden" aria-hidden="True" asp-for="ApplicationId" />
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset" id="@nameof(Model.HaveTheFormsBeenReceived)">
+                <legend class="govuk-heading-m">
+                    Has the EIA form been received from the applicant?
+                </legend>
+                <div class="govuk-hint">
+                    Check whether the applicant has uploaded the Environmental Impact Assessment (EIA) 
+                    form as part of this application OR if an EIA has been received via the EIA service.
+                </div>
+                <validation asp-for="@Model.HaveTheFormsBeenReceived"></validation>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input id="forms-received-yes"
+                               condition-disabled="@(!Model.Editable(user))"
+                               type="radio"
+                               class="govuk-radios__input"
+                               asp-for="HaveTheFormsBeenReceived"
+                               data-aria-controls="conditional-forms-received"
+                               value="@true" />
+                        <label class="govuk-label govuk-radios__label" for="forms-received-yes">
+                            Yes, the EIA forms have been received
+                        </label>
+                    </div>
+
+                    <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-forms-received">
+
+                        <div class="govuk-form-group">
+                            <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+                                <validation asp-for="@Model.EiaProcessInLineWithCode"></validation>
+                                <div class="govuk-checkboxes__item">
+                                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" asp-for="EiaProcessInLineWithCode" type="checkbox">
+                                    <label class="govuk-label govuk-checkboxes__label" asp-for="EiaProcessInLineWithCode">
+                                        Confirm the EIA form has been processed in line with the G&R EIA code
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="govuk-form-group">
+                            <label class="govuk-label" asp-for="EiaTrackerReferenceNumber">
+                                Please provide the EIA tracker reference number
+                            </label>
+                            <validation asp-for="@Model.EiaTrackerReferenceNumber"></validation>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-input" asp-for="EiaTrackerReferenceNumber" type="text">
+                        </div>
+                    </div>
+
+                    <div class="govuk-radios__item">
+                        <input id="forms-received-no"
+                               condition-disabled="@(!Model.Editable(user))"
+                               type="radio"
+                               class="govuk-radios__input"
+                               value="@false"
+                               asp-for="HaveTheFormsBeenReceived">
+                        <label class="govuk-label govuk-radios__label" for="forms-received-no">
+                            No, the EIA forms have not been received
+                        </label>
+                    </div>
+
+                </div>
+            </fieldset>
+        </div>
+
+        <button type="submit"
+                condition="@Model.Editable(user)"
+                id="submit-eia-check"
+                class="govuk-button"
+                data-module="govuk-button">
+            Submit EIA check
+        </button>
+
+        <div id="send-reminder-container" hidden="hidden">
+            <button type="submit"
+                    condition="@Model.Editable(user)"
+                    id="send-reminder"
+                    class="govuk-button"
+                    data-module="govuk-button">
+                Send EIA form reminder
+            </button>
+
+            <p class="govuk-body" condition="@Model.Editable(user)">
+                A reminder will be sent encouraging the applicant to submit the EIA form.
+                It explains that submitting the form may help progress the application sooner.
+            </p>
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/eia-forms-absent.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

@@ -240,6 +240,13 @@ config:
       enabled:
       # -- The tracking id for Microsoft Clarity
       trackingId:
+  eiaOptions:
+      # -- The external URI for EIA guidance
+      eiaApplicationExternalUri:
+      # -- The contact email for EIA queries, included in notifications
+      eiaContactEmail:
+      # -- The contact phone for EIA queries, included in notifications
+      eiaContactPhone:
   GovUkNotifyOptions:
     enabled: false
     ApiKey:

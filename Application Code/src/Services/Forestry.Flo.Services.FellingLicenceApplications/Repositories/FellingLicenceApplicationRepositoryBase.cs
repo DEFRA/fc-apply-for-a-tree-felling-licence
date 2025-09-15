@@ -58,6 +58,7 @@ public class FellingLicenceApplicationRepositoryBase : IFellingLicenceApplicatio
         entity.TermsAndConditionsStatus = applicationStepStatuses.TermsAndConditionsComplete ?? entity.TermsAndConditionsStatus;
         entity.SupportingDocumentationStatus = applicationStepStatuses.SupportingDocumentationComplete ?? entity.SupportingDocumentationStatus;
         entity.SelectCompartmentsStatus = applicationStepStatuses.SelectedCompartmentsComplete ?? entity.SelectCompartmentsStatus;
+        entity.EnvironmentalImpactAssessmentStatus = applicationStepStatuses.EnvironmentalImpactAssessmentComplete ?? entity.EnvironmentalImpactAssessmentStatus;
 
         // only update the statuses for matched compartments
 

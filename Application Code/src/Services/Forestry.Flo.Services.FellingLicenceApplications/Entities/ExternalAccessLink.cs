@@ -14,7 +14,13 @@ public class ExternalAccessLink
     /// Gets and Sets the external link application ID.
     /// </summary>
     public Guid FellingLicenceApplicationId { get; set; }
-    
+
+    /// <summary>
+    /// Gets and sets the external access link type.
+    /// </summary>
+    [Required]
+    public ExternalAccessLinkType LinkType { get; set; }
+
     /// <summary>
     /// Gets and Sets the created time stamp.
     /// </summary>
@@ -56,4 +62,10 @@ public class ExternalAccessLink
     /// </summary>
     [Required]
     public bool IsMultipleUseAllowed { get; set; } = false;
+
+    /// <summary>
+    /// Gets and sets a set of supporting document ids that are shared with this
+    /// external access link.
+    /// </summary>
+    public List<Guid> SharedSupportingDocuments { get; set; } = new();
 }

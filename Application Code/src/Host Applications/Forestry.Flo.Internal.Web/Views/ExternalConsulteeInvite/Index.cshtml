@@ -1,116 +1,140 @@
-﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Services.Common
-@using Forestry.Flo.Internal.Web.Infrastructure
-@model Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite.ExternalConsulteeInviteFormModel
+﻿@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+@model Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite.ExternalConsulteeIndexViewModel
 
 @{
-    ViewBag.Title = "Invite external consultee";
-    string CommentStatus(int i) => Model.InviteLinks[i].AreCommentsProvided ? "Yes" : "No";
+    ViewData["Title"] = "Invite someone to comment on the application";
+
+    var latestExpiry = Model.InviteLinks
+        .OrderByDescending(x => x.ExpiresTimeStamp)
+        .FirstOrDefault()?.ExpiresTimeStamp;
+
+    var user = new InternalUser(User);
+
+    var disableRadios = Model.Editable(user) == false || Model.InviteLinks.Any();
+
+    var disableButton = latestExpiry.HasValue && latestExpiry.Value > Model.CurrentDateTimeUtc;
 }
 
-<div class="govuk-grid-column-full">
+<div class="govuk-grid-column-two-thirds">
     <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
-    <h1 class="govuk-heading-xl">Invite an external party to be consulted on the application</h1>
-
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
     <partial name="Partials/_PageErrors"/>
     <form method="post">
-        <input type="hidden" asp-for="Id"/>
         <input type="hidden" asp-for="ApplicationId"/>
-        <input type="hidden" asp-for="ReturnUrl"/>
-        <input type="hidden" asp-for="PublicRegisterAlreadyCompleted"/>
-
-        <h2 class="govuk-heading-m">Already invited consultees</h2>
-        <div class="govuk-form-group">
-            @if (!Model.InviteLinks.Any())
-            {
-                <p class="govuk-body">
-                    No invitations have been sent.
-                </p>
-            }
-            else
-            {
-                <table class="govuk-table" id="documentation-list-table">
-                    <thead class="govuk-table__head">
-                    <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header">Name</th>
-                        <th scope="col" class="govuk-table__header">Email</th>
-                        <th scope="col" class="govuk-table__header">Purpose</th>
-                        <th scope="col" class="govuk-table__header">Invite created time</th>
-                        <th scope="col" class="govuk-table__header">Link expires time</th>
-                        <th scope="col" class="govuk-table__header">Comments provided</th>
-                    </tr>
-                    </thead>
-                    <tbody class="govuk-table__body">
-                    @for (var i = 0; i < Model.InviteLinks.Count; i++)
-                    {
-                        <tr class="govuk-table__row" data-id="@Model.InviteLinks[i].Id">
-                            <td class="govuk-table__cell">@Model.InviteLinks[i].Name</td>
-                            <td class="govuk-table__cell">@Model.InviteLinks[i].ContactEmail</td>
-                            <td class="govuk-table__cell">@Model.InviteLinks[i].Purpose</td>
-                            <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(Model.InviteLinks[i].CreatedTimeStamp)</td>
-                            <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(Model.InviteLinks[i].ExpiresTimeStamp)</td>
-                            <td class="govuk-table__cell">@CommentStatus(i)</td>
-                        </tr>
-                        <input type="hidden" asp-for="InviteLinks[i].Id"/>
-                        <input type="hidden" asp-for="InviteLinks[i].Name"/>
-                        <input type="hidden" asp-for="InviteLinks[i].ContactEmail"/>
-                        <input type="hidden" asp-for="InviteLinks[i].Purpose"/>
-                        <input type="hidden" asp-for="InviteLinks[i].AreCommentsProvided"/>
-                        <input type="hidden" asp-for="InviteLinks[i].CreatedTimeStamp"/>
-                        <input type="hidden" asp-for="InviteLinks[i].ExpiresTimeStamp"/>
-                    }
-                    </tbody>
-                </table>
-            }
+        
+        <div class="govuk-body govuk-!-padding-bottom-5">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend-m">
+                    <h2 class="govuk-fieldset__heading">Does this application need consultation?</h2>
+                </legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@disableRadios" class="govuk-radios__input" id="consultation-needed-yes" asp-for="ApplicationNeedsConsultations" value="true" type="radio" />
+                        <label class="govuk-label govuk-radios__label" for="consultation-needed-yes">Yes</label>
+                    </div>
+                </div>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@disableRadios" class="govuk-radios__input" id="consultation-needed-no" asp-for="ApplicationNeedsConsultations" value="false" type="radio" />
+                        <label class="govuk-label govuk-radios__label" for="consultation-needed-no">No</label>
+                    </div>
+                </div>
+            </fieldset>
         </div>
-        <fieldset class="govuk-fieldset">
-            <div class="govuk-form-group">
-                <label asp-for="ConsulteeName" class="@GdsConstants.GdsLabelCssClass"></label>
-                <validation asp-for="ConsulteeName"></validation>
-                <input autocomplete="off" class="@GdsConstants.GdsInputCssClass" asp-for="ConsulteeName"/>
-            </div>
-            <div class="govuk-form-group">
-                <label asp-for="Email" class="@GdsConstants.GdsLabelCssClass"></label>
-                <validation asp-for="Email"></validation>
-                <input autocomplete="off" class="@GdsConstants.GdsInputCssClass" asp-for="Email"/>
-            </div>
-            <div class="govuk-form-group">
-                <label class="govuk-label" asp-for="Purpose">
-                    Purpose
-                </label>
-                <div id="purpose-hint" class="govuk-hint">
-                    Please provide information about the purpose of the inviting the external party to be consulted on the application
-                </div>
-                <validation asp-for="Purpose"></validation>
-                <textarea class="govuk-textarea" asp-for="Purpose" rows="2" aria-describedby="purpose-hint"></textarea>
-            </div>
-            <div class="govuk-form-group">
-                <label asp-for="ExemptFromConsultationPublicRegister" class="@GdsConstants.GdsLabelCssClass"></label>
-                <validation asp-for="ExemptFromConsultationPublicRegister"></validation>
-                <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
-                    <div class="govuk-radios__item">
-                        <input condition-disabled="@Model.PublicRegisterAlreadyCompleted" class="govuk-radios__input" id="exempt-yes" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="true" />
-                        <label class="govuk-label govuk-radios__label" for="exempt-yes">Yes</label>
-                    </div>
-                    <div class="govuk-radios__item">
-                        <input condition-disabled="@Model.PublicRegisterAlreadyCompleted" class="govuk-radios__input" id="exempt-no" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="false" />
-                        <label class="govuk-label govuk-radios__label" for="exempt-no">No</label>
-                    </div>
-                </div>
-            </div>
 
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
-
-                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                        Continue
-                    </button>
-                    <a class="govuk-link" href="@Model.ReturnUrl" title="Abandon changes and go to the home page">Cancel</a>
+        @if (latestExpiry.HasValue && latestExpiry.Value > Model.CurrentDateTimeUtc)
+        {
+            <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+                <div class="govuk-notification-banner__header">
+                    <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+                        Important
+                    </h2>
+                </div>
+                <div class="govuk-notification-banner__content">
+                    <p class="govuk-notification-banner__heading">
+                        There are active consultations on this application
+                    </p>
+                    <p class="govuk-body">
+                        You  cannot complete this task earlier than @DateTimeDisplay.GetDateTimeDisplayString(latestExpiry.Value) based on the last invited consultee.
+                    </p>
                 </div>
             </div>
-        </fieldset>
+        }
+        
+        <div id="invite-section" class="govuk-visually-hidden" aria-hidden="true">
+
+            <h2 class="govuk-heading-l">
+                Invite someone to comment on the application
+            </h2>
+            <h3 class="govuk-heading-m">Invited consultees</h3>
+            <div class="govuk-form-group">
+                @if (!Model.InviteLinks.Any())
+                {
+                    <p class="govuk-body">
+                        No invitations have been sent.
+                    </p>
+                }
+                else
+                {
+                    <table class="govuk-table" id="documentation-list-table">
+                        <thead class="govuk-table__head">
+                        <tr class="govuk-table__row">
+                            <th scope="col" class="govuk-table__header">Name</th>
+                            <th scope="col" class="govuk-table__header">Reason</th>
+                            <th scope="col" class="govuk-table__header">Date invited</th>
+                            <th scope="col" class="govuk-table__header">Invitation expires</th>
+                            <th scope="col" class="govuk-table__header">Consultation response received</th>
+                        </tr>
+                        </thead>
+                        <tbody class="govuk-table__body">
+                        @foreach (var t in Model.InviteLinks)
+                        {
+                            <tr class="govuk-table__row" data-id="@t.Id">
+                                    <td class="govuk-table__cell"><a class="govuk-link" asp-action="GetReceivedComments" asp-route-id="@Model.ApplicationId" asp-route-accessCode="@t.AccessCode">@t.Name</a></td>
+                                <td class="govuk-table__cell">@t.Purpose</td>
+                                <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(t.CreatedTimeStamp)</td>
+                                <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(t.ExpiresTimeStamp)</td>
+                                <td class="govuk-table__cell">@(t.HasResponded ? "Yes" : "No")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+                <p class="govuk-body">Consultation ensures applications are assessed fairly, legally and with expert input.</p>
+                <a condition="@Model.Editable(user)" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="ExternalConsulteeInvite" asp-action="InviteNewConsultee" asp-route-Id="@Model.ApplicationId">Add a consultee</a>
+            </div>
+        </div>
+        
+        @if (latestExpiry.HasValue && latestExpiry.Value <= Model.CurrentDateTimeUtc)
+        {
+            <h2 class="govuk-heading-l">
+                Have you finished inviting and reviewing?
+            </h2>
+            <div class="govuk-hint">
+                You can mark this as complete once the last consultation period has ended and you've reviewed all comments.
+            </div>
+            <div class="govuk-inset-text">
+                Any consultees you add later will begin a new consultation period.
+            </div>
+        }
+        
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+                <button id="submit-button" condition-disabled="@disableButton" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">Continue</button>
+                <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
+            </div>
+        </div>
+
     </form>
 </div>
+
+@section Scripts
+{
+    <script src="~/js/consultation.js" asp-append-version="true"></script>
+}
 
 @section breadcrumbs
 {

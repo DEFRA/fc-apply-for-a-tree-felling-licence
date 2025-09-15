@@ -25,7 +25,7 @@
     <p class="govuk-body">We know some parts of this website are not fully accessible. This means that:</p>
     <ul class="govuk-list govuk-list--bullet">
         <li>some radio buttons that reveal extra content are not fully supported by screen readers</li>
-        <li>maps and map controls cannot be used properly with a keyboard</li>
+        <li>maps and map controls cannot be used properly with a keyboard or with Dragon NaturallySpeaking voice software</li>
         <li>some links and dropdowns are not accessible to keyboard-only users or people using screen readers such as VoiceOver and TalkBack</li>
         <li>file upload buttons on some pages cannot be activated using Dragon NaturallySpeaking voice software</li>
         <li>some placeholder text cannot be deleted using assistive technology on mobile devices</li>
@@ -38,14 +38,15 @@
     
     <h3 class="govuk-heading-m">Radio buttons do not include the correct ARIA role</h3>
     <p class="govuk-body">On pages like ‘Create a Property’ and ‘Felling Details’, radio buttons are used to reveal additional content. These use the aria-expanded attribute but do not include a required ARIA role such as menuitemradio.</p>
-    <p class="govuk-body">This means the content may not be interpreted correctly by assistive technologies. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
+    <p class="govuk-body">This means the content may not be interpreted correctly by assistive technologies. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
     <p class="govuk-body">We have followed the <a class="govuk-link" href="https://design-system.service.gov.uk/components/radios/#conditionally-revealing-radios">GOV.UK Design System guidance for radios with conditionally revealing content</a>, but recognise that this approach may result in invalid HTML.</p>
     <p class="govuk-body">We are monitoring guidance and exploring alternatives.</p>
 
-    <h3 class="govuk-heading-m">Maps cannot be used with a keyboard</h3>
-    <p class="govuk-body">On the ‘Create a compartment’ page, users cannot interact with the map using a keyboard.</p>
-    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
-    
+    <h3 class="govuk-heading-m">Maps cannot be used with a keyboard or speech recognition software</h3>
+    <p class="govuk-body">On the ‘Create a compartment’ page, users cannot interact with the map using a keyboard. Users of Dragon NaturallySpeaking also cannot draw areas on the map using voice commands.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a> and <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">WCAG 2.2 success criterion 4.1.2: Name, Role, Value</a>.</p>
+    <p class="govuk-body">This issue relates to third-party map content and cannot currently be fixed. We will monitor for improvements. A workaround is available on request.</p>
+
     <h3 class="govuk-heading-m">Some links and dropdowns are not accessible by keyboard</h3>
     <p class="govuk-body">On pages such as ‘Create a property’ and ‘Select felling options’, some links cannot be accessed without a mouse.</p>
     <p class="govuk-body">This may prevent keyboard-only users from accessing essential content. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
@@ -57,7 +58,7 @@
     
     <h3 class="govuk-heading-m">File upload buttons may not work with Dragon NaturallySpeaking</h3>
     <p class="govuk-body">On pages such as ‘Add agent authority form files’ and ‘Supporting documentation’, users of Dragon NaturallySpeaking may not be able to activate file upload buttons using voice commands.</p>
-    <p class="govuk-body">This is believed to be a known issue with Dragon and does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
+    <p class="govuk-body">This is believed to be a known issue with Dragon and does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
     
     <p class="govuk-body">We will update this accessibility statement as we make progress on resolving these issues.</p>
 

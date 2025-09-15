@@ -1,4 +1,5 @@
-﻿using Forestry.Flo.Internal.Web.Services;
+﻿using AutoFixture;
+using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Tests.Common;
@@ -85,31 +86,6 @@ public class ModelMappingTests
     }
     
     [Theory, AutoMoqData]
-    public void ShouldMapDocumentEntityList_ToSupportingDocumentModelList(List<Document> documentEntities)
-    {
-        //Arrange
-        //Act
-        var result = ModelMapping.ToSupportingDocumentList(documentEntities).ToList();
-
-        //Assert
-        result.Should().NotBeNull();
-        result.Count.Should().Be(documentEntities.Count);
-
-        var orderedModelList = result.OrderBy(x => x.Id).ToList();
-        var orderedEntityList = documentEntities.OrderBy(x => x.Id).ToList();
-
-        for (var i = 0; i < documentEntities.Count; i++)
-        {
-            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
-            orderedModelList[i].CreatedTimestamp.Should().Be(orderedEntityList[i].CreatedTimestamp);
-            orderedModelList[i].MimeType.Should().Be(orderedEntityList[i].MimeType);
-            orderedModelList[i].Location.Should().Be(orderedEntityList[i].Location);
-            orderedModelList[i].FileName.Should().Be(orderedEntityList[i].FileName);
-            orderedModelList[i].Purpose.Should().Be(orderedEntityList[i].Purpose);
-        }
-    }
-    
-    [Theory, AutoMoqData]
     public void ShouldMapStatusHistoryEntityList_ToStatusHistoryModelList(List<StatusHistory> statusHistories)
     {
         //Arrange
@@ -159,11 +135,11 @@ public class ModelMappingTests
     }
     
     [Theory, AutoMoqData]
-    public void ShouldMapExternalAccessLinkList_ToExternalInviteLinkList(List<ExternalAccessLink> accessLinks)
+    public void ShouldMapExternalAccessLinkList_ToExternalInviteLinkList_NoCommentsProvided(List<ExternalAccessLink> accessLinks)
     {
         //Arrange
         //Act
-        var result = ModelMapping.ToExternalInviteLinkList(accessLinks).ToList();
+        var result = ModelMapping.ToExternalInviteLinkList(accessLinks, []).ToList();
 
         //Assert
         result.Should().NotBeNull();
@@ -180,9 +156,53 @@ public class ModelMappingTests
             orderedModelList[i].ContactEmail.Should().Be(orderedEntityList[i].ContactEmail);
             orderedModelList[i].CreatedTimeStamp.Should().Be(orderedEntityList[i].CreatedTimeStamp);
             orderedModelList[i].ExpiresTimeStamp.Should().Be(orderedEntityList[i].ExpiresTimeStamp);
+            orderedModelList[i].LinkType.Should().Be(orderedEntityList[i].LinkType);
+            orderedModelList[i].HasResponded.Should().BeFalse();
         }
     }
-    
+
+    [Theory, AutoMoqData]
+    public void ShouldMapExternalAccessLinkList_ToExternalInviteLinkList_CommentsProvided(List<ExternalAccessLink> accessLinks)
+    {
+        //Arrange
+
+        var fixture = new Fixture();
+
+        var comments = new List<ConsulteeComment>();
+        foreach (var accessLink in accessLinks)
+        {
+            var numberOfComments = fixture.Create<int>() % 5 + 1;
+            for (var i = 0; i < numberOfComments; i++)
+            {
+                comments.Add(fixture.Build<ConsulteeComment>()
+                    .With(x => x.AccessCode, accessLink.AccessCode)
+                    .Create());
+            }
+        }
+
+        //Act
+        var result = ModelMapping.ToExternalInviteLinkList(accessLinks, comments).ToList();
+
+        //Assert
+        result.Should().NotBeNull();
+        result.Count.Should().Be(accessLinks.Count);
+
+        var orderedModelList = result.OrderBy(x => x.Id).ToList();
+        var orderedEntityList = accessLinks.OrderBy(x => x.Id).ToList();
+
+        for (var i = 0; i < accessLinks.Count; i++)
+        {
+            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
+            orderedModelList[i].Name.Should().Be(orderedEntityList[i].Name);
+            orderedModelList[i].Purpose.Should().Be(orderedEntityList[i].Purpose);
+            orderedModelList[i].ContactEmail.Should().Be(orderedEntityList[i].ContactEmail);
+            orderedModelList[i].CreatedTimeStamp.Should().Be(orderedEntityList[i].CreatedTimeStamp);
+            orderedModelList[i].ExpiresTimeStamp.Should().Be(orderedEntityList[i].ExpiresTimeStamp);
+            orderedModelList[i].LinkType.Should().Be(orderedEntityList[i].LinkType);
+            orderedModelList[i].HasResponded.Should().BeTrue();
+        }
+    }
+
     [Theory, AutoMoqData]
     public void ShouldMapWoodlandOwnerEntity_ToWoodlandOwnerModel(WoodlandOwner woodlandOwner)
     {

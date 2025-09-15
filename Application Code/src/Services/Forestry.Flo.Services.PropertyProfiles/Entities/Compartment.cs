@@ -25,6 +25,7 @@ public class Compartment
     /// <summary>
     /// Gets and Sets the total hectares number
     /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
     public double? TotalHectares { get; protected set; }
 
     /// <summary>

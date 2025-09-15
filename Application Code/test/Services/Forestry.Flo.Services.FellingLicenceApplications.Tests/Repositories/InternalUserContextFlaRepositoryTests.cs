@@ -10,6 +10,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Forestry.Flo.Services.Common.Extensions;
+using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Repositories;
@@ -356,8 +359,7 @@ public class InternalUserContextFlaRepositoryTests
 
         //act
         var link = (await _sut.GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(
-                accessLink.FellingLicenceApplicationId, accessLink.Name, accessLink.ContactEmail, accessLink.Purpose,
-                CancellationToken.None))
+                accessLink.FellingLicenceApplicationId, accessLink.LinkType, CancellationToken.None))
             .FirstOrDefault();
 
         //assert
@@ -672,7 +674,7 @@ public class InternalUserContextFlaRepositoryTests
         _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
         await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
 
-        var result = await _sut.GetConsulteeCommentsAsync(application.Id, comments.First().AuthorContactEmail,
+        var result = await _sut.GetConsulteeCommentsAsync(application.Id, comments.First().AccessCode,
             CancellationToken.None);
 
         Assert.Equal(1, result.Count);
@@ -1518,7 +1520,7 @@ public class InternalUserContextFlaRepositoryTests
         FellingLicenceApplication application)
     {
         // Arrange
-        application.Documents = new List<Document>();
+        application.Documents.ForEach(x => x.DeletionTimestamp = null);
         _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
         await _fellingLicenceApplicationsContext.SaveChangesAsync();
 
@@ -1528,4 +1530,629 @@ public class InternalUserContextFlaRepositoryTests
         // Assert
         Assert.Equivalent(application.Documents, result);
     }
+
+    [Fact]
+    public async Task TotalIncludedApplicationsAsync_ComputesCountsAndStatuses_WithoutAssignedFilter()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var includeStatuses = new List<FellingLicenceStatus>
+        {
+            FellingLicenceStatus.Submitted,
+            FellingLicenceStatus.AdminOfficerReview
+        };
+
+        var now = DateTime.UtcNow;
+
+        var app1 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.Submitted, Created = now.AddMinutes(-10) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = userId, Role = AssignedUserRole.AdminOfficer, TimestampAssigned = now.AddMinutes(-5), TimestampUnassigned = null }
+            }
+        };
+        var app2 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.AdminOfficerReview, Created = now.AddMinutes(-9) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = otherUserId, Role = AssignedUserRole.AdminOfficer, TimestampAssigned = now.AddMinutes(-5), TimestampUnassigned = null }
+            }
+        };
+        var app3 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.AdminOfficerReview, Created = now.AddMinutes(-8) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = userId, Role = AssignedUserRole.WoodlandOfficer, TimestampAssigned = now.AddMinutes(-4), TimestampUnassigned = null }
+            }
+        };
+        var app4 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.Approved, Created = now.AddMinutes(-7) } // not included
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = userId, Role = AssignedUserRole.FieldManager, TimestampAssigned = now.AddMinutes(-3), TimestampUnassigned = null }
+            }
+        };
+        var app5 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.Submitted, Created = now.AddMinutes(-6) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>() // unassigned
+        };
+
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.AddRange(app1, app2, app3, app4, app5);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync();
+
+        // Act
+        var summary = await _sut.TotalIncludedApplicationsAsync(
+            assignedToUserAccountIdOnly: false,
+            userId: userId,
+            userFellingLicenceSelectionOptions: includeStatuses,
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        summary.TotalCount.Should().Be(4); // app1, app2, app3, app5
+        summary.AssignedToUserCount.Should().Be(2); // app1, app3
+        summary.StatusCounts.Should().NotBeNull();
+        var submitted = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.Submitted);
+        var aoReview = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.AdminOfficerReview);
+        submitted.Count.Should().Be(2); // app1, app5
+        aoReview.Count.Should().Be(2); // app2, app3
+        summary.StatusCounts.Sum(x => x.Count).Should().Be(summary.TotalCount);
+    }
+
+    [Fact]
+    public async Task TotalIncludedApplicationsAsync_ComputesCountsAndStatuses_WithAssignedFilter()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var includeStatuses = new List<FellingLicenceStatus>
+        {
+            FellingLicenceStatus.Submitted,
+            FellingLicenceStatus.AdminOfficerReview
+        };
+
+        var now = DateTime.UtcNow;
+
+        var app1 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.Submitted, Created = now.AddMinutes(-10) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = userId, Role = AssignedUserRole.AdminOfficer, TimestampAssigned = now.AddMinutes(-5), TimestampUnassigned = null }
+            }
+        };
+        var app2 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.AdminOfficerReview, Created = now.AddMinutes(-9) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = otherUserId, Role = AssignedUserRole.AdminOfficer, TimestampAssigned = now.AddMinutes(-5), TimestampUnassigned = null }
+            }
+        };
+        var app3 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.AdminOfficerReview, Created = now.AddMinutes(-8) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = userId, Role = AssignedUserRole.WoodlandOfficer, TimestampAssigned = now.AddMinutes(-4), TimestampUnassigned = null }
+            }
+        };
+        var app5 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.Submitted, Created = now.AddMinutes(-6) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>() // unassigned
+        };
+
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.AddRange(app1, app2, app3, app5);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync();
+
+        // Act
+        var summary = await _sut.TotalIncludedApplicationsAsync(
+            assignedToUserAccountIdOnly: true, // only those assigned to user should be in total
+            userId: userId,
+            userFellingLicenceSelectionOptions: includeStatuses,
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        summary.TotalCount.Should().Be(2); // app1, app3 only
+        summary.AssignedToUserCount.Should().Be(2); // computed from base query (same two)
+        summary.StatusCounts.Should().NotBeNull();
+        var submitted = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.Submitted);
+        var aoReview = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.AdminOfficerReview);
+        submitted.Count.Should().Be(1); // app1
+        aoReview.Count.Should().Be(1); // app3
+        summary.StatusCounts.Sum(x => x.Count).Should().Be(summary.TotalCount);
+    }
+
+    [Fact]
+    public async Task TotalIncludedApplicationsAsync_WithSearchOverload_NullSearch_BehavesSameAsWithoutSearch()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var includeStatuses = new List<FellingLicenceStatus>
+        {
+            FellingLicenceStatus.Submitted,
+            FellingLicenceStatus.AdminOfficerReview
+        };
+        var now = DateTime.UtcNow;
+
+        var app1 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.Submitted, Created = now.AddMinutes(-10) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>
+            {
+                new() { AssignedUserId = userId, Role = AssignedUserRole.AdminOfficer, TimestampAssigned = now.AddMinutes(-5), TimestampUnassigned = null }
+            }
+        };
+        var app2 = new FellingLicenceApplication
+        {
+            ApplicationReference = $"REF-{Guid.NewGuid():N}",
+            CreatedTimestamp = now,
+            CreatedById = Guid.NewGuid(),
+            WoodlandOwnerId = Guid.NewGuid(),
+            StatusHistories = new List<StatusHistory>
+            {
+                new() { Status = FellingLicenceStatus.AdminOfficerReview, Created = now.AddMinutes(-9) }
+            },
+            AssigneeHistories = new List<AssigneeHistory>() // unassigned
+        };
+
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.AddRange(app1, app2);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync();
+
+        // Act
+        var summary = await _sut.TotalIncludedApplicationsAsync(
+            assignedToUserAccountIdOnly: false,
+            userId: userId,
+            userFellingLicenceSelectionOptions: includeStatuses,
+            searchText: null, // ensure we do not hit ILike translation with InMemory provider
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        summary.TotalCount.Should().Be(2);
+        summary.AssignedToUserCount.Should().Be(1);
+        summary.StatusCounts.Sum(x => x.Count).Should().Be(summary.TotalCount);
+    }
+    [Theory, AutoMoqData]
+    public async Task GetApplicationDocuments_ReturnsOnlyUndeletedDocumentsForApplication(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.Documents.Skip(1).ForEach(x => x.DeletionTimestamp = null);
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetApplicationDocumentsAsync(application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equivalent(application.Documents.Where(x => x.DeletionTimestamp.HasNoValue()), result);
+        application.Documents.Where(x => x.DeletionTimestamp.HasValue).ForEach(x =>
+        {
+            Assert.DoesNotContain(x, result);
+        });
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RemoveSiteVisitEvidence_RemovesOnlySpecifiedEntity(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        var count = _fellingLicenceApplicationsContext.SiteVisitEvidences.Count();
+
+        // Act
+        var entity = application.WoodlandOfficerReview.SiteVisitEvidences.First();
+        application.WoodlandOfficerReview.SiteVisitEvidences.Remove(entity);
+        _sut.RemoveSiteVisitEvidenceAsync(entity);
+
+        await _sut.UnitOfWork.SaveEntitiesAsync();
+
+        // Assert
+        var newCount = _fellingLicenceApplicationsContext.SiteVisitEvidences.Count();
+        Assert.Equal(count-1, newCount);
+
+        var updatedWo = _fellingLicenceApplicationsContext.WoodlandOfficerReviews.Include(x => x.SiteVisitEvidences)
+            .First(x => x.Id == application.WoodlandOfficerReview.Id);
+
+        Assert.DoesNotContain(entity, updatedWo.SiteVisitEvidences);
+    }
+
+	[Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsync_ShouldUpdateExistingEiaRecord(
+        FellingLicenceApplication application,
+        EnvironmentalImpactAssessmentRecord eiaRecord)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = application.Id,
+            FellingLicenceApplication = application,
+            HasApplicationBeenCompleted = false,
+            HasApplicationBeenSent = false
+        };
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updated = await _fellingLicenceApplicationsContext.FellingLicenceApplications
+            .Include(x => x.EnvironmentalImpactAssessment)
+            .SingleAsync(x => x.Id == application.Id);
+        Assert.Equal(eiaRecord.HasApplicationBeenCompleted, updated.EnvironmentalImpactAssessment.HasApplicationBeenCompleted);
+        Assert.Equal(eiaRecord.HasApplicationBeenSent, updated.EnvironmentalImpactAssessment.HasApplicationBeenSent);
+        Assert.True(application.FellingLicenceApplicationStepStatus.EnvironmentalImpactAssessmentStatus);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsync_ShouldCreateEiaIfNotExists(
+        FellingLicenceApplication application,
+        EnvironmentalImpactAssessmentRecord eiaRecord)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = null;
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updated = await _fellingLicenceApplicationsContext.FellingLicenceApplications
+            .Include(x => x.EnvironmentalImpactAssessment)
+            .SingleAsync(x => x.Id == application.Id);
+        Assert.NotNull(updated.EnvironmentalImpactAssessment);
+        Assert.Equal(application.Id, updated.EnvironmentalImpactAssessment.FellingLicenceApplicationId);
+        Assert.Equal(eiaRecord.HasApplicationBeenCompleted, updated.EnvironmentalImpactAssessment.HasApplicationBeenCompleted);
+        Assert.Equal(eiaRecord.HasApplicationBeenSent, updated.EnvironmentalImpactAssessment.HasApplicationBeenSent);
+        Assert.True(application.FellingLicenceApplicationStepStatus.EnvironmentalImpactAssessmentStatus);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsync_ReturnsNotFound_WhenApplicationDoesNotExist(
+        EnvironmentalImpactAssessmentRecord eiaRecord)
+    {
+        // Arrange
+        var nonExistentId = Guid.NewGuid();
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsync(nonExistentId, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ShouldUpdateFields_WhenValid(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = application.Id,
+            FellingLicenceApplication = application
+        };
+        application.AdminOfficerReview = new AdminOfficerReview();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = Maybe<bool>.From(true),
+            AreAttachedFormsCorrect = Maybe<bool>.None,
+            EiaTrackerReferenceNumber = Maybe<string>.From("TRACK-123")
+        };
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updated = await _fellingLicenceApplicationsContext.FellingLicenceApplications
+            .Include(x => x.EnvironmentalImpactAssessment)
+            .Include(x => x.AdminOfficerReview)
+            .SingleAsync(x => x.Id == application.Id);
+        Assert.Equal(eiaRecord.HasTheEiaFormBeenReceived.Value, updated.EnvironmentalImpactAssessment.HasTheEiaFormBeenReceived);
+        Assert.Equal(eiaRecord.EiaTrackerReferenceNumber.Value, updated.EnvironmentalImpactAssessment.EiaTrackerReferenceNumber);
+        Assert.Null(updated.EnvironmentalImpactAssessment.AreAttachedFormsCorrect);
+        Assert.True(updated.AdminOfficerReview.EiaChecked);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ShouldReturnFailure_WhenRecordIsInvalid(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = application.Id,
+            FellingLicenceApplication = application
+        };
+        application.AdminOfficerReview = new AdminOfficerReview();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Invalid: both booleans set, violates mutual exclusivity
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = Maybe<bool>.From(true),
+            AreAttachedFormsCorrect = Maybe<bool>.From(true),
+            EiaTrackerReferenceNumber = Maybe<string>.From("TRACK-123")
+        };
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.General, result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ShouldReturnFailure_WhenRequiredReferenceNumberMissing(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = application.Id,
+            FellingLicenceApplication = application
+        };
+        application.AdminOfficerReview = new AdminOfficerReview();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Invalid: HasTheEiaFormBeenReceived is true, but no reference number
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = Maybe<bool>.From(true),
+            AreAttachedFormsCorrect = Maybe<bool>.None,
+            EiaTrackerReferenceNumber = Maybe<string>.None
+        };
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.General, result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ShouldReturnNotFound_WhenNoEiaEntity(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = null;
+        application.AdminOfficerReview = new AdminOfficerReview();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = Maybe<bool>.From(true),
+            AreAttachedFormsCorrect = Maybe<bool>.None,
+            EiaTrackerReferenceNumber = Maybe<string>.From("TRACK-123")
+        };
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ShouldUpdate_AreAttachedFormsCorrect_WhenSet(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = application.Id,
+            FellingLicenceApplication = application
+        };
+        application.AdminOfficerReview = new AdminOfficerReview();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = Maybe<bool>.None,
+            AreAttachedFormsCorrect = Maybe<bool>.From(true),
+            EiaTrackerReferenceNumber = Maybe<string>.From("TRACK-456")
+        };
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updated = await _fellingLicenceApplicationsContext.FellingLicenceApplications
+            .Include(x => x.EnvironmentalImpactAssessment)
+            .Include(fellingLicenceApplication => fellingLicenceApplication.AdminOfficerReview)
+            .SingleAsync(x => x.Id == application.Id);
+        Assert.Equal(eiaRecord.AreAttachedFormsCorrect.Value, updated.EnvironmentalImpactAssessment.AreAttachedFormsCorrect);
+        Assert.Equal(eiaRecord.EiaTrackerReferenceNumber.Value, updated.EnvironmentalImpactAssessment.EiaTrackerReferenceNumber);
+        Assert.Null(updated.EnvironmentalImpactAssessment.HasTheEiaFormBeenReceived);
+        Assert.True(updated.AdminOfficerReview.EiaChecked);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ShouldReturnFailure_WhenBothBooleansUnset(
+        FellingLicenceApplication application)
+    {
+        // Arrange
+        application.EnvironmentalImpactAssessment = new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = application.Id,
+            FellingLicenceApplication = application
+        };
+        application.AdminOfficerReview = new AdminOfficerReview();
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Invalid: both booleans unset, violates mutual exclusivity
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = Maybe<bool>.None,
+            AreAttachedFormsCorrect = Maybe<bool>.None,
+            EiaTrackerReferenceNumber = Maybe<string>.None
+        };
+
+        // Act
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.General, result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task AddEnvironmentalImpactAssessmentRequestHistoryAsync_AddsHistory_WhenEiaExists(
+        FellingLicenceApplication application,
+        Guid requestingUserId,
+        DateTime notificationTime,
+        RequestType requestType)
+    {
+        // Arrange
+        var eia = new EnvironmentalImpactAssessment
+        {
+            FellingLicenceApplicationId = application.Id,
+            FellingLicenceApplication = application,
+            EiaRequests = new List<EnvironmentalImpactAssessmentRequestHistory>()
+        };
+        application.EnvironmentalImpactAssessment = eia;
+        _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        var record = new EnvironmentalImpactAssessmentRequestHistoryRecord
+        {
+            ApplicationId = application.Id,
+            RequestingUserId = requestingUserId,
+            NotificationTime = notificationTime,
+            RequestType = requestType
+        };
+
+        // Act
+        var result = await _sut.AddEnvironmentalImpactAssessmentRequestHistoryAsync(record, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updatedEia = _fellingLicenceApplicationsContext.EnvironmentalImpactAssessments
+            .First(x => x.FellingLicenceApplicationId == application.Id);
+        var history = updatedEia.EiaRequests.Last();
+        Assert.Equal(eia.Id, history.EnvironmentalImpactAssessmentId);
+        Assert.Equal(requestingUserId, history.RequestingUserId);
+        Assert.Equal(notificationTime, history.NotificationTime);
+        Assert.Equal(requestType, history.RequestType);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task AddEnvironmentalImpactAssessmentRequestHistoryAsync_ReturnsNotFound_WhenEiaDoesNotExist(
+        Guid applicationId,
+        Guid requestingUserId,
+        DateTime notificationTime,
+        RequestType requestType)
+    {
+        // Arrange
+        var record = new EnvironmentalImpactAssessmentRequestHistoryRecord
+        {
+            ApplicationId = applicationId,
+            RequestingUserId = requestingUserId,
+            NotificationTime = notificationTime,
+            RequestType = requestType
+        };
+
+        // Act
+        var result = await _sut.AddEnvironmentalImpactAssessmentRequestHistoryAsync(record, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
+    }
+
 }

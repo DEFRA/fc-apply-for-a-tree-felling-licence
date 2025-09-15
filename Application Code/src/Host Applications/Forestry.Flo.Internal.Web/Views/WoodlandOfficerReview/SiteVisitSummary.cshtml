@@ -1,4 +1,5 @@
-﻿@using NodaTime
+﻿@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using NodaTime
 
 @{
     ViewData["Title"] = "Site visit application summary";
@@ -10,16 +11,38 @@
 <div class="govuk-grid-column-full">
     <partial name="Partials/_ConfirmationMessageDisplay" />
     <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
     <partial name="Partials/_PageErrors" />
 </div>
 
 <div class="govuk-grid-column-two-thirds">
-    
+
     <h1 class="govuk-heading-l">
         @ViewData["Title"]
     </h1>
 
+    <div class="govuk-body no-print">
+        <h2 class="govuk-heading-m">Print or download this summary</h2>
+        <div class="govuk-hint">Click here to print or download (print to PDF) this summary page to take with you on the site visit.</div>
+        <button class="govuk-button govuk-button--secondary" onclick="window.print()">Print</button>
+    </div>
+
+    <partial name="Partials/_SiteVisitApplicationSummary" model="@Model"/>
+    <p class="govuk-body govuk-!-margin-bottom-5"></p>
+
+    <partial name="Partials/_FellingDetails" model="@Model.FellingAndRestockingDetail"/>
+    <p class="govuk-body govuk-!-margin-bottom-5"></p>
+
+    <div class="page-break"></div>
+    <h2 class="govuk-heading-m">Felling operation map</h2>
+    <img src="data:image/jpeg;base64,@Model.FellingMapBase64" alt="Felling operations map" />
+    <p class="govuk-body govuk-!-margin-bottom-5"></p>
+    
+    <div class="page-break"></div>
+    <h2 class="govuk-heading-m">Restocking operation map</h2>
+    <img src="data:image/jpeg;base64,@Model.RestockingMapBase64" alt="Restocking operations map"/>
+    <p class="govuk-body govuk-!-margin-bottom-5"></p>
+
+    <div class="page-break"></div>
     <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>
 
 </div>

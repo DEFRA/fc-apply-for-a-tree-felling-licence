@@ -1,5 +1,4 @@
 ﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using System.ComponentModel.DataAnnotations;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 
@@ -29,4 +28,10 @@ public class WoodlandOfficerReviewStatusModel
     /// is published to the decision public register.
     /// </summary>
     public bool? RecommendationForDecisionPublicRegister { get; set; }
+
+    /// <summary>
+    /// Gets and sets the reason provided by the Woodland Officer for their recommendation
+    /// that the application is or is not published to the decision public register.
+    /// </summary>
+    public string? RecommendationForDecisionPublicRegisterReason { get; set; }
 }

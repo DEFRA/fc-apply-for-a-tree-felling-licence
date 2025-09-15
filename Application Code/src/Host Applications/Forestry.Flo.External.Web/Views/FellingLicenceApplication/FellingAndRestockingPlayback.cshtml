@@ -79,7 +79,14 @@
             </fieldset>
 
             <div class="govuk-button-group">
-                <a condition-disabled="@(Model.AllowEditing is false)" class="govuk-button" asp-controller="FellingLicenceApplication" asp-action="ConstraintsCheck" asp-route-applicationId="@Model.ApplicationId">Save and continue</a>
+                <a
+                    condition-disabled="@(Model.AllowEditing is false)"
+                    class="govuk-button"
+                    asp-action="@Model.SaveAndContinueContext.Action"
+                    asp-controller="@Model.SaveAndContinueContext.Controller"
+                    asp-all-route-data="@(Model.SaveAndContinueContext.Values as Dictionary<string, string>)">
+                    Save and continue
+                </a>
             </div>
         </div>
     </form>

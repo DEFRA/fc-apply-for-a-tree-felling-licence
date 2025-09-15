@@ -197,6 +197,9 @@ config:
       enabled:
       # -- The tracking id for Microsoft Clarity
       trackingId:
+  eiaOptions:
+      # -- The external URI for EIA guidance
+      eiaApplicationExternalUri:
   GovUkNotifyOptions:
     enabled: false
     ApiKey:

@@ -30,6 +30,7 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
         bool isLarchApplication,
         bool isAssignedWoodlandOfficer,
         bool isCBWApplication,
+        bool isEiaApplication,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to retrieve admins officer review entry for application with id {ApplicationId}",
@@ -67,6 +68,7 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
                             : InternalReviewStepStatus.NotStarted)
                     : InternalReviewStepStatus.NotRequired,
                 CalculateCBWStatus(isCBWApplication, adminOfficerReview),
+                CalculateEiaStatus(isEiaApplication, adminOfficerReview),
                 isAgentApplication),
         };
     }
@@ -156,6 +158,25 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
             {
                 true => InternalReviewStepStatus.Completed,
                 false => InternalReviewStepStatus.Completed,
+                null => InternalReviewStepStatus.NotStarted
+            };
+        }
+
+        return InternalReviewStepStatus.CannotStartYet;
+    }
+
+    private static InternalReviewStepStatus CalculateEiaStatus(
+        bool isEiaApplication,
+        AdminOfficerReview? adminOfficerReview)
+    {
+        if (!isEiaApplication)
+            return InternalReviewStepStatus.NotRequired;
+
+        if (adminOfficerReview is { ConstraintsChecked: true, MappingCheckPassed: true })
+        {
+            return adminOfficerReview.EiaChecked switch
+            {
+                true or false => InternalReviewStepStatus.Completed,
                 null => InternalReviewStepStatus.NotStarted
             };
         }

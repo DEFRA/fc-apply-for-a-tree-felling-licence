@@ -15,4 +15,6 @@ public record ApplicationStepStatusRecord
     public bool? TermsAndConditionsComplete { get; init; } = null;
 
     public bool? SupportingDocumentationComplete { get; init; } = null;
+
+    public bool? EnvironmentalImpactAssessmentComplete { get; init; } = null;
 }

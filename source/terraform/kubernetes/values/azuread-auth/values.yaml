@@ -1,0 +1,12 @@
+config:
+  existingSecret: azure-auth-secrets
+  authentication:
+    issueUrl: auth.issueUrl
+    clientId: auth.clientId
+    clientSecret: auth.clientSecret
+    jwtSecret: auth.jwtSecret
+  cookieDomain: qxlva.io
+  authHost: auth.qxlva.io
+
+nodeSelector:
+  "Environment": "System"

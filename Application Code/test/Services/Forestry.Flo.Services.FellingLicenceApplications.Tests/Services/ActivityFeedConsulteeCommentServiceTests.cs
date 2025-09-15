@@ -29,7 +29,7 @@ public class ActivityFeedConsulteeCommentServiceTests
         comments.ForEach(x => x.DocumentIds = [document.Id]);
 
         _fellingLicenceApplicationRepository
-            .Setup(x => x.GetConsulteeCommentsAsync(It.IsAny<Guid>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetConsulteeCommentsAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(comments);
 
         _fellingLicenceApplicationRepository

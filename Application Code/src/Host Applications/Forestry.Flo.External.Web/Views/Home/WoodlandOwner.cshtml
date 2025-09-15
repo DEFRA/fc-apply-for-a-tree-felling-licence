@@ -9,9 +9,6 @@
 
     var user = new ExternalApplicant(User);
 
-    //hide the link to manage other users at this WO - FLOV2-2154
-    const bool showManageUsers = false;
-
     var title = user.AccountType == AccountTypeExternal.Agent || user.AccountType == AccountTypeExternal.AgentAdministrator ? "Your client's licence applications" : "Your licence applications";
     ViewData.ManuallySetBackLink(Url.Action("ManageWoodlandOwnerDetails", "WoodlandOwner", new
     {
@@ -47,8 +44,14 @@
             ViewBag.BackLinkShow = false;
         }
     </User-Is-In-Role-Multiple>
-
-    <user-is-in-role role-name="WoodlandOwnerAdministrator" condition="@showManageUsers">
+    
+    <user-is-in-role role-name="WoodlandOwnerAdministrator">
+        <br />
+        <a class="govuk-link" asp-controller="Account" asp-action="InviteUserToOrganisation">
+            Invite another user to your organisation
+        </a>
+    </user-is-in-role>
+    <user-is-in-role role-name="WoodlandOwnerAdministrator">
         <br />
         <a class="govuk-link" asp-controller="AccountAdministration" asp-action="WoodlandOwnerList">
             Manage user accounts associated with @user.WoodlandOwnerName

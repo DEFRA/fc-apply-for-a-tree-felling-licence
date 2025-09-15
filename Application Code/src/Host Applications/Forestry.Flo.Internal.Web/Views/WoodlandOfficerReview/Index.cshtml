@@ -1,6 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Woodland officer review";
 }
+@using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
 @using Forestry.Flo.Services.FellingLicenceApplications.Models
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.Services.Common.Extensions
@@ -39,6 +40,23 @@
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
+                    @if (Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
+                    {
+                        <a aria-describedby="eia-check">
+                            EIA check
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action(nameof(WoodlandOfficerReviewController.EiaScreening), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="eia-check">
+                            EIA check
+                        </a>
+                    }
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetStatusStyleName() app-task-list__tag" id="eia-check">@Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
                     <a href="@Url.Action("Pw14Checks", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="pw14-checks">
                         Woodland officer checks
                     </a>
@@ -63,18 +81,11 @@
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
-                    @*                     <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="consultation">
+                    <a href="@Url.Action("Index", "ExternalConsulteeInvite", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="consultation">
                         Consultation
-                    </a>*@
-                    <a aria-describedby="consultation">
-                        Consultation
-                    </a>
-                    <a class="govuk-hint">
-                        <br/>(Not implemented yet)
                     </a>
                 </span>
-                @* <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetStatusStyleName() app-task-list__tag" id="consultation">@Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()</strong> *@
-                <strong class="govuk-tag @(InternalReviewStepStatus.NotRequired.GetStatusStyleName()) app-task-list__tag" id="consultation">@(InternalReviewStepStatus.NotRequired.GetDisplayName())</strong>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetStatusStyleName() app-task-list__tag" id="consultation">@Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()</strong>
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
@@ -111,13 +122,13 @@
 						</a>
 					}
 				</span>
-				<strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
+				<strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName() app-task-list__tag" id="larch-check">@Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
 			</li>
 			<li class="app-task-list__item">
 				<span class="app-task-list__task-name">
                     @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired || Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.CannotStartYet)
 					{
-						<a aria-describedby="larch-check">
+						<a aria-describedby="larch-flyover-check">
                             Larch flyover update
 						</a>
                         @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired)
@@ -129,12 +140,12 @@
 					}
 					else
 					{
-                        <a href="@Url.Action("LarchFlyover", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
+                        <a href="@Url.Action("LarchFlyover", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-flyover-check">
                             Larch flyover update
 						</a>
 					}
 				</span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName() app-task-list__tag" id="larch-flyover-check">@Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
 			</li>
 			<li class="app-task-list__item">
                 <span class="app-task-list__task-name">
@@ -162,53 +173,67 @@
             <input type="hidden" asp-for="AssignedFieldManager"/>
 
             <div class="govuk-form-group">
-                <h2 class="govuk-heading-s">Review actions</h2>
+                <h2 class="govuk-heading-m">Review actions</h2>
 
-                <fieldset class="govuk-fieldset" condition="@Model.Editable(user)">
+                <div class="govuk-form-group" condition="@Model.Editable(user)">
                     <div id="consultee-hint" class="govuk-hint">
                         If you wish to invite an external stakeholder to comment on this application, click here.
                     </div>
                     <a id="invite-external-consultee" class="govuk-button" data-module="govuk-button" asp-controller="ExternalConsulteeInvite" asp-action="Index" asp-route-applicationId="@Model.FellingLicenceApplicationSummary.Id" asp-route-returnUrl="@Url.Action("Index", "WoodlandOfficerReview", new { Model.FellingLicenceApplicationSummary.Id })">Invite external consultee</a>
-                </fieldset>
+                </div>
 
-                <fieldset class="govuk-fieldset">
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" asp-for="RecommendedLicenceDuration">Recommended licence duration</label>
-                        <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
-                    </div>
-                    <br/>
-                </fieldset>
+                <div class="govuk-form-group">
+                    <label class="govuk-label" asp-for="RecommendedLicenceDuration">
+                        <h3 class="govuk-heading-s">
+                            Recommended licence duration
+                        </h3>
+                    </label>
+                    <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
+                </div>
                 
-                <fieldset class="govuk-fieldset">
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" asp-for="RecommendationForDecisionPublicRegister">Recommend to decision public register</label>
+                <div class="govuk-form-group">
+                    <fieldset class="govuk-fieldset">
+                        <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                            <h3 class="govuk-fieldset__heading">
+                                Publish on the decision public register?
+                            </h3>
+                        </legend>
                         
-                        <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
+                        <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
                                 <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-yes" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
-                                <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes, publish to the register</label>
+                                <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes, publish on the decision public register</label>
                             </div>
                             <div class="govuk-radios__item">
                                 <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-no" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="false"/>
-                                <label class="govuk-label govuk-radios__label" for="dpr-no">No, do not publish to the register</label>
+                                <label class="govuk-label govuk-radios__label" for="dpr-no">No, do not publish on the decision public register</label>
                             </div>
                         </div>
-                    </div>
-                    <br />
-                </fieldset>
+                        
+                        <br/>
+                        
+                        <h3 class="govuk-label-wrapper">
+                            <label class="govuk-label govuk-label--s" asp-for="RecommendationForDecisionPublicRegisterReason">
+                                Reason for decision
+                            </label>
+                        </h3>
+                        <div id="dpr-recommendation-hint" class="govuk-hint">
+                            Explain why you chose this option
+                        </div>
+                        <textarea class="govuk-textarea" condition-disabled="@(!Model.Editable(user))" rows="5" aria-describedby="dpr-recommendation-hint" asp-for="RecommendationForDecisionPublicRegisterReason"></textarea>
+                    </fieldset>
+                </div>
 
-                <fieldset class="govuk-fieldset">
-                    <div class="govuk-form-group">
-                        <div condition="@Model.Editable(user)" class="govuk-hint">
-                            When you’ve completed all your checks,
-                            submit your review to move the application to the next stage.
-                        </div>
-                        <div class="govuk-button-group">
-                            <button condition="@Model.Editable(user)" id="submit-review-btn" class="govuk-button" data-module="govuk-button">Submit review</button>
-                            <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary.Id">Return to application summary</a>
-                        </div>
+                <div class="govuk-form-group">
+                    <div condition="@Model.Editable(user)" class="govuk-hint">
+                        When you’ve completed all your checks,
+                        submit your review to move the application to the next stage.
                     </div>
-                </fieldset>
+                    <div class="govuk-button-group">
+                        <button condition="@Model.Editable(user)" id="submit-review-btn" class="govuk-button" data-module="govuk-button">Submit review</button>
+                        <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary.Id">Return to application summary</a>
+                    </div>
+                </div>
             </div>
         </form>
         

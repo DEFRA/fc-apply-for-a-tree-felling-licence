@@ -18,7 +18,7 @@ namespace Forestry.Flo.Services.PropertyProfiles.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("PropertyProfiles")
-                .HasAnnotation("ProductVersion", "6.0.7")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "uuid-ossp");
@@ -36,6 +36,9 @@ namespace Forestry.Flo.Services.PropertyProfiles.Migrations
                     b.Property<string>("ContactName")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsOrganisation")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("OrganisationName")
                         .HasColumnType("text");
 
@@ -44,7 +47,10 @@ namespace Forestry.Flo.Services.PropertyProfiles.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Agency", "Applicants", t => t.ExcludeFromMigrations());
+                    b.ToTable("Agency", "Applicants", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount", b =>
@@ -111,7 +117,10 @@ namespace Forestry.Flo.Services.PropertyProfiles.Migrations
 
                     b.HasIndex("WoodlandOwnerId");
 
-                    b.ToTable("UserAccount", "Applicants", t => t.ExcludeFromMigrations());
+                    b.ToTable("UserAccount", "Applicants", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("Forestry.Flo.Services.Applicants.Entities.WoodlandOwner.WoodlandOwner", b =>
@@ -132,12 +141,27 @@ namespace Forestry.Flo.Services.PropertyProfiles.Migrations
                     b.Property<bool>("IsOrganisation")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("LandlordFirstName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LandlordLastName")
+                        .HasColumnType("text");
+
                     b.Property<string>("OrganisationName")
                         .HasColumnType("text");
 
+                    b.Property<int>("TenantType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WoodlandOwnerType")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.ToTable("WoodlandOwner", "Applicants", t => t.ExcludeFromMigrations());
+                    b.ToTable("WoodlandOwner", "Applicants", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("Forestry.Flo.Services.PropertyProfiles.Entities.Compartment", b =>
@@ -164,7 +188,8 @@ namespace Forestry.Flo.Services.PropertyProfiles.Migrations
                         .HasColumnType("text");
 
                     b.Property<double?>("TotalHectares")
-                        .HasColumnType("double precision");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 

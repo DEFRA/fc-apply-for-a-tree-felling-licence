@@ -9,6 +9,8 @@
 
 @{
     ViewData["Title"] = "Your profile details";
+
+    var user = new ExternalApplicant(User);
 }
 
 
@@ -285,7 +287,7 @@
         </div>
     </div>
 
-    <div condition="!@Model.AccountTypeReadOnly" class="govuk-form-group">
+    <div condition="@(!user.HasCompletedAccountRegistration)" class="govuk-form-group">
         <div class="govuk-button-group">
             <a data-prevent-double-click="true" type="button" class="govuk-button" data-module="govuk-button" asp-action="TermsAndConditions">
                 Continue

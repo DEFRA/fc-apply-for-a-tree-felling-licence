@@ -115,7 +115,10 @@ public class ActivityFeedCaseNotesServiceTests
                 ActivityFeedItemType.AdminOfficerReviewComment,
                 ActivityFeedItemType.WoodlandOfficerReviewComment,
                 ActivityFeedItemType.SiteVisitComment,
-                ActivityFeedItemType.ReturnToApplicantComment
+                ActivityFeedItemType.ReturnToApplicantComment,
+                ActivityFeedItemType.CBWCheckComment,
+                ActivityFeedItemType.LarchCheckComment,
+                ActivityFeedItemType.ApproverReviewComment
         };
         var expectedCaseNoteTypes = new CaseNoteType[]
         {
@@ -123,7 +126,10 @@ public class ActivityFeedCaseNotesServiceTests
             CaseNoteType.AdminOfficerReviewComment,
             CaseNoteType.WoodlandOfficerReviewComment,
             CaseNoteType.SiteVisitComment,
-            CaseNoteType.ReturnToApplicantComment
+            CaseNoteType.ReturnToApplicantComment,
+            CaseNoteType.CBWCheckComment,
+            CaseNoteType.LarchCheckComment,
+            CaseNoteType.ApproverReviewComment
         };
 
         _viewCaseNotes.Setup(r => r.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
@@ -164,6 +170,8 @@ public class ActivityFeedCaseNotesServiceTests
             ActivityFeedItemType.SiteVisitComment,
             ActivityFeedItemType.ReturnToApplicantComment,
             ActivityFeedItemType.LarchCheckComment,
+            ActivityFeedItemType.CBWCheckComment,
+            ActivityFeedItemType.ApproverReviewComment
         };
 
         var sut = CreateSut();

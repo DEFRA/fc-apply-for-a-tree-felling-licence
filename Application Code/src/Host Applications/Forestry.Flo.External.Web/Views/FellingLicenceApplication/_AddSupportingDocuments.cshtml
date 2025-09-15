@@ -19,7 +19,6 @@
 }
 
 <form id="attachSupportingDocumentationForm" method="post" enctype="multipart/form-data" asp-controller="FellingLicenceApplication" asp-action="AttachSupportingDocumentation">
-    
     <input asp-for="@Model.FellingLicenceApplicationId">
     <input type="hidden" asp-for="@Model.ReturnToApplicationSummary">
     <input id="allowed-extensions" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@string.Join(", ", allowedExtensions)" />

@@ -18,5 +18,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         SiteVisitAttachment,
         [Display(Name = "Consultation Attachment")]
         ConsultationAttachment,
+        [Display(Name = "Environmental Impact Assessment")]
+        EiaAttachment
     }
 }

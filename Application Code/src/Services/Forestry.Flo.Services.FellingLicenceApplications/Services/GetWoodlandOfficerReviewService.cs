@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -10,6 +11,8 @@ using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
+using System.Reflection.Metadata;
+using System.Security.Policy;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -126,15 +129,40 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                         ? InternalReviewStepStatus.Completed
                         : InternalReviewStepStatus.NotStarted;
 
+            var consultationsStatus = InternalReviewStepStatus.NotStarted;
+            if (woodlandOfficerReview.HasValue)
+            {
+                if (woodlandOfficerReview.Value.ConsultationsComplete)
+                {
+                    consultationsStatus = InternalReviewStepStatus.Completed;
+                }
+                else if (woodlandOfficerReview.Value.ApplicationNeedsConsultations is false)
+                {
+                    consultationsStatus = InternalReviewStepStatus.NotRequired;
+                }
+                else
+                {
+                    var existingLinks = await _internalFlaRepository
+                        .GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(
+                            applicationId, ExternalAccessLinkType.ConsulteeInvite, cancellationToken);
+                    if (existingLinks.Any())
+                    {
+                        consultationsStatus = InternalReviewStepStatus.InProgress;
+                    }
+                }
+            }
+            var requiresEia = proposedFellingAndRestockingDetails.Value.Item1.ShouldProposedFellingDetailsRequireEia();
+
             var taskListStates = new WoodlandOfficerReviewTaskListStates(
                 publicRegister.GetPublicRegisterStatus(),
                 woodlandOfficerReview.GetSiteVisitStatus(),
                 woodlandOfficerReview.GetPw14ChecksStatus(),
                 fAndRStatus,
                 conditionsStatus,
-                InternalReviewStepStatus.NotStarted,
+                consultationsStatus,
                 isLarchApplication ? larchCheckStatus : InternalReviewStepStatus.NotRequired,
                 LarchFlyoverStatus,
+                woodlandOfficerReview.GetEiaScreeningStatus(requiresEia),
                 InternalReviewStepStatus.NotStarted);
 
             var result = new WoodlandOfficerReviewStatusModel
@@ -144,6 +172,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     : null,
                 RecommendationForDecisionPublicRegister = woodlandOfficerReview.HasValue
                     ? woodlandOfficerReview.Value.RecommendationForDecisionPublicRegister
+                    : null,
+                RecommendationForDecisionPublicRegisterReason = woodlandOfficerReview.HasValue
+                    ? woodlandOfficerReview.Value.RecommendationForDecisionPublicRegisterReason
                     : null,
                 WoodlandOfficerReviewTaskListStates = taskListStates,
                 WoodlandOfficerReviewComments = caseNotes
@@ -227,12 +258,38 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 return Result.Success(Maybe<SiteVisitModel>.None);
             }
 
+            var siteVisitAttachments = new List<SiteVisitEvidenceDocument>();
+            if (woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.SiteVisitEvidences.Any())
+            {
+                var applicationDocs = await _internalFlaRepository.GetApplicationDocumentsAsync(applicationId, cancellationToken);
+
+                siteVisitAttachments = woodlandOfficerReview.Value.SiteVisitEvidences.Select(x =>
+                    {
+                        var document = applicationDocs.FirstOrDefault(doc => doc.Id == x.DocumentId);
+                        return document != null
+                            ? new SiteVisitEvidenceDocument
+                            {
+                                DocumentId = document.Id,
+                                FileName = document.FileName,
+                                VisibleToApplicant = document.VisibleToApplicant,
+                                VisibleToConsultee = document.VisibleToConsultee,
+                                Label = x.Label,
+                                Comment = x.Comment
+                            }
+                            : null;
+                    })
+                    .Where(evidence => evidence != null)
+                    .Select(x => x!)
+                    .ToList();
+            }
+
             var result = new SiteVisitModel
             {
                 SiteVisitNeeded = woodlandOfficerReview.HasValue ? woodlandOfficerReview.Value?.SiteVisitNeeded : null,
                 SiteVisitArrangementsMade = woodlandOfficerReview.HasValue ? woodlandOfficerReview.Value?.SiteVisitArrangementsMade : null,
                 SiteVisitComplete = woodlandOfficerReview is { HasValue: true, Value.SiteVisitComplete: true },
-                SiteVisitComments = caseNotes
+                SiteVisitComments = caseNotes,
+                SiteVisitAttachments = siteVisitAttachments
             };
 
             return Result.Success(Maybe.From(result));

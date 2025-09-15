@@ -16,5 +16,7 @@ public enum FellingLicenceApplicationSection
     [Description("Supporting documentation")]
     SupportingDocumentation,
     [Description("Terms and conditions")]
-    FlaTermsAndConditionsViewModel
+    FlaTermsAndConditionsViewModel,
+    [Description("Environmental Impact Assessment")]
+    EnvironmentalImpactAssessment
 }

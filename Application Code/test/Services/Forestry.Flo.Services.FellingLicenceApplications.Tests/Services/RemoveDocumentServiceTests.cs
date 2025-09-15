@@ -21,6 +21,7 @@ using NodaTime;
 using Xunit;
 using Forestry.Flo.Services.Common.Models;
 using System.Collections.Generic;
+using AutoFixture;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 {
@@ -32,6 +33,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         private readonly Mock<IAuditService<RemoveDocumentService>> _auditService;
         private readonly Mock<IUnitOfWork> _unitOfWOrkMock;
         private readonly Mock<IClock> _clock;
+        private IFixture Fixture = new Fixture();
 
         public RemoveDocumentServiceTests()
         {
@@ -42,6 +44,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _unitOfWOrkMock = new Mock<IUnitOfWork>();
             _clock = new Mock<IClock>();
             _fellingLicenceApplicationRepository.SetupGet(r => r.UnitOfWork).Returns(_unitOfWOrkMock.Object);
+            Fixture.CustomiseFixtureForFellingLicenceApplications();
         }
 
         private readonly JsonSerializerOptions _options = new()
@@ -262,18 +265,22 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
         }
 
-        [Theory, AutoMoqData]
-        public async Task WhenDocumentIsSuccessfullySoftDeleted(Document document)
+        [Theory, CombinatorialData]
+        public async Task WhenDocumentIsSuccessfullySoftDeleted(
+            [CombinatorialValues(DocumentPurpose.EiaAttachment, DocumentPurpose.Attachment)] DocumentPurpose purpose)
         {
             //arrange
             var sut = CreateSut();
 
+            var document = Fixture
+                .Build<Document>()
+                .With(x => x.Purpose, purpose)
+                .With(x => x.AttachedByType, ActorType.InternalUser)
+                .Create();
+
             _fellingLicenceApplicationInternalRepository.Setup(r =>
                     r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
-
-            document.AttachedByType = ActorType.InternalUser;
-            document.Purpose = DocumentPurpose.Attachment;
 
             var internalRequest = new RemoveDocumentRequest
             {
@@ -362,11 +369,22 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Theory, AutoMoqData]
-        public async Task ShouldReturnFailure_DocumentIsNotAttachment(Document document)
+        [Theory, CombinatorialData]
+        public async Task ShouldReturnFailure_DocumentIsNotAttachmentOrEiaAttachment(DocumentPurpose purpose)
         {
+            if (purpose is DocumentPurpose.EiaAttachment or DocumentPurpose.Attachment)
+            {
+                return;
+            }
+
             //arrange
             var sut = CreateSut();
+
+            var document = Fixture
+                .Build<Document>()
+                .With(x => x.Purpose, purpose)
+                .With(x => x.AttachedByType, ActorType.InternalUser)
+                .Create();
 
             _fellingLicenceApplicationRepository.Setup(r =>
                     r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -375,9 +393,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _fellingLicenceApplicationInternalRepository
                 .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
-
-            document.AttachedByType = ActorType.InternalUser;
-            document.Purpose = DocumentPurpose.Correspondence;
 
             var userAccessModel = new UserAccessModel
             {
@@ -416,7 +431,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                              {
                                  purpose = document.Purpose,
                                  documentId = document.Id,
-                                 FailureReason = "Only attachments may be deleted"
+                                 FailureReason = "Only attachments and EIA attachments may be deleted"
                              }, _options)),
                     It.IsAny<CancellationToken>()), Times.Once);
         }

@@ -194,4 +194,9 @@ public class FellingLicenceApplication
     /// Gets or sets the larch check details for this application.
     /// </summary>
     public LarchCheckDetails? LarchCheckDetails { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Environmental Impact Assessment details for this application.
+    /// </summary>
+    public EnvironmentalImpactAssessment? EnvironmentalImpactAssessment { get; set; }
 }
