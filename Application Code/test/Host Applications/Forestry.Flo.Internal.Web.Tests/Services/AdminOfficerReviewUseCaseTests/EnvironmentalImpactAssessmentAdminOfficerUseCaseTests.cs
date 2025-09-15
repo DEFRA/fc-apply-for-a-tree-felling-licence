@@ -53,6 +53,13 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    private readonly EiaOptions _eiaOptionsValue = new EiaOptions
+    {
+        EiaApplicationExternalUri = "http://test",
+        EiaContactEmail = "test@test.com",
+        EiaContactPhone = "123456"
+    };
+
     private EnvironmentalImpactAssessmentAdminOfficerUseCase CreateSut()
     {
         var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
@@ -63,12 +70,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
             _requestContextCorrelationId,
             new RequestUserModel(user));
 
-        _eiaOptions.Setup(x => x.Value).Returns(new EiaOptions
-        {
-            EiaApplicationExternalUri = "http://test",
-            EiaContactEmail = "test@test.com",
-            EiaContactPhone = "123456"
-        });
+        _eiaOptions.Setup(x => x.Value).Returns(_eiaOptionsValue);
         return new EnvironmentalImpactAssessmentAdminOfficerUseCase(
             _internalUserAccountService.Object,
             _externalUserAccountService.Object,
@@ -629,11 +631,15 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
                 It.IsAny<EnvironmentalImpactAssessmentRequestHistoryRecord>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<UserDbErrorReason>());
 
+        var internalModel = _fixture.Create<UserAccount>();
+
         _internalUserAccountService.Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe.From(_fixture.Create<UserAccount>()));
+            .ReturnsAsync(Maybe.From(internalModel));
+
+        var externalModel = _fixture.Create<ExternalUserAccount>();
 
         _externalUserAccountService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_fixture.Create<Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount>());
+            .ReturnsAsync(externalModel);
 
         var result = await sut.ConfirmAttachedEiaFormsAreCorrectAsync(viewModel, performingUserId, CancellationToken.None);
 
@@ -650,8 +656,15 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
 
         _sendNotifications.Verify(x =>
                 x.SendNotificationAsync(
-                    It.IsAny<object>(),
-                    It.IsAny<NotificationType>(),
+                    It.Is<EnvironmentalImpactAssessmentReminderDataModel>(y => 
+                        y.PropertyName == fla.SubmittedFlaPropertyDetail!.Name &&
+                        y.ApplicationReference == fla.ApplicationReference &&
+                        y.SenderName == internalModel.FullName(true) && 
+                        y.RecipientName == externalModel.FullName(true) &&
+                        y.ContactEmail == _eiaOptionsValue.EiaContactEmail &&
+                        y.ContactNumber == _eiaOptionsValue.EiaContactPhone &&
+                        y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri),
+                    NotificationType.EiaReminderMissingDocuments,
                     It.IsAny<NotificationRecipient>(),
                     null, null, null,
                     It.IsAny<CancellationToken>()),
@@ -905,11 +918,13 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
                 It.IsAny<EnvironmentalImpactAssessmentRequestHistoryRecord>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<UserDbErrorReason>());
 
+        var internalModel = _fixture.Create<UserAccount>();
         _internalUserAccountService.Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe.From(_fixture.Create<UserAccount>()));
+            .ReturnsAsync(Maybe.From(internalModel));
 
+        var externalModel = _fixture.Create<ExternalUserAccount>();
         _externalUserAccountService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_fixture.Create<ExternalUserAccount>());
+            .ReturnsAsync(externalModel);
 
         var result = await sut.ConfirmEiaFormsHaveBeenReceivedAsync(viewModel, performingUserId, CancellationToken.None);
 
@@ -926,8 +941,15 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
 
         _sendNotifications.Verify(x =>
                 x.SendNotificationAsync(
-                    It.IsAny<object>(),
-                    It.IsAny<NotificationType>(),
+                    It.Is<EnvironmentalImpactAssessmentReminderDataModel>(y =>
+                        y.PropertyName == fla.SubmittedFlaPropertyDetail!.Name &&
+                        y.ApplicationReference == fla.ApplicationReference &&
+                        y.SenderName == internalModel.FullName(true) &&
+                        y.RecipientName == externalModel.FullName(true) &&
+                        y.ContactEmail == _eiaOptionsValue.EiaContactEmail &&
+                        y.ContactNumber == _eiaOptionsValue.EiaContactPhone &&
+                        y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri),
+                    NotificationType.EiaReminderToSendDocuments,
                     It.IsAny<NotificationRecipient>(),
                     null, null, null,
                     It.IsAny<CancellationToken>()),

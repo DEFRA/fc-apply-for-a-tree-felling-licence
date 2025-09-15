@@ -10,9 +10,9 @@ public class EnvironmentalImpactAssessmentReminderDataModel
     /// </summary>
     public required string ApplicationReference { get; set; }
     /// <summary>
-    /// Gets or sets the location associated with the application, if available.
+    /// Gets or sets the property name associated with the application.
     /// </summary>
-    public string? Location { get; set; }
+    public required string PropertyName { get; set; }
 
     /// <summary>
     /// Gets or sets the submission time of the application, formatted as a string.
