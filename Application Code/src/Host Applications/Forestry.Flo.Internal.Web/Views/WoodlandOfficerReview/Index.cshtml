@@ -175,13 +175,6 @@
             <div class="govuk-form-group">
                 <h2 class="govuk-heading-m">Review actions</h2>
 
-                <div class="govuk-form-group" condition="@Model.Editable(user)">
-                    <div id="consultee-hint" class="govuk-hint">
-                        If you wish to invite an external stakeholder to comment on this application, click here.
-                    </div>
-                    <a id="invite-external-consultee" class="govuk-button" data-module="govuk-button" asp-controller="ExternalConsulteeInvite" asp-action="Index" asp-route-applicationId="@Model.FellingLicenceApplicationSummary.Id" asp-route-returnUrl="@Url.Action("Index", "WoodlandOfficerReview", new { Model.FellingLicenceApplicationSummary.Id })">Invite external consultee</a>
-                </div>
-
                 <div class="govuk-form-group">
                     <label class="govuk-label" asp-for="RecommendedLicenceDuration">
                         <h3 class="govuk-heading-s">

@@ -388,7 +388,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
         var dataModel = new EnvironmentalImpactAssessmentReminderDataModel
         {
             ApplicationReference = application.ApplicationReference,
-            Location = application.SubmittedFlaPropertyDetail?.NearestTown,
+            PropertyName = application.SubmittedFlaPropertyDetail!.Name,
             ApplicationSubmissionTime = application.StatusHistories
                 .First(x => x.Status is FellingLicenceStatus.Submitted).Created.CreateFormattedDate(),
             RecipientName = applicantRetrieval.Value.FullName(),

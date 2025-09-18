@@ -241,10 +241,8 @@ spec:
             - name: FellingLicenceApplication__CitizensCharterDateLength
               value: "{{ .Values.config.FellingLicenceApplication.CitizensCharterDateLength }}"
             {{- end }}
-            {{- if .Values.config.FellingLicenceApplication.PostFix }}
             - name: FellingLicenceApplication__PostFix
               value: "{{ .Values.config.FellingLicenceApplication.PostFix }}"
-            {{- end }}
             {{- if .Values.config.FellingLicenceApplication.StartCounter }}
             - name: FellingLicenceApplication__StartCounter
               value: "{{ .Values.config.FellingLicenceApplication.StartCounter }}"

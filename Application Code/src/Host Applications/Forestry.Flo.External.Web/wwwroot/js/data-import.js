@@ -2,6 +2,8 @@
     $(document).ready(function () {
         $('#submit-import-files-btn').attr('disabled', 'disabled');
 
+        $('#data-import-files-label').attr('for', 'data-import-files-input');
+
         var selectedFiles = [];
 
         var clearErrors = function () {
