@@ -41,14 +41,14 @@
             <fieldset class="govuk-fieldset">
 
                 <div class="govuk-form-group">
-                    <validation asp-for="AuthorName"/>
                     <label class="govuk-label" asp-for="AuthorName"></label>
-                    <input class="govuk-input" asp-for="AuthorName"/>
+                    <validation asp-for="AuthorName" />
+                    <input class="govuk-input" asp-for="AuthorName" />
                 </div>
 
                 <div class="govuk-form-group">
-                    <validation asp-for="Comment"/>
                     <label class="govuk-label" asp-for="Comment"></label>
+                    <validation asp-for="Comment" />
                     <textarea id="Comment" class="govuk-textarea govuk-js-character-count" rows="4" aria-describedby="comments-hint" asp-for="Comment"></textarea>
                     <div class="govuk-hint govuk-character-count__message">
                         You can enter up to @DataValueConstants.ConsulteeCommentMaxLength characters

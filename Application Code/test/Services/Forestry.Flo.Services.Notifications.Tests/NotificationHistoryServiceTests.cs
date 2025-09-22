@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,44 +22,44 @@ public class NotificationHistoryServiceTests
 
     [Theory, AutoData] 
     public async Task ShouldReturnFailureWhenRepositoryReturnsFailure(
-        string applicationReference,
+        Guid applicationId,
         NotificationType[]? typeFilter)
     {
         var sut = CreateSut();
         _repository.Setup(x => x.GetNotificationHistoryForApplicationAsync(
-                It.IsAny<string>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+                It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<List<NotificationHistory>>("error"));
 
         var result =
-            await sut.RetrieveNotificationHistoryAsync(applicationReference, typeFilter, CancellationToken.None);
+            await sut.RetrieveNotificationHistoryAsync(applicationId, typeFilter, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        _repository.Verify(x => x.GetNotificationHistoryForApplicationAsync(applicationReference, typeFilter, It.IsAny<CancellationToken>()), Times.Once);
+        _repository.Verify(x => x.GetNotificationHistoryForApplicationAsync(applicationId, typeFilter, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoData]
     public async Task ShouldReturnEmptyListWhenRepositoryReturnsEmptyList(
-        string applicationReference,
+        Guid applicationId,
         NotificationType[]? typeFilter)
     {
         var sut = CreateSut();
         _repository.Setup(x => x.GetNotificationHistoryForApplicationAsync(
-                It.IsAny<string>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+                It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(new List<NotificationHistory>(0)));
 
         var result =
-            await sut.RetrieveNotificationHistoryAsync(applicationReference, typeFilter, CancellationToken.None);
+            await sut.RetrieveNotificationHistoryAsync(applicationId, typeFilter, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Value);
 
-        _repository.Verify(x => x.GetNotificationHistoryForApplicationAsync(applicationReference, typeFilter, It.IsAny<CancellationToken>()), Times.Once);
+        _repository.Verify(x => x.GetNotificationHistoryForApplicationAsync(applicationId, typeFilter, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoData]
     public async Task ShouldReturnExpectedItemsWhenRepositoryReturnsItems(
-        string applicationReference,
+        Guid applicationId,
         NotificationType[]? typeFilter,
         NotificationHistory entry1,
         List<NotificationRecipient> entry1recipients,
@@ -70,16 +71,16 @@ public class NotificationHistoryServiceTests
         entry2.Recipients = JsonConvert.SerializeObject(new List<NotificationRecipient>(0));
 
         _repository.Setup(x => x.GetNotificationHistoryForApplicationAsync(
-                It.IsAny<string>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+                It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(new List<NotificationHistory> { entry1, entry2 }));
 
         var result =
-            await sut.RetrieveNotificationHistoryAsync(applicationReference, typeFilter, CancellationToken.None);
+            await sut.RetrieveNotificationHistoryAsync(applicationId, typeFilter, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value.Count);
 
-        _repository.Verify(x => x.GetNotificationHistoryForApplicationAsync(applicationReference, typeFilter, It.IsAny<CancellationToken>()), Times.Once);
+        _repository.Verify(x => x.GetNotificationHistoryForApplicationAsync(applicationId, typeFilter, It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.Contains(result.Value, x =>
             x.Type == entry1.NotificationType

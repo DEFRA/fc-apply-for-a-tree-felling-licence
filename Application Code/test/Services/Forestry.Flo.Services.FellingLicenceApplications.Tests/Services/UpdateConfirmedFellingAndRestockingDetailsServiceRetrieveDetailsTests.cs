@@ -21,20 +21,24 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
 public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTests
 {
-    private Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepository = null!;
+    private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepository = null!;
+    private readonly Mock<IFellingLicenceApplicationExternalRepository> _externalRepository = null!;
     private readonly Mock<IAuditService<UpdateConfirmedFellingAndRestockingDetailsService>> _audit = new();
 
     public UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTests()
     {
         _fellingLicenceApplicationRepository = new Mock<IFellingLicenceApplicationInternalRepository>();
+        _externalRepository = new Mock<IFellingLicenceApplicationExternalRepository>();
     }
 
     protected UpdateConfirmedFellingAndRestockingDetailsService CreateSut()
     {
         _fellingLicenceApplicationRepository.Reset();
+        _externalRepository.Reset();
 
         return new UpdateConfirmedFellingAndRestockingDetailsService(
             _fellingLicenceApplicationRepository.Object,
+            _externalRepository.Object,
             new NullLogger<UpdateConfirmedFellingAndRestockingDetailsService>(),
             _audit.Object,
             new RequestContext("test", new RequestUserModel(new ClaimsPrincipal()))

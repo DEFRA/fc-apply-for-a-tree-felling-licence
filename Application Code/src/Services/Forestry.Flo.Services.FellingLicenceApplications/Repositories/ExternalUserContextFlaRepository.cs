@@ -136,13 +136,16 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return linkedPropertyProfile;
     }
 
-    public async Task<SubmittedFlaPropertyDetail?> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public async Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken)
     {
         var existingSubmittedFlaPropertyDetail = await Context.SubmittedFlaPropertyDetails
-                                                               .Include(x => x.SubmittedFlaPropertyCompartments)
-                                                               .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId);
+            .Include(x => x.SubmittedFlaPropertyCompartments)
+            .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken: cancellationToken);
 
-        return existingSubmittedFlaPropertyDetail;
+        return existingSubmittedFlaPropertyDetail is not null 
+            ? Maybe<SubmittedFlaPropertyDetail>.From(existingSubmittedFlaPropertyDetail) 
+            : Maybe<SubmittedFlaPropertyDetail>.None;
     }
 
     public async Task AddSubmittedFlaPropertyDetailAsync(SubmittedFlaPropertyDetail submittedFlaPropertyDetail, CancellationToken cancellationToken)

@@ -158,7 +158,8 @@ public class ExtendApplicationsUseCase
             FinalActionDate = DateTimeDisplay.GetDateDisplayString(application.FinalActionDate),
             Name = createdByUser.FullName,
             ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{application.ApplicationId}",
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = application.ApplicationId
         };
 
         var applicantRecipient =
@@ -216,7 +217,8 @@ public class ExtendApplicationsUseCase
                 Name = assignedUser.FullName,
                 ViewApplicationURL = $"{viewFLABaseURL}/{application.ApplicationId}",
                 DaysUntilFinalActionDate = (currentDate - application.FinalActionDate).Days,
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = application.ApplicationId
             };
 
             var fcRecipient = new NotificationRecipient(assignedUser.Email, fcNotificationModel.Name);

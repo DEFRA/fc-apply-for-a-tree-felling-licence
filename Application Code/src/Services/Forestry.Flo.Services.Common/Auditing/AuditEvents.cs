@@ -236,6 +236,10 @@ public static class AuditEvents
     public const string WoodlandOfficerReviewEiaScreening = "Woodland Officer Review EIA Screening";
     public const string WoodlandOfficerReviewEiaScreeningFailure = "Woodland Officer Review EIA Screening Failure";
 
+    // amendment review
+    public const string ApplicantReviewedAmendments = "Applicant Reviewed Amendments";
+    public const string ApplicantReviewedAmendmentsFailure = "Applicant Reviewed Amendments Failure";
+
 
     /// <summary>
     /// Returns the source entity type by a given audit event name.
@@ -444,6 +448,9 @@ public static class AuditEvents
 
             WoodlandOfficerReviewEiaScreening => SourceEntityType.FellingLicenceApplication,
             WoodlandOfficerReviewEiaScreeningFailure => SourceEntityType.FellingLicenceApplication,
+
+            ApplicantReviewedAmendments => SourceEntityType.FellingLicenceApplication,
+            ApplicantReviewedAmendmentsFailure => SourceEntityType.FellingLicenceApplication,
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

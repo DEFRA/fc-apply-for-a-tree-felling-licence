@@ -39,4 +39,9 @@ public class InformApplicantOfApplicationRefusalDataModel : IApplicationNotifica
     /// Gets and sets the name & address of the admin hub that the application is managed by.
     /// </summary>
     public string AdminHubFooter { get; set; }
+
+    /// <summary>
+    /// Gets and sets the application id.
+    /// </summary>
+    public required Guid ApplicationId { get; set; }
 }

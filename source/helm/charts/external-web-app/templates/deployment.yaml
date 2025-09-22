@@ -427,6 +427,8 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InviteWoodlandOwnerUserToOrganisation }}
             - name: GovUkNotifyOptions__TemplateIds__InviteAgentUserToOrganisation
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InviteAgentUserToOrganisation }}
+            - name: GovUkNotifyOptions__TemplateIds__ApplicantReviewedAmendments
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicantReviewedAmendments }}
             {{- end }}
             # ------------------- ESRI Config start -------------------
             {{- if .Values.config.esriConfig.enabled }}
@@ -716,6 +718,11 @@ spec:
             {{- if .Values.config.eiaOptions.eiaApplicationExternalUri }}
             - name: EiaOptions__EiaApplicationExternalUri
               value: {{ .Values.config.eiaOptions.eiaApplicationExternalUri | quote }}
+            {{- end }}
+            # ------------------- Review Amendments Options -------------------
+            {{- if .Values.config.reviewAmendmentsOptions.applicationWithdrawalDays }}
+            - name: ReviewAmendmentsOptions__ApplicationWithdrawalDays
+              value: {{ .Values.config.reviewAmendmentsOptions.applicationWithdrawalDays | quote }}
             {{- end }}
             # ------------------- Environment Variables End -------------------
           ports:

@@ -3,9 +3,6 @@ using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 
@@ -561,4 +558,38 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     Task<UnitResult<UserDbErrorReason>> AddEnvironmentalImpactAssessmentRequestHistoryAsync(
         EnvironmentalImpactAssessmentRequestHistoryRecord record,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets all applications that are currently on the Consultation Public Register (i.e. not removed).
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of <see cref="FellingLicenceApplication"/> entities that are on the Consultation Public Register.</returns>
+    Task<IList<FellingLicenceApplication>> GetApplicationsOnConsultationPublicRegisterPeriodsAsync(
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves all felling and restocking amendment reviews for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve amendment reviews for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing a collection of <see cref="FellingAndRestockingAmendmentReview"/> instances.
+    /// </returns>
+    Task<Result<IEnumerable<FellingAndRestockingAmendmentReview>>> GetFellingAndRestockingAmendmentReviewsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the current (most recent) felling and restocking amendment review for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the current amendment review for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="includeComplete">A flag indicating whether to include completed reviews. Defaults to true.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing the current <see cref="FellingAndRestockingAmendmentReview"/> instance.
+    /// </returns>
+    Task<Result<Maybe<FellingAndRestockingAmendmentReview>>> GetCurrentFellingAndRestockingAmendmentReviewAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken,
+        bool includeComplete = true);
 }

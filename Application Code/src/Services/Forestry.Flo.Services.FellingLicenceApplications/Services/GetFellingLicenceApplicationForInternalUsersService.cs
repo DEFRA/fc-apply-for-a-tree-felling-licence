@@ -207,4 +207,29 @@ public class GetFellingLicenceApplicationForInternalUsersService : IGetFellingLi
         => _fellingLicenceApplicationInternalRepository.GetEnvironmentalImpactAssessmentAsync(
             applicationId,
             cancellationToken);
+
+    ///<inheritdoc />
+    public async Task<IList<PublicRegisterPeriodEndModel>> RetrieveApplicationsOnTheConsultationPublicRegisterAsync(
+        CancellationToken cancellationToken)
+    {
+        var applications = await _fellingLicenceApplicationInternalRepository.GetApplicationsOnConsultationPublicRegisterPeriodsAsync(cancellationToken);
+
+        var filtered = applications
+            .Where(x => x.PublicRegister != null
+                && x.PublicRegister.ConsultationPublicRegisterRemovedTimestamp == null
+                && x.PublicRegister.ConsultationPublicRegisterPublicationTimestamp != null)
+            .Select(x => new PublicRegisterPeriodEndModel
+            {
+                PublicRegister = x.PublicRegister,
+                AssignedUserIds = x.AssigneeHistories
+                    .Where(y => y.TimestampUnassigned is null)
+                    .Select(y => y.AssignedUserId).ToList(),
+                ApplicationReference = x.ApplicationReference,
+                PropertyName = x.SubmittedFlaPropertyDetail?.Name,
+                AdminHubName = x.AdministrativeRegion
+            })
+            .ToList();
+
+        return filtered;
+    }
 }

@@ -42,7 +42,7 @@ public class ExternalConsulteeReviewController : Controller
     {
         if (ModelState.IsValid is false)
         {
-            var validationResult = await externalConsulteeReviewUseCase.ValidateAccessCodeAsync(commentModel.ApplicationId, commentModel.ApplicationId, commentModel.AuthorContactEmail, cancellationToken);
+            var validationResult = await externalConsulteeReviewUseCase.ValidateAccessCodeAsync(commentModel.ApplicationId, commentModel.AccessCode, commentModel.AuthorContactEmail, cancellationToken);
             if (validationResult.IsFailure)
             {
                 return RedirectToAction("Error", "Home");

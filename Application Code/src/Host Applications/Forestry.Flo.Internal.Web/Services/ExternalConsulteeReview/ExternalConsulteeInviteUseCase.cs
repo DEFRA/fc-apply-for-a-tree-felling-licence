@@ -130,7 +130,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         _logger.LogDebug("Setting woodland officer review consultations to complete");
 
         return await _updateWoodlandOfficerReviewService.UpdateConsultationsStatusAsync(
-            applicationId, user.UserAccountId!.Value, null, true, cancellationToken);
+            applicationId, user.UserAccountId!.Value, true, true, cancellationToken);
     }
 
     /// <summary>
@@ -215,7 +215,8 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
             SenderEmail = user.EmailAddress!,
             CommentsEndDate = DateTimeDisplay.GetDateDisplayString(endDate),
             ViewApplicationURL = externalConsulteeInviteModel.ExternalAccessLink,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
         };
 
         var accessLink = new ExternalAccessLink

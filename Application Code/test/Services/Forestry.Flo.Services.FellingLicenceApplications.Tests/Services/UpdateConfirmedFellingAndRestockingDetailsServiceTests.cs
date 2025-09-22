@@ -26,6 +26,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
 {
     private IFellingLicenceApplicationInternalRepository? _fellingLicenceApplicationRepository;
+    private IFellingLicenceApplicationExternalRepository _fellingLicenceApplicationExternalRepository;
     private readonly Mock<IAuditService<UpdateConfirmedFellingAndRestockingDetailsService>> _audit = new();
     private FellingLicenceApplicationsContext? _fellingLicenceApplicationsContext;
 
@@ -36,12 +37,24 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
 
     protected UpdateConfirmedFellingAndRestockingDetailsService CreateSut()
     {
+        var referenceGenerator = new Mock<IApplicationReferenceHelper>();
+        referenceGenerator.Setup(r => r.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>()))
+            .Returns("test");
+
+        var mockReferenceRepository = new Mock<IFellingLicenceApplicationReferenceRepository>();
+        mockReferenceRepository
+            .Setup(x => x.GetNextApplicationReferenceIdValueAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
         _fellingLicenceApplicationsContext = TestFellingLicenceApplicationsDatabaseFactory.CreateDefaultTestContext();
         _fellingLicenceApplicationRepository = new InternalUserContextFlaRepository(_fellingLicenceApplicationsContext);
+        _fellingLicenceApplicationExternalRepository = new ExternalUserContextFlaRepository(
+            _fellingLicenceApplicationsContext, referenceGenerator.Object, mockReferenceRepository.Object);
         _audit.Reset();
 
         return new UpdateConfirmedFellingAndRestockingDetailsService(
             _fellingLicenceApplicationRepository,
+            _fellingLicenceApplicationExternalRepository,
             new NullLogger<UpdateConfirmedFellingAndRestockingDetailsService>(),
             _audit.Object,
             new RequestContext("test", new RequestUserModel(new ClaimsPrincipal()))

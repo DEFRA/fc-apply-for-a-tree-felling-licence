@@ -23,7 +23,7 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
     protected readonly Mock<IUserAccountService> InternalUserAccountService = new();
     protected readonly Mock<IFellingLicenceApplicationInternalRepository> FlaRepository = new();
     protected readonly Mock<IRetrieveWoodlandOwners> WoodlandOwnerService = new();
-    protected readonly Mock<IRetrieveNotificationHistory> NotificationHistoryService = new();
+    protected readonly Mock<INotificationHistoryService> NotificationHistoryService = new();
     protected readonly Mock<IUpdateWoodlandOfficerReviewService> UpdateWoodlandOfficerReviewService = new();
     protected readonly Mock<IAuditService<T>> AuditingService = new();
     protected readonly Mock<IAgentAuthorityService> MockAgentAuthorityService = new();

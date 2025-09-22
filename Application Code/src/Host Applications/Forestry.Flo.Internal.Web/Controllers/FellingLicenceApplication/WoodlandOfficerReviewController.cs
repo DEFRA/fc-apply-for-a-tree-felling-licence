@@ -231,6 +231,46 @@ public partial class WoodlandOfficerReviewController(
         return RedirectToAction("PublicRegister", new { id = model.ApplicationId });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> ReviewComment(
+        Guid id,
+        Guid commentId,
+        [FromServices] PublicRegisterUseCase useCase,
+        bool? withExemption,
+        CancellationToken cancellationToken)
+    {
+        var commentResult = await useCase.GetPublicRegisterCommentAsync(id, commentId, cancellationToken);
+        if (commentResult.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        return View(commentResult.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ReviewComment(
+        Guid id,
+        Guid commentId,
+        [FromForm] ReviewCommentModel model,
+        [FromServices] PublicRegisterUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        if (model.Comment is not null)
+        {
+            var user = new InternalUser(User);
+            model.Comment.LastUpdatedById = user.UserAccountId!.Value;
+            var updateResult = await useCase.UpdatePublicRegisterDetailsAsync(commentId, model.Comment, cancellationToken);
+            if (!updateResult.IsFailure)
+            {
+                this.AddConfirmationMessage("Comment updated successfully.");
+                return RedirectToAction("PublicRegister", new { id });
+            }
+        }
+        this.AddErrorMessage("Failed to update comment.");
+        return RedirectToAction("ReviewComment", new { id, commentId });
+    }
+
     [HttpPost]
     public async Task<IActionResult> RemoveFromPublicRegister(
         PublicRegisterViewModel model,

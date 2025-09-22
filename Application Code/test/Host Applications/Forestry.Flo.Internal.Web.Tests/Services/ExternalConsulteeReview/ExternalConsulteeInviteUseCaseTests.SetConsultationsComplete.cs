@@ -26,7 +26,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
         Assert.Equal(error, result.Error);
 
         _mockUpdateWoodlandOfficerReviewService
-            .Verify(x => x.UpdateConsultationsStatusAsync(applicationId, userId, null, true, It.IsAny<CancellationToken>()),
+            .Verify(x => x.UpdateConsultationsStatusAsync(applicationId, userId, true, true, It.IsAny<CancellationToken>()),
                 Times.Once);
         _mockUpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
@@ -49,7 +49,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
         Assert.True(result.IsSuccess);
 
         _mockUpdateWoodlandOfficerReviewService
-            .Verify(x => x.UpdateConsultationsStatusAsync(applicationId, userId, null, true, It.IsAny<CancellationToken>()),
+            .Verify(x => x.UpdateConsultationsStatusAsync(applicationId, userId, true, true, It.IsAny<CancellationToken>()),
                 Times.Once);
         _mockUpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 

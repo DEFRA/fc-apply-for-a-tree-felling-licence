@@ -16,6 +16,7 @@
     var user = new InternalUser(User);
     var isActiveOnRegister = Model.PublicRegister.ConsultationPublicRegisterExpiryTimestamp.HasValue && 
                              Model.PublicRegister.ConsultationPublicRegisterRemovedTimestamp.HasNoValue();
+    var hasUnreviewedComments = Model.ReceivedPublicRegisterComments.Any(x => !x.Reviewed);
 }
 
 <div class="govuk-grid-column-full">
@@ -163,7 +164,7 @@
                 </div>
                 <div class="govuk-grid-row">
                     <div class="govuk-grid-column-full govuk-button-group">
-                        <button condition="@Model.Editable(user)" type="submit" class="govuk-button">
+                        <button condition="@Model.Editable(user)" condition-disabled="@hasUnreviewedComments" type="submit" class="govuk-button">
                             Remove from public register
                         </button>
                     </div>
@@ -180,15 +181,27 @@
                     @if (Model.ReceivedPublicRegisterComments.Any())
                     {
                         <table class="govuk-table">
+                            <thead class="govuk-table__head">
+                                <tr class="govuk-table__row">
+                                    <th scope="col" class="govuk-table__header">Date submitted</th>
+                                    <th scope="col" class="govuk-table__header">Comment</th>
+                                    <th scope="col" class="govuk-table__header">Status</th>
+									<th scope="col" class="govuk-table__header">Actions</th>
+								</tr>
+                            </thead>
                             <tbody class="govuk-table__body">
 
                             @foreach (var notification in Model.ReceivedPublicRegisterComments.OrderByDescending(x => x.CreatedTimestamp))
                             {
                                 <tr class="govuk-table__row">
-                                    <td class="govuk-table__cell">@notification.Source</td>
-                                    <td class="govuk-table__cell">@notification.Text</td>
-                                    <td class="govuk-table__cell">@notification.CreatedTimestamp.ToString("g")</td>
-                                </tr>
+										<td class="govuk-table__cell">@notification.CreatedTimestamp.ToString("g")</td>
+                                        <td class="govuk-table__cell">@notification.Text</td>
+                                        <td class="govuk-table__cell">@notification.Status</td>
+                                        <td class="govuk-table__cell">
+                                            <a class="govuk-link" asp-action="ReviewComment" condition="@Model.Editable(user)"
+                                               asp-route-id="@Model.ApplicationId" asp-route-commentId="@notification.Id">View</a>
+                                        </td>
+                                    </tr>
                             }
                             </tbody>
                         </table>

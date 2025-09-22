@@ -21,12 +21,12 @@ namespace Forestry.Flo.Services.Notifications.Tests.Services
     public class ActivityFeedServiceTests
     {
         private readonly Mock<IUnitOfWork> _unitOfWOrkMock;
-        private readonly Mock<IRetrieveNotificationHistory> _notificationService;
+        private readonly Mock<INotificationHistoryService> _notificationService;
 
         public ActivityFeedServiceTests()
         {
             _unitOfWOrkMock = new Mock<IUnitOfWork>();
-            _notificationService = new Mock<IRetrieveNotificationHistory>();
+            _notificationService = new Mock<INotificationHistoryService>();
         }
 
         private ActivityFeedService CreateSut()
@@ -52,8 +52,8 @@ namespace Forestry.Flo.Services.Notifications.Tests.Services
             foreach (var notificationHistory in notificationHistories)
                 notificationHistory.Type = NotificationType.PublicRegisterComment;
 
-            _notificationService.Setup(r => r.RetrieveNotificationHistoryAsync(It.IsAny<string>(),
-                    It.IsAny<NotificationType[]>(), It.IsAny<CancellationToken>()))
+            _notificationService.Setup(r => r.RetrieveNotificationHistoryAsync(
+                    It.IsAny<Guid>(), It.IsAny<NotificationType[]>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(notificationHistories);
 
             ActivityFeedItemType[] activityFeedItemTypes =
@@ -76,7 +76,7 @@ namespace Forestry.Flo.Services.Notifications.Tests.Services
             // verify
 
             _notificationService.Verify(r => r.RetrieveNotificationHistoryAsync(
-                applicationRef,
+                applicationId,
                 new[]
                 {
                     NotificationType.PublicRegisterComment
@@ -107,8 +107,8 @@ namespace Forestry.Flo.Services.Notifications.Tests.Services
             var applicationId = Guid.NewGuid();
             var applicationRef = "test/reference";
 
-            _notificationService.Setup(r => r.RetrieveNotificationHistoryAsync(It.IsAny<string>(),
-                    It.IsAny<NotificationType[]>(), It.IsAny<CancellationToken>()))
+            _notificationService.Setup(r => r.RetrieveNotificationHistoryAsync(
+                    It.IsAny<Guid>(), It.IsAny<NotificationType[]>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result.Failure<List<NotificationHistoryModel>>("Unable to retrieve public register/consultee comments for application"));
 
             ActivityFeedItemType[] activityFeedItemTypes =
@@ -133,7 +133,7 @@ namespace Forestry.Flo.Services.Notifications.Tests.Services
             // verify
 
             _notificationService.Verify(r => r.RetrieveNotificationHistoryAsync(
-                applicationRef,
+                applicationId,
                 new[]
                 {
                     NotificationType.PublicRegisterComment

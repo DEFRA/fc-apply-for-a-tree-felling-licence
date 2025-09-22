@@ -421,7 +421,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
             CaseNoteContent = caseNoteContent,
             ViewApplicationURL = externalViewURL,
             Name = applicant.Value.FullName,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
         };
 
         var applicantResult = await _notificationsService.SendNotificationAsync(
@@ -468,7 +469,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
                 CaseNoteContent = caseNoteContent,
                 ViewApplicationURL = internalViewURL,
                 Name = user.Value.FullName(),
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = applicationId
             };
 
             var fcStaffResult = await _notificationsService.SendNotificationAsync(
@@ -528,7 +530,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
                     AdminHubFooter = adminHubFooter,
                     PublishDate = DateTimeDisplay.GetDateDisplayString(
                         prModel.PublicRegister.ConsultationPublicRegisterPublicationTimestamp!.Value),
-                    RegisterName = "Consultation"
+                    RegisterName = "Consultation",
+                    ApplicationId = prModel.PublicRegister.FellingLicenceApplicationId
                 };
 
             var notificationResult =
@@ -586,7 +589,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
                 .Select(detail => $"{detail.CompartmentName} - {(detail.Zone1 ? "Zone 1" : detail.Zone2 ? "Zone 2" : "Zone 3")}")
                 .ToList(),
             ViewApplicationURL = externalViewURL,
-            Name = applicant.Value.FullName
+            Name = applicant.Value.FullName,
+            ApplicationId = applicationId
         };
 
         var notificationType = larchDetails.RecommendSplitApplicationDue switch

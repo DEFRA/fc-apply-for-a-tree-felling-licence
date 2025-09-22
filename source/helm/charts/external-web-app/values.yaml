@@ -200,6 +200,9 @@ config:
   eiaOptions:
       # -- The external URI for EIA guidance
       eiaApplicationExternalUri:
+  reviewAmendmentsOptions:
+      # -- The number of days after sending amendments to applicants, that the application is automatically withdrawn
+      applicationWithdrawalDays:
   GovUkNotifyOptions:
     enabled: false
     ApiKey:
@@ -255,6 +258,8 @@ config:
       InviteWoodlandOwnerUserToOrganisation:
       # -- Invite Agent user to Organisation - external email to Agent
       InviteAgentUserToOrganisation:
+      # -- Applicant reviewed amendments - email to Woodland Officer
+      ApplicantReviewedAmendments:
   # -- Allowed Email Domains for FC Agency Account
   FcAgency:
     enabled: false

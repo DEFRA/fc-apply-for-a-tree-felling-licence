@@ -215,7 +215,8 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase
                     AdminHubFooter = adminHubFooter,
                     PublishDate = DateTimeDisplay.GetDateDisplayString(
                         dataModel.PublicRegister.DecisionPublicRegisterPublicationTimestamp!.Value),
-                    RegisterName = "Decision"
+                    RegisterName = "Decision",
+                    ApplicationId = dataModel.PublicRegister.FellingLicenceApplicationId
                 };
 
             var notificationResult =

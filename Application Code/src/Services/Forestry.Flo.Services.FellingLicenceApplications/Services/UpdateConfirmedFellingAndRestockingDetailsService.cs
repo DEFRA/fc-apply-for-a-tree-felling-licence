@@ -22,6 +22,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 /// </summary>
 public class UpdateConfirmedFellingAndRestockingDetailsService(
     IFellingLicenceApplicationInternalRepository internalFlaRepository,
+    IFellingLicenceApplicationExternalRepository externalFlaRepository,
     ILogger<UpdateConfirmedFellingAndRestockingDetailsService> logger,
     IAuditService<UpdateConfirmedFellingAndRestockingDetailsService> audit,
     RequestContext requestContext)
@@ -299,6 +300,12 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
             ? Result.Failure(dbResult.Error.ToString())
             : Result.Success();
     }
+
+    /// <inheritdoc/>
+    public Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(
+        Guid applicationId, 
+        CancellationToken cancellationToken) 
+        => externalFlaRepository.GetExistingSubmittedFlaPropertyDetailAsync(applicationId, cancellationToken);
 
     /// <inheritdoc/>
     public async Task<Result> RevertConfirmedFellingDetailAmendmentsAsync(

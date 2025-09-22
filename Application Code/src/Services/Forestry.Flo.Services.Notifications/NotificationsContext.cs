@@ -66,6 +66,12 @@ public class NotificationsContext : DbContext, IUnitOfWork
             .Property(e => e.NotificationType)
             .HasConversion<string>();
         
+        // Ensure enum NotificationStatus is stored/read as string to match column type
+        modelBuilder
+            .Entity<NotificationHistory>()
+            .Property(e => e.Status)
+            .HasConversion<string>();
+        
     }
 
     public async Task<UnitResult<UserDbErrorReason>> SaveEntitiesAsync(CancellationToken cancellationToken = default)

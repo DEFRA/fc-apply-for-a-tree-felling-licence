@@ -316,6 +316,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
             cancellationToken);
 
         await SendInternalPublicRegisterNotifications(
+            application.Id,
             application.ApplicationReference,
             application.SubmittedFlaPropertyDetail!.Name,
             adminHubAddress,
@@ -411,7 +412,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     PropertyName = application.SubmittedFlaPropertyDetail?.Name,
                     ApproverName = approverName,
                     ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/SupportingDocumentation/{application.Id}",
-                    AdminHubFooter = adminHubFooter
+                    AdminHubFooter = adminHubFooter,
+                    ApplicationId = application.Id
                 };
 
                 return await _notificationsService.SendNotificationAsync(
@@ -431,7 +433,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     ApproverName = approverName,
                     ApproverEmail = approverEmail,
                     ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{application.Id}",
-                    AdminHubFooter = adminHubFooter
+                    AdminHubFooter = adminHubFooter,
+                    ApplicationId = application.Id
                 };
 
                 return await _notificationsService.SendNotificationAsync(
@@ -460,7 +463,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     ApproverName = approverName,
                     ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{application.Id}",
                     LocalAuthorityName = localAuthorityName,
-                    AdminHubFooter = adminHubFooter
+                    AdminHubFooter = adminHubFooter,
+                    ApplicationId = application.Id
                 };
 
                 return await _notificationsService.SendNotificationAsync(
@@ -523,6 +527,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     }
 
     private async Task SendInternalPublicRegisterNotifications(
+        Guid applicationId,
         string applicationReference,
         string propertyName,
         string adminHubAddress,
@@ -548,7 +553,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
                 PublishedDate = DateTimeDisplay.GetDateDisplayString(publishedDate),
                 ExpiryDate = DateTimeDisplay.GetDateDisplayString(expiresAt),
                 Name = user.FullName,
-                AdminHubFooter = adminHubAddress
+                AdminHubFooter = adminHubAddress,
+                ApplicationId = applicationId
             };
 
             var notificationResult = await _notificationsService.SendNotificationAsync(

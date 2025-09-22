@@ -96,7 +96,15 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
     /// <returns>A list of Properties attached to the application </returns>
     Task<Maybe<List<Guid>>> GetApplicationComparmentIdsAsync(Guid applicationId, CancellationToken cancellationToken);
 
-    Task<SubmittedFlaPropertyDetail?> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Retrieves the existing submitted FLA property detail for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the submitted FLA property detail for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Maybe{SubmittedFlaPropertyDetail}"/> containing the existing submitted FLA property detail if found; otherwise, an empty value.
+    /// </returns>
+    Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken);
 
     Task AddSubmittedFlaPropertyDetailAsync(SubmittedFlaPropertyDetail submittedFlaPropertyDetail, CancellationToken cancellationToken);
 

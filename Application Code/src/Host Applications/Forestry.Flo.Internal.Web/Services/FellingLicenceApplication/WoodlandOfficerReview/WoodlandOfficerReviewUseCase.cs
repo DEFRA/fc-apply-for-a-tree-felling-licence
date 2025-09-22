@@ -415,7 +415,8 @@ public class WoodlandOfficerReviewUseCase(
             PreviousAssignedUserName = performingUser.FullName(),
             PreviousAssignedEmailAddress = performingUser.Email,
             ViewApplicationURL = internalLinkToApplication,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
         };
 
         var result1 = await _emailService.SendNotificationAsync(

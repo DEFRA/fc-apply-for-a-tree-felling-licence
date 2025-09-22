@@ -80,4 +80,16 @@ public interface IGetWoodlandOfficerReviewService
     Task<Result<ApplicationDetailsForConditionsNotification>> GetDetailsForConditionsNotificationAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the current (most recent) felling and restocking amendment review for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the current amendment review for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing the current <see cref="FellingAndRestockingAmendmentReviewModel"/> instance.
+    /// </returns>
+    Task<Result<Maybe<FellingAndRestockingAmendmentReviewModel>>> GetCurrentFellingAndRestockingAmendmentReviewAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
 }

@@ -13,11 +13,11 @@ namespace Forestry.Flo.Services.Notifications.Services;
 public class ActivityFeedService : IActivityFeedService
 {
     private readonly ILogger<ActivityFeedService> _logger;
-    private readonly IRetrieveNotificationHistory _notificationHistoryService;
+    private readonly INotificationHistoryService _notificationHistoryService;
 
     public ActivityFeedService(
         ILogger<ActivityFeedService> logger,
-        IRetrieveNotificationHistory notificationHistoryService
+        INotificationHistoryService notificationHistoryService
         )
     {
         _logger = Guard.Against.Null(logger);
@@ -42,7 +42,8 @@ public class ActivityFeedService : IActivityFeedService
             notificationTypes[i] = (NotificationType) Enum.Parse(typeof(NotificationType), itemType.ToString());
         }
 
-        var (_, isFailure, notifications) = await _notificationHistoryService.RetrieveNotificationHistoryAsync(providerModel.FellingLicenceReference!,
+        var (_, isFailure, notifications) = await _notificationHistoryService.RetrieveNotificationHistoryAsync(
+            providerModel.FellingLicenceId!,
             notificationTypes,
             cancellationToken);
 

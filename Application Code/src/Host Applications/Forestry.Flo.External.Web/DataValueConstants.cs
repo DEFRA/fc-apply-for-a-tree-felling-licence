@@ -10,4 +10,5 @@ public static class DataValueConstants
     public const int PostalCodeMaxLength = 10;
     public const int OrganisationNameMaxLength = 100;
     public const int FullNameMaxLength = 100;
+    public const int ApplicantDisagreementReasonLength = 2000;
 }
