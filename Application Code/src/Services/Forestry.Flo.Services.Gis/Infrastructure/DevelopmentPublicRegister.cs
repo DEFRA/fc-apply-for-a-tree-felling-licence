@@ -10,38 +10,54 @@ namespace Forestry.Flo.Services.Gis.Infrastructure;
 public class DevelopmentPublicRegister(ILogger<DevelopmentPublicRegister> logger) : IPublicRegister
 {
     public async Task<Result<List<EsriCaseComments>>> GetCaseCommentsByCaseReferenceAsync(
-        string caseReference, 
+        string caseReference,
         CancellationToken cancellationToken)
     {
         logger.LogInformation("Development public register : received request for comments for case reference {CaseReference}", caseReference);
 
-        return Result.Success(new List<EsriCaseComments>(0));
+        return Result.Success(new List<EsriCaseComments>() { new EsriCaseComments()
+        {
+            CaseNote = "New comment",
+            Firstname = "John",
+            Surname = "Smith",
+            CreatedDate = DateTime.UtcNow,
+            CaseReference = caseReference,
+            GlobalID = Guid.Parse("9d029ff6-2a4e-4d25-92bc-976d385441b6")
+        } });
     }
 
     public async Task<Result<List<EsriCaseComments>>> GetCaseCommentsByCaseReferenceAndDateAsync(
-        string caseReference, 
+        string caseReference,
         DateOnly date,
         CancellationToken cancellationToken)
     {
         logger.LogInformation("Development public register : received request for comments for case reference {CaseReference} and Date {Date}", caseReference, date);
 
-        return Result.Success(new List<EsriCaseComments>(0));
+        return Result.Success(new List<EsriCaseComments>() { new EsriCaseComments()
+        {
+            CaseNote = "New comment",
+            Firstname = "John",
+            Surname = "Smith",
+            CreatedDate = DateTime.UtcNow,
+            CaseReference = caseReference,
+            GlobalID = Guid.Parse("9d029ff6-2a4e-4d25-92bc-976d385441b6")
+        } });
     }
 
     public async Task<Result<int>> AddCaseToConsultationRegisterAsync(
-        string caseRef, 
-        string propertyName, 
+        string caseRef,
+        string propertyName,
         string caseType,
-        string gridRef, 
-        string nearestTown, 
-        string localAdminArea, 
-        string adminRegion, 
-        DateTime publicRegisterStart, 
+        string gridRef,
+        string nearestTown,
+        string localAdminArea,
+        string adminRegion,
+        DateTime publicRegisterStart,
         int period,
-        double? broadLeafArea, 
-        double? coniferousArea, 
-        double? openGroundArea, 
-        double? totalArea, 
+        double? broadLeafArea,
+        double? coniferousArea,
+        double? openGroundArea,
+        double? totalArea,
         List<InternalCompartmentDetails<Polygon>> compartments,
         CancellationToken cancellationToken)
     {
@@ -74,8 +90,8 @@ public class DevelopmentPublicRegister(ILogger<DevelopmentPublicRegister> logger
     }
 
     public async Task<Result> AddCaseToDecisionRegisterAsync(
-        int objectId, 
-        string caseReference, 
+        int objectId,
+        string caseReference,
         string fellingLicenceOutcome,
         DateTime caseApprovalDateTime,
         CancellationToken cancellationToken)

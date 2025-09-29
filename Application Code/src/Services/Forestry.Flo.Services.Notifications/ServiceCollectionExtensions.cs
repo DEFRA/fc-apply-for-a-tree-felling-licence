@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
             CustomDbContextFactorySource<NotificationsContext>>();
         services.AddScoped<INotificationHistoryRepository, NotificationHistoryRepository>();
 
-        services.AddScoped<IRetrieveNotificationHistory, NotificationHistoryService>();
+        services.AddScoped<INotificationHistoryService, NotificationHistoryService>();
         services.AddScoped<IActivityFeedService, ActivityFeedService>();
 
         return services;

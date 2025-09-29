@@ -39,6 +39,16 @@ external-web-app:
       domain: "testflo2.onmicrosoft.com"
       signInPolicyId: "B2C_1_FLO_V2_Signin"
       signUpPolicyId: "B2C_1_FLO_V2_Signup"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: OneLogin
     environment: Test
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
@@ -81,6 +91,8 @@ external-web-app:
       microsoftClarity:
         enabled: true
         trackingId: "pcrkb95e7y"
+    internalUserSite:
+      baseUrl: "https://internaltestflo.ps.conneqt.cloud/"
     GovUkNotifyOptions:
       enabled: true
       ApiKey:
@@ -114,12 +126,14 @@ external-web-app:
         InviteAgentUserToOrganisation: "4506918c-4666-4bbc-9c02-43ebe98804fb"
         EiaReminderMissingDocuments: "e189fead-f4b8-4b0b-8431-8fd04958a288"
         EiaReminderToSendDocuments: "e6445f8b-93cb-4d7e-bfe1-722ebf56a576"
+        ApplicantReviewedAmendments: "fbf55260-bcd8-4832-a995-bd18e456616e"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
         - "qxlva.com"
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
+        - "forestresearch.gov.uk"
     logging:
       LogLevel:
         Default: "Debug"
@@ -296,6 +310,16 @@ internal-web-app:
         secret_key: azureb2c.client_secret
       domain: "testflo2.onmicrosoft.com"
       signUpSignInPolicyId: "B2C_1_FLO_V2_Internal_Signup_Signin"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: OneLogin
     azureAD:
       tenantId: 
         secret_key: azuread.tennant_id
@@ -400,12 +424,14 @@ internal-web-app:
         InformApplicantOfReturnedApplicationLarchOnlyMixZone: "59380bf2-28fb-4c70-9c6e-8f47cfdc8bd3"
         EiaReminderMissingDocuments: "e189fead-f4b8-4b0b-8431-8fd04958a288"
         EiaReminderToSendDocuments: "e6445f8b-93cb-4d7e-bfe1-722ebf56a576"
+        ApplicantReviewedAmendments: "fbf55260-bcd8-4832-a995-bd18e456616e"
     permittedRegisteredUser:
       enabled: true
       permittedEmailDomainsForRegisteredUser:
         - "qxlva.com"
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
+        - "forestresearch.gov.uk"
     logging:
       LogLevel:
         Default: "Debug"

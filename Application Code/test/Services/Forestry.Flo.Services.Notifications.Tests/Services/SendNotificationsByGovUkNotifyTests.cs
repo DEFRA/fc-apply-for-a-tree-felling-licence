@@ -190,6 +190,7 @@ public class SendNotificationsByGovUkNotifyTests
         var expectedContent = new Dictionary<string, dynamic>()
         {
             { "ApplicationReference", model.ApplicationReference },
+            { "ApplicationId", model.ApplicationId },
             { "ConditionsText", model.ConditionsText },
             { "Name", model.Name },
             { "PropertyName", model.PropertyName },

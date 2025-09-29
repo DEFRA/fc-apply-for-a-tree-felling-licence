@@ -75,7 +75,7 @@ public class AgentAuthorityFormUseCaseTests
 
         //assert
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _mockAudit.Verify(v => v.PublishAuditEventAsync(
             It.Is<AuditEvent>(a =>
@@ -115,8 +115,8 @@ public class AgentAuthorityFormUseCaseTests
 
         //assert
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Failed to add new agent authority");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Failed to add new agent authority", result.Error);
 
         _mockAudit.Verify(v => v.PublishAuditEventAsync(
             It.Is<AuditEvent>(a =>

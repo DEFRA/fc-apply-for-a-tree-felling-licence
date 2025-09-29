@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using FluentValidation.TestHelper;
+﻿using FluentValidation.TestHelper;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -32,10 +31,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].RestockArea");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Area to be restocked must be provided")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Area to be restocked must be provided",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -54,10 +51,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].RestockArea");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Area to be restocked must be a positive value")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Area to be restocked must be a positive value",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -76,10 +71,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].RestockArea");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Area to be restocked must be less than or equal to the digitised area when confirmed restock area is entered")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Area to be restocked must be less than or equal to the digitised area when confirmed restock area is entered",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -99,10 +92,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].RestockingDensity");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Restocking density must be provided")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Restocking density must be provided",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -121,10 +112,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].RestockingDensity");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Restocking density must be greater than zero")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Restocking density must be greater than zero",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -143,10 +132,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].ConfirmedRestockingSpecies");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - At least one species for restocking must be selected")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - At least one species for restocking must be selected",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -167,10 +154,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].ConfirmedRestockingSpecies");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - No restocking species should be listed with a restocking proposal of {restockProposal.GetDisplayName()}")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - No restocking species should be listed with a restocking proposal of {restockProposal.GetDisplayName()}",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -193,10 +178,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
 
                 var result = _sut.TestValidate(model);
 
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Sum of restocking area percentages across species, plus percentage of open space, must total 100%")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Sum of restocking area percentages across species, plus percentage of open space, must total 100%",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -237,10 +220,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].PercentOpenSpace");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Open space must be between zero and 100%")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Open space must be between zero and 100%",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }
@@ -262,10 +243,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
                 var result = _sut.TestValidate(model);
 
                 result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].PercentNaturalRegeneration");
-                result.Errors.Any(x =>
-                        x.ErrorMessage == $"Compartment {model.CompartmentName} - Natural regeneration must be between zero and 100%")
-                    .Should()
-                    .BeTrue();
+                Assert.Contains($"Compartment {model.CompartmentName} - Natural regeneration must be between zero and 100%",
+                    result.Errors.Select(x => x.ErrorMessage));
             }
         }
     }

@@ -1,14 +1,13 @@
-using System.Security.Claims;
-using Ardalis.GuardClauses;
-using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
-using Forestry.Flo.Services.InternalUsers.Repositories;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers.Configuration;
+using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
+using Forestry.Flo.Services.InternalUsers.Repositories;
+using GovUk.OneLogin.AspNetCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace Forestry.Flo.Services.InternalUsers.Services;
 
@@ -18,38 +17,40 @@ public class SignInInternalUserWithEf : ISignInInternalUser
     private readonly IUserAccountService _userAccountService;
     private readonly PermittedRegisteredUserOptions _permittedUserOptions;
     private readonly IAuditService<SignInInternalUserWithEf> _auditService;
+    private readonly AuthenticationOptions _authenticationOptions;
     private readonly ILogger<SignInInternalUserWithEf> _logger;
-
-    private const string IdentityProviderEmailClaimType = "emails";
-
     public SignInInternalUserWithEf(
         IUserAccountRepository userAccountRepository,
         IUserAccountService userAccountService,
         IOptions<PermittedRegisteredUserOptions> permittedUserOptions,
-        ILogger<SignInInternalUserWithEf> logger, 
+        ILogger<SignInInternalUserWithEf> logger,
+        IOptions<AuthenticationOptions> authenticationOptions,
         IAuditService<SignInInternalUserWithEf> auditService)
     {
         ArgumentNullException.ThrowIfNull(userAccountRepository);
         ArgumentNullException.ThrowIfNull(userAccountService);
         ArgumentNullException.ThrowIfNull(permittedUserOptions);
+        ArgumentNullException.ThrowIfNull(authenticationOptions.Value);
 
         _userAccountRepository = userAccountRepository;
         _userAccountService = userAccountService;
         _permittedUserOptions = permittedUserOptions.Value;
         _auditService = auditService;
         _logger = logger;
+        _authenticationOptions = authenticationOptions.Value;
     }
 
     public async Task HandleUserLoginAsync(ClaimsPrincipal user, string? inviteToken, CancellationToken cancellationToken = default)
     {
-        var userIdentifier = user.Claims.SingleOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
+        var userIdentifier = GetIdentityProviderId(user.Claims);
+        var email = GetEmailFromClaims(user.Claims);
 
         if (string.IsNullOrWhiteSpace(userIdentifier))
         {
             return;
         }
 
-        var result = await _userAccountRepository.GetByIdentityProviderIdAsync(userIdentifier, cancellationToken);
+        var result = await _userAccountRepository.GetByIdentityProviderIdAsync(userIdentifier, cancellationToken, email);
 
         if (result.IsSuccess)
         {
@@ -61,9 +62,7 @@ public class SignInInternalUserWithEf : ISignInInternalUser
         {
             if (result.Error == UserDbErrorReason.NotFound)
             {
-                var userEmail = user.Claims.SingleOrDefault(x => x.Type == IdentityProviderEmailClaimType)?.Value;
-
-                var domain = userEmail?.Split("@")[1];
+                var domain = email?.Split("@")[1];
                 if (!_permittedUserOptions.PermittedEmailDomainsForRegisteredUser
                         .Any(x => x.Equals(domain, StringComparison.InvariantCultureIgnoreCase)))
                 {
@@ -71,7 +70,7 @@ public class SignInInternalUserWithEf : ISignInInternalUser
                     return;
                 }
 
-                var userAccount = await _userAccountService.CreateFcUserAccountAsync(userIdentifier, userEmail);
+                var userAccount = await _userAccountService.CreateFcUserAccountAsync(userIdentifier, email!);
 
                 var claimsIdentity = CreateClaimsIdentityFromUserAccount(userAccount);
 
@@ -111,5 +110,28 @@ public class SignInInternalUserWithEf : ISignInInternalUser
 
             list.Add(new Claim(claimType, value));
         }
+    }
+
+    private string? GetEmailFromClaims(IEnumerable<Claim> claims)
+    {
+        var claimType = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.Azure => FloClaimTypes.Email,
+            AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.EmailAddress,
+            _ => ClaimTypes.Email,
+        };
+
+        return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
+    }
+
+    private string? GetIdentityProviderId(IEnumerable<Claim> claims)
+    {
+        var claimType = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.NameIdentifier,
+            _ => ClaimTypes.NameIdentifier,
+        };
+
+        return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
     }
 }

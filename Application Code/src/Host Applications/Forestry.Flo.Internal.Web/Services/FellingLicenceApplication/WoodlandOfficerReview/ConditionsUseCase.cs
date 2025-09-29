@@ -308,7 +308,8 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
             PropertyName = getDetails.Value.PropertyName,
             SenderName = user.FullName,
             SenderEmail = user.EmailAddress,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
         };
 
         var notificationResult = await _notificationsService.SendNotificationAsync(

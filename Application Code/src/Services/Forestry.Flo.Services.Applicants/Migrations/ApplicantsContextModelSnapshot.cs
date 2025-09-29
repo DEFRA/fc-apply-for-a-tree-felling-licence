@@ -18,7 +18,7 @@ namespace Forestry.Flo.Services.Applicants.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("Applicants")
-                .HasAnnotation("ProductVersion", "6.0.7")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "uuid-ossp");
@@ -239,43 +239,6 @@ namespace Forestry.Flo.Services.Applicants.Migrations
                     b.HasIndex("WoodlandOwnerId");
 
                     b.ToTable("UserAccount", "Applicants");
-                });
-
-            modelBuilder.Entity("Forestry.Flo.Services.Applicants.Entities.WoodlandOwner.LegacyDocument", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("uuid_generate_v4()");
-
-                    b.Property<int>("DocumentType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("FileType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("MimeType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("WoodlandOwnerId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("LegacyDocument", "Applicants");
                 });
 
             modelBuilder.Entity("Forestry.Flo.Services.Applicants.Entities.WoodlandOwner.WoodlandOwner", b =>

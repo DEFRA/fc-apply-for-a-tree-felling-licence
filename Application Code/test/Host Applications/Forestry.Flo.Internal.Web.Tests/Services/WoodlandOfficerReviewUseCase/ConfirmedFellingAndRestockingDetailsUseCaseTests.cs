@@ -1,13 +1,8 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
-using Forestry.Flo.Internal.Web.Models;
-using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
-using Forestry.Flo.Services.Applicants.Entities.UserAccount;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -18,7 +13,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -298,7 +292,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var internalUser = new InternalUser(user);
         var result = await sut.GetConfirmedFellingAndRestockingDetailsAsync(fla.Id, internalUser, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         _fellingLicenceRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
     }
@@ -344,7 +338,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
 
@@ -409,7 +403,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -485,7 +479,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
 
@@ -558,7 +552,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
 
@@ -623,7 +617,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -699,7 +693,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
 
@@ -764,11 +758,11 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.SelectableCompartments.Should().BeEquivalentTo(selectableCompartments);
-        result.Value.ApplicationId.Should().Be(applicationId);
-        result.Value.GisData.Should().NotBeNullOrEmpty();
-        result.Value.FellingLicenceApplicationSummary.Should().NotBeNull();
+        Assert.True(result.IsSuccess);
+        Assert.Equivalent(selectableCompartments, result.Value.SelectableCompartments);
+        Assert.Equal(applicationId, result.Value.ApplicationId);
+        Assert.NotNull(result.Value.GisData);
+        Assert.NotNull(result.Value.FellingLicenceApplicationSummary);
         _getFellingLicenceApplicationForInternalUsers.Verify(
             s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceRepository.Verify(
@@ -799,8 +793,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(applicationId.ToString());
+        Assert.True(result.IsFailure);
+        Assert.Contains(applicationId.ToString(), result.Error);
         _getFellingLicenceApplicationForInternalUsers.Verify(
             s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceRepository.Verify(
@@ -820,8 +814,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("Unable to retrieve application summary for application");
+        Assert.True(result.IsFailure);
+        Assert.Contains("Unable to retrieve application summary for application", result.Error);
         _fellingLicenceRepository.Verify(
             r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _getFellingLicenceApplicationForInternalUsers.Verify(
@@ -917,7 +911,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedFellingDetailAsync(
@@ -979,8 +973,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedFellingDetailAsync(
@@ -1052,8 +1046,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedFellingDetailAsync(
@@ -1122,7 +1116,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1180,8 +1174,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1249,8 +1243,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1308,8 +1302,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("An error occurred while reverting deleted confirmed felling detail amendments");
+        Assert.True(result.IsFailure);
+        Assert.Contains("An error occurred while reverting deleted confirmed felling detail amendments", result.Error);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1384,7 +1378,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _updateConfirmedFellAndRestockService.Verify(v =>
             v.SaveChangesToConfirmedRestockingDetailsAsync(
@@ -1445,7 +1439,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedRestockingDetailAsync(
@@ -1507,8 +1501,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedRestockingDetailAsync(
@@ -1580,8 +1574,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedRestockingDetailAsync(

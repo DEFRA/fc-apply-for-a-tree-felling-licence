@@ -44,4 +44,9 @@ public class InformFCStaffOfDecisionPublicRegisterAutomaticRemovalOnExpiryDataMo
     /// Gets and sets the date the application was added to the register.
     /// </summary>
     public string PublishDate { get; set; }
+
+    /// <summary>
+    /// Gets and sets the application id.
+    /// </summary>
+    public required Guid ApplicationId { get; set; }
 }

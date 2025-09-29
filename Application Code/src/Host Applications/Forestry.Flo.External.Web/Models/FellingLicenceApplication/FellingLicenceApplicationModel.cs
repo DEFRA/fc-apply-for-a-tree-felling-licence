@@ -1,5 +1,6 @@
 ﻿using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication;
@@ -85,6 +86,11 @@ public class FellingLicenceApplicationModel
     public BreadcrumbsModel? Breadcrumbs { get; set; }
 
     public bool HasCaseNotes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current review model for the application, if applicable.
+    /// </summary>
+    public FellingAndRestockingAmendmentReviewModel? CurrentReviewModel { get; set; }
 
     public bool IsCBWapplication
     {

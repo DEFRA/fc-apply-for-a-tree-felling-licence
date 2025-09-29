@@ -395,7 +395,8 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
             SenderName = internalUserRetrieval.Value.FullName(),
             ApplicationFormUri = eiaOptions.Value.EiaApplicationExternalUri,
             ContactEmail = eiaOptions.Value.EiaContactEmail,
-            ContactNumber = eiaOptions.Value.EiaContactPhone
+            ContactNumber = eiaOptions.Value.EiaContactPhone,
+            ApplicationId = applicationId
         };
 
         var notificationResult = await sendNotifications.SendNotificationAsync(

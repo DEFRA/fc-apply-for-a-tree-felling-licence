@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using FluentValidation.TestHelper;
+﻿using FluentValidation.TestHelper;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
@@ -28,10 +27,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
             var result = _sut.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].AreaToBeFelled");
-            result.Errors.Any(x =>
-                    x.ErrorMessage == $"Compartment {model.CompartmentName} - Area to be felled must be a positive value")
-                .Should()
-                .BeTrue();
+            Assert.Contains($"Compartment {model.CompartmentName} - Area to be felled must be a positive value",
+                result.Errors.Select(x => x.ErrorMessage));
         }
     }
 
@@ -43,10 +40,9 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
         var result = _sut.TestValidate(model);
 
         result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].RestockingProposal");
-        result.Errors.Any(x =>
-                x.ErrorMessage == $"Compartment {model.CompartmentName} - At least one of the felling or restocking operations must be selected")
-            .Should()
-            .BeTrue();
+        Assert.Contains(
+            $"Compartment {model.CompartmentName} - At least one of the felling or restocking operations must be selected",
+            result.Errors.Select(x => x.ErrorMessage));
     }
 
     [Fact]
@@ -59,10 +55,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
         var result = _sut.TestValidate(model);
 
         result.ShouldHaveValidationErrorFor("ConfirmedTotalHectares");
-        result.Errors.Any(x =>
-                x.ErrorMessage == $"Compartment {model.CompartmentName} - Confirmed total hectares must be provided")
-            .Should()
-            .BeTrue();
+        Assert.Contains($"Compartment {model.CompartmentName} - Confirmed total hectares must be provided",
+            result.Errors.Select(x => x.ErrorMessage));
     }
 
     [Theory]
@@ -77,10 +71,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
         var result = _sut.TestValidate(model);
 
         result.ShouldHaveValidationErrorFor("ConfirmedTotalHectares");
-        result.Errors.Any(x =>
-                x.ErrorMessage == $"Compartment {model.CompartmentName} - Confirmed total hectares must be a positive value")
-            .Should()
-            .BeTrue();
+        Assert.Contains($"Compartment {model.CompartmentName} - Confirmed total hectares must be a positive value",
+            result.Errors.Select(x => x.ErrorMessage));
     }
 
     [Fact]
@@ -95,10 +87,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
             var result = _sut.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].AreaToBeFelled");
-            result.Errors.Any(x =>
-                    x.ErrorMessage == $"Compartment {model.CompartmentName} - Area to be felled must be provided")
-                .Should()
-                .BeTrue();
+            Assert.Contains($"Compartment {model.CompartmentName} - Area to be felled must be provided",
+                result.Errors.Select(x => x.ErrorMessage));
         }
     }
 
@@ -114,10 +104,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
             var result = _sut.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].AreaToBeFelled");
-            result.Errors.Any(x =>
-                    x.ErrorMessage == $"Compartment {model.CompartmentName} - Area to be felled must be less than or equal to the gross size")
-                .Should()
-                .BeTrue();
+            Assert.Contains($"Compartment {model.CompartmentName} - Area to be felled must be less than or equal to the gross size",
+                result.Errors.Select(x => x.ErrorMessage));
         }
     }
 
@@ -133,10 +121,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
             var result = _sut.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedFellingSpecies");
-            result.Errors.Any(x =>
-                    x.ErrorMessage == $"Compartment {model.CompartmentName} - At least one species for felling must be selected")
-                .Should()
-                .BeTrue();
+            Assert.Contains($"Compartment {model.CompartmentName} - At least one species for felling must be selected",
+                result.Errors.Select(x => x.ErrorMessage));
         }
     }
 
@@ -153,10 +139,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
             var result = _sut.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].confirmedFellingDetail.TreePreservationOrderReference");
-            result.Errors.Any(x =>
-                    x.ErrorMessage == $"Compartment {model.CompartmentName} - Tree Preservation Order Reference must be provided.")
-                .Should()
-                .BeTrue();
+            Assert.Contains($"Compartment {model.CompartmentName} - Tree Preservation Order Reference must be provided.",
+                result.Errors.Select(x => x.ErrorMessage));
         }
     }
 
@@ -173,10 +157,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
             var result = _sut.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].confirmedFellingDetail.ConservationAreaReference");
-            result.Errors.Any(x =>
-                    x.ErrorMessage == $"Compartment {model.CompartmentName} - Conservation Area Reference must be provided.")
-                .Should()
-                .BeTrue();
+            Assert.Contains($"Compartment {model.CompartmentName} - Conservation Area Reference must be provided.",
+                result.Errors.Select(x => x.ErrorMessage));
         }
     }
 
@@ -194,10 +176,8 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorFellingTe
             var result = _sut.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].NumberOfTrees");
-            result.Errors.Any(x =>
-                    x.ErrorMessage == $"Compartment {model.CompartmentName} - Number of trees must be greater than zero when provided")
-                .Should()
-                .BeTrue();
+            Assert.Contains($"Compartment {model.CompartmentName} - Number of trees must be greater than zero when provided",
+                result.Errors.Select(x => x.ErrorMessage));
         }
     }
 

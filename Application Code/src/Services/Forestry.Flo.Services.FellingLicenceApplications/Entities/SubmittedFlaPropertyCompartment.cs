@@ -80,4 +80,9 @@ public class SubmittedFlaPropertyCompartment
     public bool Zone1 { get; set; }
     public bool Zone2 { get; set; }
     public bool Zone3 { get; set; }
+
+    /// <summary>
+    /// Gets and sets the compartment designations.
+    /// </summary>
+    public SubmittedCompartmentDesignations? SubmittedCompartmentDesignations { get; set; }
 }

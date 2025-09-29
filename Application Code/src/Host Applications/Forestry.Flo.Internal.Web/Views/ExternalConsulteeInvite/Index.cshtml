@@ -24,6 +24,10 @@
     <partial name="Partials/_PageErrors"/>
     <form method="post">
         <input type="hidden" asp-for="ApplicationId"/>
+        @if (disableRadios)
+        {
+            <input type="hidden" asp-for="ApplicationNeedsConsultations"/>
+        }
         
         <div class="govuk-body govuk-!-padding-bottom-5">
             <fieldset class="govuk-fieldset">
@@ -93,7 +97,16 @@
                         @foreach (var t in Model.InviteLinks)
                         {
                             <tr class="govuk-table__row" data-id="@t.Id">
-                                    <td class="govuk-table__cell"><a class="govuk-link" asp-action="GetReceivedComments" asp-route-id="@Model.ApplicationId" asp-route-accessCode="@t.AccessCode">@t.Name</a></td>
+                                <td class="govuk-table__cell">
+                                    @if (t.HasResponded)
+                                    {
+                                            <a class="govuk-link" asp-action="GetReceivedComments" asp-route-id="@Model.ApplicationId" asp-route-accessCode="@t.AccessCode">@t.Name</a>
+                                    }
+                                    else
+                                    {
+                                        @t.Name
+                                    }
+                                </td>
                                 <td class="govuk-table__cell">@t.Purpose</td>
                                 <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(t.CreatedTimeStamp)</td>
                                 <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(t.ExpiresTimeStamp)</td>
@@ -108,7 +121,7 @@
             </div>
         </div>
         
-        @if (latestExpiry.HasValue && latestExpiry.Value <= Model.CurrentDateTimeUtc)
+        @if (latestExpiry.HasValue && latestExpiry.Value <= Model.CurrentDateTimeUtc && Model.Editable(user))
         {
             <h2 class="govuk-heading-l">
                 Have you finished inviting and reviewing?

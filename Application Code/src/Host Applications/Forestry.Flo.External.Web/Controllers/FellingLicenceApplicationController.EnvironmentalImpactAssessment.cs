@@ -22,7 +22,7 @@ public partial class FellingLicenceApplicationController
         var user = new ExternalApplicant(User);
 
         var fellingLicenceApplicationModelResult =
-            await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (fellingLicenceApplicationModelResult.HasNoValue)
         {
@@ -56,7 +56,7 @@ public partial class FellingLicenceApplicationController
         {
 
             var fellingLicenceApplicationModelResult =
-                await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.ApplicationId, cancellationToken);
+                await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.ApplicationId, cancellationToken);
 
             if (fellingLicenceApplicationModelResult.HasNoValue)
             {
@@ -115,7 +115,7 @@ public partial class FellingLicenceApplicationController
         }
 
         var fellingLicenceApplicationModelResult =
-            await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (fellingLicenceApplicationModelResult.HasNoValue)
         {
@@ -142,7 +142,7 @@ public partial class FellingLicenceApplicationController
 
         if (removeResult.IsFailure)
         {
-            _logger.LogError("Failed to remove eia document with error {Error}", removeResult.Error);
+            logger.LogError("Failed to remove eia document with error {Error}", removeResult.Error);
             this.AddErrorMessage("Could not remove eia document at this time, try again");
         }
 

@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
@@ -133,10 +132,10 @@ public class ConstraintsCheckUseCaseTests
 
         var result = await _sut.GetConstraintsCheckModel(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        result.Value.Should().NotBeNull();
-        result.Value.ApplicationId.Should().Be(_fellingLicenceApplication.Id);
+        Assert.NotNull(result.Value);
+        Assert.Equal(_fellingLicenceApplication.Id, result.Value.ApplicationId);
     }
 
     [Fact]
@@ -150,7 +149,7 @@ public class ConstraintsCheckUseCaseTests
 
         var result = await _sut.GetConstraintsCheckModel(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         _retrieveUserAccountsServiceMock.VerifyNoOtherCalls();
         _retrieveWoodlandOwnersMock.VerifyNoOtherCalls();
@@ -177,14 +176,14 @@ public class ConstraintsCheckUseCaseTests
             checkPassed,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var aoReviewEntity =
             _fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x =>
                 x.FellingLicenceApplicationId == _fellingLicenceApplication.Id);
 
-        aoReviewEntity.Should().NotBeNull();
-        aoReviewEntity!.ConstraintsChecked.Should().Be(checkPassed);
+        Assert.NotNull(aoReviewEntity);
+        Assert.Equal(checkPassed, aoReviewEntity!.ConstraintsChecked);
             
         _auditServiceMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -214,9 +213,9 @@ public class ConstraintsCheckUseCaseTests
             checkPassed,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
-        _fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x => x.FellingLicenceApplicationId == invalidId).Should().BeNull();
+        Assert.Null(_fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x => x.FellingLicenceApplicationId == invalidId));
 
         _auditServiceMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -270,7 +269,7 @@ public class ConstraintsCheckUseCaseTests
             false,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         var error = correctStatus is false || reviewInProgress is false 
             ? "Cannot update admin officer review for application not in submitted state" 

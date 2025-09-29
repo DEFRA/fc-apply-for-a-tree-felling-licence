@@ -77,3 +77,23 @@ spec:
             - -c
             - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterExpiry/RemoveApplicationsFromDecisionPublicRegisterWhenEndDateReached"
           restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: public-register-consultation-comments
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: public-register-consultation-comments
+            image: fsflo.azurecr.io/docker/qtools:1.2.1
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterComments/PullNewComments"
+          restartPolicy: OnFailure

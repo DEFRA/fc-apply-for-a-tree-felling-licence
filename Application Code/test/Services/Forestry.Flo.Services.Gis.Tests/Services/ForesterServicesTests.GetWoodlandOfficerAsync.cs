@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
+﻿using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Moq;
 using Moq.Protected;
 using System.Net;
@@ -16,7 +15,7 @@ public partial class ForesterServicesTests
 
         var caughtException = await Assert.ThrowsAsync<ArgumentNullException>(() => sut.GetWoodlandOfficerAsync(_nullIsland, CancellationToken.None));
 
-        caughtException.Message.Should().Be("Value cannot be null. (Parameter '_config.LayerServices')");
+        Assert.Equal("Value cannot be null. (Parameter '_config.LayerServices')", caughtException.Message);
     }
 
     [Fact]
@@ -25,9 +24,8 @@ public partial class ForesterServicesTests
         var sut = CreateSUT(new EsriConfig() { Forester = new ForesterConfig { GenerateTokenService = new OAuthServiceSettingsUser { Password = "", Path = "", Username = "" }, LayerServices = new List<FeatureLayerConfig>() } });
 
         var result = await sut.GetWoodlandOfficerAsync(_nullIsland, CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should()
-            .Be("Unable to find layer details");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to find layer details", result.Error);
     }
 
     [Fact]

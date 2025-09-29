@@ -72,7 +72,7 @@ public class AgencyCreationServiceTests
 
         // assert
         Assert.True(result.IsSuccess);
-        result.Value.AgencyId.Should().NotBeEmpty();
+        Assert.NotEqual(Guid.Empty, result.Value.AgencyId);
 
         _mockRepository.Verify(x => x.AddAgencyAsync(It.Is<Agency>(a =>
                 a.OrganisationName == request.agencyModel.OrganisationName &&

@@ -20,8 +20,6 @@ public class ApplicantsContext : DbContext, IUnitOfWork
     public DbSet<WoodlandOwner> WoodlandOwners { get; set; }
     public DbSet<AgentAuthority> AgentAuthorities { get; set; }
     public DbSet<Agency> Agencies { get; set; }
-    protected DbSet<LegacyDocument> LegacyDocumentsProtected { get; set; }
-    public IQueryable<LegacyDocument> LegacyDocuments => LegacyDocumentsProtected.AsNoTrackingWithIdentityResolution();
 
     public ApplicantsContext()
     {
@@ -64,7 +62,6 @@ public class ApplicantsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<AgentAuthority>().ToTable("AgentAuthority");
         modelBuilder.Entity<AgentAuthorityForm>().ToTable("AgentAuthorityForm");
         modelBuilder.Entity<AafDocument>().ToTable("AafDocument");
-        modelBuilder.Entity<LegacyDocument>().ToTable("LegacyDocument");
 
         modelBuilder.Entity<UserAccount>().HasIndex(p => p.IdentityProviderId).IsUnique();
         modelBuilder.Entity<UserAccount>().HasIndex(p => p.Email).IsUnique();
@@ -161,13 +158,6 @@ public class ApplicantsContext : DbContext, IUnitOfWork
             .HasForeignKey(p => p.AgentAuthorityFormId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder
-            .Entity<LegacyDocument>()
-            .Property(x => x.Id)
-            .HasColumnType("uuid")
-            .HasDefaultValueSql("uuid_generate_v4()")
-            .IsRequired();
     }
     
     public async Task<UnitResult<UserDbErrorReason>> SaveEntitiesAsync(CancellationToken cancellationToken = default)

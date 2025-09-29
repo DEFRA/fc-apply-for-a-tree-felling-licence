@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Newtonsoft.Json;
@@ -64,8 +63,8 @@ public partial class ForesterServicesTests
         var sut = CreateSUT();
         var result = await sut.GenerateImage_MultipleCompartmentsAsync(ShapesDetails, CancellationToken.None, 100, MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", result.Error);
     }
 
 
@@ -126,7 +125,7 @@ public partial class ForesterServicesTests
         var result = await sut.GenerateImage_MultipleCompartmentsAsync(ShapesDetails, CancellationToken.None, 100,
             MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to read File");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to read File", result.Error);
     }
 }

@@ -1,6 +1,4 @@
-﻿
-using System.Net;
-using FluentAssertions;
+﻿using System.Net;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Newtonsoft.Json;
 using Moq;
@@ -32,8 +30,8 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to calculate Extend");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to calculate Extend", result.Error);
     }
 
     [Fact]
@@ -70,8 +68,8 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", result.Error);
     }
 
 
@@ -130,7 +128,7 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
     }
 
@@ -175,7 +173,7 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
     }
 }

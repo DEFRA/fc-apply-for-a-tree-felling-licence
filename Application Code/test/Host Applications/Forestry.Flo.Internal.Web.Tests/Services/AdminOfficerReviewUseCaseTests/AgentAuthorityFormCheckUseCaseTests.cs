@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
@@ -165,11 +164,11 @@ public class AgentAuthorityFormCheckUseCaseTests
 
         var result = await _sut.GetAgentAuthorityFormCheckModelAsync(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        result.Value.Should().NotBeNull();
-        result.Value.ApplicationId.Should().Be(_fellingLicenceApplication.Id);
-        result.Value.ApplicationOwner.Agency.Should().BeEquivalentTo(new AgencyModel
+        Assert.NotNull(result.Value);
+        Assert.Equal(_fellingLicenceApplication.Id, result.Value.ApplicationId);
+        Assert.Equivalent(new AgencyModel
         {
             Address = _applicantUser.Agency.Address,
             ContactEmail = _applicantUser.Agency.ContactEmail,
@@ -177,9 +176,9 @@ public class AgentAuthorityFormCheckUseCaseTests
             OrganisationName = _applicantUser.Agency.OrganisationName,
             AgencyId = _applicantUser.Agency.Id,
             IsFcAgency = _applicantUser.Agency.IsFcAgency
-        });
+        }, result.Value.ApplicationOwner.Agency);
 
-        result.Value.ApplicationOwner.WoodlandOwner.Should().BeEquivalentTo(new Models.UserAccount.WoodlandOwnerModel
+        Assert.Equivalent(new Models.UserAccount.WoodlandOwnerModel
         {
             ContactAddress = ModelMapping.ToAddressModel(_woodlandOwner.ContactAddress),
             ContactEmail = _woodlandOwner.ContactEmail,
@@ -188,23 +187,24 @@ public class AgentAuthorityFormCheckUseCaseTests
             IsOrganisation = _woodlandOwner.IsOrganisation,
             OrganisationName = _woodlandOwner.OrganisationName,
             OrganisationAddress = ModelMapping.ToAddressModel(_woodlandOwner.OrganisationAddress)
-        });
+        }, result.Value.ApplicationOwner.WoodlandOwner);
 
-        result.Value.ApplicationOwner.AgentAuthorityForm.Should().BeEquivalentTo(new AgentAuthorityFormViewModel
-        {
-            CouldRetrieveAgentAuthorityFormDetails = true,
-            AgentAuthorityId = _agentAuthorityFormResponse.AgentAuthorityId,
-            CurrentAgentAuthorityForm = new AgentAuthorityFormDetailsModel(
-                _agentAuthorityFormResponse.CurrentAgentAuthorityForm.Value.Id,
-                _agentAuthorityFormResponse.CurrentAgentAuthorityForm.Value.ValidFromDate,
-                _agentAuthorityFormResponse.CurrentAgentAuthorityForm.Value.ValidToDate),
-            SpecificTimestampAgentAuthorityForm = new AgentAuthorityFormDetailsModel(
-                _agentAuthorityFormResponse.SpecificTimestampAgentAuthorityForm.Value.Id,
-                _agentAuthorityFormResponse.SpecificTimestampAgentAuthorityForm.Value.ValidFromDate,
-                _agentAuthorityFormResponse.SpecificTimestampAgentAuthorityForm.Value.ValidToDate),
-            AgentAuthorityFormManagementUrl = Maybe<string>.None
-        });
+
+        Assert.True(result.Value.ApplicationOwner.AgentAuthorityForm.CouldRetrieveAgentAuthorityFormDetails);
+        Assert.Equal(_agentAuthorityFormResponse.AgentAuthorityId, result.Value.ApplicationOwner.AgentAuthorityForm.AgentAuthorityId);
         
+        Assert.Equivalent(new AgentAuthorityFormDetailsModel(
+            _agentAuthorityFormResponse.CurrentAgentAuthorityForm.Value.Id,
+            _agentAuthorityFormResponse.CurrentAgentAuthorityForm.Value.ValidFromDate,
+            _agentAuthorityFormResponse.CurrentAgentAuthorityForm.Value.ValidToDate), 
+            result.Value.ApplicationOwner.AgentAuthorityForm.CurrentAgentAuthorityForm.Value);
+        Assert.Equivalent(new AgentAuthorityFormDetailsModel(
+            _agentAuthorityFormResponse.SpecificTimestampAgentAuthorityForm.Value.Id,
+            _agentAuthorityFormResponse.SpecificTimestampAgentAuthorityForm.Value.ValidFromDate,
+            _agentAuthorityFormResponse.SpecificTimestampAgentAuthorityForm.Value.ValidToDate),
+            result.Value.ApplicationOwner.AgentAuthorityForm.SpecificTimestampAgentAuthorityForm.Value);
+        Assert.False(result.Value.ApplicationOwner.AgentAuthorityForm.AgentAuthorityFormManagementUrl.HasValue);
+
         _agentAuthorityServiceMock.Verify(x => x.GetAgencyForWoodlandOwnerAsync(_fellingLicenceApplication.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _retrieveWoodlandOwnersMock.Verify(
             v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, CancellationToken.None),
@@ -228,7 +228,7 @@ public class AgentAuthorityFormCheckUseCaseTests
 
         var result = await _sut.GetAgentAuthorityFormCheckModelAsync(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         _retrieveUserAccountsServiceMock.VerifyNoOtherCalls();
         _retrieveWoodlandOwnersMock.VerifyNoOtherCalls();
@@ -246,7 +246,7 @@ public class AgentAuthorityFormCheckUseCaseTests
 
         var result = await _sut.GetAgentAuthorityFormCheckModelAsync(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _retrieveWoodlandOwnersMock.Verify(
             v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, CancellationToken.None),
@@ -266,7 +266,7 @@ public class AgentAuthorityFormCheckUseCaseTests
 
         var result = await _sut.GetAgentAuthorityFormCheckModelAsync(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         _retrieveWoodlandOwnersMock.Verify(
             v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, CancellationToken.None),
@@ -300,17 +300,22 @@ public class AgentAuthorityFormCheckUseCaseTests
             failureReason,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var aoReviewEntity =
             _fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x =>
                 x.FellingLicenceApplicationId == _fellingLicenceApplication.Id);
 
-        aoReviewEntity.Should().NotBeNull();
-        aoReviewEntity!.AgentAuthorityCheckFailureReason.Should().Be(checkPassed 
-            ? null 
-            : failureReason);
-        aoReviewEntity!.AgentAuthorityCheckPassed.Should().Be(checkPassed);
+        Assert.NotNull(aoReviewEntity);
+        if (checkPassed)
+        {
+            Assert.Null(aoReviewEntity!.AgentAuthorityCheckFailureReason);
+        }
+        else
+        {
+            Assert.Equal(failureReason, aoReviewEntity!.AgentAuthorityCheckFailureReason);
+        }
+        Assert.Equal(checkPassed, aoReviewEntity!.AgentAuthorityCheckPassed);
             
         _auditServiceMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -341,9 +346,9 @@ public class AgentAuthorityFormCheckUseCaseTests
             failureReason,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
-        _fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x => x.FellingLicenceApplicationId == invalidId).Should().BeNull();
+        Assert.Null(_fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x => x.FellingLicenceApplicationId == invalidId));
 
         _auditServiceMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -397,7 +402,7 @@ public class AgentAuthorityFormCheckUseCaseTests
             "reason",
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         var error = correctStatus is false || reviewInProgress is false 
             ? "Cannot update admin officer review for application not in submitted state" 

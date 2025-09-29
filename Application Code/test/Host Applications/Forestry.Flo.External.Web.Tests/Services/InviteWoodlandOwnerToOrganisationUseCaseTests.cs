@@ -100,7 +100,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.InviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _userAccountRepository.Verify(r => r.Add( It.Is<UserAccount>(u =>
             u.Email == model.Email
             && u.WoodlandOwnerId == model.WoodlandOwnerId
@@ -129,7 +129,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.InviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _sendNotifications.Verify(s => s.SendNotificationAsync(
             It.Is<InviteWoodlandOwnerToOrganisationDataModel>(m => m.Name == model.Name
                                                                    && m.InviteLink.Contains(url)), 
@@ -159,8 +159,9 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.InviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Message.Should().Be(error);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(error, result.Error.Message);
+
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.WoodlandOwnerUserInvitationFailure),
@@ -185,8 +186,8 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.InviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorResult.Should().Be(InviteUserErrorResult.UserAlreadyExists);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(InviteUserErrorResult.UserAlreadyExists, result.Error.ErrorResult);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.WoodlandOwnerUserInvitationFailure),
@@ -212,8 +213,8 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.InviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorResult.Should().Be(InviteUserErrorResult.UserAlreadyExists);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(InviteUserErrorResult.UserAlreadyExists, result.Error.ErrorResult);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.WoodlandOwnerUserInvitationFailure),
@@ -239,8 +240,8 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.InviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorResult.Should().Be(InviteUserErrorResult.UserAlreadyInvited);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(InviteUserErrorResult.UserAlreadyInvited, result.Error.ErrorResult);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.WoodlandOwnerUserInvitationFailure),
@@ -259,7 +260,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
             await _sut.InviteWoodlandOwnerToOrganisationAsync(null!, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await act());
     }
     
     [Theory, AutoData]
@@ -273,7 +274,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
             await _sut.InviteWoodlandOwnerToOrganisationAsync(model, null!, url, CancellationToken.None);
 
         //assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await act());
     }
     
     [Theory, AutoData]
@@ -287,7 +288,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
             await _sut.InviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, null!, CancellationToken.None);
 
         //assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await act());
     }
     
     [Fact]
@@ -300,8 +301,8 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.RetrieveUserWoodlandOwnerOrganisationAsync(_externalApplicant,CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(_woodlandOwner.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(_woodlandOwner.Id, result.Value.Id);
     }
     
     [Fact]
@@ -329,7 +330,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.RetrieveUserWoodlandOwnerOrganisationAsync(externalApplicant,CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
     
     [Fact]
@@ -350,7 +351,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.RetrieveUserWoodlandOwnerOrganisationAsync(externalApplicant,CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
 
     [Theory, AutoData]
@@ -375,7 +376,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.ReInviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _userAccountRepository.Verify(r => r.Update( It.Is<UserAccount>(u =>
             u.Email == model.Email
             && u.WoodlandOwnerId == model.WoodlandOwnerId
@@ -410,7 +411,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.ReInviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _sendNotifications.Verify(s => s.SendNotificationAsync(
             It.Is<InviteWoodlandOwnerToOrganisationDataModel>(m => m.Name == model.Name
                                                                    && m.InviteLink.Contains(url)), 
@@ -438,7 +439,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.ReInviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.WoodlandOwnerUserInvitationFailure),
@@ -468,7 +469,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.ReInviteWoodlandOwnerToOrganisationAsync(model, _externalApplicant, url, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.WoodlandOwnerUserInvitationFailure),
@@ -495,10 +496,10 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.VerifyInvitedUserAccountAsync(model.Email, userAccount.InviteToken.ToString()!);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.UserEmail.Should().Be(userAccount.Email);
-        result.Value.OrganisationName.Should()
-            .Be(userAccount.WoodlandOwner.OrganisationName, userAccount.InviteToken.ToString());
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userAccount.Email, result.Value.UserEmail);
+        Assert.Equal(userAccount.WoodlandOwner.OrganisationName, result.Value.OrganisationName);
+        Assert.Equal(userAccount.InviteToken.ToString(), result.Value.InviteToken);
     }
     
     [Theory, AutoData]
@@ -520,7 +521,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.VerifyInvitedUserAccountAsync(model.Email, invitedUser.InviteToken.ToString()!);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
     
     [Theory, AutoData]
@@ -542,7 +543,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.VerifyInvitedUserAccountAsync(model.Email, Guid.NewGuid().ToString());
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
 
     [Theory, AutoData]
@@ -559,6 +560,6 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         var result = await _sut.VerifyInvitedUserAccountAsync(model.Email, Guid.NewGuid().ToString());
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
 }

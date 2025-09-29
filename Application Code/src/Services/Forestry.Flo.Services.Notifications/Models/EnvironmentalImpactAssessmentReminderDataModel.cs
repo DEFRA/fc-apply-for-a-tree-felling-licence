@@ -3,12 +3,18 @@
 /// <summary>
 /// Model class for data to merge into an environmental impact assessment reminder notification.
 /// </summary>
-public class EnvironmentalImpactAssessmentReminderDataModel
+public class EnvironmentalImpactAssessmentReminderDataModel : IApplicationNotification
 {
     /// <summary>
     /// Gets or sets the unique reference for the application.
     /// </summary>
     public required string ApplicationReference { get; set; }
+
+    /// <summary>
+    /// Gets and sets the application id.
+    /// </summary>
+    public required Guid ApplicationId { get; set; }
+
     /// <summary>
     /// Gets or sets the property name associated with the application.
     /// </summary>
@@ -43,4 +49,14 @@ public class EnvironmentalImpactAssessmentReminderDataModel
     /// Gets or sets the contact phone number for further information.
     /// </summary>
     public required string ContactNumber { get; set; }
+
+    /// <summary>
+    /// Gets and sets the name & address of the admin hub that the application is managed by.
+    /// </summary>
+    public string AdminHubFooter { get; set; }
+
+    /// <summary>
+    /// Gets and sets the full URL for the user to view the application on the external site.
+    /// </summary>
+    public string ViewApplicationURL { get; set; }
 }

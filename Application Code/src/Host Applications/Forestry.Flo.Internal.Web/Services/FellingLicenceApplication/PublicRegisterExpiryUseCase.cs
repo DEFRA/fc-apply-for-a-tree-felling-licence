@@ -228,7 +228,8 @@ public class PublicRegisterExpiryUseCase
                     AdminHubFooter = adminHubFooter,
                     PublishDate = DateTimeDisplay.GetDateDisplayString(
                         dataModel.PublicRegister.ConsultationPublicRegisterPublicationTimestamp!.Value),
-                    RegisterName = "Consultation"
+                    RegisterName = "Consultation",
+                    ApplicationId = dataModel.PublicRegister.FellingLicenceApplicationId
                 };
 
             var notificationResult =

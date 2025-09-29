@@ -36,4 +36,9 @@ public class InformFCStaffOfReturnedApplicationDataModel : IApplicationNotificat
     /// </summary>
     public string AdminHubFooter { get; set; }
 
+    /// <summary>
+    /// Gets and sets the application id.
+    /// </summary>
+    public required Guid ApplicationId { get; set; }
+
 }

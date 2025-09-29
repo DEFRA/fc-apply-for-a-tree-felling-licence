@@ -171,6 +171,60 @@ spec:
               value: {{ .Values.config.azureAD.clientSecret }}
             {{- end }}
             {{- end }}
+            # ------------------- GOV.UK One Login start -------------------
+            {{- if .Values.config.govUkOneLoginOptions.clientId }}
+            {{- if .Values.config.govUkOneLoginOptions.clientId.secret_key }}
+            - name: GovUkOneLoginOptions__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.govUkOneLoginOptions.clientId.secret_key }}
+            {{- else }}
+            - name: GovUkOneLoginOptions__ClientId
+              value: {{ .Values.config.govUkOneLoginOptions.clientId }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.callbackPath }}
+            - name: GovUkOneLoginOptions__CallbackPath
+              value: {{ .Values.config.govUkOneLoginOptions.callbackPath }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.environment }}
+            - name: GovUkOneLoginOptions__Environment
+              value: {{ .Values.config.govUkOneLoginOptions.environment }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.correlationCookieName }}
+            - name: GovUkOneLoginOptions__CorrelationCookieName
+              value: {{ .Values.config.govUkOneLoginOptions.correlationCookieName }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.nonceCookieName }}
+            - name: GovUkOneLoginOptions__NonceCookieName
+              value: {{ .Values.config.govUkOneLoginOptions.nonceCookieName }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.vectorsOfTrust }}
+            - name: GovUkOneLoginOptions__VectorsOfTrust__0
+              value: {{ index .Values.config.govUkOneLoginOptions.vectorsOfTrust 0 | quote }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.signingKeys }}
+            {{- range $i, $key := .Values.config.govUkOneLoginOptions.signingKeys }}
+            {{- if $key.privateKeyPem }}
+            {{- if $key.privateKeyPem.secret_key }}
+            - name: GovUkOneLoginOptions__SigningKeys__{{ $i }}__PrivateKeyPem
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ $key.privateKeyPem.secret_key }}
+            {{- else }}
+            - name: GovUkOneLoginOptions__SigningKeys__{{ $i }}__PrivateKeyPem
+              value: {{ $key.privateKeyPem | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            # ------------------- Authentication options start -------------------
+            {{- if .Values.config.authenticationOptions.provider }}
+            - name: AuthenticationOptions__Provider
+              value: {{ .Values.config.authenticationOptions.provider }}
+            {{- end }}
             # ------------------- Notifications start -------------------
             {{- if .Values.config.notifications.defaultFromAddress }}
             - name: Notifications__DefaultFromAddress
@@ -438,11 +492,11 @@ spec:
               value: {{ .Values.config.siteAnalytics.microsoftClarity.trackingId | quote }}
             {{- end }}
             # ------------------- Permitted Registered User Email Domains start -------------------
-            {{- if .Values.config.permittedRegisteredUser.enabled }}
-            {{- with .Values.config.permittedRegisteredUser }}
-            {{- if .permittedEmailDomainsForRegisteredUser }}
-            - name: permittedRegisteredUser_permittedEmailDomainsForRegisteredUser
-              value: '{{ .permittedEmailDomainsForRegisteredUser | toJson }}'
+            {{- if .Values.config.PermittedRegisteredUser.enabled }}
+            {{- with .Values.config.PermittedRegisteredUser }}
+            {{- range $i, $domain := .PermittedEmailDomainsForRegisteredUser }}
+            - name: PermittedRegisteredUser__PermittedEmailDomainsForRegisteredUser__{{ $i }}
+              value: "{{ $domain }}"
             {{- end }}
             {{- end }}
             {{- end }}
@@ -524,6 +578,8 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationMixLarchMixZone }}
             - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfReturnedApplicationLarchOnlyMixZone
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationLarchOnlyMixZone }}
+            - name: GovUkNotifyOptions__TemplateIds__ApplicantReviewedAmendments
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicantReviewedAmendments }}
             {{- end }}
             # ------------------- ESRI Config start -------------------
             {{- if .Values.config.esriConfig.enabled }}

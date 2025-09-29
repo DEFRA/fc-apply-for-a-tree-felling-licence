@@ -40,14 +40,15 @@ public interface IUserAccountRepository
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result object with the requested user account or an error reason</returns>
     Task<Result<UserAccount, UserDbErrorReason>> GetByEmailAsync(string email, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Retrieve a user account by the given Azure AD user identifier 
     /// </summary>
     /// <param name="userIdentifier">Azure AD user identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
+    /// <param name="email">An optional email address to match users during transition from ADB2C to One Login.</param>
     /// <returns>Result object with the requested user account or an error reason</returns>
-    Task<Result<UserAccount, UserDbErrorReason>> GetByUserIdentifierAsync(string userIdentifier, CancellationToken cancellationToken);
+    Task<Result<UserAccount, UserDbErrorReason>> GetByUserIdentifierAsync(string userIdentifier, CancellationToken cancellationToken, string? email = null);
 
     /// <summary>
     /// Retrieve users where ID is in userIds list

@@ -282,7 +282,8 @@ public class AutomaticWithdrawalNotificationUseCase(
             PropertyName = "n/a",
             Name = createdByUser.FullName,
             ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{application.ApplicationId}",
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = application.ApplicationId
         };
 
         var applicantRecipient =
@@ -351,7 +352,8 @@ public class AutomaticWithdrawalNotificationUseCase(
                 Name = recipient.Name!,
                 PropertyName = "n/a",
                 ViewApplicationURL = linkToApplication,
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = fla.ApplicationId
             };
 
             var sendNotificationResult = await _sendNotifications.SendNotificationAsync(

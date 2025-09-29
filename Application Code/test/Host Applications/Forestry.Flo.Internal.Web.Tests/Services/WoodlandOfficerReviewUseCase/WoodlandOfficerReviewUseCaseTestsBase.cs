@@ -12,6 +12,7 @@ using Forestry.Flo.Tests.Common;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using AutoFixture;
 using Forestry.Flo.Services.Applicants.Services;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
@@ -23,7 +24,7 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
     protected readonly Mock<IUserAccountService> InternalUserAccountService = new();
     protected readonly Mock<IFellingLicenceApplicationInternalRepository> FlaRepository = new();
     protected readonly Mock<IRetrieveWoodlandOwners> WoodlandOwnerService = new();
-    protected readonly Mock<IRetrieveNotificationHistory> NotificationHistoryService = new();
+    protected readonly Mock<INotificationHistoryService> NotificationHistoryService = new();
     protected readonly Mock<IUpdateWoodlandOfficerReviewService> UpdateWoodlandOfficerReviewService = new();
     protected readonly Mock<IAuditService<T>> AuditingService = new();
     protected readonly Mock<IAgentAuthorityService> MockAgentAuthorityService = new();
@@ -52,6 +53,8 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
     {
         PublicRegisterPeriod = TimeSpan.FromDays(30)
     };
+
+    protected readonly Fixture Fixture = new();
 
     protected RequestContext RequestContext;
 

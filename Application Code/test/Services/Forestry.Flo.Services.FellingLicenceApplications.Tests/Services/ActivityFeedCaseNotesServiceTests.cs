@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
@@ -78,7 +77,7 @@ public class ActivityFeedCaseNotesServiceTests
 
         // assert
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.Equal(caseNoteModels.Count, result.Value.Count);
         foreach (var expected in caseNoteModels)
         {
@@ -156,7 +155,7 @@ public class ActivityFeedCaseNotesServiceTests
 
         // assert
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]

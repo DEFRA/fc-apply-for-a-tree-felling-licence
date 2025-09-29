@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Forestry.Flo.Services.Notifications.Entities;
@@ -12,12 +13,12 @@ namespace Forestry.Flo.Services.Notifications.Tests;
 public class NotificationHistoryRepositoryTests
 {
     [Theory, AutoMoqData]
-    public async Task GetForApplicationReturnsEmptyWhenNoneExist(string applicationReference)
+    public async Task GetForApplicationReturnsEmptyWhenNoneExist(Guid applicationId)
     {
         var sut = CreateSut();
 
         var result = await sut.GetNotificationHistoryForApplicationAsync(
-            applicationReference,
+            applicationId,
             null,
             CancellationToken.None);
 
@@ -25,10 +26,22 @@ public class NotificationHistoryRepositoryTests
         Assert.Empty(result.Value);
     }
 
+    [Fact]
+    public async Task GetForApplicationThrowsWithEmptyGuid()
+    {
+        var applicationId = Guid.Empty;
+        var sut = CreateSut();
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await sut.GetNotificationHistoryForApplicationAsync(
+            applicationId,
+            null,
+            CancellationToken.None));
+    }
+
     [Theory, AutoMoqData]
     public async Task GetForApplicationReturnsEmptyWhenNoneExistForGivenId(
         NotificationHistory existingItem,
-        string applicationReferenceSought)
+        Guid applicationId)
     {
         var sut = CreateSut();
 
@@ -36,7 +49,7 @@ public class NotificationHistoryRepositoryTests
         await sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
 
         var result = await sut.GetNotificationHistoryForApplicationAsync(
-            applicationReferenceSought,
+            applicationId,
             null,
             CancellationToken.None);
 
@@ -54,7 +67,7 @@ public class NotificationHistoryRepositoryTests
         await sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
 
         var result = await sut.GetNotificationHistoryForApplicationAsync(
-            existingItem.ApplicationReference!,
+            existingItem.ApplicationId!.Value,
             null,
             CancellationToken.None);
 
@@ -74,7 +87,7 @@ public class NotificationHistoryRepositoryTests
         await sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
 
         var result = await sut.GetNotificationHistoryForApplicationAsync(
-            existingItem.ApplicationReference!,
+            existingItem.ApplicationId!.Value,
             new [] { NotificationType.ExternalConsulteeInvite },
             CancellationToken.None);
 
@@ -98,7 +111,7 @@ public class NotificationHistoryRepositoryTests
         await sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
 
         var result = await sut.GetNotificationHistoryForApplicationAsync(
-            existingItem1.ApplicationReference!,
+            existingItem1.ApplicationId!.Value,
             new [] { NotificationType.ApplicationResubmitted },
             CancellationToken.None);
 

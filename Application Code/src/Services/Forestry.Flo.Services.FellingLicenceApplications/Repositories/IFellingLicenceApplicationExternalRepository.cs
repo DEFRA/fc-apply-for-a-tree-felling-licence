@@ -96,10 +96,30 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
     /// <returns>A list of Properties attached to the application </returns>
     Task<Maybe<List<Guid>>> GetApplicationComparmentIdsAsync(Guid applicationId, CancellationToken cancellationToken);
 
-    Task<SubmittedFlaPropertyDetail?> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Retrieves the existing submitted FLA property detail for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the submitted FLA property detail for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Maybe{SubmittedFlaPropertyDetail}"/> containing the existing submitted FLA property detail if found; otherwise, an empty value.
+    /// </returns>
+    Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Adds a new Submitted FLA Property Detail record to the database.
+    /// </summary>
+    /// <param name="submittedFlaPropertyDetail">The <see cref="SubmittedFlaPropertyDetail"/> entity to save.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>An awaitable task.</returns>
     Task AddSubmittedFlaPropertyDetailAsync(SubmittedFlaPropertyDetail submittedFlaPropertyDetail, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Deletes the given Submitted FLA Property Detail record from the database.
+    /// </summary>
+    /// <param name="submittedFlaPropertyDetail">The <see cref="SubmittedFlaPropertyDetail"/> entity to delete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>An awaitable task.</returns>
     Task DeleteSubmittedFlaPropertyDetailAsync(SubmittedFlaPropertyDetail submittedFlaPropertyDetail, CancellationToken cancellationToken);
 
     /// <summary>
@@ -116,16 +136,63 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
     /// </summary>
     /// <param name="felingLicenceApplication">The FLA to be removed <see cref="FellingLicenceApplication"/>.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns></returns>
+    /// <returns>A <see cref="UnitResult"/> indicating if there were any failure.</returns>
     Task<UnitResult<UserDbErrorReason>> DeleteFlaAsync(FellingLicenceApplication felingLicenceApplication, CancellationToken cancellationToken);
 
-    Task<IList<AssigneeHistory>> GetCurrentlyAssignedAssigneeHistoryAsync(Guid applicationId, CancellationToken cancellationToken);
-
+    /// <summary>
+    /// Gets the case notes for an application, optionally filtering by visibility to applicant only.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve case notes for.</param>
+    /// <param name="visibleToApplicantOnly">A filter to indicate whether to only return case notes that are visible to applicants.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of case note entities.</returns>
     Task<IList<CaseNote>> GetCaseNotesAsync(Guid applicationId, bool visibleToApplicantOnly, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Verifies that the given woodland owner Id is associated with the given application Id.
+    /// </summary>
+    /// <param name="woodlandOwnerId">The woodland owner id to check.</param>
+    /// <param name="applicationId">The application id to check.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>True if the ids match, otherwise false.</returns>
     Task<bool> VerifyWoodlandOwnerIdForApplicationAsync(Guid woodlandOwnerId, Guid applicationId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Gets the current step status for the application with the given Id.
+    /// </summary>
+    /// <param name="applicationId">The application to retrieve the step status for.</param>
+    /// <returns>The <see cref="FellingLicenceApplicationStepStatus"/> for the given application id.</returns>
     Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId);
+
+    /// <summary>
+    /// Retrieves a specific Submitted FLA Property Compartment by its ID.
+    /// </summary>
+    /// <param name="compartmentId">The ID of the compartment to retrieve by its ID.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="SubmittedFlaPropertyCompartment"/> if one exists for the given ID, otherwise <see cref="Maybe{T}.None"/></returns>
     Task<Maybe<SubmittedFlaPropertyCompartment>> GetSubmittedFlaPropertyCompartmentByIdAsync(Guid compartmentId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the zone information for a specific Submitted FLA Property Compartment.
+    /// </summary>
+    /// <param name="compartmentId">The ID of the submitted FLA property compartment to update.</param>
+    /// <param name="zone1">A flag to indicate the compartment is in Zone 1.</param>
+    /// <param name="zone2">A flag to indicate the compartment is in Zone 2.</param>
+    /// <param name="zone3">A flag to indicate the compartment is in Zone 3.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="UnitResult"/> indicating if the operation failed.</returns>
     Task<UnitResult<UserDbErrorReason>> UpdateSubmittedFlaPropertyCompartmentZonesAsync(Guid compartmentId, bool zone1, bool zone2, bool zone3, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates any existing Woodland Officer Review task completion flags for tasks that will need to be redone on
+    /// resubmitting the application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to update.</param>
+    /// <param name="updatedDate">The date and time that the resubmission is triggered.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="UnitResult"/> struct indicating if the operation fails.</returns>
+    Task<UnitResult<UserDbErrorReason>> UpdateExistingWoodlandOwnerReviewFlagsForResubmission(
+        Guid applicationId,
+        DateTime updatedDate,
+        CancellationToken cancellationToken);
 }

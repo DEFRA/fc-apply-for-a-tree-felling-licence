@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -78,12 +77,12 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.DateReceived.Should().Be(requestedTime);
+        Assert.True(updatedApp.HasValue);
+        Assert.Equal(requestedTime, updatedApp.Value.DateReceived);
     }
 
     [Theory]
@@ -97,15 +96,15 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
+        Assert.True(updatedApp.HasValue);
 
         var expectedCitizenCharterDate = updatedApp.Value.DateReceived!.Value.Add(Options.CitizensCharterDateLength);
 
-        updatedApp.Value.CitizensCharterDate.Should().Be(expectedCitizenCharterDate);
+        Assert.Equal(expectedCitizenCharterDate, updatedApp.Value.CitizensCharterDate);
     }
 
     [Theory]
@@ -114,11 +113,11 @@ public class UpdateFellingLicenceApplicationServiceTests
     {
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeFalse();
+        Assert.False(updatedApp.HasValue);
     }
 
     [Theory]
@@ -150,12 +149,12 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.DateReceived.Should().BeNull();
+        Assert.True(updatedApp.HasValue);
+        Assert.Null(updatedApp.Value.DateReceived);
     }
 
     [Theory, AutoMoqData]
@@ -169,12 +168,12 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.SetApplicationApproverAsync(application.Id, approverId, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.ApproverId.Should().Be(approverId);
+        Assert.True(updatedApp.HasValue);
+        Assert.Equal(approverId, updatedApp.Value.ApproverId);
     }
 
     [Fact]
@@ -188,12 +187,12 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.SetApplicationApproverAsync(application.Id, null, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.ApproverId.Should().BeNull();
+        Assert.True(updatedApp.HasValue);
+        Assert.Null(updatedApp.Value.ApproverId);
     }
 
     [Theory, AutoMoqData]
@@ -203,7 +202,7 @@ public class UpdateFellingLicenceApplicationServiceTests
     {
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -216,13 +215,13 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.EnvironmentalImpactAssessment.Should().NotBeNull();
-        updatedApp.Value.EnvironmentalImpactAssessment!.HasApplicationBeenCompleted.Should().Be(eiaRecord.HasApplicationBeenCompleted);
-        updatedApp.Value.EnvironmentalImpactAssessment!.HasApplicationBeenSent.Should().Be(eiaRecord.HasApplicationBeenSent);
+        Assert.True(updatedApp.HasValue);
+        Assert.NotNull(updatedApp.Value.EnvironmentalImpactAssessment);
+        Assert.Equal(eiaRecord.HasApplicationBeenCompleted, updatedApp.Value.EnvironmentalImpactAssessment!.HasApplicationBeenCompleted);
+        Assert.Equal(eiaRecord.HasApplicationBeenSent, updatedApp.Value.EnvironmentalImpactAssessment!.HasApplicationBeenSent);
     }
     [Theory, AutoMoqData]
     public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ReturnsFailure_WhenRepositoryFails(
@@ -231,7 +230,7 @@ public class UpdateFellingLicenceApplicationServiceTests
     {
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -251,7 +250,7 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -271,7 +270,7 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -291,7 +290,7 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]
@@ -311,7 +310,7 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]
@@ -331,7 +330,7 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 
 }

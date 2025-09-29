@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using FluentEmail.Core;
 using FluentEmail.Core.Interfaces;
 using FluentEmail.Core.Models;
@@ -76,7 +75,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         
         VerifyEmailSent(expectedSubject, new [] { notificationRecipient }, notificationRecipients);
     }
@@ -100,7 +99,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken: CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
@@ -121,7 +120,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
     
@@ -141,7 +140,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
     
@@ -161,7 +160,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
     
@@ -181,7 +180,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
     
@@ -201,7 +200,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
     
@@ -221,7 +220,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
     
@@ -241,7 +240,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
     
@@ -261,7 +260,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
     }
 
@@ -284,7 +283,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, attachments, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients, attachments);
     }
     
@@ -297,7 +296,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _unitOfWOrkMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
     
@@ -315,7 +314,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName,  cancellationToken: CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _unitOfWOrkMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -336,7 +335,7 @@ public class EmailServiceTests
             notificationRecipient, notificationRecipients, null, senderName, cancellationToken:CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         VerifyEmailSent(expectedSubject, new[] { notificationRecipient }, notificationRecipients);
         _unitOfWOrkMock.VerifyAll();
         _notificationHistoryRepository.Verify(r => r.Add(It.Is<NotificationHistory>(h => 
@@ -359,8 +358,8 @@ public class EmailServiceTests
         var result = await _sut.CreateNotificationContentAsync(model, notificationType);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.NotEmpty(result.Value);
     }
     
     [Theory, AutoMoqData]
@@ -373,7 +372,7 @@ public class EmailServiceTests
         var result = await _sut.CreateNotificationContentAsync(model, notificationType);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
 
     private void VerifyEmailSent(

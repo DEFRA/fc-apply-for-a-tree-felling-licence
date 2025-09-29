@@ -14,6 +14,8 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+using Moq.Protected;
 using Xunit;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 
@@ -123,6 +125,234 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
         Assert.False(updatedFla.WoodlandOfficerReview.EiaScreeningComplete);
     }
 
+    [Fact]
+    public async Task UpdateFellingAndRestockingAmendmentReview_Succeeds_WhenValid()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var applicantId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId, applicantId);
+
+        var review = _fixture.Build<FellingAndRestockingAmendmentReview>()
+            .With(x => x.WoodlandOfficerReviewId, fla.WoodlandOfficerReview!.Id)
+            .With(x => x.ApplicantAgreed, true)
+            .With(x => x.ApplicantDisagreementReason, string.Empty)
+            .Without(x => x.ResponseReceivedDate)
+            .Create();
+
+        fla.WoodlandOfficerReview.FellingAndRestockingAmendmentReviews.Clear();
+        fla.WoodlandOfficerReview!.FellingAndRestockingAmendmentReviews.Add(review);
+
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = fla.Id,
+            ApplicantAgreed = false,
+            ApplicantDisagreementReason = "Some reason"
+        };
+
+        var result = await sut.UpdateFellingAndRestockingAmendmentReviewAsync(model, applicantId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        var updatedReview = _context.Set<FellingAndRestockingAmendmentReview>().First(x => x.WoodlandOfficerReviewId == fla.WoodlandOfficerReview.Id);
+        Assert.Equal(model.ApplicantAgreed, updatedReview.ApplicantAgreed);
+        Assert.Equal(model.ApplicantDisagreementReason, updatedReview.ApplicantDisagreementReason);
+        Assert.True(updatedReview.ResponseReceivedDate > DateTime.UtcNow.AddMinutes(-2));
+
+        var woodlandOfficerReview = _context.WoodlandOfficerReviews.First(x => x.Id == fla.WoodlandOfficerReview.Id);
+        Assert.InRange(woodlandOfficerReview.LastUpdatedDate, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow.AddMinutes(1));
+    }
+
+    [Fact]
+    public async Task UpdateFellingAndRestockingAmendmentReview_Fails_WhenApplicantAgreedFalseAndNoReason()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+
+        var review = _fixture.Build<FellingAndRestockingAmendmentReview>()
+            .With(x => x.WoodlandOfficerReviewId, fla.WoodlandOfficerReview!.Id)
+            .Without(x => x.ApplicantAgreed)
+            .Without(x => x.ApplicantDisagreementReason)
+            .Without(x => x.ResponseReceivedDate)
+            .Create();
+
+        fla.WoodlandOfficerReview!.FellingAndRestockingAmendmentReviews.Add(review);
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = fla.Id,
+            ApplicantAgreed = false,
+            ApplicantDisagreementReason = null
+        };
+
+        var result = await sut.UpdateFellingAndRestockingAmendmentReviewAsync(model, woodlandOfficerId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("disagreement reason", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UpdateFellingAndRestockingAmendmentReview_Fails_WhenNoExistingReview()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var applicantId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId, applicantId);
+        fla.WoodlandOfficerReview.FellingAndRestockingAmendmentReviews.Clear();
+
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = fla.Id,
+            ApplicantAgreed = false,
+            ApplicantDisagreementReason = "Some reason"
+        };
+
+        var result = await sut.UpdateFellingAndRestockingAmendmentReviewAsync(model, applicantId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("No existing felling and restocking amendment review found", result.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UpdateFellingAndRestockingAmendmentReview_ReturnsFailure_WhenApplicationNotInWoodlandOfficerReviewState()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+        var review = _fixture.Build<FellingAndRestockingAmendmentReview>()
+            .With(x => x.WoodlandOfficerReviewId, fla.WoodlandOfficerReview!.Id)
+            .Without(x => x.ApplicantAgreed)
+            .Without(x => x.ApplicantDisagreementReason)
+            .Without(x => x.ResponseReceivedDate)
+            .Create();
+
+        fla.WoodlandOfficerReview!.FellingAndRestockingAmendmentReviews.Add(review);
+
+        _context.FellingLicenceApplications.Add(fla);
+
+        // Change status to something else to fail the state check
+        fla.StatusHistories.Clear();
+        fla.StatusHistories.Add(new StatusHistory
+        {
+            Created = DateTime.UtcNow.AddDays(-1),
+            Status = FellingLicenceStatus.Draft
+        });
+
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = fla.Id,
+            ApplicantAgreed = false,
+            ApplicantDisagreementReason = "Some reason"
+        };
+
+        var result = await sut.UpdateFellingAndRestockingAmendmentReviewAsync(model, woodlandOfficerId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("unable to be updated", result.Error, StringComparison.OrdinalIgnoreCase);
+
+        var updatedFla = _context.FellingLicenceApplications
+            .Include(fellingLicenceApplication => fellingLicenceApplication.WoodlandOfficerReview!)
+            .First(x => x.Id == fla.Id);
+
+        Assert.NotNull(updatedFla.WoodlandOfficerReview);
+        Assert.False(updatedFla.WoodlandOfficerReview.EiaScreeningComplete);
+    }
+
+    [Fact]
+    public async Task UpdateFellingAndRestockingAmendmentReview_ReturnsFailure_WhenUserIsNotAssignedWoodlandOfficer()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+        var review = _fixture.Build<FellingAndRestockingAmendmentReview>()
+            .With(x => x.WoodlandOfficerReviewId, fla.WoodlandOfficerReview!.Id)
+            .Without(x => x.ApplicantAgreed)
+            .Without(x => x.ApplicantDisagreementReason)
+            .Without(x => x.ResponseReceivedDate)
+            .Create();
+
+        fla.WoodlandOfficerReview!.FellingAndRestockingAmendmentReviews.Add(review);
+
+        _context.FellingLicenceApplications.Add(fla);
+
+        // Remove WO assignment to fail the user check
+        fla.AssigneeHistories.Clear();
+
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = fla.Id,
+            ApplicantAgreed = false,
+            ApplicantDisagreementReason = "Some reason"
+        };
+
+        var result = await sut.UpdateFellingAndRestockingAmendmentReviewAsync(model, woodlandOfficerId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("unable to be updated", result.Error, StringComparison.OrdinalIgnoreCase);
+
+        var updatedFla = _context.FellingLicenceApplications
+            .Include(fellingLicenceApplication => fellingLicenceApplication.WoodlandOfficerReview!)
+            .First(x => x.Id == fla.Id);
+
+        Assert.NotNull(updatedFla.WoodlandOfficerReview);
+        Assert.False(updatedFla.WoodlandOfficerReview.EiaScreeningComplete);
+    }
+
+    [Fact]
+    public async Task UpdateFellingAndRestockingAmendmentReview_Fails_WhenResponseAlreadyReceived()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var applicantId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId, applicantId);
+
+        var review = _fixture.Build<FellingAndRestockingAmendmentReview>()
+            .With(x => x.WoodlandOfficerReviewId, fla.WoodlandOfficerReview!.Id)
+            .With(x => x.ApplicantAgreed, true)
+            .With(x => x.ApplicantDisagreementReason, string.Empty)
+            .With(x => x.ResponseReceivedDate, DateTime.UtcNow.AddDays(-1))
+            .Create();
+
+        fla.WoodlandOfficerReview.FellingAndRestockingAmendmentReviews.Clear();
+        fla.WoodlandOfficerReview!.FellingAndRestockingAmendmentReviews.Add(review);
+
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = fla.Id,
+            ApplicantAgreed = false,
+            ApplicantDisagreementReason = "Some reason"
+        };
+
+        var result = await sut.UpdateFellingAndRestockingAmendmentReviewAsync(model, applicantId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(
+            "Cannot update felling and restocking amendment review as a response has already been received",
+            result.Error,
+            StringComparison.OrdinalIgnoreCase);
+
+        var updatedReview = _context.Set<FellingAndRestockingAmendmentReview>().First(x => x.WoodlandOfficerReviewId == fla.WoodlandOfficerReview.Id);
+        Assert.NotNull(updatedReview.ResponseReceivedDate);
+    }
+
     private UpdateWoodlandOfficerReviewService CreateSut()
     {
         _clock.Reset();
@@ -170,7 +400,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
             _visibilityOptions.Object);
     }
 
-    private FellingLicenceApplication CreateFellingLicenceApplication(Guid? assignedWoId = null)
+    private FellingLicenceApplication CreateFellingLicenceApplication(Guid? assignedWoId = null, Guid? authorId = null)
     {
         var fla = _fixture.Create<FellingLicenceApplication>();
 
@@ -193,6 +423,16 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
             .With(x => x.Role, AssignedUserRole.WoodlandOfficer)
             .With(x => x.AssignedUserId, assignedWoId ?? Guid.NewGuid())
             .Create());
+
+        fla.AssigneeHistories.Add(_fixture.Build<AssigneeHistory>()
+            .Without(x => x.FellingLicenceApplicationId)
+            .Without(x => x.FellingLicenceApplication)
+            .Without(x => x.TimestampUnassigned)
+            .With(x => x.TimestampAssigned, now.AddDays(-1))
+            .With(x => x.Role, AssignedUserRole.Author)
+            .With(x => x.AssignedUserId, authorId ?? Guid.NewGuid())
+            .Create());
+
 
         fla.WoodlandOfficerReview ??= new WoodlandOfficerReview();
 

@@ -22,7 +22,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandO
 
 public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
 {
-    private readonly IRetrieveNotificationHistory _notificationHistoryService;
+    private readonly INotificationHistoryService _notificationHistoryService;
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
     private readonly IAuditService<PublicRegisterUseCase> _auditService;
     private readonly RequestContext _requestContext;
@@ -42,7 +42,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
         IUpdateWoodlandOfficerReviewService updateWoodlandOfficerReviewService,
         IPublicRegister publicRegister,
-        IRetrieveNotificationHistory notificationHistoryService,
+        INotificationHistoryService notificationHistoryService,
         IAuditService<PublicRegisterUseCase> auditService,
         IAgentAuthorityService agentAuthorityService,
         RequestContext requestContext,
@@ -95,8 +95,8 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         }
 
         var comments = await _notificationHistoryService.RetrieveNotificationHistoryAsync(
-            application.Value.ApplicationReference,
-            new[] { NotificationType.PublicRegisterComment },
+            applicationId,
+            [ NotificationType.PublicRegisterComment ],
             cancellationToken);
 
         if (comments.IsFailure)
@@ -254,6 +254,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
             var adminHubAddress = await GetConfiguredFcAreasService.TryGetAdminHubAddress(getPublishModel.Value.AdminRegion, cancellationToken);
 
             await SendNotifications(
+                applicationId,
                 getPublishModel.Value.CaseReference,
                 getPublishModel.Value.PropertyName,
                 adminHubAddress,
@@ -328,6 +329,50 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Failure(updateResult.Error);
     }
 
+    public async Task<Result<ReviewCommentModel>> GetPublicRegisterCommentAsync(Guid applicationId, Guid commentId, CancellationToken cancellationToken)
+    {
+        var commentResult = await _notificationHistoryService.GetNotificationHistoryByIdAsync(commentId, cancellationToken);
+        if (commentResult.IsFailure)
+            return Result.Failure<ReviewCommentModel>(commentResult.Error);
+
+        commentResult.Value.LastUpdatedUser = await GetUserNameAsync(commentResult.Value.LastUpdatedById, cancellationToken);
+
+        var publicRegisterDetailsResult = await GetPublicRegisterDetailsAsync(applicationId, cancellationToken);
+        if (publicRegisterDetailsResult.IsFailure)
+            return Result.Failure<ReviewCommentModel>("Public register details not found.");
+
+        publicRegisterDetailsResult.Value.Breadcrumbs!.Breadcrumbs.Add(
+            new BreadCrumb("Consultation public register", "WoodlandOfficerReview", "PublicRegister", applicationId.ToString()));
+
+        var viewModel = new ReviewCommentModel
+        {
+            FellingLicenceApplicationSummary = publicRegisterDetailsResult.Value.FellingLicenceApplicationSummary,
+            Breadcrumbs = publicRegisterDetailsResult.Value.Breadcrumbs,
+            ApplicationId = publicRegisterDetailsResult.Value.ApplicationId,
+            Comment = commentResult.Value
+        };
+        return Result.Success(viewModel);
+    }
+
+    public async Task<Result> UpdatePublicRegisterDetailsAsync(Guid commentId, NotificationHistoryModel model, CancellationToken cancellationToken)
+    {
+        // Update Response, Status, LastUpdatedById, LastUpdatedDate on the notification history
+        var result = await _notificationHistoryService.UpdateResponseStatusByIdAsync(
+            commentId,
+            model.Status,
+            model.Response,
+            model.LastUpdatedById ?? Guid.Empty,
+            model.LastUpdatedDate ?? DateTime.UtcNow,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            _logger.LogError("Failed to update public register comment with error {Error}", result.Error);
+        }
+
+        return result;
+    }
+
     private void SetBreadcrumbs(FellingLicenceApplicationPageViewModel model)
     {
         var breadCrumbs = new List<BreadCrumb>
@@ -373,6 +418,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
     }
 
     private async Task SendNotifications(
+        Guid applicationId,
         string applicationReference,
         string propertyName,
         string adminHubAddress,
@@ -398,7 +444,8 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
                 PublishedDate = DateTimeDisplay.GetDateDisplayString(publishedDate),
                 ExpiryDate = DateTimeDisplay.GetDateDisplayString(publishedDate.Add(period)),
                 Name = user.FullName,
-                AdminHubFooter = adminHubAddress
+                AdminHubFooter = adminHubAddress,
+                ApplicationId = applicationId
             };
 
             var notificationResult = await _sendNotifications.SendNotificationAsync(
@@ -412,5 +459,20 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
                 _logger.LogError("Could not send notification for publish to consultation public register to {Name}", user.FullName);
             }
         }
+    }
+
+    private async Task<string> GetUserNameAsync(Guid? userId, CancellationToken cancellationToken)
+    {
+        if (!userId.HasValue)
+        {
+            return string.Empty;
+        }
+        var user = await InternalUserAccountService.GetUserAccountAsync(userId.Value, cancellationToken);
+        if (user.HasNoValue)
+        {
+            return string.Empty;
+        }
+        var userModel = ModelMapping.ToUserAccountModel(user.Value);
+        return $"{userModel.FirstName} {userModel.LastName}".Trim();
     }
 }

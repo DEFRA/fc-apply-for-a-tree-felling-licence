@@ -28,7 +28,7 @@ dependencies:
 
   - name: pdf-generation-service
     version: ~1.0.0
-    repository: https://fsflo.azurecr.io/helm/v1/repo
+    repository: oci://fsflo.azurecr.io/helm
     condition: pdf-generation-service.enabled
 
   - name: rabbitmq

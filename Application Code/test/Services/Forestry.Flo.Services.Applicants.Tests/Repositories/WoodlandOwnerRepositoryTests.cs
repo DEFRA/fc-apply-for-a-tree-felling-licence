@@ -30,9 +30,8 @@ public class WoodlandOwnerRepositoryTests
         var result = await _sut.GetAsync(woodlandOwner.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.ContactName.Should().Be(woodlandOwner.ContactName);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(woodlandOwner.ContactName, result.Value.ContactName);
     }
     
     [Theory, AutoData]
@@ -44,9 +43,8 @@ public class WoodlandOwnerRepositoryTests
         var result =  await _sut.GetAsync(woodlandOwner.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoData]
@@ -58,16 +56,15 @@ public class WoodlandOwnerRepositoryTests
         var result =  await _sut.AddWoodlandOwnerAsync(woodlandOwner, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.ContactName.Should().Be(woodlandOwner.ContactName);
-        result.Value.ContactEmail.Should().Be(woodlandOwner.ContactEmail);
-        result.Value.ContactTelephone.Should().Be(woodlandOwner.ContactTelephone);
-        result.Value.ContactAddress.Should().Be(woodlandOwner.ContactAddress);
-        result.Value.IsOrganisation.Should().Be(woodlandOwner.IsOrganisation);
-        result.Value.OrganisationName.Should().Be(woodlandOwner.OrganisationName);
-        result.Value.OrganisationAddress.Should().Be(woodlandOwner.OrganisationAddress);
-        result.Value.Id.Should().NotBeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.Equal(woodlandOwner.ContactName, result.Value.ContactName);
+        Assert.Equal(woodlandOwner.ContactEmail, result.Value.ContactEmail);
+        Assert.Equal(woodlandOwner.ContactTelephone, result.Value.ContactTelephone);
+        Assert.Equal(woodlandOwner.ContactAddress, result.Value.ContactAddress);
+        Assert.Equal(woodlandOwner.IsOrganisation, result.Value.IsOrganisation);
+        Assert.Equal(woodlandOwner.OrganisationName, result.Value.OrganisationName);
+        Assert.Equal(woodlandOwner.OrganisationAddress, result.Value.OrganisationAddress);
+        Assert.NotEqual(Guid.Empty, result.Value.Id);
     }
 
     [Theory, AutoData]
@@ -81,8 +78,8 @@ public class WoodlandOwnerRepositoryTests
         var result =  await _sut.GetAllAsync(CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Count().Should().Be(expectedWoodlandOwners.Count);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedWoodlandOwners.Count, result.Value.Count());
 
         foreach (var actualWoodlandOwner in result.Value)
         {

@@ -20,6 +20,7 @@ using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
@@ -43,6 +44,8 @@ using FellingLicenceApplicationStepStatus =
     Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplicationStepStatus;
 using IUserAccountRepository = Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository;
 using PropertyProfileDetails = Forestry.Flo.External.Web.Models.FellingLicenceApplication.PropertyProfileDetails;
+using ProposedFellingDetailModel = Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedFellingDetailModel;
+using ProposedRestockingDetailModel = Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedRestockingDetailModel;
 
 namespace Forestry.Flo.External.Web.Services;
 
@@ -72,6 +75,7 @@ public class CreateFellingLicenceApplicationUseCase(
     IApplicationReferenceHelper applicationHelper,
     IPublicRegister publicRegisterService,
     IOptions<EiaOptions> eiaOptions,
+    IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
     IGetConfiguredFcAreas getConfiguredFcAreasService) 
     : ApplicationUseCaseCommon(retrieveUserAccountsService,
         retrieveWoodlandOwnersService,
@@ -1257,7 +1261,6 @@ public class CreateFellingLicenceApplicationUseCase(
     /// </summary>
     /// <param name="user">A current application user</param>
     /// <param name="applicationId">An application id</param>
-    /// <param name="eiaOptions"> EIA options</param>
     /// <param name="cancellationToken">A cancellation token</param>
     /// <returns></returns>
     public async Task<Maybe<FellingLicenceApplicationModel>> RetrieveFellingLicenceApplication(
@@ -1303,6 +1306,16 @@ public class CreateFellingLicenceApplicationUseCase(
         var agency = await GetAgencyModelForWoodlandOwnerAsync(application.Value.WoodlandOwnerId, cancellationToken);
 
         var requiresEia = application.Value.ShouldApplicationRequireEia();
+
+        var currentReview =
+            await getWoodlandOfficerReviewService.GetCurrentFellingAndRestockingAmendmentReviewAsync(applicationId,
+                cancellationToken);
+
+        if (currentReview.IsFailure)
+        {
+            _logger.LogWarning("unable to get current review for application, error : {error}", currentReview.Error);
+            return Maybe<FellingLicenceApplicationModel>.None;
+        }
 
         var applicationModel = new FellingLicenceApplicationModel
         {
@@ -1403,7 +1416,10 @@ public class CreateFellingLicenceApplicationUseCase(
                 ApplicationReference = application.Value.ApplicationReference,
                 EiaApplicationExternalUri = eiaOptions.Value.EiaApplicationExternalUri,
                 StepRequiredForApplication = requiresEia
-            }
+            },
+            CurrentReviewModel = currentReview.Value.TryGetValue(out var current)
+                ? current
+                : null
         };
 
         // In the event that SupportingDocumentation.StepComplete is null, indicating model has not been saved (which equates to NOT STARTED),
@@ -2867,7 +2883,8 @@ public class CreateFellingLicenceApplicationUseCase(
                 Name = user.FullName!,
                 PropertyName = submittedFlaPropertyDetail.Name,
                 ViewApplicationURL = linkToApplication,
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = applicationId
             };
 
             // TODO this should be in a service not the repo
@@ -2931,7 +2948,8 @@ public class CreateFellingLicenceApplicationUseCase(
                             Name = recipient.Name!,
                             PropertyName = submittedFlaPropertyDetail.Name,
                             ViewApplicationURL = linkToApplication,
-                            AdminHubFooter = adminHubFooter
+                            AdminHubFooter = adminHubFooter,
+                            ApplicationId = applicationId
                         };
 
                         var sendNotificationResult = await _sendNotifications.SendNotificationAsync(
@@ -3246,7 +3264,8 @@ public class CreateFellingLicenceApplicationUseCase(
                 PropertyName = propertyResult.Value.Name,
                 Name = user.FullName!,
                 ViewApplicationURL = linkToApplication,
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = applicationId
             };
 
             var woodlandOwner =
@@ -3317,7 +3336,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         Name = recipient.Name!,
                         PropertyName = propertyResult.Value.Name,
                         ViewApplicationURL = linkToApplication,
-                        AdminHubFooter = adminHubFooter
+                        AdminHubFooter = adminHubFooter,
+                        ApplicationId = applicationId
                     };
 
                     var sendNotificationResult = await _sendNotifications.SendNotificationAsync(

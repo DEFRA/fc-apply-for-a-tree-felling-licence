@@ -80,30 +80,30 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert values are mapped correctly
 
-        result.Value.ContactName.Should().Be(owner.ContactName);
-        result.Value.Id.Should().Be(owner.Id.Value);
-        result.Value.IsOrganisation.Should().BeTrue();
+        Assert.Equal(owner.ContactName, result.Value.ContactName);
+        Assert.Equal(owner.Id.Value, result.Value.Id);
+        Assert.True(result.Value.IsOrganisation);
 
-        result.Value.ContactAddress.Line1.Should().Be(owner.ContactAddress.Line1);
-        result.Value.ContactAddress.Line2.Should().Be(owner.ContactAddress.Line2);
-        result.Value.ContactAddress.Line3.Should().Be(owner.ContactAddress.Line3);
-        result.Value.ContactAddress.Line4.Should().Be(owner.ContactAddress.Line4);
-        result.Value.ContactAddress.PostalCode.Should().Be(owner.ContactAddress.PostalCode);
+        Assert.Equal(owner.ContactAddress.Line1, result.Value.ContactAddress.Line1);
+        Assert.Equal(owner.ContactAddress.Line2, result.Value.ContactAddress.Line2);
+        Assert.Equal(owner.ContactAddress.Line3, result.Value.ContactAddress.Line3);
+        Assert.Equal(owner.ContactAddress.Line4, result.Value.ContactAddress.Line4);
+        Assert.Equal(owner.ContactAddress.PostalCode, result.Value.ContactAddress.PostalCode);
 
-        result.Value.ContactTelephoneNumber.Should().Be(owner.ContactTelephone);
-        result.Value.ContactEmail.Should().Be(owner.ContactEmail);
+        Assert.Equal(owner.ContactTelephone, result.Value.ContactTelephoneNumber);
+        Assert.Equal(owner.ContactEmail, result.Value.ContactEmail);
 
-        result.Value.OrganisationAddress.Line1.Should().Be(owner.OrganisationAddress.Line1);
-        result.Value.OrganisationAddress.Line2.Should().Be(owner.OrganisationAddress.Line2);
-        result.Value.OrganisationAddress.Line3.Should().Be(owner.OrganisationAddress.Line3);
-        result.Value.OrganisationAddress.Line4.Should().Be(owner.OrganisationAddress.Line4);
-        result.Value.OrganisationAddress.PostalCode.Should().Be(owner.OrganisationAddress.PostalCode);
+        Assert.Equal(owner.OrganisationAddress.Line1, result.Value.OrganisationAddress.Line1);
+        Assert.Equal(owner.OrganisationAddress.Line2, result.Value.OrganisationAddress.Line2);
+        Assert.Equal(owner.OrganisationAddress.Line3, result.Value.OrganisationAddress.Line3);
+        Assert.Equal(owner.OrganisationAddress.Line4, result.Value.OrganisationAddress.Line4);
+        Assert.Equal(owner.OrganisationAddress.PostalCode, result.Value.OrganisationAddress.PostalCode);
 
-        result.Value.OrganisationName.Should().Be(owner.OrganisationName);
+        Assert.Equal(owner.OrganisationName, result.Value.OrganisationName);
 
         _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, CancellationToken.None), Times.Once);
     }
@@ -123,25 +123,25 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert values are mapped correctly
 
-        result.Value.ContactName.Should().Be(owner.ContactName);
-        result.Value.Id.Should().Be(owner.Id.Value);
-        result.Value.IsOrganisation.Should().BeFalse();
+        Assert.Equal(owner.ContactName, result.Value.ContactName);
+        Assert.Equal(owner.Id.Value, result.Value.Id);
+        Assert.False(result.Value.IsOrganisation);
 
-        result.Value.ContactAddress.Line1.Should().Be(owner.ContactAddress.Line1);
-        result.Value.ContactAddress.Line2.Should().Be(owner.ContactAddress.Line2);
-        result.Value.ContactAddress.Line3.Should().Be(owner.ContactAddress.Line3);
-        result.Value.ContactAddress.Line4.Should().Be(owner.ContactAddress.Line4);
-        result.Value.ContactAddress.PostalCode.Should().Be(owner.ContactAddress.PostalCode);
+        Assert.Equal(owner.ContactAddress.Line1, result.Value.ContactAddress.Line1);
+        Assert.Equal(owner.ContactAddress.Line2, result.Value.ContactAddress.Line2);
+        Assert.Equal(owner.ContactAddress.Line3, result.Value.ContactAddress.Line3);
+        Assert.Equal(owner.ContactAddress.Line4, result.Value.ContactAddress.Line4);
+        Assert.Equal(owner.ContactAddress.PostalCode, result.Value.ContactAddress.PostalCode);
 
-        result.Value.ContactTelephoneNumber.Should().Be(owner.ContactTelephone);
-        result.Value.ContactEmail.Should().Be(owner.ContactEmail);
+        Assert.Equal(owner.ContactTelephone, result.Value.ContactTelephoneNumber);
+        Assert.Equal(owner.ContactEmail, result.Value.ContactEmail);
 
-        result.Value.OrganisationAddress.Should().BeNull();
-        result.Value.OrganisationName.Should().BeNull();
+        Assert.Null(result.Value.OrganisationAddress);
+        Assert.Null(result.Value.OrganisationName);
 
         _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, CancellationToken.None), Times.Once);
     }
@@ -157,7 +157,7 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, CancellationToken.None), Times.Once);
     }
@@ -175,7 +175,7 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var result = await sut.UpdateWoodlandOwnerEntityAsync(model, _externalApplicant!, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _mockWoodlandOwnerCreationService.Verify(v => v.AmendWoodlandOwnerDetailsAsync(
             It.Is<WoodlandOwnerModel>(
@@ -215,7 +215,7 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var result = await sut.UpdateWoodlandOwnerEntityAsync(model, _externalApplicant!, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _mockWoodlandOwnerCreationService.Verify(v => v.AmendWoodlandOwnerDetailsAsync(
             It.Is<WoodlandOwnerModel>(
@@ -254,7 +254,7 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var result = await sut.UpdateWoodlandOwnerEntityAsync(model, _externalApplicant!, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _mockWoodlandOwnerCreationService.Verify(v => v.AmendWoodlandOwnerDetailsAsync(
             It.Is<WoodlandOwnerModel>(
@@ -293,7 +293,7 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var result = await sut.UpdateWoodlandOwnerEntityAsync(model, _externalApplicant!, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockWoodlandOwnerCreationService.Verify(v => v.AmendWoodlandOwnerDetailsAsync(
             It.Is<WoodlandOwnerModel>(

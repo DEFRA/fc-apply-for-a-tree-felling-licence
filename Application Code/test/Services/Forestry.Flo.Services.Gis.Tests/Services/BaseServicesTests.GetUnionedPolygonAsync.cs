@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using FluentAssertions;
 using Forestry.Flo.Services.Gis.Models.Esri.Common;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
@@ -55,7 +54,7 @@ public partial class BaseServicesTests
         var response = await access.GetUnionedPolygonAsync(_polygons.Select(p => p.GetGeometrySimple()).ToList(), CancellationToken.None);
 
 
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
         _mockHttpHandler.VerifyAll();
     }
 }

@@ -757,6 +757,40 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.ToTable("ExternalAccessLink", "FellingLicenceApplications");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingAndRestockingAmendmentReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<DateTime>("AmendmentsSentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool?>("ApplicantAgreed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ApplicantDisagreementReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ResponseDeadline")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ResponseReceivedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WoodlandOfficerReviewId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WoodlandOfficerReviewId", "ResponseReceivedDate")
+                        .IsUnique()
+                        .HasFilter("\"ResponseReceivedDate\" IS NULL");
+
+                    b.ToTable("FellingAndRestockingAmendmentReview", "FellingLicenceApplications");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1268,6 +1302,48 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.ToTable("StatusHistory", "FellingLicenceApplications");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedCompartmentDesignations", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<bool>("None")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Other")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OtherDesignationDetails")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Ramser")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Sacs")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Sbi")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Spa")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Sssi")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("SubmittedFlaPropertyCompartmentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmittedFlaPropertyCompartmentId")
+                        .IsUnique();
+
+                    b.ToTable("SubmittedCompartmentDesignations", "FellingLicenceApplications");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedFlaPropertyCompartment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1393,6 +1469,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<bool>("ConsultationsComplete")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("DesignationsComplete")
                         .HasColumnType("boolean");
 
                     b.Property<bool?>("EiaChecklistDone")
@@ -1882,6 +1961,17 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingAndRestockingAmendmentReview", b =>
+                {
+                    b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.WoodlandOfficerReview", "WoodlandOfficerReview")
+                        .WithMany("FellingAndRestockingAmendmentReviews")
+                        .HasForeignKey("WoodlandOfficerReviewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WoodlandOfficerReview");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplicationStepStatus", b =>
                 {
                     b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", "FellingLicenceApplication")
@@ -2014,6 +2104,17 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Navigation("FellingLicenceApplication");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedCompartmentDesignations", b =>
+                {
+                    b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedFlaPropertyCompartment", "SubmittedFlaPropertyCompartment")
+                        .WithOne("SubmittedCompartmentDesignations")
+                        .HasForeignKey("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedCompartmentDesignations", "SubmittedFlaPropertyCompartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SubmittedFlaPropertyCompartment");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedFlaPropertyCompartment", b =>
                 {
                     b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedFlaPropertyDetail", "SubmittedFlaPropertyDetail")
@@ -2133,6 +2234,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedFlaPropertyCompartment", b =>
                 {
                     b.Navigation("ConfirmedFellingDetails");
+
+                    b.Navigation("SubmittedCompartmentDesignations");
                 });
 
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.SubmittedFlaPropertyDetail", b =>
@@ -2142,6 +2245,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.WoodlandOfficerReview", b =>
                 {
+                    b.Navigation("FellingAndRestockingAmendmentReviews");
+
                     b.Navigation("SiteVisitEvidences");
                 });
 

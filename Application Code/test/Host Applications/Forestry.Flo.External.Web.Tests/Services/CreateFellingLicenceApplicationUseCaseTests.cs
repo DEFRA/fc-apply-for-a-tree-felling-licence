@@ -28,6 +28,7 @@ using Forestry.Flo.Services.PropertyProfiles.Entities;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Forestry.Flo.Services.PropertyProfiles.Services;
 using Forestry.Flo.Tests.Common;
+using LinqKit;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -35,6 +36,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using NodaTime.Testing;
+using System.Linq;
 using IUserAccountRepository = Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository;
 using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 
@@ -75,6 +77,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
     private readonly Mock<IApplicationReferenceHelper> _applicationReferenceHelper;
     private readonly Mock<IPublicRegister> _publicRegisterService;
     private readonly Mock<IDbContextTransaction> _transactionMock;
+    private readonly Mock<IGetWoodlandOfficerReviewService> _getWoodlandOfficerReviewService;
 
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas;
     private const string AdminHubAddress = "admin hub address";
@@ -117,6 +120,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
         _getConfiguredFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(AdminHubAddress);
         _publicRegisterService = new Mock<IPublicRegister>();
+        _getWoodlandOfficerReviewService = new Mock<IGetWoodlandOfficerReviewService>();
 
         _mockBus = new Mock<IBusControl>();
 
@@ -185,6 +189,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
             _applicationReferenceHelper.Object,
             _publicRegisterService.Object,
             _mockEiaOptions.Object,
+            _getWoodlandOfficerReviewService.Object,
             _getConfiguredFcAreas.Object);
     }
 
@@ -236,13 +241,11 @@ public class CreateFellingLicenceApplicationUseCaseTests
             await _sut.GetWoodlandOwnerApplicationsAsync(_woodlandOwner.Id, _externalApplicant, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(licenceApplications.Count);
-        result.Value.First().Status.Should()
-            .Be(licenceApplications.First().StatusHistories.OrderByDescending(s => s.Created)
-                .First().Status);
-        result.Value.First().PropertyName.Should()
-            .Be(propertyProfiles[0].Name);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(licenceApplications.Count, result.Value.Count());
+        Assert.Equal(licenceApplications.First().StatusHistories.OrderByDescending(s => s.Created).First().Status,
+                result.Value.First().Status);
+        Assert.Equal(propertyProfiles[0].Name, result.Value.First().PropertyName);
     }
 
     [Theory, AutoMoqData]
@@ -275,8 +278,9 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEquivalentTo(ModelMapping.ToPropertyProfileDetailsModelList(propertyProfiles));
+        Assert.True(result.IsSuccess);
+        
+        Assert.Equivalent(ModelMapping.ToPropertyProfileDetailsModelList(propertyProfiles), result.Value);
     }
 
     [Theory, AutoMoqData]
@@ -302,7 +306,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _fellingLicenceApplicationRepository.Verify(r => r.CreateAndSaveAsync(It.Is<FellingLicenceApplication>(app =>
             app.CreatedTimestamp == UtcNow
             && app.StatusHistories.Any()
@@ -343,8 +347,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.LinkedPropertyProfile!.ProposedFellingDetails!.All(d =>
                 compartmentIds.Any(i => i == d.PropertyProfileCompartmentId))
@@ -376,8 +380,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             await _sut.UpdateWoodland(_externalApplicant, selectWoodlandModel, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             !app.LinkedPropertyProfile!.ProposedFellingDetails!.Any()
@@ -444,21 +448,16 @@ public class CreateFellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeTrue();
-        result.Value.ApplicationId.Should().Be(application.Id);
-        result.Value.ApplicationSummary.Should().NotBeNull();
-        result.Value.ApplicationSummary.Id.Should().Be(application.Id);
-        result.Value.ApplicationSummary.ApplicationReference.Should().Be(application.ApplicationReference);
-        result.Value.ApplicationSummary.PropertyProfileId.Should()
-            .Be(application.LinkedPropertyProfile.PropertyProfileId);
-        result.Value.SelectedCompartments.SelectedCompartmentIds.Should()
-            .BeEquivalentTo(
-                application.LinkedPropertyProfile!.ProposedFellingDetails!
-                    .Select(p => p.PropertyProfileCompartmentId));
-        result.Value.FellingAndRestockingDetails.DetailsList.Select(d => d.CompartmentId).Should()
-            .BeEquivalentTo(
-                application.LinkedPropertyProfile!.ProposedFellingDetails!
-                    .Select(p => p.PropertyProfileCompartmentId));
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+        Assert.NotNull(result.Value.ApplicationSummary);
+        Assert.Equal(application.Id, result.Value.ApplicationSummary.Id);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationSummary.ApplicationReference);
+        Assert.Equal(application.LinkedPropertyProfile.PropertyProfileId, result.Value.ApplicationSummary.PropertyProfileId);
+        Assert.Equivalent(application.LinkedPropertyProfile!.ProposedFellingDetails!
+            .Select(p => p.PropertyProfileCompartmentId), result.Value.SelectedCompartments.SelectedCompartmentIds);
+        Assert.Equivalent(application.LinkedPropertyProfile!.ProposedFellingDetails!
+            .Select(p => p.PropertyProfileCompartmentId), result.Value.FellingAndRestockingDetails.DetailsList.Select(d => d.CompartmentId));
     }
 
     [Theory, AutoMoqData]
@@ -489,8 +488,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             await _sut.SetApplicationOperationsAsync(_externalApplicant, operationDetailsModel, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.ProposedTiming == operationDetailsModel.ProposedTiming
@@ -541,8 +540,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             await _sut.SetApplicationOperationsAsync(fcUser, operationDetailsModel, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.ProposedTiming == operationDetailsModel.ProposedTiming
@@ -591,8 +590,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -668,8 +667,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -737,8 +736,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         var expectedFellingStatus = fellingStatus.HasValue && fellingStatus.Value;
 
@@ -1050,19 +1049,19 @@ public class CreateFellingLicenceApplicationUseCaseTests
 
         // Assert
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        capturedDetail.Should().NotBeNull();
-        capturedDetail!.Name.Should().Be(propertyProfile.Name);
-        capturedDetail.NearestTown.Should().Be(propertyProfile.NearestTown);
-        capturedDetail.NameOfWood.Should().Be(propertyProfile.NameOfWood);
-        capturedDetail.HasWoodlandManagementPlan.Should().Be(propertyProfile.HasWoodlandManagementPlan);
-        capturedDetail.WoodlandManagementPlanReference.Should().Be(propertyProfile.WoodlandManagementPlanReference);
-        capturedDetail.IsWoodlandCertificationScheme.Should().Be(propertyProfile.IsWoodlandCertificationScheme);
-        capturedDetail.WoodlandCertificationSchemeReference.Should()
-            .Be(propertyProfile.WoodlandCertificationSchemeReference);
-        capturedDetail.WoodlandOwnerId.Should().Be(propertyProfile.WoodlandOwnerId);
-        capturedDetail.SubmittedFlaPropertyCompartments!.Count().Should().Be(propertyProfile.Compartments.Count());
+        Assert.NotNull(capturedDetail);
+
+        Assert.Equal(propertyProfile.Name, capturedDetail.Name);
+        Assert.Equal(propertyProfile.NearestTown, capturedDetail.NearestTown);
+        Assert.Equal(propertyProfile.NameOfWood, capturedDetail.NameOfWood);
+        Assert.Equal(propertyProfile.HasWoodlandManagementPlan, capturedDetail.HasWoodlandManagementPlan);
+        Assert.Equal(propertyProfile.WoodlandManagementPlanReference, capturedDetail.WoodlandManagementPlanReference);
+        Assert.Equal(propertyProfile.IsWoodlandCertificationScheme, capturedDetail.IsWoodlandCertificationScheme);
+        Assert.Equal(propertyProfile.WoodlandCertificationSchemeReference, capturedDetail.WoodlandCertificationSchemeReference);
+        Assert.Equal(propertyProfile.WoodlandOwnerId, capturedDetail.WoodlandOwnerId);
+        Assert.Equal(propertyProfile.Compartments.Count, capturedDetail.SubmittedFlaPropertyCompartments.Count);
 
         _updateFellingLicenceService.Verify(r => r.AddSubmittedFellingLicenceApplicationPropertyDetailAsync(
             capturedDetail, It.IsAny<CancellationToken>()), Times.Once);
@@ -1120,7 +1119,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // Assert
-        finalResult.IsSuccess.Should().BeTrue();
+        Assert.True(finalResult.IsSuccess);
 
         _transactionMock.Verify(i => i.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _withdrawFellingLicenceService.Verify(
@@ -1181,8 +1180,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // Assert
-        finalResult.IsFailure.Should().BeTrue();
-        finalResult.Error.Should().Be($"Could not withdraw the {nameof(FellingLicenceApplication)}");
+        Assert.True(finalResult.IsFailure);
+        Assert.Equal($"Could not withdraw the {nameof(FellingLicenceApplication)}", finalResult.Error);
 
         _withdrawFellingLicenceService.Verify(
             r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
@@ -1303,7 +1302,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _publicRegisterService.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
             publicRegister.EsriId!.Value,
             application.ApplicationReference,
@@ -1398,8 +1397,9 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Could not remove the FellingLicenceApplication from the public register");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Could not remove the FellingLicenceApplication from the public register", result.Error);
+
         _transactionMock.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _publicRegisterService.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
             publicRegister.EsriId!.Value,
@@ -1513,8 +1513,9 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Could not update the FellingLicenceApplication public register data");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Could not update the FellingLicenceApplication public register data", result.Error);
+
         _transactionMock.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _publicRegisterService.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
             publicRegister.EsriId!.Value,
@@ -1568,8 +1569,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // Assert
-        finalResult.IsSuccess.Should().BeTrue();
-        finalResult.Value.Should().Be(application.WoodlandOwnerId);
+        Assert.True(finalResult.IsSuccess);
+        Assert.Equal(application.WoodlandOwnerId, finalResult.Value);
 
         _deleteFellingLicenceService.Verify(
             r => r.DeleteDraftApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
@@ -1613,8 +1614,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // Assert
-        finalResult.IsFailure.Should().BeTrue();
-        finalResult.Error.Should().Be($"Failed to get {nameof(FellingLicenceApplication)}");
+        Assert.True(finalResult.IsFailure);
+        Assert.Equal($"Failed to get {nameof(FellingLicenceApplication)}", finalResult.Error);
 
         _deleteFellingLicenceService.Verify(
             r => r.DeleteDraftApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
@@ -1661,8 +1662,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             await _sut.DeleteDraftFellingLicenceApplicationAsync(Guid.Empty, externalApplicant, CancellationToken.None);
 
         // Assert
-        finalResult.IsFailure.Should().BeTrue();
-        finalResult.Error.Should().Be($"Could not Delete the {nameof(FellingLicenceApplication)}");
+        Assert.True(finalResult.IsFailure);
+        Assert.Equal($"Could not Delete the {nameof(FellingLicenceApplication)}", finalResult.Error);
 
         _deleteFellingLicenceService.Verify(
             r => r.DeleteDraftApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
@@ -1745,12 +1746,11 @@ public class CreateFellingLicenceApplicationUseCaseTests
             _externalApplicant, CancellationToken.None);
 
         // assert
-        result.HasValue.Should().BeTrue();
-        result.Value.ApplicationId.Should().Be(application.Id);
-        result.Value.FellingCompartmentId.Should()
-            .Be(application.LinkedPropertyProfile.ProposedFellingDetails[0].PropertyProfileCompartmentId);
-        result.Value.GIS!.ToUpper().Should().Contain(application.LinkedPropertyProfile.ProposedFellingDetails[0]
-            .PropertyProfileCompartmentId.ToString().ToUpper());
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+        Assert.Equal(application.LinkedPropertyProfile.ProposedFellingDetails[0].PropertyProfileCompartmentId, result.Value.FellingCompartmentId);
+        Assert.True(result.Value.GIS!.ToUpper().Contains(application.LinkedPropertyProfile.ProposedFellingDetails[0]
+            .PropertyProfileCompartmentId.ToString().ToUpper()));
         Assert.True(result.Value.Compartments.Single(c =>
                 c.Id == application.LinkedPropertyProfile.ProposedFellingDetails[0].PropertyProfileCompartmentId) is not
             null);
@@ -1805,8 +1805,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             selectFellingOperationTypesViewModel, CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -1857,8 +1857,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -1899,8 +1899,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -1965,8 +1965,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -2020,8 +2020,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             application.LinkedPropertyProfile.ProposedFellingDetails[0].Id, CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -2126,28 +2126,26 @@ public class CreateFellingLicenceApplicationUseCaseTests
             _externalApplicant, CancellationToken.None);
 
         // assert
-        result.HasValue.Should().BeTrue();
-        result.Value.ApplicationId.Should().Be(application.Id);
-        result.Value.FellingCompartmentId.Should()
-            .Be(application.LinkedPropertyProfile.ProposedFellingDetails[0].PropertyProfileCompartmentId);
-        result.Value.RestockingCompartmentId.Should()
-            .Be(application.LinkedPropertyProfile.ProposedFellingDetails[0].ProposedRestockingDetails![0]
-                .PropertyProfileCompartmentId);
-        result.Value.ProposedFellingDetailsId.Should()
-            .Be(application.LinkedPropertyProfile.ProposedFellingDetails[0].Id);
-        result.Value.FellingOperationType.Should().Be(FellingOperationType.FellingIndividualTrees);
-        result.Value.RestockAlternativeArea.Should().Be(true);
-        result.Value.IsCoppiceRegrowthAllowed.Should().Be(true);
-        result.Value.IsCreateOpenSpaceAllowed.Should().Be(true);
-        result.Value.IsIndividualTreesAllowed.Should().Be(true);
-        result.Value.IsNaturalRegenerationAllowed.Should().Be(true);
-        result.Value.IsReplantFelledAreaAllowed.Should().Be(false);
-        result.Value.IsIndividualTreesInAlternativeAreaAllowed.Should().Be(true);
-        result.Value.IsPlantingInAlternativeAreaAllowed.Should().Be(false);
-        result.Value.IsNaturalColonisationAllowed.Should().Be(false);
-        result.Value.GIS!.ToUpper().Should()
-            .Contain(application.LinkedPropertyProfile.ProposedFellingDetails[0].ProposedRestockingDetails![0]
-                .PropertyProfileCompartmentId.ToString().ToUpper());
+        
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+
+        Assert.Equal(application.LinkedPropertyProfile.ProposedFellingDetails[0].PropertyProfileCompartmentId, result.Value.FellingCompartmentId);
+        Assert.Equal(application.LinkedPropertyProfile.ProposedFellingDetails[0].ProposedRestockingDetails![0]
+            .PropertyProfileCompartmentId, result.Value.RestockingCompartmentId);
+        Assert.Equal(application.LinkedPropertyProfile.ProposedFellingDetails[0].Id, result.Value.ProposedFellingDetailsId);
+        Assert.Equal(FellingOperationType.FellingIndividualTrees, result.Value.FellingOperationType);
+        Assert.True(result.Value.RestockAlternativeArea);
+        Assert.True(result.Value.IsCoppiceRegrowthAllowed);
+        Assert.True(result.Value.IsCreateOpenSpaceAllowed);
+        Assert.True(result.Value.IsIndividualTreesAllowed);
+        Assert.True(result.Value.IsNaturalRegenerationAllowed);
+        Assert.False(result.Value.IsReplantFelledAreaAllowed);
+        Assert.True(result.Value.IsIndividualTreesInAlternativeAreaAllowed);
+        Assert.False(result.Value.IsPlantingInAlternativeAreaAllowed);
+        Assert.False(result.Value.IsNaturalColonisationAllowed);
+        Assert.True(result.Value.GIS!.ToUpper().Contains(application.LinkedPropertyProfile.ProposedFellingDetails[0].ProposedRestockingDetails![0]
+            .PropertyProfileCompartmentId.ToString().ToUpper()));
     }
 
     [Theory, AutoMoqData]
@@ -2219,8 +2217,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
             selectRestockingOptionsViewModel, CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(application.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
             app.Id == application.Id
@@ -2261,12 +2259,12 @@ public class CreateFellingLicenceApplicationUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.HasValue.Should().BeTrue();
-        result.Value.ApplicationId.Should().Be(fellingLicenceApplicationModel.ApplicationId);
-        result.Value.CompartmentName.Should().Be($"{compartment.CompartmentNumber}");
-        result.Value.CompartmentTotalHectares.Should().Be(compartment.TotalHectares);
-        result.Value.OperationType.Should().Be(fellingLicenceApplicationModel.FellingAndRestockingDetails.DetailsList[0]
-            .FellingDetails[0].OperationType);
+        Assert.True(result.HasValue);
+        Assert.Equal(fellingLicenceApplicationModel.ApplicationId, result.Value.ApplicationId);
+        Assert.Equal($"{compartment.CompartmentNumber}", result.Value.CompartmentName);
+        Assert.Equal(compartment.TotalHectares, result.Value.CompartmentTotalHectares);
+        Assert.Equal(fellingLicenceApplicationModel.FellingAndRestockingDetails.DetailsList[0]
+            .FellingDetails[0].OperationType, result.Value.OperationType);
     }
 
     [Theory, AutoMoqData]
@@ -2300,28 +2298,27 @@ public class CreateFellingLicenceApplicationUseCaseTests
                 CancellationToken.None);
 
         // assert
-        result.HasValue.Should().BeTrue();
-        result.Value.ApplicationId.Should().Be(application.Id);
-        result.Value.GIS!.ToUpper().Should()
-            .ContainAll(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(p =>
-                p.PropertyProfileCompartmentId.ToString().ToUpper()));
-        result.Value.FellingCompartmentsChangeLink.Controller.Should().Be("FellingLicenceApplication");
-        result.Value.FellingCompartmentsChangeLink.Action.Should()
-            .Be(nameof(FellingLicenceApplicationController.SelectCompartments));
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+        application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(p =>
+            p.PropertyProfileCompartmentId.ToString().ToUpper()).ForEach(x => Assert.True(result.Value.GIS!.ToUpper().Contains(x)));
+        Assert.Equal("FellingLicenceApplication", result.Value.FellingCompartmentsChangeLink.Controller);
+        Assert.Equal(nameof(FellingLicenceApplicationController.SelectCompartments), result.Value.FellingCompartmentsChangeLink.Action);
+
         object values = new
             { applicationId = application.Id, isForRestockingCompartmentSelection = false, returnToPlayback = true };
-        result.Value.FellingCompartmentsChangeLink.Values.Should().BeEquivalentTo(values);
-        result.Value.FellingCompartmentDetails.Count.Should()
-            .Be(application.LinkedPropertyProfile!.ProposedFellingDetails.Count);
+        Assert.Equivalent(values, result.Value.FellingCompartmentsChangeLink.Values);
+        Assert.Equal(application.LinkedPropertyProfile!.ProposedFellingDetails.Count, result.Value.FellingCompartmentDetails.Count);
+        
         for (int i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails.Count; i++)
         {
             var resultCompartment = result.Value.FellingCompartmentDetails.Find(f =>
                 f.CompartmentId == application.LinkedPropertyProfile!.ProposedFellingDetails[i]
                     .PropertyProfileCompartmentId);
-            resultCompartment.Should().NotBeNull();
-            resultCompartment.FellingOperationsChangeLink.Controller.Should().Be("FellingLicenceApplication");
-            resultCompartment.FellingOperationsChangeLink.Action.Should()
-                .Be(nameof(FellingLicenceApplicationController.SelectFellingOperationTypes));
+            Assert.NotNull(resultCompartment);
+            Assert.Equal("FellingLicenceApplication", resultCompartment.FellingOperationsChangeLink.Controller);
+            Assert.Equal(nameof(FellingLicenceApplicationController.SelectFellingOperationTypes), resultCompartment.FellingOperationsChangeLink.Action);
+
             var fellingValues = new
             {
                 applicationId = application.Id,
@@ -2329,29 +2326,27 @@ public class CreateFellingLicenceApplicationUseCaseTests
                     .PropertyProfileCompartmentId,
                 returnToPlayback = true
             };
-            resultCompartment.FellingOperationsChangeLink.Values.Should().BeEquivalentTo(fellingValues);
-            resultCompartment.FellingDetails.Count.Should().Be(1);
+            Assert.Equivalent(fellingValues, resultCompartment.FellingOperationsChangeLink.Values);
+            Assert.Single(resultCompartment.FellingDetails);
 
             var actualFellingDetail = resultCompartment.FellingDetails[0];
             var expectedfellingDetail = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
 
-            actualFellingDetail.FellingDetail.Should().BeEquivalentTo(expectedfellingDetail);
-            actualFellingDetail.FellingCompartmentName.Should().Be(resultCompartment.CompartmentName);
+            Assert.Equivalent(expectedfellingDetail, actualFellingDetail.FellingDetail);
+            Assert.Equal(resultCompartment.CompartmentName, actualFellingDetail.FellingCompartmentName);
 
-            actualFellingDetail.RestockingCompartmentDetails.Count.Should().Be(1);
+            Assert.Single(actualFellingDetail.RestockingCompartmentDetails);
 
-            actualFellingDetail.RestockingCompartmentDetails[0].CompartmentId.Should()
-                .Be(expectedfellingDetail.PropertyProfileCompartmentId);
-            actualFellingDetail.RestockingCompartmentDetails[0].RestockingDetails.Count.Should()
-                .Be(expectedfellingDetail.ProposedRestockingDetails!.Count);
+            Assert.Equal(expectedfellingDetail.PropertyProfileCompartmentId, actualFellingDetail.RestockingCompartmentDetails[0].CompartmentId);
+            Assert.Equal(expectedfellingDetail.ProposedRestockingDetails!.Count, actualFellingDetail.RestockingCompartmentDetails[0].RestockingDetails.Count);
 
             for (int j = 0; j < expectedfellingDetail.ProposedRestockingDetails.Count; j++)
             {
                 var restocking = actualFellingDetail.RestockingCompartmentDetails[0].RestockingDetails.Find(r =>
                     r.RestockingDetail.Id == expectedfellingDetail.ProposedRestockingDetails[j].Id);
 
-                restocking.Should().NotBeNull();
-                restocking.RestockingDetail.Should().BeEquivalentTo(expectedfellingDetail.ProposedRestockingDetails[j]);
+                Assert.NotNull(restocking);
+                Assert.Equivalent(expectedfellingDetail.ProposedRestockingDetails[j], restocking.RestockingDetail);
             }
         }
     }
@@ -2519,8 +2514,8 @@ public class CreateFellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.IsComplete.Should().BeTrue();
+        Assert.True(result.HasValue);
+        Assert.True(result.Value.IsComplete);
     }
 
     [Theory, AutoMoqData] public async Task RetrieveFellingLicenceApplication_ShouldSetIsCompleteFalse_WhenEiaIsRequired(
@@ -2634,7 +2629,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.IsComplete.Should().BeFalse();
+        Assert.True(result.HasValue);
+        Assert.False(result.Value.IsComplete);
     }
 }

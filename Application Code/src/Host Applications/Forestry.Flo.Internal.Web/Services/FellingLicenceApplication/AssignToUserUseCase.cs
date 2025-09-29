@@ -274,7 +274,8 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase
                 ViewApplicationURL = linkToApplication,
                 SenderName = performingUser.FullName,
                 SenderEmail = performingUser.EmailAddress,
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = applicationId
             };
 
             var sendNotificationResult = await _notificationsService.SendNotificationAsync(

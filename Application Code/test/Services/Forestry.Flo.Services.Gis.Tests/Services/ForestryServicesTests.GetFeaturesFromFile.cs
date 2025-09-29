@@ -1,10 +1,7 @@
-﻿using Forestry.Flo.Services.Gis.Services;
-using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
+﻿using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Moq;
 using Moq.Protected;
 using System.Net;
-using FluentAssertions;
-
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 public partial class ForestryServicesTests
@@ -16,7 +13,7 @@ public partial class ForestryServicesTests
         var sut = CreateSut(new EsriConfig() { Forestry = new ForestryConfig { GenerateTokenService = new OAuthServiceSettingsClient { ClientID = "", Path = "", ClientSecret = "" } } });
 
         var caughtException = await Assert.ThrowsAsync<ArgumentException>(() => sut.GetFeaturesFromFileAsync("", "", false, 0, false, 0, [], "", new CancellationToken()));
-        caughtException.Message.Should().Be("Required input No valid file contents set was empty. (Parameter 'No valid file contents set')");
+        Assert.Equal("Required input No valid file contents set was empty. (Parameter 'No valid file contents set')", caughtException.Message);
     }
 
     [Fact]
@@ -25,7 +22,7 @@ public partial class ForestryServicesTests
         var sut = CreateSut(new EsriConfig() { Forestry = new ForestryConfig { GenerateTokenService = new OAuthServiceSettingsClient { ClientID = "", Path = "", ClientSecret = "" } }, SpatialReference = 1 });
 
         var caughtException = await Assert.ThrowsAsync<ArgumentNullException>(() => sut.GetFeaturesFromFileAsync("", "", false, 0, false, 0, new byte[1], "", new CancellationToken()));
-        caughtException.Message.Should().Be("Value cannot be null. (Parameter '_config.FeaturesService')");
+        Assert.Equal("Value cannot be null. (Parameter '_config.FeaturesService')", caughtException.Message);
     }
 
     [Fact]
@@ -40,7 +37,7 @@ public partial class ForestryServicesTests
                 });
 
         var caughtException = await Assert.ThrowsAsync<ArgumentException>(() => sut.GetFeaturesFromFileAsync("", "", false, 0, false, 0, new byte[1], "", new CancellationToken()));
-        caughtException.Message.Should().Be("Required input SpatialReference cannot be zero. (Parameter 'SpatialReference')");
+        Assert.Equal("Required input SpatialReference cannot be zero. (Parameter 'SpatialReference')", caughtException.Message);
     }
 
     [Fact]

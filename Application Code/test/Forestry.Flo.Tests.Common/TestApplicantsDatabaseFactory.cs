@@ -128,55 +128,5 @@ public static class TestApplicantsDatabaseFactory
             return new ValueTask(Task.CompletedTask);
         }
 
-        public async Task AddLegacyDocuments(LegacyDocument[] documents, CancellationToken cancellationToken)
-        {
-            await LegacyDocumentsProtected.AddRangeAsync(documents, cancellationToken);
-            await SaveChangesAsync(cancellationToken);
-        }
-    }
-
-    public class TestLegacyDocument : LegacyDocument
-    {
-        public new Guid WoodlandOwnerId
-        {
-            get => base.WoodlandOwnerId;
-            set => base.WoodlandOwnerId = value;
-        }
-
-        public new LegacyDocumentType DocumentType
-        {
-            get => base.DocumentType;
-            set => base.DocumentType = value;
-        }
-
-        public new string FileName
-        {
-            get => base.FileName;
-            set => base.FileName = value;
-        }
-
-        public new long FileSize
-        {
-            get => base.FileSize; 
-            set => base.FileSize = value;
-        }
-
-        public new string FileType
-        {
-            get => base.FileType; 
-            set => base.FileType = value;
-        }
-
-        public new string MimeType
-        {
-            get => base.MimeType; 
-            set => base.MimeType = value;
-        }
-
-        public new string Location
-        {
-            get => base.Location; 
-            set => base.Location = value;
-        }
     }
 }
