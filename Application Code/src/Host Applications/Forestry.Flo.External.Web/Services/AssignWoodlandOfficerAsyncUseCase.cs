@@ -121,7 +121,8 @@ public class AssignWoodlandOfficerAsyncUseCase
             AssignedRole = AssignedUserRole.WoodlandOfficer.GetDisplayName()!,
             Name = autoAssignRecipient.Name!,
             ViewApplicationURL = linkToApplication,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = fellingLicenceApplication.Id
         };
 
         var sendNotificationAssigneeResult = await _sendNotifications.SendNotificationAsync(

@@ -332,6 +332,7 @@ public static class ServiceCollectionExtensions
         services.Configure<InternalUserSiteOptions>(configuration.GetSection("InternalUserSite"));
         services.Configure<FcAgencyOptions>(configuration.GetSection("FcAgency"));
         services.AddOptions<EiaOptions>().BindConfiguration(EiaOptions.ConfigurationKey);
+        services.AddOptions<ReviewAmendmentsOptions>().BindConfiguration(ReviewAmendmentsOptions.ConfigurationKey);
 
         services.AddScoped<RegisterUserAccountUseCase>();
         services.AddScoped<UploadShapeFileUseCase>();
@@ -366,5 +367,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<FcUserCreateAgencyUseCase>();
         services.AddScoped<AssignWoodlandOfficerAsyncUseCase>();
         services.AddScoped<EnvironmentalImpactAssessmentUseCase>();
+        services.AddScoped<ReviewFellingAndRestockingAmendmentsUseCase>();
 ;    }
 }

@@ -465,7 +465,8 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
             PreviousAssignedUserName = adminOfficer.FullName(),
             PreviousAssignedEmailAddress = adminOfficer.Email,
             ViewApplicationURL = internalLinkToApplication,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
         };
 
         var result1 = await _emailService.SendNotificationAsync(
@@ -576,7 +577,8 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
                     .ToList(),
                 ViewApplicationURL = externalViewURL,
                 AdminHubFooter = adminHubFooter,
-                Name = $"{applicant.Value.FirstName} {applicant.Value.LastName}".Trim().Replace("  ", " ")
+                Name = $"{applicant.Value.FirstName} {applicant.Value.LastName}".Trim().Replace("  ", " "),
+                ApplicationId = applicationId
             };
 
             var applicantResult = await _emailService.SendNotificationAsync(

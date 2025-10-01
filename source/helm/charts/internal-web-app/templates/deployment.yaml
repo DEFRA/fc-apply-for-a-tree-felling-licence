@@ -524,6 +524,8 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationMixLarchMixZone }}
             - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfReturnedApplicationLarchOnlyMixZone
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationLarchOnlyMixZone }}
+            - name: GovUkNotifyOptions__TemplateIds__ApplicantReviewedAmendments
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicantReviewedAmendments }}
             {{- end }}
             # ------------------- ESRI Config start -------------------
             {{- if .Values.config.esriConfig.enabled }}

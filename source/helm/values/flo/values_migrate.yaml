@@ -117,12 +117,14 @@ external-web-app:
         InviteAgentUserToOrganisation: "c45250a6-da09-4653-b30b-24fe4f721864"
         EiaReminderMissingDocuments: "a5d3ef14-28ad-4a93-8a57-4ad5aa2b7eb5"
         EiaReminderToSendDocuments: "f767d060-9ba4-485c-95e9-d4c8f148cac5"
+        ApplicantReviewedAmendments: "d6e5698a-0594-4998-9b9b-49f501cd9108"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
         - "qxlva.com"
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
+        - "forestresearch.gov.uk"
     logging:
       LogLevel:
         Default: "Information"
@@ -414,12 +416,14 @@ internal-web-app:
         InformApplicantOfReturnedApplicationLarchOnlyMixZone: "f64e9c3e-2f15-4a7a-83f9-8955d6e6bbb2"
         EiaReminderMissingDocuments: "a5d3ef14-28ad-4a93-8a57-4ad5aa2b7eb5"
         EiaReminderToSendDocuments: "f767d060-9ba4-485c-95e9-d4c8f148cac5"
+        ApplicantReviewedAmendments: "d6e5698a-0594-4998-9b9b-49f501cd9108"
     permittedRegisteredUser:
       enabled: true
       permittedEmailDomainsForRegisteredUser:
         - "qxlva.com"
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
+        - "forestresearch.gov.uk"
     logging:
       LogLevel:
         Default: "Information"

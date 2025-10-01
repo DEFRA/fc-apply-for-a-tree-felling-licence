@@ -30,11 +30,12 @@
         /// Converts UTC date time to UK date time string with format 'dd MMMM yyyy HH:mm'.
         /// </summary>
         /// <param name="value">A <see cref="DateTime"/> in UTC.</param>
+        /// <param name="delimiter">A string delimiter between date and time.</param>
         /// <returns>A string representation of the converted <see cref="DateTime"/>.</returns>
-        public static string GetDateTimeDisplayString(DateTime? value)
+        public static string GetDateTimeDisplayString(DateTime? value, string delimiter = " ")
         {
             return value.HasValue
-                ? ConvertToUkTime(value.Value).ToString("dd MMMM yyyy HH:mm")
+                ? $"{ConvertToUkTime(value.Value):dd MMMM yyyy}{delimiter}{ConvertToUkTime(value.Value):HH:mm}"
                 : " - ";
         }
 

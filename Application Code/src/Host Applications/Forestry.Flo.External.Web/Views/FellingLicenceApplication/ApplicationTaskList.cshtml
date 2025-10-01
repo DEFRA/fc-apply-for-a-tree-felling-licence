@@ -163,6 +163,40 @@
     </div>
 
     <div>
+        <div condition="@(Model.CurrentReviewModel is not null)" class="govuk-body">
+            <h2 class="govuk-heading-m">Review and confirm amendments</h2>
+            <p>We’ve reviewed you application and proposed some changes to make sure it meets  UK Forestry Standards.</p>
+            <p>
+                <b>What you have to do</b> <br/>
+                Review the changes and confirm if you’re happy to go ahead.
+            </p>
+            <p>If we don’t hear from you by <b>@(DateTimeDisplay.GetDateDisplayString(Model.CurrentReviewModel!.ResponseDeadline))</b>, we’ll withdraw your application.</p>
+            
+            <ul class="app-task-list__items">
+                <li class="app-task-list__item">
+                    <span class="app-task-list__task-name">
+                        <a 
+                            href="@Url.Action(nameof(FellingLicenceApplicationController.ReviewAmendments), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })"
+                            aria-describedby="review-amendments-status">
+                            Review amendments
+                        </a>
+                    </span>
+                    
+                    @{
+                        var status = Model.CurrentReviewModel.ResponseReceivedDate is null
+                            ? ApplicationStepStatus.NotStarted
+                            : ApplicationStepStatus.Completed;
+                    }
+
+                    <strong class="govuk-tag @GetStatusStyleName(status) app-task-list__tag" id="review-amendments-status">
+                        @(status.GetDescription())
+                    </strong>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div>
         @{
             FellingLicenceStatus[] enabledStatuses =
             [

@@ -143,7 +143,8 @@ public class VoluntaryWithdrawalNotificationUseCase
             Name = createdByUser.FullName,
             ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{application.ApplicationId}",
             WithdrawApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ConfirmWithdrawFellingLicenceApplication/{application.ApplicationId}",
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = application.ApplicationId
         };
 
         var applicantRecipient =

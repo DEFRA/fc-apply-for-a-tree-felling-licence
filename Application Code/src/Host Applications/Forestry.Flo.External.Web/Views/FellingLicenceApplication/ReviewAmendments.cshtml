@@ -1,0 +1,275 @@
+﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ReviewFellingAndRestockingAmendments.ReviewAmendmentsViewModel
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.External.Web.Infrastructure.Display
+@using Forestry.Flo.External.Web.Models.FellingLicenceApplication.ReviewFellingAndRestockingAmendments
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+
+@{
+    const string newDetailClassName = "new-confirmed-detail";
+    const string deletedDetailClassName = "deleted-confirmed-detail";
+
+    ViewData["Title"] = "Review and confirm amendments";
+    ViewData.ShowBackLink();
+}
+
+<div class="govuk-grid-column-full">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_PageErrors" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <p class="govuk-body">
+        We’ve reviewed you application and proposed some changes to make sure it meets UK Forestry Standards.
+    </p>
+
+    <p class="govuk-body">
+        <b>What you have to do</b> <br/>
+        Review the changes and confirm if you’re happy to go ahead.
+    </p>
+
+    <p class="govuk-body">
+        If we don’t hear from you by <b>@DateTimeDisplay.GetDateDisplayString(Model.ReviewDeadline)</b>, we’ll withdraw your application.
+    </p>
+
+    <div class="govuk-form-group">
+        @foreach (var item in Model.AmendedFellingAndRestockingDetails.CompartmentGisLookup)
+        {
+            <input type="hidden" id="@item.Key" value="@item.Value.GisData" data-label="@item.Value.DisplayName" data-group="compartments_GIS" name="@item.Key" />
+        }
+
+        <div class="profileMap" id="viewDiv"></div>
+    </div>
+
+    @foreach (var compartment in Model.AmendedFellingAndRestockingDetails.Compartments)
+    {
+        var amendedFellingDetails = Model.AmendedFellingAndRestockingDetails
+            .AmendedFellingOperations(compartment.SubmittedFlaPropertyCompartmentId!.Value);
+
+        foreach (var amendmentFelling in amendedFellingDetails)
+        {
+            var confirmedFellingDetail = amendmentFelling.felling;
+
+            var fellingClassName = amendmentFelling.type is ConfirmedFellingType.NewFelling
+                ? newDetailClassName
+                : string.Empty;
+
+            var tagText = amendmentFelling.type is ConfirmedFellingType.NewFelling 
+                ? "New" 
+                : "Amended";
+
+            <div class="govuk-summary-card" id="felling-operation-card">
+                <div class="govuk-summary-card__title-wrapper">
+                    <span class="govuk-summary-card__title">
+                        <span class="govuk-summary-card__title govuk-!-font-size-16">
+                            @tagText
+                        </span>
+                        <br/>
+                        <strong>@confirmedFellingDetail.OperationType!.GetDisplayName() in compartment @compartment.CompartmentNumber</strong>
+                    </span>
+                </div>
+                
+                @await Html.PartialAsync("_FellingDetailSummary", new FellingDetailViewModel(confirmedFellingDetail, compartment))
+
+            @foreach (var restockingDetail in amendmentFelling.felling.ConfirmedRestockingDetails)
+            {
+                var restockingType = restockingDetail.GetConfirmedRestockingType();
+
+                var restockingClassName = restockingType is ConfirmedRestockingType.NewRestocking
+                    ? newDetailClassName
+                    : string.Empty;
+
+                var tag = restockingType switch
+                {
+                    ConfirmedRestockingType.NewRestocking => "New",
+                    ConfirmedRestockingType.Amended => "Amended",
+                    _ => string.Empty
+                };
+
+                <div class="@restockingClassName">
+                    <div class="govuk-summary-card__title-wrapper">
+                        <h2 class="govuk-summary-card__title">
+                            <span condition="@(restockingType is not ConfirmedRestockingType.Unmodified)" class="govuk-summary-card__title govuk-!-font-size-16">
+                                @tag
+                            </span>
+                            <br/>
+                            Restocking: @restockingDetail!.RestockingProposal?.GetDisplayName() in compartment @restockingDetail.RestockingCompartmentNumber
+                        </h2>
+                    </div>
+                    @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(restockingDetail!))
+                </div>
+            }
+
+            @foreach(var deletedRestocking in amendmentFelling.deletedRestockings)
+            {
+                <div class="@deletedDetailClassName">
+                    <div class="govuk-summary-card__title-wrapper">
+                        <h2 class="govuk-summary-card__title">
+                            <span class="govuk-summary-card__title govuk-!-font-size-16">
+                                Deleted
+                            </span>
+                            <br/>
+                            Restocking: @deletedRestocking!.RestockingProposal.GetDisplayName() in compartment @deletedRestocking.CompartmentNumber
+                        </h2>
+                    </div>
+                    @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(deletedRestocking))
+                </div>
+            }
+
+            </div>
+        }
+
+        var deletedFellingDetails = Model.AmendedFellingAndRestockingDetails.DeletedFellingOperations(compartment.CompartmentId);
+
+        foreach(var deletedFelling in deletedFellingDetails)
+        {
+           <div class="govuk-summary-card @deletedDetailClassName" id="felling-operation-card">
+                    <div class="govuk-summary-card__title-wrapper">
+                        <div>
+                            <span class="govuk-summary-card__title govuk-!-font-size-16">
+                                Deleted
+                            </span>
+                            <span class="govuk-summary-card__title"> <br />
+                                <strong>
+                                    @deletedFelling.OperationType!.GetDisplayName() in compartment @compartment.CompartmentNumber
+                                </strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="govuk-summary-card__content" id="felling-card-content">
+                        <div class="govuk-grid-row govuk-!-margin-bottom-6">
+                            @await Html.PartialAsync("_FellingDetailSummary", new FellingDetailViewModel(deletedFelling, compartment))    
+                            @foreach(var deletedRestocking in deletedFelling.ProposedRestockingDetails)
+                            {
+                                <div class="govuk-summary-card @deletedDetailClassName">
+                                    <div class="govuk-summary-card__title-wrapper">
+                                        <h2 class="govuk-summary-card__title">
+                                            <span class="govuk-summary-card__title govuk-!-font-size-16">
+                                                Deleted
+                                            </span>
+                                            <br/>
+                                            Restocking: @deletedRestocking!.RestockingProposal.GetDisplayName() in compartment @deletedRestocking.CompartmentNumber
+                                        </h2>
+                                    </div>
+                                    @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(deletedRestocking))
+                                </div>
+                            }
+                        </div>
+			        </div>
+		        </div> 
+        }
+    }
+
+    <form method="post">
+        <input hidden="hidden" aria-hidden="True" asp-for="ApplicationId" />
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset" id="@nameof(Model.ApplicantAgreed)">
+                <legend class="govuk-heading-m">
+                    Do you agree to the proposed amendments made by the Woodland Officer?
+                </legend>
+                <validation asp-for="@Model.ApplicantAgreed"></validation>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input id="applicant-agrees-yes"
+                               condition-disabled="@(!Model.IsEditable)"
+                               type="radio"
+                               class="govuk-radios__input"
+                               asp-for="ApplicantAgreed"
+                               value="@true" />
+                        <label class="govuk-label govuk-radios__label" for="applicant-agrees-yes">
+                            Yes, I agree to the amendments
+                        </label>
+                    </div>
+
+                    <div class="govuk-radios__item">
+                        <input id="applicant-agrees-no"
+                               condition-disabled="@(!Model.IsEditable)"
+                               type="radio"
+                               class="govuk-radios__input"
+                               value="@false"
+                               data-aria-controls="conditional-applicant-agrees"
+                               asp-for="ApplicantAgreed">
+                        <label class="govuk-label govuk-radios__label" for="applicant-agrees-no">
+                            No, I do not agree to the amendments
+                        </label>
+                    </div>
+
+                    <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-applicant-agrees">
+
+                        <div class="govuk-form-group">
+                            <label class="govuk-hint" asp-for="ApplicantDisagreementReason">
+                                Tell us why you do not agree with the amendments. Include any details you'd like the Woodland Officer to consider before continuing with your application.
+                            </label>
+                            <validation asp-for="@Model.ApplicantDisagreementReason"></validation>
+                            <textarea condition-disabled="@(!Model.IsEditable)" class="govuk-textarea" asp-for="ApplicantDisagreementReason" rows="5" maxlength="@DataValueConstants.ApplicantDisagreementReasonLength"></textarea>
+                            <div class="govuk-hint">
+                                You can enter up to 2000 characters
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="govuk-button-group">
+            <a class="govuk-link" asp-action="ApplicationTaskList" asp-route-applicationId="@Model.ApplicationId" title="Click here to return to your application">
+                Click here to return to your application
+            </a>
+        </div>
+
+        <div class="govuk-button-group">
+            <button condition-disabled="!Model.IsEditable"
+                    class="govuk-button"
+                    type="submit"
+                    data-module="govuk-button">
+                Submit review
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Css {
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link async rel="stylesheet" href="~/css/felling-and-restocking.css?v1.1" aria-busyasp-append-version="true" />
+
+    <style>
+        #viewDiv {
+            border-color: black;
+            border-style: solid;
+            border-width: 1px;
+            padding: 0;
+            margin: 0;
+            min-width: 100%;
+            height: 55vh !important;
+        }
+    </style>
+}
+
+@section Scripts {
+
+    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script>
+        require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
+            var mapObj = new ProfileMap("viewDiv", true);
+        });
+    </script>
+
+    <script>
+        var coll = document.getElementsByClassName("collapsible");
+
+        coll[0].addEventListener("click", function () {
+            var content = document.getElementsByClassName("mapWrapper");
+            if (content[0].style.display === "block") {
+                content[0].style.display = "none";
+            } else {
+                content[0].style.display = "block";
+            }
+        });
+    </script>
+}

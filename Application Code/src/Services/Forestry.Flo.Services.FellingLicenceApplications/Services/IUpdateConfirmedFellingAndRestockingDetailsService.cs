@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -108,4 +109,14 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Guid confirmedRestockingDetailId,
         Guid userId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the existing submitted FLA property detail for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the submitted FLA property detail for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Maybe{SubmittedFlaPropertyDetail}"/> containing the existing submitted FLA property detail if found; otherwise, an empty value.
+    /// </returns>
+    Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken);
 }

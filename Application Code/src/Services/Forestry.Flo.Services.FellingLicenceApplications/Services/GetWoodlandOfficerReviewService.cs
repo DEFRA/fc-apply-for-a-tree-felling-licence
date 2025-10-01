@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using CSharpFunctionalExtensions.ValueTasks;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
@@ -479,6 +480,42 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
             _logger.LogError(ex, "Exception caught in GetDetailsForConditionsNotificationAsync");
             return Result.Failure<ApplicationDetailsForConditionsNotification>(ex.Message);
         }
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<Maybe<FellingAndRestockingAmendmentReviewModel>>> GetCurrentFellingAndRestockingAmendmentReviewAsync(
+        Guid applicationId, 
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure, entity) = await _internalFlaRepository.GetCurrentFellingAndRestockingAmendmentReviewAsync(
+            applicationId,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            _logger.LogError(
+                "Could not retrieve current felling and restocking amendment review for application with id {ApplicationId}",
+                applicationId);
+            return Result.Failure<Maybe<FellingAndRestockingAmendmentReviewModel>>("Could not retrieve current felling and restocking amendment review for application with given id");
+        }
+
+        if (entity.HasNoValue)
+        {
+            return Maybe<FellingAndRestockingAmendmentReviewModel>.None;
+        }
+
+        var model = new FellingAndRestockingAmendmentReviewModel
+        {
+            Id = entity.Value.Id,
+            FellingLicenceApplicationId = applicationId,
+            AmendmentsSentDate = entity.Value.AmendmentsSentDate,
+            ResponseReceivedDate = entity.Value.ResponseReceivedDate,
+            ApplicantAgreed = entity.Value.ApplicantAgreed,
+            ApplicantDisagreementReason = entity.Value.ApplicantDisagreementReason,
+            ResponseDeadline = entity.Value.ResponseDeadline
+        };
+
+        return Maybe.From(model);
     }
 
     private async Task<string> GetLocalAuthorityForFellingLicenceApplicationAsync(FellingLicenceApplication application, CancellationToken cancellationToken)

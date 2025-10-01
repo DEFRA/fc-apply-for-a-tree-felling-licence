@@ -109,4 +109,5 @@ public interface IGetFellingLicenceApplicationForInternalUsers
     Task<Result<EnvironmentalImpactAssessment>> GetEnvironmentalImpactAssessmentAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
+    Task<IList<PublicRegisterPeriodEndModel>> RetrieveApplicationsOnTheConsultationPublicRegisterAsync(CancellationToken cancellationToken);
 }

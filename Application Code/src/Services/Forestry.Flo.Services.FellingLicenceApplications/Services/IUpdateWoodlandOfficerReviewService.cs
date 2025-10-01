@@ -220,4 +220,18 @@ public interface IUpdateWoodlandOfficerReviewService
         bool? isComplete,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Updates the felling and restocking amendment review details for a given application.
+    /// </summary>
+    /// <param name="model">A <see cref="FellingAndRestockingAmendmentReviewUpdateRecord"/> containing the amendment review update details.</param>
+    /// <param name="userId">The id of the user making the update.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating the success or failure of the operation.
+    /// </returns>
+    Task<Result> UpdateFellingAndRestockingAmendmentReviewAsync(
+        FellingAndRestockingAmendmentReviewUpdateRecord model,
+        Guid userId,
+        CancellationToken cancellationToken);
+
 }

@@ -30,12 +30,29 @@ public interface INotificationHistoryRepository
     /// Retrieves a set of notification history entries for a specific application reference and
     /// an optional set of notification types.
     /// </summary>
-    /// <param name="applicationReference">The application reference to retrieve notification history entries for.</param>
+    /// <param name="applicationId">The application ID to retrieve notification history entries for.</param>
     /// <param name="notificationTypesFilter">An optional array of <see cref="NotificationType"/> to filter by.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A list of matching notification history entries.</returns>
     Task<Result<List<NotificationHistory>>> GetNotificationHistoryForApplicationAsync(
-        string applicationReference,
+        Guid applicationId,
         NotificationType[]? notificationTypesFilter,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the external IDs that already exist in the notification history for the provided collection of external IDs.
+    /// </summary>
+    /// <param name="externalIds">The external IDs to check for existing records.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains a list of existing external IDs.</returns>
+    Task<List<Guid>> GetExistingExternalIdsAsync(IEnumerable<Guid> externalIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates a notification history item by the item ID.
+    /// </summary>
+    /// <param name="id">Notification history id</param>
+    /// <param name="update">Action to update the entity</param>
+    /// <param name="cancellationToken">A cancellation token</param>
+    /// <returns>Result with updated entity or error reason</returns>
+    Task<Result<NotificationHistory, UserDbErrorReason>> UpdateByIdAsync(Guid id, Action<NotificationHistory> update, CancellationToken cancellationToken);
 }

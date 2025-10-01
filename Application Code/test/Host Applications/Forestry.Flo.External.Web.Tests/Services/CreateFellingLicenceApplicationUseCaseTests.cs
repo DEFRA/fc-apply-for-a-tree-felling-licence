@@ -75,6 +75,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
     private readonly Mock<IApplicationReferenceHelper> _applicationReferenceHelper;
     private readonly Mock<IPublicRegister> _publicRegisterService;
     private readonly Mock<IDbContextTransaction> _transactionMock;
+    private readonly Mock<IGetWoodlandOfficerReviewService> _getWoodlandOfficerReviewService;
 
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas;
     private const string AdminHubAddress = "admin hub address";
@@ -117,6 +118,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
         _getConfiguredFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(AdminHubAddress);
         _publicRegisterService = new Mock<IPublicRegister>();
+        _getWoodlandOfficerReviewService = new Mock<IGetWoodlandOfficerReviewService>();
 
         _mockBus = new Mock<IBusControl>();
 
@@ -185,6 +187,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
             _applicationReferenceHelper.Object,
             _publicRegisterService.Object,
             _mockEiaOptions.Object,
+            _getWoodlandOfficerReviewService.Object,
             _getConfiguredFcAreas.Object);
     }
 

@@ -4,6 +4,7 @@ using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.EntityFrameworkCore;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -380,6 +381,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
            .Include(x => x.FellingLicenceApplication)
            .ThenInclude(x => x.LarchCheckDetails)  
            .Include(x => x.SiteVisitEvidences)
+           .Include(x => x.FellingAndRestockingAmendmentReviews)
            .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken);
 
         return result != null ? Maybe.From(result) : Maybe<WoodlandOfficerReview>.None;
@@ -1065,5 +1067,67 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         });
 
         return await Context.SaveEntitiesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<IList<FellingLicenceApplication>> GetApplicationsOnConsultationPublicRegisterPeriodsAsync(
+        CancellationToken cancellationToken)
+    {
+        return await Context.FellingLicenceApplications
+            .Include(s => s.AssigneeHistories)
+            .Include(s => s.SubmittedFlaPropertyDetail)
+            .Include(s => s.PublicRegister)
+            .Where(x =>
+                x.PublicRegister != null
+                && x.PublicRegister.ConsultationPublicRegisterPublicationTimestamp != null
+                && x.PublicRegister.ConsultationPublicRegisterRemovedTimestamp == null
+            )
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<IEnumerable<FellingAndRestockingAmendmentReview>>> GetFellingAndRestockingAmendmentReviewsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var woReview = await GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
+
+            return woReview.HasNoValue 
+                ? [] 
+                : woReview.Value.FellingAndRestockingAmendmentReviews.ToList();
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<IEnumerable<FellingAndRestockingAmendmentReview>>(ex.Message);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<Maybe<FellingAndRestockingAmendmentReview>>> GetCurrentFellingAndRestockingAmendmentReviewAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken,
+        bool includeComplete = true)
+    {
+        var reviews = await GetFellingAndRestockingAmendmentReviewsAsync(applicationId, cancellationToken);
+
+        if (reviews.IsFailure)
+        {
+            return Result.Failure<Maybe<FellingAndRestockingAmendmentReview>>(reviews.Error);
+        }
+
+        var options = reviews.Value;
+
+        if (includeComplete is false)
+        {
+            options = options.Where(x => x.ResponseReceivedDate is null);
+        }
+
+        var currentReview = options.MaxBy(x => x.AmendmentsSentDate);
+
+        return currentReview is not null
+            ? Maybe.From(currentReview)
+            : Maybe.None;
     }
 }

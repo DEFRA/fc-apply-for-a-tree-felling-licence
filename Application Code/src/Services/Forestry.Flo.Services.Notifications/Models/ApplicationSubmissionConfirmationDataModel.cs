@@ -17,6 +17,11 @@ public class ApplicationSubmissionConfirmationDataModel : IApplicationNotificati
     public string ApplicationReference { get; set; }
 
     /// <summary>
+    /// Gets and sets the application id.
+    /// </summary>
+    public required Guid ApplicationId { get; set; }
+
+    /// <summary>
     /// Gets and sets the name of the property the application is for.
     /// </summary>
     public string? PropertyName { get; set; }
