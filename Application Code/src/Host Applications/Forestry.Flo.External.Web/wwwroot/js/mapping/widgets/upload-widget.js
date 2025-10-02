@@ -11,9 +11,6 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
             _this.handleNameChange = function (evt) {
                 _this.compartmentName = evt.target.value;
             };
-            _this.handleDesignationChange = function (evt) {
-                _this.designation = evt.target.value;
-            };
             _this.handleWoodlandChange = function (evt) {
                 _this.woodlandName = evt.target.value;
             };
@@ -38,7 +35,6 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
             });
             this.compartmentName = null;
             this.woodlandName = null;
-            this.designation = null;
             this.emit("noSelecting", {});
             this.map.layers.removeMany(importedLayers);
             this.errorMessage = "";
@@ -109,8 +105,7 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
                             if (that.allowMappings) {
                                 that.emit("uploaded", {
                                     compartmentName: that.compartmentName,
-                                    designation: that.designation,
-                                    woodlandName: that.woodlandName,
+                                    woodlandName: that.woodlandName
                                 });
                             }
                             else {
@@ -170,8 +165,7 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
                             if (that.allowMappings) {
                                 that.emit("uploaded", {
                                     compartmentName: that.compartmentName,
-                                    designation: that.designation,
-                                    woodlandName: that.woodlandName,
+                                    woodlandName: that.woodlandName
                                 });
                             }
                             else {
@@ -223,8 +217,7 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
                         if (that.allowMappings) {
                             that.emit("uploaded", {
                                 compartmentName: that.compartmentName,
-                                designation: that.designation,
-                                woodlandName: that.woodlandName,
+                                woodlandName: that.woodlandName
                             });
                         }
                         else {
@@ -333,16 +326,10 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
                 "Woodland",
                 (0, widget_1.tsx)("input", { type: "text", onchange: this.handleWoodlandChange, value: this.woodlandName })));
         };
-        UploadWidget.prototype.renderDesignation = function () {
-            return ((0, widget_1.tsx)("calcite-label", null,
-                "Designation",
-                (0, widget_1.tsx)("input", { type: "text", onchange: this.handleDesignationChange, value: this.designation })));
-        };
         UploadWidget.prototype.renderMapping = function () {
             return ((0, widget_1.tsx)("calcite-block", { collapsible: true, hidden: this.isUploading, heading: "Field Mapping", description: "Please select fields to be mapped from source file" }, [
                 this.renderCompartmentNumber(),
-                this.renderWoodland(),
-                this.renderDesignation(),
+                this.renderWoodland()
             ]));
         };
         UploadWidget.prototype.renderUpload = function () {
@@ -404,9 +391,6 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
         tslib_1.__decorate([
             (0, decorators_1.property)()
         ], UploadWidget.prototype, "compartmentName", void 0);
-        tslib_1.__decorate([
-            (0, decorators_1.property)()
-        ], UploadWidget.prototype, "designation", void 0);
         tslib_1.__decorate([
             (0, decorators_1.property)()
         ], UploadWidget.prototype, "woodlandName", void 0);

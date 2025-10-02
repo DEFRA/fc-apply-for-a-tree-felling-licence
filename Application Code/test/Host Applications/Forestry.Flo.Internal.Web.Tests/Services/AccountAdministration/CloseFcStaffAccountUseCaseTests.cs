@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using AutoFixture.Xunit2;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.AccountAdministration;
 using Forestry.Flo.Services.Common;
@@ -48,7 +47,7 @@ public class CloseFcStaffAccountUseCaseTests
 
         var result = await sut.CloseFcStaffAccountAsync(user.UserAccountId, _accountAdmin, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _internalAccountServiceMock.Verify(v => v.SetUserAccountStatusAsync(user.UserAccountId, Status.Closed, CancellationToken.None), Times.Once);
         _auditMock.Verify(v =>
@@ -75,7 +74,7 @@ public class CloseFcStaffAccountUseCaseTests
 
         var result = await sut.CloseFcStaffAccountAsync(user.UserAccountId, _accountAdmin, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _internalAccountServiceMock.Verify(v => v.SetUserAccountStatusAsync(user.UserAccountId, Status.Closed, CancellationToken.None), Times.Once);
         _auditMock.Verify(v =>
@@ -98,7 +97,7 @@ public class CloseFcStaffAccountUseCaseTests
 
         var result = await sut.CloseFcStaffAccountAsync(user.UserAccountId, _accountAdmin, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _internalAccountServiceMock.VerifyNoOtherCalls();
         _auditMock.VerifyNoOtherCalls();
@@ -114,7 +113,7 @@ public class CloseFcStaffAccountUseCaseTests
 
         var result = await sut.CloseFcStaffAccountAsync(user.UserAccountId, notAdminAccount, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _internalAccountServiceMock.VerifyNoOtherCalls();
         _auditMock.VerifyNoOtherCalls();

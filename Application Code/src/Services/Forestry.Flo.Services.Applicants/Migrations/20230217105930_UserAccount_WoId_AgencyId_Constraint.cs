@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.Applicants.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class UserAccount_WoId_AgencyId_Constraint : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

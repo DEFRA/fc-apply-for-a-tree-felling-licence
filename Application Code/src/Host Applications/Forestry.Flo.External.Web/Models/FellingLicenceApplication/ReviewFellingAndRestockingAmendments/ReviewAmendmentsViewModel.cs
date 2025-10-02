@@ -53,4 +53,9 @@ public class ReviewAmendmentsViewModel
     public required DateTime ReviewDeadline { get; set; }
 
     public bool IsEditable => ResponseReceivedDate.HasNoValue();
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the amendment review has been completed.
+    /// </summary>
+    public bool? AmendmentReviewCompleted { get; set; }
 }

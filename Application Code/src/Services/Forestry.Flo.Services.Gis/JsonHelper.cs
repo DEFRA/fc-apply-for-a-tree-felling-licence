@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Forestry.Flo.Services.Gis
 {
@@ -27,6 +28,7 @@ namespace Forestry.Flo.Services.Gis
             writer.WriteRawValue(((DateTime)value - _epoch).TotalMilliseconds + "000");
         }
 
+        [ExcludeFromCodeCoverage]
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             if (reader.Value == null) { return null; }
@@ -38,6 +40,7 @@ namespace Forestry.Flo.Services.Gis
     {
         private static readonly DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0);
 
+        [ExcludeFromCodeCoverage]
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             writer.WriteRawValue(((DateTime)value - dt).TotalMilliseconds + "");
@@ -45,7 +48,10 @@ namespace Forestry.Flo.Services.Gis
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            if (reader.Value == null) { return null; }
+            if (reader.Value == null)
+            {
+                return null;
+            }
             return dt.AddMilliseconds((long)reader.Value);
         }
     }

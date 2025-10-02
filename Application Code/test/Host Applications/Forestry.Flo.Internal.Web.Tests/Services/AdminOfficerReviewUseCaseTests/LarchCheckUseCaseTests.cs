@@ -1,6 +1,5 @@
 using System.Text.Json;
 using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
@@ -23,7 +22,6 @@ using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Internal.Web.Services;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Microsoft.Extensions.Options;
@@ -165,16 +163,16 @@ public class LarchCheckUseCaseTests
 
         var result = await _sut.GetLarchCheckModelAsync(_fellingLicenceApplication.Id, _internalUser, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
-        result.Value.ApplicationId.Should().Be(_fellingLicenceApplication.Id);
-        result.Value.ConfirmLarchOnly.Should().BeTrue();
-        result.Value.Zone1.Should().BeTrue();
-        result.Value.Zone2.Should().BeFalse();
-        result.Value.Zone3.Should().BeTrue();
-        result.Value.ConfirmMoratorium.Should().BeTrue();
-        result.Value.ConfirmInspectionLog.Should().BeTrue();
-        result.Value.RecommendSplitApplicationDue.Should().Be(RecommendSplitApplicationEnum.LarchOnlyMixZone);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal(_fellingLicenceApplication.Id, result.Value.ApplicationId);
+        Assert.True(result.Value.ConfirmLarchOnly);
+        Assert.True(result.Value.Zone1);
+        Assert.False(result.Value.Zone2);
+        Assert.True(result.Value.Zone3);
+        Assert.True(result.Value.ConfirmMoratorium);
+        Assert.True(result.Value.ConfirmInspectionLog);
+        Assert.Equal(RecommendSplitApplicationEnum.LarchOnlyMixZone, result.Value.RecommendSplitApplicationDue);
     }
 
     [Fact]
@@ -187,7 +185,7 @@ public class LarchCheckUseCaseTests
 
         var result = await _sut.GetLarchCheckModelAsync(_fellingLicenceApplication.Id, _internalUser, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         _retrieveUserAccountsServiceMock.VerifyNoOtherCalls();
         _retrieveWoodlandOwnersMock.VerifyNoOtherCalls();
@@ -219,7 +217,7 @@ public class LarchCheckUseCaseTests
 
         var result = await _sut.SaveLarchCheckAsync(viewModel, _internalUser.UserAccountId!.Value, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _auditServiceMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -297,9 +295,7 @@ public class LarchCheckUseCaseTests
                     CompartmentNumber = _fixture.Create<string>(),
                     SubCompartmentName = _fixture.Create<string>(),
                     TotalHectares = _fixture.Create<double>(),
-                    ConfirmedTotalHectares = _fixture.Create<double>(),
                     WoodlandName = _fixture.Create<string>(),
-                    Designation = _fixture.Create<string>(),
                     GISData = _fixture.Create<string>(),
                     PropertyProfileId = propertyProfileId,
                     SubmittedFlaPropertyDetail = application.SubmittedFlaPropertyDetail,

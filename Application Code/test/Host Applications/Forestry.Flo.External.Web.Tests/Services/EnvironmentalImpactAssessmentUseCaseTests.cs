@@ -90,8 +90,8 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.AddEiaDocumentsToApplicationAsync(_externalApplicant, _applicationId, FileCollection, modelState, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        modelState.ErrorCount.Should().Be(0);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, modelState.ErrorCount);
         _mockAddDocumentService.Verify(v => v.AddDocumentsAsExternalApplicantAsync(
             It.Is<AddDocumentsExternalRequest>(x =>
                 x.ActorType == ActorType.ExternalApplicant &&
@@ -135,8 +135,8 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.AddEiaDocumentsToApplicationAsync(_externalApplicant, _applicationId, files, modelState, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        modelState.ErrorCount.Should().Be(0);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, modelState.ErrorCount);
         _mockAddDocumentService.VerifyNoOtherCalls();
 
         _mockRetrieveUserAccountsService
@@ -168,8 +168,8 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.AddEiaDocumentsToApplicationAsync(_externalApplicant, _applicationId, FileCollection, modelState, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeFalse();
-        modelState.ErrorCount.Should().Be(0);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(0, modelState.ErrorCount);
 
         _mockRetrieveUserAccountsService
             .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.Once);
@@ -210,9 +210,9 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.AddEiaDocumentsToApplicationAsync(_externalApplicant, _applicationId, FileCollection, modelState, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeFalse();
-        modelState.ErrorCount.Should().Be(1);
-        modelState["eia-file-upload"].Errors[0].ErrorMessage.Should().Be("Upload failed");
+        Assert.False(result.IsSuccess);
+        Assert.Equal(1, modelState.ErrorCount);
+        Assert.Equal("Upload failed", modelState["eia-file-upload"].Errors[0].ErrorMessage);
 
         _mockRetrieveUserAccountsService
             .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
@@ -276,8 +276,8 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.AddEiaDocumentsToApplicationAsync(_externalApplicant, _applicationId, FileCollection, modelState, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Could not update application step status.");
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Could not update application step status.", result.Error);
 
         _mockRetrieveUserAccountsService
             .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
@@ -337,8 +337,8 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.AddEiaDocumentsToApplicationAsync(_externalApplicant, _applicationId, FileCollection, modelState, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Application not found or user cannot access it.");
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Application not found or user cannot access it.", result.Error);
 
         _mockRetrieveUserAccountsService
             .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
@@ -373,7 +373,7 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.MarkEiaAsCompletedAsync(_applicationId, eiaRecord, _externalApplicant, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _mockUpdateFellingLicenceApplication.Verify(x => x.UpdateEnvironmentalImpactAssessmentAsync(_applicationId, eiaRecord, It.IsAny<CancellationToken>()), Times.Once);
         
         _mockRetrieveUserAccountsService
@@ -433,8 +433,8 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.MarkEiaAsCompletedAsync(_applicationId, eiaRecord, _externalApplicant, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Application not found or user cannot access it.");
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Application not found or user cannot access it.", result.Error);
 
         _mockRetrieveUserAccountsService
             .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.AtLeastOnce);
@@ -467,8 +467,9 @@ public class EnvironmentalImpactAssessmentUseCaseTests
         var result = await sut.MarkEiaAsCompletedAsync(_applicationId, eiaRecord, _externalApplicant, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Could not update EIA record.");
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Could not update EIA record.", result.Error);
+        
         _mockUpdateFellingLicenceApplication.Verify(x => x.UpdateEnvironmentalImpactAssessmentAsync(_applicationId, eiaRecord, It.IsAny<CancellationToken>()), Times.Once);
 
         _mockRetrieveUserAccountsService

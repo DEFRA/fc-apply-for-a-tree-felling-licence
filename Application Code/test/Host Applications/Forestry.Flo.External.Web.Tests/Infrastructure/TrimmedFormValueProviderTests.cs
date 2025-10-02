@@ -19,7 +19,7 @@ public class TrimmedFormValueProviderTests
         var result = sut.GetValue(name);
 
         //assert
-        result.FirstValue.Should().Be(value);
-        result.LastOrDefault().Should().Be(value);
+        Assert.Equal(value, result.FirstValue);
+        Assert.Equal(value, result.LastOrDefault());
     }
 }

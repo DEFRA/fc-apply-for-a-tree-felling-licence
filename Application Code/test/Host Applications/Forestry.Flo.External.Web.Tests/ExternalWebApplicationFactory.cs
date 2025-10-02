@@ -1,5 +1,4 @@
 ﻿using AutoFixture;
-using FluentAssertions.Common;
 using Forestry.Flo.Services.Applicants;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Repositories;

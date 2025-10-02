@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
@@ -15,12 +16,37 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerRev
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Services.Notifications.Entities;
+using Forestry.Flo.Services.Notifications.Models;
+using Forestry.Flo.Services.Notifications.Services;
+using Microsoft.Extensions.Options;
+using Microsoft.Graph;
 using Newtonsoft.Json;
+using System;
 using ProposedFellingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel;
 using ProposedRestockingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 
+/// <summary>
+/// Use case for managing confirmed felling and restocking details during woodland officer review.
+/// </summary>
+/// <param name="internalUserAccountService">Service for internal user accounts.</param>
+/// <param name="externalUserAccountService">Service for external user accounts.</param>
+/// <param name="getFellingLicenceService">Service to get felling licence applications for internal users.</param>
+/// <param name="fellingLicenceApplicationInternalRepository">Repository for internal felling licence applications.</param>
+/// <param name="woodlandOwnerService">Service for woodland owners.</param>
+/// <param name="updateConfirmedFellingAndRestockingDetailsService">Service to update confirmed felling and restocking details.</param>
+/// <param name="updateWoodlandOfficerReviewService">Service to update woodland officer review.</param>
+/// <param name="agentAuthorityService">Service for agent authority operations.</param>
+/// <param name="getConfiguredFcAreasService">Service to get configured FC areas.</param>
+/// <param name="auditService">Audit service for this use case.</param>
+/// <param name="activityFeedItemProvider">Provider for activity feed items.</param>
+/// <param name="getFellingLicenceApplicationService">Service to get felling licence application details.</param>
+/// <param name="reviewAmendmentsOptions">Options for review amendments.</param>
+/// <param name="requestContext">Request context information.</param>
+/// <param name="emailService">Service for sending notifications.</param>
+/// <param name="logger">Logger instance.</param>
 public class ConfirmedFellingAndRestockingDetailsUseCase(
     IUserAccountService internalUserAccountService,
     IRetrieveUserAccountsService externalUserAccountService,
@@ -33,8 +59,11 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
     IGetConfiguredFcAreas getConfiguredFcAreasService,
     IAuditService<ConfirmedFellingAndRestockingDetailsUseCase> auditService,
     IActivityFeedItemProvider activityFeedItemProvider,
+    IGetFellingLicenceApplicationForInternalUsers getFellingLicenceApplicationService,
+    IOptions<ReviewAmendmentsOptions> reviewAmendmentsOptions,
     RequestContext requestContext,
-    ILogger<ConfirmedFellingAndRestockingDetailsUseCase> logger) 
+    ISendNotifications emailService,
+    ILogger<ConfirmedFellingAndRestockingDetailsUseCase> logger)
     : FellingLicenceApplicationUseCaseBase(internalUserAccountService,
         externalUserAccountService,
         fellingLicenceApplicationInternalRepository,
@@ -85,7 +114,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
             {
                 FellingLicenceId = applicationId,
                 FellingLicenceReference = summaryResult.ApplicationReference,
-                ItemTypes = [ActivityFeedItemType.WoodlandOfficerReviewComment],
+                ItemTypes = [ActivityFeedItemType.WoodlandOfficerReviewComment, ActivityFeedItemType.AmendmentOfficerReason, ActivityFeedItemType.AmendmentApplicantReason],
             },
             ActorType.InternalUser,
             cancellationToken);
@@ -96,19 +125,51 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
             return Result.Failure<ConfirmedFellingRestockingDetailsModel>($"Unable to retrieve activity feed items for application id {applicationId}");
         }
 
+        // Determine if there are any amendments vs proposed (either felling or restocking)
+        var amendmentsMade = retrievalResult.ConfirmedFellingAndRestockingDetailModels.Any(c =>
+            c.ConfirmedFellingDetailModels.Any(f => f.AmendedProperties is { Count: > 0 }) ||
+            c.ConfirmedFellingDetailModels.Any(f => f.ConfirmedRestockingDetailModels.Any(r => r.AmendedProperties is { Count: > 0 })));
+
+        // Check if there is a current amendment review (i.e., amendments have already been sent)
+        var currentReviewResult = await FellingLicenceRepository.GetCurrentFellingAndRestockingAmendmentReviewAsync(
+            applicationId,
+            cancellationToken,
+            includeComplete: true);
+
+        var currentReview = currentReviewResult.Value.HasValue ? currentReviewResult.Value.Value : null;
+
+        // UPDATED: include Completed state when AmendmentReviewCompleted flag is true.
+        var amendmentState =
+            !amendmentsMade
+                ? AmendmentStateEnum.NoAmendment
+                : currentReview == null
+                    ? AmendmentStateEnum.NewAmendment
+                    : currentReview.AmendmentReviewCompleted == true
+                        ? AmendmentStateEnum.Completed
+                        : currentReview.ResponseReceivedDate is null
+                            ? AmendmentStateEnum.SentToApplicant
+                            : currentReview.ApplicantAgreed ?? false
+                                ? AmendmentStateEnum.ApplicantAgreed
+                                : AmendmentStateEnum.ApplicantDisagreed;
+
+        var relevantButton =RelevantFellingAndRestockingButton.None;
+
         var result = new ConfirmedFellingRestockingDetailsModel
         {
             FellingLicenceApplicationSummary = summaryResult,
+            AmendmentState = amendmentState,
+            AmendmentReviewId = currentReview?.Id,
+            AmendmentsSentDate = currentReview?.AmendmentsSentDate,
             ActivityFeedItems = activityFeedItems.Value.ToList(),
             ApplicationId = applicationId,
             PotentialRestockingCompartments = retrievalResult.SubmittedFlaPropertyCompartments
                 .Select(x => new PotentialRestockingCompartments(x.Id, Math.Round(x.TotalHectares!.Value, 2), x.DisplayName, x.CompartmentId))
                 .ToList(),
-            CanCurrentUserAmend = 
+            CanCurrentUserAmend =
                 summaryResult.StatusHistories.MaxBy(x => x.Created)?.Status is FellingLicenceStatus.WoodlandOfficerReview &&
-                summaryResult.AssigneeHistories.Any(y => 
-                    y.Role is AssignedUserRole.WoodlandOfficer && 
-                    y.UserAccount!.Id == user.UserAccountId && 
+                summaryResult.AssigneeHistories.Any(y =>
+                    y.Role is AssignedUserRole.WoodlandOfficer &&
+                    y.UserAccount!.Id == user.UserAccountId &&
                     y.TimestampUnassigned is null) &&
                 !retrievalResult.ConfirmedFellingAndRestockingComplete,
             Compartments = retrievalResult.ConfirmedFellingAndRestockingDetailModels.Select(x =>
@@ -119,8 +180,6 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                         SubCompartmentName = x.SubCompartmentName,
                         TotalHectares = x.TotalHectares,
                         SubmittedFlaPropertyCompartmentId = x.SubmittedFlaPropertyCompartmentId,
-                        Designation = x.Designation,
-                        ConfirmedTotalHectares = x.ConfirmedTotalHectares,
                         NearestTown = x.NearestTown,
                         GISData = summaryResult.DetailsList?.FirstOrDefault(y => y.CompartmentId == x.CompartmentId)?.GISData,
 
@@ -201,7 +260,6 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                         CompartmentNumber = x.CompartmentNumber,
                         SubCompartmentName = x.SubCompartmentName,
                         TotalHectares = x.TotalHectares,
-                        Designation = x.Designation,
                         ProposedFellingDetails = x.ProposedFellingDetailModels.Select(f =>
                                 new ProposedFellingDetailModel
                                 {
@@ -247,10 +305,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 .ThenBy(x => x.SubCompartmentName)
                 .ToArray(),
             ConfirmedFellingAndRestockingComplete = retrievalResult.ConfirmedFellingAndRestockingComplete,
-            // todo: set this based on amendment acceptance state implemented in FLOV2-2361
-            RelevantButton = retrievalResult.ConfirmedFellingAndRestockingComplete
-                ? RelevantFellingAndRestockingButton.None
-                : RelevantFellingAndRestockingButton.ConfirmFellingAndRestocking,
+            // Decide the primary action button based on completion state and amendment review state
+            RelevantButton = relevantButton,
         };
 
         SetBreadcrumbs(result, pageName);
@@ -274,7 +330,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         logger.LogDebug("Saving confirmed felling details for application {ApplicationId}", model.ApplicationId);
 
         // reset restocking selection if the operation type does not require restocking
-        if (model.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.OperationType is 
+        if (model.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.OperationType is
             FellingOperationType.Thinning)
         {
             model.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NoRestockingReason = null;
@@ -294,7 +350,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
 
         if (saveResult.IsFailure)
         {
-            logger.LogError( "Failed to save confirmed felling details for application {ApplicationId} with error {Error}", model.ApplicationId, saveResult.Error);
+            logger.LogError("Failed to save confirmed felling details for application {ApplicationId} with error {Error}", model.ApplicationId, saveResult.Error);
             await transaction.RollbackAsync(cancellationToken);
             await AuditConfirmedFellingDetailsUpdateFailureAsync(model.ApplicationId, user, saveResult.Error, cancellationToken);
             return saveResult.ConvertFailure<ConfirmedFellingRestockingDetailsModel>();
@@ -502,7 +558,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                         requestContext,
                         new
                         {
-                            Error = updateEntityResult.Error,
+                            updateEntityResult.Error,
                         }),
                     cancellationToken);
 
@@ -540,6 +596,154 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
             await transaction.RollbackAsync(cancellationToken);
             return Result.Failure($"An error occurred while reverting deleted confirmed felling detail amendments: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Sends amendments to the applicant and triggers notification email.
+    /// </summary>
+    /// <param name="applicationId">The application ID.</param>
+    /// <param name="user">The internal user sending amendments.</param>
+    /// <param name="linkToApplication">Optional link to the application.</param>
+    /// <param name="amendmentsReason">Optional reason for amendments.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating success or failure.</returns>
+    public async Task<Result> SendAmendmentsToApplicant(
+        Guid applicationId,
+        InternalUser user,
+        string? linkToApplication,
+        string? amendmentsReason,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        logger.LogDebug("Sending amendments for application {ApplicationId}", applicationId);
+        var responseDeadline = DateTime.UtcNow.AddDays(reviewAmendmentsOptions.Value.ApplicationWithdrawalDays);
+        var updateEntityResult = await _updateWoodlandOfficerReviewService.CreateFellingAndRestockingAmendmentReviewAsync(
+            applicationId,
+            user.UserAccountId!.Value,
+            responseDeadline,
+            amendmentsReason,
+            cancellationToken);
+
+        if (updateEntityResult.IsFailure)
+        {
+            await auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.SendAmendmentsToApplicantFailure,
+                    applicationId,
+                    user.UserAccountId,
+                    requestContext,
+                    new
+                    {
+                        updateEntityResult.Error,
+                    }),
+                cancellationToken);
+
+            logger.LogError("Failed to update woodland officer review amendments for application {ApplicationId} with error {Error}", applicationId, updateEntityResult.Error);
+            return updateEntityResult;
+        }
+
+        await auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.SendAmendmentsToApplicant,
+                applicationId,
+                user.UserAccountId,
+                requestContext,
+                new { }),
+            cancellationToken);
+
+        var getDetailsResult = await getFellingLicenceApplicationService
+            .RetrieveApplicationNotificationDetailsAsync(applicationId, new UserAccessModel { IsFcUser = true, UserAccountId = user.UserAccountId!.Value }, cancellationToken)
+            .ConfigureAwait(false);
+        if (getDetailsResult.IsFailure)
+        {
+            return Result.Failure("Could not look up application reference");
+        }
+
+        var appResult = await getFellingLicenceApplicationService
+            .GetApplicationByIdAsync(applicationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (appResult.IsFailure)
+        {
+            return Result.Failure("Could not look up application reference");
+        }
+        var applicant = await ExternalUserAccountService.RetrieveUserAccountEntityByIdAsync(appResult.Value.CreatedById, cancellationToken);
+
+        if (applicant.IsFailure)
+        {
+            return Result.Failure("Unable to determine applicant for notification");
+        }
+
+        var adminHubFooter = await GetAdminHubAddressDetailsAsync(getDetailsResult.Value.AdminHubName, cancellationToken);
+
+        var woodlandOfficerModel = new AmendmentsSentToApplicantDataModel
+        {
+            Name = applicant.Value.FullName(),
+            ApplicationReference = getDetailsResult.Value.ApplicationReference,
+            PropertyName = getDetailsResult.Value.PropertyName,
+            ResponseDeadline = DateTimeDisplay.GetDateDisplayString(responseDeadline),
+            WoName = user.FullName,
+            ViewApplicationURL = linkToApplication,
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
+        };
+
+        var notificationResult = await emailService.SendNotificationAsync(
+            woodlandOfficerModel,
+            NotificationType.AmendmentsSentToApplicant,
+            new NotificationRecipient(user.EmailAddress, user.FullName),
+            cancellationToken: cancellationToken);
+
+        if (notificationResult.IsFailure)
+        {
+            logger.LogError("Unable to send amendments for application {ApplicationId}", user.UserAccountId!.Value);
+            return Result.Failure("Unable to send amendments");
+        }
+
+        logger.LogInformation("Successfully sent confirmed felling detail amendments for application {ApplicationId}", applicationId);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Marks further amendments as complete for a given amendment review.
+    /// Publishes audit events for completion and failure, and logs the result.
+    /// </summary>
+    /// <param name="user">The internal user completing the amendments.</param>
+    /// <param name="amendmentReviewId">The unique identifier of the amendment review to complete.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>A <see cref="Result"/> indicating success or failure of the completion operation.</returns>
+    public async Task<Result> MakeFurtherAmendments(
+        InternalUser user,
+        Guid amendmentReviewId,
+        CancellationToken cancellationToken)
+    {
+        var updateEntityResult = await _updateWoodlandOfficerReviewService.CompleteFellingAndRestockingAmendmentReviewAsync(
+            amendmentReviewId,
+            cancellationToken);
+
+        if (updateEntityResult.IsFailure)
+        {
+            await auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.CompleteFellingAndRestockingAmendmentReview,
+                    amendmentReviewId,
+                    user.UserAccountId,
+                    requestContext,
+                    new
+                    {
+                        updateEntityResult.Error,
+                    }),
+                cancellationToken);
+
+            logger.LogError("Failed to complete woodland officer review amendments for application {amendmentReviewId} with error {Error}", amendmentReviewId, updateEntityResult.Error);
+            return updateEntityResult;
+        }
+
+        await auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.CompleteFellingAndRestockingAmendmentReviewFailure,
+                amendmentReviewId,
+                user.UserAccountId,
+                requestContext,
+                new { }),
+            cancellationToken);
+
+        return updateEntityResult;
     }
 
     /// <summary>
@@ -717,7 +921,6 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         {
             CompartmentId = model.ConfirmedFellingRestockingDetails.CompartmentId!.Value,
             CompartmentNumber = model.ConfirmedFellingRestockingDetails.CompartmentNumber,
-            Designation = model.ConfirmedFellingRestockingDetails.Designation,
             TotalHectares = model.ConfirmedFellingRestockingDetails.TotalHectares,
             SubCompartmentName = model.ConfirmedFellingRestockingDetails.SubCompartmentName,
             ConfirmedFellingDetailModel = new ConfirmedFellingDetailModel
@@ -731,7 +934,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 NumberOfTrees = fellingDetails.NumberOfTrees,
                 OperationType = fellingDetails.OperationType ?? FellingOperationType.None,
                 IsTreeMarkingUsed = fellingDetails.IsTreeMarkingUsed,
-                TreeMarking = fellingDetails.IsTreeMarkingUsed??false ? fellingDetails.TreeMarking : string.Empty,
+                TreeMarking = fellingDetails.IsTreeMarkingUsed ?? false ? fellingDetails.TreeMarking : string.Empty,
                 EstimatedTotalFellingVolume = fellingDetails.EstimatedTotalFellingVolume ?? 0,
                 IsRestocking = fellingDetails.IsRestocking,
                 NoRestockingReason = fellingDetails.NoRestockingReason,
@@ -762,7 +965,6 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return new IndividualRestockingDetailModel
         {
             SubmittedFlaPropertyCompartmentId = compartmentId,
-            Designation = model.ConfirmedFellingRestockingDetails.Designation,
             TotalHectares = model.ConfirmedFellingRestockingDetails.TotalHectares,
             SubCompartmentName = model.ConfirmedFellingRestockingDetails.SubCompartmentName,
             ConfirmedRestockingDetailModel = new ConfirmedRestockingDetailModel
@@ -851,7 +1053,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 applicationId,
                 user.UserAccountId,
                 requestContext,
-                new {}), 
+                new { }),
             cancellationToken);
     }
 
@@ -883,7 +1085,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 applicationId,
                 user.UserAccountId,
                 requestContext,
-                new {}), 
+                new { }),
             cancellationToken);
     }
 

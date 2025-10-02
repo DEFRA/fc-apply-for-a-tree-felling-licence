@@ -41,6 +41,9 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
                 .ThenInclude(f => f.ConfirmedFellingDetails)!
                 .ThenInclude(r => r!.ConfirmedRestockingDetails)!
                 .ThenInclude(s => s!.ConfirmedRestockingSpecies)
+            .Include(a => a.SubmittedFlaPropertyDetail)
+                .ThenInclude(c => c!.SubmittedFlaPropertyCompartments)!
+                .ThenInclude(c => c.SubmittedCompartmentDesignations)
             .Include(a => a.LinkedPropertyProfile)
                 .ThenInclude(p => p!.ProposedFellingDetails)!
                 .ThenInclude(d => d.FellingSpecies)
@@ -67,7 +70,9 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         CancellationToken cancellationToken)
     {
         var existingEntry = await Context.AssigneeHistories.SingleOrDefaultAsync(
-            x => x.Role == assignedRole && x.FellingLicenceApplicationId == applicationId && x.TimestampUnassigned.HasValue == false);
+            x => x.Role == assignedRole && x.FellingLicenceApplicationId == applicationId && x.TimestampUnassigned.HasValue == false,
+            cancellationToken);
+
         var existingAssigneeId = existingEntry?.AssignedUserId;
 
         if (existingAssigneeId == assignedUserId)
@@ -787,7 +792,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         CancellationToken cancellationToken)
     {
         var propertyDetail = await Context.SubmittedFlaPropertyDetails
-            .Include(d => d.SubmittedFlaPropertyCompartments)
+            .Include(d => d.SubmittedFlaPropertyCompartments)!
+                .ThenInclude(x => x.SubmittedCompartmentDesignations)
             .FirstOrDefaultAsync(d => d.FellingLicenceApplicationId == applicationId, cancellationToken);
 
         return propertyDetail is null
@@ -1119,9 +1125,9 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
         var options = reviews.Value;
 
-        if (includeComplete is false)
+        if (!includeComplete)
         {
-            options = options.Where(x => x.ResponseReceivedDate is null);
+            options = options.Where(x => x.AmendmentReviewCompleted != true);
         }
 
         var currentReview = options.MaxBy(x => x.AmendmentsSentDate);
@@ -1130,4 +1136,27 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             ? Maybe.From(currentReview)
             : Maybe.None;
     }
+
+    /// <inheritdoc />
+    public async Task AddFellingAndRestockingAmendmentReviewAsync(FellingAndRestockingAmendmentReview fellingAndRestockingAmendmentReview, CancellationToken cancellationToken)
+    {
+        await Context.Set<FellingAndRestockingAmendmentReview>().AddAsync(fellingAndRestockingAmendmentReview, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> SetAmendmentReviewCompletedAsync(
+        Guid amendmentReviewId,
+        bool reviewCompleted,
+        CancellationToken cancellationToken)
+    {
+        var review = await Context.Set<FellingAndRestockingAmendmentReview>()
+            .SingleOrDefaultAsync(x => x.Id == amendmentReviewId, cancellationToken);
+        if (review == null)
+        {
+            return UnitResult.Failure(UserDbErrorReason.NotFound);
+        }
+        review.AmendmentReviewCompleted = reviewCompleted;
+        return await Context.SaveEntitiesAsync(cancellationToken);
+    }
+
 }

@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
@@ -64,9 +63,9 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveReopenWithdrawnApplicationModelAsync(application.Id, "TestPage", CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.ApplicationId.Should().Be(application.Id);
-        result.Value.ActivityFeed.ActivityFeedItemModels.Should().BeEquivalentTo(activityFeedItems);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+        Assert.Equivalent(activityFeedItems, result.Value.ActivityFeed.ActivityFeedItemModels);
     }
 
     [Theory, AutoMoqData]
@@ -106,8 +105,8 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveReopenWithdrawnApplicationModelAsync(application.Id, "TestPage", CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Application is not in a withdrawn state");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Application is not in a withdrawn state", result.Error);
     }
 
     [Theory, AutoMoqData]
@@ -123,8 +122,8 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveReopenWithdrawnApplicationModelAsync(applicationId, "TestPage", CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Could not locate Felling Licence Application with the given id");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Could not locate Felling Licence Application with the given id", result.Error);
     }
 
     [Theory, AutoMoqData]
@@ -172,7 +171,7 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveReopenWithdrawnApplicationModelAsync(application.Id, "TestPage", CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Error retrieving activity feed items");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Error retrieving activity feed items", result.Error);
     }
 }

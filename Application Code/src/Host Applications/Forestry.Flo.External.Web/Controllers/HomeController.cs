@@ -3,21 +3,33 @@ using Forestry.Flo.External.Web.Models;
 using Forestry.Flo.External.Web.Models.Home;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.Common.User;
+using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics;
+using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Infrastructure;
+using Microsoft.Extensions.Options;
+using AuthenticationOptions = Forestry.Flo.Services.Common.Infrastructure.AuthenticationOptions;
 
 namespace Forestry.Flo.External.Web.Controllers;
 
 public partial class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly AuthenticationOptions _authenticationOptions;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(
+        ILogger<HomeController> logger,
+        IOptions<AuthenticationOptions> authOptions)
     {
+        ArgumentNullException.ThrowIfNull(authOptions.Value);
+
         _logger = logger ?? new NullLogger<HomeController>();;
+        _authenticationOptions = authOptions.Value;
     }
     
     // GET Home/AcceptInvitation?email=some@email.com&token=sometoken
@@ -81,26 +93,50 @@ public partial class HomeController : Controller
 
     public IActionResult SignIn()
     {
+        var scheme = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.Azure => FloAuthenticationScheme.SignIn,
+            AuthenticationProvider.OneLogin => OneLoginDefaults.AuthenticationScheme,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
         return Challenge(new AuthenticationProperties
         {
             RedirectUri = Url.Action(nameof(Index)),
-        }, "SignIn");
+        }, scheme);
     }
 
     public IActionResult SignUp()
     {
+        var scheme = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.Azure => FloAuthenticationScheme.SignUp,
+            AuthenticationProvider.OneLogin => OneLoginDefaults.AuthenticationScheme,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
         return Challenge(new AuthenticationProperties
         {
             RedirectUri = Url.Action(nameof(Index)),
-        }, "SignUp");
+        }, scheme);
     }
 
-    public async Task Logout()
+    public async Task<IActionResult> Logout([FromServices] IOptions<AuthenticationOptions> options)
     {
-        await HttpContext.SignOutAsync();
-        await HttpContext.SignOutAsync("SignIn");
-        await HttpContext.SignOutAsync("SignUp");
-        HttpContext.Response.Headers.Add("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+        switch (options.Value.Provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return SignOut(OneLoginDefaults.AuthenticationScheme);
+            case AuthenticationProvider.Azure:
+                await HttpContext.SignOutAsync();
+                await HttpContext.SignOutAsync("SignIn");
+                await HttpContext.SignOutAsync("SignUp");
+                HttpContext.Response.Headers.Add("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+                return SignOut();
+            default:
+                return SignOut();
+        }
     }
 
     public IActionResult Privacy()

@@ -82,6 +82,16 @@ public interface IGetWoodlandOfficerReviewService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Gets the compartment designations entered by the woodland officer for the application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve data for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="ApplicationSubmittedCompartmentDesignations"/> model of the designations data.</returns>
+    Task<Result<ApplicationSubmittedCompartmentDesignations>> GetCompartmentDesignationsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Retrieves the current (most recent) felling and restocking amendment review for the specified application.
     /// </summary>
     /// <param name="applicationId">The ID of the application to retrieve the current amendment review for.</param>

@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class FinalActionDate_FellingLicenceApplication : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

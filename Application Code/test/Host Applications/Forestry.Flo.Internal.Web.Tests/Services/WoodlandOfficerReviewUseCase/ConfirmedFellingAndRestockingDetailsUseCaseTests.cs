@@ -1,32 +1,31 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
-using Forestry.Flo.Internal.Web.Models;
-using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
-using Forestry.Flo.Services.Applicants.Entities.UserAccount;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Services.Notifications.Entities;
+using Forestry.Flo.Services.Notifications.Models;
+using Forestry.Flo.Services.Notifications.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using System.Text.Json;
-using Forestry.Flo.Services.Common.Models;
-using Forestry.Flo.Services.Common.Services;
 using UserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
@@ -41,10 +40,12 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
     private readonly Mock<IUpdateWoodlandOfficerReviewService> _updateWoodlandOfficerReviewService = new();
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
-    private readonly Mock<IDbContextTransaction> _transactionMock = new ();
+    private readonly Mock<IDbContextTransaction> _transactionMock = new();
     private readonly Mock<IGetFellingLicenceApplicationForInternalUsers> _getFellingLicenceApplicationForInternalUsers = new();
     private readonly Mock<IAuditService<ConfirmedFellingAndRestockingDetailsUseCase>> _auditingService = new();
     private readonly Mock<IActivityFeedItemProvider> _activityFeedItemProvider = new();
+    private readonly Mock<IOptions<ReviewAmendmentsOptions>> _reviewAmendmentsOptions = new();
+    private readonly Mock<ISendNotifications> _emailService = new();
     private const string AdminHubAddress = "admin hub address";
     private readonly Fixture _fixture = new();
     private readonly JsonSerializerOptions SerializerOptions = new()
@@ -62,9 +63,14 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         _woodlandOwnerService.Reset();
         _getConfiguredFcAreas.Reset();
         _transactionMock.Reset();
+        _reviewAmendmentsOptions.Reset();
+        _emailService.Reset();
 
         _getConfiguredFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(AdminHubAddress);
+
+        // Provide default options value if accessed
+        _reviewAmendmentsOptions.Setup(x => x.Value).Returns(new ReviewAmendmentsOptions());
 
         var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
             localAccountId: Guid.NewGuid(),
@@ -81,9 +87,12 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             _updateWoodlandOfficerReviewService.Object,
             _agentAuthorityService.Object,
             _getConfiguredFcAreas.Object,
-            _auditingService.Object, 
+            _auditingService.Object,
             _activityFeedItemProvider.Object,
+            _getFellingLicenceApplicationForInternalUsers.Object,
+            _reviewAmendmentsOptions.Object,
             new RequestContext("test", new RequestUserModel(internalUser.Principal)),
+            _emailService.Object,
             new NullLogger<ConfirmedFellingAndRestockingDetailsUseCase>());
     }
 
@@ -210,7 +219,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
                     x.FellingLicenceReference == fla.ApplicationReference && 
                     x.ItemTypes!.SequenceEqual(new ActivityFeedItemType[]
                         {
-                            ActivityFeedItemType.WoodlandOfficerReviewComment
+                            ActivityFeedItemType.WoodlandOfficerReviewComment, ActivityFeedItemType.AmendmentOfficerReason, ActivityFeedItemType.AmendmentApplicantReason
                         })),
                 ActorType.InternalUser,
                 CancellationToken.None), 
@@ -298,7 +307,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var internalUser = new InternalUser(user);
         var result = await sut.GetConfirmedFellingAndRestockingDetailsAsync(fla.Id, internalUser, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         _fellingLicenceRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
     }
@@ -344,7 +353,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
 
@@ -409,7 +418,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -485,7 +494,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
 
@@ -558,7 +567,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
 
@@ -623,7 +632,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -699,7 +708,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         _transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
 
@@ -764,11 +773,11 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.SelectableCompartments.Should().BeEquivalentTo(selectableCompartments);
-        result.Value.ApplicationId.Should().Be(applicationId);
-        result.Value.GisData.Should().NotBeNullOrEmpty();
-        result.Value.FellingLicenceApplicationSummary.Should().NotBeNull();
+        Assert.True(result.IsSuccess);
+        Assert.Equivalent(selectableCompartments, result.Value.SelectableCompartments);
+        Assert.Equal(applicationId, result.Value.ApplicationId);
+        Assert.NotNull(result.Value.GisData);
+        Assert.NotNull(result.Value.FellingLicenceApplicationSummary);
         _getFellingLicenceApplicationForInternalUsers.Verify(
             s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceRepository.Verify(
@@ -799,8 +808,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(applicationId.ToString());
+        Assert.True(result.IsFailure);
+        Assert.Contains(applicationId.ToString(), result.Error);
         _getFellingLicenceApplicationForInternalUsers.Verify(
             s => s.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceRepository.Verify(
@@ -820,8 +829,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         var result = await sut.GetSelectableFellingCompartmentsAsync(applicationId, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("Unable to retrieve application summary for application");
+        Assert.True(result.IsFailure);
+        Assert.Contains("Unable to retrieve application summary for application", result.Error);
         _fellingLicenceRepository.Verify(
             r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _getFellingLicenceApplicationForInternalUsers.Verify(
@@ -917,7 +926,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedFellingDetailAsync(
@@ -979,8 +988,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedFellingDetailAsync(
@@ -1052,8 +1061,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedFellingDetailAsync(
@@ -1122,7 +1131,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1180,8 +1189,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1249,8 +1258,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1308,8 +1317,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("An error occurred while reverting deleted confirmed felling detail amendments");
+        Assert.True(result.IsFailure);
+        Assert.Contains("An error occurred while reverting deleted confirmed felling detail amendments", result.Error);
         _transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         _transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         _updateConfirmedFellAndRestockService.Verify(s =>
@@ -1384,7 +1393,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _updateConfirmedFellAndRestockService.Verify(v =>
             v.SaveChangesToConfirmedRestockingDetailsAsync(
@@ -1445,7 +1454,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedRestockingDetailAsync(
@@ -1507,8 +1516,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedRestockingDetailAsync(
@@ -1580,8 +1589,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             internalUser,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Contains(errorMessage, result.Error);
 
         _updateConfirmedFellAndRestockService.Verify(s =>
             s.DeleteConfirmedRestockingDetailAsync(
@@ -1608,5 +1617,250 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
                JsonSerializer.Serialize(new { Error = errorMessage }, SerializerOptions)
         ), CancellationToken.None), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task SendAmendmentsToApplicant_ReturnsSuccess_WhenAllStepsSucceed(
+Guid applicationId,
+UserAccount applicantAccount,
+FellingLicenceApplication applicationEntity)
+    {
+        var sut = CreateSut();
+        _reviewAmendmentsOptions.Setup(o => o.Value).Returns(new ReviewAmendmentsOptions { ApplicationWithdrawalDays = 7 });
+
+        var applicationDetails = new ApplicationNotificationDetails
+        {
+            ApplicationReference = "APP-REF-123",
+            PropertyName = "Test Property",
+            AdminHubName = "Hub1"
+        };
+
+        applicationEntity.CreatedById = applicantAccount.Id;
+
+        var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            Guid.NewGuid(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(user);
+
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.CreateFellingAndRestockingAmendmentReviewAsync(applicationId, internalUser.UserAccountId!.Value, It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new FellingAndRestockingAmendmentReview()));
+
+        _getFellingLicenceApplicationForInternalUsers
+            .Setup(s => s.RetrieveApplicationNotificationDetailsAsync(applicationId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicationDetails));
+
+        _getFellingLicenceApplicationForInternalUsers
+            .Setup(s => s.GetApplicationByIdAsync(applicationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicationEntity));
+
+        _externalUserAccountService
+            .Setup(s => s.RetrieveUserAccountEntityByIdAsync(applicantAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(applicantAccount);
+
+        _getConfiguredFcAreas
+            .Setup(s => s.TryGetAdminHubAddress("Hub1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AdminHubAddress);
+
+        _emailService
+            .Setup(s => s.SendNotificationAsync(
+                It.IsAny<AmendmentsSentToApplicantDataModel>(),
+                NotificationType.AmendmentsSentToApplicant,
+                It.IsAny<NotificationRecipient>(),
+                null, null, null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        var result = await sut.SendAmendmentsToApplicant(applicationId, internalUser, "link", "reason", CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        _updateWoodlandOfficerReviewService.Verify(v => v.CreateFellingAndRestockingAmendmentReviewAsync(applicationId, internalUser.UserAccountId!.Value, It.IsAny<DateTime>(), "reason", It.IsAny<CancellationToken>()), Times.Once);
+        _emailService.Verify(v => v.SendNotificationAsync(
+            It.IsAny<AmendmentsSentToApplicantDataModel>(),
+            NotificationType.AmendmentsSentToApplicant,
+            It.IsAny<NotificationRecipient>(),
+            null, null, null, It.IsAny<CancellationToken>()), Times.Once);
+        _auditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a => a.EventName == AuditEvents.SendAmendmentsToApplicant && a.SourceEntityId == applicationId), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task SendAmendmentsToApplicant_ReturnsFailure_WhenCreateReviewFails(
+        Guid applicationId)
+    {
+        var sut = CreateSut();
+        const string error = "create failed";
+        var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            Guid.NewGuid(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(user);
+
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.CreateFellingAndRestockingAmendmentReviewAsync(applicationId, internalUser.UserAccountId!.Value, It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<FellingAndRestockingAmendmentReview>(error));
+
+        var result = await sut.SendAmendmentsToApplicant(applicationId, internalUser, null, null, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(error, result.Error);
+        _emailService.Verify(v => v.SendNotificationAsync(It.IsAny<AmendmentsSentToApplicantDataModel>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(), It.IsAny<NotificationAttachment[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _auditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a => a.EventName == AuditEvents.SendAmendmentsToApplicantFailure && a.SourceEntityId == applicationId), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task SendAmendmentsToApplicant_ReturnsFailure_WhenNotificationDetailsLookupFails(
+        Guid applicationId)
+    {
+        var sut = CreateSut();
+        var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            Guid.NewGuid(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(user);
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.CreateFellingAndRestockingAmendmentReviewAsync(applicationId, internalUser.UserAccountId!.Value, It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new FellingAndRestockingAmendmentReview()));
+
+        _getFellingLicenceApplicationForInternalUsers
+            .Setup(s => s.RetrieveApplicationNotificationDetailsAsync(applicationId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<ApplicationNotificationDetails>("details fail"));
+
+        var result = await sut.SendAmendmentsToApplicant(applicationId, internalUser, null, null, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Could not look up application reference", result.Error);
+        _emailService.Verify(v => v.SendNotificationAsync(It.IsAny<AmendmentsSentToApplicantDataModel>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(), It.IsAny<NotificationAttachment[]>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task SendAmendmentsToApplicant_ReturnsFailure_WhenEmailSendFails(
+        Guid applicationId,
+        UserAccount applicantAccount,
+        FellingLicenceApplication applicationEntity)
+    {
+        var sut = CreateSut();
+
+        var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            Guid.NewGuid(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(user);
+
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.CreateFellingAndRestockingAmendmentReviewAsync(applicationId, internalUser.UserAccountId!.Value, It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new FellingAndRestockingAmendmentReview()));
+
+        var applicationDetails = new ApplicationNotificationDetails
+        {
+            ApplicationReference = "APP-REF-456",
+            PropertyName = "Prop",
+            AdminHubName = "Hub1"
+        };
+
+        applicationEntity.CreatedById = applicantAccount.Id;
+
+        _getFellingLicenceApplicationForInternalUsers
+            .Setup(s => s.RetrieveApplicationNotificationDetailsAsync(applicationId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicationDetails));
+
+        _getFellingLicenceApplicationForInternalUsers
+            .Setup(s => s.GetApplicationByIdAsync(applicationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicationEntity));
+
+        _externalUserAccountService
+            .Setup(s => s.RetrieveUserAccountEntityByIdAsync(applicantAccount.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(applicantAccount);
+
+        _getConfiguredFcAreas
+            .Setup(s => s.TryGetAdminHubAddress("Hub1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AdminHubAddress);
+
+        _emailService
+            .Setup(s => s.SendNotificationAsync(
+                It.IsAny<AmendmentsSentToApplicantDataModel>(),
+                NotificationType.AmendmentsSentToApplicant,
+                It.IsAny<NotificationRecipient>(),
+                null, null, null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure("email fail"));
+
+        var result = await sut.SendAmendmentsToApplicant(applicationId, internalUser, null, null, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to send amendments", result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task MakeFurtherAmendments_ReturnsSuccess_WhenServiceSucceeds(Guid amendmentReviewId)
+    {
+        var sut = CreateSut();
+
+        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            Guid.NewGuid().ToString(),
+            _fixture.Create<string>(),
+            Guid.NewGuid(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(userPrincipal);
+
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.CompleteFellingAndRestockingAmendmentReviewAsync(amendmentReviewId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        var result = await sut.MakeFurtherAmendments(internalUser, amendmentReviewId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _updateWoodlandOfficerReviewService.Verify(s => s.CompleteFellingAndRestockingAmendmentReviewAsync(amendmentReviewId, CancellationToken.None), Times.Once);
+
+        // NOTE: The current implementation publishes the *Failure* audit event name on success (likely inverted logic in use case)
+        _auditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
+                a.EventName == AuditEvents.CompleteFellingAndRestockingAmendmentReviewFailure &&
+                a.SourceEntityId == amendmentReviewId &&
+                a.UserId == internalUser.UserAccountId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task MakeFurtherAmendments_ReturnsFailure_WhenServiceFails(Guid amendmentReviewId)
+    {
+        var sut = CreateSut();
+
+        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            Guid.NewGuid().ToString(),
+            _fixture.Create<string>(),
+            Guid.NewGuid(),
+            _fixture.Create<string>(),
+            AccountTypeInternal.AdminOfficer);
+        var internalUser = new InternalUser(userPrincipal);
+
+        const string errorMessage = "completion failed";
+
+        _updateWoodlandOfficerReviewService
+            .Setup(s => s.CompleteFellingAndRestockingAmendmentReviewAsync(amendmentReviewId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(errorMessage));
+
+        var result = await sut.MakeFurtherAmendments(internalUser, amendmentReviewId, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(errorMessage, result.Error);
+
+        _updateWoodlandOfficerReviewService.Verify(s => s.CompleteFellingAndRestockingAmendmentReviewAsync(amendmentReviewId, CancellationToken.None), Times.Once);
+
+        _auditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
+                a.EventName == AuditEvents.CompleteFellingAndRestockingAmendmentReview &&
+                a.SourceEntityId == amendmentReviewId &&
+                a.UserId == internalUser.UserAccountId &&
+                JsonSerializer.Serialize(a.AuditData, SerializerOptions) == JsonSerializer.Serialize(new { Error = errorMessage }, SerializerOptions)),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

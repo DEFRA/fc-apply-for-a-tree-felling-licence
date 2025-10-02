@@ -102,10 +102,6 @@
                                 : string.Empty)
             </dd>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Designations</dt>
-            <dd class="govuk-summary-list__value">@Model.Designation</dd>
-        </div>
         @{
             RenderSummaryRow("Area to be felled", "Ha", Model.AreaToBeFelled, Model.OldValue(nameof(Model.AreaToBeFelled)));
         }

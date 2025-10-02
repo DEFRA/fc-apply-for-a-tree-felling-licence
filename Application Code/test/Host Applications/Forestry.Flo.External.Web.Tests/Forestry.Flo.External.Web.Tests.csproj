@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoFixture.Xunit2" Version="4.18.1" />
-    <PackageReference Include="FluentAssertions" Version="8.3.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
@@ -35,4 +34,7 @@
     <ProjectReference Include="..\..\..\src\Host Applications\Forestry.Flo.External.Web\Forestry.Flo.External.Web.csproj" />
     <ProjectReference Include="..\..\Forestry.Flo.Tests.Common\Forestry.Flo.Tests.Common.csproj" />
   </ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage" />
+	</ItemGroup>
 </Project>

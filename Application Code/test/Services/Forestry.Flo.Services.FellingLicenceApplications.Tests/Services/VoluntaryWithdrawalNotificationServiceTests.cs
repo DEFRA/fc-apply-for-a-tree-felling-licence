@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -91,12 +85,12 @@ public class VoluntaryWithdrawalNotificationServiceTests
 
         var result = await sut.GetApplicationsAfterThresholdForWithdrawalAsync(_threshold, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Count.Should().Be(applications.Count);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(applications.Count, result.Value.Count);
 
         foreach (var application in result.Value)
         {
-            application.NotificationDateSent.Date.Should().Be(currentDate.Date);
+            Assert.Equal(currentDate.Date, application.NotificationDateSent.Date);
         }
 
         _internalFLARepositoryMock.Verify(v => v.GetApplicationsThatAreWithinThresholdOfWithdrawalNotificationDateAsync(currentDate, _threshold, CancellationToken.None), Times.Once);
@@ -147,7 +141,7 @@ public class VoluntaryWithdrawalNotificationServiceTests
 
         var result = await sut.GetApplicationsAfterThresholdForWithdrawalAsync(_threshold, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _internalFLARepositoryMock.Verify(v => v.GetApplicationsThatAreWithinThresholdOfWithdrawalNotificationDateAsync(currentTime, _threshold, CancellationToken.None), Times.Once);
         _internalFLARepositoryMock.Verify(v => v.UnitOfWork.SaveEntitiesAsync(CancellationToken.None), Times.Once);

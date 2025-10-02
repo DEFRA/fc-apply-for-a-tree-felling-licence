@@ -99,4 +99,24 @@ public class NotificationHistoryServiceAddListTests
         _repository.Verify(r => r.Add(It.IsAny<NotificationHistory>()), Times.Exactly(2));
         _repository.Verify(r => r.UnitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task ReturnsFailureWhenRepositoryThrows()
+    {
+        var models = new List<NotificationHistoryModel>
+        {
+            new NotificationHistoryModel { ExternalId = Guid.NewGuid(), CreatedTimestamp = DateTime.UtcNow, Type = NotificationType.PublicRegisterComment, Text = "A" },
+            new NotificationHistoryModel { ExternalId = Guid.NewGuid(), CreatedTimestamp = DateTime.UtcNow, Type = NotificationType.PublicRegisterComment, Text = "B" }
+        };
+        _repository
+            .Setup(r => r.GetExistingExternalIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception());
+
+        var sut = CreateSut();
+        var result = await sut.AddNotificationHistoryListAsync(models, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        _repository.Verify(r => r.GetExistingExternalIdsAsync(It.Is<IEnumerable<Guid>>(e => e.Count() == 2 && e.Contains(models.First().ExternalId.Value) && e.Contains(models.Last().ExternalId.Value) ), It.IsAny<CancellationToken>()), Times.Once);
+        _repository.VerifyNoOtherCalls();
+    }
 }

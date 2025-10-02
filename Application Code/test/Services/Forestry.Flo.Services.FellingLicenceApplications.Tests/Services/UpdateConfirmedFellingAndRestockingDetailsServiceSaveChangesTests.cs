@@ -4,7 +4,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -17,9 +16,7 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Newtonsoft.Json;
 using Xunit;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
@@ -311,7 +308,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
 
         foreach (var species in speciesList)
         {
-            storedFd.ConfirmedFellingSpecies.Should().ContainSingle(x => x.Species == species);
+            Assert.Single(storedFd.ConfirmedFellingSpecies, x => x.Species == species);
         }
     }
 
@@ -338,7 +335,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
             [],
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -364,7 +361,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
             [],
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -381,7 +378,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
             [],
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
 

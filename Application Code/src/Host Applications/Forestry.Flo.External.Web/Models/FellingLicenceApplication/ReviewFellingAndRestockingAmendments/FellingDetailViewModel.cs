@@ -132,7 +132,6 @@ public class FellingDetailViewModel : CompartmentConfirmedFellingRestockingDetai
         CompartmentNumber = compartment.CompartmentNumber;
         SubCompartmentName = compartment.SubCompartmentName;
         TotalHectares = compartment.TotalHectares;
-        Designation = compartment.Designation;
         AmendedProperties = model.AmendedProperties;
         RestockingCompartments = string.Join(", ", model.ConfirmedRestockingDetails.Select(x => x.RestockingCompartmentNumber).Distinct());
         RestockingOperationsInCompartment = string.Join(", ", model.ConfirmedRestockingDetails
@@ -165,7 +164,6 @@ public class FellingDetailViewModel : CompartmentConfirmedFellingRestockingDetai
         CompartmentNumber = compartment.CompartmentNumber;
         SubCompartmentName = compartment.SubCompartmentName;
         TotalHectares = compartment.TotalHectares;
-        Designation = compartment.Designation;
         AmendedProperties = [];
         RestockingCompartments = string.Join(", ", model.ProposedRestockingDetails.Select(x => x.CompartmentNumber).Distinct());
         RestockingOperationsInCompartment = string.Join(", ", model.ProposedRestockingDetails

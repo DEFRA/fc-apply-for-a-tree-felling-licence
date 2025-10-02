@@ -27,7 +27,6 @@ public static class GisMappingExtensions
         {
             CompartmentNumber = submittedFlaPropertyCompartment.CompartmentNumber,
             WoodlandName = submittedFlaPropertyCompartment.WoodlandName,
-            Designation = submittedFlaPropertyCompartment.Designation,
             GISData = submittedFlaPropertyCompartment.GISData
         };
 

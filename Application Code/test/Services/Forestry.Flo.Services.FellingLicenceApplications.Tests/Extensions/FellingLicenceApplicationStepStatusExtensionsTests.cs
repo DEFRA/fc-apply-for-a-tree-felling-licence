@@ -1,5 +1,4 @@
 ﻿using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
@@ -20,7 +19,7 @@ public class FellingLicenceApplicationStepStatusExtensionsTests
 
         var result = status.OverallCompletion();
 
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 
     [Theory, CombinatorialData]
@@ -32,7 +31,7 @@ public class FellingLicenceApplicationStepStatusExtensionsTests
 
         if (compartmentStatus is null && fellingStatus is null)
         {
-            result.HasNoValue().Should().BeTrue();
+            Assert.True(result.HasNoValue());
         }
         else
         {
@@ -41,8 +40,8 @@ public class FellingLicenceApplicationStepStatusExtensionsTests
                 && restockingCompartmentStatus.HasValue && restockingCompartmentStatus.Value
                 && restockingStatus.HasValue && restockingStatus.Value;
 
-            result.HasValue.Should().BeTrue();
-            result!.Value.Should().Be(expectedValue);
+            Assert.True(result.HasValue);
+            Assert.Equal(expectedValue, result!.Value);
         }
     }
 

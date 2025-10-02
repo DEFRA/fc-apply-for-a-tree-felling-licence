@@ -146,6 +146,7 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .ToTable("UserAccount", "InternalUsers", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<EnvironmentalImpactAssessment>().ToTable("EnvironmentalImpactAssessment");
         modelBuilder.Entity<EnvironmentalImpactAssessmentRequestHistory>().ToTable("EnvironmentalImpactAssessmentRequestHistory");
+        modelBuilder.Entity<SubmittedCompartmentDesignations>().ToTable("SubmittedCompartmentDesignations");
         modelBuilder.Entity<FellingAndRestockingAmendmentReview>().ToTable("FellingAndRestockingAmendmentReview");
 
         modelBuilder.HasDefaultSchema(SchemaName);
@@ -516,10 +517,6 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             });
 
         modelBuilder.Entity<SubmittedFlaPropertyCompartment>()
-            .Property(p => p.ConfirmedTotalHectares)
-            .HasPrecision(18, 2);
-
-        modelBuilder.Entity<SubmittedFlaPropertyCompartment>()
             .Property(p => p.TotalHectares)
             .HasPrecision(18, 2);
 
@@ -750,6 +747,22 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                 e.HasMany(x => x.EiaRequests)
                     .WithOne(x => x.EnvironmentalImpactAssessment)
                     .HasForeignKey(x => x.EnvironmentalImpactAssessmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        modelBuilder
+            .Entity<SubmittedCompartmentDesignations>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
+        modelBuilder
+            .Entity<SubmittedCompartmentDesignations>(e =>
+            {
+                e.HasOne(p => p.SubmittedFlaPropertyCompartment)
+                    .WithOne(x => x.SubmittedCompartmentDesignations)
+                    .HasForeignKey<SubmittedCompartmentDesignations>(p => p.SubmittedFlaPropertyCompartmentId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

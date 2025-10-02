@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.PropertyProfiles.Entities;
@@ -35,9 +34,8 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.GetByIdAsync(propertyProfile.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().Be(propertyProfile.Name);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(propertyProfile.Name, result.Value.Name);
     }
     
     [Theory, AutoMoqData]
@@ -53,10 +51,9 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.GetByIdAsync(propertyProfile.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Compartments.Should().HaveCount(propertyProfile.Compartments.Count);
-        result.Value.Compartments.First().Should().BeEquivalentTo(propertyProfile.Compartments.First());
+        Assert.True(result.IsSuccess);
+        Assert.Equal(propertyProfile.Compartments.Count, result.Value.Compartments.Count);
+        Assert.Equivalent(propertyProfile.Compartments.First(), result.Value.Compartments.First());
     }
     
     [Theory, AutoMoqData]
@@ -69,9 +66,8 @@ public class PropertyProfileRepositoryTests
         var result =  await _sut.GetByIdAsync(propertyProfile.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
     
     [Theory, AutoMoqData]
@@ -85,9 +81,8 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.GetAsync(propertyProfile.Id, propertyProfile.WoodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().Be(propertyProfile.Name);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(propertyProfile.Name, result.Value.Name);
     }
     
     [Theory, AutoMoqData]
@@ -103,10 +98,9 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.GetAsync(propertyProfile.Id, propertyProfile.WoodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Compartments.Should().HaveCount(propertyProfile.Compartments.Count);
-        result.Value.Compartments.First().Should().BeEquivalentTo(propertyProfile.Compartments.First());
+        Assert.True(result.IsSuccess);
+        Assert.Equal(propertyProfile.Compartments.Count, result.Value.Compartments.Count);
+        Assert.Equivalent(propertyProfile.Compartments.First(), result.Value.Compartments.First());
     }
     
     [Theory, AutoMoqData]
@@ -121,8 +115,7 @@ public class PropertyProfileRepositoryTests
         var result = (await _sut.ListAsync(new ListPropertyProfilesQuery(woodlandOwnerId) , CancellationToken.None)).ToList();
 
         //assert
-        result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(propertyProfiles);
+        Assert.Equivalent(propertyProfiles, result);
     }
 
     [Theory, AutoMoqData]
@@ -137,9 +130,9 @@ public class PropertyProfileRepositoryTests
         var result = (await _sut.ListAsync(new ListPropertyProfilesQuery(woodlandOwnerId, new []{propertyProfiles.Last().Id}) , CancellationToken.None)).ToList();
 
         //assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(1);
-        result.First().Should().BeEquivalentTo(propertyProfiles.Last());
+        Assert.NotNull(result);
+        Assert.Single(result);
+        Assert.Equivalent(propertyProfiles.Last(), result.First());
     }
     
     [Theory, AutoMoqData]
@@ -150,9 +143,8 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.GetAsync(propertyProfile.Id, propertyProfile.WoodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
     
     [Theory, AutoMoqData]
@@ -165,9 +157,8 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.GetAsync(propertyProfile.Id, wrongOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
 
@@ -186,11 +177,11 @@ public class PropertyProfileRepositoryTests
         var saveResult = await _sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
          
         //assert
-        updateResult.IsSuccess.Should().BeTrue();
-        saveResult.IsSuccess.Should().BeTrue();
+        Assert.True(updateResult.IsSuccess);
+        Assert.True(saveResult.IsSuccess);
         var result = await _propertyProfilesContext.PropertyProfiles.FindAsync(propertyProfile.Id);
-        result.Should().NotBeNull();
-        result!.Name.Should().Be(updated.Name);
+        Assert.NotNull(result);
+        Assert.Equal(updated.Name, result!.Name);
     }
     
     [Theory, AutoMoqData]
@@ -204,8 +195,8 @@ public class PropertyProfileRepositoryTests
         var result =  await _sut.UpdateAsync(updated);
          
         //assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoMoqData]
@@ -227,7 +218,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfileAsync(propertyProfile.Id, userAccessModel , new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -250,7 +241,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfileAsync(propertyProfile.Id, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -273,7 +264,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfileAsync(propertyProfile.Id, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -296,7 +287,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfileAsync(propertyProfile.Id, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.False(result.Value);
     }
 
@@ -321,7 +312,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfilesAsync(query, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -346,7 +337,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfilesAsync(query, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -371,7 +362,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfilesAsync(query, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -396,7 +387,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfilesAsync(query, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.False(result.Value);
     }
 
@@ -424,7 +415,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfilesAsync(query, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -449,7 +440,7 @@ public class PropertyProfileRepositoryTests
         var result = await _sut.CheckUserCanAccessPropertyProfilesAsync(query, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 
     [Theory, AutoMoqData]
@@ -462,9 +453,9 @@ public class PropertyProfileRepositoryTests
          var saveResult = await _sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
          
         //assert
-        saveResult.IsSuccess.Should().BeTrue();
+        Assert.True(saveResult.IsSuccess);
         var result = await _propertyProfilesContext.PropertyProfiles.FindAsync(propertyProfile.Id);
-        result.Should().NotBeNull();
-        result!.Name.Should().Be(propertyProfile.Name);
+        Assert.NotNull(result);
+        Assert.Equal(propertyProfile.Name, result!.Name);
     }
 }

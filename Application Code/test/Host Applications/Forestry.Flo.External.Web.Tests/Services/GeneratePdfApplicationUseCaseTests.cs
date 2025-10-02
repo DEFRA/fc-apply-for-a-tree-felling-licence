@@ -161,8 +161,10 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!)
             {
+                comp.SubmittedCompartmentDesignations = null;
                 comp.Id = propertyProfile.Compartments[0].Id;
                 comp.CompartmentId = propertyProfile.Compartments[0].Id;
+                comp.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in comp.ConfirmedFellingDetails)
                 {
                     if (felling.SubmittedFlaPropertyCompartment == null)
@@ -211,7 +213,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -329,7 +331,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -439,7 +441,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -522,7 +524,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -592,6 +594,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
             {
                 comp.Id = propertyProfile.Compartments[0].Id;
                 comp.CompartmentId = propertyProfile.Compartments[0].Id;
+                comp.SubmittedCompartmentDesignations = null;
+                comp.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in comp.ConfirmedFellingDetails)
                 {
                     if (felling.SubmittedFlaPropertyCompartment == null)
@@ -636,7 +640,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             // verify
 

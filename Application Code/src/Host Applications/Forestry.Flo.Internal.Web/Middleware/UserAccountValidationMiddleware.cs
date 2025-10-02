@@ -1,16 +1,18 @@
-﻿using System.Security.Claims;
-using Forestry.Flo.Internal.Web.Extensions;
-using Forestry.Flo.Internal.Web.Infrastructure;
-using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
+﻿using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers;
 using Forestry.Flo.Services.InternalUsers.Configuration;
+using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
+using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using AuthenticationOptions = Forestry.Flo.Services.Common.Infrastructure.AuthenticationOptions;
+using ClaimsPrincipalExtensions = Forestry.Flo.Internal.Web.Infrastructure.ClaimsPrincipalExtensions;
 
 namespace Forestry.Flo.Internal.Web.Middleware
 {
@@ -20,6 +22,7 @@ namespace Forestry.Flo.Internal.Web.Middleware
         private IUserAccountService _userAccountService;
         private readonly ILogger<UserAccountValidationMiddleware> _logger;
         private readonly PermittedRegisteredUserOptions _permittedRegisteredUserOptions;
+        private readonly AuthenticationOptions _authenticationOptions;
 
         private const string UserAccountRegisterAccountDetailsUrl = "/Account/RegisterAccountDetails";
         private const string UserAccountAwaitingConfirmationUrl = "/Account/UserAccountAwaitingConfirmation";
@@ -29,6 +32,7 @@ namespace Forestry.Flo.Internal.Web.Middleware
             IDbContextFactory<InternalUsersContext> dbContextFactory, 
             IUserAccountService userAccountService, 
             IOptions<PermittedRegisteredUserOptions> permittedUserOptions,
+            IOptions<AuthenticationOptions> authenticationOptions,
             ILogger<UserAccountValidationMiddleware> logger)
         {
             ArgumentNullException.ThrowIfNull(permittedUserOptions);
@@ -37,6 +41,7 @@ namespace Forestry.Flo.Internal.Web.Middleware
             _dbContextFactory = dbContextFactory;
             _userAccountService = userAccountService;
             _logger = logger;
+            _authenticationOptions = authenticationOptions.Value;
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -55,8 +60,7 @@ namespace Forestry.Flo.Internal.Web.Middleware
                 CancellationToken cancellationToken = default;
 
                 // verify user logged into AD B2C has a valid email address
-                var email = context.User.Claims.SingleOrDefault(x =>
-                    x.Type == ClaimsPrincipalExtensions.IdentityProviderEmailClaimType)?.Value;
+                var email = GetEmailFromClaims(context.User.Claims);
                 var domain = email?.Split("@")[1];
                 if (!_permittedRegisteredUserOptions.PermittedEmailDomainsForRegisteredUser
                         .Any(x => x.Equals(domain, StringComparison.InvariantCultureIgnoreCase)))
@@ -71,20 +75,36 @@ namespace Forestry.Flo.Internal.Web.Middleware
                 {
                     await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-                    var identityProviderId = context.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
+                    var identityProviderId = GetIdentityProviderId(context.User.Claims);
 
                     // If user account cannot be identified by IdentityProviderId, we need to create a minimal record
                     // Note that LocalAccountId is not persisted in claims between requests so use of IdentityProviderId is optimal
 
                     var userAccount = await dbContext.UserAccounts.SingleOrDefaultAsync(x => x.IdentityProviderId == identityProviderId, cancellationToken);
 
-                    if (userAccount == null)
+                    if (userAccount is null)
                     {
-                        await context.SignOutAsync();
-                        throw new InvalidOperationException($"{nameof(userAccount)} is not expected to be null in {nameof(UserAccountValidationMiddleware)} {nameof(InvokeAsync)}");
+                        // This should only occur if the user has existing authentication cookies but no user account record
+                        // Cookies need to be cleared as sign in process needs to be triggered
+                        context.Response.Headers.Append("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+
+                        switch (_authenticationOptions.Provider)
+                        {
+                            case AuthenticationProvider.OneLogin:
+                                await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                                await context.SignOutAsync(OneLoginDefaults.AuthenticationScheme);
+                                break;
+                            case AuthenticationProvider.Azure:
+                                await context.SignOutAsync("SignIn");
+                                await context.SignOutAsync("SignUp");
+                                break;
+                            default:
+                                await context.SignOutAsync();
+                                break;
+                        }
                     }
 
-                    if (UserAccountIsInvalid(userAccount))
+                    if (UserAccountIsInvalid(userAccount!))
                     {
                         if (!IsUserAccountErrorUrl(requestUrl))
                         {
@@ -142,6 +162,29 @@ namespace Forestry.Flo.Internal.Web.Middleware
         private bool UserAccountIsInvalid(UserAccount userAccount)
         {
             return userAccount.Status is Status.Closed or Status.Denied;
+        }
+
+        private string? GetEmailFromClaims(IEnumerable<Claim> claims)
+        {
+            var claimType = _authenticationOptions.Provider switch
+            {
+                AuthenticationProvider.Azure => ClaimsPrincipalExtensions.IdentityProviderEmailClaimType,
+                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.EmailAddress,
+                _ => ClaimTypes.Email,
+            };
+
+            return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
+        }
+
+        private string? GetIdentityProviderId(IEnumerable<Claim> claims)
+        {
+            var claimType = _authenticationOptions.Provider switch
+            {
+                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.NameIdentifier,
+                _ => ClaimTypes.NameIdentifier,
+            };
+
+            return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
         }
     }
 }

@@ -79,6 +79,31 @@
                             break;
                     }
                     break;
+
+                case ActivityFeedItemCategory.AmendmentReviews:
+                    <div class="moj-timeline__item flo-timeline_item-casenote" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
+
+                        <div class="moj-timeline__header">
+                            <button class="activity-avatar-button" type="button">
+                                <img class="activity-avatar" data-forename="@activityFeedItem.CreatedByUser?.FirstName" data-surname="@activityFeedItem.CreatedByUser?.LastName" data-role="@activityFeedItem.CreatedByUser?.AccountType" alt="Avatar">
+                            </button>
+                            <h2 class="moj-timeline__title">@activityFeedItem.ActivityFeedItemType.GetDisplayName()</h2>
+
+                            <p class="moj-timeline__byline">by @activityFeedItem.CreatedByUser?.FullName</p>
+
+                        </div>
+
+                        <p class="moj-timeline__date">
+                            @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
+                        </p>
+
+                        <div class="moj-timeline__description">
+                            <p class="show-line-breaks">@activityFeedItem.Text</p>
+                        </div>
+
+                    </div>
+
+                    break;
             }
         }
 
