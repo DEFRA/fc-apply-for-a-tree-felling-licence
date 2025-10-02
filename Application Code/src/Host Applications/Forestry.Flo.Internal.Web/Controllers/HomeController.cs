@@ -2,13 +2,18 @@ using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers.Services;
+using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Threading;
+using AuthenticationOptions = Forestry.Flo.Services.Common.Infrastructure.AuthenticationOptions;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
 
 namespace Forestry.Flo.Internal.Web.Controllers;
@@ -122,11 +127,21 @@ public class HomeController : Controller
         return RedirectToAction("Index");
     }
 
-    public async Task Logout()
+    public async Task<IActionResult> Logout([FromServices] IOptions<AuthenticationOptions> options)
     {
-        await HttpContext.SignOutAsync();
-        await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
-        HttpContext.Response.Headers.Add("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+        switch (options.Value.Provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return SignOut(OneLoginDefaults.AuthenticationScheme);
+            case AuthenticationProvider.Azure:
+                await HttpContext.SignOutAsync();
+                await HttpContext.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
+                HttpContext.Response.Headers.Add("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+                return SignOut();
+            default:
+                return SignOut();
+        }
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

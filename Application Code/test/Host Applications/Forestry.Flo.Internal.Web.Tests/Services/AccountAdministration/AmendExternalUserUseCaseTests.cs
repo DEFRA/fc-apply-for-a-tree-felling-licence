@@ -1,13 +1,11 @@
 ﻿using AutoFixture;
 using AutoFixture.Xunit2;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.AccountAdministration;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -55,25 +53,25 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.RetrieveExternalUserAccountAsync(user.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert model values correctly set
 
-        result.Value.UserId.Should().Be(user.Id);
+        Assert.Equal(user.Id, result.Value.UserId);
 
-        result.Value.PersonContactsDetails.ContactAddress.Line1.Should().Be(user.ContactAddress.Line1);
-        result.Value.PersonContactsDetails.ContactAddress.Line2.Should().Be(user.ContactAddress.Line2);
-        result.Value.PersonContactsDetails.ContactAddress.Line3.Should().Be(user.ContactAddress.Line3);
-        result.Value.PersonContactsDetails.ContactAddress.Line4.Should().Be(user.ContactAddress.Line4);
-        result.Value.PersonContactsDetails.ContactAddress.PostalCode.Should().Be(user.ContactAddress.PostalCode);
+        Assert.Equal(user.ContactAddress.Line1, result.Value.PersonContactsDetails.ContactAddress.Line1);
+        Assert.Equal(user.ContactAddress.Line2, result.Value.PersonContactsDetails.ContactAddress.Line2);
+        Assert.Equal(user.ContactAddress.Line3, result.Value.PersonContactsDetails.ContactAddress.Line3);
+        Assert.Equal(user.ContactAddress.Line4, result.Value.PersonContactsDetails.ContactAddress.Line4);
+        Assert.Equal(user.ContactAddress.PostalCode, result.Value.PersonContactsDetails.ContactAddress.PostalCode);
 
-        result.Value.PersonContactsDetails.ContactMobileNumber.Should().Be(user.ContactMobileTelephone);
-        result.Value.PersonContactsDetails.ContactTelephoneNumber.Should().Be(user.ContactTelephone);
-        result.Value.PersonContactsDetails.PreferredContactMethod.Should().Be(user.PreferredContactMethod);
+        Assert.Equal(user.ContactMobileTelephone, result.Value.PersonContactsDetails.ContactMobileNumber);
+        Assert.Equal(user.ContactTelephone, result.Value.PersonContactsDetails.ContactTelephoneNumber);
+        Assert.Equal(user.PreferredContactMethod, result.Value.PersonContactsDetails.PreferredContactMethod);
 
-        result.Value.PersonName.FirstName.Should().Be(user.FirstName);
-        result.Value.PersonName.LastName.Should().Be(user.LastName);
-        result.Value.PersonName.Title.Should().Be(user.Title);
+        Assert.Equal(user.FirstName, result.Value.PersonName.FirstName);
+        Assert.Equal(user.LastName, result.Value.PersonName.LastName);
+        Assert.Equal(user.Title, result.Value.PersonName.Title);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None),Times.Once);
     }
@@ -89,7 +87,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.RetrieveExternalUserAccountAsync(user.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoData]
@@ -103,7 +101,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(_accountAdmin, model, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _amendUsersMock.Verify(v => v.UpdateUserAccountDetailsAsync(
             It.Is<UpdateUserAccountModel>(
@@ -148,7 +146,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(_accountAdmin, model, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _amendUsersMock.Verify(v => v.UpdateUserAccountDetailsAsync(
             It.Is<UpdateUserAccountModel>(
@@ -183,7 +181,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(_accountAdmin, model, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _amendUsersMock.Verify(v => v.UpdateUserAccountDetailsAsync(
             It.Is<UpdateUserAccountModel>(
@@ -231,7 +229,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.CloseExternalUserAccountAsync(user.UserAccountId, _accountAdmin, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _amendUsersMock.Verify(v => v.UpdateApplicantAccountStatusAsync(user.UserAccountId, UserAccountStatus.Deactivated, CancellationToken.None), Times.Once);
 
@@ -267,7 +265,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.CloseExternalUserAccountAsync(user.UserAccountId, _accountAdmin, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _amendUsersMock.Verify(v => v.UpdateApplicantAccountStatusAsync(user.UserAccountId, UserAccountStatus.Deactivated, CancellationToken.None), Times.Once);
 
@@ -294,7 +292,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.CloseExternalUserAccountAsync(user.UserAccountId, CreateInternalUser(AccountTypeInternal.AdminOfficer), CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _amendUsersMock.VerifyNoOtherCalls();
         _auditMock.VerifyNoOtherCalls();
@@ -311,7 +309,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.CloseExternalUserAccountAsync(user.UserAccountId, internalUser, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _amendUsersMock.VerifyNoOtherCalls();
         _auditMock.VerifyNoOtherCalls();
@@ -335,7 +333,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyAgentCanBeClosedAsync(user.Id, user.AgencyId!.Value, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUsersLinkedToAgencyAsync(user.AgencyId.Value, CancellationToken.None), Times.Once);
@@ -364,8 +362,8 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyAgentCanBeClosedAsync(user.Id, user.AgencyId!.Value, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("There must be at least one agent administrator account at the agency.");
+        Assert.True(result.IsFailure);
+        Assert.Equal("There must be at least one agent administrator account at the agency.", result.Error);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUsersLinkedToAgencyAsync(user.AgencyId.Value, CancellationToken.None), Times.Once);
@@ -390,8 +388,8 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyAgentCanBeClosedAsync(user.Id, user.AgencyId!.Value, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Agent user account could not be retrieved.");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Agent user account could not be retrieved.", result.Error);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUsersLinkedToAgencyAsync(user.AgencyId.Value, CancellationToken.None), Times.Once);
@@ -420,8 +418,8 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyAgentCanBeClosedAsync(user.Id, user.AgencyId!.Value, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Agent user account could not be retrieved.");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Agent user account could not be retrieved.", result.Error);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUsersLinkedToAgencyAsync(user.AgencyId.Value, CancellationToken.None), Times.Once);
@@ -445,7 +443,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyWoodlandOwnerCanBeClosedAsync(user.Id, user.WoodlandOwnerId!.Value, CancellationToken.None);
 
-        result.Should().BeTrue();
+        Assert.True(result);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountsForWoodlandOwnerAsync(user.WoodlandOwnerId.Value, CancellationToken.None), Times.Once);
@@ -469,7 +467,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyWoodlandOwnerCanBeClosedAsync(user.Id, user.WoodlandOwnerId!.Value, CancellationToken.None);
 
-        result.Should().BeFalse();
+        Assert.False(result);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountsForWoodlandOwnerAsync(user.WoodlandOwnerId.Value, CancellationToken.None), Times.Once);
@@ -491,7 +489,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyWoodlandOwnerCanBeClosedAsync(user.Id, user.WoodlandOwnerId!.Value, CancellationToken.None);
 
-        result.Should().BeFalse();
+        Assert.False(result);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountsForWoodlandOwnerAsync(user.WoodlandOwnerId.Value, CancellationToken.None), Times.Once);
@@ -520,7 +518,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.VerifyWoodlandOwnerCanBeClosedAsync(user.Id, user.WoodlandOwnerId!.Value, CancellationToken.None);
 
-        result.Should().BeFalse();
+        Assert.False(result);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountsForWoodlandOwnerAsync(user.WoodlandOwnerId.Value, CancellationToken.None), Times.Once);

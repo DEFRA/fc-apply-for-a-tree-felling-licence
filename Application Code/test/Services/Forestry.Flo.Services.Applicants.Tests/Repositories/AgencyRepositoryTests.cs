@@ -33,9 +33,8 @@ public class AgencyRepositoryTests
         var result = await _sut.GetAsync(agency.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.ContactName.Should().Be(agency.ContactName);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(agency.ContactName, result.Value.ContactName);
     }
     
     [Theory, AutoData]
@@ -48,9 +47,8 @@ public class AgencyRepositoryTests
         var result =  await _sut.GetAsync(agency.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoData]
@@ -66,9 +64,8 @@ public class AgencyRepositoryTests
         var result = await _sut.GetAsync(agency.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.ContactName.Should().Be(agency.ContactName);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(agency.ContactName, result.Value.ContactName);
     }
 
     [Theory, AutoData]

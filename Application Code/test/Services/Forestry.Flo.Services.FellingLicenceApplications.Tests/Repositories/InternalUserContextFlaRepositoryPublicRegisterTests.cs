@@ -1,5 +1,4 @@
 ﻿using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Tests.Common;
@@ -46,7 +45,7 @@ public class InternalUserContextFlaRepositoryPublicRegisterTests
         var result =
             await _sut.GetApplicationsWithExpiredConsultationPublicRegisterPeriodsAsync(currentDate, CancellationToken.None);
 
-        result.Count.Should().Be(applications.Count);
+        Assert.Equal(applications.Count, result.Count);
     }
 
     [Theory, AutoMoqData]
@@ -66,7 +65,7 @@ public class InternalUserContextFlaRepositoryPublicRegisterTests
         var result =
             await _sut.GetApplicationsWithExpiredConsultationPublicRegisterPeriodsAsync(currentDate, CancellationToken.None);
 
-        result.Count.Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -103,6 +102,6 @@ public class InternalUserContextFlaRepositoryPublicRegisterTests
         var result =
             await _sut.GetApplicationsWithExpiredConsultationPublicRegisterPeriodsAsync(currentDate, CancellationToken.None);
 
-        result.Count.Should().Be(1);
+        Assert.Single(result);
     }
 }

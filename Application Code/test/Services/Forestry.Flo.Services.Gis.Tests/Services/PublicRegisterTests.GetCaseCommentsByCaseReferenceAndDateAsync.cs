@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Moq;
+﻿using Moq;
 using Moq.Protected;
 using System.Net;
 
@@ -25,8 +24,8 @@ public partial class PublicRegisterTests
 
         var response = await sut.GetCaseCommentsByCaseReferenceAndDateAsync("caseNo", new DateOnly(2000, 1, 1), CancellationToken.None);
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", response.Error);
     }
 
     [Fact]
@@ -47,6 +46,6 @@ public partial class PublicRegisterTests
 
         var response = await sut.GetCaseCommentsByCaseReferenceAndDateAsync("caseNo", new DateOnly(2000, 1, 1), CancellationToken.None);
 
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
     }
 }

@@ -35,5 +35,6 @@ public enum NotificationType
     InformApplicantOfReturnedApplicationLarchOnlyMixZone,
     EiaReminderMissingDocuments,
     EiaReminderToSendDocuments,
-    ApplicantReviewedAmendments
+    ApplicantReviewedAmendments,
+    AmendmentsSentToApplicant
 }

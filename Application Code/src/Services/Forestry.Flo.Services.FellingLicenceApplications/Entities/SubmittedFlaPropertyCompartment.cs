@@ -39,20 +39,9 @@ public class SubmittedFlaPropertyCompartment
     public double? TotalHectares { get; set; }
 
     /// <summary>
-    /// Gets and Sets the confirmed (digitised) total hectares number
-    /// </summary>
-    [Column(TypeName = "decimal(18,2)")]
-    public double? ConfirmedTotalHectares { get; set; }
-
-    /// <summary>
     /// Gets and Sets the woodland name
     /// </summary>
     public string? WoodlandName { get; set; }
-
-    /// <summary>
-    /// Gets and Sets the designation
-    /// </summary>
-    public string? Designation { get; set; }
 
     /// <summary>
     /// Gets and Sets the GIS data
@@ -80,4 +69,9 @@ public class SubmittedFlaPropertyCompartment
     public bool Zone1 { get; set; }
     public bool Zone2 { get; set; }
     public bool Zone3 { get; set; }
+
+    /// <summary>
+    /// Gets and sets the compartment designations.
+    /// </summary>
+    public SubmittedCompartmentDesignations? SubmittedCompartmentDesignations { get; set; }
 }

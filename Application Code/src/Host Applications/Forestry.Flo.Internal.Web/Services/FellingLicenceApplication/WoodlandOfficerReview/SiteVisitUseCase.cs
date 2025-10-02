@@ -630,7 +630,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         model.Breadcrumbs = new BreadcrumbsModel
         {
             Breadcrumbs = breadCrumbs,
-            CurrentPage = "Site Visit"
+            CurrentPage = currentPage
         };
     }
 

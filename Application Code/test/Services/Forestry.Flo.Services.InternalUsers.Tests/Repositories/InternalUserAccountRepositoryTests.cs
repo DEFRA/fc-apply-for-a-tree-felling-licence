@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Repositories;
@@ -31,8 +31,8 @@ public class InternalUserAccountRepositoryTests
         var result = await _sut.GetByFullnameAsync(userToCheck.FirstName!, userToCheck.LastName!, CancellationToken.None);
 
         //assert
-        result.Count.Should().BeGreaterThan(0);
-        result.First().Should().Be(internalUsers[0]);
+        Assert.True(result.Count > 0);
+        Assert.Equal(internalUsers[0], result.First());
     }
 
     [Theory, AutoMoqData]
@@ -42,7 +42,7 @@ public class InternalUserAccountRepositoryTests
         var result = await _sut.GetByFullnameAsync(userToCheck.FirstName!, userToCheck.LastName!, CancellationToken.None);
 
         //assert
-        result.Count.Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Theory, AutoMoqData]
@@ -52,7 +52,7 @@ public class InternalUserAccountRepositoryTests
         var result = await _sut.GetByFullnameAsync(userToCheck.Title, userToCheck.FirstName!, userToCheck.LastName!, CancellationToken.None);
 
         //assert
-        result.Count.Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Theory, AutoMoqData]
@@ -73,8 +73,8 @@ public class InternalUserAccountRepositoryTests
         var result = await _sut.GetByFullnameAsync(userToCheck.Title, userToCheck.FirstName!, userToCheck.LastName!, CancellationToken.None);
 
         //assert
-        result.Count.Should().BeGreaterThan(0);
-        result.First().Should().Be(internalUsers[0]);
+        Assert.True(result.Count > 0);
+        Assert.Equal(internalUsers[0], result.First());
     }
 
     [Theory, AutoMoqData]
@@ -90,7 +90,7 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetConfirmedUserAccountsAsync(CancellationToken.None);
 
-        result.Count().Should().Be(internalUsers.Count);
+        Assert.Equal(internalUsers.Count, result.Count());
     }
 
     [Theory, AutoMoqData]
@@ -106,7 +106,7 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetConfirmedUserAccountsAsync(CancellationToken.None);
 
-        result.Count().Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Theory, AutoMoqData]
@@ -124,7 +124,7 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetConfirmedUserAccountsAsync(CancellationToken.None);
 
-        result.Count().Should().Be(2);
+        Assert.Equal(2, result.Count());
     }
 
     [Theory, AutoMoqData]
@@ -133,7 +133,7 @@ public class InternalUserAccountRepositoryTests
         var result = await _sut.AddAsync(user, CancellationToken.None);
         await _internalUsersContext.SaveEntitiesAsync(CancellationToken.None);
 
-        result.Should().Be(user);
+        Assert.Equal(user, result);
     }
 
     [Theory, AutoMoqData]
@@ -144,8 +144,8 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetAsync(internalUsers[0].Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(internalUsers[0]);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(internalUsers[0], result.Value);
     }
 
     [Theory, AutoMoqData]
@@ -156,7 +156,7 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetAsync(Guid.NewGuid(), CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -167,8 +167,8 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetByIdentityProviderIdAsync(internalUsers[0].IdentityProviderId!, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(internalUsers[0]);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(internalUsers[0], result.Value);
     }
 
     [Theory, AutoMoqData]
@@ -179,7 +179,64 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetByIdentityProviderIdAsync(string.Empty, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnUserAccount_WhenMatchedByEmail(List<UserAccount> internalUsers)
+    {
+        // Arrange
+        var identityProviderId = Guid.NewGuid().ToString();
+        var userToMatch = internalUsers[0];
+        userToMatch.IdentityProviderId = null;
+        userToMatch.Email = "testuser@domain.com";
+        _internalUsersContext.UserAccounts.AddRange(internalUsers);
+        await _internalUsersContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.GetByIdentityProviderIdAsync(identityProviderId, CancellationToken.None, userToMatch.Email);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userToMatch.Email, result.Value.Email);
+        Assert.Equal(identityProviderId, result.Value.IdentityProviderId);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnFailure_WhenNoUserMatchesByEmail(List<UserAccount> internalUsers)
+    {
+        // Arrange
+        var identityProviderId = Guid.NewGuid().ToString();
+        var email = "notfound@domain.com";
+        internalUsers.ForEach(u => u.IdentityProviderId = null);
+        _internalUsersContext.UserAccounts.AddRange(internalUsers);
+        await _internalUsersContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.GetByIdentityProviderIdAsync(identityProviderId, CancellationToken.None, email);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldNotMatchByEmail_IfIdentityProviderIdIsNotNull(List<UserAccount> internalUsers)
+    {
+        // Arrange
+        var identityProviderId = Guid.NewGuid().ToString();
+        var userToMatch = internalUsers[0];
+        userToMatch.IdentityProviderId = "existing-id";
+        userToMatch.Email = "testuser@domain.com";
+        _internalUsersContext.UserAccounts.AddRange(internalUsers);
+        await _internalUsersContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.GetByIdentityProviderIdAsync(identityProviderId, CancellationToken.None, userToMatch.Email);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoMoqData]
@@ -203,7 +260,7 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetUnconfirmedUserAccountsAsync(CancellationToken.None);
 
-        result.Count().Should().Be(internalUsers.Count);
+        Assert.Equal(internalUsers.Count, result.Count());
     }
 
     [Theory, AutoMoqData]
@@ -219,7 +276,7 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetUnconfirmedUserAccountsAsync(CancellationToken.None);
 
-        result.Count().Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Theory, AutoMoqData]
@@ -237,7 +294,7 @@ public class InternalUserAccountRepositoryTests
 
         var result = await _sut.GetUnconfirmedUserAccountsAsync(CancellationToken.None);
 
-        result.Count().Should().Be(2);
+        Assert.Equal(2, result.Count());
     }
 
     [Theory, AutoMoqData]
@@ -252,7 +309,7 @@ public class InternalUserAccountRepositoryTests
         var result =
             await _sut.GetConfirmedUserAccountsByAccountTypeAsync(filterAccountType, null, CancellationToken.None);
 
-        result.Should().BeEquivalentTo(matchingAccounts);
+        Assert.Equivalent(matchingAccounts, result);
     }
 
     [Theory, AutoMoqData]
@@ -268,6 +325,6 @@ public class InternalUserAccountRepositoryTests
         var result =
             await _sut.GetConfirmedUserAccountsByAccountTypeAsync(filterAccountType, filterAccountTypeOther, CancellationToken.None);
 
-        result.Should().BeEquivalentTo(matchingAccounts);
+        Assert.Equivalent(matchingAccounts, result);
     }
 }

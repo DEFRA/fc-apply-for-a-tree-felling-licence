@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.PropertyProfiles.Entities;
@@ -35,9 +34,8 @@ public class CompartmentRepositoryTests
         var result = await _sut.GetByIdAsync(compartment.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.CompartmentNumber.Should().Be(compartment.CompartmentNumber);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(compartment.CompartmentNumber, result.Value.CompartmentNumber);
     }
     
     [Theory, AutoMoqData]
@@ -52,10 +50,9 @@ public class CompartmentRepositoryTests
         var result = await _sut.GetByIdAsync(compartment.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.PropertyProfile.Should().NotBeNull();
-        result.Value.PropertyProfile.Should().BeEquivalentTo(compartment.PropertyProfile);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.PropertyProfile);
+        Assert.Equivalent(compartment.PropertyProfile, result.Value.PropertyProfile);
     }
     
     [Theory, AutoMoqData]
@@ -68,9 +65,8 @@ public class CompartmentRepositoryTests
         var result =  await _sut.GetByIdAsync(compartment.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
     
     [Theory, AutoMoqData]
@@ -85,9 +81,8 @@ public class CompartmentRepositoryTests
         var result = await _sut.GetAsync(compartment.Id, compartment.PropertyProfile.WoodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.CompartmentNumber.Should().Be(compartment.CompartmentNumber);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(compartment.CompartmentNumber, result.Value.CompartmentNumber);
     }
     
     [Theory, AutoMoqData]
@@ -102,10 +97,9 @@ public class CompartmentRepositoryTests
         var result = await _sut.GetAsync(compartment.Id, compartment.PropertyProfile.WoodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.PropertyProfile.Should().NotBeNull();
-        result.Value.PropertyProfile.Should().BeEquivalentTo(compartment.PropertyProfile);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.PropertyProfile);
+        Assert.Equivalent(compartment.PropertyProfile, result.Value.PropertyProfile);
     }
     
     [Theory, AutoMoqData]
@@ -116,9 +110,8 @@ public class CompartmentRepositoryTests
         var result = await _sut.GetAsync(compartment.Id, compartment.PropertyProfile.WoodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
     
     [Theory, AutoMoqData]
@@ -131,9 +124,8 @@ public class CompartmentRepositoryTests
         var result = await _sut.GetAsync(compartment.Id, wrongOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoMoqData]
@@ -151,10 +143,10 @@ public class CompartmentRepositoryTests
         var saveResult = await _sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
          
         //assert
-        saveResult.IsSuccess.Should().BeTrue();
+        Assert.True(saveResult.IsSuccess);
         var result = await _propertyProfileContext.Compartments.FindAsync(compartment.Id);
-        result.Should().NotBeNull();
-        result!.CompartmentNumber.Should().Be(updated.CompartmentNumber);
+        Assert.NotNull(result);
+        Assert.Equal(updated.CompartmentNumber, result!.CompartmentNumber);
     }
     
     [Theory, AutoMoqData]
@@ -168,8 +160,8 @@ public class CompartmentRepositoryTests
         var updateResult = await _sut.UpdateAsync(updated);
          
         //assert
-        updateResult.IsSuccess.Should().BeFalse();
-        updateResult.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(updateResult.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, updateResult.Error);
     }
     
     [Theory, AutoMoqData]
@@ -182,10 +174,10 @@ public class CompartmentRepositoryTests
          var saveResult = await _sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
          
         //assert
-        saveResult.IsSuccess.Should().BeTrue();
+        Assert.True(saveResult.IsSuccess);
         var result = await _propertyProfileContext.Compartments.FindAsync(compartment.Id);
-        result.Should().NotBeNull();
-        result!.CompartmentNumber.Should().Be(compartment.CompartmentNumber);
+        Assert.NotNull(result);
+        Assert.Equal(compartment.CompartmentNumber, result!.CompartmentNumber);
     }
 
     [Theory, AutoMoqData]
@@ -226,7 +218,7 @@ public class CompartmentRepositoryTests
         var result = await _sut.CheckUserCanAccessCompartmentAsync(compartment.Id, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -250,7 +242,7 @@ public class CompartmentRepositoryTests
         var result = await _sut.CheckUserCanAccessCompartmentAsync(compartment.Id, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 
@@ -274,7 +266,7 @@ public class CompartmentRepositoryTests
         var result = await _sut.CheckUserCanAccessCompartmentAsync(compartment.Id, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.False(result.Value);
     }
 
@@ -298,7 +290,7 @@ public class CompartmentRepositoryTests
         var result = await _sut.CheckUserCanAccessCompartmentAsync(Guid.NewGuid(), userAccessModel, new CancellationToken());
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -329,7 +321,7 @@ public class CompartmentRepositoryTests
         var result = await _sut.CheckUserCanAccessCompartmentAsync(compartmentOther.PropertyProfile.WoodlandOwnerId, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
     
     [Theory, AutoMoqData]
@@ -352,7 +344,7 @@ public class CompartmentRepositoryTests
         var result = await _sut.CheckUserCanAccessCompartmentAsync(compartment.Id, userAccessModel, new CancellationToken());
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.True(result.Value);
     }
 }
@@ -360,7 +352,7 @@ public class CompartmentRepositoryTests
 public class TestCompartment : Compartment
 {
     public TestCompartment(Compartment compartment) : base(compartment.CompartmentNumber,
-        compartment.SubCompartmentName, compartment.TotalHectares, compartment.Designation,
+        compartment.SubCompartmentName, compartment.TotalHectares,
         compartment.GISData, compartment.PropertyProfileId)
     {
         Id = compartment.Id;

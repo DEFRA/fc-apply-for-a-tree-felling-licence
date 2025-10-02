@@ -71,13 +71,21 @@
 				</span>
 				<strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetStatusStyleName() app-task-list__tag" id="felling-and-restocking">@Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetDisplayName()</strong>
 			</li>
-			<li class="app-task-list__item">
+            <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
                     <a href="@Url.Action("Conditions", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="conditions">
                         Conditions and remarks
                     </a>
                 </span>
                 <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetStatusStyleName() app-task-list__tag" id="conditions">@Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetDisplayName()</strong>
+            </li>
+            <li class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("ViewDesignations", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="designations">
+                        Compartment designations
+                    </a>
+                </span>
+                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus.GetStatusStyleName() app-task-list__tag" id="designations">@Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus.GetDisplayName()</strong>
             </li>
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">

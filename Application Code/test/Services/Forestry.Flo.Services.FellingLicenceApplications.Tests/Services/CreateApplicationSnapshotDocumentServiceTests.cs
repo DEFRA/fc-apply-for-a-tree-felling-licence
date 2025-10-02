@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -69,7 +68,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -103,7 +102,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             // verify
 
@@ -137,7 +136,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             // verify
 
@@ -164,7 +163,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             // verify
 

@@ -29,7 +29,7 @@ public class CompartmentEntitySpecimenBuilder : ISpecimenBuilder
             "{\"spatialReference\":{\"latestWkid\":27700,\"wkid\":27700},\"rings\":[[[1,1], [1,2], [2,2],[2,1], [1,1]]]}";
 
 
-        var compartment = new Compartment(_random.Next(100, 999).ToString(), "a", 2.00, "des", gisData, propertyProfileId)
+        var compartment = new Compartment(_random.Next(100, 999).ToString(), "a", 2.00, gisData, propertyProfileId)
         {
             Id = Guid.NewGuid()
             

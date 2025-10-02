@@ -195,13 +195,6 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
-    public async Task<IList<AssigneeHistory>> GetCurrentlyAssignedAssigneeHistoryAsync(Guid applicationId, CancellationToken cancellationToken)
-    {
-        var currentlyAssignedAssigneeHistories = await Context.AssigneeHistories.Where(x => x.FellingLicenceApplicationId == applicationId && x.TimestampUnassigned == null).ToListAsync(cancellationToken: cancellationToken);
-
-        return currentlyAssignedAssigneeHistories;
-    }
-
     public async Task<IList<CaseNote>> GetCaseNotesAsync(Guid applicationId, bool visibleToApplicantOnly, CancellationToken cancellationToken)
     {
         var caseNotes = await Context.CaseNote
@@ -261,4 +254,34 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
+    public async Task<UnitResult<UserDbErrorReason>> UpdateExistingWoodlandOwnerReviewFlagsForResubmission(
+        Guid applicationId,
+        DateTime updatedDate,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var review = await Context.WoodlandOfficerReviews.SingleOrDefaultAsync(
+                x => x.FellingLicenceApplicationId == applicationId, cancellationToken);
+
+            if (review == null)
+            {
+                // no review exists, so exit early
+                return UnitResult.Success<UserDbErrorReason>();
+            }
+
+            review.DesignationsComplete = false;
+            review.ConfirmedFellingAndRestockingComplete = false;
+            review.ConditionsToApplicantDate = null;
+            review.WoodlandOfficerReviewComplete = false;
+
+            review.LastUpdatedDate = updatedDate;
+
+            return await Context.SaveEntitiesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return UnitResult.Failure(UserDbErrorReason.General);
+        }
+    }
 }

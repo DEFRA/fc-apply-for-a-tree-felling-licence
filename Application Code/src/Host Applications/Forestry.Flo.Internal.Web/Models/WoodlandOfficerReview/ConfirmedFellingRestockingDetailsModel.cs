@@ -2,6 +2,7 @@
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 
 namespace Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 
@@ -113,6 +114,16 @@ public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModel
     /// Gets and sets a value indicating whether the current user can amend the confirmed felling and restocking details.
     /// </summary>
     public required bool CanCurrentUserAmend { get; set; }
+
+    public bool FurtherAmendments { get; set; }
+
+    public required FellingLicenceApplication.AmendmentStateEnum AmendmentState { get; set; }
+
+    public DateTime? AmendmentsSentDate { get; set; }
+
+    public Guid? AmendmentReviewId { get; set; }
+
+    public string? AmendmentReason { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether any confirmed felling details have amended properties.

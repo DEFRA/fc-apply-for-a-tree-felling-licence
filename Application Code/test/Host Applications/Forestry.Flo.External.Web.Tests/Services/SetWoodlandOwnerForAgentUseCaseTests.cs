@@ -60,8 +60,8 @@ public class SetWoodlandOwnerForAgentUseCaseTests
 
         //assert
 
-        result.Value.Should().NotBeNull();
-        result.Value.Count.Should().Be(agentAuthorities.AgentAuthorities.Count);
+        Assert.NotNull(result.Value);
+        Assert.Equal(agentAuthorities.AgentAuthorities.Count, result.Value.Count);
 
         _agentAuthorityService.Verify(x => x.GetAgentAuthoritiesAsync(externalApplicant.UserAccountId!.Value, agencyId, filter, It.IsAny<CancellationToken>()), Times.Once);
 

@@ -24,11 +24,6 @@ public class FellingAndRestockingDetailModelBase
     public double? TotalHectares { get; set; }
 
     /// <summary>
-    /// Gets or sets the designation of the compartment.
-    /// </summary>
-    public string? Designation { get; set; }
-
-    /// <summary>
     /// Gets or sets the compartment number.
     /// </summary>
     public string? CompartmentNumber { get; set; }
@@ -63,11 +58,6 @@ public class FellingAndRestockingDetailModel : FellingAndRestockingDetailModelBa
     /// indicates that the confirmed felling detail has been deleted.
     /// </remarks>
     public IEnumerable<ProposedFellingDetailModel> ProposedFellingDetailModels { get; set; } = [];
-
-    /// <summary>
-    /// Gets or sets the total confirmed hectares for the compartment.
-    /// </summary>
-    public double? ConfirmedTotalHectares { get; set; }
 }
 
 /// <summary>

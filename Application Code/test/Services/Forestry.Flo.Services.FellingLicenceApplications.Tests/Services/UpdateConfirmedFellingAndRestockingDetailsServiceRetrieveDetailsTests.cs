@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -16,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
@@ -159,7 +159,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
 
         var result = await sut.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fla.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
     }
@@ -199,7 +199,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
             ConfirmedRestockingDetails = new List<ConfirmedRestockingDetail> { new ConfirmedRestockingDetail { Area = 1.0 } }
         };
         var result = service.GetAmendedFellingDetailProperties(proposed, confirmed);
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -209,8 +209,8 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
         var proposed = new ProposedFellingDetail { AreaToBeFelled = 2.0 };
         var confirmed = new ConfirmedFellingDetail { AreaToBeFelled = 1.0 };
         var result = service.GetAmendedFellingDetailProperties(proposed, confirmed);
-        result.Should().ContainKey(nameof(proposed.AreaToBeFelled));
-        result[nameof(proposed.AreaToBeFelled)].Should().Be("2");
+        Assert.Contains(nameof(proposed.AreaToBeFelled), result.Keys);
+        Assert.Equal("2", result[nameof(proposed.AreaToBeFelled)]);
     }
 
     [Fact]
@@ -233,8 +233,8 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
             }
         };
         var result = service.GetAmendedFellingDetailProperties(proposed, confirmed);
-        result.Should().ContainKey(nameof(proposed.FellingSpecies));
-        result[nameof(proposed.FellingSpecies)].Should().Contain("SP2");
+        Assert.Contains(nameof(proposed.FellingSpecies), result.Keys);
+        Assert.Contains("SP2", result[nameof(proposed.FellingSpecies)]);
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
         var proposed = new ProposedRestockingDetail { Area = 1.0 };
         var confirmed = new ConfirmedRestockingDetail { Area = 2.0 };
         var result = service.GetAmendedRestockingProperties(proposed, confirmed, new Dictionary<Guid, string?>());
-        result.Should().ContainKey(nameof(proposed.Area));
-        result[nameof(proposed.Area)].Should().Be("1");
+        Assert.Contains(nameof(proposed.Area), result.Keys);
+        Assert.Equal("1", result[nameof(proposed.Area)]);
     }
 }

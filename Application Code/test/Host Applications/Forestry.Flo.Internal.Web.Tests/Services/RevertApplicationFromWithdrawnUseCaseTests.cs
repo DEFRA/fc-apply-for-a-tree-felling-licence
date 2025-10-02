@@ -8,7 +8,6 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
@@ -58,7 +57,7 @@ public class RevertApplicationFromWithdrawnUseCaseTests
         var result = await sut.RevertApplicationFromWithdrawnAsync(performingUser, applicationId, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _updateFellingLicenceService.Verify(x => x.TryRevertApplicationFromWithdrawnAsync(
             performingUser.UserAccountId!.Value,
             applicationId,
@@ -94,8 +93,8 @@ public class RevertApplicationFromWithdrawnUseCaseTests
         var result = await sut.RevertApplicationFromWithdrawnAsync(performingUser, applicationId, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(error);
+        Assert.True(result.IsFailure);
+        Assert.Equal(error, result.Error);
         _updateFellingLicenceService.Verify(x => x.TryRevertApplicationFromWithdrawnAsync(
             It.IsAny<Guid>(),
             It.IsAny<Guid>(),
@@ -137,8 +136,8 @@ public class RevertApplicationFromWithdrawnUseCaseTests
         var result = await sut.RevertApplicationFromWithdrawnAsync(performingUser, applicationId, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(errorMessage);
+        Assert.True(result.IsFailure);
+        Assert.Equal(errorMessage, result.Error);
         _updateFellingLicenceService.Verify(x => x.TryRevertApplicationFromWithdrawnAsync(
             performingUser.UserAccountId!.Value,
             applicationId,

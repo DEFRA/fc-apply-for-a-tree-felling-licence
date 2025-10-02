@@ -87,8 +87,8 @@ public class FcAgentCreatesWoodlandOwnerUseCaseTests
         var result = await sut.CreateWoodlandOwnerAsync(_externalApplicant!, model, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.WoodlandOwnerId.Should().NotBeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.NotEqual(Guid.Empty, result.Value.WoodlandOwnerId);
         _mockWoodlandOwnerCreationService.Verify();
 
         _mockAudit.Verify(v => v.PublishAuditEventAsync(
@@ -127,7 +127,7 @@ public class FcAgentCreatesWoodlandOwnerUseCaseTests
         var result = await sut.CreateWoodlandOwnerAsync(_externalApplicant!, model, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockWoodlandOwnerCreationService.Verify();
 
         _mockAudit.Verify(v => v.PublishAuditEventAsync(
@@ -166,7 +166,7 @@ public class FcAgentCreatesWoodlandOwnerUseCaseTests
         var result = await sut.CreateWoodlandOwnerAsync(_externalApplicant!, model, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockWoodlandOwnerCreationService.Verify();
 
         _mockAudit.Verify(v => v.PublishAuditEventAsync(
@@ -200,7 +200,7 @@ public class FcAgentCreatesWoodlandOwnerUseCaseTests
         var result = await sut.CreateWoodlandOwnerAsync(_externalApplicant!, model, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockWoodlandOwnerCreationService.VerifyNoOtherCalls();
         _mockAudit.VerifyNoOtherCalls();
     }
@@ -215,7 +215,7 @@ public class FcAgentCreatesWoodlandOwnerUseCaseTests
         var result = await sut.CreateWoodlandOwnerAsync(_externalApplicant!, model, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockWoodlandOwnerCreationService.VerifyNoOtherCalls();
         _mockAudit.VerifyNoOtherCalls();
     }

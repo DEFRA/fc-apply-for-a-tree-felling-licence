@@ -2,7 +2,6 @@
 using Moq;
 using Moq.Protected;
 using System.Net;
-using FluentAssertions;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 
@@ -17,7 +16,7 @@ public partial class ForestryServicesTests
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/GetToken")),
             ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
         var caughtException = await Assert.ThrowsAsync<ArgumentException>(() => sut.GetFeaturesFromStringAsync("", "", false, 0, false, 0, "", "", new CancellationToken()));
-        caughtException.Message.Should().Be("Required input No valid text set was empty. (Parameter 'No valid text set')");
+        Assert.Equal("Required input No valid text set was empty. (Parameter 'No valid text set')", caughtException.Message);
     }
 
     [Fact]
@@ -26,7 +25,7 @@ public partial class ForestryServicesTests
         var sut = CreateSut(new EsriConfig() { Forestry = new ForestryConfig { GenerateTokenService = new OAuthServiceSettingsClient { ClientID = "", Path = "", ClientSecret = "" } }, SpatialReference = 1 });
 
         var caughtException = await Assert.ThrowsAsync<ArgumentNullException>(() => sut.GetFeaturesFromStringAsync("", "", false, 0, false, 0, "{}", "", new CancellationToken()));
-        caughtException.Message.Should().Be("Value cannot be null. (Parameter '_config.FeaturesService')");
+        Assert.Equal("Value cannot be null. (Parameter '_config.FeaturesService')", caughtException.Message);
     }
 
     [Fact]
@@ -41,7 +40,7 @@ public partial class ForestryServicesTests
                 });
 
         var caughtException = await Assert.ThrowsAsync<ArgumentException>(() => access.GetFeaturesFromStringAsync("", "", false, 0, false, 0, "{}", "", new CancellationToken()));
-        caughtException.Message.Should().Be("Required input SpatialReference cannot be zero. (Parameter 'SpatialReference')");
+        Assert.Equal("Required input SpatialReference cannot be zero. (Parameter 'SpatialReference')", caughtException.Message);
     }
 
 
@@ -70,8 +69,8 @@ public partial class ForestryServicesTests
 
         var resx = await sut.GetFeaturesFromStringAsync("", "", false, 0, false, 0, "{}", "", new CancellationToken());
 
-        resx.IsSuccess.Should().BeTrue();
-        resx.Value.Should().Be("{'result':'pass'}");
+        Assert.True(resx.IsSuccess);
+        Assert.Equal("{'result':'pass'}", resx.Value);
         _mockHttpHandler.VerifyAll();
     }
 }

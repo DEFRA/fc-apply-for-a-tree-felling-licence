@@ -1,7 +1,6 @@
 ﻿
 using System.Net;
 using System.Net.Http.Headers;
-using FluentAssertions;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Moq.Protected;
 using Moq;
@@ -17,7 +16,7 @@ public partial class ForesterServicesTests
 
         var caughtException = await Assert.ThrowsAsync<ArgumentNullException>(() => sut.IsInEnglandAsync(_nullIsland, CancellationToken.None));
 
-        caughtException.Message.Should().Be("Value cannot be null. (Parameter '_config.LayerServices')");
+        Assert.Equal("Value cannot be null. (Parameter '_config.LayerServices')", caughtException.Message);
     }
 
     [Fact]

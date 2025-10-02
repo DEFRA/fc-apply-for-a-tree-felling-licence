@@ -34,18 +34,18 @@ public class AmendUserAccountsServiceTests
             .ReturnsAsync(1);
 
         var result = await sut.UpdateUserAccountDetailsAsync(updateModel, CancellationToken.None);
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        user.FirstName.Should().Be(updateModel.FirstName);
-        user.LastName.Should().Be(updateModel.LastName);
-        user.Title.Should().Be(updateModel.Title);
-        user.PreferredContactMethod.Should().Be(updateModel.PreferredContactMethod);
+        Assert.Equal(updateModel.FirstName, user.FirstName);
+        Assert.Equal(updateModel.LastName, user.LastName);
+        Assert.Equal(updateModel.Title, user.Title);
+        Assert.Equal(updateModel.PreferredContactMethod, user.PreferredContactMethod);
 
-        user.ContactAddress.Should().Be(updateModel.ContactAddress);
-        user.ContactMobileTelephone.Should().Be(updateModel.ContactMobileNumber);
-        user.ContactTelephone.Should().Be(updateModel.ContactTelephoneNumber);
+        Assert.Equal(updateModel.ContactAddress, user.ContactAddress);
+        Assert.Equal(updateModel.ContactMobileNumber, user.ContactMobileTelephone);
+        Assert.Equal(updateModel.ContactTelephoneNumber, user.ContactTelephone);
 
-        user.LastChanged.Should().Be(_now);
+        Assert.Equal(_now, user.LastChanged);
 
         _mockUserRepository.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _mockUserRepository.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Once);
@@ -63,7 +63,7 @@ public class AmendUserAccountsServiceTests
 
         var result = await sut.UpdateUserAccountDetailsAsync(updateModel, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockUserRepository.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _mockUserRepository.Verify(v => v.UnitOfWork.SaveEntitiesAsync(CancellationToken.None), Times.Never);
@@ -84,7 +84,7 @@ public class AmendUserAccountsServiceTests
 
         var result = await sut.UpdateUserAccountDetailsAsync(updateModel, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockUserRepository.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _mockUserRepository.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Once);
@@ -110,15 +110,15 @@ public class AmendUserAccountsServiceTests
 
         var result = await sut.UpdateApplicantAccountStatusAsync(user.Id, status, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         
         // assert model mapped correctly
 
-        result.Value.AccountType.Should().Be(user.AccountType);
-        result.Value.FirstName.Should().Be(user.FirstName);
-        result.Value.LastName.Should().Be(user.LastName);
-        result.Value.UserAccountId.Should().Be(user.Id);
-        result.Value.Status.Should().Be(UserAccountStatus.Active);
+        Assert.Equal(user.AccountType, result.Value.AccountType);
+        Assert.Equal(user.FirstName, result.Value.FirstName);
+        Assert.Equal(user.LastName, result.Value.LastName);
+        Assert.Equal(user.Id, result.Value.UserAccountId);
+        Assert.Equal(UserAccountStatus.Active, result.Value.Status);
 
         _mockUserRepository.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _mockUserRepository.Verify(v => v.UnitOfWork.SaveEntitiesAsync(CancellationToken.None), Times.Once);
@@ -144,7 +144,7 @@ public class AmendUserAccountsServiceTests
 
         var result = await sut.UpdateApplicantAccountStatusAsync(user.Id, status, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockUserRepository.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _mockUserRepository.Verify(v => v.UnitOfWork.SaveEntitiesAsync(CancellationToken.None), Times.Once);
@@ -163,7 +163,7 @@ public class AmendUserAccountsServiceTests
 
         var result = await sut.UpdateApplicantAccountStatusAsync(user.Id, UserAccountStatus.Deactivated, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockUserRepository.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _mockUserRepository.Verify(v => v.UnitOfWork.SaveEntitiesAsync(CancellationToken.None), Times.Never);

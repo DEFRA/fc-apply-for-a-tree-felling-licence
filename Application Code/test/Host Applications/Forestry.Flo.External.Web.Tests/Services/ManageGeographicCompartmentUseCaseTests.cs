@@ -15,6 +15,8 @@ using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Forestry.Flo.Services.PropertyProfiles.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
+using static MassTransit.ValidationResultExtensions;
+using Result = CSharpFunctionalExtensions.Result;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
@@ -81,8 +83,8 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.CreateCompartmentAsync(compartmentModel, _externalApplicant);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(compartmentModel.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(compartmentModel.Id, result.Value);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.CreateCompartmentEvent),
@@ -113,8 +115,8 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.VerifyUserPropertyProfileAsync(_externalApplicant, propertyProfile.Id);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEquivalentTo(ModelMapping.ToPropertyProfileModel(propertyProfile));
+        Assert.True(result.IsSuccess);
+        Assert.Equivalent(ModelMapping.ToPropertyProfileModel(propertyProfile), result.Value);
     }
 
     [Theory, AutoData]
@@ -132,8 +134,8 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.VerifyUserPropertyProfileAsync(_externalApplicant, propertyProfileId);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorTypes.NotFound, result.Error.ErrorType);
     }
 
     [Theory, AutoMoqData]
@@ -153,8 +155,8 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.VerifyUserPropertyProfileAsync(_externalApplicant, propertyProfile.Id);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorTypes.NotFound, result.Error.ErrorType);
     }
 
     [Theory, AutoData]
@@ -172,8 +174,8 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.CreateCompartmentAsync(compartmentModel, _externalApplicant);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.InternalError);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorTypes.InternalError, result.Error.ErrorType);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(
                 It.Is<AuditEvent>(e => e.EventName == AuditEvents.CreateCompartmentFailureEvent),
@@ -191,7 +193,7 @@ public class ManageGeographicCompartmentUseCaseTests
         var act = async () => await _sut.CreateCompartmentAsync(null!, _externalApplicant);
 
         //assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await act());
     }
 
     [Theory, AutoData]
@@ -207,8 +209,8 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.CreateCompartmentAsync(importCompartmentModel,propertyID, _externalApplicant);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.InternalError);
+        Assert.False(result.IsSuccess);
+        Assert.Equivalent(ErrorTypes.InternalError, result.Error.ErrorType);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(
                 It.Is<AuditEvent>(e => e.EventName == AuditEvents.CreateCompartmentFailureEvent),
@@ -228,7 +230,7 @@ public class ManageGeographicCompartmentUseCaseTests
         var act = async () => await _sut.VerifyUserPropertyProfileAsync(null!, propertyProfileId);
 
         //assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await act());
     }
 
     [Theory, AutoMoqData]
@@ -251,9 +253,9 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.RetrieveCompartmentAsync(compartment.Id, _externalApplicant);
 
         //assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(compartment.Id);
-        result.Value.PropertyProfileName.Should().Be(compartment.PropertyProfile.Name);
+        Assert.True(result.HasValue);
+        Assert.Equal(compartment.Id, result.Value.Id);
+        Assert.Equal(compartment.PropertyProfile.Name, result.Value.PropertyProfileName);
     }
 
     [Theory, AutoMoqData]
@@ -271,6 +273,6 @@ public class ManageGeographicCompartmentUseCaseTests
         var result = await _sut.RetrieveCompartmentAsync(propertyProfile.Compartments.First().Id, _externalApplicant);
 
         //assert
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 }

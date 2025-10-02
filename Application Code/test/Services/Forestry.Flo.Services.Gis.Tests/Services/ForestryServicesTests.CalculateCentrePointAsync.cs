@@ -4,7 +4,6 @@ using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
 using System.Net;
-using FluentAssertions;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services
 {
@@ -29,8 +28,8 @@ namespace Forestry.Flo.Services.Gis.Tests.Services
             var response = await sut.CalculateCentrePointAsync(_polygons.Select(p => p.GetGeometrySimple()).ToList(), CancellationToken.None);
 
             _mockHttpHandler.VerifyAll();
-            response.IsFailure.Should().BeTrue();
-            response.Error.Should().Be("Unable to connect to the esri service");
+            Assert.True(response.IsFailure);
+            Assert.Equal("Unable to connect to the esri service", response.Error);
         }
 
 
@@ -55,9 +54,9 @@ namespace Forestry.Flo.Services.Gis.Tests.Services
             var response = await access.CalculateCentrePointAsync(_polygons.Select(p => p.GetGeometrySimple()).ToList(), CancellationToken.None);
 
             _mockHttpHandler.VerifyAll();
-            response.IsSuccess.Should().BeTrue();
-            response.Value.X.Should().Be(4.2f);
-            response.Value.Y.Should().Be(4.1f);
+            Assert.True(response.IsSuccess);
+            Assert.Equal(4.2f, response.Value.X);
+            Assert.Equal(4.1f, response.Value.Y);
         }
     }
 }

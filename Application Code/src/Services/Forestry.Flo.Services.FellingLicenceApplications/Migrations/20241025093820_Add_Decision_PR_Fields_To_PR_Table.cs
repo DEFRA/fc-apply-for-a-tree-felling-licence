@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class Add_Decision_PR_Fields_To_PR_Table : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

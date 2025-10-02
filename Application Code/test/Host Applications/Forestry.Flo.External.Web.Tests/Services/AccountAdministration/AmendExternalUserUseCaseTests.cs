@@ -52,23 +52,23 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.RetrieveExternalUserAccountAsync(user.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert model mapped correctly
 
-        result.Value.PersonContactsDetails.ContactAddress.Line1.Should().Be(user.ContactAddress.Line1);
-        result.Value.PersonContactsDetails.ContactAddress.Line2.Should().Be(user.ContactAddress.Line2);
-        result.Value.PersonContactsDetails.ContactAddress.Line3.Should().Be(user.ContactAddress.Line3);
-        result.Value.PersonContactsDetails.ContactAddress.Line4.Should().Be(user.ContactAddress.Line4);
-        result.Value.PersonContactsDetails.ContactAddress.PostalCode.Should().Be(user.ContactAddress.PostalCode);
+        Assert.Equal(user.ContactAddress.Line1, result.Value.PersonContactsDetails.ContactAddress.Line1);
+        Assert.Equal(user.ContactAddress.Line2, result.Value.PersonContactsDetails.ContactAddress.Line2);
+        Assert.Equal(user.ContactAddress.Line3, result.Value.PersonContactsDetails.ContactAddress.Line3);
+        Assert.Equal(user.ContactAddress.Line4, result.Value.PersonContactsDetails.ContactAddress.Line4);
+        Assert.Equal(user.ContactAddress.PostalCode, result.Value.PersonContactsDetails.ContactAddress.PostalCode);
 
-        result.Value.PersonContactsDetails.ContactMobileNumber.Should().Be(user.ContactMobileTelephone);
-        result.Value.PersonContactsDetails.ContactTelephoneNumber.Should().Be(user.ContactTelephone);
-        result.Value.PersonContactsDetails.PreferredContactMethod.Should().Be(user.PreferredContactMethod);
+        Assert.Equal(user.ContactMobileTelephone, result.Value.PersonContactsDetails.ContactMobileNumber);
+        Assert.Equal(user.ContactTelephone, result.Value.PersonContactsDetails.ContactTelephoneNumber);
+        Assert.Equal(user.PreferredContactMethod, result.Value.PersonContactsDetails.PreferredContactMethod);
 
-        result.Value.PersonName.FirstName.Should().Be(user.FirstName);
-        result.Value.PersonName.LastName.Should().Be(user.LastName);
-        result.Value.PersonName.Title.Should().Be(user.Title);
+        Assert.Equal(user.FirstName, result.Value.PersonName.FirstName);
+        Assert.Equal(user.LastName, result.Value.PersonName.LastName);
+        Assert.Equal(user.Title, result.Value.PersonName.Title);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(user.Id, CancellationToken.None), Times.Once);
     }
@@ -84,7 +84,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.RetrieveExternalUserAccountAsync(user.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoData]
@@ -106,7 +106,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(woodlandOwnerAdmin, model, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(model.UserId, CancellationToken.None), Times.Once);
         _amendUsersMock.Verify(v => v.UpdateUserAccountDetailsAsync(
@@ -156,7 +156,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(woodlandOwnerAdmin, model, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(model.UserId, CancellationToken.None), Times.Once);
         _amendUsersMock.VerifyNoOtherCalls();
@@ -216,7 +216,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(adminUser, model, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         var error = user.IsWoodlandOwner()
             ? $"Logged in user lacks authority to amend woodland owner user account with id {model.UserId}"
@@ -259,7 +259,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(woodlandOwnerAdmin, model, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(model.UserId, CancellationToken.None), Times.Once);
         _amendUsersMock.Verify(v => v.UpdateUserAccountDetailsAsync(
@@ -313,7 +313,7 @@ public class AmendExternalUserUseCaseTests
 
         var result = await sut.UpdateExternalAccountDetailsAsync(woodlandOwnerAdmin, model, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveUserAccountEntityByIdAsync(model.UserId, CancellationToken.None), Times.Once);
         _amendUsersMock.Verify(v => v.UpdateUserAccountDetailsAsync(

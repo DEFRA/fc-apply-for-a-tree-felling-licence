@@ -11,8 +11,6 @@ namespace Forestry.Flo.Services.Gis.Models.Internal.Request
 
         public string? SubCompartmentName { get; set; }
 
-        public string? Designation { get; set; }
-
         public string? WoodlandName { get; set; }
 
         public double? TotalHectares {get;set;}

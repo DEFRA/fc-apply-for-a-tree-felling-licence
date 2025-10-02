@@ -1,0 +1,131 @@
+﻿@using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview
+@using Forestry.Flo.Services.Common.Extensions
+@using Microsoft.AspNetCore.Mvc.ModelBinding
+@using NodaTime
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.UpdateDesignationsViewModel
+
+
+@{
+    ViewData["Title"] = "Designations for " + Model.CompartmentDesignations.CompartmentName;
+    var user = new InternalUser(User);
+
+    var saveButtonText = Model.NextCompartmentId.HasValue
+        ? "Save and continue to next compartment"
+        : "Save and return to designations";
+
+    var divClass = "govuk-form-group";
+    if (ViewData.ModelState.ContainsKey("CompartmentDesignations"))
+    {
+        divClass += " govuk-form-group--error";
+    }
+}
+
+<div class="govuk-grid-column-full">
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+    <partial name="Partials/_PageErrors" />
+</div>
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    <p class="govuk-body">@Model.CompartmentsReviewed of @Model.TotalCompartments compartments reviewed</p>
+    
+    <form method="post">
+        <input asp-for="ApplicationId" />
+        <input type="hidden" asp-for="CompartmentDesignations.SubmittedFlaCompartmentId"/>
+        <input type="hidden" asp-for="CompartmentDesignations.Id" />
+        <input asp-for="NextCompartmentId" />
+        <input type="hidden" asp-for="CompartmentDesignations.CompartmentName"/>
+
+        <div class="@divClass" id="CompartmentDesignations">
+            <fieldset class="govuk-fieldset" aria-describedby="designations-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">
+                        Designations
+                    </h2>
+                </legend>
+                <validation asp-for="CompartmentDesignations"></validation>
+                <div id="designations-hint" class="govuk-hint">
+                    Use the LIS report to check whether this compartment has designations.
+                    Record the correct designations below, or confirm that no designations
+                    apply.
+                </div>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Sssi">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Sssi">
+                            SSSI
+                        </label>
+                    </div>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Sacs">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Sacs">
+                            SACs
+                        </label>
+                    </div>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Spa">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Spa">
+                            SPA
+                        </label>
+                    </div>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Ramser">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Ramser">
+                            RAMSER
+                        </label>
+                    </div>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Sbi">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Sbi">
+                            SBI (local wildlife sites)
+                        </label>
+                    </div>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Other" data-aria-controls="conditional-other">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Other">
+                            Other designation
+                        </label>
+                    </div>
+                    <div class="govuk-checkboxes__conditional" id="conditional-other">
+                        <div class="govuk-form-group">
+                            <label class="govuk-label" asp-for="CompartmentDesignations.OtherDesignationDetails">
+                                Explain the other designations identified in the LIS report
+                            </label>
+                            <validation asp-for="CompartmentDesignations.OtherDesignationDetails"></validation>
+                            <textarea class="govuk-textarea" asp-for="CompartmentDesignations.OtherDesignationDetails" rows="3"></textarea>
+                        </div>
+                    </div>
+                
+                    <div class="govuk-checkboxes__divider">or</div>
+                
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.None">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.None">
+                            None
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+        
+        <div class="govuk-hint">
+            Saving this compartment will make it @(Model.CompartmentDesignations.Id.HasValue ? Model.CompartmentsReviewed : Model.CompartmentsReviewed + 1) of @Model.TotalCompartments reviewed
+        </div>
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+                <button id="submit-button" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">@saveButtonText</button>
+                <a asp-action="ViewDesignations" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to designations</a>
+            </div>
+        </div>
+    </form>
+
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

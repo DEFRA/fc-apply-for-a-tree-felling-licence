@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 namespace Forestry.Flo.Services.Gis.Tests.Shapes
 {
@@ -13,11 +12,11 @@ namespace Forestry.Flo.Services.Gis.Tests.Shapes
             var sut = JsonConvert.DeserializeObject<Polygon>(shape);
             var result = sut.GetExtent();
 
-            result.HasValue.Should().BeTrue();
-            result.Value.X_max.Should().Be(359184.75F);
-            result.Value.Y_max.Should().Be(173171.08F);
-            result.Value.Y_min.Should().Be(173117.33F);
-            result.Value.X_max.Should().Be(359184.75F);
+            Assert.True(result.HasValue);
+            Assert.Equal(359184.75F, result.Value.X_max);
+            Assert.Equal(173171.08F, result.Value.Y_max);
+            Assert.Equal(173117.33F, result.Value.Y_min);
+            Assert.Equal(359125.031F, result.Value.X_min);
         }
     }
 }

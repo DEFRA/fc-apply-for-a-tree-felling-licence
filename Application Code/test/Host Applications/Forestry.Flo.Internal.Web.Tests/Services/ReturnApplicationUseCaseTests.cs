@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Services.Common.Auditing;
@@ -12,8 +7,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
-using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.User;
 using System.Security.Claims;
@@ -62,8 +55,8 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(_user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotRetrieveApplication);
+        Assert.False(result.IsSuccess);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotRetrieveApplication, result.SubProcessFailures);
     }
 
     [Theory, AutoData]
@@ -80,8 +73,8 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(_user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState);
+        Assert.False(result.IsSuccess);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState, result.SubProcessFailures);
     }
 
     [Theory, AutoData]
@@ -101,8 +94,8 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(_user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState);
+        Assert.False(result.IsSuccess);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState, result.SubProcessFailures);
     }
 
     [Theory, AutoData]
@@ -124,8 +117,8 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(_user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState);
+        Assert.False(result.IsSuccess);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState, result.SubProcessFailures);
     }
 
     [Theory, AutoData]
@@ -147,8 +140,8 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(_user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.UserRoleNotAuthorised);
+        Assert.False(result.IsSuccess);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.UserRoleNotAuthorised, result.SubProcessFailures);
     }
 
     [Theory, AutoData]
@@ -190,7 +183,7 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _auditService.Verify(x => x.PublishAuditEventAsync(
             It.Is<AuditEvent>(e => e.EventName == AuditEvents.RevertApproveToWoodlandOfficerReview),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -243,7 +236,7 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         _auditService.Verify(x => x.PublishAuditEventAsync(
             It.Is<AuditEvent>(e => e.EventName == AuditEvents.RevertApproveToAdminOfficerReview),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -294,8 +287,8 @@ public class ReturnApplicationUseCaseTests
 
         var result = await sut.ReturnApplication(user, _applicationId, caseNote, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotStoreCaseNote);
+        Assert.True(result.IsSuccess);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotStoreCaseNote, result.SubProcessFailures);
 
         _auditService.Verify(x => x.PublishAuditEventAsync(
             It.Is<AuditEvent>(e => e.EventName == AuditEvents.RevertApproveToAdminOfficerReview),

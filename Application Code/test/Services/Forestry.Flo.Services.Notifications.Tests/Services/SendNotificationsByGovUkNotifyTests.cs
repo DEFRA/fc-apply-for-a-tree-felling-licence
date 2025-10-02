@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
@@ -16,8 +12,13 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
 using NodaTime;
+using Notify.Exceptions;
 using Notify.Interfaces;
 using Notify.Models.Responses;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Forestry.Flo.Services.Notifications.Tests.Services;
@@ -28,6 +29,63 @@ public class SendNotificationsByGovUkNotifyTests
     private readonly Mock<INotificationHistoryRepository> _mockNotificationHistoryRepository = new();
     private readonly Mock<IUnitOfWork> _mockNotificationsUow = new();
 
+
+
+    [Theory, AutoData]
+    public async Task SendWhenClientThrowsException(
+        GovUkNotifyOptions options,
+        ConditionsToApplicantDataModel model,
+        NotificationRecipient recipient)
+    {
+        var sut = CreateSut(options);
+
+        var expectedTemplateId = options.TemplateIds.Last();
+
+        _mockClient
+            .Setup(x => x.SendEmailAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Dictionary<string, dynamic>>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>()))
+            .ThrowsAsync(new NotifyClientException());
+
+        var result = await sut.SendNotificationAsync(
+            model,
+            expectedTemplateId.Key,
+            [recipient]);
+
+        Assert.True(result.IsFailure);
+
+        _mockClient.Verify(x => x.SendEmailAsync(
+            It.IsAny<string>(),
+            expectedTemplateId.Value,
+            It.IsAny<Dictionary<string, dynamic>>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>()), Times.Once);
+
+        _mockNotificationHistoryRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task SendWithNoRecipients(
+        GovUkNotifyOptions options,
+        ConditionsToApplicantDataModel model)
+    {
+        var sut = CreateSut(options);
+
+        var expectedTemplateId = options.TemplateIds.Last();
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await sut.SendNotificationAsync(
+            model,
+            expectedTemplateId.Key,
+            []));
+
+        _mockClient.VerifyNoOtherCalls();
+        _mockNotificationHistoryRepository.VerifyNoOtherCalls();
+    }
 
     [Theory, AutoData]
     public async Task SendsUsingCorrectTemplateId(
@@ -242,6 +300,64 @@ public class SendNotificationsByGovUkNotifyTests
             && n.Recipients == JsonConvert.SerializeObject(new List<NotificationRecipient> {recipient})
             && n.Text == JsonConvert.SerializeObject(model)
             )), Times.Once);
+    }
+
+    [Theory, AutoData]
+    public async Task CreatesExpectedContent(
+        GovUkNotifyOptions options,
+        ConditionsToApplicantDataModel model,
+        NotificationAttachment attachment,
+        TemplatePreviewResponse response)
+    {
+        var sut = CreateSut(options);
+
+        var expectedTemplateId = options.TemplateIds.Last();
+
+        _mockClient
+            .Setup(x => x.GenerateTemplatePreviewAsync(It.IsAny<string>(), It.IsAny<Dictionary<string, dynamic>>()))
+            .ReturnsAsync(response);
+
+        var result = await sut.CreateNotificationContentAsync(
+            model,
+            expectedTemplateId.Key,
+            [ attachment ]);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(response.body, result.Value);
+
+        _mockClient.Verify(x => x.GenerateTemplatePreviewAsync(
+            expectedTemplateId.Value,
+            It.IsAny<Dictionary<string, dynamic>>()), Times.Once);
+        _mockClient.VerifyNoOtherCalls();
+        _mockNotificationHistoryRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task GenerateTemplatePreviewWhenClientThrowsException(
+        GovUkNotifyOptions options,
+        ConditionsToApplicantDataModel model,
+        NotificationAttachment attachment)
+    {
+        var sut = CreateSut(options);
+
+        var expectedTemplateId = options.TemplateIds.Last();
+
+        _mockClient
+            .Setup(x => x.GenerateTemplatePreviewAsync(It.IsAny<string>(), It.IsAny<Dictionary<string, dynamic>>()))
+            .ThrowsAsync(new NotifyClientException());
+
+        var result = await sut.CreateNotificationContentAsync(
+            model,
+            expectedTemplateId.Key,
+            [attachment]);
+
+        Assert.True(result.IsFailure);
+
+        _mockClient.Verify(x => x.GenerateTemplatePreviewAsync(
+            expectedTemplateId.Value,
+            It.IsAny<Dictionary<string, dynamic>>()), Times.Once);
+        _mockClient.VerifyNoOtherCalls();
+        _mockNotificationHistoryRepository.VerifyNoOtherCalls();
     }
 
     private bool AllMatch(Dictionary<string, dynamic> expected, Dictionary<string, dynamic> actual)

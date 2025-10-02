@@ -31,7 +31,7 @@ public class UserAccountEqualityComparerTests
         bool equals = userAccountEqualityComparer.Equals(userAccount1, userAccount2);
 
         //assert
-        equals.Should().BeTrue();
+        Assert.True(equals);
     }
 
     [Fact]
@@ -47,6 +47,6 @@ public class UserAccountEqualityComparerTests
         bool equals = userAccountEqualityComparer.Equals(userAccount1, userAccount2);
 
         //assert
-        equals.Should().BeFalse();
+        Assert.False(equals);
     }
 }

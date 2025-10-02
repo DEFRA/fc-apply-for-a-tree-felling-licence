@@ -32,11 +32,6 @@ namespace Forestry.Flo.Services.Gis.Models.Internal
         /// </summary>
         public string? WoodlandName { get; set; }
 
-        /// <summary>
-        /// The designation name
-        /// </summary>
-        public string? Designation { get; set; }
-
         //The GIS Shape object
         public string GISData { get; set; }
     }

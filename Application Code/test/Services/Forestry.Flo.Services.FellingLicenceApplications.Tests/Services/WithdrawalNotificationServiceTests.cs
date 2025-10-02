@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -86,12 +85,12 @@ public class WithdrawalNotificationServiceTests
 
         var result = await sut.GetApplicationsAfterThresholdForWithdrawalAsync(_threshold, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Count.Should().Be(applications.Count);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(applications.Count, result.Value.Count);
 
         foreach (var application in result.Value)
         {
-            application.NotificationDateSent.Date.Should().Be(currentDate.Date);
+            Assert.Equal(currentDate.Date, application.NotificationDateSent.Date);
         }
 
         _internalFLARepositoryMock.Verify(v => v.GetApplicationsThatAreWithinThresholdAutomaticWithdrawalDateAsync(

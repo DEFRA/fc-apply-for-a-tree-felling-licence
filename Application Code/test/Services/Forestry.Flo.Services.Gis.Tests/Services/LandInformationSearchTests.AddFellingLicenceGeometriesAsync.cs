@@ -1,7 +1,4 @@
 ﻿using System.Net;
-using FluentAssertions;
-using Forestry.Flo.Services.Gis.Models.Internal;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Moq;
 using Moq.Protected;
 
@@ -21,8 +18,8 @@ public partial class LandInformationSearchTests
         var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
             sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), [], CancellationToken.None));
 
-        ex.Message.Should().Contain("Required input polygons was empty");
-        ex.ParamName.Should().Be("polygons");
+        Assert.Contains("Required input polygons was empty", ex.Message);
+        Assert.Equal("polygons", ex.ParamName);
     }
 
     [Fact]
@@ -42,7 +39,7 @@ public partial class LandInformationSearchTests
         var response = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), _compartments, CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -62,7 +59,7 @@ public partial class LandInformationSearchTests
         var response = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), _compartments, CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -82,7 +79,7 @@ public partial class LandInformationSearchTests
         var response = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), _compartments, CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -106,7 +103,7 @@ public partial class LandInformationSearchTests
         var response = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), _compartments, CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -130,7 +127,7 @@ public partial class LandInformationSearchTests
         var response = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), _compartments, CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -154,7 +151,7 @@ public partial class LandInformationSearchTests
         var response = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), _compartments, CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -178,6 +175,6 @@ public partial class LandInformationSearchTests
         var response = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), _compartments, CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
     }
 }

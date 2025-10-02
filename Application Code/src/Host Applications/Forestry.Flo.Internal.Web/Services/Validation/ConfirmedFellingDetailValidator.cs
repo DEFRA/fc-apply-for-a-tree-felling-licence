@@ -19,11 +19,7 @@ public class ConfirmedFellingDetailValidator : AbstractValidator<ConfirmedFellin
             .DependentRules(() => RuleFor(m => m.AreaToBeFelled)
                 .GreaterThan(0)
                 .WithMessage(x => $"Compartment {compartment.CompartmentName} - Area to be felled must be a positive value"))
-            .When(m => m.OperationType is not FellingOperationType.None)
-            .DependentRules(() => RuleFor(d => d.AreaToBeFelled)
-                .LessThanOrEqualTo(d => compartment.ConfirmedTotalHectares)
-                .WithMessage(x => $"Compartment {compartment.CompartmentName} - Area to be felled must be less than or equal to the gross size"))
-            .When(m => m.OperationType is not FellingOperationType.None);
+                .When(m => m.OperationType is not FellingOperationType.None);
 
         // when felling is selected, at least one confirmed felling species must be provided
         // and the total percentages of these species must equal 100

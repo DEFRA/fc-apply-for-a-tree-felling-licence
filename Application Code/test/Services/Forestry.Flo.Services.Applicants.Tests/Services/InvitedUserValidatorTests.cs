@@ -30,7 +30,7 @@ public class InvitedUserValidatorTests
         var result = _sut.VerifyInvitedUser(account.InviteToken.ToString()!, account);
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
     
     [Theory, AutoMoqData]
@@ -44,7 +44,7 @@ public class InvitedUserValidatorTests
         var result = _sut.VerifyInvitedUser(invalidToken.ToString(), account);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
     
     [Theory, AutoMoqData]
@@ -58,7 +58,7 @@ public class InvitedUserValidatorTests
         var result = _sut.VerifyInvitedUser(account.InviteToken.ToString()!, account);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
     
     [Theory, AutoMoqData]
@@ -72,6 +72,6 @@ public class InvitedUserValidatorTests
         var result = _sut.VerifyInvitedUser(account.InviteToken.ToString()!, account);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
     }
 }

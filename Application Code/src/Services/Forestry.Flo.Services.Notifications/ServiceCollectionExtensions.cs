@@ -33,33 +33,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddNotificationsBySmtp(
-        this IServiceCollection services,
-        IConfiguration configuration)
-    {
-        var configSection = configuration.GetSection("Notifications");
-        var config = configSection.Get<NotificationsOptions>();
-        services.Configure<NotificationsOptions>(configSection);
-
-        if (string.IsNullOrWhiteSpace(config.Smtp.Username) || string.IsNullOrWhiteSpace(config.Smtp.Password))
-        {
-            services
-                .AddFluentEmail(config.DefaultFromAddress, config.DefaultFromName ?? "")
-                .AddSmtpSender(config.Smtp.Host, config.Smtp.Port)
-                .AddRazorRenderer();
-        }
-        else
-        {
-            services
-                .AddFluentEmail(config.DefaultFromAddress, config.DefaultFromName ?? "")
-                .AddSmtpSender(config.Smtp.Host, config.Smtp.Port, config.Smtp.Username, config.Smtp.Password)
-                .AddRazorRenderer();
-        }
-        services.AddScoped<ISendNotifications, EmailService>();
-
-        return services;
-    }
-
     private static IServiceCollection AddNotificationsByGovUkNotify(
         this IServiceCollection services,
         IConfiguration configuration)

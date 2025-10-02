@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.InternalUsers.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class AddUserAccountConfirmationDenied : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -13,6 +13,10 @@ public class NotificationHistoryRepository : INotificationHistoryRepository
     ///<inheritdoc />
     public IUnitOfWork UnitOfWork => _context;
 
+    /// <summary>
+    /// Creates a new instance of <see cref="NotificationHistoryRepository"/>.
+    /// </summary>
+    /// <param name="context">The <see cref="DbContext"/>.</param>
     public NotificationHistoryRepository(NotificationsContext context) =>
         _context = Guard.Against.Null(context);
 
@@ -53,12 +57,7 @@ public class NotificationHistoryRepository : INotificationHistoryRepository
         return Result.Success(result);
     }
 
-    /// <summary>
-    /// Gets all existing ExternalIds from the NotificationHistory table for the provided list.
-    /// </summary>
-    /// <param name="externalIds">The list of external identifiers to check.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A list of existing ExternalIds.</returns>
+    /// <inheritdoc />
     public async Task<List<Guid>> GetExistingExternalIdsAsync(IEnumerable<Guid> externalIds, CancellationToken cancellationToken)
     {
         if (externalIds == null || !externalIds.Any()) return new List<Guid>();
@@ -73,9 +72,13 @@ public class NotificationHistoryRepository : INotificationHistoryRepository
     {
         var entity = await _context.NotificationHistories.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
         if (entity == null)
+        {
             return Result.Failure<NotificationHistory, UserDbErrorReason>(UserDbErrorReason.NotFound);
+        }
+        
         update(entity);
         await _context.SaveChangesAsync(cancellationToken);
+        
         return Result.Success<NotificationHistory, UserDbErrorReason>(entity);
     }
 }

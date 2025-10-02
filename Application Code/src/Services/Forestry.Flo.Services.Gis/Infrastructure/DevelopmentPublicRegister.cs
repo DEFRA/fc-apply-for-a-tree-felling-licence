@@ -76,7 +76,7 @@ public class DevelopmentPublicRegister(ILogger<DevelopmentPublicRegister> logger
         logger.LogDebug("Total area: {TotalArea}", totalArea);
         logger.LogDebug("Count of compartments: {CountOfCompartments}", compartments.Count);
 
-        var esriId = int.Parse(caseRef.Split('/')[0]);
+        var esriId = int.TryParse(caseRef.Split('/')[0], out var result) ? result : 1;
         logger.LogInformation("Returning ESRI Id {EsriId}", esriId);
 
         return Result.Success(esriId);

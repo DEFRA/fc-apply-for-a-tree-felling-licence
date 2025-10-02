@@ -1,7 +1,4 @@
-﻿
-
-using FluentAssertions;
-using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
+﻿using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 
@@ -44,7 +41,7 @@ public partial class BaseServicesTests
         var sut = CreateSut(layerSettings: _layerSettings);
         var result = sut.GetLayerDetail(value);
 
-        result.HasNoValue.Should().BeTrue();
+        Assert.True(result.HasNoValue);
     }
 
     [Theory]
@@ -57,17 +54,17 @@ public partial class BaseServicesTests
         var sut = CreateSut(layerSettings: _layerSettings);
         var result = sut.GetLayerDetail(value);
 
-        result.HasNoValue.Should().BeFalse();
-        result.Value.Name.Should().Be("Country_Boundaries_Generalised");
+        Assert.True(result.HasValue);
+        Assert.Equal("Country_Boundaries_Generalised", result.Value.Name);
     }
 
+    [Fact]
     public void GetLayerDetails_ShouldReturnNoneFromNoMatch()
     {
         var sut = CreateSut(layerSettings: _layerSettings);
         var result = sut.GetLayerDetail("Not Here");
 
-        result.HasNoValue.Should().BeFalse();
-        result.Value.Name.Should().Be("Country_Boundaries_Generalised");
+        Assert.False(result.HasValue);
     }
 
 
@@ -78,7 +75,7 @@ public partial class BaseServicesTests
         var sut = CreateSut(layerSettings: _layerSettings);
         var result = sut.GetLayerDetail(expected);
 
-        result.HasNoValue.Should().BeFalse();
-        result.Value.Name.Should().Be(expected);
+        Assert.True(result.HasValue);
+        Assert.Equal(expected, result.Value.Name);
     }
 }

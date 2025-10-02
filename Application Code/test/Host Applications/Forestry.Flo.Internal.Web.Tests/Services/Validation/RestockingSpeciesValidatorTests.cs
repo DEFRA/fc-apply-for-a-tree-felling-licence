@@ -1,9 +1,6 @@
-﻿using FluentAssertions;
-using FluentValidation.TestHelper;
+﻿using FluentValidation.TestHelper;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services.Validation;
-using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.Validation;
 
@@ -38,10 +35,8 @@ public class RestockingSpeciesValidatorTests
         var result = _sut.TestValidate(model);
 
         result.ShouldHaveValidationErrorFor("Percentage");
-        result.Errors.Any(x =>
-                x.ErrorMessage == $"Compartment {CompartmentName} - Percentage must be provided for all restocking species")
-            .Should()
-            .BeTrue();
+        Assert.Contains($"Compartment {CompartmentName} - Percentage must be provided for all restocking species",
+            result.Errors.Select(x => x.ErrorMessage));
     }
 
     [Theory]
@@ -58,10 +53,8 @@ public class RestockingSpeciesValidatorTests
         var result = _sut.TestValidate(model);
 
         result.ShouldHaveValidationErrorFor("Percentage");
-        result.Errors.Any(x =>
-                x.ErrorMessage == $"Compartment {CompartmentName} - Percentage must be greater than zero and less than or equal to 100% for restocking species {model.Species}")
-            .Should()
-            .BeTrue();
+        Assert.Contains($"Compartment {CompartmentName} - Percentage must be greater than zero and less than or equal to 100% for restocking species {model.Species}",
+            result.Errors.Select(x => x.ErrorMessage));
     }
 
     private static ConfirmedRestockingSpeciesModel ConstructModel()

@@ -204,6 +204,10 @@ public class WoodlandOfficerReview
     public bool ConsultationsComplete { get; set; }
 
     /// <summary>
+    /// Gets and sets whether the Woodland Officer has completed the designations stage of the review.
+    /// </summary>
+    public bool DesignationsComplete { get; set; }
+
     /// Gets and sets the felling and restocking amendment reviews associated with this WO review.
     /// </summary>
     public IList<FellingAndRestockingAmendmentReview> FellingAndRestockingAmendmentReviews { get; set; } = new List<FellingAndRestockingAmendmentReview>();

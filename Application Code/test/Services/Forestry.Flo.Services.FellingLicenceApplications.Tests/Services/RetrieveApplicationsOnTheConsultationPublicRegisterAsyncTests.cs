@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -32,7 +31,7 @@ public class RetrieveApplicationsOnTheConsultationPublicRegisterAsyncTests
         var sut = CreateSut();
         var result = await sut.RetrieveApplicationsOnTheConsultationPublicRegisterAsync(CancellationToken.None);
 
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -77,16 +76,16 @@ public class RetrieveApplicationsOnTheConsultationPublicRegisterAsyncTests
         var sut = CreateSut();
         var result = await sut.RetrieveApplicationsOnTheConsultationPublicRegisterAsync(CancellationToken.None);
 
-        result.Count.Should().Be(2);
-        result[0].ApplicationReference.Should().Be("REF1");
-        result[0].PropertyName.Should().Be("Prop1");
-        result[0].AdminHubName.Should().Be("Region1");
-        result[0].AssignedUserIds.Should().Contain(app1.AssigneeHistories[0].AssignedUserId);
+        Assert.Equal(2, result.Count);
+        Assert.Equal("REF1", result[0].ApplicationReference);
+        Assert.Equal("Prop1", result[0].PropertyName);
+        Assert.Equal("Region1", result[0].AdminHubName);
+        Assert.Contains(app1.AssigneeHistories[0].AssignedUserId, result[0].AssignedUserIds);
 
-        result[1].ApplicationReference.Should().Be("REF2");
-        result[1].PropertyName.Should().Be("Prop2");
-        result[1].AdminHubName.Should().Be("Region2");
-        result[1].AssignedUserIds.Should().Contain(app2.AssigneeHistories[0].AssignedUserId);
+        Assert.Equal("REF2", result[1].ApplicationReference);
+        Assert.Equal("Prop2", result[1].PropertyName);
+        Assert.Equal("Region2", result[1].AdminHubName);
+        Assert.Contains(app2.AssigneeHistories[0].AssignedUserId, result[1].AssignedUserIds);
     }
 
     [Fact]
@@ -128,7 +127,7 @@ public class RetrieveApplicationsOnTheConsultationPublicRegisterAsyncTests
         var sut = CreateSut();
         var result = await sut.RetrieveApplicationsOnTheConsultationPublicRegisterAsync(CancellationToken.None);
 
-        result.Count.Should().Be(1);
-        result[0].ApplicationReference.Should().Be("REF3");
+        Assert.Single(result);
+        Assert.Equal("REF3", result[0].ApplicationReference);
     }
 }

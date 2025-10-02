@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
@@ -259,7 +258,7 @@ public class AdminOfficerReviewUseCaseTests
         _updateConfirmedFellingAndRestockingDetailsService.VerifyNoOtherCalls();
 
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 
     [Theory, AutoMoqData]
@@ -398,7 +397,7 @@ public class AdminOfficerReviewUseCaseTests
         _mockAuditService.VerifyNoOtherCalls();
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
 
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
     }
@@ -422,7 +421,7 @@ public class AdminOfficerReviewUseCaseTests
         var result = await _sut.CompleteLarchCheckAsync(applicationId, performingUserId, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _updateAdminOfficerReviewService.Verify(x => x.SetLarchCheckCompletionAsync(applicationId, It.IsAny<bool>(), performingUserId, true, It.IsAny<CancellationToken>()), Times.Once);
         _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -450,8 +449,8 @@ public class AdminOfficerReviewUseCaseTests
         var result = await _sut.CompleteLarchCheckAsync(applicationId, performingUserId, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(error);
+        Assert.True(result.IsFailure);
+        Assert.Equal(error, result.Error);
 
         _updateAdminOfficerReviewService.Verify(x => x.SetLarchCheckCompletionAsync(applicationId, It.IsAny<bool>(), performingUserId, true, It.IsAny<CancellationToken>()), Times.Once);
         _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -499,8 +498,8 @@ public class AdminOfficerReviewUseCaseTests
         var result = await _sut.ConfirmAdminOfficerReview(fellingLicenceApplication.Id, user, internalLinkToApplication, dateReceived, false, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(error);
+        Assert.True(result.IsFailure);
+        Assert.Contains(error, result.Error);
 
         _updateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(
             fellingLicenceApplication.Id, user.UserAccountId!.Value, true, It.IsAny<CancellationToken>()), Times.Once);
@@ -547,8 +546,8 @@ public class AdminOfficerReviewUseCaseTests
         var result = await _sut.ConfirmAdminOfficerReview(fellingLicenceApplication.Id, user, internalLinkToApplication, dateReceived, false, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(error);
+        Assert.True(result.IsFailure);
+        Assert.Contains(error, result.Error);
 
         _updateConfirmedFellingAndRestockingDetailsService.Verify(x =>
             x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()), Times.Once);
@@ -593,8 +592,8 @@ public class AdminOfficerReviewUseCaseTests
         var result = await _sut.ConfirmAdminOfficerReview(fellingLicenceApplication.Id, user, internalLinkToApplication, dateReceived, false, CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain(error);
+        Assert.True(result.IsFailure);
+        Assert.Contains(error, result.Error);
 
         _updateConfirmedFellingAndRestockingDetailsService.Verify(x =>
             x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()), Times.Once);
@@ -745,6 +744,6 @@ public class AdminOfficerReviewUseCaseTests
             fellingLicenceApplication.Id, user.UserAccountId!.Value, true, It.IsAny<CancellationToken>()), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         //assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 }

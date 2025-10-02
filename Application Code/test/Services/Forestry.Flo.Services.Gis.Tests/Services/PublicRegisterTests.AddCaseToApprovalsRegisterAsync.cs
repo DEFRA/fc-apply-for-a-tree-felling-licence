@@ -2,7 +2,6 @@
 using Moq.Protected;
 using System.Net;
 using System.Net.Http.Headers;
-using FluentAssertions;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 public partial class PublicRegisterTests
@@ -21,8 +20,8 @@ public partial class PublicRegisterTests
         var sut = CreateSUT();
 
         var result = await sut.AddCaseToDecisionRegisterAsync(0, "case", fellingLicenceOutcome, DateTime.Now, CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Object ID not correctly set");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Object ID not correctly set", result.Error);
     }
 
     [Theory]
@@ -39,8 +38,8 @@ public partial class PublicRegisterTests
 
         var result = await sut.AddCaseToDecisionRegisterAsync(3, "", fellingLicenceOutcome, DateTime.Now, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("No Case Reference given");
+        Assert.True(result.IsFailure);
+        Assert.Equal("No Case Reference given", result.Error);
     }
 
     [Theory]
@@ -67,8 +66,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", response.Error);
     }
 
     [Theory]
@@ -99,8 +98,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Updated the Boundary, Updating Compartments returned 'Unable to query the compartments layer'");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Updated the Boundary, Updating Compartments returned 'Unable to query the compartments layer'", response.Error);
     }
 
 
@@ -137,8 +136,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Updated the Boundary, Updating Compartments returned 'Empty message from ESRI'");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Updated the Boundary, Updating Compartments returned 'Empty message from ESRI'", response.Error);
     }
 
     [Theory]
@@ -181,8 +180,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Updated the Boundary, Updating Compartments returned 'No Results'");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Updated the Boundary, Updating Compartments returned 'No Results'", response.Error);
     }
 
     [Theory]
@@ -214,7 +213,7 @@ public partial class PublicRegisterTests
 
         var response = await sut.AddCaseToDecisionRegisterAsync(3, "case", fellingLicenceOutcome, DateTime.Now, CancellationToken.None);
 
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
     }
 
     [Fact]
@@ -243,6 +242,6 @@ public partial class PublicRegisterTests
 
         var response = await sut.AddCaseToDecisionRegisterAsync(3, "case", "badOutcome", DateTime.Now, CancellationToken.None);
 
-        response.IsSuccess.Should().BeFalse();
+        Assert.False(response.IsSuccess);
     }
 }

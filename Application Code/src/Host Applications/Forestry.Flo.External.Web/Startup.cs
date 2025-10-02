@@ -1,5 +1,6 @@
 ﻿using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.FileStorage.Configuration;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
@@ -52,6 +53,9 @@ public class Startup
             x.Secure = CookieSecurePolicy.Always;
         });
 
+        services.AddOptions<GovUkOneLoginOptions>().BindConfiguration(GovUkOneLoginOptions.ConfigurationKey);
+        services.AddOptions<AuthenticationOptions>().BindConfiguration(AuthenticationOptions.ConfigurationKey);
+
         var builder = services.AddControllersWithViews(options =>
         {
             var formValueProviderFactoryIndex =
@@ -68,11 +72,24 @@ public class Startup
             builder.AddRazorRuntimeCompilation();
         }
 
+        var authenticationOptions = new AuthenticationOptions();
+        Configuration.Bind("authenticationOptions", authenticationOptions);
+
         services.AddHttpContextAccessor();
         services.AddRequestContext();
         services.AddDistributedMemoryCache();
         services.AddSession();
-        services.AddAzureAdB2CServices(Configuration);
+
+        switch (authenticationOptions.Provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                services.AddOneLoginServices(Configuration);
+                break;
+            case AuthenticationProvider.Azure:
+                services.AddAzureAdB2CServices(Configuration);
+                break;
+        }
+
         services.AddFloServices(Configuration);
         services.AddDomainServices(ConfigureDatabaseConnection, Configuration, HostEnvironment);
         services.RegisterMassTransit(Configuration);

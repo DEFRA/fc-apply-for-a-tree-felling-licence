@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
@@ -91,7 +89,7 @@ namespace Forestry.Flo.Services.Common.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
         }
     }
 }

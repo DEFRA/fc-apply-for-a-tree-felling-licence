@@ -32,6 +32,16 @@ external-web-app:
       domain: "migrateflo.onmicrosoft.com"
       signInPolicyId: "B2C_1_FLO_V2_Signin"
       signUpPolicyId: "B2C_1_FLO_V2_Signup"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: Azure
     environment: Migrate
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
@@ -84,6 +94,8 @@ external-web-app:
       microsoftClarity:
         enabled: true
         trackingId: "pcrkb95e7y"
+    internalUserSite:
+      baseUrl: "https://private-beta-internal-pre-prod.tree-felling.forestrycommission.gov.uk/"
     GovUkNotifyOptions:
       enabled: true
       ApiKey:
@@ -300,6 +312,16 @@ internal-web-app:
         secret_key: azureb2c.client_secret
       domain: "migrateflo.onmicrosoft.com"
       signUpSignInPolicyId: "B2C_1_FLO_V2_Internal_Signup_Signin"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: Azure
     azureAD:
       tenantId: 
         secret_key: azuread.tennant_id

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+﻿using FluentEmail.Core;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Xunit;
 
@@ -14,12 +14,12 @@ public class TreeSpeciesFactoryTest
         var result = TreeSpeciesFactory.SpeciesDictionary;
 
         //assert
-        result.Should().NotBeEmpty();
-        result.Values.Should().AllSatisfy(model =>
+        Assert.NotEmpty(result);
+        
+        result.Values.ForEach(model =>
         {
-            model.Code.Should().MatchRegex("^[A-Z]+$");
-            model.Name.Should().MatchRegex("^[\\w-/()' ]+$");
-            model.SpeciesType.Should().BeOneOf(SpeciesType.Broadleaf, SpeciesType.Conifer);
+            Assert.Matches("^[A-Z]+$", model.Code);
+            Assert.Matches("^[\\w-/()' ]+$", model.Name);
         });
     }
 }

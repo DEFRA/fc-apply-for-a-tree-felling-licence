@@ -34,6 +34,11 @@ public class FellingAndRestockingAmendmentReview
     public DateTime AmendmentsSentDate { get; set; }
 
     /// <summary>
+    /// Gets or sets the reason for the amendments sent to the applicant.
+    /// </summary>
+    public string? AmendmentsReason { get; set; }
+
+    /// <summary>
     /// Gets or sets the deadline by which the applicant must respond to the amendments,
     /// else the application will be automatically withdrawn.
     /// </summary>
@@ -59,4 +64,9 @@ public class FellingAndRestockingAmendmentReview
     /// This should be null if the applicant agreed to the amendments or has not yet responded.
     /// </remarks>
     public string? ApplicantDisagreementReason { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the amendment review has been completed.
+    /// </summary>
+    public bool? AmendmentReviewCompleted { get; set; }
 }

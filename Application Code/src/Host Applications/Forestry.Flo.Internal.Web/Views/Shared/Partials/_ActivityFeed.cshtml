@@ -14,7 +14,8 @@
     @if (Model.ShowFilters)
     {
         var types = (ActivityFeedItemType[]) Enum.GetValues(typeof(ActivityFeedItemType));
-        types = types.Where(x => x.GetActivityFeedItemTypeAttribute() != ActivityFeedItemCategory.OutgoingNotification).ToArray();
+        var excludedCategories = new[] { ActivityFeedItemCategory.OutgoingNotification, ActivityFeedItemCategory.AmendmentReviews };
+        types = types.Where(x => !excludedCategories.Contains(x.GetActivityFeedItemTypeAttribute().Value)).ToArray();
 
         <input type="hidden" asp-for="DefaultCaseNoteFilter" value="@Model.DefaultCaseNoteFilter.ToString()" />
         <div class="govuk-form-group govuk-body-s">
@@ -35,7 +36,8 @@
         <div class="govuk-form-group govuk-body-s">
             Include:
             <button id="AllOutgoingNotifications" class="activity-item-inclusion filter unselected" data-id="AllOutgoingNotifications" data-category="OutgoingNotification">Outgoing notifications</button>
-        </div>
+            <button id="AllAmendmentReviews" class="activity-item-inclusion filter unselected" data-id="AmendmentReviews" data-category="AmendmentReviews">Amendment Reviews</button>
+		</div>
     }
     
     @if (Model.ShowAddCaseNote)
@@ -165,32 +167,74 @@
 
                     break;
 
-                    case ActivityFeedItemCategory.OutgoingNotification:
-                        <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
+                case ActivityFeedItemCategory.OutgoingNotification:
+                    <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
 
-                            <div class="moj-timeline__header">
-                                <h2 class="moj-timeline__title">@activityFeedItem.Text</h2>
+                        <div class="moj-timeline__header">
+                            <h2 class="moj-timeline__title">@activityFeedItem.Text</h2>
 
 
-                                @if (activityFeedItem.Recipients != null)
-                                {
-                                    <p class="moj-timeline__byline">
-                                        sent to:
+                            @if (activityFeedItem.Recipients != null)
+                            {
+                                <p class="moj-timeline__byline">
+                                    sent to:
 
-                                        @foreach (var recipient in activityFeedItem.Recipients)
-                                        {
-                                            <b> @recipient </b>
-                                        }
-                                    </p>
-                                }
-                            </div>
-
-                            <p class="moj-timeline__date">
-                                @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
-                            </p>
-
+                                    @foreach (var recipient in activityFeedItem.Recipients)
+                                    {
+                                        <b> @recipient </b>
+                                    }
+                                </p>
+                            }
                         </div>
+
+                        <p class="moj-timeline__date">
+                            @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
+                        </p>
+
+                    </div>
+                break;
+
+                case ActivityFeedItemCategory.AmendmentReviews:
+                    <div class="moj-timeline__item flo-timeline_item-casenote" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
+
+                        <div class="moj-timeline__header">
+                            <img class="activity-avatar" data-forename="@activityFeedItem.CreatedByUser?.FirstName" data-surname="@activityFeedItem.CreatedByUser?.LastName" data-role="@activityFeedItem.CreatedByUser?.AccountType" alt="Avatar">
+                            <h2 class="moj-timeline__title">@activityFeedItem.ActivityFeedItemType.GetDisplayName()</h2>
+                            <p class="moj-timeline__byline">by @activityFeedItem.CreatedByUser?.FullName</p>
+                        </div>
+
+                        <p class="moj-timeline__date">
+                            @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
+                        </p>
+
+                        <div class="moj-timeline__description">
+                            <p class="show-line-breaks">@activityFeedItem.Text</p>
+                            <p>
+                                This case note is visible to:
+                                <div class="status-row">
+                                    @if (activityFeedItem.VisibleToApplicant)
+                                    {
+                                        <strong class="govuk-tag govuk-tag--grey">
+                                            Applicant
+                                        </strong>
+                                    }
+                                    @if (activityFeedItem.VisibleToConsultee)
+                                    {
+                                        <strong class="govuk-tag govuk-tag--grey">
+                                            Consultee
+                                        </strong>
+                                    }
+                                    <strong class="govuk-tag govuk-tag--grey">
+                                        FOI
+                                    </strong>
+                                </div>
+                            </p>
+                        </div>
+
+                    </div>
+
                     break;
+
             }
         }
 

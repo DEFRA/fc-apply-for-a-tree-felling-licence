@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Tests.Common;
@@ -45,7 +44,7 @@ public class FellingLicenceApplicationRepositoryTests
         var result = await _sut.ListAsync(woodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeEmpty();
+        Assert.NotEmpty(result);
     }
     
     [Theory, AutoMoqData]
@@ -57,7 +56,7 @@ public class FellingLicenceApplicationRepositoryTests
         var result = await _sut.ListAsync(woodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
     
     [Theory, AutoMoqData]
@@ -72,9 +71,9 @@ public class FellingLicenceApplicationRepositoryTests
         var result = (await _sut.ListAsync(woodlandOwnerId, CancellationToken.None)).ToList();
 
         //assert
-        result.Should().NotBeEmpty();
-        result.First().StatusHistories.Should().NotBeEmpty();
-        result.First().LinkedPropertyProfile.Should().NotBeNull();
+        Assert.NotEmpty(result);
+        Assert.NotEmpty(result.First().StatusHistories);
+        Assert.NotNull(result.First().LinkedPropertyProfile);
     }
     
     [Theory, AutoMoqData]
@@ -91,10 +90,10 @@ public class FellingLicenceApplicationRepositoryTests
         var saveResult = await _sut.UnitOfWork.SaveEntitiesAsync(CancellationToken.None);
          
         //assert
-        saveResult.IsSuccess.Should().BeTrue();
+        Assert.True(saveResult.IsSuccess);
         var result = await _fellingLicenceApplicationsContext.FellingLicenceApplications.FindAsync(fellingLicenceApplication.Id);
-        result.Should().NotBeNull();
-        result!.ApplicationReference.Should().Be(updatedReference);
+        Assert.NotNull(result);
+        Assert.Equal(updatedReference, result!.ApplicationReference);
     }
 
     [Theory, AutoMoqData]

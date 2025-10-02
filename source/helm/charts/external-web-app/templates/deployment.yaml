@@ -141,6 +141,60 @@ spec:
             - name: AzureADB2C__SignInPolicyId
               value: {{ .Values.config.azureADB2C.signInPolicyId }}
             {{- end }}
+            # ------------------- GOV.UK One Login start -------------------
+            {{- if .Values.config.govUkOneLoginOptions.clientId }}
+            {{- if .Values.config.govUkOneLoginOptions.clientId.secret_key }}
+            - name: GovUkOneLoginOptions__ClientId
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.govUkOneLoginOptions.clientId.secret_key }}
+            {{- else }}
+            - name: GovUkOneLoginOptions__ClientId
+              value: {{ .Values.config.govUkOneLoginOptions.clientId }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.callbackPath }}
+            - name: GovUkOneLoginOptions__CallbackPath
+              value: {{ .Values.config.govUkOneLoginOptions.callbackPath }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.environment }}
+            - name: GovUkOneLoginOptions__Environment
+              value: {{ .Values.config.govUkOneLoginOptions.environment }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.correlationCookieName }}
+            - name: GovUkOneLoginOptions__CorrelationCookieName
+              value: {{ .Values.config.govUkOneLoginOptions.correlationCookieName }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.nonceCookieName }}
+            - name: GovUkOneLoginOptions__NonceCookieName
+              value: {{ .Values.config.govUkOneLoginOptions.nonceCookieName }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.vectorsOfTrust }}
+            - name: GovUkOneLoginOptions__VectorsOfTrust__0
+              value: {{ index .Values.config.govUkOneLoginOptions.vectorsOfTrust 0 | quote }}
+            {{- end }}
+            {{- if .Values.config.govUkOneLoginOptions.signingKeys }}
+            {{- range $i, $key := .Values.config.govUkOneLoginOptions.signingKeys }}
+            {{- if $key.privateKeyPem }}
+            {{- if $key.privateKeyPem.secret_key }}
+            - name: GovUkOneLoginOptions__SigningKeys__{{ $i }}__PrivateKeyPem
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.config.secret_key_ref_name }}
+                  key: {{ $key.privateKeyPem.secret_key }}
+            {{- else }}
+            - name: GovUkOneLoginOptions__SigningKeys__{{ $i }}__PrivateKeyPem
+              value: {{ $key.privateKeyPem | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            # ------------------- Authentication options start -------------------
+            {{- if .Values.config.authenticationOptions.provider }}
+            - name: AuthenticationOptions__Provider
+              value: {{ .Values.config.authenticationOptions.provider }}
+            {{- end }}
             # ------------------- Notifications start -------------------
             {{- if .Values.config.notifications.defaultFromAddress }}
             - name: Notifications__DefaultFromAddress
@@ -351,9 +405,9 @@ spec:
             # ------------------- Permitted FcAgency Email Domains start -------------------
             {{- if .Values.config.FcAgency.enabled }}
             {{- with .Values.config.FcAgency }}
-            {{- if .PermittedEmailDomainsForFcAgent }}
-            - name: FcAgency_PermittedEmailDomainsForFcAgent
-              value: '{{ .PermittedEmailDomainsForFcAgent | toJson }}'
+            {{- range $i, $domain := .PermittedEmailDomainsForFcAgent }}
+            - name: FcAgency__PermittedEmailDomainsForFcAgent__{{ $i }}
+              value: "{{ $domain }}"
             {{- end }}
             {{- end }}
             {{- end }}
@@ -723,6 +777,11 @@ spec:
             {{- if .Values.config.reviewAmendmentsOptions.applicationWithdrawalDays }}
             - name: ReviewAmendmentsOptions__ApplicationWithdrawalDays
               value: {{ .Values.config.reviewAmendmentsOptions.applicationWithdrawalDays | quote }}
+            {{- end }}
+            # ------------------- Internal User Site Options -------------------
+            {{- if .Values.config.internalUserSite.baseUrl }}
+            - name: InternalUserSite__BaseUrl
+              value: {{ .Values.config.internalUserSite.baseUrl | quote }}
             {{- end }}
             # ------------------- Environment Variables End -------------------
           ports:

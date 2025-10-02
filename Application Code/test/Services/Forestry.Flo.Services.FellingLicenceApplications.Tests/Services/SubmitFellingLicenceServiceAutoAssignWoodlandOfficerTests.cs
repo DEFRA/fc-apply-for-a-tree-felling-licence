@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -97,15 +96,15 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var (isSuccess, _, result) = await sut.AutoAssignWoodlandOfficerAsync(fla.Id, externalApplicantId, "link", CancellationToken.None);
 
-            isSuccess.Should().BeTrue();
+            Assert.True(isSuccess);
 
             // assert returned record holds correct data
 
-            result.AssignedUserEmail.Should().Be(woodlandOfficerAccount.Email);
-            result.AssignedUserFirstName.Should().Be(woodlandOfficerAccount.FirstName);
-            result.AssignedUserLastName.Should().Be(woodlandOfficerAccount.LastName);
-            result.AssignedUserId.Should().Be(woodlandOfficerAccount.Id);
-            result.UnassignedUserId.Should().Be(unassignedId);
+            Assert.Equal(woodlandOfficerAccount.Email, result.AssignedUserEmail);
+            Assert.Equal(woodlandOfficerAccount.FirstName, result.AssignedUserFirstName);
+            Assert.Equal(woodlandOfficerAccount.LastName, result.AssignedUserLastName);
+            Assert.Equal(woodlandOfficerAccount.Id, result.AssignedUserId);
+            Assert.Equal(unassignedId, result.UnassignedUserId);
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
             _foresterServices.Verify(v => v.GetWoodlandOfficerAsync(It.Is<Point>(e => JsonConvert.SerializeObject(e) == fla.CentrePoint), CancellationToken.None), Times.Once);
@@ -150,7 +149,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var result = await sut.AutoAssignWoodlandOfficerAsync(fla.Id, externalApplicantId, "link", CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
             _foresterServices.Verify(v => v.GetWoodlandOfficerAsync(It.Is<Point>(e => JsonConvert.SerializeObject(e) == fla.CentrePoint), CancellationToken.None), Times.Once);
@@ -194,7 +193,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var result = await sut.AutoAssignWoodlandOfficerAsync(fla.Id, externalApplicantId, "link", CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
             _foresterServices.Verify(v => v.GetWoodlandOfficerAsync(It.Is<Point>(e => JsonConvert.SerializeObject(e) == fla.CentrePoint), CancellationToken.None), Times.Once);
@@ -229,7 +228,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var result = await sut.AutoAssignWoodlandOfficerAsync(fla.Id, externalApplicantId, "link", CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
             _foresterServices.Verify(v => v.GetWoodlandOfficerAsync(It.Is<Point>(e => JsonConvert.SerializeObject(e) == fla.CentrePoint), CancellationToken.None), Times.Once);
@@ -253,7 +252,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var result = await sut.AutoAssignWoodlandOfficerAsync(fla.Id, externalApplicantId, "link", CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
 
@@ -276,7 +275,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var result = await sut.AutoAssignWoodlandOfficerAsync(fla.Id, externalApplicantId, "link", CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
 
@@ -303,7 +302,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var result = await sut.AutoAssignWoodlandOfficerAsync(flaId, externalApplicantId, "link", CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(flaId, CancellationToken.None), Times.Once);
 
@@ -325,8 +324,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.CalculateCentrePointForApplicationAsync(applicationId, new List<string>(), CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be($"Unable to calculate centre point for application of id {applicationId}");
+            Assert.True(result.IsFailure);
+            Assert.Equal($"Unable to calculate centre point for application of id {applicationId}", result.Error);
             _forestryServices.Verify(a => a.CalculateCentrePointAsync(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -337,8 +336,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _forestryServices.Setup(a => a.CalculateCentrePointAsync(It.IsAny<List<string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success(point));
 
             var result = await sut.CalculateCentrePointForApplicationAsync(Guid.NewGuid(), new List<string>(), CancellationToken.None);
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Should().Be(point.GetGeometrySimple());
+            Assert.True(result.IsSuccess);
+            Assert.Equal(point.GetGeometrySimple(), result.Value);
         }
 
 
@@ -351,7 +350,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.CalculateOSGridAsync(centrePoint.GetGeometrySimple() , CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _forestryServices.Verify(a => a.GetOSGridReferenceAsync(It.Is<Point>(e => e.GetGeometrySimple() == centrePoint.GetGeometrySimple()), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -366,7 +365,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.CalculateOSGridAsync(string.Empty, CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
             _forestryServices.Verify(a => a.GetOSGridReferenceAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
@@ -381,7 +380,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.CalculateOSGridAsync(val, CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
             _forestryServices.Verify(a => a.GetOSGridReferenceAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
@@ -395,7 +394,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.CalculateOSGridAsync(centrePoint.GetGeometrySimple(), CancellationToken.None);
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
             _forestryServices.Verify(a => a.GetOSGridReferenceAsync(It.Is<Point>(e => e.GetGeometrySimple() == centrePoint.GetGeometrySimple()), It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -410,7 +409,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.GetConfiguredFcAreaAsync(string.Empty, CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
             _foresterServices.Verify(a => a.GetAdminBoundaryIdAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
@@ -426,7 +425,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.GetConfiguredFcAreaAsync(val, CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
             _foresterServices.Verify(a => a.GetAdminBoundaryIdAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
@@ -443,7 +442,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result =
                     await sut.GetConfiguredFcAreaAsync(centrePoint.GetGeometrySimple(), CancellationToken.None);
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
             _foresterServices.Verify(a => a.GetAdminBoundaryIdAsync(It.Is<Point>(e => e.GetGeometrySimple() == centrePoint.GetGeometrySimple()), It.IsAny<CancellationToken>()), Times.Once);
         }
 

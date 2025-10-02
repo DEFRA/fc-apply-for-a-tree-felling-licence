@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
+﻿using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 
 namespace Forestry.Flo.Services.InternalUsers.Tests.Services;
@@ -32,7 +31,7 @@ public class UserAccountEqualityComparerTests
         bool equals = userAccountEqualityComparer.Equals(userAccount1, userAccount2);
 
         //assert
-        equals.Should().BeTrue();
+        Assert.True(equals);
     }
 
     [Fact]
@@ -48,6 +47,6 @@ public class UserAccountEqualityComparerTests
         bool equals = userAccountEqualityComparer.Equals(userAccount1, userAccount2);
 
         //assert
-        equals.Should().BeFalse();
+        Assert.False(equals);
     }
 }

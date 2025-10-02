@@ -93,7 +93,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
 
         var result = await sut.AssignWoodlandOfficerAsync(message, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -158,7 +158,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
 
         var result = await sut.AssignWoodlandOfficerAsync(message, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -216,7 +216,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
 
         var result = await sut.AssignWoodlandOfficerAsync(message, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,

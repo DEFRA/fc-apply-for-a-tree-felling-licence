@@ -24,4 +24,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Forestry.Flo.Services.Applicants.Tests" />
   </ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage" />
+	</ItemGroup>
 </Project>

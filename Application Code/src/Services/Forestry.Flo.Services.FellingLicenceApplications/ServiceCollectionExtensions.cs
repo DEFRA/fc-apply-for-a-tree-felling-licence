@@ -56,6 +56,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IActivityFeedService, ActivityFeedAssigneeHistoryService>();
         services.AddScoped<IActivityFeedService, ActivityFeedStatusHistoryService>();
         services.AddScoped<IActivityFeedService, ActivityFeedConsulteeCommentService>();
+        services.AddScoped<IActivityFeedService, ActivityFeedAmendmentReviewService>();
         services.AddScoped<IUpdateAdminOfficerReviewService, UpdateAdminOfficerReviewService>();
         services.AddScoped<IGetAdminOfficerReview, GetAdminOfficerReviewService>();
         services.AddScoped<ISubmitFellingLicenceService, SubmitFellingLicenceService>();

@@ -362,6 +362,9 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceTests
         _mockUnitofWork
             .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+        _mockRepository
+            .Setup(x => x.UpdateExistingWoodlandOwnerReviewFlagsForResubmission(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.SubmitFellingLicenceApplicationAsync(applicationId, userAccessModel, CancellationToken.None);
 
@@ -395,6 +398,8 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceTests
         _mockRepository.Verify(x => x
                 .DeleteAdminOfficerReviewForApplicationAsync(applicationId, It.IsAny<CancellationToken>()),
             Times.Once);
+        _mockRepository.Verify(x => x.UpdateExistingWoodlandOwnerReviewFlagsForResubmission(
+            applicationId, _now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
 
         _mockUnitofWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitofWork.VerifyNoOtherCalls();
@@ -463,6 +468,9 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceTests
         _mockUnitofWork
             .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+        _mockRepository
+            .Setup(x => x.UpdateExistingWoodlandOwnerReviewFlagsForResubmission(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.SubmitFellingLicenceApplicationAsync(applicationId, userAccessModel, CancellationToken.None);
 
@@ -495,6 +503,8 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceTests
         _mockRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _mockRepository.Verify(x => x.DeleteSubmittedFlaPropertyDetailForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _mockRepository.VerifyGet(x => x.UnitOfWork, Times.Once);
+        _mockRepository.Verify(x => x.UpdateExistingWoodlandOwnerReviewFlagsForResubmission(
+            applicationId, _now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
 
         _mockUnitofWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitofWork.VerifyNoOtherCalls();

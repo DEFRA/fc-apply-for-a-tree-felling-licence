@@ -4,10 +4,6 @@
 @{
     ViewData["Title"] = "Your managed clients";
     var breadcrumbs = new BreadcrumbsModel { Breadcrumbs = new List<BreadCrumb>(0), CurrentPage = "Home" };
-
-    const bool legacyDocuments = false;  //FLOV2-2143 - hide this link
-
-    var user = new ExternalApplicant(User);
 }
 
 <div class="govuk-grid-column-full">
@@ -26,12 +22,6 @@
             Create new client
         </a>
     </user-is-in-role-multiple>
-    <user-is-in-role role-name="AgentAdministrator" condition="@legacyDocuments">
-        <br />
-        <a class="govuk-link" asp-controller="LegacyDocuments" asp-action="Index">
-            View your legacy documents from FLOv1
-        </a>
-    </user-is-in-role>
 
     <user-is-in-role role-name="AgentAdministrator">
         <br />

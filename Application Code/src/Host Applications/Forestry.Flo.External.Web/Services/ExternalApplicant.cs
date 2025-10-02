@@ -4,7 +4,7 @@ using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Extensions;
-using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
 
 namespace Forestry.Flo.External.Web.Services;
@@ -12,7 +12,6 @@ namespace Forestry.Flo.External.Web.Services;
 public class ExternalApplicant
 {
     private const string LocalClaimLabel = "ExternalApplicantLocalSource";
-    private const string IdentityProviderEmailClaimType = "emails";
 
     private readonly ClaimsPrincipal _principal;
 
@@ -29,7 +28,19 @@ public class ExternalApplicant
 
     public bool IsNotLoggedIn => _principal.IsNotLoggedIn();
 
-    public string? IdentityProviderId => GetClaimValue(ClaimTypes.NameIdentifier);
+    public string? IdentityProviderId
+    {
+        get
+        {
+            var claimType = AuthenticationProvider switch
+            {
+                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.NameIdentifier,
+                _ => ClaimTypes.NameIdentifier
+            };
+
+            return GetClaimValue(claimType);
+        }
+    }
 
     public bool HasRegisteredLocalAccount =>
         _principal.Identities.Any(x => x.AuthenticationType == FloClaimTypes.ClaimsIdentityAuthenticationType);
@@ -61,10 +72,31 @@ public class ExternalApplicant
         }
     }
 
-    public string? EmailAddress => GetClaimValue(IdentityProviderEmailClaimType);
+    public string? EmailAddress
+    {
+        get
+        {
+            var claimType = AuthenticationProvider switch
+            {
+                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.EmailAddress,
+                _ => FloClaimTypes.Email
+            };
+
+            return GetClaimValue(claimType);
+        }
+    }
 
     public string? FullName => GetClaimValue(FloClaimTypes.UserName);
     public DateTime? LastChanged => DateTime.TryParse(GetClaimValue(FloClaimTypes.LastChanged), out var lastChanged) ? lastChanged.ToUniversalTime() : null;
+
+    public AuthenticationProvider AuthenticationProvider
+    {
+        get
+        {
+            var claim = GetClaimValue(FloClaimTypes.AuthenticationProvider);
+            return Enum.Parse<AuthenticationProvider>(claim!);
+        }
+    }
 
     public bool HasCompletedAccountRegistration
     {

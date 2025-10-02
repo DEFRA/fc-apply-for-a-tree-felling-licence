@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.PropertyProfiles.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class SortPropertyMigrations : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

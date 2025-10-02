@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Forestry.Flo.Services.Common;
+﻿using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Tests.Common;
@@ -40,18 +39,18 @@ public class InternalUserContextFlaRepositoryTests
         var result = await _sut.GetAsync(licenceApplication.Id, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeTrue();
-        result.Value.StatusHistories.Should().NotBeEmpty();
-        result.Value.Documents.Should().NotBeEmpty();
-        result.Value.CaseNotes.Should().NotBeEmpty();
-        result.Value.AssigneeHistories.Should().NotBeEmpty();
-        result.Value.LinkedPropertyProfile.Should().NotBeNull();
+        Assert.True(result.HasValue);
+        Assert.NotEmpty(result.Value.StatusHistories);
+        Assert.NotEmpty(result.Value.Documents);
+        Assert.NotEmpty(result.Value.CaseNotes);
+        Assert.NotEmpty(result.Value.AssigneeHistories);
+        Assert.NotNull(result.Value.LinkedPropertyProfile);
         var proposedRestockingDetails = result.Value.LinkedPropertyProfile!.ProposedFellingDetails!.SelectMany(p => p.ProposedRestockingDetails!).ToList();
-        proposedRestockingDetails.Should().NotBeEmpty();
-        proposedRestockingDetails!.First().RestockingSpecies.Should().NotBeEmpty();
-        result.Value.LinkedPropertyProfile!.ProposedFellingDetails.Should().NotBeEmpty();
-        result.Value.LinkedPropertyProfile!.ProposedFellingDetails!.First().FellingSpecies.Should().NotBeEmpty();
-        result.Value.SubmittedFlaPropertyDetail.Should().NotBeNull();
+        Assert.NotEmpty(proposedRestockingDetails);
+        Assert.NotEmpty(proposedRestockingDetails!.First().RestockingSpecies);
+        Assert.NotEmpty(result.Value.LinkedPropertyProfile!.ProposedFellingDetails);
+        Assert.NotEmpty(result.Value.LinkedPropertyProfile!.ProposedFellingDetails!.First().FellingSpecies);
+        Assert.NotNull(result.Value.SubmittedFlaPropertyDetail);
     }
 
     [Theory, AutoMoqData]
@@ -305,9 +304,9 @@ public class InternalUserContextFlaRepositoryTests
             .FirstOrDefault(l => l.FellingLicenceApplicationId == accessLink.FellingLicenceApplicationId
                                  && l.ContactEmail == accessLink.ContactEmail
                                  && l.Purpose == accessLink.Purpose);
-        result.IsSuccess.Should().BeTrue();
-        link.Should().NotBeNull();
-        link!.AccessCode.Should().Be(accessLink.AccessCode);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(link);
+        Assert.Equal(accessLink.AccessCode, link!.AccessCode);
     }
 
     [Theory, AutoMoqData]
@@ -328,9 +327,9 @@ public class InternalUserContextFlaRepositoryTests
             .FirstOrDefault(l => l.FellingLicenceApplicationId == accessLink.FellingLicenceApplicationId
                                  && l.ContactEmail == accessLink.ContactEmail
                                  && l.Purpose == accessLink.Purpose);
-        result.IsSuccess.Should().BeTrue();
-        link.Should().NotBeNull();
-        link!.AccessCode.Should().Be(accessLink.AccessCode);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(link);
+        Assert.Equal(accessLink.AccessCode, link!.AccessCode);
     }
 
     [Theory, AutoMoqData]
@@ -346,8 +345,8 @@ public class InternalUserContextFlaRepositoryTests
             .FirstOrDefault(l => l.FellingLicenceApplicationId == accessLink.FellingLicenceApplicationId
                                  && l.ContactEmail == accessLink.ContactEmail
                                  && l.Purpose == accessLink.Purpose);
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoMoqData]
@@ -363,8 +362,8 @@ public class InternalUserContextFlaRepositoryTests
             .FirstOrDefault();
 
         //assert
-        link.Should().NotBeNull();
-        link!.AccessCode.Should().Be(accessLink.AccessCode);
+        Assert.NotNull(link);
+        Assert.Equal(accessLink.AccessCode, link!.AccessCode);
     }
 
     [Theory, AutoMoqData]
@@ -1193,9 +1192,9 @@ public class InternalUserContextFlaRepositoryTests
             now, default);
 
         //Assert
-        result.Count.Should().Be(2);
-        applicationFound.Id.Should().Be(result.First().Id);
-        applicationFound2.Id.Should().Be(result.Last().Id);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(applicationFound.Id, result.First().Id);
+        Assert.Equal(applicationFound2.Id, result.Last().Id);
     }
 
     [Theory, AutoMoqData] public async Task GetFinalisedApplicationsForPublicRegisterExpiry_AllHistoric_AllPreviouslyRemovedSet_FindsNone(
@@ -1218,7 +1217,7 @@ public class InternalUserContextFlaRepositoryTests
             GetFinalisedApplicationsWithExpiredDecisionPublicRegisterPeriodsAsync(now, default);
 
         //Assert
-        result.Count.Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Theory, AutoMoqData]
@@ -1241,7 +1240,7 @@ public class InternalUserContextFlaRepositoryTests
             GetFinalisedApplicationsWithExpiredDecisionPublicRegisterPeriodsAsync(now, default);
 
         //Assert
-        result.Count.Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Theory, AutoMoqData]
@@ -1261,7 +1260,7 @@ public class InternalUserContextFlaRepositoryTests
             GetFinalisedApplicationsWithExpiredDecisionPublicRegisterPeriodsAsync(now, default);
 
         //Assert
-        result.Count.Should().Be(0);
+        Assert.Empty(result);
     }
 
     [Theory, AutoMoqData]
@@ -1629,14 +1628,14 @@ public class InternalUserContextFlaRepositoryTests
             cancellationToken: CancellationToken.None);
 
         // Assert
-        summary.TotalCount.Should().Be(4); // app1, app2, app3, app5
-        summary.AssignedToUserCount.Should().Be(2); // app1, app3
-        summary.StatusCounts.Should().NotBeNull();
+        Assert.Equal(4, summary.TotalCount); // app1, app2, app3, app5
+        Assert.Equal(2, summary.AssignedToUserCount); // app1, app3
+        Assert.NotNull(summary.StatusCounts);
         var submitted = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.Submitted);
         var aoReview = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.AdminOfficerReview);
-        submitted.Count.Should().Be(2); // app1, app5
-        aoReview.Count.Should().Be(2); // app2, app3
-        summary.StatusCounts.Sum(x => x.Count).Should().Be(summary.TotalCount);
+        Assert.Equal(2, submitted.Count); // app1, app5
+        Assert.Equal(2, aoReview.Count); // app2, app3
+        Assert.Equal(summary.StatusCounts.Sum(x => x.Count), summary.TotalCount);
     }
 
     [Fact]
@@ -1722,14 +1721,14 @@ public class InternalUserContextFlaRepositoryTests
             cancellationToken: CancellationToken.None);
 
         // Assert
-        summary.TotalCount.Should().Be(2); // app1, app3 only
-        summary.AssignedToUserCount.Should().Be(2); // computed from base query (same two)
-        summary.StatusCounts.Should().NotBeNull();
+        Assert.Equal(2, summary.TotalCount); // app1, app3 only
+        Assert.Equal(2, summary.AssignedToUserCount); // computed from base query (same two)
+        Assert.NotNull(summary.StatusCounts);
         var submitted = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.Submitted);
         var aoReview = summary.StatusCounts.Single(x => x.Status == FellingLicenceStatus.AdminOfficerReview);
-        submitted.Count.Should().Be(1); // app1
-        aoReview.Count.Should().Be(1); // app3
-        summary.StatusCounts.Sum(x => x.Count).Should().Be(summary.TotalCount);
+        Assert.Equal(1, submitted.Count); // app1
+        Assert.Equal(1, aoReview.Count); // app3
+        Assert.Equal(summary.StatusCounts.Sum(x => x.Count), summary.TotalCount);
     }
 
     [Fact]
@@ -1784,9 +1783,9 @@ public class InternalUserContextFlaRepositoryTests
             cancellationToken: CancellationToken.None);
 
         // Assert
-        summary.TotalCount.Should().Be(2);
-        summary.AssignedToUserCount.Should().Be(1);
-        summary.StatusCounts.Sum(x => x.Count).Should().Be(summary.TotalCount);
+        Assert.Equal(2, summary.TotalCount);
+        Assert.Equal(1, summary.AssignedToUserCount);
+        Assert.Equal(summary.StatusCounts.Sum(x => x.Count), summary.TotalCount);
     }
     [Theory, AutoMoqData]
     public async Task GetApplicationDocuments_ReturnsOnlyUndeletedDocumentsForApplication(

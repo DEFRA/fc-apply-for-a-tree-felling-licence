@@ -14,16 +14,5 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidator : Abstra
         // felling validation
         RuleForEach(m => m.ConfirmedFellingDetails)
             .SetValidator(x => new ConfirmedFellingDetailValidator(x));
-
-        // a positive value must be inputted for confirmed (digitised) total hectares
-        RuleFor(m => m.ConfirmedTotalHectares)
-            .NotNull()
-            .WithMessage(x => $"Compartment {x.CompartmentName} - Confirmed total hectares must be provided")
-            .When(m => m.ConfirmedFellingDetails.Any(x => x.OperationType is not FellingOperationType.None))
-            .DependentRules(() => RuleFor(m => m.ConfirmedTotalHectares)
-                .GreaterThan(0)
-                .WithMessage(x => $"Compartment {x.CompartmentName} - Confirmed total hectares must be a positive value"))
-            .When(m => m.ConfirmedFellingDetails.Any(x => x.OperationType is not FellingOperationType.None));
-
     }
 }

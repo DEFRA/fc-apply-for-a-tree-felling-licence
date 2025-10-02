@@ -3,7 +3,6 @@ using Moq;
 using Moq.Protected;
 using System.Net;
 using System.Net.Http.Headers;
-using FluentAssertions;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 
@@ -15,7 +14,7 @@ public partial class ForesterServicesTests
         var sut = CreateSUT(new EsriConfig() { Forester = new ForesterConfig { GenerateTokenService = new OAuthServiceSettingsUser() { Password = "", Username = "", Path = "" } } });
 
         var caughtException = await Assert.ThrowsAsync<ArgumentNullException>(() => sut.GetAdminBoundaryIdAsync(_nullIsland, CancellationToken.None));
-        caughtException.Message.Should().Be("Value cannot be null. (Parameter '_config.LayerServices')");
+        Assert.Equal("Value cannot be null. (Parameter '_config.LayerServices')", caughtException.Message);
     }
 
     [Fact]
@@ -24,8 +23,8 @@ public partial class ForesterServicesTests
         var sut = CreateSUT(new EsriConfig() { Forester = new ForesterConfig { GenerateTokenService = new OAuthServiceSettingsUser() { Password = "", Username = "", Path = "" }, LayerServices = new List<FeatureLayerConfig>() } });
 
         var result = await sut.GetAdminBoundaryIdAsync(_nullIsland, CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to find layer details");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to find layer details", result.Error);
     }
 
     [Fact]
@@ -54,8 +53,8 @@ public partial class ForesterServicesTests
 
         var response = await classUnderTest.GetAdminBoundaryIdAsync(_nullIsland, CancellationToken.None);
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("No Results found");
+        Assert.True(response.IsFailure);
+        Assert.Equal("No Results found", response.Error);
     }
 
     [Fact]
@@ -83,7 +82,7 @@ public partial class ForesterServicesTests
 
         var response = await classUnderTest.GetAdminBoundaryIdAsync(_nullIsland, CancellationToken.None);
 
-        response.IsSuccess.Should().BeTrue();
-        response.Value.Code.Should().Be("cs");
+        Assert.True(response.IsSuccess);
+        Assert.Equal("cs", response.Value.Code);
     }
 }

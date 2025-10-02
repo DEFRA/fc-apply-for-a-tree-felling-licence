@@ -22,4 +22,5 @@ public static class FloClaimTypes
     public const string FcUser = $"{ClaimTypeNamespace}/fcUser";
     public const string AccountStatus = $"{ClaimTypeNamespace}/accountStatus";
     public const string UserCanApproveApplications = $"{ClaimTypeNamespace}/canapproveapplications";
+    public const string AuthenticationProvider = $"{ClaimTypeNamespace}/authenticationprovider";
 }

@@ -86,6 +86,31 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 return confirmedFellingAndRestockingDetails.ConvertFailure<WoodlandOfficerReviewStatusModel>();
             }
 
+            var designationsStatus = InternalReviewStepStatus.NotStarted;
+
+            if (woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.DesignationsComplete)
+            {
+                designationsStatus = InternalReviewStepStatus.Completed;
+            }
+            else
+            {
+                var submittedCompartments = await _internalFlaRepository.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
+                    applicationId, cancellationToken);
+
+                if (submittedCompartments.IsFailure)
+                {
+                    _logger.LogError(
+                        "Could not retrieve submitted compartment designations for application with id {ApplicationId}",
+                        applicationId);
+                    return submittedCompartments.ConvertFailure<WoodlandOfficerReviewStatusModel>();
+                }
+
+                if (submittedCompartments.Value.Any(c => c.SubmittedCompartmentDesignations != null))
+                {
+                    designationsStatus = InternalReviewStepStatus.InProgress;
+                }
+            }
+
             var fAndRStatus = confirmedFellingAndRestockingDetails.Value.Item1.Any() == false &&
                               confirmedFellingAndRestockingDetails.Value.Item2.Any() == false
                 ? InternalReviewStepStatus.NotStarted
@@ -161,6 +186,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 fAndRStatus,
                 conditionsStatus,
                 consultationsStatus,
+                designationsStatus,
                 isLarchApplication ? larchCheckStatus : InternalReviewStepStatus.NotRequired,
                 LarchFlyoverStatus,
                 woodlandOfficerReview.GetEiaScreeningStatus(requiresEia),
@@ -483,6 +509,54 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
     }
 
     /// <inheritdoc/>
+    public async Task<Result<ApplicationSubmittedCompartmentDesignations>> GetCompartmentDesignationsAsync(
+        Guid applicationId, 
+        CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Attempting to retrieve designations data entered as part of the woodland officer review for application {ApplicationId}", applicationId);
+
+        try
+        {
+            var woReview = await _internalFlaRepository.GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
+
+            var compartments = await _internalFlaRepository.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, cancellationToken);
+
+            if (compartments.IsFailure)
+            {
+                _logger.LogError("Could not retrieve submitted compartment designations for application with id {ApplicationId}", applicationId);
+                return compartments.ConvertFailure<ApplicationSubmittedCompartmentDesignations>();
+            }
+
+            var result = new ApplicationSubmittedCompartmentDesignations
+            {
+                HasCompletedDesignations = woReview.HasValue && woReview.Value.DesignationsComplete,
+                CompartmentDesignations = compartments.Value.Select(x => new SubmittedCompartmentDesignationsModel
+                {
+                    CompartmentName = $"{x.CompartmentNumber}{x.SubCompartmentName}",
+                    Id = x.SubmittedCompartmentDesignations?.Id,
+                    SubmittedFlaCompartmentId = x.Id,
+                    Sssi = x.SubmittedCompartmentDesignations?.Sssi ?? false,
+                    Sacs = x.SubmittedCompartmentDesignations?.Sacs ?? false,
+                    Spa = x.SubmittedCompartmentDesignations?.Spa ?? false,
+                    Ramser = x.SubmittedCompartmentDesignations?.Ramser ?? false,
+                    Sbi = x.SubmittedCompartmentDesignations?.Sbi ?? false,
+                    Other = x.SubmittedCompartmentDesignations?.Other ?? false,
+                    OtherDesignationDetails = x.SubmittedCompartmentDesignations?.OtherDesignationDetails,
+                    None = x.SubmittedCompartmentDesignations?.None ?? false
+                }).ToList()
+            };
+
+            return Result.Success(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in GetCompartmentDesignationsAsync");
+            return Result.Failure<ApplicationSubmittedCompartmentDesignations>(ex.Message);
+        }
+	}
+	
+
+	/// <inheritdoc/>
     public async Task<Result<Maybe<FellingAndRestockingAmendmentReviewModel>>> GetCurrentFellingAndRestockingAmendmentReviewAsync(
         Guid applicationId, 
         CancellationToken cancellationToken)
@@ -512,7 +586,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
             ResponseReceivedDate = entity.Value.ResponseReceivedDate,
             ApplicantAgreed = entity.Value.ApplicantAgreed,
             ApplicantDisagreementReason = entity.Value.ApplicantDisagreementReason,
-            ResponseDeadline = entity.Value.ResponseDeadline
+            ResponseDeadline = entity.Value.ResponseDeadline,
+            AmendmentsReason = entity.Value.AmendmentsReason,
+            AmendmentReviewCompleted = entity.Value.ApplicantAgreed.HasValue
         };
 
         return Maybe.From(model);

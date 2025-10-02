@@ -1,8 +1,9 @@
-using System.Security.Claims;
 using Ardalis.GuardClauses;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
+using System.Security.Claims;
 
 namespace Forestry.Flo.Internal.Web.Services;
 
@@ -20,7 +21,19 @@ public class InternalUser
         }
     }
 
-    public string? IdentityProviderId => GetClaimValue(ClaimTypes.NameIdentifier);
+    public string? IdentityProviderId
+    {
+        get
+        {
+            var claimType = AuthenticationProvider switch
+            {
+                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.NameIdentifier,
+                _ => ClaimTypes.NameIdentifier
+            };
+
+            return GetClaimValue(claimType);
+        }
+    }
 
     public Guid? UserAccountId
     {
@@ -54,8 +67,28 @@ public class InternalUser
                 : Enum.Parse<AccountTypeInternalOther>(claim);
         }
     }
+    public AuthenticationProvider AuthenticationProvider
+    {
+        get
+        {
+            var claim = GetClaimValue(FloClaimTypes.AuthenticationProvider);
+            return Enum.Parse<AuthenticationProvider>(claim!);
+        }
+    }
 
-    public string? EmailAddress => GetClaimValue(ClaimsPrincipalExtensions.IdentityProviderEmailClaimType);
+    public string? EmailAddress
+    {
+        get
+        {
+            var claimType = AuthenticationProvider switch
+            {
+                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.EmailAddress,
+                _ => ClaimsPrincipalExtensions.IdentityProviderEmailClaimType
+            };
+
+            return GetClaimValue(claimType);
+        }
+    }
 
     public string? FullName => GetClaimValue(FloClaimTypes.UserName);
 

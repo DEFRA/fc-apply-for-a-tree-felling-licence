@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.Common.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class AuditEvent : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

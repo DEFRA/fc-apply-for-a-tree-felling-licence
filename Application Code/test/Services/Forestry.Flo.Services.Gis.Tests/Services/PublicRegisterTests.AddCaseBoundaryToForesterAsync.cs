@@ -1,10 +1,8 @@
-﻿
-using Forestry.Flo.Services.Gis.Models.Internal;
+﻿using Forestry.Flo.Services.Gis.Models.Internal;
 using Moq;
 using Moq.Protected;
 using System.Net;
 using System.Net.Http.Headers;
-using FluentAssertions;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
@@ -53,8 +51,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Added Case Boundary, but failed to add compartments. Unable to rollback Boundary");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Added Case Boundary, but failed to add compartments. Unable to rollback Boundary", response.Error);
     }
 
     [Fact]
@@ -94,8 +92,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Added Case Boundary, but failed to add compartments. Unable to rollback Boundary");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Added Case Boundary, but failed to add compartments. Unable to rollback Boundary", response.Error);
     }
 
     [Fact]
@@ -121,6 +119,6 @@ public partial class PublicRegisterTests
 
         var response = await sut.AddCaseToConsultationRegisterAsync("C-NP-AB-Test-18-10-22", "Pauls Garden", "Type", "Grid", "Swindon", "Swindon", "Wiltshire", DateTime.Now, 90, 0, 0, 0, 0, _compartments, CancellationToken.None);
 
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
     }
 }

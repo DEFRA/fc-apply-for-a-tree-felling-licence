@@ -12,7 +12,7 @@ namespace Forestry.Flo.Services.Gis
         {
             Guard.Against.Null(shape);
 
-            if (string.IsNullOrEmpty(shape.ShapeDetails) || string.IsNullOrEmpty((shape.ShapeType)))
+            if (string.IsNullOrEmpty(shape.ShapeDetails) || string.IsNullOrEmpty(shape.ShapeType))
             {
                 return Maybe<FlowShape<BaseShape>>.None;
             }

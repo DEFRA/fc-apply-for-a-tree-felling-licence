@@ -35,8 +35,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRetrieveUserAccountsService, RetrieveUserAccountsService>();
         services.AddScoped<IRetrieveWoodlandOwners, RetrieveWoodlandOwnersService>();
         services.AddScoped<IAmendUserAccounts, AmendUserAccountsService>();
-        services.AddScoped<ILegacyDocumentsRepository, LegacyDocumentsRepository>();
-        services.AddScoped<IRetrieveLegacyDocuments, RetrieveLegacyDocumentsService>();
         services.AddScoped<IAccountRegistrationService, AccountRegistrationService>();
         services.AddScoped<IRetrieveAgencies, RetrieveAgenciesService>();
         services.AddScoped<IAgencyCreationService, AgencyCreationService>();

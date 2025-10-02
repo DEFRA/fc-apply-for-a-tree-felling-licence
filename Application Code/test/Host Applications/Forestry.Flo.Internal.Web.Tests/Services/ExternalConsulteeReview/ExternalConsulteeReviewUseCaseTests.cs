@@ -3,7 +3,6 @@ using System.Text;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using FluentEmail.Core;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
@@ -27,6 +26,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Services.FileStorage.ResultModels;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.ExternalConsulteeReview;
@@ -497,20 +497,29 @@ public class ExternalConsulteeReviewUseCaseTests
 
         Assert.True(result.IsSuccess);
 
-        result.Value.ApplicationSummary.Should().NotBeNull();
+        Assert.NotNull(result.Value.ApplicationSummary);
 
-        result.Value.ApplicationSummary.Id.Should().Be(fellingLicenceApplication.Id);
-        result.Value.ApplicationSummary.ApplicationReference.Should().Be(fellingLicenceApplication.ApplicationReference);
+        Assert.Equal(fellingLicenceApplication.Id, result.Value.ApplicationSummary.Id);
+        Assert.Equal(fellingLicenceApplication.ApplicationReference, result.Value.ApplicationSummary.ApplicationReference);
 
-        result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
-            fellingLicenceApplication.Documents.Take(2), o => o.ExcludingMissingMembers());
+        Assert.Equivalent(fellingLicenceApplication.Documents.Take(2).Select(d => new DocumentModel
+        {
+            Id = d.Id,
+            CreatedTimestamp = d.CreatedTimestamp,
+            FileName = d.FileName,
+            DocumentPurpose = d.Purpose,
+            FileSize = d.FileSize,
+            FileType = d.FileType,
+            AttachedByType = d.AttachedByType,
+            MimeType = d.MimeType
+        }), result.Value.ConsulteeDocuments);
 
-        result.Value.ActivityFeed.Should().NotBeNull();
-        result.Value.ActivityFeed.ActivityFeedItemModels.Should().BeEmpty();
-        result.Value.ActivityFeed.ApplicationId.Should().Be(applicationId);
-        result.Value.ActivityFeed.ShowAddCaseNote.Should().BeFalse();
-        result.Value.ActivityFeed.ActivityFeedTitle.Should().Be("Your added comments");
-        result.Value.ActivityFeed.ShowFilters.Should().BeFalse();
+        Assert.NotNull(result.Value.ActivityFeed);
+        Assert.Empty(result.Value.ActivityFeed.ActivityFeedItemModels);
+        Assert.Equal(applicationId, result.Value.ActivityFeed.ApplicationId);
+        Assert.False(result.Value.ActivityFeed.ShowAddCaseNote);
+        Assert.Equal("Your added comments", result.Value.ActivityFeed.ActivityFeedTitle);
+        Assert.False(result.Value.ActivityFeed.ShowFilters);
 
         _mockAuditService.VerifyNoOtherCalls();
 
@@ -608,20 +617,31 @@ public class ExternalConsulteeReviewUseCaseTests
 
         Assert.True(result.IsSuccess);
 
-        result.Value.ApplicationSummary.Should().NotBeNull();
+        Assert.NotNull(result.Value.ApplicationSummary);
 
-        result.Value.ApplicationSummary.Id.Should().Be(fellingLicenceApplication.Id);
-        result.Value.ApplicationSummary.ApplicationReference.Should().Be(fellingLicenceApplication.ApplicationReference);
+        Assert.Equal(fellingLicenceApplication.Id, result.Value.ApplicationSummary.Id);
+        Assert.Equal(fellingLicenceApplication.ApplicationReference, result.Value.ApplicationSummary.ApplicationReference);
 
-        result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
-            fellingLicenceApplication.Documents.Take(2), o => o.ExcludingMissingMembers());
+        Assert.Equivalent(fellingLicenceApplication.Documents.Take(2).Select(d => new DocumentModel
+        {
+            Id = d.Id,
+            CreatedTimestamp = d.CreatedTimestamp,
+            FileName = d.FileName,
+            DocumentPurpose = d.Purpose,
+            FileSize = d.FileSize,
+            FileType = d.FileType,
+            AttachedByType = d.AttachedByType,
+            MimeType = d.MimeType
+        }), result.Value.ConsulteeDocuments);
+        //result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
+        //    fellingLicenceApplication.Documents.Take(2), o => o.ExcludingMissingMembers());
 
-        result.Value.ActivityFeed.Should().NotBeNull();
-        result.Value.ActivityFeed.ActivityFeedItemModels.Should().BeEquivalentTo(expectedItemFeedItems);
-        result.Value.ActivityFeed.ApplicationId.Should().Be(applicationId);
-        result.Value.ActivityFeed.ShowAddCaseNote.Should().BeFalse();
-        result.Value.ActivityFeed.ActivityFeedTitle.Should().Be("Your added comments");
-        result.Value.ActivityFeed.ShowFilters.Should().BeFalse();
+        Assert.NotNull(result.Value.ActivityFeed);
+        Assert.Equivalent(expectedItemFeedItems, result.Value.ActivityFeed.ActivityFeedItemModels);
+        Assert.Equal(applicationId, result.Value.ActivityFeed.ApplicationId);
+        Assert.False(result.Value.ActivityFeed.ShowAddCaseNote);
+        Assert.Equal("Your added comments", result.Value.ActivityFeed.ActivityFeedTitle);
+        Assert.False(result.Value.ActivityFeed.ShowFilters);
 
         _mockAuditService.VerifyNoOtherCalls();
 

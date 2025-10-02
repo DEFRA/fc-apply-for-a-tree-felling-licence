@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class AddTermsAndConditionsAcceptedFellingLicenceApplication : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

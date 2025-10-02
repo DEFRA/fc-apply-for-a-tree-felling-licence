@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Services.Common;
@@ -88,7 +87,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -127,7 +126,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
         }
 
 
@@ -155,7 +154,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
         }
 
         private AddSupportingDocumentsUseCase CreateSut(int maxNumberOfDocuments = 2, int maxFileSizeBytes = 1024)

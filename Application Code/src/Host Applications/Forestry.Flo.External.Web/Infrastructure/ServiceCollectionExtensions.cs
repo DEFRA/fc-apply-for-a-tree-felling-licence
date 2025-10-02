@@ -31,6 +31,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.Gis.Infrastructure;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.Gis.Services;
+using GovUk.OneLogin.AspNetCore;
 
 namespace Forestry.Flo.External.Web.Infrastructure;
 
@@ -95,6 +96,13 @@ public static class ServiceCollectionExtensions
                 {
                     var principal = context.Principal;
                     var userSignIn = context.HttpContext.RequestServices.GetService<ISignInApplicant>();
+
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
+                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure))
+                    ]);
+
+                    context.Principal!.AddIdentity(newIdentity);
+
                     if (principal != null && userSignIn != null)
                     {
                         await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
@@ -146,7 +154,7 @@ public static class ServiceCollectionExtensions
                 {
                     if (context.Request.Query.TryGetValue("token", out var inviteToken))
                     {
-                        context.ProtocolMessage.State= inviteToken;
+                        context.ProtocolMessage.State = inviteToken;
                     }
                     await Task.CompletedTask.ConfigureAwait(false);
                 };
@@ -155,6 +163,13 @@ public static class ServiceCollectionExtensions
                 {
                     var principal = context.Principal;
                     var userSignIn = context.HttpContext.RequestServices.GetService<ISignInApplicant>();
+
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
+                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure))
+                    ]);
+
+                    context.Principal!.AddIdentity(newIdentity);
+
                     if (principal != null && userSignIn != null)
                     {
                         await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
@@ -177,12 +192,86 @@ public static class ServiceCollectionExtensions
                         .WithRedirectUri(currentUri)
                         .WithClientSecret(options.ClientSecret)
                         .Build();
-                    
+
                     var result = await cca
                         .AcquireTokenByAuthorizationCode(options.Scope, code)
                         .ExecuteAsync();
 
                     context.HandleCodeRedemption(result.AccessToken, result.IdToken);
+                };
+            });
+
+        services.AddScoped<CustomCookieAuthenticationEvents>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddOneLoginServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = new AzureAdB2COptions();
+        configuration.Bind("AzureAdB2C", settings);
+
+        services
+            .AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", policyBuilder => policyBuilder
+                    .WithOrigins(settings.Instance)
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials());
+            })
+            .AddAuthorization(options =>
+            {
+                options.AddPolicy(AuthorizationPolicyConstants.FcUserPolicyName, policy =>
+                    policy.RequireClaim(FloClaimTypes.FcUser, "true"));
+            })
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = "Cookies";
+                options.DefaultChallengeScheme = OneLoginDefaults.AuthenticationScheme;
+            })
+            .AddCookie(options =>
+            {
+                options.EventsType = typeof(CustomCookieAuthenticationEvents);
+            })
+            .AddOneLogin(options =>
+            {
+                var govUkOptions = configuration.GetSection(GovUkOneLoginOptions.ConfigurationKey).Get<GovUkOneLoginOptions>();
+                if (govUkOptions is null)
+                {
+                    throw new InvalidOperationException("GovUkOneLoginOptions configuration section is missing or invalid.");
+                }
+
+                options.InitialiseGovUkOneLogin(govUkOptions);
+
+                options.Events.OnTokenValidated = context =>
+                {
+                    var token = context.ProtocolMessage.State;
+
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
+                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
+                    ]);
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        newIdentity.AddClaim(new System.Security.Claims.Claim("token", context.ProtocolMessage.State));
+                    }
+                    context.Principal!.AddIdentity(newIdentity);
+                    return Task.CompletedTask;
+                };
+
+                options.Events.OnTicketReceived = async context =>
+                {
+                    var principal = context.Principal;
+                    var userSignIn = context.HttpContext.RequestServices.GetService<ISignInApplicant>();
+
+                    var token = context.Principal?.Claims.FirstOrDefault(x => x.Type == "token")?.Value;
+
+                    if (principal != null && userSignIn != null)
+                    {
+                        await userSignIn.HandleUserLoginAsync(principal, token);
+                    }
                 };
             });
 
@@ -329,10 +418,9 @@ public static class ServiceCollectionExtensions
         services.Configure<ApiFileUploadOptions>(configuration.GetSection("ApiFileUploadSettings"));
         services.Configure<SecurityOptions>(configuration.GetSection("Security"));
         services.Configure<DocumentVisibilityOptions>(configuration.GetSection("DocumentVisibilities"));
-        services.Configure<InternalUserSiteOptions>(configuration.GetSection("InternalUserSite"));
         services.Configure<FcAgencyOptions>(configuration.GetSection("FcAgency"));
         services.AddOptions<EiaOptions>().BindConfiguration(EiaOptions.ConfigurationKey);
-        services.AddOptions<ReviewAmendmentsOptions>().BindConfiguration(ReviewAmendmentsOptions.ConfigurationKey);
+        services.AddOptions<InternalUserSiteOptions>().BindConfiguration(InternalUserSiteOptions.ConfigurationKey);
 
         services.AddScoped<RegisterUserAccountUseCase>();
         services.AddScoped<UploadShapeFileUseCase>();
@@ -360,7 +448,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ManageWoodlandOwnerDetailsUseCase>();
         services.AddScoped<AmendExternalUserUseCase>();
         services.AddScoped<ValidateShapeUseCase>();
-        services.AddScoped<LegacyDocumentsUseCase>();
         services.AddScoped<CalculateCentrePointUseCase>();
         services.AddScoped<CreateExternalUserProfileForInternalFcUserUseCase>();
         services.AddScoped<GetDataForFcUserHomepageUseCase>();

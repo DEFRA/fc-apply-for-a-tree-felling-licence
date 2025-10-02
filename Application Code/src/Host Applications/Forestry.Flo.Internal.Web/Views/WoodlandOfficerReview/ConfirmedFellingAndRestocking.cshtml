@@ -275,7 +275,7 @@
                                 }
                                 <div class="govuk-button-group">
                                     <a
-                                        condition="@(Model.Editable(user) & canAddRestocking)"
+                                        condition="@(Model.Editable(user) && canAddRestocking && Model.CanCurrentUserAmend)"
                                         id="add-button-restocking-@confirmedFellingDetail.ConfirmedFellingDetailsId"
                                         data-prevent-double-click="true"
                                         asp-action="AddConfirmedRestockingDetails"
@@ -419,7 +419,7 @@
 
         <div class="govuk-button-group">
             <a
-                condition="@(Model.Editable(user) && !Model.ConfirmedFellingAndRestockingComplete)"
+                condition="@(Model.Editable(user) && !Model.ConfirmedFellingAndRestockingComplete && Model.CanCurrentUserAmend)"
                 id="add-felling-operation"
                 data-prevent-double-click="true"
                 asp-action="SelectFellingCompartment"
@@ -432,43 +432,117 @@
             </a>
         </div>
 
-        <div class="govuk-form-group" condition="@(Model.RelevantButton != RelevantFellingAndRestockingButton.None)">
+        <div class="govuk-form-group">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                     <h2 class="govuk-fieldset__heading">Review actions</h2>
                 </legend>
-                <div condition="@(Model.RelevantButton is RelevantFellingAndRestockingButton.SendAmendmentsToApplicant && Model.CanCurrentUserAmend)" class="govuk-hint">
-                    If there are any issues with the application that require changes from the applicant, click here.
+
+                <div condition="@(Model.AmendmentState is AmendmentStateEnum.NoAmendment)" class="govuk-body">
                 </div>
-                <div class="govuk-button-group">
-                    <button 
-                        condition="@(Model.RelevantButton is RelevantFellingAndRestockingButton.SendAmendmentsToApplicant && Model.CanCurrentUserAmend)"
-                        condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
-                        id="save-btn" 
-                        data-prevent-double-click="true" 
-                        type="submit" 
-                        class="govuk-button" 
-                        data-module="govuk-button">
-                        Send amendments to application for confirmation
-                    </button>
+
+                <div condition="@((Model.AmendmentState is AmendmentStateEnum.NewAmendment || Model.AmendmentState is AmendmentStateEnum.Completed) && Model.CanCurrentUserAmend)" class="govuk-body">
+                    Please provide details and reasoning for the amendments
+
+                    <textarea rows="5" class="@GdsConstants.GdsTextAreaCssClass" id="address-field-input" asp-for="@Model.AmendmentReason"></textarea>
+
+                    <div class="govuk-button-group">
+                        <button 
+                            condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
+                            asp-controller="WoodlandOfficerReview"
+                            asp-action="SendAmendmentsToApplicant"
+                            id="save-btn" 
+                            data-prevent-double-click="true" 
+                            type="submit" 
+                            class="govuk-button" 
+                            data-module="govuk-button">
+                            Send amendments to application for confirmation
+                        </button>
+                    </div>
                 </div>
-                <div class="govuk-button-group">
-                    <button 
-                        condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
-                        asp-controller="WoodlandOfficerReview"
-                        asp-action="ConfirmFellingAndRestocking"
-                        id="confirm-btn" 
-                        data-prevent-double-click="true"
-                        type="submit" 
-                        class="govuk-button" 
-                        condition="@(Model.RelevantButton is RelevantFellingAndRestockingButton.ConfirmFellingAndRestocking && Model.CanCurrentUserAmend)"
-                        data-module="govuk-button">
-                        Confirm felling and restocking
-                    </button>
+
+                <div condition="@(Model.AmendmentState is AmendmentStateEnum.SentToApplicant)" class="govuk-body">
+                    <p>Amendments sent @Model.AmendmentsSentDate?.ToString("dd/MM/yyyy") - see case notes/timeline for further detail.</p>
+                    <p>The applicant has been sent the amendments for confirmation</p>
                 </div>
+
+                <div condition="@(Model.AmendmentState is AmendmentStateEnum.ApplicantAgreed)" class="govuk-hint">
+                    <p>The applicant has agreed with the amendments - see case notes/timeline for further detail</p>
+                </div>
+
+                <div condition="@(Model.AmendmentState is AmendmentStateEnum.ApplicantDisagreed && Model.CanCurrentUserAmend)" class="govuk-body">
+                    <p>The applicant does not agree with the amendments - see case notes/timeline for further detail</p>
+                </div>
+
+                <div condition="@((Model.AmendmentState is AmendmentStateEnum.ApplicantAgreed || Model.AmendmentState is AmendmentStateEnum.ApplicantDisagreed) && Model.CanCurrentUserAmend)" class="govuk-body">
+                    <div class="govuk-form-group">
+                        <fieldset class="govuk-fieldset">
+                            <legend class="govuk-heading-m" id="@Html.IdFor(x => x.FurtherAmendments)">
+                                Are further amendments required?
+                            </legend>
+                            <div class="govuk-radios" data-module="govuk-radios">
+
+                                <div class="govuk-radios__item">
+                                    <input id="felling-detail-tree-marking-yes"
+                                           type="radio" class="govuk-radios__input"
+                                           asp-for="FurtherAmendments"
+                                           value="@true"
+                                           data-aria-controls="conditional-@Html.NameFor(x => x.FurtherAmendments)">
+                                    <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-yes" asp-for="FurtherAmendments">
+                                        Yes
+                                    </label>
+                                </div>
+
+                                <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.FurtherAmendments)">
+                                    <div class="govuk-form-group">
+                                        <div class="govuk-button-group">
+                                            <button 
+                                                condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
+                                                asp-controller="WoodlandOfficerReview"
+                                                asp-action="MakeFurtherAmendments"
+                                                asp-route-applicationId="@Model.ApplicationId"
+                                                asp-route-amendmentReviewId="@Model.AmendmentReviewId"
+                                                id="confirm-btn" 
+                                                data-prevent-double-click="true"
+                                                type="submit" 
+                                                class="govuk-button" 
+                                                data-module="govuk-button">
+                                                Make further amendments
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="govuk-radios__item">
+                                    <input id="felling-detail-tree-marking-no" type="radio" class="govuk-radios__input" asp-for="FurtherAmendments" value="@false">
+                                    <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-no" asp-for="FurtherAmendments">
+                                        No
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+                
+                <div condition="@(Model.AmendmentState is not AmendmentStateEnum.SentToApplicant)" class="govuk-body">
+                    <input type="hidden" asp-for="AmendmentReviewId" />
+                    <div class="govuk-button-group">
+                        <button 
+                            condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
+                            asp-controller="WoodlandOfficerReview"
+                            asp-action="ConfirmFellingAndRestocking"
+                            id="confirm-btn" 
+                            data-prevent-double-click="true"
+                            type="submit" 
+                            class="govuk-button" 
+                            data-module="govuk-button">
+                            Confirm felling and restocking
+                        </button>
+                    </div>
+                </div>
+
             </fieldset>
         </div>
-
     </form>
 
     <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">

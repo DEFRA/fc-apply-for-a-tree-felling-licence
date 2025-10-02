@@ -44,7 +44,7 @@ public class GetDataForFcUserHomepageUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.Equal(woodlandOwners.Count(x => !x.HasActiveUserAccounts), result.Value.AllWoodlandOwnersManagedByFc.Count);
         Assert.Equal(woodlandOwners.Count(x => x.HasActiveUserAccounts), result.Value.AllExternalWoodlandOwners.Count);
 
@@ -80,7 +80,7 @@ public class GetDataForFcUserHomepageUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockRetrieveWoodlandOwnersService.Verify(
             x => x.GetAllWoodlandOwnersForFcAsync(_externalApplicant!.UserAccountId!.Value,
@@ -115,7 +115,7 @@ public class GetDataForFcUserHomepageUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockRetrieveWoodlandOwnersService.Verify(
             x => x.GetAllWoodlandOwnersForFcAsync(_externalApplicant!.UserAccountId!.Value,

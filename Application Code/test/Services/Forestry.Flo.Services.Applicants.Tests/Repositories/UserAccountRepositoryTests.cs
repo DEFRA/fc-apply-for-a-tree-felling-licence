@@ -1,8 +1,5 @@
-﻿using AutoFixture;
-using AutoFixture.Xunit2;
-using Forestry.Flo.Services.Applicants.Entities.Agent;
+﻿using AutoFixture.Xunit2;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Tests.Common;
@@ -31,9 +28,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetAsync(userAccount.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Email.Should().Be(userAccount.Email);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userAccount.Email, result.Value.Email);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -47,12 +43,11 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetAsync(userAccount.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Agency.Should().NotBeNull();
-        result.Value.Agency!.Id.Should().Be(userAccount.Agency!.Id);
-        result.Value.WoodlandOwner.Should().NotBeNull();
-        result.Value.WoodlandOwner!.Id.Should().Be(userAccount.WoodlandOwner!.Id);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Agency);
+        Assert.Equal(userAccount.Agency!.Id, result.Value.Agency!.Id);
+        Assert.NotNull(result.Value.WoodlandOwner);
+        Assert.Equal(userAccount.WoodlandOwner!.Id, result.Value.WoodlandOwner!.Id);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -63,9 +58,8 @@ public class UserAccountRepositoryTests
         var result =  await _sut.GetAsync(userAccount.Id, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -79,9 +73,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetByEmailAsync(userAccount.Email, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Email.Should().Be(userAccount.Email);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userAccount.Email, result.Value.Email);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -95,9 +88,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetByEmailAsync(userAccount.Email.ToLower(), CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Email.Should().Be(userAccount.Email);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userAccount.Email, result.Value.Email);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -111,12 +103,11 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetByEmailAsync(userAccount.Email, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Agency.Should().NotBeNull();
-        result.Value.Agency!.Id.Should().Be(userAccount.Agency!.Id);
-        result.Value.WoodlandOwner.Should().NotBeNull();
-        result.Value.WoodlandOwner!.Id.Should().Be(userAccount.WoodlandOwner!.Id);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Agency);
+        Assert.Equal(userAccount.Agency!.Id, result.Value.Agency!.Id);
+        Assert.NotNull(result.Value.WoodlandOwner);
+        Assert.Equal(userAccount.WoodlandOwner!.Id, result.Value.WoodlandOwner!.Id);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -127,9 +118,8 @@ public class UserAccountRepositoryTests
         var result =  await _sut.GetByEmailAsync(userAccount.Email, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -143,9 +133,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetByUserIdentifierAsync(userAccount.IdentityProviderId!, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Email.Should().Be(userAccount.Email);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userAccount.Email, result.Value.Email);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -159,12 +148,11 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetByUserIdentifierAsync(userAccount.IdentityProviderId!, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Agency.Should().NotBeNull();
-        result.Value.Agency!.Id.Should().Be(userAccount.Agency!.Id);
-        result.Value.WoodlandOwner.Should().NotBeNull();
-        result.Value.WoodlandOwner!.Id.Should().Be(userAccount.WoodlandOwner!.Id);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.Agency);
+        Assert.Equal(userAccount.Agency!.Id, result.Value.Agency!.Id);
+        Assert.NotNull(result.Value.WoodlandOwner);
+        Assert.Equal(userAccount.WoodlandOwner!.Id, result.Value.WoodlandOwner!.Id);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -175,9 +163,66 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetByUserIdentifierAsync(userAccount.IdentityProviderId!, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
+    }
+
+
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnUserAccount_WhenMatchedByEmail(List<UserAccount> internalUsers)
+    {
+        // Arrange
+        var identityProviderId = Guid.NewGuid().ToString();
+        var userToMatch = internalUsers[0];
+        userToMatch.IdentityProviderId = null;
+        userToMatch.Email = "testuser@domain.com";
+        _applicantsContext.UserAccounts.AddRange(internalUsers);
+        await _applicantsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.GetByUserIdentifierAsync(identityProviderId, CancellationToken.None, userToMatch.Email);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userToMatch.Email, result.Value.Email);
+        Assert.Equal(identityProviderId, result.Value.IdentityProviderId);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnFailure_WhenNoUserMatchesByEmail(List<UserAccount> internalUsers)
+    {
+        // Arrange
+        var identityProviderId = Guid.NewGuid().ToString();
+        var email = "notfound@domain.com";
+        internalUsers.ForEach(u => u.IdentityProviderId = null);
+        _applicantsContext.UserAccounts.AddRange(internalUsers);
+        await _applicantsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.GetByUserIdentifierAsync(identityProviderId, CancellationToken.None, email);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldNotMatchByEmail_IfIdentityProviderIdIsNotNull(List<UserAccount> internalUsers)
+    {
+        // Arrange
+        var identityProviderId = Guid.NewGuid().ToString();
+        var userToMatch = internalUsers[0];
+        userToMatch.IdentityProviderId = "existing-id";
+        userToMatch.Email = "testuser@domain.com";
+        _applicantsContext.UserAccounts.AddRange(internalUsers);
+        await _applicantsContext.SaveEntitiesAsync(CancellationToken.None);
+
+        // Act
+        var result = await _sut.GetByUserIdentifierAsync(identityProviderId, CancellationToken.None, userToMatch.Email);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -194,8 +239,8 @@ public class UserAccountRepositoryTests
          
         //assert
         var result = await _applicantsContext.UserAccounts.FindAsync(userAccount.Id);
-        result.Should().NotBeNull();
-        result!.Title.Should().Be(userAccount.Title);
+        Assert.NotNull(result);
+        Assert.Equal(userAccount.Title, result!.Title);
     }
     
     [Theory, AutoDataWithNonFcAgency]
@@ -209,8 +254,8 @@ public class UserAccountRepositoryTests
          
         //assert
         var result = await _applicantsContext.UserAccounts.FindAsync(userAccount.Id);
-        result.Should().NotBeNull();
-        result!.Email.Should().Be(userAccount.Email);
+        Assert.NotNull(result);
+        Assert.Equal(userAccount.Email, result!.Email);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -225,10 +270,9 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetUsersWithWoodlandOwnerIdAsync(userAccount.WoodlandOwnerId!.Value, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.First().WoodlandOwner.Should().NotBeNull();
-        result.Value.First().WoodlandOwner!.Id.Should().Be(userAccount.WoodlandOwner!.Id);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value.First().WoodlandOwner);
+        Assert.Equal(userAccount.WoodlandOwner!.Id, result.Value.First().WoodlandOwner!.Id);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -243,9 +287,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetUsersWithWoodlandOwnerIdAsync(userAccount.WoodlandOwnerId!.Value, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -260,9 +303,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetUsersWithWoodlandOwnerIdAsync(userAccount.WoodlandOwnerId!.Value, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -279,9 +321,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetUsersWithWoodlandOwnerIdAsync(woodlandOwnerId, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoData]
@@ -289,9 +330,8 @@ public class UserAccountRepositoryTests
     {
         var result = await _sut.GetUsersWithAgencyIdAsync(agencyId, CancellationToken.None);
 
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -305,9 +345,8 @@ public class UserAccountRepositoryTests
 
         var result = await _sut.GetUsersWithAgencyIdAsync(agencyId, CancellationToken.None);
 
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -319,9 +358,8 @@ public class UserAccountRepositoryTests
 
         var result = await _sut.GetUsersWithAgencyIdAsync(users[0].AgencyId!.Value, CancellationToken.None);
 
-        result.Should().NotBeNull();
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Equal(users[0]);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(users[0], result.Value.Single());
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -336,9 +374,8 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetUsersWithWoodlandOwnerIdAsync(userAccount.AgencyId!.Value, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -353,8 +390,7 @@ public class UserAccountRepositoryTests
         var result = await _sut.GetUsersWithWoodlandOwnerIdAsync(userAccount.AgencyId!.Value, CancellationToken.None);
 
         //assert
-        result.Should().NotBeNull();
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be(UserDbErrorReason.NotFound);
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 }

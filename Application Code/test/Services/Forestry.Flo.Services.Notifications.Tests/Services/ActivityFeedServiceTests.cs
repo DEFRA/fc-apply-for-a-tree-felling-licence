@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
@@ -85,7 +84,7 @@ namespace Forestry.Flo.Services.Notifications.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
             foreach (var note in result.Value)
             {
                 Assert.False(note.VisibleToApplicant);
@@ -142,7 +141,7 @@ namespace Forestry.Flo.Services.Notifications.Tests.Services
 
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
         }
     }
 }

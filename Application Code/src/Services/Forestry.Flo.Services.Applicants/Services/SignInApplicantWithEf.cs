@@ -6,9 +6,8 @@ using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Forestry.Flo.Services.Applicants.Services;
@@ -21,6 +20,7 @@ public class SignInApplicantWithEf : ISignInApplicant
     private readonly IAuditService<SignInApplicantWithEf> _auditService;
     private readonly ILogger<SignInApplicantWithEf> _logger;
     private readonly RequestContext _requestContext;
+    private readonly AuthenticationOptions _authenticationOptions;
     private const string IdentityProviderEmailClaimType = "emails";
 
     public SignInApplicantWithEf(
@@ -29,6 +29,7 @@ public class SignInApplicantWithEf : ISignInApplicant
         ILogger<SignInApplicantWithEf> logger,
         IAuditService<SignInApplicantWithEf> auditService,
         IOptions<FcAgencyOptions> fcAgencyOptions,
+        IOptions<AuthenticationOptions> authenticationOptions,
         RequestContext requestContext)
     {
         _userAccountRepository = userAccountRepository ?? throw new ArgumentNullException(nameof(userAccountRepository));
@@ -37,18 +38,20 @@ public class SignInApplicantWithEf : ISignInApplicant
         _logger = logger;
         _fcAgencyOptions = Guard.Against.Null(fcAgencyOptions.Value);
         _requestContext = requestContext;
+        _authenticationOptions = Guard.Against.Null(authenticationOptions.Value);
     }
 
     public async Task HandleUserLoginAsync(ClaimsPrincipal user, string? inviteToken, CancellationToken cancellationToken = default)
     {
-        var userIdentifier = user.Claims.SingleOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
+        var userIdentifier = GetIdentityProviderId(user.Claims);
+        var email = GetEmailFromClaims(user.Claims);
 
         if (string.IsNullOrWhiteSpace(userIdentifier))
         {
             return;
         }
 
-        await _userAccountRepository.GetByUserIdentifierAsync(userIdentifier, cancellationToken)
+        await _userAccountRepository.GetByUserIdentifierAsync(userIdentifier, cancellationToken, email)
             .Tap(userAccount =>
             {
                 // This condition runs if user is identifiable in database by identifier.
@@ -66,8 +69,8 @@ public class SignInApplicantWithEf : ISignInApplicant
     private async Task TryGetClaimsFromInvitedUser(ClaimsPrincipal user, string? inviteToken,
         CancellationToken cancellationToken = default)
     {
-        var userIdentifier = user.Claims.SingleOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
-        var userEmail = user.Claims.SingleOrDefault(x => x.Type == IdentityProviderEmailClaimType)?.Value;
+        var userIdentifier = GetIdentityProviderId(user.Claims);
+        var userEmail = GetEmailFromClaims(user.Claims);
 
         if (inviteToken == null) return;
 
@@ -117,5 +120,26 @@ public class SignInApplicantWithEf : ISignInApplicant
         return await _userAccountRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
     }
 
-   
+    private string? GetEmailFromClaims(IEnumerable<Claim> claims)
+    {
+        var claimType = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.Azure => FloClaimTypes.Email,
+            AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.EmailAddress,
+            _ => ClaimTypes.Email,
+        };
+
+        return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
+    }
+
+    private string? GetIdentityProviderId(IEnumerable<Claim> claims)
+    {
+        var claimType = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.NameIdentifier,
+            _ => ClaimTypes.NameIdentifier,
+        };
+
+        return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
+    }
 }

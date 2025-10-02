@@ -12,6 +12,7 @@ using Forestry.Flo.Tests.Common;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using AutoFixture;
 using Forestry.Flo.Services.Applicants.Services;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
@@ -52,6 +53,8 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
     {
         PublicRegisterPeriod = TimeSpan.FromDays(30)
     };
+
+    protected readonly Fixture Fixture = new();
 
     protected RequestContext RequestContext;
 

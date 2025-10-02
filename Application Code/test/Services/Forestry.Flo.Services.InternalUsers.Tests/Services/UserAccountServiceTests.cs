@@ -3,19 +3,14 @@ using System.Text.Json;
 using AutoFixture;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
-using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Models;
 using Forestry.Flo.Services.InternalUsers.Repositories;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
 
@@ -79,7 +74,7 @@ public class UserAccountServiceTests
 
         var result = await sut.GetUserAccountAsync(user.Id, CancellationToken.None);
 
-        result.HasValue.Should().BeTrue();
+        Assert.True(result.HasValue);
 
         _userAccountRepositoryMock.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
     }
@@ -94,7 +89,7 @@ public class UserAccountServiceTests
 
         var result = await sut.GetUserAccountAsync(user.Id, CancellationToken.None);
 
-        result.HasNoValue.Should().BeTrue();
+        Assert.True(result.HasNoValue);
 
         _userAccountRepositoryMock.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
     }
@@ -104,14 +99,14 @@ public class UserAccountServiceTests
     {
         var sut = CreateSut();
 
-        _userAccountRepositoryMock.Setup(s => s.GetByIdentityProviderIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _userAccountRepositoryMock.Setup(s => s.GetByIdentityProviderIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<string?>()))
             .ReturnsAsync(user);
 
         var result = await sut.GetUserAccountByIdentityProviderIdAsync(user.IdentityProviderId!, CancellationToken.None);
 
-        result.HasValue.Should().BeTrue();
+        Assert.True(result.HasValue);
 
-        _userAccountRepositoryMock.Verify(v => v.GetByIdentityProviderIdAsync(user.IdentityProviderId!, CancellationToken.None), Times.Once);
+        _userAccountRepositoryMock.Verify(v => v.GetByIdentityProviderIdAsync(user.IdentityProviderId!, CancellationToken.None, null), Times.Once);
     }
 
     [Theory, AutoData]
@@ -119,14 +114,14 @@ public class UserAccountServiceTests
     {
         var sut = CreateSut();
 
-        _userAccountRepositoryMock.Setup(s => s.GetByIdentityProviderIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _userAccountRepositoryMock.Setup(s => s.GetByIdentityProviderIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<string?>()))
             .ReturnsAsync(Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.General));
 
         var result = await sut.GetUserAccountByIdentityProviderIdAsync(user.IdentityProviderId!, CancellationToken.None);
 
-        result.HasNoValue.Should().BeTrue();
+        Assert.True(result.HasNoValue);
 
-        _userAccountRepositoryMock.Verify(v => v.GetByIdentityProviderIdAsync(user.IdentityProviderId!, CancellationToken.None), Times.Once);
+        _userAccountRepositoryMock.Verify(v => v.GetByIdentityProviderIdAsync(user.IdentityProviderId!, CancellationToken.None, null), Times.Once);
     }
 
     [Theory, AutoData]
@@ -144,9 +139,9 @@ public class UserAccountServiceTests
 
         var result = await sut.UpdateUserAccountDetailsAsync(model, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        result.Value.Should().Be(user);
+        Assert.Equal(user, result.Value);
 
         _userAccountRepositoryMock.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _userAccountRepositoryMock.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Once);
@@ -165,7 +160,7 @@ public class UserAccountServiceTests
 
         var result = await sut.UpdateUserAccountDetailsAsync(model, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _userAccountRepositoryMock.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _userAccountRepositoryMock.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Never);
@@ -264,9 +259,9 @@ public class UserAccountServiceTests
 
         var result = await sut.RetrieveUserAccountsByIdsAsync(userIds, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        result.Value.Count.Should().Be(users.Count);
+        Assert.Equal(users.Count, result.Value.Count);
 
         _userAccountRepositoryMock.Verify(v => v.GetUsersWithIdsInAsync(userIds, CancellationToken.None), Times.Once);
     }
@@ -283,7 +278,7 @@ public class UserAccountServiceTests
 
         var result = await sut.RetrieveUserAccountsByIdsAsync(userIds, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
 
         _userAccountRepositoryMock.Verify(v => v.GetUsersWithIdsInAsync(userIds, CancellationToken.None), Times.Once);
     }
@@ -306,15 +301,15 @@ public class UserAccountServiceTests
 
         var result = await sut.SetUserAccountStatusAsync(user.Id, status, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         
         // assert model mapped correctly
 
-        result.Value.Status.Should().Be(status);
-        result.Value.AccountType.Should().Be(user.AccountType);
-        result.Value.FullName.Should().Be(user.FullName());
-        result.Value.Email.Should().Be(user.Email);
-        result.Value.UserAccountId.Should().Be(user.Id);
+        Assert.Equal(status, result.Value.Status);
+        Assert.Equal(user.AccountType, result.Value.AccountType);
+        Assert.Equal(user.FullName(), result.Value.FullName);
+        Assert.Equal(user.Email, result.Value.Email);
+        Assert.Equal(user.Id, result.Value.UserAccountId);
 
         _userAccountRepositoryMock.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _userAccountRepositoryMock.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Once);
@@ -332,7 +327,7 @@ public class UserAccountServiceTests
 
         var result = await sut.SetUserAccountStatusAsync(user.Id, Status.Closed, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _userAccountRepositoryMock.Verify(v => v.GetAsync(user.Id, CancellationToken.None), Times.Once);
         _userAccountRepositoryMock.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Never);

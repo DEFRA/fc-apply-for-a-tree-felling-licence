@@ -5,7 +5,6 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="8.3.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="System.Security.Cryptography.Xml" Version="9.0.6" />
     <PackageReference Include="xunit" Version="2.9.2" />
@@ -22,4 +21,7 @@
     <ProjectReference Include="..\..\..\src\Services\Forestry.Flo.Services.Common\Forestry.Flo.Services.Common.csproj" />
     <ProjectReference Include="..\..\Forestry.Flo.Tests.Common\Forestry.Flo.Tests.Common.csproj" />
   </ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage" />
+	</ItemGroup>
 </Project>

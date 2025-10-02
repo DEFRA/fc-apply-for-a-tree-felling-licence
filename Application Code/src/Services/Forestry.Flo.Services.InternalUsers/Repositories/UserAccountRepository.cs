@@ -49,10 +49,34 @@ public class UserAccountRepository : IUserAccountRepository
     }
 
     /// <inheritdoc />
-    public async Task<Result<UserAccount, UserDbErrorReason>> GetByIdentityProviderIdAsync(string identityProviderId,
-        CancellationToken cancellationToken)
+    public async Task<Result<UserAccount, UserDbErrorReason>> GetByIdentityProviderIdAsync(
+        string identityProviderId,
+        CancellationToken cancellationToken,
+        string? email = null)
     {
         var userAccount = await _context.UserAccounts.FirstOrDefaultAsync(x => x.IdentityProviderId == identityProviderId, cancellationToken);
+
+        // todo: this must be removed once the transition to Gov.UK One Login is complete as part of FLOV2-2485
+
+        #region Remove after FLOV2-2485
+
+        if (userAccount is null && email is not null)
+        {
+            var matchByEmail = await _context.UserAccounts
+                .SingleOrDefaultAsync(a =>
+                        a.Email.ToLower() == email.ToLower() &&
+                        a.IdentityProviderId == null,
+                    cancellationToken: cancellationToken);
+
+            if (matchByEmail is not null)
+            {
+                matchByEmail.IdentityProviderId = identityProviderId;
+                await _context.SaveEntitiesAsync(cancellationToken);
+                return matchByEmail;
+            }
+        }
+
+        #endregion
 
         return userAccount is null 
             ? Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound)

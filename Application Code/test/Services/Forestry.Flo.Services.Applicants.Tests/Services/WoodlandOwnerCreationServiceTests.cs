@@ -75,7 +75,7 @@ public class WoodlandOwnerCreationServiceTests
 
         // assert
         Assert.True(result.IsSuccess);
-        result.Value.WoodlandOwnerId.Should().NotBeEmpty();
+        Assert.NotEqual(Guid.Empty, result.Value.WoodlandOwnerId);
 
         _mockRepository.Verify(x => x.AddWoodlandOwnerAsync(It.Is<WoodlandOwner>(a =>
                 a.OrganisationName == request.WoodlandOwner.OrganisationName && 
@@ -102,18 +102,18 @@ public class WoodlandOwnerCreationServiceTests
 
         var result = await sut.AmendWoodlandOwnerDetailsAsync(model, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeTrue();
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value);
 
         // assert values set correctly
 
-        owner.ContactAddress.Should().Be(model.ContactAddress);
-        owner.ContactEmail.Should().Be(model.ContactEmail);
-        owner.ContactName.Should().Be(model.ContactName);
-        owner.ContactTelephone.Should().Be(model.ContactTelephone);
-        owner.IsOrganisation.Should().Be(model.IsOrganisation);
-        owner.OrganisationAddress.Should().Be(model.OrganisationAddress);
-        owner.OrganisationName.Should().Be(model.OrganisationName);
+        Assert.Equal(model.ContactAddress, owner.ContactAddress);
+        Assert.Equal(model.ContactEmail, owner.ContactEmail);
+        Assert.Equal(model.ContactName, owner.ContactName);
+        Assert.Equal(model.ContactTelephone, owner.ContactTelephone);
+        Assert.Equal(model.IsOrganisation, owner.IsOrganisation);
+        Assert.Equal(model.OrganisationAddress, owner.OrganisationAddress);
+        Assert.Equal(model.OrganisationName, owner.OrganisationName);
 
         _mockRepository.Verify(v => v.GetAsync(model.Id.Value, CancellationToken.None), Times.Once);
         _mockRepository.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Once);
@@ -144,8 +144,8 @@ public class WoodlandOwnerCreationServiceTests
 
         var result = await sut.AmendWoodlandOwnerDetailsAsync(model, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeFalse();
+        Assert.True(result.IsSuccess);
+        Assert.False(result.Value);
 
         _mockRepository.Verify(v => v.GetAsync(model.Id.Value, CancellationToken.None), Times.Once);
         _mockRepository.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Once);
@@ -161,7 +161,7 @@ public class WoodlandOwnerCreationServiceTests
 
         var result = await sut.AmendWoodlandOwnerDetailsAsync(model, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockRepository.Verify(v => v.GetAsync(model.Id.Value, CancellationToken.None), Times.Once);
         _mockRepository.Verify(v => v.UnitOfWork.SaveChangesAsync(CancellationToken.None), Times.Never);

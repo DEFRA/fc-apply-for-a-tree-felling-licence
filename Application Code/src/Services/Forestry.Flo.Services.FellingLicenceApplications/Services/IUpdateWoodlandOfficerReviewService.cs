@@ -233,5 +233,41 @@ public interface IUpdateWoodlandOfficerReviewService
         FellingAndRestockingAmendmentReviewUpdateRecord model,
         Guid userId,
         CancellationToken cancellationToken);
+    Task<Result<FellingAndRestockingAmendmentReview>> CreateFellingAndRestockingAmendmentReviewAsync(Guid applicationId, Guid userId, DateTime responseDeadline, string? amendmentsReason, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Updates the selected compartment designations for an application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to be updated.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="designations">A model of the designations for a compartment.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct indicating success or failure.</returns>
+    Task<Result> UpdateCompartmentDesignationsAsync(
+        Guid applicationId,
+        Guid userId,
+        SubmittedCompartmentDesignationsModel designations,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the woodland officer review to indicate that all compartment designations have been reviewed and completed.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to be updated.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="isComplete">A flag to indicate if the compartment designations are complete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct indicating success or failure.</returns>
+    Task<Result> UpdateApplicationCompartmentDesignationsCompletedAsync(
+        Guid applicationId,
+        Guid userId,
+        bool isComplete,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Marks a felling and restocking amendment review as completed.
+    /// </summary>
+    /// <param name="amendmentReviewId">The unique identifier of the amendment review to complete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
+    Task<Result> CompleteFellingAndRestockingAmendmentReviewAsync(Guid amendmentReviewId, CancellationToken cancellationToken);
 }

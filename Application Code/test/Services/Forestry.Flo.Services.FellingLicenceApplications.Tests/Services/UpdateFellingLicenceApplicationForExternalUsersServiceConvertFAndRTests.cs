@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using AutoFixture.AutoMoq;
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -395,7 +394,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceConvertFAndRT
 
         // assert
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -422,7 +421,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceConvertFAndRT
 
         // assert 
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -449,7 +448,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceConvertFAndRT
 
         // assert 
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -471,7 +470,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceConvertFAndRT
 
         // assert 
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     private static IFixture CreateFixture()

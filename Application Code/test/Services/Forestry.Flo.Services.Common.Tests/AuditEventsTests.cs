@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Auditing;
 using Xunit;
 
@@ -14,7 +13,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.CreatePropertyProfileEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.PropertyProfile);
+        Assert.Equal(SourceEntityType.PropertyProfile, result);
     }
     
     [Fact]
@@ -25,7 +24,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.CreatePropertyProfileFailureEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.PropertyProfile);
+        Assert.Equal(SourceEntityType.PropertyProfile, result);
     }
     
     [Fact]
@@ -36,7 +35,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.UpdatePropertyProfileEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.PropertyProfile);
+        Assert.Equal(SourceEntityType.PropertyProfile, result);
     }
     
     [Fact]
@@ -47,7 +46,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.UpdatePropertyProfileFailureEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.PropertyProfile);
+        Assert.Equal(SourceEntityType.PropertyProfile, result);
     }
     
     [Fact]
@@ -58,7 +57,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.CreateCompartmentEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.Compartment);
+        Assert.Equal(SourceEntityType.Compartment, result);
     }
     
     [Fact]
@@ -69,7 +68,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.CreateCompartmentFailureEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.Compartment);
+        Assert.Equal(SourceEntityType.Compartment, result);
     }
     
     [Fact]
@@ -80,7 +79,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.UpdateWoodlandOwnerEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.WoodlandOwner);
+        Assert.Equal(SourceEntityType.WoodlandOwner, result);
     }
     
     [Fact]
@@ -91,7 +90,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.UpdateWoodlandOwnerFailureEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.WoodlandOwner);
+        Assert.Equal(SourceEntityType.WoodlandOwner, result);
     }
     
     [Fact]
@@ -102,7 +101,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.RegisterAuditEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
     
     [Fact]
@@ -113,7 +112,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.RegisterFailureEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
     
     [Fact]
@@ -124,7 +123,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.UpdateAccountEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
     
     [Fact]
@@ -135,7 +134,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.UpdateAccountFailureEvent);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
     
     [Fact]
@@ -146,7 +145,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.WoodlandOwnerUserInvitationSent);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
     
     [Fact]
@@ -157,7 +156,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.WoodlandOwnerUserInvitationFailure);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
     
     [Fact]
@@ -168,7 +167,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.AcceptInvitationSuccess);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
     
     [Fact]
@@ -179,7 +178,7 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(AuditEvents.AcceptInvitationFailure);
 
         //assert
-        result.Should().Be(SourceEntityType.UserAccount);
+        Assert.Equal(SourceEntityType.UserAccount, result);
     }
 
     [Theory]
@@ -196,6 +195,6 @@ public class AuditEventsTests
         var result = AuditEvents.GetEventSourceEntityType(eventName);
 
         //assert
-        result.Should().Be(SourceEntityType.FellingLicenceApplication);
+        Assert.Equal(SourceEntityType.FellingLicenceApplication, result);
     }
 }

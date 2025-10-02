@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Tests.Common;
@@ -30,12 +29,12 @@ public class GetConfirmedUserAccountsTests : AssignToUserUseCaseTestsBase
         var result = await (Task<Result<IEnumerable<UserAccountModel>>>)methodInfo!.Invoke(sut, new object[] { CancellationToken.None })!;
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
-        result.Value.Count().Should().Be(users.Count);
-        foreach (var resultUser in result.Value) 
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal(users.Count, result.Value.Count());
+        foreach (var resultUser in result.Value)
         {
-            users.Any(x=>x.Id == resultUser.Id).Should().BeTrue();
+            Assert.Contains(resultUser.Id, users.Select(x => x.Id));
         }
 
         MockInternalUserAccountService.Verify(x => x.ListConfirmedUserAccountsAsync(It.IsAny<CancellationToken>(), null), Times.Once());
@@ -58,9 +57,9 @@ public class GetConfirmedUserAccountsTests : AssignToUserUseCaseTestsBase
         var result = await (Task<Result<IEnumerable<UserAccountModel>>>)methodInfo!.Invoke(sut, new object[] { CancellationToken.None })!;
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
-        result.Value.Should().NotBeNull();
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Empty(result.Value);
 
         MockInternalUserAccountService.Verify(x => x.ListConfirmedUserAccountsAsync(It.IsAny<CancellationToken>(), null), Times.Once());
     }
@@ -85,16 +84,17 @@ public class GetConfirmedUserAccountsTests : AssignToUserUseCaseTestsBase
         var result = await (Task<Result<IEnumerable<UserAccountModel>>>)methodInfo!.Invoke(sut, new object[] { CancellationToken.None })!;
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
-        result.Value.Count().Should().Be(users.Count);
-        result.Value.DistinctBy(x=>x.Id).Count().Should().Be(users.Count);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal(users.Count, result.Value.Count());
+        Assert.Equal(users.Count, result.Value.DistinctBy(z => z.Id).Count());
         foreach (var resultUser in result.Value)
         {
-            users.Any(x => x.Id == resultUser.Id).Should().BeTrue();
-            (users.First(x => x.Id == resultUser.Id).AccountType == resultUser.AccountType).Should().BeTrue();
-            (users.First(x => x.Id == resultUser.Id).CanApproveApplications == resultUser.CanApproveApplications).Should().BeTrue();
-            (users.First(x => x.Id == resultUser.Id).Status == resultUser.Status).Should().BeTrue();
+            var user = users.FirstOrDefault(x => x.Id == resultUser.Id);
+            Assert.NotNull(user);
+            Assert.Equal(user.AccountType, resultUser.AccountType);
+            Assert.Equal(user.CanApproveApplications, resultUser.CanApproveApplications);
+            Assert.Equal(user.Status, resultUser.Status);
         }
 
         MockInternalUserAccountService.Verify(x => x.ListConfirmedUserAccountsAsync(It.IsAny<CancellationToken>(), null), Times.Once());

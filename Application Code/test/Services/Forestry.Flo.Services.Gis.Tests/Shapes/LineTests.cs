@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+﻿using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Newtonsoft.Json;
 
 namespace Forestry.Flo.Services.Gis.Tests.Shapes;
@@ -12,10 +11,10 @@ public class LineTests
             var sut = JsonConvert.DeserializeObject<Line>(shape);
             var result = sut.GetExtent();
 
-            result.HasValue.Should().BeTrue();
-            result.Value.X_max.Should().Be(359174F);
-            result.Value.Y_max.Should().Be(173115.39F);
-            result.Value.Y_min.Should().Be(173103.44F);
-            result.Value.X_max.Should().Be(359174F);
+            Assert.True(result.HasValue);
+            Assert.Equal(359174F, result.Value.X_max);
+            Assert.Equal(173115.39F, result.Value.Y_max);
+            Assert.Equal(173103.44F, result.Value.Y_min);
+            Assert.Equal(359143.25F, result.Value.X_min);
         }
     }

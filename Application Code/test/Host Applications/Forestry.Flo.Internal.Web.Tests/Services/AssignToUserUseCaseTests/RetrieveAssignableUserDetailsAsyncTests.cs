@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -53,9 +52,9 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         var result = await sut.RetrieveDetailsToAssignFlaToUserAsync(fla.Id, role, returnUrl, _testUser, CancellationToken.None);
 
         // Assert
-        result.Value.FellingLicenceApplicationSummary.Id.Should().Be(fla.Id);
-        result.Value.UserAccounts.Should().HaveCount(users.Count());
-        result.Value.HiddenAccounts.Should().BeFalse();
+        Assert.Equal(fla.Id, result.Value.FellingLicenceApplicationSummary.Id);
+        Assert.Equal(users.Count(), result.Value.UserAccounts.Count());
+        Assert.False(result.Value.HiddenAccounts);
 
         MockInternalUserAccountService.Verify(x => x.ListConfirmedUserAccountsAsync(It.IsAny<CancellationToken>(), null));
     }
@@ -101,9 +100,9 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         var result = await sut.RetrieveDetailsToAssignFlaToUserAsync(fla.Id, role, returnUrl, _testUser, CancellationToken.None);
 
         // Assert
-        result.Value.FellingLicenceApplicationSummary!.Id.Should().Be(fla.Id);
-        result.Value.UserAccounts.Should().BeEmpty();
-        result.Value.HiddenAccounts.Should().BeTrue();
+        Assert.Equal(fla.Id, result.Value.FellingLicenceApplicationSummary!.Id);
+        Assert.Empty(result.Value.UserAccounts);
+        Assert.True(result.Value.HiddenAccounts);
 
         MockInternalUserAccountService.Verify(x => x.ListConfirmedUserAccountsAsync(It.IsAny<CancellationToken>(), null));
     }
@@ -151,10 +150,10 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         var result = await sut.RetrieveDetailsToAssignFlaToUserAsync(fla.Id, role, returnUrl, _testUser, CancellationToken.None);
 
         // Assert
-        result.Value.FellingLicenceApplicationSummary.Id.Should().Be(fla.Id);
-        result.Value.UserAccounts.Should().NotContain(u => u.CanApproveApplications == false);
-        result.Value.HiddenAccounts.Should().BeTrue();
-        result.Value.UserAccounts.Should().HaveCount(users.Count - 1);
+        Assert.Equal(fla.Id, result.Value.FellingLicenceApplicationSummary.Id);
+        Assert.DoesNotContain(false, result.Value.UserAccounts.Select(u => u.CanApproveApplications));
+        Assert.True(result.Value.HiddenAccounts);
+        Assert.Equal(users.Count-1, result.Value.UserAccounts.Count());
 
         MockInternalUserAccountService.Verify(x => x.ListConfirmedUserAccountsAsync(It.IsAny<CancellationToken>(), null));
     }
@@ -203,11 +202,11 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         var result = await sut.RetrieveDetailsToAssignFlaToUserAsync(fla.Id, role, returnUrl, _testUser, CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.FellingLicenceApplicationSummary!.Id.Should().Be(fla.Id);
-        result.Value.UserAccounts.Should().NotContain(u => u.Email == createdByUser.Email);
-        result.Value.HiddenAccounts.Should().BeTrue();
-        result.Value.UserAccounts.Should().HaveCount(users.Count-1);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(fla.Id, result.Value.FellingLicenceApplicationSummary!.Id);
+        Assert.DoesNotContain(createdByUser.Email, result.Value.UserAccounts.Select(x => x.Email));
+        Assert.True(result.Value.HiddenAccounts);
+        Assert.Equal(users.Count-1, result.Value.UserAccounts.Count());
 
         MockInternalUserAccountService.Verify(x => x.ListConfirmedUserAccountsAsync(It.IsAny<CancellationToken>(), null));
     }

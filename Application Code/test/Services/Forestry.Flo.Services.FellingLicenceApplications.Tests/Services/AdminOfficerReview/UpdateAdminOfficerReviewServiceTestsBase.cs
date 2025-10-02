@@ -20,6 +20,7 @@ public abstract class UpdateAdminOfficerReviewServiceTestsBase
     protected readonly FellingLicenceApplicationsContext FellingLicenceApplicationsContext;
     protected readonly IFixture Fixture;
     protected readonly Mock<IClock> MockClock = new();
+    protected readonly DateTime Now = DateTime.UtcNow;
 
     protected UpdateAdminOfficerReviewServiceTestsBase()
     {
@@ -33,7 +34,7 @@ public abstract class UpdateAdminOfficerReviewServiceTestsBase
 
         FellingLicenceApplicationsContext = TestFellingLicenceApplicationsDatabaseFactory.CreateDefaultTestContext();
 
-        MockClock.Setup(x => x.GetCurrentInstant()).Returns(DateTime.UtcNow.ToInstant());
+        MockClock.Setup(x => x.GetCurrentInstant()).Returns(Now.ToInstant());
 
         Sut = new UpdateAdminOfficerReviewService(new InternalUserContextFlaRepository(FellingLicenceApplicationsContext), new NullLogger<UpdateAdminOfficerReviewService>(), MockClock.Object);
     }

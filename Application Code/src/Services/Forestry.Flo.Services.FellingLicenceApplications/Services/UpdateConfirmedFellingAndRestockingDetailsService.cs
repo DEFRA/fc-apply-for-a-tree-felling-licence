@@ -72,7 +72,6 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
                  CompartmentId = compartment.CompartmentId,
                  SubmittedFlaPropertyCompartmentId = compartment.Id,
                  TotalHectares = Math.Round(compartment.TotalHectares??0, 2),
-                 ConfirmedTotalHectares = compartment.ConfirmedTotalHectares,
                  CompartmentNumber = compartment.CompartmentNumber,
                  SubCompartmentName = compartment.SubCompartmentName,
                  NearestTown = application.SubmittedFlaPropertyDetail.NearestTown,

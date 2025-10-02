@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
@@ -8,6 +7,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Tests.Common;
 using Moq;
 using System.Security.Claims;
+using Forestry.Flo.Services.Common.Infrastructure;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 
@@ -23,7 +23,8 @@ public partial class FellingLicenceApplicationUseCaseTests
         var claims = new List<Claim>
         {
             new Claim(FloClaimTypes.UserCanApproveApplications, "true"),
-            new Claim(FloClaimTypes.LocalAccountId, account.Id.ToString())
+            new Claim(FloClaimTypes.LocalAccountId, account.Id.ToString()),
+            new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
         };
         var internalUser = new InternalUser(new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthType")));
 
@@ -52,9 +53,9 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, internalUser, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(application.Id);
-        result.Value.UserCanApproveRefuseReferApplication.Should().BeTrue();
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.Id);
+        Assert.True(result.Value.UserCanApproveRefuseReferApplication);
     }
 
     [Theory, AutoMoqData]
@@ -95,9 +96,9 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, internalUser, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(application.Id);
-        result.Value.UserCanApproveRefuseReferApplication.Should().BeFalse();
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.Id);
+        Assert.False(result.Value.UserCanApproveRefuseReferApplication);
     }
 
     [Theory, AutoMoqData]
@@ -111,7 +112,8 @@ public partial class FellingLicenceApplicationUseCaseTests
         {
             new Claim(FloClaimTypes.UserCanApproveApplications, "true"),
             new Claim(FloClaimTypes.LocalAccountId, account.Id.ToString()),
-            new Claim(FloClaimTypes.Email, externalAccount.Email.ToString())
+            new Claim(OneLoginPrincipalClaimTypes.EmailAddress, externalAccount.Email.ToString()),
+            new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
         };
         var internalUser = new InternalUser(new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuthType")));
 
@@ -142,11 +144,11 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, internalUser, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(application.Id);
-        result.Value.ViewingUser.Should().Be(internalUser);
-        result.Value.ViewingUser?.EmailAddress.Should().Be(externalAccount.Email);
-        result.Value.UserCanApproveRefuseReferApplication.Should().BeFalse();
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.Id);
+        Assert.Equal(internalUser, result.Value.ViewingUser);
+        Assert.Equal(externalAccount.Email, result.Value.ViewingUser?.EmailAddress);
+        Assert.False(result.Value.UserCanApproveRefuseReferApplication);
     }
 
     [Theory, AutoMoqData]
@@ -187,10 +189,10 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, internalUser, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(application.Id);
-        result.Value.ViewingUser.Should().Be(internalUser);
-        result.Value.UserCanApproveRefuseReferApplication.Should().BeFalse();
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.Id);
+        Assert.Equal(internalUser, result.Value.ViewingUser);
+        Assert.False(result.Value.UserCanApproveRefuseReferApplication);
     }
 
     [Theory, AutoMoqData]
@@ -231,10 +233,10 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, internalUser, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(application.Id);
-        result.Value.ViewingUser.Should().Be(internalUser);
-        result.Value.UserCanApproveRefuseReferApplication.Should().BeFalse();
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.Id);
+        Assert.Equal(internalUser, result.Value.ViewingUser);
+        Assert.False(result.Value.UserCanApproveRefuseReferApplication);
     }
 
     [Theory, AutoMoqData]
@@ -267,10 +269,10 @@ public partial class FellingLicenceApplicationUseCaseTests
         var result = await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, internalUser, CancellationToken.None);
 
         // Assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(application.Id);
-        result.Value.ViewingUser.Should().Be(internalUser);
-        result.Value.UserCanApproveRefuseReferApplication.Should().BeFalse();
-        result.Value.IsEditable.Should().BeFalse();
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Id, result.Value.Id);
+        Assert.Equal(internalUser, result.Value.ViewingUser);
+        Assert.False(result.Value.UserCanApproveRefuseReferApplication);
+        Assert.False(result.Value.IsEditable);
     }
 }

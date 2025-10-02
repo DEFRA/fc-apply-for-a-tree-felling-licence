@@ -17,6 +17,7 @@ using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FileStorage.Services;
@@ -229,7 +230,7 @@ public class RegisterUserAccountUseCaseTests
             case AccountType.Agent:
                 Assert.Equal(AccountTypeExternal.AgentAdministrator, storedAccount.AccountType);
                 Assert.True(storedAccount.IsAgent());
-                storedAccount.Agency.Should().NotBeNull();
+                Assert.NotNull(storedAccount.Agency);
                 break;
             default:
                 break;
@@ -400,7 +401,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
 
         //assert
-        result.Should().Be(Result.Success());
+        Assert.True(result.IsSuccess);
         _userAccountRepository.Verify(r => r.Update(It.Is<UserAccount>( u => 
             u.Id == account.Id
             && u.Agency!.ShouldAutoApproveThinningApplications == agencyModel.ShouldAutoApproveThinningApplications
@@ -441,7 +442,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
     
     [Theory, AutoMoqData]
@@ -464,7 +465,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
     
     [Theory, AutoMoqData]
@@ -487,7 +488,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -512,7 +513,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockAuditService.Verify(s =>
             s.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                 e.EventName == AuditEvents.UpdateAccountFailureEvent && e.ActorType == ActorType.ExternalApplicant), It.IsAny<CancellationToken>()));
@@ -544,7 +545,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockAuditService.Verify(s =>
             s.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                 e.EventName == AuditEvents.UpdateAccountFailureEvent
@@ -1186,7 +1187,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
 
         //assert
-        result.Should().Be(Result.Success());
+        Assert.True(result.IsSuccess);
         _userAccountRepository.Verify(r => r.Update(It.Is<UserAccount>(u =>
             u.Id == account.Id
             && u.Agency != null
@@ -1220,7 +1221,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -1243,7 +1244,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -1266,7 +1267,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
 
         //assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -1291,7 +1292,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockAuditService.Verify(s =>
             s.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                 e.EventName == AuditEvents.UpdateAccountFailureEvent && e.ActorType == ActorType.ExternalApplicant), It.IsAny<CancellationToken>()));
@@ -1323,7 +1324,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
 
         //assert
-        result.IsSuccess.Should().BeFalse();
+        Assert.False(result.IsSuccess);
         _mockAuditService.Verify(s =>
             s.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                 e.EventName == AuditEvents.UpdateAccountFailureEvent
@@ -1349,6 +1350,7 @@ public class RegisterUserAccountUseCaseTests
                 new NullLogger<SignInApplicantWithEf>(), 
                 _mockAuditServiceForSignIn.Object,
                 Options.Create(new FcAgencyOptions { PermittedEmailDomainsForFcAgent = new List<string> {"qxlva.com","forestrycommission.gov.uk"}}),
+                Options.Create(new AuthenticationOptions { Provider = AuthenticationProvider.OneLogin}),
                 new RequestContext("test", new RequestUserModel(_externalApplicant.Principal))),
             _fixedTimeClock,
             _mockAuditService.Object,

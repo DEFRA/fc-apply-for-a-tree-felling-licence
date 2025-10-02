@@ -41,7 +41,7 @@ public class RemoveAgentAuthorityFormDocumentUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _mockAudit.Verify(v => v.PublishAuditEventAsync(
             It.Is<AuditEvent>(a =>
@@ -80,7 +80,7 @@ public class RemoveAgentAuthorityFormDocumentUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockAudit.Verify(v => v.PublishAuditEventAsync(
             It.Is<AuditEvent>(a =>

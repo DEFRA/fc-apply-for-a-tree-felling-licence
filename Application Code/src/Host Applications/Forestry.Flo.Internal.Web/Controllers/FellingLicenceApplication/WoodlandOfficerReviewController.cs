@@ -880,6 +880,117 @@ public partial class WoodlandOfficerReviewController(
         return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> ViewDesignations(
+        Guid id,
+        [FromServices] DesignationsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure, viewModel) = await useCase.GetApplicationDesignationsAsync(id, cancellationToken);
+
+        if (isFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ViewDesignations(
+        DesignationsViewModel model,
+        [FromServices] DesignationsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure, viewModel) = await useCase.GetApplicationDesignationsAsync(model.ApplicationId, cancellationToken);
+
+        if (isFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        if (viewModel.CompartmentDesignations.CompartmentDesignations.Any(x => !x.HasCompletedDesignations))
+        {
+            this.AddErrorMessage("Please review all of the compartments before submitting the task");
+            return View(viewModel);
+        }
+
+        var user = new InternalUser(User);
+        var result = await useCase.UpdateCompartmentDesignationsCompletionAsync(model.ApplicationId, user, true, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Unable to complete the designations task");
+            return View(viewModel);
+        }
+
+        this.AddConfirmationMessage("Successfully completed the designations task");
+        return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
+
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> UpdateDesignations(
+        Guid id,
+        Guid compartmentId,
+        [FromServices] DesignationsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure, viewModel) = await useCase.GetUpdateDesignationsModelAsync(id, compartmentId, cancellationToken);
+
+        if (isFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UpdateDesignations(
+        UpdateDesignationsViewModel model,
+        [FromServices] DesignationsUseCase useCase,
+        [FromServices] IValidator<UpdateDesignationsViewModel> validator,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        ValidateModel(model, validator);
+        if (ModelState.IsValid is false)
+        {
+            var (_, isFailure, viewModel) = await useCase.GetUpdateDesignationsModelAsync(model.ApplicationId, model.CompartmentDesignations.SubmittedFlaCompartmentId, cancellationToken);
+            if (isFailure)
+            {
+                return RedirectToAction(nameof(HomeController.Error), "Home");
+            }
+
+            viewModel.CompartmentDesignations = model.CompartmentDesignations;
+            return View(viewModel);
+        }
+
+        var result = await useCase.UpdateCompartmentDesignationsAsync(model.ApplicationId, model.CompartmentDesignations, user, cancellationToken);
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Unable to update designations");
+            var (_, isFailure, viewModel) = await useCase.GetUpdateDesignationsModelAsync(model.ApplicationId, model.CompartmentDesignations.SubmittedFlaCompartmentId, cancellationToken);
+            if (isFailure)
+            {
+                return RedirectToAction(nameof(HomeController.Error), "Home");
+            }
+
+            viewModel.CompartmentDesignations = model.CompartmentDesignations;
+            return View(viewModel);
+        }
+
+        this.AddConfirmationMessage($"Successfully updated designations for {model.CompartmentDesignations.CompartmentName}");
+        if (model.NextCompartmentId.HasValue)
+        {
+            return RedirectToAction(nameof(UpdateDesignations), new { id = model.ApplicationId, compartmentId = model.NextCompartmentId });
+        }
+        
+        return RedirectToAction(nameof(ViewDesignations), new { id = model.ApplicationId });
+    }
+
     private async Task<Result<EiaScreeningViewModel>> LoadEiaScreeningViewModel(Guid id, CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);

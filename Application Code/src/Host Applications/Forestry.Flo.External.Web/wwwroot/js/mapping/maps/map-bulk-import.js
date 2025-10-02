@@ -210,7 +210,6 @@ define(["require",
                             return;
                         }
 
-
                         fetch(window.origin + "/api/Gis/GetShapes", {
                             method: "POST",
                             body: that.getFormData(that.getfileNamePartsArray(filePath), e.target.files[0]),
@@ -351,7 +350,6 @@ define(["require",
 
                 this.view.on("click", (e) => {
                     that.view.hitTest(e).then(async (r) => {
-                        console.log("here");
                         if (!r.results || r.results.length === 0) {
                             return;
                         }
@@ -986,7 +984,6 @@ define(["require",
                         ShapeID: g.uid,
                         CompartmentNumber: name,
                         TotalHectares: that.getSizeOfShape(g),
-                        designation: "",
                         woodlandName: "",
                         GISData: JSON.stringify(g.geometry.toJSON())
                     });
@@ -1100,6 +1097,19 @@ define(["require",
 
                 const that = this;
 
+                if (data.featureCollection.layers.length === 0) {
+                    that.alertWidget.ShowMessage("error", "No layers found in the file");
+                    document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                    that.clearImportWidget();
+                    return;
+                }
+                if (data.featureCollection.layers[0].featureSet.features.length === 0) {
+                    that.alertWidget.ShowMessage("error", "No features found");
+                    document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                    that.clearImportWidget();
+                    return;
+                }
+
                 var nextPanel = document.getElementById(`SelectArea`);
                 if (nextPanel) {
                     nextPanel.removeAttribute("hidden");
@@ -1108,13 +1118,6 @@ define(["require",
                 nextPanel = document.getElementById(`SelectField`);
                 if (nextPanel) {
                     nextPanel.removeAttribute("hidden");
-                }
-
-                if (data.featureCollection.layers.length === 0) {
-                    return;
-                }
-                if (data.featureCollection.layers[0].featureSet.features.length === 0) {
-                    return;
                 }
 
                 data.featureCollection.layers[0].featureSet.features[0].attributes
@@ -1364,11 +1367,30 @@ define(["require",
 
             }
 
+            bulkImportMap.prototype.clearImportWidget = function () {
+                this._drawingLayer.removeAll();
+                this.handleLabelsOnDrawingLayer();
+
+                var list = document.getElementById("selection");
+                
+                this.removeAllChildNodes(list);
+
+                var nextPanel = document.getElementById(`SelectArea`);
+                if (nextPanel) {
+                    nextPanel.setAttribute("hidden", "true");
+                }
+                nextPanel = document.getElementById(`SelectField`);
+                if (nextPanel) {
+                    nextPanel.setAttribute("hidden", "true");
+                }
+            };
+
             bulkImportMap.prototype.removeAllChildNodes = function (parent) {
-                if (!parent)
-                    while (parent.firstChild) {
-                        parent.removeChild(parent.firstChild);
-                    }
+                if (!parent) return;
+
+                while (parent.firstChild) {
+                    parent.removeChild(parent.firstChild);
+                }
             }
 
             bulkImportMap.prototype.generateGuid = function () {

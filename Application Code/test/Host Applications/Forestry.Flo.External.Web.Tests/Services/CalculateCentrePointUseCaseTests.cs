@@ -136,7 +136,7 @@ public class CalculateCentrePointUseCaseTests
 
         var result = await sut.CalculateCentrePointAsync(message, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -214,7 +214,7 @@ public class CalculateCentrePointUseCaseTests
 
         var result = await sut.CalculateCentrePointAsync(message, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -302,7 +302,7 @@ public class CalculateCentrePointUseCaseTests
 
         var result = await sut.CalculateCentrePointAsync(message, CancellationToken.None);
 
-        result.IsSuccess.Should().BeFalse();
+        Assert.True(result.IsFailure);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -376,7 +376,7 @@ public class CalculateCentrePointUseCaseTests
 
         var result = await sut.CalculateCentrePointAsync(message, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -448,7 +448,7 @@ public class CalculateCentrePointUseCaseTests
 
         var result = await sut.CalculateCentrePointAsync(message, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -532,7 +532,7 @@ public class CalculateCentrePointUseCaseTests
 
         var result = await sut.CalculateCentrePointAsync(message, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,
@@ -635,7 +635,7 @@ public class CalculateCentrePointUseCaseTests
 
         var result = await sut.CalculateCentrePointAsync(message, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
             application.Id,

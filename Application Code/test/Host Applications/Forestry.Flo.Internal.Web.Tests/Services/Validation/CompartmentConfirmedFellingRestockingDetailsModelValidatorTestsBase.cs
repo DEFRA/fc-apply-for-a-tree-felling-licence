@@ -25,8 +25,6 @@ public abstract class CompartmentConfirmedFellingRestockingDetailsModelValidator
             CompartmentNumber = "CompartmentNumber",
             SubCompartmentName = "SubCompartmentName",
             TotalHectares = 54d,
-            Designation = "Designation",
-            ConfirmedTotalHectares = 54d,
             ConfirmedFellingDetails = new[]
             {
                 new ConfirmedFellingDetailViewModel

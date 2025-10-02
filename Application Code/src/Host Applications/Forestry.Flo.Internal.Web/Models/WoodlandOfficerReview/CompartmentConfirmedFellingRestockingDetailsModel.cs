@@ -37,11 +37,6 @@ public class CompartmentConfirmedFellingRestockingDetailsModelBase
     public double? TotalHectares { get; set; }
 
     /// <summary>
-    /// Gets or sets the designation of the compartment.
-    /// </summary>
-    public string? Designation { get; set; }
-
-    /// <summary>
     /// Gets or sets the name of the nearest town to the compartment.
     /// </summary>
     public string? NearestTown { get; set; }
@@ -58,11 +53,6 @@ public class CompartmentConfirmedFellingRestockingDetailsModel : CompartmentConf
     /// A collection of confirmed felling details for the compartment.
     /// </summary>
     public ConfirmedFellingDetailViewModel[] ConfirmedFellingDetails { get; set; } = [];
-
-    /// <summary>
-    /// Gets or sets the confirmed total hectares for the submitted compartment.
-    /// </summary>
-    public double? ConfirmedTotalHectares { get; set; }
 }
 
 public class IndividualConfirmedFellingRestockingDetailModel : CompartmentConfirmedFellingRestockingDetailsModelBase

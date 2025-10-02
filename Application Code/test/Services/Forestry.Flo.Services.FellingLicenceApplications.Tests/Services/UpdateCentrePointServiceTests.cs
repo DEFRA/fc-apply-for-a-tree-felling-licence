@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -55,17 +54,17 @@ public class UpdateCentrePointServiceTests
 
         var updatedFlaResult = await _externalUserContextFlaRepository.GetAsync(app.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        updatedFlaResult.HasValue.Should().BeTrue();
+        Assert.True(updatedFlaResult.HasValue);
 
         var updatedFla = updatedFlaResult.Value;
 
-        updatedFla.Should().NotBeNull();
-        updatedFla!.CentrePoint.Should().Be(centrePt);
-        updatedFla!.OSGridReference.Should().Be(osGrid);
-        updatedFla!.AreaCode.Should().Be(areaCode);
-        updatedFla!.AdministrativeRegion.Should().Be(adminRegion);
+        Assert.NotNull(updatedFla);
+        Assert.Equal(centrePt, updatedFla!.CentrePoint);
+        Assert.Equal(osGrid, updatedFla!.OSGridReference);
+        Assert.Equal(areaCode, updatedFla!.AreaCode);
+        Assert.Equal(adminRegion, updatedFla!.AdministrativeRegion);
     }
 
     [Theory]
@@ -84,7 +83,7 @@ public class UpdateCentrePointServiceTests
 
         var updatedFla = await _externalUserContextFlaRepository.GetAsync(app.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        updatedFla.HasNoValue.Should().BeTrue();
+        Assert.True(result.IsFailure);
+        Assert.True(updatedFla.HasNoValue);
     }
 }

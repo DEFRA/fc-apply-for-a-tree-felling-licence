@@ -50,13 +50,7 @@ public class ConfirmedRestockingDetailValidator : AbstractValidator<ConfirmedRes
             .DependentRules(() => RuleFor(m => m.RestockArea)
                 .GreaterThan(0)
                 .WithMessage(x => $"Compartment {compartment.CompartmentName} - Area to be restocked must be a positive value"))
-            .When(m => m.RestockingProposal is not (TypeOfProposal.None or TypeOfProposal.DoNotIntendToRestock))
-            .DependentRules(() => RuleFor(d => d.RestockArea)
-                .LessThanOrEqualTo(d => compartment.ConfirmedTotalHectares)
-                .WithMessage(x =>
-                    $"Compartment {compartment.CompartmentName} - Area to be restocked must be less than or equal to the digitised area when confirmed restock area is entered"))
-            .When(m => m.RestockingProposal is not (TypeOfProposal.None or TypeOfProposal.DoNotIntendToRestock)
-                       && compartment.ConfirmedTotalHectares != null);
+            .When(m => m.RestockingProposal is not (TypeOfProposal.None or TypeOfProposal.DoNotIntendToRestock));
 
         // ensure restocking density is not null and is greater than 0
         RuleFor(m => m.RestockingDensity)

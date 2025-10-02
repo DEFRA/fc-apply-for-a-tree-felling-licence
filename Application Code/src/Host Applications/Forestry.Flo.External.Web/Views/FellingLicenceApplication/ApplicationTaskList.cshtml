@@ -183,9 +183,10 @@
                     </span>
                     
                     @{
-                        var status = Model.CurrentReviewModel.ResponseReceivedDate is null
-                            ? ApplicationStepStatus.NotStarted
-                            : ApplicationStepStatus.Completed;
+						var status = Model.CurrentReviewModel.ResponseReceivedDate is not null 
+                                    || (Model.CurrentReviewModel.AmendmentReviewCompleted ?? false) // completed by case officer
+                            ? ApplicationStepStatus.Completed
+                            : ApplicationStepStatus.NotStarted;
                     }
 
                     <strong class="govuk-tag @GetStatusStyleName(status) app-task-list__tag" id="review-amendments-status">

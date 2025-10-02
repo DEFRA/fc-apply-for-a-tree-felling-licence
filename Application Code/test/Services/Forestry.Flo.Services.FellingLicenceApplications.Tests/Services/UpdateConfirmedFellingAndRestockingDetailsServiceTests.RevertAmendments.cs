@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -59,7 +58,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
                 CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var reloadedFla = await _fellingLicenceApplicationsContext.FellingLicenceApplications
             .Include(fellingLicenceApplication => fellingLicenceApplication.SubmittedFlaPropertyDetail!)
@@ -75,42 +74,42 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             .First(x => x.Id == submittedFlaCompartment.Id);
         var reloadedConfirmed = reloadedCompartment.ConfirmedFellingDetails.First(x => x.Id == confirmedFellingDetail.Id);
 
-        reloadedConfirmed.AreaToBeFelled.Should().Be(proposed.AreaToBeFelled);
-        reloadedConfirmed.IsPartOfTreePreservationOrder.Should().Be(proposed.IsPartOfTreePreservationOrder);
-        reloadedConfirmed.TreePreservationOrderReference.Should().Be(proposed.TreePreservationOrderReference);
-        reloadedConfirmed.IsWithinConservationArea.Should().Be(proposed.IsWithinConservationArea);
-        reloadedConfirmed.ConservationAreaReference.Should().Be(proposed.ConservationAreaReference);
-        reloadedConfirmed.NumberOfTrees.Should().Be(proposed.NumberOfTrees);
-        reloadedConfirmed.OperationType.Should().Be(proposed.OperationType);
-        reloadedConfirmed.TreeMarking.Should().Be(proposed.TreeMarking);
-        reloadedConfirmed.EstimatedTotalFellingVolume.Should().Be(proposed.EstimatedTotalFellingVolume);
-        reloadedConfirmed.IsRestocking.Should().Be(proposed.IsRestocking ?? (proposed.ProposedRestockingDetails?.Any() == true));
-        reloadedConfirmed.NoRestockingReason.Should().Be(proposed.NoRestockingReason);
+        Assert.Equal(proposed.AreaToBeFelled, reloadedConfirmed.AreaToBeFelled);
+        Assert.Equal(proposed.IsPartOfTreePreservationOrder, reloadedConfirmed.IsPartOfTreePreservationOrder);
+        Assert.Equal(proposed.TreePreservationOrderReference, reloadedConfirmed.TreePreservationOrderReference);
+        Assert.Equal(proposed.IsWithinConservationArea, reloadedConfirmed.IsWithinConservationArea);
+        Assert.Equal(proposed.ConservationAreaReference, reloadedConfirmed.ConservationAreaReference);
+        Assert.Equal(proposed.NumberOfTrees, reloadedConfirmed.NumberOfTrees);
+        Assert.Equal(proposed.OperationType, reloadedConfirmed.OperationType);
+        Assert.Equal(proposed.TreeMarking, reloadedConfirmed.TreeMarking);
+        Assert.Equal(proposed.EstimatedTotalFellingVolume, reloadedConfirmed.EstimatedTotalFellingVolume);
+        Assert.Equal(proposed.IsRestocking ?? (proposed.ProposedRestockingDetails?.Any() == true), reloadedConfirmed.IsRestocking);
+        Assert.Equal(proposed.NoRestockingReason, reloadedConfirmed.NoRestockingReason);
 
         // Felling species
-        reloadedConfirmed.ConfirmedFellingSpecies.Select(s => s.Species)
-            .Should().BeEquivalentTo(proposed.FellingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>());
+        Assert.Equivalent(proposed.FellingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>(),
+            reloadedConfirmed.ConfirmedFellingSpecies.Select(s => s.Species));
 
         // Restocking details
         if (proposed.ProposedRestockingDetails != null)
         {
-            reloadedConfirmed.ConfirmedRestockingDetails.Count.Should().Be(proposed.ProposedRestockingDetails.Count);
+            Assert.Equal(proposed.ProposedRestockingDetails.Count, reloadedConfirmed.ConfirmedRestockingDetails.Count);
             foreach (var (confirmedRestock, proposedRestock) in reloadedConfirmed.ConfirmedRestockingDetails.Zip(proposed.ProposedRestockingDetails))
             {
-                confirmedRestock.Area.Should().Be(proposedRestock.Area);
-                confirmedRestock.PercentageOfRestockArea.Should().Be(proposedRestock.PercentageOfRestockArea);
-                confirmedRestock.RestockingDensity.Should().Be(proposedRestock.RestockingDensity);
-                confirmedRestock.NumberOfTrees.Should().Be(proposedRestock.NumberOfTrees);
-                confirmedRestock.RestockingProposal.Should().Be(proposedRestock.RestockingProposal);
+                Assert.Equal(proposedRestock.Area, confirmedRestock.Area);
+                Assert.Equal(proposedRestock.PercentageOfRestockArea, confirmedRestock.PercentageOfRestockArea);
+                Assert.Equal(proposedRestock.RestockingDensity, confirmedRestock.RestockingDensity);
+                Assert.Equal(proposedRestock.NumberOfTrees, confirmedRestock.NumberOfTrees);
+                Assert.Equal(proposedRestock.RestockingProposal, confirmedRestock.RestockingProposal);
 
                 // Restocking species
-                confirmedRestock.ConfirmedRestockingSpecies.Select(s => s.Species)
-                    .Should().BeEquivalentTo(proposedRestock.RestockingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>());
+                Assert.Equivalent(proposedRestock.RestockingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>(),
+                    confirmedRestock.ConfirmedRestockingSpecies.Select(s => s.Species));
             }
         }
         else
         {
-            reloadedConfirmed.ConfirmedRestockingDetails.Should().BeEmpty();
+            Assert.Empty(reloadedConfirmed.ConfirmedRestockingDetails);
         }
     }
 
@@ -127,8 +126,8 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             userId,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("Unable to retrieve felling licence application");
+        Assert.True(result.IsFailure);
+        Assert.Contains("Unable to retrieve felling licence application", result.Error);
     }
 
     [Fact]
@@ -175,8 +174,8 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             otherUserId, // not permitted
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("is not permitted to amend felling licence application");
+        Assert.True(result.IsFailure);
+        Assert.Contains("is not permitted to amend felling licence application", result.Error);
     }
 
     [Fact]
@@ -204,7 +203,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var reloadedFla = await _fellingLicenceApplicationsContext.FellingLicenceApplications
             .Include(x => x.SubmittedFlaPropertyDetail!)
@@ -222,41 +221,41 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
         var reloadedConfirmed = reloadedCompartment.ConfirmedFellingDetails
             .FirstOrDefault(x => x.ProposedFellingDetailId == proposed.Id);
 
-        reloadedConfirmed.Should().NotBeNull();
-        reloadedConfirmed!.AreaToBeFelled.Should().Be(proposed.AreaToBeFelled);
-        reloadedConfirmed.IsPartOfTreePreservationOrder.Should().Be(proposed.IsPartOfTreePreservationOrder);
-        reloadedConfirmed.TreePreservationOrderReference.Should().Be(proposed.TreePreservationOrderReference);
-        reloadedConfirmed.IsWithinConservationArea.Should().Be(proposed.IsWithinConservationArea);
-        reloadedConfirmed.ConservationAreaReference.Should().Be(proposed.ConservationAreaReference);
-        reloadedConfirmed.NumberOfTrees.Should().Be(proposed.NumberOfTrees);
-        reloadedConfirmed.OperationType.Should().Be(proposed.OperationType);
-        reloadedConfirmed.TreeMarking.Should().Be(proposed.TreeMarking);
-        reloadedConfirmed.EstimatedTotalFellingVolume.Should().Be(proposed.EstimatedTotalFellingVolume);
-        reloadedConfirmed.IsRestocking.Should().Be(proposed.IsRestocking ?? (proposed.ProposedRestockingDetails?.Any() == true));
-        reloadedConfirmed.NoRestockingReason.Should().Be(proposed.NoRestockingReason);
-        reloadedConfirmed.ConfirmedFellingSpecies.Select(s => s.Species)
-            .Should().BeEquivalentTo(proposed.FellingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>());
-        reloadedConfirmed.ProposedFellingDetailId.Should().Be(proposed.Id);
-        reloadedConfirmed.SubmittedFlaPropertyCompartmentId.Should().Be(reloadedCompartment.Id);
+        Assert.NotNull(reloadedConfirmed);
+        Assert.Equal(proposed.AreaToBeFelled, reloadedConfirmed!.AreaToBeFelled);
+        Assert.Equal(proposed.IsPartOfTreePreservationOrder, reloadedConfirmed.IsPartOfTreePreservationOrder);
+        Assert.Equal(proposed.TreePreservationOrderReference, reloadedConfirmed.TreePreservationOrderReference);
+        Assert.Equal(proposed.IsWithinConservationArea, reloadedConfirmed.IsWithinConservationArea);
+        Assert.Equal(proposed.ConservationAreaReference, reloadedConfirmed.ConservationAreaReference);
+        Assert.Equal(proposed.NumberOfTrees, reloadedConfirmed.NumberOfTrees);
+        Assert.Equal(proposed.OperationType, reloadedConfirmed.OperationType);
+        Assert.Equal(proposed.TreeMarking, reloadedConfirmed.TreeMarking);
+        Assert.Equal(proposed.EstimatedTotalFellingVolume, reloadedConfirmed.EstimatedTotalFellingVolume);
+        Assert.Equal(proposed.IsRestocking ?? (proposed.ProposedRestockingDetails?.Any() == true), reloadedConfirmed.IsRestocking);
+        Assert.Equal(proposed.NoRestockingReason, reloadedConfirmed.NoRestockingReason);
+        Assert.Equivalent(proposed.FellingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>(),
+            reloadedConfirmed.ConfirmedFellingSpecies.Select(s => s.Species));
+        Assert.Equal(proposed.Id, reloadedConfirmed.ProposedFellingDetailId);
+        Assert.Equal(reloadedCompartment.Id, reloadedConfirmed.SubmittedFlaPropertyCompartmentId);
         if (proposed.ProposedRestockingDetails != null)
         {
-            reloadedConfirmed.ConfirmedRestockingDetails.Count.Should().Be(proposed.ProposedRestockingDetails.Count);
+            Assert.Equal(proposed.ProposedRestockingDetails.Count, reloadedConfirmed.ConfirmedRestockingDetails.Count);
             foreach (var (confirmedRestock, proposedRestock) in reloadedConfirmed.ConfirmedRestockingDetails.Zip(proposed.ProposedRestockingDetails))
             {
-                confirmedRestock.Area.Should().Be(proposedRestock.Area);
-                confirmedRestock.PercentageOfRestockArea.Should().Be(proposedRestock.PercentageOfRestockArea);
-                confirmedRestock.RestockingDensity.Should().Be(proposedRestock.RestockingDensity);
-                confirmedRestock.NumberOfTrees.Should().Be(proposedRestock.NumberOfTrees);
-                confirmedRestock.RestockingProposal.Should().Be(proposedRestock.RestockingProposal);
-                confirmedRestock.ConfirmedRestockingSpecies.Select(s => s.Species)
-                    .Should().BeEquivalentTo(proposedRestock.RestockingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>());
-                confirmedRestock.SubmittedFlaPropertyCompartmentId.Should().Be(reloadedCompartment.Id);
-                confirmedRestock.ProposedRestockingDetailId.Should().Be(proposedRestock.Id);
+                Assert.Equal(proposedRestock.Area, confirmedRestock.Area);
+                Assert.Equal(proposedRestock.PercentageOfRestockArea, confirmedRestock.PercentageOfRestockArea);
+                Assert.Equal(proposedRestock.RestockingDensity, confirmedRestock.RestockingDensity);
+                Assert.Equal(proposedRestock.NumberOfTrees, confirmedRestock.NumberOfTrees);
+                Assert.Equal(proposedRestock.RestockingProposal, confirmedRestock.RestockingProposal);
+                Assert.Equivalent(proposedRestock.RestockingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>(),
+                    confirmedRestock.ConfirmedRestockingSpecies.Select(s => s.Species));
+                Assert.Equal(reloadedCompartment.Id, confirmedRestock.SubmittedFlaPropertyCompartmentId);
+                Assert.Equal(proposedRestock.Id, confirmedRestock.ProposedRestockingDetailId);
             }
         }
         else
         {
-            reloadedConfirmed.ConfirmedRestockingDetails.Should().BeEmpty();
+            Assert.Empty(reloadedConfirmed.ConfirmedRestockingDetails);
         }
     }
 
@@ -304,7 +303,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 
     [Fact]
@@ -322,8 +321,8 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             userId,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("Unable to find proposed felling detail");
+        Assert.True(result.IsFailure);
+        Assert.Contains("Unable to find proposed felling detail", result.Error);
     }
 
     [Fact]
@@ -346,7 +345,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             userId,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("Unable to find compartment for proposed felling detail");
+        Assert.True(result.IsFailure);
+        Assert.Contains("Unable to find compartment for proposed felling detail", result.Error);
     }
 }
