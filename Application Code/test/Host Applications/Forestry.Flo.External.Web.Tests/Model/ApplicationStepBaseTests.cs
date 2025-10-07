@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
+﻿using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Tests.Common;
 
 namespace Forestry.Flo.External.Web.Tests.Model
@@ -22,7 +17,7 @@ namespace Forestry.Flo.External.Web.Tests.Model
             var result = model.Status;
 
             //assert
-            result.Should().Be(ApplicationStepStatus.NotStarted);
+            Assert.Equal(ApplicationStepStatus.NotStarted, result);
         }
 
         [Theory, AutoMoqData]
@@ -37,7 +32,7 @@ namespace Forestry.Flo.External.Web.Tests.Model
             var result = model.Status;
 
             //assert
-            result.Should().Be(ApplicationStepStatus.InProgress);
+            Assert.Equal(ApplicationStepStatus.InProgress, result);
         }
 
         [Theory, AutoMoqData]
@@ -52,7 +47,7 @@ namespace Forestry.Flo.External.Web.Tests.Model
             var result = model.Status;
 
             //assert
-            result.Should().Be(ApplicationStepStatus.Completed);
+            Assert.Equal(ApplicationStepStatus.Completed, result);
         }
     }
 }

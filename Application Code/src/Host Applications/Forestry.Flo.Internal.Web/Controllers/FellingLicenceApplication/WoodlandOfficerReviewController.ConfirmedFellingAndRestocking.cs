@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
@@ -60,7 +61,6 @@ public partial class WoodlandOfficerReviewController
                     SubCompartmentName = specificFellingDetail.SubCompartmentName,
                     SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
                     TotalHectares = specificFellingDetail.TotalHectares,
-                    Designation = specificFellingDetail.Designation,
                     ConfirmedFellingDetails =
                         specificFellingDetail.ConfirmedFellingDetails.First(x =>
                             x.ConfirmedFellingDetailsId == confirmedFellingDetailsId),
@@ -175,7 +175,6 @@ public partial class WoodlandOfficerReviewController
                     CompartmentNumber = specificCompartment.CompartmentNumber,
                     SubCompartmentName = specificCompartment.SubCompartmentName,
                     TotalHectares = specificCompartment.TotalHectares,
-                    Designation = specificCompartment.Designation,
                     ConfirmedFellingDetails = new ConfirmedFellingDetailViewModel()
                 },
             Breadcrumbs = confirmedFellingRestockingDetailsModel.Breadcrumbs
@@ -323,6 +322,66 @@ public partial class WoodlandOfficerReviewController
         }
 
         return View(model.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SendAmendmentsToApplicant(
+        Guid applicationId,
+        string? amendmentReason,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
+        [FromServices] WoodlandOfficerReviewUseCase woReviewUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+
+        if (string.IsNullOrWhiteSpace(amendmentReason))
+        {
+            this.AddErrorMessage("Enter a reason for the amendments");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+
+        string linkToApplication = Url.AbsoluteAction("Index", "FellingLicenceApplication", new { id = applicationId })!;
+
+        var (_, isFailure, error) = await cfrUseCase.SendAmendmentsToApplicant(
+            applicationId,
+            user,
+            linkToApplication,
+            amendmentReason,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not send felling and restocking amendments");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+        this.AddConfirmationMessage("Amendments are sent successfully to the applicant");
+        return RedirectToAction("ConfirmedFellingAndRestocking", "WoodlandOfficerReview", new { id = applicationId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> MakeFurtherAmendments(
+        Guid applicationId,
+        Guid amendmentReviewId,
+        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
+        [FromServices] WoodlandOfficerReviewUseCase woReviewUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var result = await cfrUseCase.MakeFurtherAmendments(
+            user,
+            amendmentReviewId,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Could not close current felling and restocking amendment review");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+
+        this.AddConfirmationMessage("Amendment was closed");
+        return RedirectToAction("ConfirmedFellingAndRestocking", "WoodlandOfficerReview", new { id = applicationId });
     }
 
     [HttpPost]
@@ -500,7 +559,6 @@ public partial class WoodlandOfficerReviewController
                         SubCompartmentName = specificFellingDetail.SubCompartmentName,
                         SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
                         TotalHectares = specificFellingDetail.TotalHectares,
-                        Designation = specificFellingDetail.Designation,
                         ConfirmedRestockingDetails = new ConfirmedRestockingDetailViewModel()
                         {
                             ConfirmedFellingDetailsId = fellingDetailsId,
@@ -532,7 +590,6 @@ public partial class WoodlandOfficerReviewController
                         CompartmentNumber = specificFellingDetail.CompartmentNumber,
                         SubCompartmentName = specificFellingDetail.SubCompartmentName,
                         SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
-                        Designation = specificFellingDetail.Designation,
                         ConfirmedRestockingDetails =
                             specificFellingDetail.ConfirmedFellingDetails.First(x =>
                                 x.ConfirmedFellingDetailsId == fellingDetailsId).ConfirmedRestockingDetails.First(x =>

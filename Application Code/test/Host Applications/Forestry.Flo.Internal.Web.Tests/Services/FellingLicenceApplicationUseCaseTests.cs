@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using FluentEmail.Core;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
@@ -16,6 +15,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Forestry.Flo.Tests.Common;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -114,12 +114,12 @@ public partial class FellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, _internalUser, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Documents.Should().HaveCount(application.Documents!.Count);
-        result.Value.Id.Should().Be(application.Id);
-        result.Value.ApplicationDocument.Should().NotBeNull();
-        result.Value.ApplicationOwner!.WoodlandOwner!.ContactName.Should().Be(woodlandOwner.ContactName);
-        result.Value.OperationDetailsModel.Should().NotBeNull();
+        Assert.True(result.HasValue);
+        Assert.Equal(application.Documents!.Count, result.Value.Documents.Count());
+        Assert.Equal(application.Id, result.Value.Id);
+        Assert.NotNull(result.Value.ApplicationDocument);
+        Assert.Equal(woodlandOwner.ContactName, result.Value.ApplicationOwner!.WoodlandOwner!.ContactName);
+        Assert.NotNull(result.Value.OperationDetailsModel);
 
         _fellingLicenceApplicationRepository.VerifyAll();
         _woodlandOwnerService.VerifyAll();
@@ -150,16 +150,16 @@ public partial class FellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, _internalUser, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeTrue();
-        result.Value.FellingLicenceApplicationSummary.Should().NotBeNull();
+        Assert.True(result.HasValue);
+        Assert.NotNull(result.Value.FellingLicenceApplicationSummary);
         var summary = result.Value.FellingLicenceApplicationSummary;
-        summary!.Id.Should().Be(application.Id);
-        summary.AgentOrAgencyName.Should().Be(agencyModel.OrganisationName);
-        summary.ApplicationReference.Should().Be(application.ApplicationReference);
-        summary.PropertyName.Should().Be(application.SubmittedFlaPropertyDetail?.Name);
-        summary.WoodlandOwnerId.Should().Be(application.WoodlandOwnerId);
-        summary.WoodlandOwnerName.Should().Be(woodlandOwner.IsOrganisation ? woodlandOwner.OrganisationName : woodlandOwner.ContactName);
-        summary.NameOfWood.Should().Be(application.SubmittedFlaPropertyDetail!.NameOfWood);
+        Assert.Equal(application.Id, summary!.Id);
+        Assert.Equal(agencyModel.OrganisationName, summary.AgentOrAgencyName);
+        Assert.Equal(application.ApplicationReference, summary.ApplicationReference);
+        Assert.Equal(application.SubmittedFlaPropertyDetail?.Name, summary.PropertyName);
+        Assert.Equal(application.WoodlandOwnerId, summary.WoodlandOwnerId);
+        Assert.Equal(woodlandOwner.IsOrganisation ? woodlandOwner.OrganisationName : woodlandOwner.ContactName, summary.WoodlandOwnerName);
+        Assert.Equal(application.SubmittedFlaPropertyDetail!.NameOfWood, summary.NameOfWood);
         _fellingLicenceApplicationRepository.VerifyAll();
         _woodlandOwnerService.VerifyAll();
     }
@@ -179,7 +179,7 @@ public partial class FellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, _internalUser, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 
     [Theory, AutoMoqData]
@@ -209,26 +209,20 @@ public partial class FellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, _internalUser, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeTrue();
-        result.Value.FellingAndRestockingDetail.Should().NotBeNull();
+        Assert.True(result.HasValue);
+        Assert.NotNull(result.Value.FellingAndRestockingDetail);
         var lastCompartment = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.ToList().Last();
         var detailsList = result.Value.FellingAndRestockingDetail!.DetailsList;
-        detailsList.Should()
-            .HaveCount(application.LinkedPropertyProfile.ProposedFellingDetails.Count);
-        detailsList.SelectMany(x => x.RestockingDetail).Should()
-            .HaveCount(application.LinkedPropertyProfile.ProposedFellingDetails
-                .SelectMany(x => x.ProposedRestockingDetails).Count());
-        detailsList.Should().NotContainNulls(d => d.FellingDetail);
-        detailsList.Should().NotContainNulls(d => d.RestockingDetail);
-        detailsList.Last().CompartmentId.Should()
-            .Be(lastCompartment.CompartmentId);
-        detailsList.Last().GISData.Should()
-            .Be(lastCompartment.GISData);
-        detailsList.Last().CompartmentName.Should()
-            .Be(lastCompartment.DisplayName);
-        detailsList.Last().FellingDetail.NumberOfTrees.Should()
-            .Be(application.LinkedPropertyProfile!.ProposedFellingDetails!.First(d =>
-                d.PropertyProfileCompartmentId == lastCompartment.CompartmentId).NumberOfTrees);
+        Assert.Equal(application.LinkedPropertyProfile.ProposedFellingDetails.Count, detailsList.Count);
+        Assert.Equal(application.LinkedPropertyProfile.ProposedFellingDetails
+            .SelectMany(x => x.ProposedRestockingDetails).Count(), detailsList.SelectMany(x => x.RestockingDetail).Count());
+        Assert.DoesNotContain(null, detailsList.Select(x => x.FellingDetail));
+        Assert.DoesNotContain(null, detailsList.Select(x => x.RestockingDetail));
+        Assert.Equal(lastCompartment.CompartmentId, detailsList.Last().CompartmentId);
+        Assert.Equal(lastCompartment.GISData, detailsList.Last().GISData);
+        Assert.Equal(lastCompartment.DisplayName, detailsList.Last().CompartmentName);
+        Assert.Equal(application.LinkedPropertyProfile!.ProposedFellingDetails!.First(d =>
+            d.PropertyProfileCompartmentId == lastCompartment.CompartmentId).NumberOfTrees, detailsList.Last().FellingDetail.NumberOfTrees);
         _fellingLicenceApplicationRepository.VerifyAll();
         _woodlandOwnerService.VerifyAll();
     }
@@ -251,7 +245,7 @@ public partial class FellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, _internalUser, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 
     [Theory, AutoMoqData]
@@ -278,7 +272,7 @@ public partial class FellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, _internalUser, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 
 
@@ -295,7 +289,7 @@ public partial class FellingLicenceApplicationUseCaseTests
             await _sut.RetrieveFellingLicenceApplicationReviewSummaryAsync(application.Id, _internalUser, CancellationToken.None);
 
         //assert
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 
     private static void SyncApplicationCompartmentData(FellingLicenceApplication application)

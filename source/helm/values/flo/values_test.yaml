@@ -39,6 +39,16 @@ external-web-app:
       domain: "testflo2.onmicrosoft.com"
       signInPolicyId: "B2C_1_FLO_V2_Signin"
       signUpPolicyId: "B2C_1_FLO_V2_Signup"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: OneLogin
     environment: Test
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
@@ -81,6 +91,8 @@ external-web-app:
       microsoftClarity:
         enabled: true
         trackingId: "pcrkb95e7y"
+    internalUserSite:
+      baseUrl: "https://internaltestflo.ps.conneqt.cloud/"
     GovUkNotifyOptions:
       enabled: true
       ApiKey:
@@ -298,6 +310,16 @@ internal-web-app:
         secret_key: azureb2c.client_secret
       domain: "testflo2.onmicrosoft.com"
       signUpSignInPolicyId: "B2C_1_FLO_V2_Internal_Signup_Signin"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: OneLogin
     azureAD:
       tenantId: 
         secret_key: azuread.tennant_id

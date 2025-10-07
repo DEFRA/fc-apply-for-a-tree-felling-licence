@@ -49,8 +49,8 @@ public class FcUserCreateAgencyUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
         
         _mockAgencyCreationService.Verify(
             x => x.AddAgencyAsync(It.IsAny<AddAgencyDetailsRequest>(),
@@ -91,7 +91,7 @@ public class FcUserCreateAgencyUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockAgencyCreationService.Verify(
             x => x.AddAgencyAsync(It.IsAny<AddAgencyDetailsRequest>(),
@@ -132,7 +132,7 @@ public class FcUserCreateAgencyUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockAgencyCreationService.Verify(
             x => x.AddAgencyAsync(It.IsAny<AddAgencyDetailsRequest>(),
@@ -167,7 +167,7 @@ public class FcUserCreateAgencyUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockAgencyCreationService.Verify(
             x => x.AddAgencyAsync(It.IsAny<AddAgencyDetailsRequest>(),

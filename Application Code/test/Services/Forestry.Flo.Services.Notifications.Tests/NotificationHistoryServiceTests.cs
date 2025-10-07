@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Repositories;
@@ -95,6 +96,114 @@ public class NotificationHistoryServiceTests
             && x.CreatedTimestamp == entry2.CreatedTimestamp
             && x.Source == entry2.Source
             && x.Text == entry2.Text);
+    }
+
+    [Theory, AutoData]
+    public async Task GetNotificationHistoryByIdWhenNoItemExistsForId(Guid unknownId)
+    {
+        var sut = CreateSut();
+
+        _repository.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<NotificationHistory, UserDbErrorReason>(UserDbErrorReason.NotFound));
+
+        var result = await sut.GetNotificationHistoryByIdAsync(unknownId, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound.GetDescription(), result.Error);
+
+        _repository.Verify(x => x.GetByIdAsync(unknownId, It.IsAny<CancellationToken>()), Times.Once);
+        _repository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task GetNotificationHistoryByIdWhenItemExists(
+        NotificationHistory entry,
+        Guid knownId,
+        List<NotificationRecipient> entryRecipients)
+    {
+        var sut = CreateSut();
+        entry.Recipients = JsonConvert.SerializeObject(entryRecipients);
+
+        _repository.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<NotificationHistory, UserDbErrorReason>(entry));
+        
+        var result = await sut.GetNotificationHistoryByIdAsync(knownId, CancellationToken.None);
+        
+        Assert.True(result.IsSuccess);
+        Assert.Equal(entry.Id, result.Value.Id);
+        Assert.Equal(entry.NotificationType, result.Value.Type);
+        Assert.Equal(entry.Text, result.Value.Text);
+        Assert.Equal(entry.Source, result.Value.Source);
+        Assert.Equal(entry.CreatedTimestamp, result.Value.CreatedTimestamp);
+        Assert.Equal(entryRecipients.Count, result.Value.Recipients?.Count() ?? 0);
+        Assert.Equivalent(entryRecipients, result.Value.Recipients);
+        Assert.Equal(entry.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(entry.ApplicationId, result.Value.ApplicationId);
+        Assert.Equal(entry.ExternalId, result.Value.ExternalId);
+        Assert.Equal(entry.Status, result.Value.Status);
+        Assert.Equal(entry.Response, result.Value.Response);
+        Assert.Equal(entry.LastUpdatedById, result.Value.LastUpdatedById);
+        Assert.Equal(entry.LastUpdatedDate, result.Value.LastUpdatedDate);
+
+        _repository.Verify(x => x.GetByIdAsync(knownId, It.IsAny<CancellationToken>()), Times.Once);
+        _repository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task UpdateResponseStatusByIdWhenRepositoryReturnsFailure(
+        Guid id,
+        NotificationStatus newStatus,
+        string response,
+        Guid lastUpdatedById,
+        DateTime lastUpdatedDate)
+    {
+        var sut = CreateSut();
+
+        _repository
+            .Setup(x => x.UpdateByIdAsync(It.IsAny<Guid>(), It.IsAny<Action<NotificationHistory>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<NotificationHistory, UserDbErrorReason>(UserDbErrorReason.NotFound));
+
+        var result = await sut.UpdateResponseStatusByIdAsync(id, newStatus, response, lastUpdatedById, lastUpdatedDate, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(UserDbErrorReason.NotFound.GetDescription(), result.Error);
+
+        _repository.Verify(x => x.UpdateByIdAsync(id, It.IsAny<Action<NotificationHistory>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _repository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task UpdateResponseStatusByIdWhenRepositoryReturnsSuccess(
+        Guid id,
+        NotificationStatus newStatus,
+        string response,
+        Guid lastUpdatedById,
+        DateTime lastUpdatedDate,
+        NotificationHistory existingItem)
+    {
+        var sut = CreateSut();
+
+        Action<NotificationHistory>? capturedUpdate = null;
+
+        _repository
+            .Setup(x => x.UpdateByIdAsync(It.IsAny<Guid>(), It.IsAny<Action<NotificationHistory>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<NotificationHistory, UserDbErrorReason>(existingItem))
+            .Callback((Guid _, Action<NotificationHistory> y, CancellationToken _) => capturedUpdate = y);
+
+        var result = await sut.UpdateResponseStatusByIdAsync(id, newStatus, response, lastUpdatedById, lastUpdatedDate, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _repository.Verify(x => x.UpdateByIdAsync(id, It.IsAny<Action<NotificationHistory>>(), It.IsAny<CancellationToken>()), Times.Once);
+        _repository.VerifyNoOtherCalls();
+
+        capturedUpdate.Invoke(existingItem);
+        Assert.Equal(newStatus, existingItem.Status);
+        Assert.Equal(response, existingItem.Response);
+        Assert.Equal(lastUpdatedById, existingItem.LastUpdatedById);
+        Assert.Equal(lastUpdatedDate, existingItem.LastUpdatedDate);
     }
 
     private NotificationHistoryService CreateSut()

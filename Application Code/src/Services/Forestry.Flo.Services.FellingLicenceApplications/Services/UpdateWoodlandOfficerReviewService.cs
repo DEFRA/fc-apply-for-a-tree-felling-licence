@@ -11,7 +11,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NodaTime;
-using System;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -611,6 +610,56 @@ public class UpdateWoodlandOfficerReviewService(
     }
 
     /// <inheritdoc />
+    public async Task<Result<FellingAndRestockingAmendmentReview>> CreateFellingAndRestockingAmendmentReviewAsync(
+        Guid applicationId,
+        Guid userId,
+        DateTime responseDeadline,
+        string? amendmentsReason,
+        CancellationToken cancellationToken)
+    {
+        if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+        {
+            return Result.Failure<FellingAndRestockingAmendmentReview>("Application woodland officer review unable to be updated");
+        }
+
+        try
+        {
+            var maybeExistingWoodlandOfficerReview =
+                await _internalFlaRepository.GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
+
+            var entity = new FellingAndRestockingAmendmentReview
+            {
+                WoodlandOfficerReviewId = maybeExistingWoodlandOfficerReview.Value.Id,
+                AmendmentsSentDate = DateTime.UtcNow,
+                ResponseDeadline = responseDeadline,
+                AmendmentsReason = amendmentsReason
+            };
+            await _internalFlaRepository.AddFellingAndRestockingAmendmentReviewAsync(entity, cancellationToken);
+
+            await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            return Result.Success(entity);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception caught in UpdateWoodlandOfficerReviewLastUpdateDateAndBy");
+            return Result.Failure<FellingAndRestockingAmendmentReview>(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> CompleteFellingAndRestockingAmendmentReviewAsync(
+        Guid amendmentReviewId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _internalFlaRepository.SetAmendmentReviewCompletedAsync(amendmentReviewId, true, cancellationToken);
+        if (result.IsFailure)
+        {
+            return Result.Failure(result.Error.ToString());
+        }
+        return Result.Success();
+    }
+
+    /// <inheritdoc />
     public async Task<Result> UpdateLarchCheckAsync(
         Guid applicationId,
         Guid userId,
@@ -852,7 +901,12 @@ public class UpdateWoodlandOfficerReviewService(
                 review.ConsultationsComplete = isComplete.Value;
             }
 
-            await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (saveResult.IsFailure)
+            {
+                logger.LogError("Could not save changes to woodland officer review, error: {Error}", saveResult.Error);
+                return Result.Failure(saveResult.Error.ToString());
+            }
 
             return Result.Success();
         }
@@ -930,6 +984,124 @@ public class UpdateWoodlandOfficerReviewService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Exception caught in UpdateConsultationsStatusAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateCompartmentDesignationsAsync(
+        Guid applicationId, 
+        Guid userId,
+        SubmittedCompartmentDesignationsModel designations, 
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Updating compartment designations for application id {ApplicationId} and submitted compartment id {SubmittedCompartmentId}", 
+            applicationId, designations.SubmittedFlaCompartmentId);
+
+        try
+        {
+            if (await AssertApplication(applicationId, userId, cancellationToken) is false)
+            {
+                return Result.Failure("Application woodland officer review unable to be updated");
+            }
+
+            var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+                applicationId,
+                userId,
+                cancellationToken);
+
+            if (isFailure)
+            {
+                return Result.Failure(error);
+            }
+
+            var compartments = await _internalFlaRepository.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, cancellationToken);
+
+            if (compartments.IsFailure)
+            {
+                logger.LogError("Could not retrieve submitted compartment designations for application with id {ApplicationId}", applicationId);
+                return compartments.ConvertFailure();
+            }
+
+            var compartment = compartments.Value.SingleOrDefault(x => x.Id == designations.SubmittedFlaCompartmentId);
+            if (compartment == null)
+            {
+                logger.LogError("Could not find submitted compartment designation with id {SubmittedCompartmentId} for application with id {ApplicationId}",
+                    designations.SubmittedFlaCompartmentId, applicationId);
+                return Result.Failure("Could not find submitted compartment designation");
+            }
+
+            var designationsEntity =
+                compartment.SubmittedCompartmentDesignations ?? new SubmittedCompartmentDesignations();
+
+            designationsEntity.SubmittedFlaPropertyCompartmentId = compartment.Id;
+            designationsEntity.Sssi = designations.Sssi;
+            designationsEntity.Sacs = designations.Sacs;
+            designationsEntity.Spa = designations.Spa;
+            designationsEntity.Ramser = designations.Ramser;
+            designationsEntity.Sbi = designations.Sbi;
+            designationsEntity.Other = designations.Other;
+            designationsEntity.OtherDesignationDetails = designations.Other ? designations.OtherDesignationDetails : null;
+            designationsEntity.None = designations.None;
+
+            compartment.SubmittedCompartmentDesignations = designationsEntity;
+
+            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (saveResult.IsFailure)
+            {
+                logger.LogError("Could not save changes to submitted fla compartment designations, error: {Error}", saveResult.Error);
+                return Result.Failure(saveResult.Error.ToString());
+            }
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception caught in UpdateCompartmentDesignationsAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateApplicationCompartmentDesignationsCompletedAsync(
+        Guid applicationId, 
+        Guid userId,
+        bool isComplete,
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Updating compartment designations completion status for application id {ApplicationId}", applicationId);
+
+        try
+        {
+            if (await AssertApplication(applicationId, userId, cancellationToken) is false)
+            {
+                return Result.Failure("Application woodland officer review unable to be updated");
+            }
+
+            var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+                applicationId,
+                userId,
+                cancellationToken);
+
+            if (isFailure)
+            {
+                return Result.Failure(error);
+            }
+
+            review.DesignationsComplete = isComplete;
+
+            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (saveResult.IsFailure)
+            {
+                logger.LogError("Could not save changes to woodland officer review, error: {Error}", saveResult.Error);
+                return Result.Failure(saveResult.Error.ToString());
+            }
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception caught in CompleteApplicationCompartmentDesignationsAsync");
             return Result.Failure(ex.Message);
         }
     }

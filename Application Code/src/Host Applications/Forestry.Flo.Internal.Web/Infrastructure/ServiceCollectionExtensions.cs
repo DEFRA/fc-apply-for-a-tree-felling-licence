@@ -2,20 +2,30 @@ using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure.Fakes;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.AccountAdministration;
+using Forestry.Flo.Internal.Web.Services.AdminHub;
 using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Reports;
+using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.AdminHubs;
 using Forestry.Flo.Services.Applicants;
-using Forestry.Flo.Services.InternalUsers;
-using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Analytics;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.ConditionsBuilder;
 using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FileStorage;
 using Forestry.Flo.Services.FileStorage.Configuration;
 using Forestry.Flo.Services.Gis;
+using Forestry.Flo.Services.InternalUsers;
+using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications;
 using Forestry.Flo.Services.PropertyProfiles;
+using GovUk.OneLogin.AspNetCore;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -23,15 +33,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Forestry.Flo.Internal.Web.Services.AdminHub;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
-using Forestry.Flo.Internal.Web.Services.Reports;
-using Forestry.Flo.Services.Common.Infrastructure;
-using MassTransit;
 using Microsoft.IO;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
-using Forestry.Flo.Internal.Web.Services.Validation;
-using Forestry.Flo.Services.Common.Analytics;
 
 namespace Forestry.Flo.Internal.Web.Infrastructure;
 
@@ -116,9 +118,82 @@ public static class ServiceCollectionExtensions
                 {
                     var principal = context.Principal;
                     var userSignIn = context.HttpContext.RequestServices.GetService<ISignInInternalUser>();
+
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
+                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure))
+                    ]);
+
+                    context.Principal!.AddIdentity(newIdentity);
+
+
                     if (principal != null && userSignIn != null)
                     {
                         await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
+                    }
+                };
+            });
+
+        return services;
+    }
+
+    public static IServiceCollection AddOneLoginServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = new AzureAdB2COptions();
+        configuration.Bind("AzureAdB2C", settings);
+
+        services
+            .AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", policyBuilder => policyBuilder
+                    .WithOrigins(settings.Instance)
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials());
+            })
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = "Cookies";
+                options.DefaultChallengeScheme = OneLoginDefaults.AuthenticationScheme;
+            })
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddOneLogin(options =>
+            {
+                var govUkOptions = configuration.GetSection(GovUkOneLoginOptions.ConfigurationKey).Get<GovUkOneLoginOptions>();
+                if (govUkOptions is null)
+                {
+                    throw new InvalidOperationException("GovUkOneLoginOptions configuration section is missing or invalid.");
+                }
+
+                options.InitialiseGovUkOneLogin(govUkOptions);
+
+                options.Events.OnTokenValidated = context =>
+                {
+                    var token = context.ProtocolMessage.State;
+
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
+                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
+                    ]);
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        newIdentity.AddClaim(new System.Security.Claims.Claim("token", context.ProtocolMessage.State));
+                    }
+
+                    context.Principal!.AddIdentity(newIdentity);
+                    return Task.CompletedTask;
+                };
+
+                options.Events.OnTicketReceived = async context =>
+                {
+                    var principal = context.Principal;
+                    var userSignIn = context.HttpContext.RequestServices.GetService<ISignInInternalUser>();
+
+                    var token = context.Principal?.Claims.FirstOrDefault(x => x.Type == "token")?.Value;
+
+                    if (principal != null && userSignIn != null)
+                    {
+                        await userSignIn.HandleUserLoginAsync(principal, token);
                     }
                 };
             });
@@ -238,6 +313,7 @@ public static class ServiceCollectionExtensions
         services.Configure<VoluntaryWithdrawalNotificationOptions>(configuration.GetSection("VoluntaryWithdrawApplication"));
         services.Configure<LarchOptions>(configuration.GetSection("LarchOptions"));
         services.AddOptions<EiaOptions>().BindConfiguration(EiaOptions.ConfigurationKey);
+        services.AddOptions<ReviewAmendmentsOptions>().BindConfiguration(ReviewAmendmentsOptions.ConfigurationKey);
 
         services.AddScoped<RegisterUserAccountUseCase>();
         services.AddScoped<ExternalConsulteeInviteUseCase>();
@@ -249,6 +325,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PublicRegisterUseCase>();
         services.AddScoped<SiteVisitUseCase>();
         services.AddScoped<Pw14UseCase>();
+        services.AddScoped<DesignationsUseCase>();
         services.AddScoped<AdminOfficerReviewUseCase>();
         services.AddScoped<AddDocumentFromExternalSystemUseCase>();
         services.AddScoped<ManageAdminHubUseCase>();

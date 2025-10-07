@@ -27,14 +27,6 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
                 }
                 _this.compartmentMessage = "";
             };
-            _this.handleDesignationChange = function (evt) {
-                _this.shape.designation = evt.target.value;
-                if (_this.shape.designation.length > 35) {
-                    _this.designationMessage =
-                        "Designation must be 35 characters or less";
-                    return;
-                }
-            };
             _this.handleWoodlandChange = function (evt) {
                 _this.shape.woodlandName = evt.target.value;
                 if (_this.shape.woodlandName.length > 35) {
@@ -55,7 +47,6 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
                 _this.emit("save", {
                     shapeID: _this.shape.shapeID,
                     compartmentName: _this.shape.compartmentName,
-                    designation: _this.shape.designation,
                     woodlandName: _this.shape.woodlandName
                 });
                 _this.SetShape(null);
@@ -79,12 +70,6 @@ define(["require", "exports", "tslib", "esri/core/accessorSupport/decorators", "
                 "Woodland (optional)",
                 (0, widget_1.tsx)("input", { type: "text", onchange: this.handleWoodlandChange, value: this.shape.woodlandName }),
                 (0, widget_1.tsx)("calcite-input-message", { active: this.woodlandMessage.length > 0 }, this.woodlandMessage)));
-        };
-        EditWidget.prototype.renderDesignation = function () {
-            return ((0, widget_1.tsx)("calcite-label", null,
-                "Designation (optional)",
-                (0, widget_1.tsx)("input", { type: "text", onchange: this.handleDesignationChange, value: this.shape.designation }),
-                (0, widget_1.tsx)("calcite-input-message", { active: this.designationMessage.length > 0 }, this.designationMessage)));
         };
         EditWidget.prototype.render = function () {
             return ((0, widget_1.tsx)("div", null, this.shape === null ? null : ((0, widget_1.tsx)("calcite-panel", { },

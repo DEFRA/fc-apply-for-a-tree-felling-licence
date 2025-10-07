@@ -170,8 +170,8 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The confirmed felling and restocking details for the application.</returns>
     Task<Result<(List<ConfirmedFellingDetail>, List<ConfirmedRestockingDetail>)>> GetConfirmedFellingAndRestockingDetailsForApplicationAsync(
-            Guid applicationId,
-            CancellationToken cancellationToken);
+        Guid applicationId,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the woodland officer review entity for the application with the given id.
@@ -457,6 +457,10 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <returns>
     /// A <see cref="Result{T, TError}"/> containing a list of <see cref="SubmittedFlaPropertyCompartment"/> if successful.
     /// </returns>
+    /// <remarks>
+    /// Returns the compartment entity and linked <see cref="SubmittedCompartmentDesignations"/>, but does not include
+    /// felling and restocking details, which should be retrieved separately if required.
+    /// </remarks>
     Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
@@ -592,4 +596,14 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         Guid applicationId,
         CancellationToken cancellationToken,
         bool includeComplete = true);
+    Task AddFellingAndRestockingAmendmentReviewAsync(FellingAndRestockingAmendmentReview fellingAndRestockingAmendmentReview, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Sets the AmendmentReviewCompleted flag for a specific FellingAndRestockingAmendmentReview.
+    /// </summary>
+    /// <param name="amendmentReviewId">The unique identifier of the amendment review to update.</param>
+    /// <param name="completed">True to mark the review as completed, false otherwise.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>A <see cref="UnitResult{UserDbErrorReason}"/> indicating success or failure of the update operation.</returns>
+    Task<UnitResult<UserDbErrorReason>> SetAmendmentReviewCompletedAsync(Guid amendmentReviewId, bool completed, CancellationToken cancellationToken);
 }

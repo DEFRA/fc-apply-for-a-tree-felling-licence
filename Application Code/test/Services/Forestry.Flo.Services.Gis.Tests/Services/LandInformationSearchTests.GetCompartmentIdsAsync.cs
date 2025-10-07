@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Moq.Protected;
+﻿using Moq.Protected;
 using Moq;
 using System.Net;
 
@@ -24,7 +23,7 @@ public partial class LandInformationSearchTests
         var response = await sut.GetCompartmentIdsAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -44,7 +43,7 @@ public partial class LandInformationSearchTests
         var response = await sut.GetCompartmentIdsAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -64,7 +63,7 @@ public partial class LandInformationSearchTests
         var response = await sut.GetCompartmentIdsAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -88,8 +87,8 @@ public partial class LandInformationSearchTests
         var response = await sut.GetCompartmentIdsAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsSuccess.Should().BeTrue();
-        response.Value.Should().BeEmpty();
+        Assert.True(response.IsSuccess);
+        Assert.Empty(response.Value);
     }
 
 
@@ -114,11 +113,11 @@ public partial class LandInformationSearchTests
         var response = await sut.GetCompartmentIdsAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
 
-        response.Value.Count.Should().Be(2);
-        response.Value[0].Should().Be(1047);
-        response.Value[1].Should().Be(1048);
+        Assert.Equal(2, response.Value.Count);
+        Assert.Equal(1047, response.Value[0]);
+        Assert.Equal(1048, response.Value[1]);
     }
 }
 

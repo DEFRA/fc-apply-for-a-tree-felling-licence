@@ -8,30 +8,16 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Forestry.Flo.Services.Common.User;
-using Forestry.Flo.Services.Gis.Interfaces;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Repositories;
 using NodaTime;
 using Xunit;
-using FluentAssertions;
 using Forestry.Flo.Services.FileStorage.Services;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
-using Forestry.Flo.Services.InternalUsers.Services;
-using Forestry.Flo.Services.Notifications.Entities;
-using Forestry.Flo.Services.Notifications.Models;
-using Forestry.Flo.Services.Notifications.Services;
-using Newtonsoft.Json;
-using JsonSerializer = System.Text.Json.JsonSerializer;
-using static System.Net.Mime.MediaTypeNames;
 using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
@@ -98,7 +84,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.DeleteDraftApplicationAsync(fla.Id, userAccessModel, CancellationToken.None);
 
             // assert
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.DeleteFlaAsync(fla, It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -140,7 +126,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.DeleteDraftApplicationAsync(fla.Id, userAccessModel, CancellationToken.None);
 
             // assert
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.DeleteFlaAsync(fla, It.IsAny<CancellationToken>()), Times.Never);
         }

@@ -169,6 +169,14 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
             .DeleteSubmittedFlaPropertyDetailForApplicationAsync(applicationId, cancellationToken)
             .ConfigureAwait(false);
 
+        // clear down woodland officer review task flags for tasks that will need to be redone/checked again due to resubmission
+        if (currentStatus != FellingLicenceStatus.Draft)
+        {
+            await _fellingLicenceApplicationRepository
+                .UpdateExistingWoodlandOwnerReviewFlagsForResubmission(applicationId, now, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         // return response details required by the usecase for notifications
         var result = new SubmitFellingLicenceApplicationResponse(
             newReference,

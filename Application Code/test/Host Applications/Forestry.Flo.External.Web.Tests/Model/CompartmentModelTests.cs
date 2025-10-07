@@ -14,6 +14,6 @@ public class CompartmentModelTests
         var result = compartmentModel.DisplayName;
 
         //assert
-        result.Should().Be($"{compartmentModel.CompartmentNumber}");
+        Assert.Equal($"{compartmentModel.CompartmentNumber}", result);
     }
 }

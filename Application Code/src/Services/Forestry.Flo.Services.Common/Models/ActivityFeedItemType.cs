@@ -90,5 +90,11 @@ public enum ActivityFeedItemType
     InformApplicantOfApplicationReferredToLocalAuthority,
     
     [Display(Name = "Application extended"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
-    InformApplicantOfApplicationExtension
+    InformApplicantOfApplicationExtension,
+
+
+    [Display(Name = "Applicant amendment"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
+    AmendmentApplicantReason,
+    [Display(Name = "Woodland officer amendment"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
+    AmendmentOfficerReason,
 }

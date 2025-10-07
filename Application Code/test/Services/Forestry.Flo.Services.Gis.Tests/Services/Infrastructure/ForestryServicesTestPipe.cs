@@ -1,12 +1,13 @@
 ﻿using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Gis.Services;
 using Forestry.Flo.Services.Gis.Models.Esri.Common;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.Gis.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Forestry.Flo.Services.Gis.Tests.Access.Infrastructure;
+namespace Forestry.Flo.Services.Gis.Tests.Services.Infrastructure;
+
 public class ForestryServicesTestPipe : ForestryServices
 
 {

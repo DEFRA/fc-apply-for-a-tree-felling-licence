@@ -30,12 +30,6 @@ public class CompartmentModel:PageWithBreadcrumbsViewModel
     public double? TotalHectares { get; set; }
 
     /// <summary>
-    /// Gets and Sets the designation
-    /// </summary>
-    [MaxLength(DataValueConstants.PropertyNameMaxLength)]
-    public string? Designation { get; set; }
-
-    /// <summary>
     /// Gets and Sets the GIS data
     /// </summary>
     // ReSharper disable once InconsistentNaming

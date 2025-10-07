@@ -14,6 +14,7 @@ using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.User;
+using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -47,7 +48,6 @@ public partial class AccountController : Controller
         };
     }
 
-    [Authorize(AuthenticationSchemes = FloAuthenticationScheme.SignUp)]
     [HttpGet]
     public async Task<IActionResult> RegisterAccountType([FromQuery] string? token, 
         [FromServices] RegisterUserAccountUseCase useCase,

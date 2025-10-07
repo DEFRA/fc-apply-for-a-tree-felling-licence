@@ -125,12 +125,7 @@ public class NotificationHistoryService : INotificationHistoryService
         }
     }
 
-    /// <summary>
-    /// Gets a notification history item by the item ID.
-    /// </summary>
-    /// <param name="id">Notification history id</param>
-    /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns>A result containing the notification history model or error message.</returns>
+    /// <inheritdoc />
     public async Task<Result<NotificationHistoryModel>> GetNotificationHistoryByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var entityResult = await _repository.GetByIdAsync(id, cancellationToken);
@@ -150,6 +145,7 @@ public class NotificationHistoryService : INotificationHistoryService
                 ? null
                 : JsonConvert.DeserializeObject<List<NotificationRecipient>>(x.Recipients)!,
             ApplicationReference = x.ApplicationReference,
+            ApplicationId = x.ApplicationId,
             ExternalId = x.ExternalId,
             Status = x.Status ?? NotificationStatus.New,
             Response = x.Response,
@@ -159,40 +155,7 @@ public class NotificationHistoryService : INotificationHistoryService
         return Result.Success(model);
     }
 
-    /// <summary>
-    /// Updates a notification history item by the item ID.
-    /// </summary>
-    /// <param name="id">Notification history id</param>
-    /// <param name="model">Model with updated values</param>
-    /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns>A result containing the updated notification history model or error reason.</returns>
-    public async Task<Result> UpdateNotificationHistoryByIdAsync(Guid id, NotificationHistoryModel model, CancellationToken cancellationToken)
-    {
-        var updateResult = await _repository.UpdateByIdAsync(id, entity =>
-        {
-            entity.CreatedTimestamp = model.CreatedTimestamp;
-            entity.Source = model.Source;
-            entity.NotificationType = model.Type;
-            entity.Text = model.Text;
-            entity.Recipients = model.Recipients != null ? JsonConvert.SerializeObject(model.Recipients) : string.Empty;
-            entity.ApplicationReference = model.ApplicationReference;
-            entity.ExternalId = model.ExternalId;
-            entity.Status = model.Status;
-            entity.Response = model.Response;
-        }, cancellationToken);
-        return updateResult.IsSuccess ? Result.Success() : Result.Failure(updateResult.Error.GetDescription());
-    }
-
-    /// <summary>
-    /// Updates the response and status of a notification history item by the item ID, and sets last updated fields.
-    /// </summary>
-    /// <param name="id">Notification history id</param>
-    /// <param name="status">New status</param>
-    /// <param name="response">New response</param>
-    /// <param name="lastUpdatedById">The user who updated the record</param>
-    /// <param name="lastUpdatedDate">The date/time of update</param>
-    /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns>A result indicating success or failure.</returns>
+    /// <inheritdoc />
     public async Task<Result> UpdateResponseStatusByIdAsync(Guid id, NotificationStatus status, string? response, Guid lastUpdatedById, DateTime lastUpdatedDate, CancellationToken cancellationToken)
     {
         var updateResult = await _repository.UpdateByIdAsync(id, entity =>

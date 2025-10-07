@@ -62,6 +62,25 @@ public partial class ForesterServicesTests
                         }
                     }
                 },
+                GeometryService = new GeometryServiceSettings
+                {
+                    Path = "https://www.AGOL.com/geom/",
+                    IsPublic = true,
+                    NeedsToken = false,
+                    IntersectService = new BaseEsriServiceConfig
+                    {
+                        Path = "intersect"
+                    },
+                    UnionService = new BaseEsriServiceConfig
+                    {
+                        Path = "union"
+                    },
+                    ProjectService = new ProjectServiceSettings
+                    {
+                        Path = "project",
+                        OutSR = 1
+                    },
+                },
                 LayerServices =
                 [
                     new FeatureLayerConfig()

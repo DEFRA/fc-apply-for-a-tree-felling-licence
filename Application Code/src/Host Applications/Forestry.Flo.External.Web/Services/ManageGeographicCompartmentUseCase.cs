@@ -71,8 +71,7 @@ public class ManageGeographicCompartmentUseCase
                         {
                             compartmentEntity.PropertyProfileId,
                             compartmentEntity.CompartmentNumber,
-                            compartmentEntity.SubCompartmentName,
-                            compartmentEntity.Designation
+                            compartmentEntity.SubCompartmentName
                         }),
                     cancellationToken))
                 .OnFailure(async r =>
@@ -107,7 +106,6 @@ public class ManageGeographicCompartmentUseCase
             compartmentImport.CompartmentNumber,
             compartmentImport.SubCompartmentName, 
             compartmentImport.TotalHectares, 
-            compartmentImport.Designation, 
             compartmentImport.GISData, 
             propertyProfileId);
 
@@ -126,8 +124,7 @@ public class ManageGeographicCompartmentUseCase
                         compartmentModel.CompartmentNumber,
                         compartmentModel.SubCompartmentName,
                         compartmentModel.GISData,
-                        compartmentModel.TotalHectares,
-                        compartmentModel.Designation
+                        compartmentModel.TotalHectares
                     }),
                 cancellationToken))
             .OnFailure(async r =>
@@ -138,7 +135,7 @@ public class ManageGeographicCompartmentUseCase
                 _logger.LogError(
                     $"A compartment couldn't be added to the database and rolled back from the stagedSave Details: ProfileID - {compartmentModel.PropertyProfileId}. " +
                     $"Number -{compartmentModel.CompartmentNumber}. " +
-                    $"Total HA -{compartmentModel.TotalHectares}. Designation - {compartmentModel.Designation}. " +
+                    $"Total HA -{compartmentModel.TotalHectares}. " +
                     $"GIS:{compartmentModel.GISData}. Reason: {r.ToString()}");
             })
             .Map(() => compartment.Id)
@@ -185,7 +182,6 @@ public class ManageGeographicCompartmentUseCase
                         compartmentEntity.PropertyProfileId,
                         compartmentEntity.CompartmentNumber,
                         compartmentEntity.SubCompartmentName,
-                        compartmentEntity.Designation,
                         compartmentEntity.GISData
                     }),
                 cancellationToken))
@@ -276,7 +272,6 @@ public class ManageGeographicCompartmentUseCase
                 compartmentModel.PropertyProfileId,
                 compartmentModel.CompartmentNumber,
                 compartmentModel.SubCompartmentName,
-                compartmentModel.Designation,
                 compartmentModel.GISData,
                 compartmentModel.TotalHectares,
                 Error = error
@@ -297,7 +292,6 @@ public class ManageGeographicCompartmentUseCase
                 compartmentModel.CompartmentNumber,
                 compartmentModel.SubCompartmentName,
                 compartmentModel.WoodlandName,
-                compartmentModel.Designation,
                 compartmentModel.GISData,
                 compartmentModel.TotalHectares,
                 Error = error

@@ -13,7 +13,7 @@ public class SupportingDocumentationModelTests
         var result = model.Status;
 
         //assert
-        result.Should().Be(ApplicationStepStatus.Completed);
+        Assert.Equal(ApplicationStepStatus.Completed, result);
     }
 
     [Theory, AutoMoqData]
@@ -27,6 +27,6 @@ public class SupportingDocumentationModelTests
         var result = model.Status;
 
         //assert
-        result.Should().Be(ApplicationStepStatus.NotStarted);
+        Assert.Equal(ApplicationStepStatus.NotStarted, result);
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using AutoFixture.Xunit2;
-using FluentAssertions;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
@@ -112,7 +111,7 @@ public partial class BaseServicesTests
         var response = await access.ConvertPointToLatLongAsync(point, CancellationToken.None);
 
 
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -134,7 +133,7 @@ public partial class BaseServicesTests
         var access = CreateSut(geometryService: _geometryServiceSettings , spatialReference: 27700);
         var response = await access.ConvertPointToLatLongAsync(point, CancellationToken.None);
 
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
         _mockHttpHandler.VerifyAll();
     }
 }

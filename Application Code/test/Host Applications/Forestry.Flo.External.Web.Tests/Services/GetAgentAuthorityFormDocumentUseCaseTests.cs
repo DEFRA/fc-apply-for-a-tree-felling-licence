@@ -37,7 +37,7 @@ public class GetAgentAuthorityFormDocumentUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.Equal(response.AgentAuthorityFormResponseModels.Count, result.Value.HistoricAuthorityForms.Count + (result.Value.HasCurrentAuthorityForm ? 1 :0));
         Assert.Equal(result.Value.WoodlandOwnerOrOrganisationName, response.WoodlandOwnerModel.IsOrganisation ? response.WoodlandOwnerModel.OrganisationName : response.WoodlandOwnerModel.ContactName );
         Assert.Equal(agentAuthorityId, result.Value.AgentAuthorityId);
@@ -70,7 +70,7 @@ public class GetAgentAuthorityFormDocumentUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockAgentAuthorityService.Verify(
             x => x.GetAgentAuthorityFormDocumentsByAuthorityIdAsync(

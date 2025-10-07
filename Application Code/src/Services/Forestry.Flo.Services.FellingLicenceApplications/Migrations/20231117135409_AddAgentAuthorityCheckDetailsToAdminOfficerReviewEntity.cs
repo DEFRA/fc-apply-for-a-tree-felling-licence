@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 {
+    [ExcludeFromCodeCoverage]
     public partial class AddAgentAuthorityCheckDetailsToAdminOfficerReviewEntity : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

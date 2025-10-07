@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Services.Applicants.Services;
@@ -164,6 +163,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!) {
                 comp.Id = propertyProfile.Compartments[0].Id;
                 comp.CompartmentId = propertyProfile.Compartments[0].Id;
+                comp.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in comp.ConfirmedFellingDetails) {
                     if (felling.SubmittedFlaPropertyCompartment == null) {
                         felling.SubmittedFlaPropertyCompartment = new SubmittedFlaPropertyCompartment();
@@ -208,7 +208,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -319,7 +319,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -421,7 +421,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -531,7 +531,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -565,6 +565,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!) {
                 comp.Id = propertyProfile.Compartments[0].Id;
                 comp.CompartmentId = propertyProfile.Compartments[0].Id;
+                comp.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in comp.ConfirmedFellingDetails) {
                     if (felling.SubmittedFlaPropertyCompartment == null) {
                         felling.SubmittedFlaPropertyCompartment = new SubmittedFlaPropertyCompartment();
@@ -605,7 +606,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             // verify
 

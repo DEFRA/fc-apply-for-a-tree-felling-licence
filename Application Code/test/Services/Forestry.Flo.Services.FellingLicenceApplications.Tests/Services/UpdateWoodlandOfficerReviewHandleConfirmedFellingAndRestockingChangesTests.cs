@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoFixture.Xunit2;
-using CSharpFunctionalExtensions;
-using FluentAssertions;
-using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -16,7 +10,6 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
-using TinyCsvParser.Model;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
@@ -73,7 +66,7 @@ public class UpdateWoodlandOfficerReviewHandleConfirmedFellingAndRestockingChang
 
         //assert result is success
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedFlaMaybe = await _internalRepository.GetAsync(application.Id, CancellationToken.None);
 
@@ -81,9 +74,9 @@ public class UpdateWoodlandOfficerReviewHandleConfirmedFellingAndRestockingChang
 
         //assert database values have been updated
 
-        updatedFla.WoodlandOfficerReview!.LastUpdatedDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(5));
-        updatedFla.WoodlandOfficerReview.LastUpdatedById.Should().Be(performingUserId);
-        updatedFla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete.Should().BeTrue();
+        Assert.Equal(Now.ToDateTimeUtc(), updatedFla.WoodlandOfficerReview!.LastUpdatedDate);
+        Assert.Equal(performingUserId, updatedFla.WoodlandOfficerReview.LastUpdatedById);
+        Assert.True(updatedFla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete);
     }
 
     private new UpdateWoodlandOfficerReviewService CreateSut()

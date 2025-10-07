@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -47,7 +46,7 @@ public class FellingLicenceApplicationRepositoryBaseTests
         var result = await _sut.CheckApplicationExists(licenceApplication.Id, CancellationToken.None);
 
         //assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Theory, AutoMoqData]
@@ -57,7 +56,7 @@ public class FellingLicenceApplicationRepositoryBaseTests
         var result = await _sut.CheckApplicationExists(licenceApplication.Id, CancellationToken.None);
 
         //assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Theory, AutoMoqData]
@@ -77,9 +76,9 @@ public class FellingLicenceApplicationRepositoryBaseTests
 
         var updatedFla = await _sut.GetAsync(licenceApplication.Id, CancellationToken.None);
         //assert
-        result.IsSuccess.Should().BeTrue();
-        updatedFla.Value.Documents.Should().HaveCount(1);
-        updatedFla.Value.Documents[0].Should().Be(document);
+        Assert.True(result.IsSuccess);
+        Assert.Single(updatedFla.Value.Documents!);
+        Assert.Equal(document, updatedFla.Value.Documents[0]);
     }
 
     [Theory, AutoMoqData]
@@ -106,18 +105,17 @@ public class FellingLicenceApplicationRepositoryBaseTests
 
         var updatedFla = await _sut.GetAsync(fla.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert step statuses have been set accordingly
 
-        updatedFla.Value.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus.Should().Be(stepStatusRecord.TermsAndConditionsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus.Should().Be(stepStatusRecord.ConstraintsCheckComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus.Should().Be(stepStatusRecord.OperationDetailsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus.Should().Be(stepStatusRecord.SelectedCompartmentsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus.Should().Be(stepStatusRecord.SupportingDocumentationComplete);
+        Assert.Equal(stepStatusRecord.TermsAndConditionsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus);
+        Assert.Equal(stepStatusRecord.ConstraintsCheckComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus);
+        Assert.Equal(stepStatusRecord.OperationDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus);
+        Assert.Equal(stepStatusRecord.SelectedCompartmentsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus);
+        Assert.Equal(stepStatusRecord.SupportingDocumentationComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
 
-        updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Should()
-            .BeEquivalentTo(stepStatusRecord.FellingAndRestockingDetailsComplete);
+        Assert.Equivalent(stepStatusRecord.FellingAndRestockingDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses);
     }
 
     [Theory, AutoMoqData]
@@ -150,18 +148,16 @@ public class FellingLicenceApplicationRepositoryBaseTests
 
         var updatedFla = await _sut.GetAsync(fla.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert step statuses have been set accordingly
 
-        updatedFla.Value.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus.Should().Be(stepStatusRecord.TermsAndConditionsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus.Should().Be(fla.FellingLicenceApplicationStepStatus.ConstraintCheckStatus);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus.Should().Be(stepStatusRecord.OperationDetailsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus.Should().Be(stepStatusRecord.SelectedCompartmentsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus.Should().Be(fla.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
-
-        updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Should()
-            .BeEquivalentTo(stepStatusRecord.FellingAndRestockingDetailsComplete);
+        Assert.Equal(stepStatusRecord.TermsAndConditionsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus);
+        Assert.Equal(fla.FellingLicenceApplicationStepStatus.ConstraintCheckStatus, updatedFla.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus);
+        Assert.Equal(stepStatusRecord.OperationDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus);
+        Assert.Equal(stepStatusRecord.SelectedCompartmentsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus);
+        Assert.Equal(fla.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus, updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
+        Assert.Equivalent(stepStatusRecord.FellingAndRestockingDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses);
     }
 
     [Theory, AutoMoqData]
@@ -175,18 +171,17 @@ public class FellingLicenceApplicationRepositoryBaseTests
 
         var updatedFla = await _sut.GetAsync(fla.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert step statuses have been set accordingly
 
-        updatedFla.Value.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus.Should().Be(stepStatusRecord.TermsAndConditionsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus.Should().Be(fla.FellingLicenceApplicationStepStatus.ConstraintCheckStatus);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus.Should().Be(stepStatusRecord.OperationDetailsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus.Should().Be(stepStatusRecord.SelectedCompartmentsComplete);
-        updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus.Should().Be(fla.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
+        Assert.Equal(stepStatusRecord.TermsAndConditionsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus);
+        Assert.Equal(fla.FellingLicenceApplicationStepStatus.ConstraintCheckStatus, updatedFla.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus);
+        Assert.Equal(stepStatusRecord.OperationDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus);
+        Assert.Equal(stepStatusRecord.SelectedCompartmentsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus);
+        Assert.Equal(fla.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus, updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
 
-        updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Should()
-            .BeEquivalentTo(fla.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses);
+        Assert.Equivalent(fla.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses, updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses);
     }
 
     [Theory, AutoMoqData]

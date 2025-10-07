@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Text.Json;
 using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.Common.MassTransit.Messages;
@@ -83,15 +82,15 @@ public class RegisterUserAccountUseCaseTests
 
         // assert user account is retrieved
 
-        result.HasValue.Should().BeTrue();
+        Assert.True(result.HasValue);
 
         // assert mapped values correct
 
-        result.Value.FirstName.Should().Be(userAccount.FirstName);
-        result.Value.LastName.Should().Be(userAccount.LastName);
-        result.Value.Title.Should().Be(userAccount.Title);
-        result.Value.RequestedAccountType.Should().Be(userAccount.AccountType);
-        result.Value.DisallowedRoles.Count.Should().Be(1);
+        Assert.Equal(userAccount.FirstName, result.Value.FirstName);
+        Assert.Equal(userAccount.LastName, result.Value.LastName);
+        Assert.Equal(userAccount.Title, result.Value.Title);
+        Assert.Equal(userAccount.AccountType, result.Value.RequestedAccountType);
+        Assert.Single(result.Value.DisallowedRoles);
     }
 
     [Theory, AutoMoqData]
@@ -105,7 +104,7 @@ public class RegisterUserAccountUseCaseTests
 
         var result = await sut.GetUserAccountModelAsync(_internalUser, CancellationToken.None);
 
-        result.HasNoValue.Should().BeTrue();
+        Assert.True(result.HasNoValue);
     }
 
     [Theory, AutoMoqData]
@@ -124,17 +123,17 @@ public class RegisterUserAccountUseCaseTests
 
         // assert user account is retrieved
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert mapped values correct
 
-        result.Value.FirstName.Should().Be(userAccount.FirstName);
-        result.Value.LastName.Should().Be(userAccount.LastName);
-        result.Value.Title.Should().Be(userAccount.Title);
-        result.Value.RequestedAccountType.Should().Be(userAccount.AccountType);
-        result.Value.RequestedAccountTypeOther.Should().Be(userAccount.AccountTypeOther);
-        result.Value.AllowRoleChange.Should().BeTrue();
-        result.Value.DisallowedRoles.Should().Contain(AccountTypeInternal.FcStaffMember);
+        Assert.Equal(userAccount.FirstName, result.Value.FirstName);
+        Assert.Equal(userAccount.LastName, result.Value.LastName);
+        Assert.Equal(userAccount.Title, result.Value.Title);
+        Assert.Equal(userAccount.AccountType, result.Value.RequestedAccountType);
+        Assert.Equal(userAccount.AccountTypeOther, result.Value.RequestedAccountTypeOther);
+        Assert.True(result.Value.AllowRoleChange);
+        Assert.Contains(AccountTypeInternal.FcStaffMember, result.Value.DisallowedRoles);
     }
 
     [Theory, AutoMoqData]
@@ -155,11 +154,11 @@ public class RegisterUserAccountUseCaseTests
 
         // assert user account is retrieved
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert disallowed roles includes account admin
 
-        result.Value.DisallowedRoles.Should().Contain(AccountTypeInternal.AccountAdministrator);
+        Assert.Contains(AccountTypeInternal.AccountAdministrator, result.Value.DisallowedRoles);
     }
 
     [Theory, AutoMoqData]
@@ -180,11 +179,11 @@ public class RegisterUserAccountUseCaseTests
 
         // assert user account is retrieved
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert disallowed roles includes account admin
 
-        result.Value.DisallowedRoles.Should().NotContain(AccountTypeInternal.AccountAdministrator);
+        Assert.DoesNotContain(AccountTypeInternal.AccountAdministrator, result.Value.DisallowedRoles);
     }
 
     [Theory, AutoMoqData]
@@ -205,11 +204,11 @@ public class RegisterUserAccountUseCaseTests
 
         // assert user account is retrieved
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         // assert disallowed roles includes account admin
 
-        result.Value.AllowRoleChange.Should().BeFalse();
+        Assert.False(result.Value.AllowRoleChange);
     }
 
     [Theory, AutoMoqData]
@@ -228,7 +227,7 @@ public class RegisterUserAccountUseCaseTests
 
         // assert user account is retrieved
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory]
@@ -256,7 +255,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await 
             sut.UpdateAccountRegistrationDetailsByIdAsync(_internalUser, updateUserModel, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _userAccountService.Verify(v => v.UpdateUserAccountDetailsAsync(
             It.Is<UpdateRegistrationDetailsModel>(x => 
@@ -300,7 +299,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await
             sut.UpdateAccountRegistrationDetailsByIdAsync(_internalUser, updateUserModel, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _userAccountService.Verify(v => v.UpdateUserAccountDetailsAsync(
             It.Is<UpdateRegistrationDetailsModel>(x =>
@@ -364,7 +363,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await
             sut.UpdateAccountRegistrationDetailsAsync(_internalUser, updateUserModel, BaseUrlToConfirmUser, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _userAccountService.Verify(v => v.UpdateUserAccountDetailsAsync(
             It.Is<UpdateRegistrationDetailsModel>(x =>
@@ -418,7 +417,7 @@ public class RegisterUserAccountUseCaseTests
         var result = await
             sut.UpdateAccountRegistrationDetailsAsync(_internalUser, updateUserModel, BaseUrlToConfirmUser, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _userAccountService.Verify(v => v.UpdateUserAccountDetailsAsync(
             It.Is<UpdateRegistrationDetailsModel>(x =>
@@ -466,7 +465,7 @@ public class RegisterUserAccountUseCaseTests
 
         var result = await sut.UpdateUserAccountStatusAsync(_performingUser, user.Id, status, canApprove, loginUrl, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         if (status is Status.Confirmed)
         {
@@ -523,7 +522,7 @@ public class RegisterUserAccountUseCaseTests
 
         var result = await sut.UpdateUserAccountStatusAsync(_performingUser, user.Id, Status.Confirmed, false, loginUrl, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _userAccountService.Verify(v => v.UpdateUserAccountConfirmedAsync(user.Id, false, CancellationToken.None), Times.Once);
 
@@ -558,7 +557,7 @@ public class RegisterUserAccountUseCaseTests
 
         var result = await sut.UpdateUserAccountStatusAsync(_performingUser, user.Id, Status.Confirmed, false, loginUrl, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         _userAccountService.Verify(v => v.UpdateUserAccountConfirmedAsync(user.Id, false, CancellationToken.None), Times.Once);
 
@@ -605,7 +604,7 @@ public class RegisterUserAccountUseCaseTests
 
         var result = await sut.UpdateUserAccountStatusAsync(_performingUser, user.Id, Status.Confirmed, false, loginUrl, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _userAccountService.Verify(v => v.UpdateUserAccountConfirmedAsync(user.Id, false, CancellationToken.None), Times.Once);
 
@@ -631,7 +630,7 @@ public class RegisterUserAccountUseCaseTests
 
         var result = await sut.UpdateUserAccountStatusAsync(_performingUser, user.Id, status, false, loginUrl, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _userAccountService.VerifyNoOtherCalls();
         _sendNotifications.VerifyNoOtherCalls();

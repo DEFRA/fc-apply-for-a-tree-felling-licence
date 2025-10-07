@@ -256,12 +256,12 @@ public class ForesterServices : BaseServices, IForesterServices
 
         var jobResx = await CheckJobAsync(resx.Value.Id, delay, cancellationToken);
         if (jobResx.IsFailure) {
-            return resx.ConvertFailure<Stream>();
+            return jobResx.ConvertFailure<Stream>();
         }
 
         var outputResx = await GetOutputDetailsAsync(jobResx.Value, resx.Value.Id, cancellationToken);
         if (outputResx.IsFailure) {
-            return resx.ConvertFailure<Stream>();
+            return outputResx.ConvertFailure<Stream>();
         }
 
 

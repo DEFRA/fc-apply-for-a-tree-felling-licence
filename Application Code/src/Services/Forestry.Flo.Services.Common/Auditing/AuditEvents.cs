@@ -114,6 +114,8 @@ public static class AuditEvents
     public const string RevertApproveToWoodlandOfficerReview = "Revert Approve to Woodland Officer Review";
     public const string RevertConfirmedFellingDetails = "Revert Confirmed Felling Details";
     public const string RevertConfirmedFellingDetailsFailure = "Revert Confirmed Felling Details Failure";
+    public const string UpdateDesignations = "Update Compartment Designations";
+    public const string UpdateDesignationsFailure = "Update Compartment Designations Failure";
 
     //Admin officer review audit events
     public const string ConfirmAdminOfficerReview = "Confirm Operations Admin Officer Review";
@@ -239,6 +241,11 @@ public static class AuditEvents
     // amendment review
     public const string ApplicantReviewedAmendments = "Applicant Reviewed Amendments";
     public const string ApplicantReviewedAmendmentsFailure = "Applicant Reviewed Amendments Failure";
+    public const string SendAmendmentsToApplicant = "Send Amendments To Applicant";
+    public const string SendAmendmentsToApplicantFailure = "Send Amendments To Applicant Failure";
+
+    public const string CompleteFellingAndRestockingAmendmentReview = "Complete Felling And Restocking Amendment Review";
+    public const string CompleteFellingAndRestockingAmendmentReviewFailure = "Complete Felling And Restocking Amendment Review Failure";
 
 
     /// <summary>
@@ -356,6 +363,8 @@ public static class AuditEvents
             UpdateConfirmedRestockingDetailsFailure => SourceEntityType.FellingLicenceApplication,
             RevertConfirmedFellingDetails => SourceEntityType.ProposedFellingDetails,
             RevertConfirmedFellingDetailsFailure => SourceEntityType.ProposedFellingDetails,
+            UpdateDesignations => SourceEntityType.FellingLicenceApplication,
+            UpdateDesignationsFailure => SourceEntityType.FellingLicenceApplication,
 
             ConfirmAdminOfficerReview => SourceEntityType.FellingLicenceApplication,
             ConfirmAdminOfficerReviewFailure => SourceEntityType.FellingLicenceApplication,
@@ -451,6 +460,11 @@ public static class AuditEvents
 
             ApplicantReviewedAmendments => SourceEntityType.FellingLicenceApplication,
             ApplicantReviewedAmendmentsFailure => SourceEntityType.FellingLicenceApplication,
+            SendAmendmentsToApplicant => SourceEntityType.FellingLicenceApplication,
+            SendAmendmentsToApplicantFailure => SourceEntityType.FellingLicenceApplication,
+            CompleteFellingAndRestockingAmendmentReview => SourceEntityType.FellingLicenceApplication,
+            CompleteFellingAndRestockingAmendmentReviewFailure => SourceEntityType.FellingLicenceApplication,
+
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

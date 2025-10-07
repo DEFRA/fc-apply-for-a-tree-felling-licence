@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Forestry.Flo.Services.Common.Infrastructure;
+﻿using Forestry.Flo.Services.Common.Infrastructure;
 using Xunit;
 
 namespace Forestry.Flo.Services.Common.Tests.Infrastructure;
@@ -23,7 +22,7 @@ public class FloEmailAddressAttributeTests
         var result = _sut.IsValid(email);
 
         //assert
-        result.Should().BeTrue();
+        Assert.True(result);
     } 
     
     [Fact]
@@ -36,6 +35,6 @@ public class FloEmailAddressAttributeTests
         var result = _sut.IsValid(email);
 
         //assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 }

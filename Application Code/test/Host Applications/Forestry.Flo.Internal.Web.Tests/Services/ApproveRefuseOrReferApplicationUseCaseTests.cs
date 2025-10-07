@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
@@ -150,8 +149,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Approved,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Should().BeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.SubProcessFailures);
         
         _publicRegister.Verify(x=>x.AddCaseToDecisionRegisterAsync(
             application.PublicRegister!.EsriId.Value, 
@@ -283,8 +282,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Should().BeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
@@ -406,8 +405,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Approved,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Single().Should().Be(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister, result.SubProcessFailures.Single());
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
             application.PublicRegister!.EsriId!.Value,
@@ -515,10 +514,12 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Approved,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Count.Should().Be(2);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.SubProcessFailures.Count);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant,
+            result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
             application.PublicRegister!.EsriId!.Value,
@@ -626,9 +627,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Approved,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Count.Should().Be(1);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
             application.PublicRegister!.EsriId!.Value,
@@ -741,9 +743,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Approved,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Count.Should().Be(1);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotStoreDecisionDetailsLocally);
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotStoreDecisionDetailsLocally,
+            result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
             application.PublicRegister!.EsriId!.Value,
@@ -855,10 +858,12 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Count.Should().Be(2);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.SubProcessFailures.Count);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant,
+            result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
@@ -958,9 +963,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Count.Should().Be(1);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
@@ -1056,10 +1062,12 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Approved,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Count.Should().Be(2);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.SubProcessFailures.Count);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant,
+            result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
             application.PublicRegister!.EsriId!.Value,
@@ -1159,8 +1167,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Approved,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Should().BeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
            It.IsAny<int>(),
@@ -1265,8 +1273,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Single().Should().Be(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
         
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
@@ -1374,10 +1384,12 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Count.Should().Be(2);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister);
-        result.SubProcessFailures.Should().Contain(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.SubProcessFailures.Count);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotSendNotificationToApplicant,
+            result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
@@ -1477,8 +1489,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Should().BeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
@@ -1592,8 +1604,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.ReferredToLocalAuthority,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.SubProcessFailures.Should().BeEmpty();
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
@@ -1683,8 +1695,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             requestedStatus,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.SubProcessFailures.Single().Should().Be(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationStatusRequested);
+        Assert.True(result.IsFailure);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationStatusRequested,
+            result.SubProcessFailures);
 
         _getFLAMock.VerifyNoOtherCalls();
         _notificationsMock.VerifyNoOtherCalls();
@@ -1707,8 +1721,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.SubProcessFailures.Single().Should().Be(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotRetrieveApplication);
+        Assert.True(result.IsFailure);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotRetrieveApplication,
+            result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(applicationId, CancellationToken.None), Times.Once);
 
@@ -1738,8 +1754,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,// any valid status to be set in the use case.
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.SubProcessFailures.Single().Should().Be(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState);
+        Assert.True(result.IsFailure);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState, result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None),Times.Once);
 
@@ -1766,8 +1783,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             FellingLicenceStatus.Refused,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.SubProcessFailures.Single().Should().Be(FinaliseFellingLicenceApplicationProcessOutcomes.UserRoleNotAuthorised);
+        Assert.True(result.IsFailure);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.UserRoleNotAuthorised, result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
 

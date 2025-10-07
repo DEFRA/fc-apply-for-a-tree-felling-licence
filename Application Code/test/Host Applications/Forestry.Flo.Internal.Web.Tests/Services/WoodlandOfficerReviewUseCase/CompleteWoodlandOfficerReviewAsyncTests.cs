@@ -429,12 +429,6 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
-        NotificationService
-            .Setup(x => x.SendNotificationAsync(It.IsAny<InformApplicantOfApplicationReviewCompletionDataModel>(),
-                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
-                It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
             applicationId,

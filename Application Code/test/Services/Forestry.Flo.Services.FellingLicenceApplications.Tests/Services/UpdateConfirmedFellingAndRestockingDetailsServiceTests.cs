@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Forestry.Flo.Services.Common;
+﻿using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
@@ -83,7 +82,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var storedFla = await _fellingLicenceApplicationsContext.FellingLicenceApplications
             .Include(fellingLicenceApplication => fellingLicenceApplication.SubmittedFlaPropertyDetail!)
@@ -92,37 +91,24 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             .ThenInclude(fellingDetail => fellingDetail.ConfirmedRestockingDetails)
             .FirstAsync(x => x.Id == fla.Id);
         var storedCompartment = storedFla!.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
-        storedCompartment.ConfirmedFellingDetails.Should().NotContain(x => x.Id == confirmedFellingDetail.Id);
-
-        _fellingLicenceApplicationsContext.ConfirmedFellingDetails
-            .Any(x => x.Id == confirmedFellingDetail.Id)
-            .Should().BeFalse();
+        Assert.DoesNotContain(confirmedFellingDetail.Id, storedCompartment.ConfirmedFellingDetails.Select(x => x.Id));
+        Assert.DoesNotContain(confirmedFellingDetail.Id, _fellingLicenceApplicationsContext.ConfirmedFellingDetails.Select(x => x.Id));
 
         foreach (var restockingDetail in confirmedFellingDetail.ConfirmedRestockingDetails)
         {
-            _fellingLicenceApplicationsContext.ConfirmedRestockingDetails
-                .Any(x => x.Id == restockingDetail.Id)
-                .Should().BeFalse();
+            Assert.DoesNotContain(restockingDetail.Id, _fellingLicenceApplicationsContext.ConfirmedRestockingDetails.Select(x => x.Id));
 
             foreach (var restockingSpecies in restockingDetail.ConfirmedRestockingSpecies)
             {
-                _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies
-                    .Any(x => x.Id == restockingSpecies.Id)
-                    .Should().BeFalse();
+                Assert.DoesNotContain(restockingSpecies.Id, _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies.Select(x => x.Id));
             }
         }
 
-        _fellingLicenceApplicationsContext.ConfirmedFellingSpecies
-            .NotAny(x => x.ConfirmedFellingDetailId == confirmedFellingDetail.Id)
-            .Should()
-            .BeTrue();
+        Assert.DoesNotContain(confirmedFellingDetail.Id, _fellingLicenceApplicationsContext.ConfirmedFellingSpecies.Select(x => x.ConfirmedFellingDetailId));
 
         foreach (var restock in confirmedFellingDetail.ConfirmedRestockingDetails)
         {
-            _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies
-                .NotAny(x => x.ConfirmedRestockingDetailsId == restock.Id)
-                .Should()
-                .BeTrue();
+            Assert.DoesNotContain(restock.Id, _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies.Select(x => x.ConfirmedRestockingDetailsId));
         }
     }
 
@@ -147,7 +133,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -173,7 +159,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -193,7 +179,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -375,7 +361,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             detailModel,
             new Dictionary<string, SpeciesModel>(),
             CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -405,7 +391,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             detailModel,
             new Dictionary<string, SpeciesModel>(),
             CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -420,7 +406,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             detailModel,
             new Dictionary<string, SpeciesModel>(),
             CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -446,7 +432,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             CancellationToken.None);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         var storedFla = await _fellingLicenceApplicationsContext.FellingLicenceApplications
             .Include(x => x.SubmittedFlaPropertyDetail)
             .ThenInclude(d => d.SubmittedFlaPropertyCompartments!)
@@ -456,10 +442,10 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             .FirstAsync(x => x.Id == fla.Id);
         var storedCompartment = storedFla!.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
         var storedFellingDetail = storedCompartment.ConfirmedFellingDetails.First(x => x.Id == confirmedFellingDetail.Id);
-        storedFellingDetail.ConfirmedRestockingDetails.Should().NotContain(x => x.Id == confirmedRestockingDetail.Id);
+        Assert.DoesNotContain(confirmedRestockingDetail.Id, storedFellingDetail.ConfirmedRestockingDetails.Select(x => x.Id));
         foreach (var speciesId in restockingSpeciesIds)
         {
-            _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies.Any(x => x.Id == speciesId).Should().BeFalse();
+            Assert.DoesNotContain(speciesId, _fellingLicenceApplicationsContext.ConfirmedRestockingSpecies.Select(x => x.Id));
         }
     }
 
@@ -475,7 +461,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             restockingDetailId,
             userId,
             CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -495,7 +481,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             confirmedRestockingDetail.Id,
             otherUserId,
             CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -512,7 +498,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             nonExistentRestockingDetailId,
             userId,
             CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -534,7 +520,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
             randomRestockingDetailId,
             userId,
             CancellationToken.None);
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     private static FellingLicenceApplication ConstructFellingLicenceApplication(bool existingConfirmed, Guid userId)

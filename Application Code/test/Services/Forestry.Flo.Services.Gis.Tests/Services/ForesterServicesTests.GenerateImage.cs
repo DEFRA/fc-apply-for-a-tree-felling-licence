@@ -1,6 +1,4 @@
-﻿
-using System.Net;
-using FluentAssertions;
+﻿using System.Net;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Newtonsoft.Json;
 using Moq;
@@ -32,8 +30,8 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to calculate Extend");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to calculate Extend", result.Error);
     }
 
     [Fact]
@@ -53,12 +51,6 @@ public partial class ForesterServicesTests
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, }).Verifiable();
 
-
-        _mockHttpHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/GetToken/")),
-                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
-
         _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
             .Returns(new HttpClient(_mockHttpHandler.Object));
 
@@ -70,8 +62,9 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", result.Error);
+        _mockHttpHandler.VerifyAll();
     }
 
 
@@ -85,6 +78,17 @@ public partial class ForesterServicesTests
             .Setup<Task<HttpResponseMessage>>("SendAsync",
                 ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/GetToken")),
                 ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage);
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/Utils/Export")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK, 
+                Content = new StringContent(
+                    "{\"jobId\": \"1\", \"jobStatus\" : \"esriJobSubmitted\" }")
+            }).Verifiable();
 
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync",
@@ -107,12 +111,6 @@ public partial class ForesterServicesTests
                     "{\"paramName\" :\"1\", \"dataType\" : \"file\",  \"value\": { \"url\" :\"https://paul.com/image.png\" }  \r\n}")
             }).Verifiable();
 
-
-        _mockHttpHandler.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync",
-                ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/GetToken/")),
-                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
-
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync",
                 ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://paul.com/image.png")),
@@ -130,8 +128,51 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
+        _mockHttpHandler.VerifyAll();
+    }
 
+    [Fact]
+    public async Task GenerateCompartmentImageAsync_CheckJobStatusFails()
+    {
+
+        _mockHttpHandler.Reset();
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/GetToken")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage);
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/Utils/Export")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(
+                    "{\"jobId\": \"1\", \"jobStatus\" : \"esriJobSubmitted\" }")
+            }).Verifiable();
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/Utils/jobs/1")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.InternalServerError
+            }).Verifiable();
+
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>()))
+            .Returns(new HttpClient(_mockHttpHandler.Object));
+
+        ShapeDetails.ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(shape);
+
+        var sut = CreateSUT();
+        var result =
+            await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
+                MapGeneration.Other, "");
+
+        Assert.True(result.IsFailure);
+        _mockHttpHandler.VerifyAll();
     }
 
     [Fact]
@@ -143,6 +184,17 @@ public partial class ForesterServicesTests
             .Setup<Task<HttpResponseMessage>>("SendAsync",
                 ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/GetToken")),
                 ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage);
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/Utils/Export")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(
+                    "{\"jobId\": \"1\", \"jobStatus\" : \"esriJobSubmitted\" }")
+            }).Verifiable();
 
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync",
@@ -175,7 +227,7 @@ public partial class ForesterServicesTests
             await sut.GenerateImage_SingleCompartmentAsync(ShapeDetails, CancellationToken.None, 100,
                 MapGeneration.Other, "");
 
-        result.IsFailure.Should().BeTrue();
-
+        Assert.True(result.IsFailure);
+        _mockHttpHandler.VerifyAll();
     }
 }

@@ -29,11 +29,6 @@ public class Compartment
     public double? TotalHectares { get; protected set; }
 
     /// <summary>
-    /// Gets and Sets the designation
-    /// </summary>
-    public string? Designation { get; protected set; }
-
-    /// <summary>
     /// Gets and Sets the GIS data
     /// </summary>
     // ReSharper disable once InconsistentNaming
@@ -53,14 +48,12 @@ public class Compartment
     public Compartment(string compartmentNumber,
         string? subCompartmentName,
         double? totalHectares,
-        string? designation,
         string? gisData,
         Guid propertyProfileId)
     {
         CompartmentNumber = compartmentNumber;
         SubCompartmentName = subCompartmentName;
         TotalHectares = totalHectares;
-        Designation = designation;
         GISData = gisData;
         PropertyProfileId = propertyProfileId;
     }

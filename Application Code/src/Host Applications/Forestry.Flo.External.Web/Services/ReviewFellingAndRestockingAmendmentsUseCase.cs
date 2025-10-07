@@ -111,8 +111,6 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
                         SubCompartmentName = x.SubCompartmentName,
                         TotalHectares = x.TotalHectares,
                         SubmittedFlaPropertyCompartmentId = x.SubmittedFlaPropertyCompartmentId,
-                        Designation = x.Designation,
-                        ConfirmedTotalHectares = x.ConfirmedTotalHectares,
                         NearestTown = x.NearestTown,
                         GISData = compartmentGisDictionary[x.SubmittedFlaPropertyCompartmentId].GISData,
 
@@ -192,7 +190,6 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
                         CompartmentNumber = x.CompartmentNumber,
                         SubCompartmentName = x.SubCompartmentName,
                         TotalHectares = x.TotalHectares,
-                        Designation = x.Designation,
                         GISData = compartmentGisDictionary[x.SubmittedFlaPropertyCompartmentId].GISData,
                         ProposedFellingDetails = x.ProposedFellingDetailModels.Select(f =>
                                 new ProposedFellingDetailModel()
@@ -248,7 +245,8 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
             ResponseReceivedDate = currentReview.Value.ResponseReceivedDate,
             ApplicantAgreed = currentReview.Value.ApplicantAgreed,
             ApplicantDisagreementReason = currentReview.Value.ApplicantDisagreementReason,
-            ReviewDeadline = currentReview.Value.ResponseDeadline
+            ReviewDeadline = currentReview.Value.ResponseDeadline,
+            AmendmentReviewCompleted = currentReview.Value.AmendmentReviewCompleted,
         };
 
         return Result.Success(viewModel);

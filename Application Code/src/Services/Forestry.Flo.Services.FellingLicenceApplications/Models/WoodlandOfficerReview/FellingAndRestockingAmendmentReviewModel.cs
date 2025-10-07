@@ -45,6 +45,17 @@ public class FellingAndRestockingAmendmentReviewModel
     /// This should be null if the applicant agreed to the amendments or has not yet responded.
     /// </remarks>
     public string? ApplicantDisagreementReason { get; set; }
+
+
+    /// <summary>
+    /// Gets or sets the reason for the amendments sent to the applicant.
+    /// </summary>
+    public string? AmendmentsReason { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the amendment review has been completed.
+    /// </summary>
+    public bool? AmendmentReviewCompleted { get; set; }
 }
 
 /// <summary>
