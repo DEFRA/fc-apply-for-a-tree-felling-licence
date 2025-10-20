@@ -35,6 +35,7 @@ public class UpdatePublicRegisterDetailsAsyncTests : WoodlandOfficerReviewUseCas
             NotificationService.Object,
             GetConfiguredFcAreas.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(WoodlandOfficerReviewOptions),
+            WoodlandOfficerReviewSubStatusService.Object,
             logger ?? new NullLogger<PublicRegisterUseCase>());
     }
 

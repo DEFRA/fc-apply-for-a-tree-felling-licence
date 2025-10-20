@@ -211,3 +211,7 @@ table#application-list-table{
 .moj-timeline:has(:first-child.flo-timeline_item-casenote):before {
     top: 22px;
 }
+
+.flo-timeline_item-casenote:before {
+    top: 22px !important;
+}

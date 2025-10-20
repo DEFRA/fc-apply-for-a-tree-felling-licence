@@ -1,25 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using AutoFixture;
-using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Auditing;
+﻿using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.FileStorage.Model;
-using Forestry.Flo.Services.FileStorage.Services;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Repositories;
 using Forestry.Flo.Tests.Common;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Moq;
-using NodaTime;
-using NodaTime.Testing;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
@@ -37,8 +28,8 @@ public class ViewCaseNotesServiceTests
         _userAccountRepository = new Mock<IUserAccountRepository>();
     }
 
-    [Theory, AutoMoqData]
-    public async Task WhenCaseNotesExist_CheckBasicFetchScenario(FellingLicenceApplication application)
+    [Fact]
+    public async Task WhenCaseNotesExist_CheckBasicFetchScenario()
     {
         Guid userId1 = Guid.NewGuid();
         Guid userId2 = Guid.NewGuid();
@@ -89,7 +80,60 @@ public class ViewCaseNotesServiceTests
         Assert.True(result.Count(x => x.FellingLicenceApplicationId == fellingLicenceApplicationId) == 2);
     }
 
-    [Theory, AutoMoqData] public async Task WhenVisibleToApplicantOnlyIsTrue_OnlyApplicantVisibleCommentsAreReturned(FellingLicenceApplication application)
+    [Theory, AutoMoqData]
+    public async Task WhenCaseNotesExist_GetSpecificCaseNotes(CaseNoteType[] types)
+    {
+        Guid userId1 = Guid.NewGuid();
+        Guid userId2 = Guid.NewGuid();
+        Guid fellingLicenceApplicationId = Guid.NewGuid();
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), CancellationToken.None)).ReturnsAsync(new List<CaseNote>
+        {
+            new()
+            {
+                CreatedByUserId = userId1,
+                CreatedTimestamp = DateTime.Now,
+                FellingLicenceApplicationId = fellingLicenceApplicationId,
+                Id = Guid.NewGuid(),
+                Text = "Test1",
+                VisibleToApplicant = true,
+                Type = CaseNoteType.ReturnToApplicantComment,
+                VisibleToConsultee = true
+            },
+            new()
+            {
+                CreatedByUserId = userId2,
+                CreatedTimestamp = DateTime.Now,
+                FellingLicenceApplicationId = fellingLicenceApplicationId,
+                Id = Guid.NewGuid(),
+                Text = "Test1",
+                VisibleToApplicant = true,
+                Type = CaseNoteType.ReturnToApplicantComment,
+                VisibleToConsultee = true
+            }
+        });
+
+        _userAccountRepository.Setup(x => x.GetUsersWithIdsInAsync(new List<Guid> { userId1, userId2 }, CancellationToken.None)).ReturnsAsync(new List<UserAccount>
+        {
+            new UserAccountProxy(userId1),
+            new UserAccountProxy(userId2)
+        });
+
+        //arrange
+        var sut = new ViewCaseNotesService(_fellingLicenceApplicationRepository.Object, _userAccountRepository.Object);
+
+        //act
+        var result = await sut.GetSpecificCaseNotesAsync(fellingLicenceApplicationId, types, CancellationToken.None);
+
+        //assert
+
+        Assert.True(result.Count(x => x.CreatedByUserId == userId1) == 1);
+        Assert.True(result.Count(x => x.CreatedByUserId == userId2) == 1);
+        Assert.True(result.Count(x => x.FellingLicenceApplicationId == fellingLicenceApplicationId) == 2);
+    }
+
+    [Fact] 
+    public async Task WhenVisibleToApplicantOnlyIsTrue_OnlyApplicantVisibleCommentsAreReturned()
     {
         //arrange
 

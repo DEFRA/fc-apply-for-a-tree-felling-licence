@@ -52,6 +52,11 @@ public class ReviewAmendmentsViewModel
     /// </summary>
     public required DateTime ReviewDeadline { get; set; }
 
+    /// <summary>
+    /// Gets or sets the reason for the amendments sent to the applicant.
+    /// </summary>
+    public string? AmendmentsReason { get; set; }
+
     public bool IsEditable => ResponseReceivedDate.HasNoValue();
 
     /// <summary>

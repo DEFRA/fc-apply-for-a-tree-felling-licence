@@ -2,14 +2,22 @@
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Services.AdminHubs.Model;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
+using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Repositories;
+using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
+using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications;
 using Forestry.Flo.Services.Notifications.Services;
@@ -18,15 +26,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
 using System.Reflection;
-using Forestry.Flo.Services.AdminHubs.Model;
-using Forestry.Flo.Services.Applicants.Models;
-using Forestry.Flo.Services.Applicants.Services;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.FellingLicenceApplications;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
 using UserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AssignToUserUseCaseTests;
 
@@ -44,6 +45,7 @@ public abstract class AssignToUserUseCaseTestsBase
     protected readonly Mock<IGetFellingLicenceApplicationForInternalUsers> MockGetFellingLicenceApplication = new();
     protected readonly Mock<IUpdateFellingLicenceApplication> MockUpdateFellingLicenceApplication = new();
     protected readonly Mock<IAgentAuthorityService> MockAgentAuthorityService = new();
+    protected readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
 
     protected readonly InternalUser _testUser;
     protected readonly List<string> _validAreaCodes;
@@ -95,6 +97,7 @@ public abstract class AssignToUserUseCaseTestsBase
             MockGetFellingLicenceApplication.Object,
             MockUpdateFellingLicenceApplication.Object,
             MockAgentAuthorityService.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             new NullLogger<AssignToUserUseCase>());
 
     }

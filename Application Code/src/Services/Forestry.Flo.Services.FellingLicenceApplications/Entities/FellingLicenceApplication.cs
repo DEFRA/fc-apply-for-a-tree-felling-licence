@@ -199,4 +199,14 @@ public class FellingLicenceApplication
     /// Gets or sets the Environmental Impact Assessment details for this application.
     /// </summary>
     public EnvironmentalImpactAssessment? EnvironmentalImpactAssessment { get; set; }
+
+    /// <summary>
+    /// Gets and sets a flag indicating whether this application is for a ten year licence.
+    /// </summary>
+    public bool? IsForTenYearLicence { get; set; }
+
+    /// <summary>
+    /// Gets and sets the woodland management plan reference.
+    /// </summary>
+    public string? WoodlandManagementPlanReference { get; set; }
 }

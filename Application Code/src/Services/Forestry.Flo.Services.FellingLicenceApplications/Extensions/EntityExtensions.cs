@@ -224,5 +224,13 @@ public static class EntityExtensions
     /// </returns>
     public static bool ShouldApplicationRequireEia(this FellingLicenceApplication fellingLicenceApplication) =>
         fellingLicenceApplication.LinkedPropertyProfile?.ProposedFellingDetails?.ShouldProposedFellingDetailsRequireEia() ?? false;
+
+    /// <summary>
+    /// Determines whether the specified felling licence application is in a state that allows the applicant to edit it.
+    /// </summary>
+    /// <param name="fellingLicenceApplication">The felling licence application to test.</param>
+    /// <returns>True if the application is in a state for the applicant to be able to edit, otherwise false.</returns>
+    public static bool IsInApplicantEditableState(this FellingLicenceApplication fellingLicenceApplication) =>
+        FellingLicenceStatusConstants.SubmitStatuses.Any(x => x == fellingLicenceApplication.GetCurrentStatus());
 }
 

@@ -4,9 +4,6 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -17,6 +14,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using Forestry.Flo.Internal.Web.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
@@ -25,8 +24,8 @@ namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 [AutoValidateAntiforgeryToken]
 public partial class WoodlandOfficerReviewController(
     IValidator<CompartmentConfirmedFellingRestockingDetailsModel> fellingAndRestockingDetailsModelValidator,
-    EnvironmentalImpactAssessmentAdminOfficerUseCase eiaUseCase,
-    WoodlandOfficerReviewUseCase woReviewUseCase)
+    IEnvironmentalImpactAssessmentAdminOfficerUseCase eiaUseCase,
+    IWoodlandOfficerReviewUseCase woReviewUseCase)
     : Controller
 {
     private readonly IValidator<CompartmentConfirmedFellingRestockingDetailsModel> _fellingAndRestockingDetailsModelValidator = fellingAndRestockingDetailsModelValidator;
@@ -34,7 +33,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> Index(
         Guid id,
-        [FromServices]WoodlandOfficerReviewUseCase useCase,
+        [FromServices]IWoodlandOfficerReviewUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -53,7 +52,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> ConfirmWoodlandOfficerReview(
         WoodlandOfficerReviewModel model,
-        [FromServices] WoodlandOfficerReviewUseCase useCase,
+        [FromServices] IWoodlandOfficerReviewUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -115,7 +114,7 @@ public partial class WoodlandOfficerReviewController(
 
     public async Task<IActionResult> AssignFieldManager(
         Guid id,
-        [FromServices]WoodlandOfficerReviewUseCase useCase,
+        [FromServices]IWoodlandOfficerReviewUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -149,7 +148,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> PublicRegister(
         Guid id,
-        [FromServices] PublicRegisterUseCase useCase,
+        [FromServices] IPublicRegisterUseCase useCase,
         bool? withExemption,
         CancellationToken cancellationToken)
     {
@@ -171,7 +170,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> SaveExemption(
         PublicRegisterViewModel model,
-        [FromServices] PublicRegisterUseCase useCase,
+        [FromServices] IPublicRegisterUseCase useCase,
         CancellationToken cancellationToken)
     {
         if (model.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister 
@@ -204,7 +203,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> PublishToConsultationPublicRegister(
         PublicRegisterViewModel model,
-        [FromServices] PublicRegisterUseCase useCase,
+        [FromServices] IPublicRegisterUseCase useCase,
         CancellationToken cancellationToken)
     {
         if (model.PublicRegister?.ConsultationPublicRegisterPeriodDays.HasNoValue() ?? true)
@@ -235,7 +234,7 @@ public partial class WoodlandOfficerReviewController(
     public async Task<IActionResult> ReviewComment(
         Guid id,
         Guid commentId,
-        [FromServices] PublicRegisterUseCase useCase,
+        [FromServices] IPublicRegisterUseCase useCase,
         bool? withExemption,
         CancellationToken cancellationToken)
     {
@@ -253,7 +252,7 @@ public partial class WoodlandOfficerReviewController(
         Guid id,
         Guid commentId,
         [FromForm] ReviewCommentModel model,
-        [FromServices] PublicRegisterUseCase useCase,
+        [FromServices] IPublicRegisterUseCase useCase,
         CancellationToken cancellationToken)
     {
         if (model.Comment is not null)
@@ -274,7 +273,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> RemoveFromPublicRegister(
         PublicRegisterViewModel model,
-        [FromServices] PublicRegisterUseCase useCase,
+        [FromServices] IPublicRegisterUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -299,7 +298,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> SiteVisit(
         Guid id,
-        [FromServices] SiteVisitUseCase useCase,
+        [FromServices] ISiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
         var hostingPage = Url.Action(nameof(SiteVisit), new { id = id });
@@ -324,7 +323,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> SiteVisitSummary(
         Guid id,
-        [FromServices] SiteVisitUseCase useCase,
+        [FromServices] ISiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
         var hostingPage = Url.Action(nameof(SiteVisitSummary), new { id = id });
@@ -342,7 +341,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> SiteVisit(
         SiteVisitViewModel model,
-        [FromServices] SiteVisitUseCase useCase,
+        [FromServices] ISiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -422,7 +421,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> AddSiteVisitEvidence(
         Guid id,
-        [FromServices] SiteVisitUseCase useCase,
+        [FromServices] ISiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
         var hostingPage = Url.Action(nameof(AddSiteVisitEvidence), new { id = id });
@@ -446,7 +445,7 @@ public partial class WoodlandOfficerReviewController(
     public async Task<IActionResult> AddSiteVisitEvidence(
         AddSiteVisitEvidenceModel model,
         FormFileCollection siteVisitAttachmentFiles,
-        [FromServices] SiteVisitUseCase useCase,
+        [FromServices] ISiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -471,7 +470,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> ReviewSiteVisitEvidence(
         Guid id,
-        [FromServices] SiteVisitUseCase useCase,
+        [FromServices] ISiteVisitUseCase useCase,
         CancellationToken cancellationToken)
     {
         var hostingPage = Url.Action(nameof(ReviewSiteVisitEvidence), new { id = id });
@@ -489,7 +488,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> Pw14Checks(
         Guid id,
-        [FromServices] Pw14UseCase useCase,
+        [FromServices] IPw14UseCase useCase,
         CancellationToken cancellationToken)
     {
         var model = await useCase.GetPw14CheckDetailsAsync(id, cancellationToken);
@@ -505,7 +504,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> Pw14Checks(
         Pw14ChecksViewModel model,
-        [FromServices] Pw14UseCase useCase,
+        [FromServices] IPw14UseCase useCase,
         [FromServices] IAmendCaseNotes amendCaseNotes,
         CancellationToken cancellationToken)
     {
@@ -547,7 +546,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> Conditions(
         Guid id,
-        [FromServices] ConditionsUseCase useCase,
+        [FromServices] IConditionsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -566,7 +565,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> SaveConditionalStatus(
         ConditionsViewModel model,
-        [FromServices] ConditionsUseCase useCase,
+        [FromServices] IConditionsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -590,7 +589,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> GenerateConditions(
         ConditionsViewModel model,
-        [FromServices] ConditionsUseCase useCase,
+        [FromServices] IConditionsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -615,7 +614,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> SaveConditions(
         ConditionsViewModel model,
-        [FromServices] ConditionsUseCase useCase,
+        [FromServices] IConditionsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -635,7 +634,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> SendConditionsNotification(
         ConditionsViewModel model,
-        [FromServices] ConditionsUseCase useCase,
+        [FromServices] IConditionsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -663,7 +662,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> LarchCheck(
         Guid id,
-        [FromServices] LarchCheckUseCase useCase,
+        [FromServices] ILarchCheckUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -671,7 +670,7 @@ public partial class WoodlandOfficerReviewController(
 
         if (model.IsFailure)
         {
-            this.AddErrorMessage("Could not retrieve mapping check status");
+            this.AddErrorMessage("Could not retrieve larch check status");
             return RedirectToAction("Index", new { id });
         }
 
@@ -682,8 +681,8 @@ public partial class WoodlandOfficerReviewController(
     public async Task<IActionResult> LarchCheck(
         Guid id,
         LarchCheckModel model,
-        [FromServices] LarchCheckUseCase useCase,
-        [FromServices] WoodlandOfficerReviewUseCase woodlandOfficerReviewUseCase,
+        [FromServices] ILarchCheckUseCase useCase,
+        [FromServices] IWoodlandOfficerReviewUseCase woodlandOfficerReviewUseCase,
         [FromServices] IAmendCaseNotes amendCaseNotes,
         CancellationToken cancellationToken)
     {
@@ -730,11 +729,11 @@ public partial class WoodlandOfficerReviewController(
                 VisibleToConsultee: model.VisibleToConsultee
             );
 
-            var caseNoteresult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
+            var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
 
-            if (caseNoteresult.IsFailure)
+            if (caseNoteResult.IsFailure)
             {
-                this.AddErrorMessage(result.Error);
+                this.AddErrorMessage(caseNoteResult.Error);
                 return RedirectToAction(nameof(LarchFlyover), new { id = model.ApplicationId });
             }
         }
@@ -745,7 +744,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> LarchFlyover(
         Guid id,
-        [FromServices] LarchCheckUseCase useCase,
+        [FromServices] ILarchCheckUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -753,7 +752,7 @@ public partial class WoodlandOfficerReviewController(
 
         if (model.IsFailure)
         {
-            this.AddErrorMessage("Could not retrieve mapping check status");
+            this.AddErrorMessage("Could not retrieve larch flyover status");
             return RedirectToAction("Index", new { id });
         }
 
@@ -764,7 +763,7 @@ public partial class WoodlandOfficerReviewController(
     public async Task<IActionResult> LarchFlyover(
         Guid id,
         LarchFlyoverModel model,
-        [FromServices] LarchCheckUseCase useCase,
+        [FromServices] ILarchCheckUseCase useCase,
         [FromServices] IAmendCaseNotes amendCaseNotes,
         [FromServices] IValidator<LarchFlyoverModel> larchFlyoverValidator,
         CancellationToken cancellationToken)
@@ -807,11 +806,11 @@ public partial class WoodlandOfficerReviewController(
                 VisibleToConsultee: model.VisibleToConsultee
             );
 
-            var caseNoteresult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
+            var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
 
-            if (caseNoteresult.IsFailure)
+            if (caseNoteResult.IsFailure)
             {
-                this.AddErrorMessage(result.Error);
+                this.AddErrorMessage(caseNoteResult.Error);
                 return RedirectToAction(nameof(LarchFlyover), new { id = model.ApplicationId });
             }
         }
@@ -839,7 +838,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> EiaScreening(
         EiaScreeningViewModel model,
-        [FromServices] WoodlandOfficerReviewUseCase useCase,
+        [FromServices] IWoodlandOfficerReviewUseCase useCase,
         [FromServices] IValidator<EiaScreeningViewModel> validator,
         CancellationToken cancellationToken)
     {
@@ -883,7 +882,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpGet]
     public async Task<IActionResult> ViewDesignations(
         Guid id,
-        [FromServices] DesignationsUseCase useCase,
+        [FromServices] IDesignationsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, viewModel) = await useCase.GetApplicationDesignationsAsync(id, cancellationToken);
@@ -899,7 +898,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> ViewDesignations(
         DesignationsViewModel model,
-        [FromServices] DesignationsUseCase useCase,
+        [FromServices] IDesignationsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, viewModel) = await useCase.GetApplicationDesignationsAsync(model.ApplicationId, cancellationToken);
@@ -933,7 +932,7 @@ public partial class WoodlandOfficerReviewController(
     public async Task<IActionResult> UpdateDesignations(
         Guid id,
         Guid compartmentId,
-        [FromServices] DesignationsUseCase useCase,
+        [FromServices] IDesignationsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, viewModel) = await useCase.GetUpdateDesignationsModelAsync(id, compartmentId, cancellationToken);
@@ -949,7 +948,7 @@ public partial class WoodlandOfficerReviewController(
     [HttpPost]
     public async Task<IActionResult> UpdateDesignations(
         UpdateDesignationsViewModel model,
-        [FromServices] DesignationsUseCase useCase,
+        [FromServices] IDesignationsUseCase useCase,
         [FromServices] IValidator<UpdateDesignationsViewModel> validator,
         CancellationToken cancellationToken)
     {
@@ -989,6 +988,24 @@ public partial class WoodlandOfficerReviewController(
         }
         
         return RedirectToAction(nameof(ViewDesignations), new { id = model.ApplicationId });
+    }
+
+    public async Task<IActionResult> GenerateLicencePreview(
+        [FromQuery] Guid applicationId,
+        [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var resultPdfGenerated =
+            await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(user.UserAccountId!.Value, applicationId, cancellationToken);
+
+        if (resultPdfGenerated.IsFailure)
+        {
+            this.AddErrorMessage("Unable to generate the preview licence document for the application");
+        }
+
+        return RedirectToAction(nameof(Index), new { id = applicationId });
     }
 
     private async Task<Result<EiaScreeningViewModel>> LoadEiaScreeningViewModel(Guid id, CancellationToken cancellationToken)

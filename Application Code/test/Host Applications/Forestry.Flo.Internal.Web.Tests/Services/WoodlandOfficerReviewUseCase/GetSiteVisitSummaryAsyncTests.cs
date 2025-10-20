@@ -466,6 +466,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             MockRemoveDocumentService.Object,
             _foresterServices.Object,
             RequestContext,
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<SiteVisitUseCase>());
     }
 }

@@ -60,9 +60,7 @@ public class GetConfiguredFcAreasService : IGetConfiguredFcAreas
     public async Task<string> TryGetAdminHubAddress(string adminHubName, CancellationToken cancellationToken)
     {
         var getAdminHubsResult = await _adminHubService.RetrieveAdminHubDataAsync(
-            new GetAdminHubsDataRequestModel(
-                Guid.Empty,                             //why
-                AccountTypeInternal.AdminHubManager), //why
+            GetAdminHubsDataRequestModel.CreateSystemRequest,
             cancellationToken);
 
         if (getAdminHubsResult.IsFailure)

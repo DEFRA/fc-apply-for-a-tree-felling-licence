@@ -68,7 +68,7 @@
         <div class="govuk-grid-row">
 
             <div class="govuk-grid-column-full">
-                <h2 class="govuk-heading-m">Process stage</h2>
+                <h1 class="govuk-heading-m">Process stage</h1>
             </div>
 
         </div>
@@ -102,7 +102,7 @@
         </div>
         <div class="govuk-!-text-align-left govuk-grid-row govuk-!-margin-top-2">
             <div class="govuk-grid-column-full">
-                <label class="govuk-label--s" for="search-text">Search for an application</label>
+                <label class="govuk-label--s" for="search">Search for an application</label>
                 <div class="govuk-hint">
                     Search by application reference number, property or user.
                 </div>
@@ -179,6 +179,9 @@
                             <a class="sort-header" href="@getSortUrl("Status")">Status @getSortArrow("Status")</a>
                         </th>
                         <th scope="col" class="govuk-table__header">
+                            Sub-status
+                        </th>
+                        <th scope="col" class="govuk-table__header">
                             <a class="sort-header" href="@getSortUrl("Reference")">Reference @getSortArrow("Reference")</a>
                         </th>
                         <th scope="col" class="govuk-table__header">
@@ -213,12 +216,25 @@
                         {
                             <tr class="govuk-table__row data-row">
 
-                                <td class="govuk-table__cell" style="width: @(14 + offset)%">
+                                <td class="govuk-table__cell" style="width: @(12 + offset)%">
                                     <strong class="govuk-tag app-task-list__tag @GetStatusStyleName(assignedFellingLicenceApplicationModel.FellingLicenceStatus)" id="company-information-status">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
                                 </td>
 
+                                <td class="govuk-table__cell" style="width: @(12 + offset)%">
+                                    <div class="sub-status-vertical-container">
+                                        @foreach (var subStatus in assignedFellingLicenceApplicationModel.SubStatuses)
+                                        {
+                                            <div>
+                                                <strong class="govuk-tag govuk-tag--grey">
+                                                    @subStatus.GetDisplayName()
+                                                </strong>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+
                                 <td class="govuk-table__cell" style="width: @(10 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.Reference)">
-                                    <a asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId" aria-describedby="application-details">
+                                    <a asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId">
                                         @assignedFellingLicenceApplicationModel.Reference
                                     </a>
                                 </td>

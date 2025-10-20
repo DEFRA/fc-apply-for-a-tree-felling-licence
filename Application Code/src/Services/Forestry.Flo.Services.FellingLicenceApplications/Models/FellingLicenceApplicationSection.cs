@@ -18,5 +18,7 @@ public enum FellingLicenceApplicationSection
     [Description("Terms and conditions")]
     FlaTermsAndConditionsViewModel,
     [Description("Environmental Impact Assessment")]
-    EnvironmentalImpactAssessment
+    EnvironmentalImpactAssessment,
+    [Description("10 Year Licence")]
+    TenYearLicence
 }

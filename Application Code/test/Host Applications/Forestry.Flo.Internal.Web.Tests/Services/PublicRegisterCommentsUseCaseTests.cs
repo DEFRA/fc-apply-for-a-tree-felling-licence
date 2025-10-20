@@ -1,5 +1,4 @@
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -11,6 +10,7 @@ using Forestry.Flo.Services.Notifications.Models;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NodaTime;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 

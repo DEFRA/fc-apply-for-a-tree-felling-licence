@@ -27,7 +27,7 @@ define(["require",
     "/js/mapping/mapSettings.js?v=" + Date.now(),
     "/js/mapping/widgets/alert-widget.js?v=" + Date.now(),
     "/js/mapping/KMLConvertor.js?v=" + Date.now(),
-"/js/JZip.js"],
+    "/js/JZip.js"],
     function (require,
         exports,
         config,
@@ -55,7 +55,7 @@ define(["require",
         MapsCommon, mapSettings,
         AlertWidget,
         kml,
-        JSZip    ) {
+        JSZip) {
         var bulkImportMap = /** @class */ (function () {
 
             /**
@@ -99,7 +99,7 @@ define(["require",
                             that.alertWidget.ShowMessage("error", "File type is not supported");
                             return;
                         }
-                        if (fileExt.toLocaleLowerCase() === ".kml" ) {
+                        if (fileExt.toLocaleLowerCase() === ".kml") {
                             var fileReader = new FileReader();
                             fileReader.readAsText(e.target.files[0]);
                             fileReader.onload = function () {
@@ -140,7 +140,7 @@ define(["require",
                             fileReader.onload = async function () {
                                 try {
                                     const jszip = new JSZip();
-                                    const zip = await jszip.loadAsync(fileReader.result); 
+                                    const zip = await jszip.loadAsync(fileReader.result);
                                     const kmlFile = Object.keys(zip.files).find((fileName) => fileName.endsWith(".kml"));
 
                                     if (!kmlFile) {
@@ -435,12 +435,6 @@ define(["require",
                 if (this.ocLayer_Polygon) {
                     sources.push({
                         layer: this.ocLayer_Polygon,
-                        enabled: true
-                    });
-                }
-                if (this.ocLayer_Line) {
-                    sources.push({
-                        layer: this.ocLayer_Line,
                         enabled: true
                     });
                 }
@@ -932,23 +926,7 @@ define(["require",
                     let label = shapeGraphic.attributes.compartmentName;
                     var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
                     labelSymbol.text = label;
-                    if (shapeGraphic.geometry.type === "point") {
-                        labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                        labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                        resx = new Graphic({
-                            geometry: shapeGraphic.geometry,
-                            symbol: labelSymbol
-                        });
-                    }
-                    else if (shapeGraphic.geometry.type === "polyline") {
-                        labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                        labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                        resx = new Graphic({
-                            geometry: shapeGraphic.geometry.extent.center,
-                            symbol: labelSymbol
-                        });
-                    }
-                    else {
+                    if (shapeGraphic.geometry.type === "polygon") {
                         resx = new Graphic({
                             geometry: shapeGraphic.geometry.centroid,
                             symbol: labelSymbol
@@ -961,6 +939,7 @@ define(["require",
                     }
                     return resx;
                 };
+
             bulkImportMap.prototype.getSizeOfShape = function (workingGraphic) {
                 var hectares = geometryEngine.planarArea(workingGraphic.geometry, "hectares");
                 if (hectares < 0) {
@@ -1372,7 +1351,7 @@ define(["require",
                 this.handleLabelsOnDrawingLayer();
 
                 var list = document.getElementById("selection");
-                
+
                 this.removeAllChildNodes(list);
 
                 var nextPanel = document.getElementById(`SelectArea`);
@@ -1411,15 +1390,8 @@ define(["require",
                 const labelGraphics = this._drawingLayer.graphics.items.map((graphic) => {
                     let textSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
                     textSymbol.text = graphic.attributes[that.fieldControl.options[that.fieldControl.selectedIndex || 0].value] || "";
+                    labelGeometry = graphic.geometry.centroid;
 
-                    let labelGeometry;
-                    if (graphic.geometry.type === "point") {
-                        labelGeometry = graphic.geometry;
-                    } else if (graphic.geometry.type === "polygon") {
-                        labelGeometry = graphic.geometry.centroid;
-                    } else if (graphic.geometry.type === "polyline") {
-                        labelGeometry = graphic.geometry.extent.center;
-                    }
 
                     return new Graphic({
                         geometry: labelGeometry,

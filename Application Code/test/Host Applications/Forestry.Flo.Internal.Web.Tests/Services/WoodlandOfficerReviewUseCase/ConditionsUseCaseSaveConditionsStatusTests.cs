@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
@@ -13,6 +12,7 @@ using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Services;
 using Forestry.Flo.Tests.Common;
@@ -20,6 +20,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
+using System.Text.Json;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
@@ -32,6 +33,7 @@ public class ConditionsUseCaseSaveConditionsStatusTests
     private readonly Mock<IUpdateConfirmedFellingAndRestockingDetailsService> _fellingAndRestockingService = new();
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private const string AdminHubAddress = "admin hub address";
 
     private readonly string RequestContextCorrelationId = Guid.NewGuid().ToString();
@@ -260,6 +262,7 @@ public class ConditionsUseCaseSaveConditionsStatusTests
             _getConfiguredFcAreas.Object,
             new Mock<IClock>().Object,
             new OptionsWrapper<ExternalApplicantSiteOptions>(new ExternalApplicantSiteOptions()),
+            _woodlandOfficerReviewSubStatusService.Object,
             new NullLogger<ConditionsUseCase>());
     }
 }

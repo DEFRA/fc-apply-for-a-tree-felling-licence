@@ -234,21 +234,6 @@ define([
                             spatialReference: item.GISData.spatialReference.wkid
                         };
                     }
-                    else if (item.GISData.paths) {
-                        geometry = {
-                            type: "polyline",
-                            paths: item.GISData.paths,
-                            spatialReference: item.GISData.spatialReference.wkid
-                        };
-                    }
-                    else {
-                        geometry = {
-                            type: "point",
-                            longitude: item.GISData.x,
-                            latitude: item.GISData.y,
-                            spatialReference: item.GISData.spatialReference.wkid
-                        };
-                    }
 
                     try {
                         that.oc_GraphicsArray.push(new Graphic({
@@ -268,12 +253,6 @@ define([
                 this.CanSave();
                 this.buildPolygon_layer(this.oc_GraphicsArray.filter(function (item) {
                     return item.geometry.type === "polygon";
-                }));
-                this.buildPoint_layer(this.oc_GraphicsArray.filter(function (item) {
-                    return item.geometry.type === "point";
-                }));
-                this.buildLine_layer(this.oc_GraphicsArray.filter(function (item) {
-                    return item.geometry.type === "polyline";
                 }));
             };
 
@@ -717,97 +696,15 @@ define([
                                 expression: "$feature.compartmentName ",
                             },
                             symbol: labelSymbol,
-                           visualVariables: mapSettings.visualVariables.textSize
+                            visualVariables: mapSettings.visualVariables.textSize
                         },
                         renderer: {
                             type: "simple",
                             symbol: mapSettings.otherPolygonSymbol,
-                           visualVariables: mapSettings.visualVariables.size
+                            visualVariables: mapSettings.visualVariables.size
                         }
                     });
                     this.map.add(this.ocLayer_Polygon);
-                }
-                catch (e) {
-                    if (window.console) {
-                        console.error("Failed to create all required parts for view.", e);
-                    }
-                }
-            };
-
-            /**
-            * Draws all other compartment lines to the "Polyline Layer"
-            * @param {Geometry[]} lines The geometry of the lines 
-            **/
-            mapDrawCompartment.prototype.buildLine_layer = function (lines) {
-                try {
-                    if (typeof lines === "undefined" || lines === null || lines.length === 0) {
-                        return;
-                    }
-                    let labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-
-                    this.ocLayer_Line = new FeatureLayer({
-                        source: lines,
-                        geometryType: "polyline",
-                        objectIdField: "ObjectID",
-                        fields: [
-                            { name: "ObjectID", type: "oid" },
-                            { name: "compartmentName", type: "string" }
-                        ],
-                        labelingInfo: {
-                            labelExpressionInfo: {
-                                expression: "$feature.compartmentName "
-                            },
-                            symbol: labelSymbol,
-                            visualVariables: mapSettings.visualVariables.textSize
-                        },
-                        renderer: {
-                            type: "simple",
-                            symbol: mapSettings.otherLineSymbol,
-                            visualVariables: mapSettings.visualVariables.size
-                        }
-                    });
-                    this.map.add(this.ocLayer_Line);
-                }
-                catch (e) {
-                    if (window.console) {
-                        console.error("Failed to create all required parts for view.", e);
-                    }
-                }
-            };
-
-            /**
-            * Draws all other compartment polygons to the "Points Layer"
-            * @param {Geometry[]} points The geometry of the points 
-            **/
-            mapDrawCompartment.prototype.buildPoint_layer = function (points) {
-                try {
-                    if (typeof points === "undefined" || points === null || points.length === 0) {
-                        return;
-                    }
-                    let labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-
-                    this.ocLayer_Point = new FeatureLayer({
-                        source: points,
-                        geometryType: "point",
-                        objectIdField: "ObjectID",
-                        fields: [
-                            { name: "ObjectID", type: "oid" },
-                            { name: "compartmentName", type: "string" }
-                        ],
-                        labelingInfo: {
-                            labelExpressionInfo: {
-                                expression: "$feature.compartmentName "
-                            },
-                            symbol: labelSymbol,
-                            visualVariables: mapSettings.visualVariables.textSize
-                        },
-                        renderer: {
-                            type: "simple",
-                            symbol: mapSettings.otherPointSymbol,
-                            visualVariables: mapSettings.visualVariables.size
-                        }
-                    });
-                    this.map.add(this.ocLayer_Point);
                 }
                 catch (e) {
                     if (window.console) {
@@ -946,8 +843,6 @@ define([
                     layer: this._drawingLayer,
                     view: this.view,
                     availableCreateTools: [
-                        "point",
-                        "polyline",
                         "polygon"
                     ],
                     tool: "move",
@@ -975,12 +870,6 @@ define([
                 if (this.ocLayer_Polygon) {
                     sources.push({
                         layer: this.ocLayer_Polygon,
-                        enabled: true,
-                    });
-                }
-                if (this.ocLayer_Line) {
-                    sources.push({
-                        layer: this.ocLayer_Line,
                         enabled: true,
                     });
                 }
@@ -1246,24 +1135,11 @@ define([
                 //Finally lets apply all fields
                 this._drawingLayer.graphics.items.forEach(function (g) {
                     g.attributes.isValid = isValid;
-                    switch (g.geometry.type) {
-                        case "point":
-                            if (!g.symbol.type || g.symbol.type !== "text") {
-                                g.symbol = g.attributes.isValid
-                                    ? mapSettings.activePointSymbol
-                                    : mapSettings.invalidPointSymbol;
-                            }
-                            break;
-                        case "polyline":
-                            g.symbol = g.attributes.isValid
-                                ? mapSettings.activeLineSymbol
-                                : mapSettings.invalidLineSymbol;
-                            break;
-                        case "polygon":
-                            g.symbol = g.attributes.isValid
-                                ? mapSettings.activePolygonSymbol
-                                : mapSettings.invalidPolygonSymbol;
-                            break;
+                    if (g.geometry.type === "polygon") {
+                        g.symbol = g.attributes.isValid
+                            ? mapSettings.activePolygonSymbol
+                            : mapSettings.invalidPolygonSymbol;
+
                     }
                 });
                 if (evt.toolEventInfo &&
@@ -1381,19 +1257,6 @@ define([
              * Gets the size of the shape.
              */
             mapDrawCompartment.prototype.getSizeOfShape = function (workingGraphic) {
-                if (workingGraphic.geometry.type === "point") {
-                    return 0.01;
-                }
-                if (workingGraphic.geometry.type === "polyline") {
-                    let workingDistance = geometryEngine.planarLength(workingGraphic.geometry, "meters");
-                    workingDistance = Math.round(workingDistance / 10);
-                    let area = workingDistance * 0.01;
-
-                    if (area === 0) {
-                        area = 0.01;
-                    }
-                    return area;
-                }
                 return geometryEngine.planarArea(workingGraphic.geometry, "hectares");
             }
 
@@ -1494,28 +1357,12 @@ define([
                     }
 
                 }
-                if (shapeGraphic.geometry.type === "point") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry,
-                        symbol: labelSymbol,
-                    });
-                }
-                else if (shapeGraphic.geometry.type === "polyline") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.extent.center,
-                        symbol: labelSymbol,
-                    });
-                }
-                else {
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.centroid,
-                        symbol: labelSymbol,
-                    });
-                }
+
+                resx = new Graphic({
+                    geometry: shapeGraphic.geometry.centroid,
+                    symbol: labelSymbol,
+                });
+
                 if (!resx.attributes) {
                     resx.attributes = {
                         shapeID: shapeGraphic.uid,
@@ -1574,29 +1421,6 @@ define([
                             symbol: mapSettings.activePolygonSymbol,
                         });
                     }
-                    else if (this.cc_GIS.paths) {
-                        //Its a Path
-                        shape = new Graphic({
-                            geometry: {
-                                type: "polyline",
-                                paths: this.cc_GIS.paths,
-                                spatialReference: this.cc_GIS.spatialReference.wkid,
-                            },
-                            symbol: mapSettings.activeLineSymbol,
-                        });
-                    }
-                    else {
-                        //Its a Point
-                        shape = new Graphic({
-                            geometry: {
-                                type: "point",
-                                longitude: this.cc_GIS.x,
-                                latitude: this.cc_GIS.y,
-                                spatialReference: this.cc_GIS.spatialReference.wkid,
-                            },
-                            symbol: mapSettings.activePointSymbol,
-                        });
-                    }
                 }
                 else {
                     shape = new Graphic({
@@ -1608,7 +1432,7 @@ define([
                     name: this.cc_Name,
                     isValid: true
                 };
-                var labelGraphic = this.getLabelGraphic(shape);
+                const labelGraphic = this.getLabelGraphic(shape);
                 return {
                     shape: shape,
                     label: labelGraphic,

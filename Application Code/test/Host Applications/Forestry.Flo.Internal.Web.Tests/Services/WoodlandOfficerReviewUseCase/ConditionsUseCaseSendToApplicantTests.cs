@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
@@ -15,6 +14,7 @@ using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
@@ -24,6 +24,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
+using System.Text.Json;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
@@ -39,6 +40,7 @@ public class ConditionsUseCaseSendToApplicantTests
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService = new();
     private readonly Mock<IRetrieveWoodlandOwners> _woodlandOwnersService = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
 
     private readonly string RequestContextCorrelationId = Guid.NewGuid().ToString();
     private readonly Guid RequestContextUserId = Guid.NewGuid();
@@ -267,7 +269,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _conditionsService.VerifyNoOtherCalls();
 
         var expectedConditionsText = "No conditions apply to the application";
-        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         _notificationsService.Verify(x => x.SendNotificationAsync(It.Is<ConditionsToApplicantDataModel>(
             m => m.ApplicationReference == applicationDetails.ApplicationReference 
@@ -362,7 +364,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _conditionsService.VerifyNoOtherCalls();
 
         var expectedConditionsText = "No conditions apply to the application";
-        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         _notificationsService.Verify(x => x.SendNotificationAsync(It.Is<ConditionsToApplicantDataModel>(
             m => m.ApplicationReference == applicationDetails.ApplicationReference
@@ -456,7 +458,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _conditionsService.VerifyNoOtherCalls();
 
         var expectedConditionsText = "No conditions apply to the application";
-        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         _notificationsService.Verify(x => x.SendNotificationAsync(It.Is<ConditionsToApplicantDataModel>(
             m => m.ApplicationReference == applicationDetails.ApplicationReference
@@ -555,7 +557,7 @@ public class ConditionsUseCaseSendToApplicantTests
             expectedConditionsText.AddRange(condition.ToFormattedArray());
             expectedConditionsText.Add(string.Empty);
         }
-        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var expectedUrl = $"{_baseUri}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         _notificationsService.Verify(x => x.SendNotificationAsync(It.Is<ConditionsToApplicantDataModel>(
             m => m.ApplicationReference == applicationDetails.ApplicationReference 
@@ -626,6 +628,7 @@ public class ConditionsUseCaseSendToApplicantTests
             _getConfiguredFcAreas.Object,
             clock.Object,
             new OptionsWrapper<ExternalApplicantSiteOptions>(new ExternalApplicantSiteOptions{BaseUrl = _baseUri}),
+            _woodlandOfficerReviewSubStatusService.Object,
             new NullLogger<ConditionsUseCase>());
     }
 }

@@ -27,6 +27,7 @@ using MassTransit;
 using Forestry.Flo.External.Web.Services.AgentAuthority;
 using Forestry.Flo.External.Web.Services.FcUser;
 using Forestry.Flo.Services.Common.Analytics;
+using Forestry.Flo.Services.ConditionsBuilder;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.Gis.Infrastructure;
 using Forestry.Flo.Services.Gis.Interfaces;
@@ -103,9 +104,17 @@ public static class ServiceCollectionExtensions
 
                     context.Principal!.AddIdentity(newIdentity);
 
-                    if (principal != null && userSignIn != null)
+                    try
                     {
-                        await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
+                        if (principal != null && userSignIn != null)
+                        {
+                            await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
+                        }
+                    }
+                    catch(Exception)
+                    {
+                        context.Response.Redirect("/Home/Error");
+                        context.HandleResponse();
                     }
                 };
 
@@ -170,9 +179,17 @@ public static class ServiceCollectionExtensions
 
                     context.Principal!.AddIdentity(newIdentity);
 
-                    if (principal != null && userSignIn != null)
+                    try
                     {
-                        await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
+                        if (principal != null && userSignIn != null)
+                        {
+                            await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        context.Response.Redirect("/Home/Error");
+                        context.HandleResponse();
                     }
                 };
 
@@ -268,9 +285,17 @@ public static class ServiceCollectionExtensions
 
                     var token = context.Principal?.Claims.FirstOrDefault(x => x.Type == "token")?.Value;
 
-                    if (principal != null && userSignIn != null)
+                    try
                     {
-                        await userSignIn.HandleUserLoginAsync(principal, token);
+                        if (principal != null && userSignIn != null)
+                        {
+                            await userSignIn.HandleUserLoginAsync(principal, token);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        context.Response.Redirect("/Home/Error");
+                        context.HandleResponse();
                     }
                 };
             });
@@ -314,6 +339,7 @@ public static class ServiceCollectionExtensions
         services.AddAdminHubServices(dbContextOptions);
         services.AddDataImportServices();
         services.AddFileStorageServices(configuration, environment);
+        services.AddConditionsBuilderServices(configuration, dbContextOptions);
 
         services.AddFakeServices(configuration);
 
@@ -455,5 +481,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AssignWoodlandOfficerAsyncUseCase>();
         services.AddScoped<EnvironmentalImpactAssessmentUseCase>();
         services.AddScoped<ReviewFellingAndRestockingAmendmentsUseCase>();
-;    }
+        services.AddScoped<TenYearLicenceUseCase>();
+    }
 }

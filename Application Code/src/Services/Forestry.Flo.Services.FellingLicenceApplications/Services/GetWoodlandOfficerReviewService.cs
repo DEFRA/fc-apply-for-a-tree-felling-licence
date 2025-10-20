@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
 using System.Reflection.Metadata;
 using System.Security.Policy;
+using Forestry.Flo.Services.Gis.Models.Internal;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -392,25 +393,35 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
             // TODO: LAYER IS NOT THE CORRECT LAYER, https://harrishealthalliance.atlassian.net/browse/FLOV2-1595
             var localAuthority = await GetLocalAuthorityForFellingLicenceApplicationAsync(fla.Value, cancellationToken);
 
-            // TODO: NEEDS TO BE THE CONFIRMED F&R DETAILS, When entities straightened out!!!
-            var fellingDetails =
-                fla.Value.LinkedPropertyProfile.ProposedFellingDetails ?? new List<ProposedFellingDetail>(0);
-
-            var totalArea = fellingDetails.Sum(x => x.AreaToBeFelled);
-            double broadleaf = 0;
-            double conifer = 0;
             double compartmentAreaTotal = 0;
 
-            foreach (var fellingDetail in fellingDetails)
+            if (fla.Value.WoodlandOfficerReview?.ConfirmedFellingAndRestockingComplete ?? false)
             {
-                var compartmentArea = fellingDetail.AreaToBeFelled;
-                compartmentAreaTotal += compartmentArea;
+                var fellingDetails =
+                    fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?.SelectMany(x => x.ConfirmedFellingDetails) ?? new List<ConfirmedFellingDetail>(0);
+                
+                foreach (var fellingDetail in fellingDetails)
+                {
+                    compartmentAreaTotal += fellingDetail.AreaToBeFelled;
+                }
+            }
+            else
+            {
+                var fellingDetails =
+                    fla.Value.LinkedPropertyProfile.ProposedFellingDetails ?? new List<ProposedFellingDetail>(0);
+
+                foreach (var fellingDetail in fellingDetails)
+                {
+                    compartmentAreaTotal += fellingDetail.AreaToBeFelled;
+                }
             }
 
+            var totalArea = fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?.Sum(x => x.TotalHectares) ?? 0;
+
             var compartmentDetails =
-                fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments
+                fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
                     .Select(x => x.ToInternalCompartmentDetails())
-                    .ToList();
+                    .ToList() ?? [];
 
             var result = new ApplicationDetailsForPublicRegisterModel
             {
@@ -420,9 +431,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 NearestTown = fla.Value.SubmittedFlaPropertyDetail.NearestTown ?? string.Empty,
                 LocalAuthority = localAuthority,
                 AdminRegion = fla.Value.AdministrativeRegion ?? string.Empty,
-                TotalArea = fla.Value.LinkedPropertyProfile.ProposedFellingDetails.Sum(x => x.AreaToBeFelled),
-                BroadleafArea = broadleaf,
-                ConiferousArea = conifer,
+                TotalArea = totalArea,
+                BroadleafArea = 0,
+                ConiferousArea = 0,
                 OpenGroundArea = totalArea - compartmentAreaTotal,
                 Compartments = compartmentDetails,
                 CentrePoint = fla.HasValue && !string.IsNullOrEmpty(fla.Value.CentrePoint)
@@ -538,7 +549,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     Sssi = x.SubmittedCompartmentDesignations?.Sssi ?? false,
                     Sacs = x.SubmittedCompartmentDesignations?.Sacs ?? false,
                     Spa = x.SubmittedCompartmentDesignations?.Spa ?? false,
-                    Ramser = x.SubmittedCompartmentDesignations?.Ramser ?? false,
+                    Ramsar = x.SubmittedCompartmentDesignations?.Ramsar ?? false,
                     Sbi = x.SubmittedCompartmentDesignations?.Sbi ?? false,
                     Other = x.SubmittedCompartmentDesignations?.Other ?? false,
                     OtherDesignationDetails = x.SubmittedCompartmentDesignations?.OtherDesignationDetails,
@@ -561,37 +572,46 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
         Guid applicationId, 
         CancellationToken cancellationToken)
     {
-        var (_, isFailure, entity) = await _internalFlaRepository.GetCurrentFellingAndRestockingAmendmentReviewAsync(
-            applicationId,
-            cancellationToken);
-
-        if (isFailure)
+        try
         {
-            _logger.LogError(
-                "Could not retrieve current felling and restocking amendment review for application with id {ApplicationId}",
-                applicationId);
-            return Result.Failure<Maybe<FellingAndRestockingAmendmentReviewModel>>("Could not retrieve current felling and restocking amendment review for application with given id");
+            var (_, isFailure, entity) = await _internalFlaRepository.GetCurrentFellingAndRestockingAmendmentReviewAsync(
+                applicationId,
+                cancellationToken);
+
+            if (isFailure)
+            {
+                _logger.LogError(
+                    "Could not retrieve current felling and restocking amendment review for application with id {ApplicationId}",
+                    applicationId);
+                return Result.Failure<Maybe<FellingAndRestockingAmendmentReviewModel>>("Could not retrieve current felling and restocking amendment review for application with given id");
+            }
+
+            if (entity.HasNoValue)
+            {
+                return Result.Success(Maybe<FellingAndRestockingAmendmentReviewModel>.None);
+            }
+
+            var model = new FellingAndRestockingAmendmentReviewModel
+            {
+                Id = entity.Value.Id,
+                FellingLicenceApplicationId = applicationId,
+                AmendmentsSentDate = entity.Value.AmendmentsSentDate,
+                ResponseReceivedDate = entity.Value.ResponseReceivedDate,
+                ApplicantAgreed = entity.Value.ApplicantAgreed,
+                ApplicantDisagreementReason = entity.Value.ApplicantDisagreementReason,
+                ResponseDeadline = entity.Value.ResponseDeadline,
+                AmendmentsReason = entity.Value.AmendmentsReason,
+                AmendmentReviewCompleted = entity.Value.AmendmentReviewCompleted
+            };
+
+            return Result.Success(Maybe.From(model));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in GetCurrentFellingAndRestockingAmendmentReviewAsync");
+            return Result.Failure<Maybe<FellingAndRestockingAmendmentReviewModel>>(ex.Message);
         }
 
-        if (entity.HasNoValue)
-        {
-            return Maybe<FellingAndRestockingAmendmentReviewModel>.None;
-        }
-
-        var model = new FellingAndRestockingAmendmentReviewModel
-        {
-            Id = entity.Value.Id,
-            FellingLicenceApplicationId = applicationId,
-            AmendmentsSentDate = entity.Value.AmendmentsSentDate,
-            ResponseReceivedDate = entity.Value.ResponseReceivedDate,
-            ApplicantAgreed = entity.Value.ApplicantAgreed,
-            ApplicantDisagreementReason = entity.Value.ApplicantDisagreementReason,
-            ResponseDeadline = entity.Value.ResponseDeadline,
-            AmendmentsReason = entity.Value.AmendmentsReason,
-            AmendmentReviewCompleted = entity.Value.ApplicantAgreed.HasValue
-        };
-
-        return Maybe.From(model);
     }
 
     private async Task<string> GetLocalAuthorityForFellingLicenceApplicationAsync(FellingLicenceApplication application, CancellationToken cancellationToken)

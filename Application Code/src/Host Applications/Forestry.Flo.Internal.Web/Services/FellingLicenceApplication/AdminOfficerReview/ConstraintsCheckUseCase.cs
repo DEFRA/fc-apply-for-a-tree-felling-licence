@@ -1,16 +1,18 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.AdminOfficerReview;
-using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
+using Forestry.Flo.Services.InternalUsers.Services;
 using Result = CSharpFunctionalExtensions.Result;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 
-public class ConstraintsCheckUseCase : AdminOfficerReviewUseCaseBase
+public class ConstraintsCheckUseCase : AdminOfficerReviewUseCaseBase, IConstraintsCheckUseCase
 {
     public ConstraintsCheckUseCase(
         IUserAccountService internalUserAccountService,
@@ -23,6 +25,7 @@ public class ConstraintsCheckUseCase : AdminOfficerReviewUseCaseBase
         IAuditService<AdminOfficerReviewUseCaseBase> auditService,
         IAgentAuthorityService agentAuthorityService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         RequestContext requestContext)
         : base(internalUserAccountService,
             externalUserAccountService,
@@ -34,6 +37,7 @@ public class ConstraintsCheckUseCase : AdminOfficerReviewUseCaseBase
             auditService,
             agentAuthorityService,
             getConfiguredFcAreasService,
+            woodlandOfficerReviewSubStatusService,
             requestContext)
     {
 

@@ -340,7 +340,7 @@ internal-web-app:
         secret_key: blob.connectionString
       container: testingflo
     externalApplicantSite:
-      baseUrl: "https://testflo.ps.conneqt.cloud"
+      baseUrl: "https://testflo.ps.conneqt.cloud/"
     woodlandOfficerReview:
       useDevPublicRegister: false
     cronJobs:
@@ -599,6 +599,11 @@ pdf-generation-service:
     spring:
       thymeleaf:
         prefix: "file:///templates/source/html-templates/"
+  env:
+    - name: SPRING_THYMELEAF_PREFIX
+      value: file:///templates/source/html-templates/
+    - name: ORGANISATION_CONFIGURATION_SERVICE_ENABLED
+      value: "false"
 
 postgresql:
   primary:

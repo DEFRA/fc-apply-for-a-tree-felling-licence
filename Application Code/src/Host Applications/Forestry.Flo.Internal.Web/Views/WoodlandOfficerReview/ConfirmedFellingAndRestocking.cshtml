@@ -24,9 +24,9 @@
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
-    @foreach (var item in Model.Compartments)
+    @foreach (var item in Model.SubmittedFlaPropertyCompartments)
     {
-        <input type="hidden" id="@item.SubmittedFlaPropertyCompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" name="@item.SubmittedFlaPropertyCompartmentId" />
+        <input type="hidden" id="@item.SubmittedCompartmentId" value="@item.GisData" data-label="@item.Label" data-group="compartments_GIS" name="@item.SubmittedCompartmentId" />
     }
 
     @functions {
@@ -101,7 +101,7 @@
 
                 var shouldShowRevert = confirmedFellingType is not (ConfirmedFellingType.Unmodified or ConfirmedFellingType.NewFelling);
 
-                shouldShowRevert = shouldShowRevert && Model.CanCurrentUserAmend;
+                shouldShowRevert = shouldShowRevert && Model.Amendment.CanCurrentUserAmend;
                 var fellingClassName = confirmedFellingType is ConfirmedFellingType.NewFelling 
                     ? newDetailClassName 
                     : string.Empty;
@@ -124,7 +124,7 @@
 
                 @foreach (var deletedRestocking in deletedRestockingDetails)
                 {
-                    var submittedCompartmentId = Model.PotentialRestockingCompartments.First(x =>
+                    var submittedCompartmentId = Model.SubmittedFlaPropertyCompartments.First(x =>
                         x.PropertyCompartmentId == deletedRestocking.CompartmentId ||
                         x.SubmittedCompartmentId == deletedRestocking.CompartmentId)
                         .SubmittedCompartmentId;
@@ -209,7 +209,7 @@
                                             <li class="govuk-summary-card__action">
                                                 <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@compartment.SubmittedFlaPropertyCompartmentId')">Show on map</a>
                                             </li>
-                                            <li condition="@Model.CanCurrentUserAmend" class="govuk-summary-card__action">
+                                            <li condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__action">
                                                 <a id="amend-link-felling-@(confirmedFellingDetail.ConfirmedFellingDetailsId)"
                                                    href="@Url.Action("AmendConfirmedFellingDetails", new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId })" 
                                                    aria-describedby="felling-and-restocking">
@@ -244,7 +244,7 @@
                                                 <li class="govuk-summary-card__action">
                                                     <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@restockingDetail!.RestockingCompartmentId')">Show on map</a>
                                                 </li>
-                                                <li condition="@Model.CanCurrentUserAmend" class="govuk-summary-card__action">
+                                                <li condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__action">
 										            <a id="amend-link-restocking-@(restockingDetail.ConfirmedRestockingDetailsId)" href="@Url.Action("AmendConfirmedRestockingDetails", 
 											            new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId, confirmedRestockingDetailsId = confirmedFellingDetail.ConfirmedRestockingDetails[k].ConfirmedRestockingDetailsId })" 
 										            aria-describedby="felling-and-restocking">
@@ -259,7 +259,7 @@
                                 
                                 @foreach(var deletedRestocking in deletedRestockingDetails)
                                 {
-                                    var submittedCompartmentId = Model.PotentialRestockingCompartments.First(x => x.PropertyCompartmentId == deletedRestocking.CompartmentId).SubmittedCompartmentId;
+                                    var submittedCompartmentId = Model.SubmittedFlaPropertyCompartments.First(x => x.PropertyCompartmentId == deletedRestocking.CompartmentId).SubmittedCompartmentId;
 
                                     <div class="govuk-summary-card @deletedDetailClassName">
                                         <div class="govuk-summary-card__title-wrapper">
@@ -275,7 +275,7 @@
                                 }
                                 <div class="govuk-button-group">
                                     <a
-                                        condition="@(Model.Editable(user) && canAddRestocking && Model.CanCurrentUserAmend)"
+                                        condition="@(Model.Editable(user) && canAddRestocking && Model.Amendment.CanCurrentUserAmend)"
                                         id="add-button-restocking-@confirmedFellingDetail.ConfirmedFellingDetailsId"
                                         data-prevent-double-click="true"
                                         asp-action="AddConfirmedRestockingDetails"
@@ -303,7 +303,7 @@
 
                 foreach(var restockingDetail in deletedFelling.ProposedRestockingDetails)
                 { 
-                    var submittedCompartmentId = Model.PotentialRestockingCompartments
+                    var submittedCompartmentId = Model.SubmittedFlaPropertyCompartments
                         .First(x => x.PropertyCompartmentId == restockingDetail.CompartmentId)
                         .SubmittedCompartmentId;
 
@@ -325,7 +325,7 @@
                                 <strong>Compartment size:</strong> @compartment.TotalHectares!.Value.FormatDoubleForDisplay() Ha
                             </div>
                         </div>
-                        <ul condition="@Model.CanCurrentUserAmend" class="govuk-summary-card__actions">
+                        <ul condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__actions">
                             @{
                                 var visibleId = $"delete-amendments-visible-{deletedFelling.Id}";
                                 var invisibleId = $"delete-amendments-invisible-{deletedFelling.Id}";
@@ -392,7 +392,7 @@
                             <div class="govuk-grid-column-one-half">          
                                 @foreach(var deletedRestocking in deletedFelling.ProposedRestockingDetails)
                                 {
-                                    var submittedCompartmentId = Model.PotentialRestockingCompartments
+                                    var submittedCompartmentId = Model.SubmittedFlaPropertyCompartments
                                         .First(x => x.PropertyCompartmentId == deletedRestocking.CompartmentId)
                                         .SubmittedCompartmentId;
 
@@ -419,7 +419,7 @@
 
         <div class="govuk-button-group">
             <a
-                condition="@(Model.Editable(user) && !Model.ConfirmedFellingAndRestockingComplete && Model.CanCurrentUserAmend)"
+                condition="@(Model.Editable(user) && !Model.ConfirmedFellingAndRestockingComplete && Model.Amendment.CanCurrentUserAmend)"
                 id="add-felling-operation"
                 data-prevent-double-click="true"
                 asp-action="SelectFellingCompartment"
@@ -438,13 +438,13 @@
                     <h2 class="govuk-fieldset__heading">Review actions</h2>
                 </legend>
 
-                <div condition="@(Model.AmendmentState is AmendmentStateEnum.NoAmendment)" class="govuk-body">
+                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.NoAmendment)" class="govuk-body">
                 </div>
 
-                <div condition="@((Model.AmendmentState is AmendmentStateEnum.NewAmendment || Model.AmendmentState is AmendmentStateEnum.Completed) && Model.CanCurrentUserAmend)" class="govuk-body">
+                <div condition="@((Model.Amendment.AmendmentState is AmendmentStateEnum.NewAmendment || Model.Amendment.AmendmentState is AmendmentStateEnum.Completed) && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
                     Please provide details and reasoning for the amendments
 
-                    <textarea rows="5" class="@GdsConstants.GdsTextAreaCssClass" id="address-field-input" asp-for="@Model.AmendmentReason"></textarea>
+                    <textarea rows="5" class="@GdsConstants.GdsTextAreaCssClass" name="amendmentReason">@Model.Amendment.AmendmentReason</textarea>
 
                     <div class="govuk-button-group">
                         <button 
@@ -456,44 +456,45 @@
                             type="submit" 
                             class="govuk-button" 
                             data-module="govuk-button">
-                            Send amendments to application for confirmation
+                            Send amendments to applicant for confirmation
                         </button>
                     </div>
                 </div>
 
-                <div condition="@(Model.AmendmentState is AmendmentStateEnum.SentToApplicant)" class="govuk-body">
-                    <p>Amendments sent @Model.AmendmentsSentDate?.ToString("dd/MM/yyyy") - see case notes/timeline for further detail.</p>
+                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.SentToApplicant)" class="govuk-body">
+                    <p>Amendments sent @Model.Amendment.AmendmentsSentDate?.ToString("dd/MM/yyyy") - see case notes/timeline for further detail.</p>
                     <p>The applicant has been sent the amendments for confirmation</p>
                 </div>
 
-                <div condition="@(Model.AmendmentState is AmendmentStateEnum.ApplicantAgreed)" class="govuk-hint">
+                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantAgreed)" class="govuk-hint">
                     <p>The applicant has agreed with the amendments - see case notes/timeline for further detail</p>
                 </div>
 
-                <div condition="@(Model.AmendmentState is AmendmentStateEnum.ApplicantDisagreed && Model.CanCurrentUserAmend)" class="govuk-body">
-                    <p>The applicant does not agree with the amendments - see case notes/timeline for further detail</p>
+                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantDisagreed && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
+                    <p>The applicant does not agree with the amendments, providing the following reasons:</p>
+                    <p>@Model.Amendment.ApplicantDisagreementReason</p>
                 </div>
 
-                <div condition="@((Model.AmendmentState is AmendmentStateEnum.ApplicantAgreed || Model.AmendmentState is AmendmentStateEnum.ApplicantDisagreed) && Model.CanCurrentUserAmend)" class="govuk-body">
+                <div condition="@((Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantAgreed || Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantDisagreed) && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
                     <div class="govuk-form-group">
                         <fieldset class="govuk-fieldset">
-                            <legend class="govuk-heading-m" id="@Html.IdFor(x => x.FurtherAmendments)">
+                            <legend class="govuk-heading-m" id="@Html.IdFor(x => x.Amendment.FurtherAmendments)">
                                 Are further amendments required?
                             </legend>
                             <div class="govuk-radios" data-module="govuk-radios">
 
                                 <div class="govuk-radios__item">
-                                    <input id="felling-detail-tree-marking-yes"
+                                    <input id="make-further-amendments-yes"
                                            type="radio" class="govuk-radios__input"
-                                           asp-for="FurtherAmendments"
+                                           asp-for="Amendment.FurtherAmendments"
                                            value="@true"
-                                           data-aria-controls="conditional-@Html.NameFor(x => x.FurtherAmendments)">
-                                    <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-yes" asp-for="FurtherAmendments">
+                                           data-aria-controls="conditional-@Html.NameFor(x => x.Amendment.FurtherAmendments)">
+                                    <label class="govuk-label govuk-radios__label" for="make-further-amendments-yes" asp-for="Amendment.FurtherAmendments">
                                         Yes
                                     </label>
                                 </div>
 
-                                <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.FurtherAmendments)">
+                                <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.Amendment.FurtherAmendments)">
                                     <div class="govuk-form-group">
                                         <div class="govuk-button-group">
                                             <button 
@@ -501,7 +502,7 @@
                                                 asp-controller="WoodlandOfficerReview"
                                                 asp-action="MakeFurtherAmendments"
                                                 asp-route-applicationId="@Model.ApplicationId"
-                                                asp-route-amendmentReviewId="@Model.AmendmentReviewId"
+                                                asp-route-amendmentReviewId="@Model.Amendment.AmendmentReviewId"
                                                 id="confirm-btn" 
                                                 data-prevent-double-click="true"
                                                 type="submit" 
@@ -514,8 +515,8 @@
                                 </div>
 
                                 <div class="govuk-radios__item">
-                                    <input id="felling-detail-tree-marking-no" type="radio" class="govuk-radios__input" asp-for="FurtherAmendments" value="@false">
-                                    <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-no" asp-for="FurtherAmendments">
+                                    <input id="make-further-amendments-no" type="radio" class="govuk-radios__input" asp-for="Amendment.FurtherAmendments" value="@false">
+                                    <label class="govuk-label govuk-radios__label" for="make-further-amendments-no" asp-for="Amendment.FurtherAmendments">
                                         No
                                     </label>
                                 </div>
@@ -523,9 +524,9 @@
                         </fieldset>
                     </div>
                 </div>
-                
-                <div condition="@(Model.AmendmentState is not AmendmentStateEnum.SentToApplicant)" class="govuk-body">
-                    <input type="hidden" asp-for="AmendmentReviewId" />
+
+                <div condition="@(Model.Amendment.AmendmentState is not AmendmentStateEnum.Completed && !Model.ConfirmedFellingAndRestockingComplete)" class="govuk-body">
+                    <input type="hidden" asp-for="Amendment.AmendmentReviewId" />
                     <div class="govuk-button-group">
                         <button 
                             condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
@@ -578,9 +579,9 @@
     <script src="~/js/confirmed-felling-and-restocking-mapping.js" asp-append-version="true"></script>
 
 	<!-- ArcGIS scripts and styles -->
-	<script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
+    <script src="https://js.arcgis.com/4.24/"></script>
 	<script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
-	<link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
 	<link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
 }
 

@@ -64,6 +64,7 @@ additionalArguments:
   - --entryPoints.websecure.forwardedHeaders.insecure=true
   - --serversTransport.insecureSkipVerify=true
   - --accesslog.filepath=/data/access.log
+  - --entrypoints.websecure.http.tls.options=default@kubernetescrd # Reference to the TLSOption created in tlsoption.yaml
 
 nodeSelector:
   "environment": "system"

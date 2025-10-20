@@ -10,8 +10,8 @@ public class UpdateDesignationsViewModelValidator : AbstractValidator<UpdateDesi
     {
         RuleFor(m => m.CompartmentDesignations)
             .Must(m =>
-                ((m.Sssi || m.Sacs || m.Spa || m.Ramser || m.Sbi || m.Other) && !m.None)
-                || m is { Sssi: false, Sacs: false, Spa: false, Ramser: false, Sbi: false, Other: false, None: true })
+                ((m.Sssi || m.Sacs || m.Spa || m.Ramsar || m.Sbi || m.Other) && !m.None)
+                || m is { Sssi: false, Sacs: false, Spa: false, Ramsar: false, Sbi: false, Other: false, None: true })
             .WithMessage("Select at least one designation or 'None'");
        
         When(m => m.CompartmentDesignations.Other, () =>

@@ -599,6 +599,11 @@ pdf-generation-service:
     spring:
       thymeleaf:
         prefix: "file:///templates/source/html-templates/"
+  env:
+    - name: SPRING_THYMELEAF_PREFIX
+      value: file:///templates/source/html-templates/
+    - name: ORGANISATION_CONFIGURATION_SERVICE_ENABLED
+      value: "false"
 
 rabbitmq:
   auth:

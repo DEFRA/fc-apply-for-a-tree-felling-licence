@@ -1,4 +1,5 @@
 ﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication
 {
@@ -21,5 +22,10 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication
         public DateTime? SubmittedDate { get; set; }
 
         public DateTime? CitizensCharterDate { get; set; }
+
+        /// <summary>
+        /// A collection of woodland officer review sub-statuses that can be used to filter the list of applications.
+        /// </summary>
+        public IEnumerable<WoodlandOfficerReviewSubStatus> SubStatuses { get; set; } = [];
     }
 }

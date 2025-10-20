@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NodaTime;
 using System.Net;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
@@ -24,8 +25,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
     {
         private readonly IAuditService<AddDocumentService> _auditService;
         private readonly IFellingLicenceApplicationExternalRepository _fellingLicenceApplicationRepository;
-        private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
         private readonly IFileStorageService _storageService;
+        private readonly FileValidator _fileValidator;
         private readonly RequestContext _requestContext;
         private readonly UserFileUploadOptions _userFileUploadOptions;
         private readonly FileTypesProvider _fileTypesProvider;
@@ -37,13 +38,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
         /// </summary>
         /// <param name="clock"></param>
         /// <param name="storageService">The configured <see cref="IFileStorageService"/> to be used.</param>
-        /// <param name="fileTypesProvider"></param>
-        /// <param name="userFileUploadOptions"></param>
-        /// <param name="auditService"></param>
-        /// <param name="fellingLicenceApplicationRepository"></param>
-        /// <param name="requestContext"></param>
-        /// <param name="logger"></param>
-        /// <param name="fellingLicenceApplicationInternalRepository"></param>
+        /// <param name="fileTypesProvider">A <see cref="FileTypesProvider"/> to calculate the file type.</param>
+        /// <param name="userFileUploadOptions">Configuration settings for user file uploads.</param>
+        /// <param name="auditService">An auditing service.</param>
+        /// <param name="fellingLicenceApplicationRepository">A repository implementation to interact with the underlying database.</param>
+        /// <param name="fileValidator">A validator for uploaded files.</param>
+        /// <param name="requestContext">The request context.</param>
+        /// <param name="logger">A logging implementation.</param>
         /// <exception cref="ArgumentNullException"></exception>
         public AddDocumentService(IClock clock,
             IFileStorageService storageService,
@@ -51,19 +52,19 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             IOptions<UserFileUploadOptions> userFileUploadOptions,
             IAuditService<AddDocumentService> auditService,
             IFellingLicenceApplicationExternalRepository fellingLicenceApplicationRepository,
+            FileValidator fileValidator,
             RequestContext requestContext,
-            ILogger<AddDocumentService> logger,
-            IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository)
+            ILogger<AddDocumentService> logger)
         {
             _clock = Guard.Against.Null(clock);
-            _storageService = storageService ?? throw new ArgumentNullException(nameof(storageService));
+            _storageService = Guard.Against.Null(storageService);
+            _fileValidator = Guard.Against.Null(fileValidator);
             _requestContext = Guard.Against.Null(requestContext);
             _fileTypesProvider = Guard.Against.Null(fileTypesProvider);
             _userFileUploadOptions = Guard.Against.Null(userFileUploadOptions.Value);
             _auditService = Guard.Against.Null(auditService);
             _fellingLicenceApplicationRepository = Guard.Against.Null(fellingLicenceApplicationRepository);
             _logger = logger;
-            _fellingLicenceApplicationInternalRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
         }
 
         public async Task<Result<AddDocumentsSuccessResult, AddDocumentsFailureResult>> AddDocumentsAsExternalApplicantAsync(
@@ -104,7 +105,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             var userFacingErrors = new List<string>();
 
             var applicationExists =
-                await _fellingLicenceApplicationInternalRepository.CheckApplicationExists(
+                await _fellingLicenceApplicationRepository.CheckApplicationExists(
                     addDocumentsRequest.FellingApplicationId, cancellationToken);
 
             if (!applicationExists)
@@ -124,24 +125,50 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                 return CreateFailureResult(userFacingErrors);
             }
 
+            var documentStorageFailure = false;
             var documentIds = new List<Guid>();
+
+            var fileUploadReason = addDocumentsRequest.DocumentPurpose switch
+            {
+                DocumentPurpose.EiaAttachment => FileUploadReason.EiaDocument,
+                DocumentPurpose.WmpDocument => FileUploadReason.WmpDocument,
+                _ => FileUploadReason.SupportingDocument
+            };
+
             if (addDocumentsRequest.FileToStoreModels.Any())
             {
                 var exceedsMaximumDocumentsPerUser =
-                    addDocumentsRequest.ApplicationDocumentCount + addDocumentsRequest.FileToStoreModels.Count > _userFileUploadOptions.MaxNumberDocuments;
+                    addDocumentsRequest.ApplicationDocumentCount + addDocumentsRequest.FileToStoreModels.Count > _userFileUploadOptions.MaxNumberDocuments
+                    && addDocumentsRequest.DocumentPurpose != DocumentPurpose.WmpDocument;  // only EIA/supporting docs are limited; WMP docs are not
 
                 if (!exceedsMaximumDocumentsPerUser)
                 {
                     foreach (var fileToStoreModel in addDocumentsRequest.FileToStoreModels)
                     {
+                        var validationResult = _fileValidator.Validate(fileToStoreModel.FileBytes, fileToStoreModel.FileName, addDocumentsRequest.ReceivedByApi, fileUploadReason);
+
+                        if (validationResult.IsFailure)
+                        {
+                            _logger.LogWarning("File for upload was not successfully validated. Validator returned with [{fileValidationError}].", validationResult.Error);
+
+                            await HandleFailureAsync(addDocumentsRequest.UserAccountId,
+                                addDocumentsRequest.FellingApplicationId,
+                                StoreFileFailureResult.CreateWithInvalidFileReason(validationResult.Error), fileToStoreModel,
+                                userFacingErrors, cancellationToken);
+
+                            continue;
+                        }
+
                         var result = await AddFileAsync(
                             addDocumentsRequest,
                             fileToStoreModel, 
+                            fileUploadReason,
                             userFacingErrors,
                             cancellationToken);
 
                         if (result.IsFailure)
                         {
+                            documentStorageFailure = true;
                             _logger.LogWarning(result.Error);
                         }
                         else
@@ -167,7 +194,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                 userFacingErrors.Add("No documents were specified.");
             }
 
-            return userFacingErrors.Any() 
+            return userFacingErrors.Any() || documentStorageFailure
                 ? CreateFailureResult(userFacingErrors) 
                 : CreateSuccessResult(documentIds, userFacingErrors);
         }
@@ -175,6 +202,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
         private async Task<Result<Guid>> AddFileAsync(
             AddDocumentsRequest addDocumentsRequest,
             FileToStoreModel fileToStore,
+            FileUploadReason fileUploadReason,
             ICollection<string> userFacingErrors,
             CancellationToken cancellationToken)
         {
@@ -184,12 +212,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
                              "is to be saved to location of [{location}].", 
                 fileToStore.FileName, addDocumentsRequest.DocumentPurpose, addDocumentsRequest.FellingApplicationId, storedLocationPath);
             
+
             var (isSuccess, _, savedFile, error) = await _storageService.StoreFileAsync(
                 fileToStore.FileName,
                 fileToStore.FileBytes,
                 storedLocationPath,
                 addDocumentsRequest.ReceivedByApi,
-                FileUploadReason.SupportingDocument,
+                fileUploadReason,
                 cancellationToken); 
 
             _logger.LogDebug("Call to store file returned having success of [{result}].", isSuccess);

@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using FellingLicenceStatusConstants = Forestry.Flo.External.Web.Models.FellingLicenceStatusConstants;
 
 namespace Forestry.Flo.External.Web.Controllers;
@@ -117,10 +118,13 @@ public partial class FellingLicenceApplicationController(
             selectWoodlandModel.WoodlandOwnerId,
             true, cancellationToken);
 
-        return result.IsFailure
-            ? RedirectToAction(nameof(HomeController.Error), "Home")
-            : RedirectToAction(nameof(Operations),
-                new { applicationId = result.Value });
+        if (result.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+        return user.IsFcUser
+            ? RedirectToAction(nameof(TenYearLicence), new { applicationId = result.Value })
+            : RedirectToAction(nameof(Operations), new { applicationId = result.Value });
     }
 
     [HttpGet]
@@ -205,10 +209,13 @@ public partial class FellingLicenceApplicationController(
         var result = await createFellingLicenceApplicationUseCase.UpdateWoodland(user,
             selectWoodlandModel, cancellationToken);
 
-        return result.IsFailure
-            ? RedirectToAction(nameof(HomeController.Error), "Home")
-            : RedirectToAction(nameof(SelectCompartments),
-                new { applicationId = result.Value });
+        if (result.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+        return user.IsFcUser
+            ? RedirectToAction(nameof(TenYearLicence), new { applicationId = result.Value })
+            : RedirectToAction(nameof(Operations), new { applicationId = result.Value });
     }
 
     /// <summary>
@@ -465,10 +472,14 @@ public partial class FellingLicenceApplicationController(
 
         if (compartmentsModel.IsForRestockingCompartmentSelection)
         {
-            return await IterateRestockingCompartmentsForFellingOperationType(compartmentsModel.ApplicationId, compartmentsModel.FellingCompartmentId.Value, compartmentsModel.ProposedFellingDetailsId.Value);
+            return await IterateRestockingCompartmentsForFellingOperationType(
+                compartmentsModel.ApplicationId, 
+                compartmentsModel.FellingCompartmentId.Value, 
+                compartmentsModel.ProposedFellingDetailsId.Value,
+                cancellationToken);
         }
 
-        return await IterateCompartments(compartmentsModel.ApplicationId);
+        return await IterateCompartments(compartmentsModel.ApplicationId, cancellationToken);
     }
 
     [HttpGet]
@@ -563,7 +574,7 @@ public partial class FellingLicenceApplicationController(
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        return await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId);
+        return await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId, cancellationToken);
     }
 
 
@@ -781,7 +792,7 @@ public partial class FellingLicenceApplicationController(
                     ReturnToPlayback = proposedFellingDetail.ReturnToPlayback
                 });
 
-            return await DecideOnPostFellingDetailRedirect(proposedFellingDetail);
+            return await DecideOnPostFellingDetailRedirect(proposedFellingDetail, cancellationToken);
         }
         else
         {
@@ -836,7 +847,7 @@ public partial class FellingLicenceApplicationController(
 
         ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = result.Value.ApplicationSummary.WoodlandOwnerId;
 
-        return await DecideOnPostFellingDetailRedirect(model);
+        return await DecideOnPostFellingDetailRedirect(model, cancellationToken);
     }
 
     [HttpGet]
@@ -932,7 +943,7 @@ public partial class FellingLicenceApplicationController(
                 fellingCompartmentName = model.FellingCompartmentName,
                 proposedFellingDetailsId = model.ProposedFellingDetailsId
             })
-            : await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId);
+            : await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId, cancellationToken);
     }
 
     [HttpGet]
@@ -1052,10 +1063,12 @@ public partial class FellingLicenceApplicationController(
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        return await IterateRestockingTypesForRestockingCompartment(model.ApplicationId,
+        return await IterateRestockingTypesForRestockingCompartment(
+            model.ApplicationId,
             model.FellingCompartmentId,
             model.ProposedFellingDetailsId,
-            model.RestockingCompartmentId);
+            model.RestockingCompartmentId,
+            cancellationToken);
     }
 
     [HttpGet]
@@ -1128,10 +1141,12 @@ public partial class FellingLicenceApplicationController(
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        return await IterateRestockingTypesForRestockingCompartment(model.ApplicationId,
+        return await IterateRestockingTypesForRestockingCompartment(
+            model.ApplicationId,
             model.FellingCompartmentId,
             model.ProposedFellingDetailsId,
-            model.RestockingCompartmentId);
+            model.RestockingCompartmentId,
+            cancellationToken);
     }
 
     [HttpGet]
@@ -1156,6 +1171,267 @@ public partial class FellingLicenceApplicationController(
         ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = result.Value.ApplicationSummary.WoodlandOwnerId;
 
         return View(model.Value);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> TenYearLicence(
+        Guid applicationId,
+        bool returnToApplicationSummary,
+        bool fromDataImport,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+        }
+
+        var viewModel = await tenYearLicenceUseCase
+            .GetTenYearLicenceApplicationViewModel(user, applicationId, returnToApplicationSummary, fromDataImport, cancellationToken);
+
+        if (viewModel.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+        ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+        SetTaskBreadcrumbs(viewModel.Value);
+
+        return View(viewModel.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> TenYearLicence(
+        TenYearLicenceApplicationViewModel model,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+        }
+
+        ModelState.Clear();
+
+        // WMP reference is mandatory if the user has selected to apply for a 10-year licence
+        if (model.IsForTenYearLicence.HasNoValue() ||
+            model.IsForTenYearLicence is true && string.IsNullOrWhiteSpace(model.WoodlandManagementPlanReference))
+        {
+            if (model.IsForTenYearLicence.HasNoValue())
+            {
+                ModelState.AddModelError(
+                    nameof(TenYearLicenceApplicationViewModel.IsForTenYearLicence),
+                    "Select if this application is for a 10-year licence");
+            }
+            else
+            {
+                ModelState.AddModelError(
+                    nameof(TenYearLicenceApplicationViewModel.WoodlandManagementPlanReference),
+                    "Enter the woodland management plan reference");
+            }
+
+            var reloadModel = await ReloadViewModel(model);
+
+            if (reloadModel.IsFailure)
+            {
+                return RedirectToAction(nameof(HomeController.Error), "Home");
+            }
+
+            return View(reloadModel.Value);
+        }
+
+        var updateResult = await tenYearLicenceUseCase.UpdateTenYearLicenceStatusAsync(
+            model.ApplicationId,
+            user,
+            model.IsForTenYearLicence!.Value,
+            model.WoodlandManagementPlanReference,
+            cancellationToken);
+
+        if (updateResult.IsFailure)
+        {
+            var reloadModel = await ReloadViewModel(model);
+
+            if (reloadModel.IsFailure)
+            {
+                return RedirectToAction(nameof(HomeController.Error), "Home");
+            }
+            this.AddErrorMessage("Could not update ten-year licence application status, please try again");
+            return View(reloadModel.Value);
+        }
+
+        if (model.IsForTenYearLicence is true)
+        {
+            return RedirectToAction(nameof(WmpDocuments), new
+            {
+                applicationId = model.ApplicationId,
+                returnToApplicationSummary = model.ReturnToApplicationSummary,
+                fromDataImport = model.FromDataImport
+            });
+        }
+
+        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+
+        async Task<Result<TenYearLicenceApplicationViewModel>> ReloadViewModel(TenYearLicenceApplicationViewModel initialModel)
+        {
+            var reloadModel = await tenYearLicenceUseCase
+                .GetTenYearLicenceApplicationViewModel(user, initialModel.ApplicationId, initialModel.ReturnToApplicationSummary, initialModel.FromDataImport, cancellationToken);
+
+            if (reloadModel.IsFailure)
+            {
+                return reloadModel.ConvertFailure<TenYearLicenceApplicationViewModel>();
+            }
+
+            ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = reloadModel.Value.ApplicationSummary.WoodlandOwnerId;
+            ViewBag.ApplicationSummary = reloadModel.Value.ApplicationSummary;
+
+            reloadModel.Value.IsForTenYearLicence = initialModel.IsForTenYearLicence;
+            reloadModel.Value.WoodlandManagementPlanReference = initialModel.WoodlandManagementPlanReference;
+
+            SetTaskBreadcrumbs(reloadModel.Value);
+            return reloadModel.Value;
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> WmpDocuments(
+        Guid applicationId,
+        bool returnToApplicationSummary,
+        bool fromDataImport,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+        }
+
+        var isTenYearLicenceApplication = await tenYearLicenceUseCase.IsTenYearLicenceApplicationAsync(
+            user, applicationId, cancellationToken);
+
+        if (isTenYearLicenceApplication.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        if (!isTenYearLicenceApplication.Value)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+        }
+
+        var viewModel = await tenYearLicenceUseCase
+            .GetWmpDocumentsViewModel(user, applicationId, returnToApplicationSummary, fromDataImport, cancellationToken);
+
+        if (viewModel.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+        ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+        SetTaskBreadcrumbs(viewModel.Value);
+
+        return View(viewModel.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> WmpDocuments(
+        WmpDocumentsViewModel model,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+        }
+
+        var viewModel = await tenYearLicenceUseCase
+            .GetWmpDocumentsViewModel(user, model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, cancellationToken);
+
+        if (viewModel.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        var atLeastOneWmpDocument = viewModel.Value.Documents.Any();
+
+        if (!atLeastOneWmpDocument)
+        {
+            ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+            ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+            SetTaskBreadcrumbs(viewModel.Value);
+
+            ModelState.Clear();
+            this.AddErrorMessage("Upload at least one WMP document to continue");
+
+            return View(viewModel.Value);
+        }
+
+        var updateResult = await tenYearLicenceUseCase
+            .CompleteTenYearLicenceStepAsync(model.ApplicationId, user, cancellationToken);
+
+        if (updateResult.IsFailure)
+        {
+            ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+            ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+            SetTaskBreadcrumbs(viewModel.Value);
+
+            this.AddErrorMessage("Could not complete ten-year licence step, please try again");
+
+            return View(viewModel.Value);
+
+        }
+
+        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+    }
+
+    /// <summary>
+    /// This is an action method to explicitly support the deleting of uploaded WMP documents.
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost]
+    public async Task<IActionResult> RemoveWmpDocument(
+        Guid applicationId,
+        Guid documentIdentifier,
+        bool returnToApplicationSummary,
+        bool fromDataImport,
+        [FromServices] RemoveSupportingDocumentUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+        }
+
+        var removeResult = await useCase.RemoveSupportingDocumentAsync(user, applicationId, documentIdentifier, cancellationToken);
+
+        if (removeResult.IsFailure)
+        {
+            logger.LogError("Failed to remove supporting documentation with error {Error}", removeResult.Error);
+            this.AddErrorMessage("Could not remove supporting document at this time, try again");
+        }
+
+        return RedirectToAction(nameof(WmpDocuments), new { applicationId, returnToApplicationSummary, fromDataImport });
+
     }
 
     [HttpGet]
@@ -1221,7 +1497,14 @@ public partial class FellingLicenceApplicationController(
 
         var application = result.Value;
 
-        return RedirectToAction(nameof(TermsAndConditions), new { applicationId = application.ApplicationId });
+        if (supportingDocumentationSaveModel.ReturnToApplicationSummary)
+        {
+            return RedirectToAction(nameof(ApplicationSummary), new { applicationId = application.ApplicationId });
+        }
+        else
+        {
+            return RedirectToAction(nameof(TermsAndConditions), new { applicationId = application.ApplicationId });
+        }
     }
 
     /// <summary>
@@ -1245,6 +1528,7 @@ public partial class FellingLicenceApplicationController(
             logger.LogError("Failed to remove supporting documentation with error {Error}", removeResult.Error);
             this.AddErrorMessage("Could not remove supporting document at this time, try again");
         }
+
         if(returnToApplicationSummary)
             return RedirectToAction(nameof(SupportingDocumentation), new { applicationId, returnToApplicationSummary });
         else
@@ -1260,9 +1544,30 @@ public partial class FellingLicenceApplicationController(
         CancellationToken cancellationToken)
     {
         if (!supportingDocumentationFiles.Any())
-            return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId });
+        {
+            this.AddErrorMessage("Select at least one file to upload");
+
+            if (model.Purpose == DocumentPurpose.WmpDocument)
+            {
+                return RedirectToAction(nameof(WmpDocuments),
+                    new
+                    {
+                        applicationId = model.FellingLicenceApplicationId,
+                        model.ReturnToApplicationSummary,
+                        model.FromDataImport
+                    });
+            }
+
+            return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary });
+        }
 
         var user = new ExternalApplicant(User);
+
+        // only FC users should be able to upload WMP documents
+        if (model.Purpose == DocumentPurpose.WmpDocument && !user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(model.FellingLicenceApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+        }
 
         var saveDocumentsResult = await useCase.AddDocumentsToApplicationAsync(
             user,
@@ -1272,12 +1577,34 @@ public partial class FellingLicenceApplicationController(
             cancellationToken);
 
         if (saveDocumentsResult.IsSuccess && ModelState.IsValid)
-            if (model.ReturnToApplicationSummary)
-                return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary });
-            else
-                return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId });
+        {
+            if (model.Purpose == DocumentPurpose.WmpDocument)
+            {
+                return RedirectToAction(nameof(WmpDocuments),
+                    new
+                    {
+                        applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary,
+                        model.FromDataImport
+                    });
+            }
+
+            return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary });
+        }
 
         // Was not successful across the entire set of uploaded documents in FormFileCollection:
+
+        if (model.Purpose == DocumentPurpose.WmpDocument)
+        {
+            this.AddErrorMessage("One or more selected documents could not be uploaded, please try again");
+            return RedirectToAction(nameof(WmpDocuments),
+                new
+                {
+                    applicationId = model.FellingLicenceApplicationId,
+                    model.ReturnToApplicationSummary,
+                    model.FromDataImport
+                });
+        }
+
         var fellingLicenceApplicationModelResult =
             await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.FellingLicenceApplicationId, cancellationToken);
 
@@ -1579,9 +1906,9 @@ public partial class FellingLicenceApplicationController(
 
         var linkToApplication = 
             Url.AbsoluteAction(
-                "Index",
+                nameof(ApplicationTaskList),
                 "FellingLicenceApplication", 
-                new { id = model.ApplicationId })!;
+                new { applicationId = model.ApplicationId })!;
 
         var (_, submissionFailure, isResubmission) = 
             await createFellingLicenceApplicationUseCase.SubmitFellingLicenceApplicationAsync(
@@ -1634,7 +1961,7 @@ public partial class FellingLicenceApplicationController(
     {
         var user = new ExternalApplicant(User);
 
-        string linkToApplication = Url.AbsoluteAction("Index", "FellingLicenceApplication", new { id = withdrawFellingLicenceApplicationModel.ApplicationId })!;
+        string linkToApplication = Url.AbsoluteAction(nameof(ApplicationTaskList), "FellingLicenceApplication", new { applicationId = withdrawFellingLicenceApplicationModel.ApplicationId })!;
 
         var result = await createFellingLicenceApplicationUseCase.WithdrawFellingLicenceApplicationAsync(withdrawFellingLicenceApplicationModel.ApplicationId, user, linkToApplication!, cancellationToken);
         if (result.IsFailure)
@@ -1759,9 +2086,9 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> ContinueFellingAndRestocking(Guid applicationId)
+    public async Task<IActionResult> ContinueFellingAndRestocking(Guid applicationId, CancellationToken cancellationToken)
     {
-        return await IterateCompartments(applicationId);
+        return await IterateCompartments(applicationId, cancellationToken);
     }
 
     [HttpGet]
@@ -1885,7 +2212,7 @@ public partial class FellingLicenceApplicationController(
         }
     }
 
-    private async Task<IActionResult> DecideOnPostFellingDetailRedirect(ProposedFellingDetailModel proposedFellingDetail)
+    private async Task<IActionResult> DecideOnPostFellingDetailRedirect(ProposedFellingDetailModel proposedFellingDetail, CancellationToken cancellationToken)
     {
         if (createFellingLicenceApplicationUseCase.FellingOperationRequiresStocking(proposedFellingDetail.OperationType) && !proposedFellingDetail.ReturnToPlayback)
         {
@@ -1899,13 +2226,13 @@ public partial class FellingLicenceApplicationController(
         }
         else
         {
-            return await IterateFellingOperationTypesInCompartment(proposedFellingDetail.ApplicationId, proposedFellingDetail.FellingCompartmentId);
+            return await IterateFellingOperationTypesInCompartment(proposedFellingDetail.ApplicationId, proposedFellingDetail.FellingCompartmentId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateRestockingTypesForRestockingCompartment(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, Guid restockingCompartmentId)
+    private async Task<IActionResult> IterateRestockingTypesForRestockingCompartment(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, Guid restockingCompartmentId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var compartmentStatus = applicationStepStatus.CompartmentFellingRestockingStatuses.FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
 
@@ -1929,13 +2256,13 @@ public partial class FellingLicenceApplicationController(
         }
         else
         {
-            return await IterateRestockingCompartmentsForFellingOperationType(applicationId, fellingCompartmentId, proposedFellingDetailsId);
+            return await IterateRestockingCompartmentsForFellingOperationType(applicationId, fellingCompartmentId, proposedFellingDetailsId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateRestockingCompartmentsForFellingOperationType(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId)
+    private async Task<IActionResult> IterateRestockingCompartmentsForFellingOperationType(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var compartmentStatus = applicationStepStatus.CompartmentFellingRestockingStatuses.FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
 
@@ -1967,17 +2294,22 @@ public partial class FellingLicenceApplicationController(
 
                 if (completion.HasNoValue() || (completion.HasValue && !completion.Value))
                 {
-                    return await IterateRestockingTypesForRestockingCompartment(applicationId, fellingCompartmentId, proposedFellingDetailsId, restockingCompartmentStatus.CompartmentId);
+                    return await IterateRestockingTypesForRestockingCompartment(
+                        applicationId, 
+                        fellingCompartmentId, 
+                        proposedFellingDetailsId, 
+                        restockingCompartmentStatus.CompartmentId,
+                        cancellationToken);
                 }
             }
 
-            return await IterateFellingOperationTypesInCompartment(applicationId, fellingCompartmentId);
+            return await IterateFellingOperationTypesInCompartment(applicationId, fellingCompartmentId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateFellingOperationTypesInCompartment(Guid applicationId, Guid fellingCompartmentId)
+    private async Task<IActionResult> IterateFellingOperationTypesInCompartment(Guid applicationId, Guid fellingCompartmentId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var compartmentStatus = applicationStepStatus.CompartmentFellingRestockingStatuses.FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
 
@@ -2000,17 +2332,17 @@ public partial class FellingLicenceApplicationController(
 
                 if (completion.HasNoValue() || (completion.HasValue && !completion.Value))
                 {
-                    return await IterateRestockingCompartmentsForFellingOperationType(applicationId, compartmentStatus.CompartmentId, fellingStatus.Id);
+                    return await IterateRestockingCompartmentsForFellingOperationType(applicationId, compartmentStatus.CompartmentId, fellingStatus.Id, cancellationToken);
                 }
             }
 
-            return await IterateCompartments(applicationId);
+            return await IterateCompartments(applicationId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateCompartments(Guid applicationId)
+    private async Task<IActionResult> IterateCompartments(Guid applicationId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var unprocessedCompartments = applicationStepStatus.CompartmentFellingRestockingStatuses.Where(c => c.Status.HasNoValue() || (c.Status.HasValue && ! c.Status.Value)).ToList();
 
@@ -2028,12 +2360,30 @@ public partial class FellingLicenceApplicationController(
 
                 if (completion.HasNoValue() || (completion.HasValue && !completion.Value))
                 {
-                    return await IterateFellingOperationTypesInCompartment(applicationId, compartment.CompartmentId);
+                    return await IterateFellingOperationTypesInCompartment(applicationId, compartment.CompartmentId, cancellationToken);
                 }
             }
 
             return RedirectToAction(nameof(FellingAndRestockingPlayback), new { applicationId });
         }
+    }
+
+    private IActionResult GetRedirectPostTenYearLicencePages(
+        Guid applicationId,
+        bool returnToApplicationSummary,
+        bool fromDataImport)
+    {
+        if (returnToApplicationSummary)
+        {
+            return RedirectToAction(nameof(ApplicationSummary), new { applicationId });
+        }
+
+        if (fromDataImport)
+        {
+            return RedirectToAction(nameof(FellingAndRestockingPlayback), new { applicationId });
+        }
+
+        return RedirectToAction(nameof(Operations), new { applicationId, returnToApplicationSummary });
     }
 
 }

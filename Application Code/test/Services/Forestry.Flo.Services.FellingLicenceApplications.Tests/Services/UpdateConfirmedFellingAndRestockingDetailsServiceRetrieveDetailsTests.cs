@@ -148,6 +148,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
         _fellingLicenceApplicationRepository.Verify(v => v.GetWoodlandOfficerReviewAsync(fla.Id, CancellationToken.None), Times.Once);
     }
 
+
     [Theory, AutoMoqData]
 
     public async Task ShouldReturnFailure_WhenFLANotFound(FellingLicenceApplication fla)
@@ -246,5 +247,100 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceRetrieveDetailsTes
         var result = service.GetAmendedRestockingProperties(proposed, confirmed, new Dictionary<Guid, string?>());
         Assert.Contains(nameof(proposed.Area), result.Keys);
         Assert.Equal("1", result[nameof(proposed.Area)]);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ConfirmedDetailsCorrectlyRetrieved_WithCompartmentOnlyUsedForRestocking(
+        FellingLicenceApplication fla)
+    {
+        // Arrange: Set up a compartment only used for restocking
+        var restockingCompartment = new SubmittedFlaPropertyCompartment
+        {
+            Id = Guid.NewGuid(),
+            CompartmentId = Guid.NewGuid(),
+            CompartmentNumber = "R1",
+            PropertyProfileId = fla.SubmittedFlaPropertyDetail.PropertyProfileId,
+            SubmittedFlaPropertyDetail = fla.SubmittedFlaPropertyDetail,
+            ConfirmedFellingDetails = []
+        };
+
+
+        var fellingCompartment = new SubmittedFlaPropertyCompartment
+        {
+            Id = Guid.NewGuid(),
+            CompartmentId = Guid.NewGuid(),
+            CompartmentNumber = "R2",
+            PropertyProfileId = fla.SubmittedFlaPropertyDetail.PropertyProfileId,
+            SubmittedFlaPropertyDetail = fla.SubmittedFlaPropertyDetail,
+            ConfirmedFellingDetails = [],
+        };
+
+
+        // Add a ConfirmedFellingDetail with IsRestocking = true, but no felling details
+        var confirmedFellingDetail = new ConfirmedFellingDetail
+        {
+            SubmittedFlaPropertyCompartmentId = fellingCompartment.Id,
+            SubmittedFlaPropertyCompartment = restockingCompartment,
+            IsRestocking = true,
+            ConfirmedFellingSpecies = [],
+            ConfirmedRestockingDetails = new List<ConfirmedRestockingDetail>
+            {
+                new ConfirmedRestockingDetail
+                {
+                    SubmittedFlaPropertyCompartmentId = restockingCompartment.Id,
+                    RestockingDensity = 2.5
+                }
+            }
+        };
+        restockingCompartment.ConfirmedFellingDetails.Add(confirmedFellingDetail);
+
+        // Clear any existing compartments and add only the restocking compartment
+        fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments = new List<SubmittedFlaPropertyCompartment>
+        {
+            restockingCompartment,
+            fellingCompartment
+        };
+
+        var sut = CreateSut();
+
+        _fellingLicenceApplicationRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fla);
+
+        var woodlandOfficerReview = new WoodlandOfficerReview
+        {
+            ConfirmedFellingAndRestockingComplete =
+                fla.WoodlandOfficerReview!.ConfirmedFellingAndRestockingComplete,
+            FellingLicenceApplication = fla,
+            FellingLicenceApplicationId = fla.Id
+        };
+
+        _fellingLicenceApplicationRepository.Setup(r =>
+                r.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOfficerReview);
+
+        // Act
+        var (isSuccess, _, result) = await sut.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fla.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(isSuccess);
+
+        var modelValue = result.ConfirmedFellingAndRestockingDetailModels.First();
+        Assert.Equal(restockingCompartment.CompartmentId, modelValue.CompartmentId);
+        Assert.Equal(restockingCompartment.CompartmentNumber, modelValue.CompartmentNumber);
+
+        var modelFellingDetail = modelValue.ConfirmedFellingDetailModels.First();
+        Assert.True(modelFellingDetail.IsRestocking);
+
+        var modelRestockingDetails = modelFellingDetail.ConfirmedRestockingDetailModels.First();
+        Assert.Equal(2.5, modelRestockingDetails.RestockingDensity);
+
+        Assert.Equal(result.ConfirmedFellingAndRestockingComplete,
+            fla.WoodlandOfficerReview!.ConfirmedFellingAndRestockingComplete);
+
+        Assert.Contains(fellingCompartment, result.SubmittedFlaPropertyCompartments);
+        Assert.Contains(restockingCompartment, result.SubmittedFlaPropertyCompartments);
+
+        _fellingLicenceApplicationRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
+        _fellingLicenceApplicationRepository.Verify(v => v.GetWoodlandOfficerReviewAsync(fla.Id, CancellationToken.None), Times.Once);
     }
 }

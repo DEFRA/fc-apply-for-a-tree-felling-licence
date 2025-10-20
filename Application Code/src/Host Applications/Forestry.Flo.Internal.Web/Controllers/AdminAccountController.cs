@@ -2,6 +2,7 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Services;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -102,7 +103,7 @@ public class AdminAccountController : Controller
     public async Task<IActionResult> ConfirmUserAccount(
         Guid id,
         bool canApproveApplications,
-        [FromServices] RegisterUserAccountUseCase userAccountUseCase,
+        [FromServices] IRegisterUserAccountUseCase userAccountUseCase,
         CancellationToken cancellationToken)
     {
         var loginUrl = Url.AbsoluteAction("Index", "Home")!;
@@ -132,7 +133,7 @@ public class AdminAccountController : Controller
     [HttpPost]
     public async Task<IActionResult> DenyUserAccount(
         Guid id,
-        [FromServices] RegisterUserAccountUseCase userAccountUseCase,
+        [FromServices] IRegisterUserAccountUseCase userAccountUseCase,
         CancellationToken cancellationToken)
     {
         var loginUrl = Url.AbsoluteAction("Index", "Home")!;

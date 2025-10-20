@@ -6,7 +6,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using NodaTime;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -39,37 +38,21 @@ public class ApproverReviewService : IApproverReviewService
 {
     private readonly IFellingLicenceApplicationInternalRepository _internalFlaRepository;
     private readonly IClock _clock;
-    private readonly WoodlandOfficerReviewOptions _woodlandOfficerReviewOptions;
-    private readonly IViewCaseNotesService _caseNotesService;
-    private readonly IAddDocumentService _addDocumentService;
-    private readonly ILogger<UpdateWoodlandOfficerReviewService> _logger;
-    private readonly DocumentVisibilityOptions _options;
+    private readonly ILogger<ApproverReviewService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ApproverReviewService"/> class.
     /// </summary>
     /// <param name="internalFlaRepository">The internal repository for felling licence applications.</param>
     /// <param name="clock">The clock instance for getting the current time.</param>
-    /// <param name="publicRegisterOptions">The options for the public register.</param>
-    /// <param name="caseNotesService">The service for viewing case notes.</param>
-    /// <param name="addDocumentService">The service for adding documents.</param>
     /// <param name="logger">The logger instance.</param>
-    /// <param name="options">The document visibility options.</param>
     public ApproverReviewService(
         IFellingLicenceApplicationInternalRepository internalFlaRepository,
         IClock clock,
-        IOptions<WoodlandOfficerReviewOptions> publicRegisterOptions,
-        IViewCaseNotesService caseNotesService,
-        IAddDocumentService addDocumentService,
-        ILogger<UpdateWoodlandOfficerReviewService> logger,
-        IOptions<DocumentVisibilityOptions> options)
+        ILogger<ApproverReviewService> logger)
     {
         _internalFlaRepository = Guard.Against.Null(internalFlaRepository);
         _clock = Guard.Against.Null(clock);
-        _woodlandOfficerReviewOptions = Guard.Against.Null(publicRegisterOptions.Value);
-        _caseNotesService = Guard.Against.Null(caseNotesService);
-        _addDocumentService = Guard.Against.Null(addDocumentService);
-        _options = Guard.Against.Null(options.Value);
         _logger = logger;
     }
 
@@ -160,8 +143,6 @@ public class ApproverReviewService : IApproverReviewService
                 return Result.Failure("Approver review not found for the specified application.");
             }
 
-            // Assuming the repository has a method to delete the approver review.
-            // If not, you may need to implement it in the repository.
             var result = await _internalFlaRepository.DeleteApproverReviewAsync(applicationId, cancellationToken);
             if (result.IsFailure)
             {

@@ -70,7 +70,7 @@ public partial class FellingLicenceApplicationController
             return RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        this.AddConfirmationMessage("Amendment review saved.");
+        this.AddConfirmationMessage("Your response was sent to the woodland officer");
         return RedirectToAction(nameof(ApplicationTaskList), new { applicationId = model.ApplicationId });
     }
 }

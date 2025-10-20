@@ -312,12 +312,43 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _fellingLicenceApplicationExternalRepository.Verify(v => v.AddStatusHistory(userAccessModel.UserAccountId, fla.Id, FellingLicenceStatus.Withdrawn, It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        [Fact]
+        public async Task ShouldReturnFailure_WhenWithdrawingApplicationCannotBeFound()
+        {
+            var sut = CreateSut();
+            var externalUserId = Guid.NewGuid();
+
+            // dummy data
+            var applicationId = Guid.NewGuid();
+            var userAccessModel = new UserAccessModel
+            {
+                IsFcUser = false,
+                UserAccountId = Guid.NewGuid(),
+                AgencyId = null,
+                WoodlandOwnerIds = new List<Guid> { Guid.NewGuid() }
+            };
+
+            // setup
+
+            _fellingLicenceApplicationExternalRepository.Setup(r =>
+                    r.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Failure<bool>("error"));
+
+            var result = await sut.WithdrawApplication(applicationId, userAccessModel, CancellationToken.None);
+
+            // assert
+            Assert.True(result.IsFailure);
+            _fellingLicenceApplicationExternalRepository.Verify(v => v.CheckUserCanAccessApplicationAsync(applicationId, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
+            _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+        }
+
         [Theory]
         [InlineData(FellingLicenceStatus.Approved)]
         [InlineData(FellingLicenceStatus.Refused)]
         [InlineData(FellingLicenceStatus.Draft)]
         [InlineData(FellingLicenceStatus.Received)]
         [InlineData(FellingLicenceStatus.ReferredToLocalAuthority)]
+        [InlineData(FellingLicenceStatus.Withdrawn)]
         public async Task ShouldReturnFailure_WhenWithdrawingApplicationInWrongState(FellingLicenceStatus status)
         {
             var sut = CreateSut();
@@ -431,7 +462,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.General));
 
             // Act
-            var result = await sut.UpdatePublicRegisterEntityToRemovedAsync(applicationId, null, removedDateTime, CancellationToken.None);
+            var result = await sut.UpdatePublicRegisterEntityToRemovedAsync(applicationId, Guid.NewGuid(), removedDateTime, CancellationToken.None);
 
             // Assert
             Assert.True(result.IsFailure);

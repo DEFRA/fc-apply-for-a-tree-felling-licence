@@ -26,7 +26,7 @@ public interface IUpdateAdminOfficerReviewService
         Guid performingUserId,
         DateTime completedDateTime,
         bool isAgencyApplication,
-        bool requireWOReview,
+        bool isSkippingWoReviewForCbw,
         CancellationToken cancellationToken);
 
     /// <summary>

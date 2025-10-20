@@ -3,6 +3,7 @@ using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 
 namespace Forestry.Flo.Internal.Web.Controllers.Api;
 
@@ -28,7 +29,7 @@ public class LandInformationSearchApiController : ControllerBase
     [RequestSizeLimit(33554432)]//32MB
     public async Task<IActionResult> StoreDocument(
         [FromRoute] string applicationId,
-        [FromServices] AddDocumentFromExternalSystemUseCase useCase,
+        [FromServices] IAddDocumentFromExternalSystemUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, value, error) = await GetAsUseCaseRequestAsync(applicationId, Request, cancellationToken);

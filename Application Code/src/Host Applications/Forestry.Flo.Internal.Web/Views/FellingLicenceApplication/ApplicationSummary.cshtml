@@ -59,14 +59,26 @@
                         <h2 id="header-title" slot="header">
                             Felling
                         </h2>
-                        <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed> 
+                        <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed>
+
                             <calcite-action-bar slot="action-bar" expanded>
+                            <calcite-action 
+                                    data-action-id="basemaps" 
+                                    icon="basemap" 
+                                    text="Basemaps" 
+                                    scale="l"></calcite-action> 
                                 <calcite-action id="view"
                                                 icon="analysis"
                                                 text="View Restocking"
                                                 scale="l"></calcite-action>
-
                             </calcite-action-bar>
+
+                            <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden >
+                                <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-basemap-button" scale="s"></calcite-action>
+                                <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
+                                <div id="basemaps-container"></div>
+                            </calcite-panel>
+
                         </calcite-shell-panel>
                             <div class="profileMap" id="viewDivMain"></div>
 
@@ -97,14 +109,14 @@
         <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
         <partial name="Partials/_DataTablesJs" />
         <script src="~/js/compartment-list.js" asp-append-version="true"></script>
-        <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
+        <script src="https://js.arcgis.com/4.24/"></script>
         <script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
         <script src="~/js/add-case-note.js" asp-append-version="true"></script>
         <script src="~/js/supporting-documentation.js" asp-append-version="true"></script>
         <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
 
 
-        <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+            <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
         <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
         <script>
 

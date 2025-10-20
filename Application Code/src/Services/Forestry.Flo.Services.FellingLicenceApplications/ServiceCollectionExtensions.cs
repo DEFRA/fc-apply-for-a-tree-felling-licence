@@ -1,5 +1,4 @@
 using Ardalis.GuardClauses;
-using Forestry.Flo.Internal.Web;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.Services;
@@ -7,6 +6,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Configuration;
@@ -36,7 +36,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContextFactory<FellingLicenceApplicationsContext>(options);
         services.AddSingleton<IDbContextFactorySource<FellingLicenceApplicationsContext>, CustomDbContextFactorySource<FellingLicenceApplicationsContext>>();
         services.AddSingleton<IApplicationReferenceHelper, ApplicationReferenceHelper>();
-        services.AddSingleton<IAmendCaseNotes, AmendCaseNotes>();
+        services.AddScoped<IAmendCaseNotes, AmendCaseNotes>();
         services.AddScoped<IFellingLicenceApplicationExternalRepository, ExternalUserContextFlaRepository>();
         services.AddScoped<IFellingLicenceApplicationInternalRepository, InternalUserContextFlaRepository>();
         services.AddScoped<IFellingLicenceApplicationReferenceRepository, FellingLicenceApplicationReferenceRepository>();
@@ -65,6 +65,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IExtendApplications, ExtendApplicationsService>();
         services.AddScoped<IVoluntaryWithdrawalNotificationService, VoluntaryWithdrawalNotificationService>();
         services.AddScoped<IWithdrawalNotificationService, WithdrawalNotificationService>();
+        services.AddScoped<ILateAmendmentResponseWithdrawalService, LateAmendmentResponseWithdrawalService>();
         services.AddScoped<IGetFellingLicenceApplicationForInternalUsers, GetFellingLicenceApplicationForInternalUsersService>();
         services.AddScoped<IGetFellingLicenceApplicationForExternalUsers, GetFellingLicenceApplicationForExternalUsersService>();
         services.AddScoped<IUpdateFellingLicenceApplication, UpdateFellingLicenceApplicationService>();
@@ -78,6 +79,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGetConfiguredFcAreas, GetConfiguredFcAreasService>();
         services.AddScoped<IUpdateFellingLicenceApplicationForExternalUsers, UpdateFellingLicenceApplicationForExternalUsersService>();
         services.AddScoped<ILarchCheckService, LarchCheckService>();
+
+        services.AddScoped<ISubStatusSpecification, AmendmentsWithApplicantSpecification>();
+        services.AddScoped<ISubStatusSpecification, OnPublicRegisterSpecification>();
+        services.AddScoped<IWoodlandOfficerReviewSubStatusService, WoodlandOfficerReviewSubStatusService>();
 
         return services;
     }

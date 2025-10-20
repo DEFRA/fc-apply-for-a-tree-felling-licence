@@ -6,6 +6,11 @@
     "esri/views/MapView",
     "esri/Basemap",
     "esri/Graphic",
+    "esri/layers/WMSLayer",
+    "esri/layers/WMTSLayer",
+    "esri/layers/GraphicsLayer",
+    "esri/widgets/BasemapGallery",
+    "esri/widgets/Expand",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
@@ -19,6 +24,11 @@
         MapView,
         Basemap,
         Graphic,
+        WMSLayer,
+        WMTSLayer,
+        GraphicsLayer,
+        BasemapToggle,
+        Expand,
         locator,
         FeatureLayer,
         maps_html_Helper,
@@ -52,8 +62,102 @@
             this.view
                 .when(this.mapLoadEvt.bind(this))
                 .then(this.loadCompartments.bind(this))
-                .then(this.GetStartingPoint.bind(this));
+                .then(this.addWidgets.bind(this))
+                .then(this.GetStartingPoint.bind(this))
+                .then(this.addWatermark.bind(this));
         }
+
+        fellingRestockMap.prototype.addWatermark = function () {
+            // Create a new GraphicsLayer for the watermark
+            const watermarkLayer = new GraphicsLayer({
+                visible: false,
+                id: "watermarkLayer",
+            });
+
+            // Define the text symbol for the watermark
+            const textSymbol = mapSettings.BlueSkyTextSymbol;
+
+            //Function to update the watermark positions
+            const updateWatermarkPositions = () => {
+                const extent = this.view.extent;
+                const width = extent.width;
+                const height = extent.height;
+                const spacing = Math.min(width, height) / 4;
+                const spatialReference = this.view.spatialReference;
+
+                // Clear existing graphics
+                watermarkLayer.removeAll();
+
+                // Create watermark graphics at regular intervals
+                for (let x = extent.xmin; x < extent.xmax; x += spacing) {
+                    for (let y = extent.ymin; y < extent.ymax; y += spacing) {
+                        const point = {
+                            type: "point",
+                            x: x,
+                            y: y,
+                            spatialReference: spatialReference
+                        };
+
+                        const watermarkGraphic = new Graphic({
+                            geometry: point,
+                            symbol: textSymbol
+                        });
+
+                        watermarkLayer.add(watermarkGraphic);
+                    }
+                }
+            };
+
+            // Add the watermark layer to the map
+            this.map.add(watermarkLayer);
+
+            // Update the watermark positions initially and whenever the view changes
+            this.view.watch("stationary", (newValue) => {
+                if (newValue) {
+                    updateWatermarkPositions();
+                }
+            });
+            this.view.watch("extent", updateWatermarkPositions);
+
+            // Watch for basemap changes and toggle watermark visibility
+            this.view.watch("map.basemap", (newBasemap) => {
+                if (!newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK) {
+                    watermarkLayer.visible = true;
+                } else {
+                    watermarkLayer.visible = false;
+                }
+            });
+            return Promise.resolve();
+        };
+
+        fellingRestockMap.prototype.addWidgets = function () {
+            this.map.basemap.title = "OS Map";
+
+            var wmsLayer = new WMSLayer(mapSettings.wmsLayer);
+
+            var wmsBasemap = new Basemap({
+                baseLayers: [wmsLayer],
+                title: mapSettings.wmsLayerName,
+                id: "wmsBasemap"
+            });
+
+
+            const basemapToggleWidget = new BasemapToggle({
+                view: this.view,
+                source: [this.map.basemap, wmsBasemap]
+            });
+
+            const expandLayer = new Expand({
+                expandIconClass: "esri-icon-basemap",
+                view: this.view,
+                content: basemapToggleWidget
+            });
+
+            this.view.ui.add(expandLayer, { position: "top-left" });
+
+            return Promise.resolve();
+
+        };
 
         fellingRestockMap.prototype.loadCompartments = function () {
             this.id = maps_html_Helper.getCompartmentId();
@@ -73,21 +177,8 @@
                         spatialReference: item.GIS.spatialReference.wkid,
                     };
                 }
-                else if (item.GIS.paths) {
-                    geometry = {
-                        type: "polyline",
-                        paths: item.GIS.paths,
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                }
-                else {
-                    geometry = {
-                        type: "point",
-                        longitude: item.GIS.x,
-                        latitude: item.GIS.y,
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                }
+
+
                 if (geometry) {
                     try {
                         graphicsArray.push(new Graphic({
@@ -108,12 +199,6 @@
             });
             this.loadPolygonLayer(graphicsArray.filter(function (item) {
                 return item.geometry.type === "polygon";
-            }));
-            this.loadLineLayer(graphicsArray.filter(function (item) {
-                return item.geometry.type === "polyline";
-            }));
-            this.loadPointLayer(graphicsArray.filter(function (item) {
-                return item.geometry.type === "point";
             }));
             return Promise.resolve(graphicsArray);
         };
@@ -153,98 +238,6 @@
                     },
                 });
                 this.map.add(this.compartmentLayer_polygon);
-            }
-            catch (e) {
-                if (window.console) {
-                    console.error("Failed to create all required parts for view.", e);
-                    Promise.reject(e);
-                }
-            }
-            return Promise.resolve();
-        };
-
-        fellingRestockMap.prototype.loadPointLayer = function (graphicsArray) {
-            try {
-                if (typeof graphicsArray === "undefined" || graphicsArray.length === 0) {
-                    return Promise.resolve();
-                }
-                var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-                labelSymbol.xoffset = -20;
-                labelSymbol.yoffset = -15;
-                this.compartmentLayer_point = new FeatureLayer({
-                    labelsVisible: true,
-                    source: graphicsArray,
-                    geometryType: "point",
-                    objectIdField: "ObjectID",
-                    fields: [
-                        { name: "ObjectID", type: "oid" },
-                        { name: "compartmentName", type: "string" },
-                        { name: "current", type: "string" }
-                    ],
-                    labelingInfo: {
-                        labelExpressionInfo: {
-                            expression: "$feature.compartmentName",
-                        },
-                        symbol: labelSymbol,
-                        visualVariables: mapSettings.visualVariables.textSize
-                    },
-                    renderer: {
-                        type: "unique-value",
-                        field: "current",
-                        defaultSymbol: mapSettings.otherPointSymbol,
-                        uniqueValueInfos: [{
-                            value: "Y",
-                            symbol: mapSettings.activePointSymbol
-                        }],
-                        visualVariables: mapSettings.visualVariables.size
-                    },
-                });
-                this.map.add(this.compartmentLayer_point);
-            }
-            catch (e) {
-                if (window.console) {
-                    console.error("Failed to create all required parts for view.", e);
-                    Promise.reject(e);
-                }
-            }
-            return Promise.resolve();
-        };
-
-        fellingRestockMap.prototype.loadLineLayer = function (graphicsArray) {
-            try {
-                if (typeof graphicsArray === "undefined" || graphicsArray.length === 0) {
-                    return Promise.resolve();
-                }
-                var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-                this.compartmentLayer_line = new FeatureLayer({
-                    labelsVisible: true,
-                    source: graphicsArray,
-                    geometryType: "polyline",
-                    objectIdField: "ObjectID",
-                    fields: [
-                        { name: "ObjectID", type: "oid" },
-                        { name: "compartmentName", type: "string" },
-                        { name: "current", type: "string" }
-                    ],
-                    labelingInfo: {
-                        labelExpressionInfo: {
-                            expression: "$feature.compartmentName",
-                        },
-                        symbol: labelSymbol,
-                        visualVariables: mapSettings.visualVariables.textSize
-                    },
-                    renderer: {
-                        type: "unique-value",
-                        field: "current",
-                        defaultSymbol: mapSettings.otherLineSymbol,
-                        uniqueValueInfos: [{
-                            value: "Y",
-                            symbol: mapSettings.activeLineSymbol
-                        }],
-                        visualVariables: mapSettings.visualVariables.size
-                    },
-                });
-                this.map.add(this.compartmentLayer_line);
             }
             catch (e) {
                 if (window.console) {

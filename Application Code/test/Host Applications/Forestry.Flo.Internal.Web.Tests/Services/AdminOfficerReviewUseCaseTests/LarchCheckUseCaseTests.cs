@@ -1,30 +1,31 @@
-using System.Text.Json;
 using AutoFixture;
+using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
-using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Common.Models;
-using Forestry.Flo.Services.Common.Services;
-using Forestry.Flo.Internal.Web.Services;
+using System.Text.Json;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
-using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
-using Forestry.Flo.Internal.Web.Infrastructure;
-using Microsoft.Extensions.Options;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AdminOfficerReviewUseCaseTests;
 
@@ -43,6 +44,7 @@ public class LarchCheckUseCaseTests
     private readonly Mock<IAmendCaseNotes> _caseNotesServiceMock = new();
     private readonly Mock<IViewCaseNotesService> _viewCaseNotesServiceMock = new();
     private readonly Mock<IActivityFeedItemProvider> _activityFeedItemProviderMock = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
 
     private readonly InternalUserContextFlaRepository _internalRepo;
     private readonly FellingLicenceApplicationsContext _fellingLicenceApplicationsContext;
@@ -130,6 +132,7 @@ public class LarchCheckUseCaseTests
             _activityFeedItemProviderMock.Object,
             new OptionsWrapper<LarchOptions>(new LarchOptions()),
             _getConfiguredFcAreas.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             new RequestContext("test", new RequestUserModel(_internalUser.Principal)));
     }
 

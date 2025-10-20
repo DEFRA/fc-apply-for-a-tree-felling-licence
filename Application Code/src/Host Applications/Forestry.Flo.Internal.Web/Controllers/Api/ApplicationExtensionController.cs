@@ -1,7 +1,7 @@
-﻿using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure.Display;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 
 namespace Forestry.Flo.Internal.Web.Controllers.Api;
 
@@ -17,7 +17,7 @@ public class ApplicationExtensionController : ControllerBase
 
     [Route("ExtendApplications")]
     public async Task<IActionResult> ExtendApplicationFinalActionDates(
-        [FromServices] ExtendApplicationsUseCase extendApplications,
+        [FromServices] IExtendApplicationsUseCase extendApplications,
         CancellationToken cancellationToken)
     {
         await extendApplications.ExtendApplicationFinalActionDatesAsync(GetFellingLicenceUrlLink(), cancellationToken);

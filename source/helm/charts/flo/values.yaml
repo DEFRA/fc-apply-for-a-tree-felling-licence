@@ -25,9 +25,20 @@ internal-web-app:
 
 pdf-generation-service:
   enabled: false
+  image:
+    registry: fsflo.azurecr.io
+    repository: fsflo.azurecr.io/quicksilva/pdf-generation-service
+    tag: "34"
+  env:
+    - name: SPRING_THYMELEAF_PREFIX
+      value: file:///templates/source/html-templates/
+    - name: ORGANISATION_CONFIGURATION_SERVICE_ENABLED
+      value: "false"
 
 postgresql:
   image:
+    registry: fsflo.azurecr.io
+    repository: postgresql
     tag: 14.4.0-debian-11-r4
   networkPolicy:
     enabled: true
@@ -54,6 +65,10 @@ postgresql:
         emptyDir: {} 
 
 rabbitmq:
+  image:
+    registry: fsflo.azurecr.io
+    repository: rabbitmq
+    tag: 3.12-debian-11
   fullnameOverride: rabbitmq
 
   auth:

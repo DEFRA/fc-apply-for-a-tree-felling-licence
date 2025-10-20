@@ -2,8 +2,8 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
-using Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -11,17 +11,17 @@ using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
 using Microsoft.Extensions.Options;
 using NodaTime;
-using Notify.Models.Responses;
 
 namespace Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 
-public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBase
+public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBase, IExternalConsulteeInviteUseCase
 {
     private readonly IExternalConsulteeReviewService _externalConsulteeReviewService;
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
@@ -47,13 +47,15 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         ILogger<ExternalConsulteeInviteUseCase> logger,
         IClock clock,
         IOptions<UserInviteOptions> options,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         RequestContext requestContext) : base(
         internalUserAccountService,
         externalUserAccountService,
         fellingLicenceApplicationInternalRepository,
         woodlandOwnerService,
         agentAuthorityService,
-        getConfiguredFcAreasService)
+        getConfiguredFcAreasService,
+        woodlandOfficerReviewSubStatusService)
     {
         _externalConsulteeReviewService = Guard.Against.Null(externalConsulteeReviewService);
         _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
@@ -65,13 +67,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         _requestContext = Guard.Against.Null(requestContext);
     }
 
-    /// <summary>
-    /// Retrieves the existing invited external consultees and the not needed/complete status of
-    /// consultations for the application.
-    /// </summary>
-    /// <param name="applicationId"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns>A <see cref="ExternalConsulteeIndexViewModel"/> view model for the consultee invite index page.</returns>
+    /// <inheritdoc />
     public async Task<Result<ExternalConsulteeIndexViewModel>> GetConsulteeInvitesIndexViewModelAsync(
         Guid applicationId,
         CancellationToken cancellationToken)
@@ -97,13 +93,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         return Result.Failure<ExternalConsulteeIndexViewModel>(ApplicationNotFoundError);
     }
 
-    /// <summary>
-    /// Updates the woodland officer review record to set consultations as not needed.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to update.</param>
-    /// <param name="user">The user performing the update.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating if successful.</returns>
+    /// <inheritdoc />
     public async Task<Result> SetDoesNotRequireConsultationsAsync(
         Guid applicationId,
         InternalUser user,
@@ -115,13 +105,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
             applicationId, user.UserAccountId!.Value, false, false, cancellationToken);
     }
 
-    /// <summary>
-    /// Updates the woodland officer review record to set consultations as complete.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to update.</param>
-    /// <param name="user">The user performing the update.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating if successful.</returns>
+    /// <inheritdoc />
     public async Task<Result> SetConsultationsCompleteAsync(
         Guid applicationId,
         InternalUser user,
@@ -133,12 +117,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
             applicationId, user.UserAccountId!.Value, true, true, cancellationToken);
     }
 
-    /// <summary>
-    /// Gets a new External Consultee Invite View Model from application data by the given application id.
-    /// </summary>
-    /// <param name="applicationId">The application id</param>
-    /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns>A <see cref="ExternalConsulteeInviteFormModel"/> model for inviting a new consultee.</returns>
+    /// <inheritdoc />
     public async Task<Result<ExternalConsulteeInviteFormModel>> GetNewExternalConsulteeInviteViewModelAsync(
         Guid applicationId,
         CancellationToken cancellationToken)
@@ -179,14 +158,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         return Result.Failure<ExternalConsulteeInviteFormModel>(ApplicationNotFoundError);
     }
 
-    /// <summary>
-    /// Send an invitation to an external consultee to review the application.
-    /// </summary>
-    /// <param name="externalConsulteeInviteModel">The consultee invite view model</param>
-    /// <param name="applicationId">The application Id</param>
-    /// <param name="user">A current system user</param>
-    /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns>A result of the operation.</returns>
+    /// <inheritdoc />
     public async Task<Result> InviteExternalConsulteeAsync(
         ExternalConsulteeInviteModel externalConsulteeInviteModel,
         Guid applicationId,
@@ -254,13 +226,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
             });
     }
 
-    /// <summary>
-    /// Gets a view model to display the received comments for a given application id and access code.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to retrieve the received comments for.</param>
-    /// <param name="accessCode">The access code of the particular invite to retrieve comments for.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="ReceivedConsulteeCommentsViewModel"/> model of the data to display.</returns>
+    /// <inheritdoc />
     public async Task<Result<ReceivedConsulteeCommentsViewModel>> GetReceivedCommentsAsync(
         Guid applicationId,
         Guid accessCode,

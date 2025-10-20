@@ -4,6 +4,7 @@ using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Microsoft.AspNetCore.Mvc;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using NodaTime;
@@ -16,7 +17,7 @@ using Microsoft.IO;
 
 namespace Forestry.Flo.Internal.Web.Services.Reports;
 
-public class GenerateReportUseCase
+public class GenerateReportUseCase : IGenerateReportUseCase
 {
     private readonly IReportQueryService _reportQueryService;
     private readonly IAdminHubService _adminHubService;

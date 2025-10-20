@@ -5,15 +5,23 @@
     "esri/Map",
     "esri/views/MapView",
     "esri/Basemap",
+    "esri/layers/WMSLayer",
+    "esri/layers/WMTSLayer",
+    "esri/layers/GraphicsLayer",
+    "esri/widgets/BasemapGallery",
     "esri/Graphic",
     "esri/rest/locator",
     "esri/widgets/Expand",
     "esri/widgets/Print",
     "/js/mapping/maps-html-helper.js",
-    "/js/mapping/fcconfig.js",
+    "/js/mapping/fcconfig.js?v=" + Date.now(),
     "/js/mapping/widgets/graphic-selection-widget.js",
     "/js/mapping/widgets/symbol-editor-widget.js"], 
     function (require, exports, config, Map, MapView, Basemap,
+        WMSLayer,
+        WMTSLayer,
+        GraphicsLayer,
+        BasemapToggle,
         Graphic, locator, Expand, PrintWidget, maps_html_Helper, fcconfig, Selection, SymbolEditor) {
     var printerMap = /** @class */ (function () {
         function printerMap(location) {
@@ -44,11 +52,29 @@
             this.view
                 .when(this.loadCompartments.bind(this))
                 .then(this.setupWidgets.bind(this))
-                .then(this.GetStartingPoint.bind(this));
+                .then(this.GetStartingPoint.bind(this))
+                .then(this.addWatermark.bind(this));
         }
 
         printerMap.prototype.setupWidgets = function () {
             var that = this;
+
+            that.map.basemap.title = "OS Map";
+
+            var wmsLayer = new WMSLayer(fcconfig.wmsLayer);
+
+            var wmsBasemap = new Basemap({
+                baseLayers: [wmsLayer],
+                title: fcconfig.wmsLayerName,
+                id: "wmsBasemap"
+            });
+
+
+            const basemapToggleWidget = new BasemapToggle({
+                view: this.view,
+                    source: [that.map.basemap, wmsBasemap]
+            });
+
 
             const selection = new Selection({
                 shapes: this.graphicsArray.filter((shape) => { return shape.attributes.isShape }).map((shape) => {
@@ -108,6 +134,13 @@
             this.editor = new SymbolEditor({
                 view: this.view,
             });
+
+            const expandLayer = new Expand({
+                expandIconClass: "esri-icon-basemap",
+                view: this.view,
+                content: basemapToggleWidget
+            });
+
             const expandPrinter = new Expand({
                 expandIconClass: "esri-icon-printer",
                 view: this.view,
@@ -208,6 +241,8 @@
                 that.view.graphics.items[shapeIndex].symbol = evt.Symbol;
             });
 
+            this.view.ui.add(expandLayer, { position: "top-right" });
+
             this.view.ui.add(expandStyle, { position: "top-right" });
 
             this.view.ui.add(expandPrinter, {
@@ -216,6 +251,69 @@
             this.view.ui.add(expandViewer, "top-right");
             return Promise.resolve();
         }
+
+        printerMap.prototype.addWatermark = function () {
+            // Create a new GraphicsLayer for the watermark
+            const watermarkLayer = new GraphicsLayer({
+                visible: false,
+                id: "watermarkLayer",
+            });
+
+            // Define the text symbol for the watermark
+            const textSymbol = fcconfig.BlueSkyTextSymbol;
+            console.log(fcconfig);
+            //Function to update the watermark positions
+            const updateWatermarkPositions = () => {
+                const extent = this.view.extent;
+                const width = extent.width;
+                const height = extent.height;
+                const spacing = Math.min(width, height) / 4;
+                const spatialReference = this.view.spatialReference;
+
+                // Clear existing graphics
+                watermarkLayer.removeAll();
+
+                // Create watermark graphics at regular intervals
+                for (let x = extent.xmin; x < extent.xmax; x += spacing) {
+                    for (let y = extent.ymin; y < extent.ymax; y += spacing) {
+                        const point = {
+                            type: "point",
+                            x: x,
+                            y: y,
+                            spatialReference: spatialReference
+                        };
+
+                        const watermarkGraphic = new Graphic({
+                            geometry: point,
+                            symbol: textSymbol
+                        });
+
+                        watermarkLayer.add(watermarkGraphic);
+                    }
+                }
+            };
+
+            // Add the watermark layer to the map
+            this.map.add(watermarkLayer);
+
+            // Update the watermark positions initially and whenever the view changes
+            this.view.watch("stationary", (newValue) => {
+                if (newValue) {
+                    updateWatermarkPositions();
+                }
+            });
+            this.view.watch("extent", updateWatermarkPositions);
+
+            // Watch for basemap changes and toggle watermark visibility
+            this.view.watch("map.basemap", (newBasemap) => {
+                if (!newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK) {
+                    watermarkLayer.visible = true;
+                } else {
+                    watermarkLayer.visible = false;
+                }
+            });
+            return Promise.resolve();
+        };
 
         printerMap.prototype.loadCompartments = function () {
             var items = maps_html_Helper.getCompartments();
@@ -241,36 +339,7 @@
                     shapeSymbol = fcconfig.otherPolygonSymbol;
                     centroid = geometry.centroid;
                 }
-                else if (item.GIS.paths) {
-                    geometry = {
-                        type: "polyline",
-                        paths: item.GIS.paths,
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                    shapeSymbol = fcconfig.otherLineSymbol;
-                    centroid = {
-                        type: "point",
-                        longitude: geometry.paths[0][(Math.floor(geometry.paths[0].length / 2))][0],
-                        latitude: geometry.paths[0][(Math.floor(geometry.paths[0].length / 2))][1],
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                    
-                }
-                else {
-                    geometry = {
-                        type: "point",
-                        longitude: item.GIS.x,
-                        latitude: item.GIS.y,
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                    shapeSymbol = fcconfig.otherPointSymbol;
-                    centroid = {
-                        type: "point",
-                        longitude: item.GIS.x,
-                        latitude: item.GIS.y,
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                }
+             
                 if (geometry) {
                     var labelId = that.GenerateUUID();
                     try {

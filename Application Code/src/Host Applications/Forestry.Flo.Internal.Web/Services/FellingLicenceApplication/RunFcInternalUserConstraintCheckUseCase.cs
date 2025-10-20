@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,7 +9,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 /// <summary>
 /// Handles the Admin Officer selecting to run the Constraint Check in the Internal application.
 /// </summary>
-public class RunFcInternalUserConstraintCheckUseCase
+public class RunFcInternalUserConstraintCheckUseCase : IRunFcInternalUserConstraintCheckUseCase
 {
     private readonly ConstraintCheckerService _constraintCheckerService;
     private readonly ILogger<RunFcInternalUserConstraintCheckUseCase> _logger;

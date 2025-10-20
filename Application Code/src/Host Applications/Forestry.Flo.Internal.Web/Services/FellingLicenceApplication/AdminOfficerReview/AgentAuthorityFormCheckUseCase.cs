@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.AdminOfficerReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -8,12 +9,13 @@ using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Result = CSharpFunctionalExtensions.Result;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 
-public class AgentAuthorityFormCheckUseCase : AdminOfficerReviewUseCaseBase
+public class AgentAuthorityFormCheckUseCase : AdminOfficerReviewUseCaseBase, IAgentAuthorityFormCheckUseCase
 {
     private readonly IAgentAuthorityInternalService _agentAuthorityInternalService;
     private readonly IAgentAuthorityService _agentAuthorityService;
@@ -30,6 +32,7 @@ public class AgentAuthorityFormCheckUseCase : AdminOfficerReviewUseCaseBase
         IAgentAuthorityService agentAuthorityService,
         IAuditService<AdminOfficerReviewUseCaseBase> auditService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         RequestContext requestContext) 
         : base(internalUserAccountService, 
             externalUserAccountService,
@@ -41,6 +44,7 @@ public class AgentAuthorityFormCheckUseCase : AdminOfficerReviewUseCaseBase
             auditService,
             agentAuthorityService,
             getConfiguredFcAreasService,
+            woodlandOfficerReviewSubStatusService,
             requestContext)
     {
         ArgumentNullException.ThrowIfNull(agentAuthorityService);
@@ -50,12 +54,7 @@ public class AgentAuthorityFormCheckUseCase : AdminOfficerReviewUseCaseBase
         _agentAuthorityService = agentAuthorityService;
     }
 
-    /// <summary>
-    /// Gets a populated <see cref="AgentAuthorityFormCheckModel"/> for admin officers to verify an agent authority form for an application in review.
-    /// </summary>
-    /// <param name="applicationId">The identifier for the application.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A populated <see cref="AgentAuthorityFormCheckModel"/> containing details of an application's agent authority form.</returns>
+    /// <inheritdoc />
     public async Task<Result<AgentAuthorityFormCheckModel>> GetAgentAuthorityFormCheckModelAsync(Guid applicationId, CancellationToken cancellationToken)
     {
         var (_, licenceRetrievalFailure, fellingLicence) = await GetFellingLicenceApplication
@@ -140,15 +139,7 @@ public class AgentAuthorityFormCheckUseCase : AdminOfficerReviewUseCaseBase
         };
     }
 
-    /// <summary>
-    /// Completes the agent authority form check task in the admin officer review.
-    /// </summary>
-    /// <param name="applicationId">The identifier for the application.</param>
-    /// <param name="performingUserId">The identifier for the internal user completing the check.</param>
-    /// <param name="isCheckPassed">A flag indicating whether the agent authority form check is successful.</param>
-    /// <param name="failureReason">A textual reason why the agent authority form check has failed, if the check is unsuccessful.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the agent authority check has been updated successfully.</returns>
+    /// <inheritdoc />
     public async Task<Result> CompleteAgentAuthorityCheckAsync(
         Guid applicationId,
         Guid performingUserId,

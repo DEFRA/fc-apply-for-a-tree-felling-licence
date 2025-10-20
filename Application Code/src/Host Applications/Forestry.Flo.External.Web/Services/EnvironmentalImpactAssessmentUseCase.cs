@@ -131,10 +131,13 @@ public class EnvironmentalImpactAssessmentUseCase(
             }
         }
 
+        var documentsCount = applicationResult.Value.Documents!.Count(x =>
+            x.DeletionTimestamp is null && x.Purpose is DocumentPurpose.EiaAttachment or DocumentPurpose.Attachment);
+
         var addDocumentRequest = new AddDocumentsExternalRequest
         {
             ActorType = ActorType.ExternalApplicant,
-            ApplicationDocumentCount = applicationResult.Value.Documents!.Count(x => x.DeletionTimestamp is null),
+            ApplicationDocumentCount = documentsCount,
             DocumentPurpose = DocumentPurpose.EiaAttachment,
             FellingApplicationId = fellingLicenceApplicationId,
             FileToStoreModels = filesModel,

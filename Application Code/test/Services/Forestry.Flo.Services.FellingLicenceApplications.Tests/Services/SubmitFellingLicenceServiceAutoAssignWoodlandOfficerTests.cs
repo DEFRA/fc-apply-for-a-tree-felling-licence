@@ -36,7 +36,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         private readonly Mock<IAuditService<SubmitFellingLicenceService>> _auditService;
         private readonly Mock<IForesterServices> _foresterServices;
         private readonly Mock<IForestryServices> _forestryServices;
-        private readonly Mock<ISendNotifications> _notificationsService;
         private readonly Mock<IClock> _clock;
         private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreasMock;
 
@@ -48,7 +47,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _forestryServices = new();
             _clock = new Mock<IClock>();
             _auditService = new Mock<IAuditService<SubmitFellingLicenceService>>();
-            _notificationsService = new Mock<ISendNotifications>();
             _getConfiguredFcAreasMock = new Mock<IGetConfiguredFcAreas>();
         }
 
@@ -155,7 +153,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _foresterServices.Verify(v => v.GetWoodlandOfficerAsync(It.Is<Point>(e => JsonConvert.SerializeObject(e) == fla.CentrePoint), CancellationToken.None), Times.Once);
             _userAccountRepository.Verify(v => v.GetByFullnameAsync(woodlandOfficerAccount.FirstName!, woodlandOfficerAccount.LastName!, CancellationToken.None), Times.Once);
             _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
-            _notificationsService.VerifyNoOtherCalls();
             _auditService.VerifyNoOtherCalls();
         }
 
@@ -453,7 +450,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _userAccountRepository.Reset();
             _clock.Reset();
             _foresterServices.Reset();
-            _notificationsService.Reset();
             _getConfiguredFcAreasMock.Reset();
 
             _clock.Setup(x => x.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.UtcNow));
@@ -475,7 +471,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 _foresterServices.Object,
                 _forestryServices.Object,
                 _clock.Object,
-                _notificationsService.Object,
                 _getConfiguredFcAreasMock.Object);
         }
     }

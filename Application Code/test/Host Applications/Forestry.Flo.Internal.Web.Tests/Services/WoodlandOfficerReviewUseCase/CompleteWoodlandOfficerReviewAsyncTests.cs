@@ -13,6 +13,7 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Text.Json;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
@@ -107,8 +108,6 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
         ExternalUserAccountRepository.VerifyNoOtherCalls();
         InternalUserAccountService.VerifyNoOtherCalls();
 
-        var deleteMe = AuditingService.Invocations.First().Arguments[0] as AuditEvent;
-
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                 a.EventName == AuditEvents.ConfirmWoodlandOfficerReviewFailure
                 && a.ActorType == ActorType.InternalUser
@@ -137,7 +136,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                     recommendationForDecisionPublicRegister = recommendationForDecisionPublicRegister
                 }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
+
         AuditingService.VerifyNoOtherCalls();
+        MockBus.Verify(x => x.Publish(
+            It.Is<GenerateSubmittedPdfPreviewMessage>(m =>
+                m.ApplicationId == applicationId &&
+                m.InternalUserId == user.UserAccountId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -211,7 +216,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                     recommendationForDecisionPublicRegister = recommendationForDecisionPublicRegister
                 }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
+
         AuditingService.VerifyNoOtherCalls();
+        MockBus.Verify(x => x.Publish(
+            It.Is<GenerateSubmittedPdfPreviewMessage>(m =>
+                m.ApplicationId == applicationId &&
+                m.InternalUserId == user.UserAccountId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -290,7 +301,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                     recommendationForDecisionPublicRegister = recommendationForDecisionPublicRegister
                 }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
+
         AuditingService.VerifyNoOtherCalls();
+        MockBus.Verify(x => x.Publish(
+            It.Is<GenerateSubmittedPdfPreviewMessage>(m =>
+                m.ApplicationId == applicationId &&
+                m.InternalUserId == user.UserAccountId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -392,7 +409,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                     recommendationForDecisionPublicRegister = recommendationForDecisionPublicRegister
                 }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
+
         AuditingService.VerifyNoOtherCalls();
+        MockBus.Verify(x => x.Publish(
+            It.Is<GenerateSubmittedPdfPreviewMessage>(m =>
+                m.ApplicationId == applicationId &&
+                m.InternalUserId == user.UserAccountId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -508,6 +531,12 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                 }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
         AuditingService.VerifyNoOtherCalls();
+
+        MockBus.Verify(x => x.Publish(
+            It.Is<GenerateSubmittedPdfPreviewMessage>(m => 
+                m.ApplicationId == applicationId &&
+                m.InternalUserId == user.UserAccountId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase CreateSut()
@@ -527,7 +556,9 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             MockAgentAuthorityService.Object,
             GetConfiguredFcAreas.Object,
             Clock.Object,
+            WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
+            MockBus.Object,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

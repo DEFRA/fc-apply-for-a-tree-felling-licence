@@ -338,7 +338,7 @@ internal-web-app:
         secret_key: blob.connectionString
       container: devflo
     externalApplicantSite:
-      baseUrl: "https://devflo.ps.conneqt.cloud"
+      baseUrl: "https://devflo.ps.conneqt.cloud/"
     woodlandOfficerReview:
       useDevPublicRegister: false
     cronJobs:
@@ -575,7 +575,6 @@ internal-web-app:
 
 pdf-generation-service:
   enabled: true
-
   config:
     bitbucket:
       folder: /source/html-templates/*
@@ -584,6 +583,11 @@ pdf-generation-service:
     spring:
       thymeleaf:
         prefix: "file:///templates/source/html-templates/"
+  env:
+    - name: SPRING_THYMELEAF_PREFIX
+      value: file:///templates/source/html-templates/
+    - name: ORGANISATION_CONFIGURATION_SERVICE_ENABLED
+      value: "false"
 
 postgresql:
   primary:

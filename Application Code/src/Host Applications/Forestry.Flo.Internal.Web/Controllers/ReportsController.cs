@@ -4,6 +4,7 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.Reports;
 using Forestry.Flo.Internal.Web.Services;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Internal.Web.Services.Reports;
 using Forestry.Flo.Services.Common.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -39,7 +40,7 @@ public class ReportsController : Controller
 
     [HttpGet]
     public async Task<IActionResult> FellingLicenceApplicationsDataReport(
-        [FromServices] GenerateReportUseCase useCase,
+        [FromServices] IGenerateReportUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -58,7 +59,7 @@ public class ReportsController : Controller
     [HttpPost]
     public async Task<IActionResult> SubmitFellingLicenceApplicationsDataReport(
         ReportRequestViewModel viewModel,
-        [FromServices] GenerateReportUseCase useCase,
+        [FromServices] IGenerateReportUseCase useCase,
         [FromServices] IValidator<ReportRequestViewModel> reportValidator,
         CancellationToken cancellationToken)
     {

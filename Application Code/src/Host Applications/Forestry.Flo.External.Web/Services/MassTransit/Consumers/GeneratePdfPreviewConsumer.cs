@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Exceptions;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
+using Forestry.Flo.Services.Common.MassTransit.Messages;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 

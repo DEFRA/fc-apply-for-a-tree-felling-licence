@@ -5,29 +5,33 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.AdminOfficerReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.MassTransit.Messages;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
-using Forestry.Flo.Services.ConditionsBuilder.Models;
-using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using MassTransit;
 using Microsoft.Extensions.Options;
 using NodaTime;
 using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 
-public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
+public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOfficerReviewUseCase
 {
     private readonly IClock _clock;
     private readonly ISendNotifications _emailService;
@@ -41,6 +45,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
     private readonly IUpdateConfirmedFellingAndRestockingDetailsService _updateConfirmedFellingAndRestockingDetailsService;
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
     private readonly ICalculateConditions _calculateConditionsService;
+    private readonly IBus _busControl;
 
     public AdminOfficerReviewUseCase(
         ISendNotifications emailService,
@@ -65,7 +70,9 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
         IGetConfiguredFcAreas getConfiguredFcAreasService,
         IUpdateConfirmedFellingAndRestockingDetailsService updateConfirmedFellingAndRestockingDetailsService,
         IUpdateWoodlandOfficerReviewService updateWoodlandOfficerReviewService,
-        ICalculateConditions calculateConditionsService)
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
+        ICalculateConditions calculateConditionsService,
+        IBus busControl)
         : base(internalUserAccountService,
             externalUserAccountService,
             logger,
@@ -76,6 +83,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
             auditService,
             agentAuthorityService,
             getConfiguredFcAreasService,
+            woodlandOfficerReviewSubStatusService,
             requestContext)
     {
         ArgumentNullException.ThrowIfNull(updateFellingLicenceApplication);
@@ -90,6 +98,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
         ArgumentNullException.ThrowIfNull(updateConfirmedFellingAndRestockingDetailsService);
         ArgumentNullException.ThrowIfNull(calculateConditionsService);
         ArgumentNullException.ThrowIfNull(updateWoodlandOfficerReviewService);
+        ArgumentNullException.ThrowIfNull(busControl);
 
         _updateFellingLicenceApplication = updateFellingLicenceApplication;
         _getAdminOfficerReview = getAdminOfficerReview;
@@ -103,16 +112,10 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
         _updateConfirmedFellingAndRestockingDetailsService = updateConfirmedFellingAndRestockingDetailsService;
         _updateWoodlandOfficerReviewService = updateWoodlandOfficerReviewService;
         _calculateConditionsService = calculateConditionsService;
+        _busControl = busControl;
     }
 
-    /// <summary>
-    /// Creates an <see cref="AdminOfficerReviewModel"/> to populate the admin officer review page.
-    /// </summary>
-    /// <param name="applicationId">The identifier for the application to review.</param>
-    /// <param name="user">The user requesting the page.</param>
-    /// <param name="hostingPage">The page to return to after adding an activity feed comment.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A populated <see cref="AdminOfficerReviewModel"/> to display to the user.</returns>
+    /// <inheritdoc />
     public async Task<Result<AdminOfficerReviewModel>> GetAdminOfficerReviewAsync(
         Guid applicationId,
         InternalUser user,
@@ -214,6 +217,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
         return Result.Success(result);
     }
 
+    /// <inheritdoc />
     public async Task<Result> ConfirmAdminOfficerReview(
         Guid applicationId,
         InternalUser user,
@@ -268,15 +272,17 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
             }
         }
 
-        // CBW - copy the proposed felling and restocking details to be able to Approve directly
-        var CBWrequireWOReview = await _getAdminOfficerReview.GetCBWReviewStatusAsync( applicationId, cancellationToken) ?? true;
-        if (CBWrequireWOReview == false)
+        // CBWChecked - Complete CFR and Conditions to be able to Approve directly
+        var CBWChecked = await _getAdminOfficerReview.GetCBWReviewStatusAsync(applicationId, cancellationToken);
+        var isSkippingWoReviewForCbw = CBWChecked == false;     // CBW in non-sensitive area
+        if (isSkippingWoReviewForCbw)
         {
             var updateWoReviewResult = await _updateWoodlandOfficerReviewService.HandleConfirmedFellingAndRestockingChangesAsync(
                 applicationId,
                 user.UserAccountId!.Value,
                 true,
-                cancellationToken);
+                cancellationToken,
+                isSkippingWoReviewForCbw);
 
             if (updateWoReviewResult.IsFailure)
             {
@@ -308,7 +314,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
             user.UserAccountId!.Value,
             now,
             isAgentApplication,
-            CBWrequireWOReview,
+            isSkippingWoReviewForCbw,
             cancellationToken);
 
         if (updateResult.IsFailure)
@@ -323,6 +329,12 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
                 }, cancellationToken);
             return Result.Failure("Unable to update application");
         }
+
+        await _busControl.Publish(
+            new GenerateSubmittedPdfPreviewMessage(
+                user.UserAccountId!.Value,
+                applicationId),
+            cancellationToken);
 
         var applicant = await ExternalUserAccountService.RetrieveUserAccountEntityByIdAsync(updateResult.Value.ApplicantId, cancellationToken);
 
@@ -368,7 +380,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
         }
 
         var result = await SendReviewConfirmationNotifications(
-            updateResult.Value.ApplicationReference, applicant.Value, woodlandOfficer.Value, adminOfficer.Value, 
+            updateResult.Value.ApplicationReference, applicant.Value, woodlandOfficer.Value, adminOfficer.Value,
             applicationId, internalLinkToApplication, updateResult.Value.AdminHubName, cancellationToken);
 
         if (result.IsSuccess)
@@ -384,14 +396,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
         return result;
     }
 
-
-    /// <summary>
-    /// Completes the larch check task in the admin officer review.
-    /// </summary>
-    /// <param name="applicationId">The identifier for the application.</param>
-    /// <param name="performingUserId">The identifier for the internal user completing the check.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the larch check has been updated successfully.</returns>
+    /// <inheritdoc />
     public async Task<Result> CompleteLarchCheckAsync(
         Guid applicationId,
         Guid performingUserId,
@@ -565,7 +570,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase
             var applicant = await ExternalUserAccountService.RetrieveUserAccountEntityByIdAsync(applicationSummary.Value.CreatedById, cancellationToken);
 
             var adminHubFooter = await GetConfiguredFcAreasService.TryGetAdminHubAddress(fellingLicence.AdministrativeRegion, cancellationToken);
-            
+
             var informApplicantModel = new InformApplicantOfReturnedLarchApplicationDataModel
             {
                 ApplicationReference = applicationSummary.Value.ApplicationReference,

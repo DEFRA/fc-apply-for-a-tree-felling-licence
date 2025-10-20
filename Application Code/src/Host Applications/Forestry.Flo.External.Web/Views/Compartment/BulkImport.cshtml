@@ -166,8 +166,8 @@
 </div>
 
 @section Css {
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")?v=@DateTime.UtcNow.Ticks" />
     <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
 }
 
@@ -224,24 +224,18 @@
         margin-right: 10px;
         margin-bottom: 10px;
     }
+
+    .component-sample-wrapper calcite-panel calcite-action-bar {
+        width: 100%;
+    }
 </style>
 
 @section Scripts {
     <script type="module" src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js")"></script>
-    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script src="https://js.arcgis.com/4.24/"></script>
     <script type="module">
-
-         //require(["/js/mapping/maps/map-bulk-import.js"], function (ProfileMap) {
-         require(["/js/mapping/maps/map-bulk-import.js?v=" + Date.now()], function (ProfileMap) {
-
+        require(["/js/mapping/maps/map-bulk-import.js?v=" + Date.now()], function (ProfileMap) {
             var mapObj = new ProfileMap("viewDivDraw");
-
         })
-
     </script>
-    <style>
-        .component-sample-wrapper calcite-panel calcite-action-bar {
-            width: 100%;
-        }
-    </style>
 }

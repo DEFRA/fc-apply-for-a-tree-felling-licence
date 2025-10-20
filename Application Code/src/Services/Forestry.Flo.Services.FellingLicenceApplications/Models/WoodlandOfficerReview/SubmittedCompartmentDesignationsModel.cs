@@ -36,9 +36,9 @@ public class SubmittedCompartmentDesignationsModel
     public bool Spa { get; set; }
 
     /// <summary>
-    /// Gets and sets a value indicating whether the compartment is within a RAMSER.
+    /// Gets and sets a value indicating whether the compartment is within a RAMSAR.
     /// </summary>
-    public bool Ramser { get; set; }
+    public bool Ramsar { get; set; }
 
     /// <summary>
     /// Gets and sets a value indicating whether the compartment is within an SBI.
@@ -76,7 +76,7 @@ public class SubmittedCompartmentDesignationsModel
         if (Sssi) designations.Add("SSSI");
         if (Sacs) designations.Add("SAC");
         if (Spa) designations.Add("SPA");
-        if (Ramser) designations.Add("RAMSER");
+        if (Ramsar) designations.Add("RAMSAR");
         if (Sbi) designations.Add("SBI");
         if (Other) designations.Add("Other");
         if (None) designations.Add("None (reviewed)");

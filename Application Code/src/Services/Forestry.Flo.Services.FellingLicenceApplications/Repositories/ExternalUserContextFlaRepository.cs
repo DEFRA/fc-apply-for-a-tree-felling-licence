@@ -216,9 +216,9 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .AnyAsync(a => a.WoodlandOwnerId == woodlandOwnerId && a.Id == applicationId, cancellationToken);
     }
 
-    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId)
+    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId, CancellationToken cancellationToken)
     {
-        return await Context.FellingLicenceApplicationStepStatus.FirstAsync(flas => flas.FellingLicenceApplicationId == applicationId);
+        return await Context.FellingLicenceApplicationStepStatus.FirstAsync(flas => flas.FellingLicenceApplicationId == applicationId, cancellationToken);
     }
 
     public async Task<Maybe<SubmittedFlaPropertyCompartment>> GetSubmittedFlaPropertyCompartmentByIdAsync(Guid compartmentId, CancellationToken cancellationToken)
@@ -254,7 +254,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
-    public async Task<UnitResult<UserDbErrorReason>> UpdateExistingWoodlandOwnerReviewFlagsForResubmission(
+    public async Task<UnitResult<UserDbErrorReason>> UpdateExistingWoodlandOfficerReviewFlagsForResubmission(
         Guid applicationId,
         DateTime updatedDate,
         CancellationToken cancellationToken)

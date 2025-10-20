@@ -116,11 +116,6 @@
     position: relative
 }
 
-calcite-loader {
-    align-self: center;
-    justify-self: center;
-}
-
 #header-title {
     margin-left: 1rem;
     margin-right: 1rem;

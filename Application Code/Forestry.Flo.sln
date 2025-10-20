@@ -73,6 +73,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Forestry.Flo.Services.DataI
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Forestry.Flo.Services.DataImport.Tests", "test\Services\Forestry.Flo.Services.DataImport.Tests\Forestry.Flo.Services.DataImport.Tests.csproj", "{024F1790-2330-4BA0-AF57-25A83B54FFAD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forestry.Flo.HostApplicationsCommon", "src\Host Applications\Forestry.Flo.HostApplicationsCommon\Forestry.Flo.HostApplicationsCommon.csproj", "{F0B81F75-4110-4F58-B4D2-0F820ED1AB89}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -191,6 +193,10 @@ Global
 		{024F1790-2330-4BA0-AF57-25A83B54FFAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{024F1790-2330-4BA0-AF57-25A83B54FFAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{024F1790-2330-4BA0-AF57-25A83B54FFAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0B81F75-4110-4F58-B4D2-0F820ED1AB89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0B81F75-4110-4F58-B4D2-0F820ED1AB89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0B81F75-4110-4F58-B4D2-0F820ED1AB89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0B81F75-4110-4F58-B4D2-0F820ED1AB89}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -228,6 +234,7 @@ Global
 		{BD98B64B-A8DC-4037-B612-16B2DD2802C7} = {17089AC9-4406-4457-AA0F-99A46A4614DE}
 		{C1E0BA35-02E7-47BD-847B-4AACF638C812} = {2623C4CA-79F3-43D1-8471-5463791E2EA8}
 		{024F1790-2330-4BA0-AF57-25A83B54FFAD} = {17089AC9-4406-4457-AA0F-99A46A4614DE}
+		{F0B81F75-4110-4F58-B4D2-0F820ED1AB89} = {C8D2AE79-81F3-4CA0-86EB-635BB00055C4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B4989AC9-08FF-4A80-B666-41203070553B}

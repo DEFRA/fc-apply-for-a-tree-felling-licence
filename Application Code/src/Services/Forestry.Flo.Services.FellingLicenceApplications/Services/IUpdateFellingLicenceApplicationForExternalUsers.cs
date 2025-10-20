@@ -74,4 +74,32 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
         Guid applicationId,
         UserAccessModel userAccessModel,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the ten-year licence status for a specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to update.</param>
+    /// <param name="userAccess">The auth for the user performing the update.</param>
+    /// <param name="isForTenYearLicence">A flag indicating whether the application is for a ten-year licence.</param>
+    /// <param name="woodlandManagementPlanReference">The reference for the WMP related to the application, if applicable.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating if the update was successful.</returns>
+    Task<Result> UpdateTenYearLicenceStatusAsync(
+        Guid applicationId,
+        UserAccessModel userAccess,
+        bool isForTenYearLicence,
+        string? woodlandManagementPlanReference,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Marks the ten-year licence step as complete for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to update.</param>
+    /// <param name="userAccess">The auth for the user performing the update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating if the update was successful.</returns>
+    Task<Result> CompleteTenYearLicenceStepAsync(
+        Guid applicationId,
+        UserAccessModel userAccess,
+        CancellationToken cancellationToken);
 }

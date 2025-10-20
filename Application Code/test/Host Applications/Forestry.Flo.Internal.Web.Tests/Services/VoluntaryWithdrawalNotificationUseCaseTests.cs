@@ -19,7 +19,7 @@ using NodaTime;
 using System.Text.Json;
 using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccountModel;
 using VoluntaryWithdrawalNotificationOptions = Forestry.Flo.Internal.Web.Infrastructure.VoluntaryWithdrawalNotificationOptions;
-using VoluntaryWithdrawalNotificationUseCase = Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.VoluntaryWithdrawalNotificationUseCase;
+using VoluntaryWithdrawalNotificationUseCase = Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api.VoluntaryWithdrawalNotificationUseCase;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 

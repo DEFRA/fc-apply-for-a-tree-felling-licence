@@ -606,4 +606,29 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A <see cref="UnitResult{UserDbErrorReason}"/> indicating success or failure of the update operation.</returns>
     Task<UnitResult<UserDbErrorReason>> SetAmendmentReviewCompletedAsync(Guid amendmentReviewId, bool completed, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets all applications that have an active felling and restocking amendment review where a reminder notification
+    /// should be sent because the current time is within the configured reminder period prior to the response deadline,
+    /// but no reminder notification has yet been issued.
+    /// </summary>
+    /// <param name="currentTime">The current date / time (UTC).</param>
+    /// <param name="reminderPeriod">The period before the response deadline at which a reminder should be sent.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of applications requiring an amendment review reminder notification.</returns>
+    Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentNotificationAsync(
+        DateTime currentTime,
+        TimeSpan reminderPeriod,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets all applications that have an active felling and restocking amendment review where the response deadline has passed
+    /// (i.e. the applicant has not responded in time) and the application is still WithApplicant or ReturnedToApplicant.
+    /// </summary>
+    /// <param name="currentTime">The current date / time (UTC).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of applications whose amendment response deadlines have passed.</returns>
+    Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentWithdrawalAsync(
+        DateTime currentTime,
+        CancellationToken cancellationToken);
 }

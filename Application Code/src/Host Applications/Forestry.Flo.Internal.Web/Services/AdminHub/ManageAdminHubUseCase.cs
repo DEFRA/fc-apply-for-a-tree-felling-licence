@@ -7,13 +7,13 @@ using Forestry.Flo.Services.AdminHubs.Model;
 using Forestry.Flo.Services.AdminHubs.Services;
 using Forestry.Flo.Internal.Web.Models.AdminHub;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 
 namespace Forestry.Flo.Internal.Web.Services.AdminHub;
 
-public class ManageAdminHubUseCase
+public class ManageAdminHubUseCase : IManageAdminHubUseCase
 {
     private readonly RequestContext _requestContext;
     private readonly IAuditService<ManageAdminHubUseCase> _auditService;
@@ -35,6 +35,7 @@ public class ManageAdminHubUseCase
         _logger = logger ?? new NullLogger<ManageAdminHubUseCase>();
     }
 
+    /// <inheritdoc />
     public async Task<Result<ViewAdminHubModel>> RetrieveAdminHubDetailsAsync(
         InternalUser user,
         CancellationToken cancellationToken)
@@ -82,6 +83,7 @@ public class ManageAdminHubUseCase
 
     }
 
+    /// <inheritdoc />
     public async Task<UnitResult<ManageAdminHubOutcome>> AddAdminOfficerAsync(
         ViewAdminHubModel model,
         InternalUser user,
@@ -116,6 +118,7 @@ public class ManageAdminHubUseCase
         return result;
     }
 
+    /// <inheritdoc />
     public async Task<UnitResult<ManageAdminHubOutcome>> RemoveAdminOfficerAsync(
         ViewAdminHubModel model,
         InternalUser user,
@@ -150,6 +153,7 @@ public class ManageAdminHubUseCase
         return result;
     }
 
+    /// <inheritdoc />
     public async Task<UnitResult<ManageAdminHubOutcome>> EditAdminHub(
         ViewAdminHubModel model, 
         InternalUser user, 

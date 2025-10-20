@@ -2,7 +2,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
-using Forestry.Flo.Services.Applicants.Repositories;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -13,6 +13,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
@@ -20,7 +21,7 @@ using Forestry.Flo.Services.Notifications.Services;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
-public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase
+public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssignToUserUseCase
 {
     private readonly IAuditService<AssignToUserUseCase> _auditService;
     private readonly RequestContext _requestContext;
@@ -41,13 +42,15 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase
         IGetFellingLicenceApplicationForInternalUsers getFellingLicenceApplicationService,
         IUpdateFellingLicenceApplication updateFellingLicenceApplicationService,
         IAgentAuthorityService agentAuthorityService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<AssignToUserUseCase> logger)
         : base(internalUserAccountService, 
             externalUserAccountService,
             fellingLicenceApplicationInternalRepository, 
             woodlandOwnerService, 
             agentAuthorityService,
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService,
+            woodlandOfficerReviewSubStatusService)
     {
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
@@ -57,6 +60,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<Result<ConfirmReassignApplicationModel>> ConfirmReassignApplicationForRole(
         Guid applicationId,
         AssignedUserRole selectedRole,
@@ -81,6 +85,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(model);
     }
 
+    /// <inheritdoc />
     public async Task<Result<AssignToUserModel>> RetrieveDetailsToAssignFlaToUserAsync(
         Guid applicationId,
         AssignedUserRole selectedRole,
@@ -151,6 +156,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(model);
     }
 
+    /// <inheritdoc />
     public async Task<Result> AssignToUserAsync(
         Guid applicationId,
         Guid assignToUserId,

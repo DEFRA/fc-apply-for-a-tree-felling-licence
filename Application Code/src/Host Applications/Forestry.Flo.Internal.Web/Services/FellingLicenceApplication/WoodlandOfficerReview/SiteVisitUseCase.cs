@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -15,6 +16,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.Gis.Models.Internal;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
@@ -26,7 +28,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandO
 /// <summary>
 /// Usecase class for managing site visits in the woodland officer review process of a felling licence application.
 /// </summary>
-public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
+public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisitUseCase
 {
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
     private readonly IActivityFeedItemProvider _activityFeedItemProvider;
@@ -71,13 +73,15 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         IRemoveDocumentService removeDocumentService,
         IForesterServices foresterServices,
         RequestContext requestContext,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<SiteVisitUseCase> logger) 
         : base(internalUserAccountService,
             externalUserAccountService, 
             fellingLicenceApplicationInternalRepository, 
             woodlandOwnerService,
             agentAuthorityService, 
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService,
+            woodlandOfficerReviewSubStatusService)
     {
         _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
@@ -90,13 +94,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Retrieves the site visit details for a felling licence application, including comments and summary information.
-    /// </summary>
-    /// <param name="applicationId">The ID of the application to retrieve details for.</param>
-    /// <param name="hostingPage">The hosting page.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="SiteVisitViewModel"/> representing the current state of the site visit.</returns>
+    /// <inheritdoc />
     public async Task<Result<SiteVisitViewModel>> GetSiteVisitDetailsAsync(
         Guid applicationId,
         string hostingPage,
@@ -175,14 +173,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(result);
     }
 
-    /// <summary>
-    /// Updates the site visit status for a felling licence application, indicating that a site visit is not needed.
-    /// </summary>
-    /// <param name="applicationId">The ID of the application to update site visit details for.</param>
-    /// <param name="user">The user making the update.</param>
-    /// <param name="siteVisitNotNeededReason">The reason for not needing a site visit, to be stored as a case note.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating success or failure.</returns>
+    /// <inheritdoc />
     public async Task<Result> SiteVisitIsNotNeededAsync(
         Guid applicationId,
         InternalUser user,
@@ -228,15 +219,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Failure(updateResult.Error);
     }
 
-    /// <summary>
-    /// Updates the site visit arrangements for a felling licence application, including whether arrangements have been made and any notes about the arrangements.
-    /// </summary>
-    /// <param name="applicationId">The ID of the application to update.</param>
-    /// <param name="user">The user making the update.</param>
-    /// <param name="siteVisitArrangementsMade">A flag indicating if any arrangements have been made.</param>
-    /// <param name="siteVisitArrangements">Details of the arrangements, to be stored as a case note.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating success or failure.</returns>
+    /// <inheritdoc />
     public async Task<Result> SetSiteVisitArrangementsAsync(
         Guid applicationId,
         InternalUser user,
@@ -285,13 +268,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Failure(updateResult.Error);
     }
 
-    /// <summary>
-    /// Retrieves the site visit summary for a felling licence application, including comments and summary information.
-    /// </summary>
-    /// <param name="applicationId">The ID of the application to retrieve a summary for.</param>
-    /// <param name="hostingPage">The hosting page.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="SiteVisitSummaryModel"/> representing the application details required for a site visit summary document.</returns>
+    /// <inheritdoc />
     public async Task<Result<SiteVisitSummaryModel>> GetSiteVisitSummaryAsync(
         Guid applicationId,
         string hostingPage,
@@ -401,13 +378,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(result);
     }
 
-    /// <summary>
-    /// Retrieves the site visit details for a felling licence application, including comments and summary information.
-    /// </summary>
-    /// <param name="applicationId">The ID of the application to retrieve details for.</param>
-    /// <param name="hostingPage">The hosting page.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="SiteVisitViewModel"/> representing the current state of the site visit.</returns>
+    /// <inheritdoc />
     public async Task<Result<AddSiteVisitEvidenceModel>> GetSiteVisitEvidenceModelAsync(
         Guid applicationId,
         string hostingPage,
@@ -489,14 +460,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(result);
     }
 
-    /// <summary>
-    /// Adds site visit evidence documents and comments for a felling licence application.
-    /// </summary>
-    /// <param name="model">A <see cref="AddSiteVisitEvidenceModel"/> representing the data to be stored.</param>
-    /// <param name="siteVisitAttachmentFiles">A <see cref="FormFileCollection"/> containing the _new_ files to be stored.</param>
-    /// <param name="user">The user performing the operation.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating success or failure.</returns>
+    /// <inheritdoc />
     public async Task<Result> AddSiteVisitEvidenceAsync(
         AddSiteVisitEvidenceModel model,
         FormFileCollection siteVisitAttachmentFiles,

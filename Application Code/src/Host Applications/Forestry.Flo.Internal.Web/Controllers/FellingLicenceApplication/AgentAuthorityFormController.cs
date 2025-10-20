@@ -1,13 +1,13 @@
-﻿using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+﻿using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
 public class AgentAuthorityFormController : Controller
 {
-    private readonly ViewAgentAuthorityFormUseCase _viewAgentAuthorityFormUseCase;
+    private readonly IViewAgentAuthorityFormUseCase _viewAgentAuthorityFormUseCase;
 
-    public AgentAuthorityFormController(ViewAgentAuthorityFormUseCase viewAgentAuthorityFormUseCase)
+    public AgentAuthorityFormController(IViewAgentAuthorityFormUseCase viewAgentAuthorityFormUseCase)
     {
         ArgumentNullException.ThrowIfNull(viewAgentAuthorityFormUseCase);
         _viewAgentAuthorityFormUseCase = viewAgentAuthorityFormUseCase;

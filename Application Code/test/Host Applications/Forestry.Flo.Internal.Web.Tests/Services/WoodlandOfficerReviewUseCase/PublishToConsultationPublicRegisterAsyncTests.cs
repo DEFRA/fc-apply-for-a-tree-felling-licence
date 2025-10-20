@@ -379,6 +379,7 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
             NotificationService.Object,
             GetConfiguredFcAreas.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(WoodlandOfficerReviewOptions),
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<PublicRegisterUseCase>());
     }
 }

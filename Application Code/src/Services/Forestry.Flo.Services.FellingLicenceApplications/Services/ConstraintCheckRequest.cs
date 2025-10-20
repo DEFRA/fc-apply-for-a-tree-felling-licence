@@ -9,8 +9,6 @@ public class ConstraintCheckRequest
     public Guid UserAccountId { get; }
     public bool IsInternalUser { get; }
 
-    protected ConstraintCheckRequest() { }
-
     private ConstraintCheckRequest(Guid applicationId, Guid userAccountId, bool isInternalUser)
     {
         ApplicationId = applicationId;

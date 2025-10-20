@@ -1,5 +1,5 @@
 ﻿using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
@@ -10,7 +10,7 @@ namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
         [Route("[controller]")]
         public async Task<IActionResult> Run(
             [FromQuery] Guid id,
-            [FromServices] RunFcInternalUserConstraintCheckUseCase useCase,
+            [FromServices] IRunFcInternalUserConstraintCheckUseCase useCase,
             CancellationToken cancellationToken)
         {
             var user = new InternalUser(User);

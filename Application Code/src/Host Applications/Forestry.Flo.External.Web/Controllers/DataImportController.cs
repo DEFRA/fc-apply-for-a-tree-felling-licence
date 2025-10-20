@@ -118,8 +118,23 @@ public class DataImportController : Controller
             return RedirectToAction(nameof(Index), new { woodlandOwnerId });
         }
 
-        this.AddConfirmationMessage("You data was imported successfully. Complete any remaining tasks to submit your application.");
-        return RedirectToAction("WoodlandOwner", "Home", new { woodlandOwnerId });
+        this.AddConfirmationMessage("Your data was imported successfully. Complete any remaining tasks to submit your application.");
+
+        // if not exactly one application was imported, redirect to woodland owner dashboard
+        if (result.Value.Count != 1)
+        {
+            return RedirectToAction(nameof(HomeController.WoodlandOwner), "Home", new { woodlandOwnerId });
+        }
+
+        var applicationId = result.Value.Keys.First();
+        if (user.IsFcUser)
+        {
+            // FC user - redirect to "is for ten year licence?" page
+            return RedirectToAction(nameof(FellingLicenceApplicationController.TenYearLicence), "FellingLicenceApplication", new { applicationId, fromDataImport = true });
+        }
+
+        //normal external applicant - redirect to felling and restocking playback
+        return RedirectToAction(nameof(FellingLicenceApplicationController.FellingAndRestockingPlayback), "FellingLicenceApplication", new { applicationId });
     }
 
     private void StoreParsedDataModel(ImportFileSetContents model) => TempData[DataImportUseCase.ParsedDataKey] = JsonConvert.SerializeObject(model);

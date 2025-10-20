@@ -220,6 +220,7 @@ public class DesignationsUseCaseGetApplicationDesignationsTests : WoodlandOffice
             GetConfiguredFcAreas.Object,
             AuditingService.Object,
             RequestContext,
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<DesignationsUseCase>());
     }
 }

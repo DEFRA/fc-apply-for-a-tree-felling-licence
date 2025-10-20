@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
-public class ViewAgentAuthorityFormUseCase
+public class ViewAgentAuthorityFormUseCase : IViewAgentAuthorityFormUseCase
 {
     private readonly IAgentAuthorityInternalService _agentAuthorityInternalService;
     private readonly ILogger<ViewAgentAuthorityFormUseCase> _logger;

@@ -1,10 +1,8 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
-using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.EntityFrameworkCore;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -55,6 +53,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Include(a => a.PublicRegister)
             .Include(a => a.LarchCheckDetails)
             .Include(x => x.WoodlandOfficerReview)
+                .ThenInclude(x => x.FellingAndRestockingAmendmentReviews)
             .Include(x => x.ConsulteeComments)
             .AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
@@ -198,6 +197,9 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Include(a => a.AssigneeHistories)
             .Include(a => a.LinkedPropertyProfile)
             .Include(a => a.SubmittedFlaPropertyDetail)
+            .Include(x => x.WoodlandOfficerReview)
+            .ThenInclude(x => x.FellingAndRestockingAmendmentReviews)
+            .Include(x => x.PublicRegister)
             .Where(app =>
                 userFellingLicenceSelectionOptions.Contains(
                     app.StatusHistories
@@ -347,7 +349,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     /// <inheritdoc />
     public async Task<Result<(List<ConfirmedFellingDetail>, List<ConfirmedRestockingDetail>)>> GetConfirmedFellingAndRestockingDetailsForApplicationAsync(Guid applicationId, CancellationToken cancellationToken)
     {
-        var fla = await Context.FellingLicenceApplications.Where(x => x.Id == applicationId)
+        var fla = await Context.FellingLicenceApplications
+            .Where(x => x.Id == applicationId)
             .Include(s => s.SubmittedFlaPropertyDetail)
                 .ThenInclude(c => c.SubmittedFlaPropertyCompartments)!
                 .ThenInclude(f => f.ConfirmedFellingDetails)
@@ -1157,6 +1160,50 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         }
         review.AmendmentReviewCompleted = reviewCompleted;
         return await Context.SaveEntitiesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentNotificationAsync(
+        DateTime currentTime,
+        TimeSpan reminderPeriod,
+        CancellationToken cancellationToken)
+    {
+        // Find applications where there is at least one active amendment review whose reminder threshold has been reached
+        // (currentTime >= ResponseDeadline - reminderPeriod) and a reminder notification has not yet been sent.
+        var result = await Context.FellingLicenceApplications
+            .Include(x => x.SubmittedFlaPropertyDetail)!
+            .Include(x => x.WoodlandOfficerReview)!
+                .ThenInclude(w => w.FellingAndRestockingAmendmentReviews)
+            .Where(x => x.WoodlandOfficerReview != null
+                        && x.WoodlandOfficerReview.FellingAndRestockingAmendmentReviews.Any(r =>
+                            r.AmendmentReviewCompleted != true
+                            && r.ReminderNotificationTimeStamp == null
+                            && currentTime >= (r.ResponseDeadline - reminderPeriod)))
+            .ToListAsync(cancellationToken);
+
+        return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentWithdrawalAsync(
+        DateTime currentTime,
+        CancellationToken cancellationToken)
+    {
+        // Applications where: active amendment review exists AND response deadline has passed without completion
+        // AND application still WithApplicant / ReturnedToApplicant
+        var result = await Context.FellingLicenceApplications
+            .Include(x => x.WoodlandOfficerReview)!
+                .ThenInclude(w => w.FellingAndRestockingAmendmentReviews)
+            .Include(x => x.StatusHistories)
+            .Where(x =>
+                x.WoodlandOfficerReview != null
+                && x.WoodlandOfficerReview.FellingAndRestockingAmendmentReviews.Any(r =>
+                    r.AmendmentReviewCompleted != true
+                    && r.ResponseDeadline < currentTime) // response deadline passed
+                && (x.StatusHistories.OrderByDescending(y => y.Created)!.FirstOrDefault()!.Status == FellingLicenceStatus.WoodlandOfficerReview))
+            .ToListAsync(cancellationToken);
+
+        return result;
     }
 
 }

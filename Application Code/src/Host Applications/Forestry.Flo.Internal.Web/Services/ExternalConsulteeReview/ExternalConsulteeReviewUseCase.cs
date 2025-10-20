@@ -4,6 +4,7 @@ using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -15,13 +16,14 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Microsoft.AspNetCore.Mvc;
 using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 
-public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBase
+public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBase, IExternalConsulteeReviewUseCase
 {
     private readonly IAddDocumentService _addDocumentService;
     private readonly IRemoveDocumentService _removeDocumentService;
@@ -44,6 +46,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         IGetDocumentServiceInternal getDocumentService,
         IAddDocumentService addDocumentService,
         IRemoveDocumentService removeDocumentService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<ExternalConsulteeReviewUseCase> logger,
         RequestContext requestContext,
         IClock clock) : base(
@@ -52,7 +55,8 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         fellingLicenceApplicationInternalRepository,
         woodlandOwnerService,
         agentAuthorityService,
-        getConfiguredFcAreasService)
+        getConfiguredFcAreasService,
+        woodlandOfficerReviewSubStatusService)
     {
         _addDocumentService = Guard.Against.Null(addDocumentService);
         _removeDocumentService = Guard.Against.Null(removeDocumentService);

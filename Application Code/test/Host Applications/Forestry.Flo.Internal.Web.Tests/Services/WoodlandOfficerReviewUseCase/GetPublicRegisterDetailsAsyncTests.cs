@@ -136,6 +136,7 @@ public class GetPublicRegisterDetailsAsyncTests : WoodlandOfficerReviewUseCaseTe
             NotificationService.Object,
             GetConfiguredFcAreas.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(WoodlandOfficerReviewOptions),
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<PublicRegisterUseCase>());
     }
 }

@@ -207,10 +207,54 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
             performingUserId,
             completedDateTime,
             false,
-            true,
+            false,      // no CBW do not skip WO
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenApplicationDoesNotHaveWoodlandOfficerYet(
+        Guid performingUserId,
+        DateTime completedDateTime,
+        FellingLicenceApplication application)
+    {
+        application.CitizensCharterDate = null;
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new()
+            {
+                Created = DateTime.UtcNow,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        };
+        application.AssigneeHistories = new List<AssigneeHistory>
+        {
+            new()
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = performingUserId,
+                Role = AssignedUserRole.AdminOfficer
+            }
+        };
+
+        CompletableAdminOfficerReview(application, true);
+
+        FellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await FellingLicenceApplicationsContext.SaveEntitiesAsync().ConfigureAwait(false);
+
+        var result = await Sut.CompleteAdminOfficerReviewAsync(
+            application.Id,
+            performingUserId,
+            completedDateTime,
+            false,
+            true,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        Assert.Single(application.StatusHistories);
+        Assert.Equal(FellingLicenceStatus.AdminOfficerReview, application.StatusHistories.Last().Status);
     }
 
     [Theory, AutoMoqData]
@@ -255,7 +299,7 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
             performingUserId, 
             completedDateTime, 
             false,
-            true,
+            false,      // no CBW do not skip WO
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -265,6 +309,61 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
         Assert.Equal(application.CreatedById, result.Value.ApplicantId);
         Assert.Equal(2, application.StatusHistories.Count);
         Assert.Equal(FellingLicenceStatus.WoodlandOfficerReview, application.StatusHistories.Last().Status);
+        Assert.Equal(completedDateTime, application.StatusHistories.Last().Created);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenApplicationUpdatedStraightToApproval(
+        Guid performingUserId,
+        Guid fieldManagerId,
+        DateTime completedDateTime,
+        FellingLicenceApplication application)
+    {
+        application.CitizensCharterDate = null;
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new()
+            {
+                Created = DateTime.UtcNow,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        };
+        application.AssigneeHistories = new List<AssigneeHistory>
+        {
+            new()
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = performingUserId,
+                Role = AssignedUserRole.AdminOfficer
+            },
+            new()
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = fieldManagerId,
+                Role = AssignedUserRole.FieldManager
+            }
+        };
+
+        CompletableAdminOfficerReview(application, true);
+
+        FellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await FellingLicenceApplicationsContext.SaveEntitiesAsync().ConfigureAwait(false);
+
+        var result = await Sut.CompleteAdminOfficerReviewAsync(
+            application.Id,
+            performingUserId,
+            completedDateTime,
+            false,
+            true,       // CBW do skip WO
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        Assert.Equal(fieldManagerId, result.Value.WoodlandOfficerId);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(application.CreatedById, result.Value.ApplicantId);
+        Assert.Equal(2, application.StatusHistories.Count);
+        Assert.Equal(FellingLicenceStatus.SentForApproval, application.StatusHistories.Last().Status);
         Assert.Equal(completedDateTime, application.StatusHistories.Last().Created);
     }
 

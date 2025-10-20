@@ -7,7 +7,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Tests.Common;
-using LinqKit;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System;
@@ -15,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AutoFixture.AutoMoq;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
@@ -24,7 +24,39 @@ public partial class GetWoodlandOfficerReviewServiceTests
     private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepository = new();
     private readonly Mock<IForesterServices> _foresterServices = new();
     private readonly Mock<IViewCaseNotesService> _viewCaseNotesService = new();
-    private readonly Fixture _fixture = new();
+    private readonly IFixture _fixture;
+
+    public GetWoodlandOfficerReviewServiceTests()
+    {
+        var fixture = new Fixture().Customize(new CompositeCustomization(
+            new AutoMoqCustomization(),
+            new SupportMutableValueTypesCustomization()));
+
+        fixture.Behaviors.Add(new OmitOnRecursionBehavior());
+
+        fixture.Customize<DateOnly>(composer => composer.FromFactory<DateTime>(DateOnly.FromDateTime));
+
+        _fixture = fixture;
+    }
+
+    [Theory, AutoData]
+    public async Task ShouldReturnFailureIfRepositoryThrows(Guid applicationId)
+    {
+        var sut = CreateSut();
+
+        _fellingLicenceApplicationRepository.Setup(x =>
+                x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception());
+
+        var result = await sut.GetWoodlandOfficerReviewStatusAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+        _viewCaseNotesService.VerifyNoOtherCalls();
+    }
 
     [Theory, AutoData]
     public async Task ShouldReturnFailureIfUnableToRetrieveProposedFellingAndRestockingDetails(Guid applicationId)
@@ -1544,263 +1576,6 @@ public partial class GetWoodlandOfficerReviewServiceTests
         Assert.Equal(InternalReviewStepStatus.Completed, result.Value.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus);
 
         _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetPublicRegisterShouldReturnMaybeNoneIfNoEntryExists(Guid applicationId)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<PublicRegister>.None);
-
-        var result = await sut.GetPublicRegisterDetailsAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasNoValue);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetPublicRegisterShouldReturnExpectedModelIfEntryExists(
-        Guid applicationId, 
-        PublicRegister publicRegister)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
-
-        var result = await sut.GetPublicRegisterDetailsAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasValue);
-
-        var actual = result.Value.Value;
-        Assert.Equal(publicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister, actual.WoodlandOfficerSetAsExemptFromConsultationPublicRegister);
-        Assert.Equal(publicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason, actual.WoodlandOfficerConsultationPublicRegisterExemptionReason);
-        Assert.Equal(publicRegister.ConsultationPublicRegisterPublicationTimestamp, actual.ConsultationPublicRegisterPublicationTimestamp);
-        Assert.Equal(publicRegister.ConsultationPublicRegisterExpiryTimestamp, actual.ConsultationPublicRegisterExpiryTimestamp);
-        Assert.Equal(publicRegister.ConsultationPublicRegisterRemovedTimestamp, actual.ConsultationPublicRegisterRemovedTimestamp);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetSiteVisitShouldReturnMaybeNoneIfNoEntryOrCommentsExist(Guid applicationId)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<WoodlandOfficerReview>.None);
-
-        _viewCaseNotesService
-            .Setup(x => x.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<CaseNoteModel>(0));
-
-        var result = await sut.GetSiteVisitDetailsAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasNoValue);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        _viewCaseNotesService.Verify(x => x.GetSpecificCaseNotesAsync(applicationId, new[] { CaseNoteType.SiteVisitComment }, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetSiteVisitShouldReturnDefaultEntryAndCommentsIfJustCommentsExist(
-        Guid applicationId,
-        IList<CaseNoteModel> comments)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<WoodlandOfficerReview>.None);
-
-        _viewCaseNotesService
-            .Setup(x => x.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(comments);
-
-        var result = await sut.GetSiteVisitDetailsAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasValue);
-
-        var model = result.Value.Value;
-
-        Assert.Null(model.SiteVisitNeeded);
-        Assert.Null(model.SiteVisitArrangementsMade);
-        Assert.False(model.SiteVisitComplete);
-        Assert.Equal(comments, model.SiteVisitComments);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        _viewCaseNotesService.Verify(x => x.GetSpecificCaseNotesAsync(applicationId, new[] { CaseNoteType.SiteVisitComment }, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetSiteVisitShouldReturnExpectedValuesIfDataExistsWithoutAnyAttachments(
-        Guid applicationId,
-        WoodlandOfficerReview reviewEntity,
-        IList<CaseNoteModel> comments)
-    {
-        var sut = CreateSut();
-
-        reviewEntity.SiteVisitEvidences = new List<SiteVisitEvidence>();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<WoodlandOfficerReview>.From(reviewEntity));
-
-        _viewCaseNotesService
-            .Setup(x => x.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(comments);
-
-        var result = await sut.GetSiteVisitDetailsAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasValue);
-
-        var model = result.Value.Value;
-
-        Assert.Equal(reviewEntity.SiteVisitNeeded, model.SiteVisitNeeded);
-        Assert.Equal(reviewEntity.SiteVisitArrangementsMade, model.SiteVisitArrangementsMade);
-        Assert.Equal(reviewEntity.SiteVisitComplete, model.SiteVisitComplete);
-        Assert.Equal(comments, model.SiteVisitComments);
-        Assert.Empty(model.SiteVisitAttachments);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        _viewCaseNotesService.Verify(x => x.GetSpecificCaseNotesAsync(applicationId, new[] { CaseNoteType.SiteVisitComment }, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetSiteVisitShouldReturnExpectedValuesIfDataExistsWithAttachments(
-        Guid applicationId,
-        WoodlandOfficerReview reviewEntity,
-        IList<CaseNoteModel> comments,
-        Document document)
-    {
-        var sut = CreateSut();
-
-        reviewEntity.SiteVisitEvidences.ForEach(x => x.DocumentId = document.Id);
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<WoodlandOfficerReview>.From(reviewEntity));
-
-        _viewCaseNotesService
-            .Setup(x => x.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(comments);
-
-        _fellingLicenceApplicationRepository
-            .Setup(x => x.GetApplicationDocumentsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([document]);
-
-        var result = await sut.GetSiteVisitDetailsAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasValue);
-
-        var model = result.Value.Value;
-
-        Assert.Equal(reviewEntity.SiteVisitNeeded, model.SiteVisitNeeded);
-        Assert.Equal(reviewEntity.SiteVisitArrangementsMade, model.SiteVisitArrangementsMade);
-        Assert.Equal(reviewEntity.SiteVisitComplete, model.SiteVisitComplete);
-        Assert.Equal(comments, model.SiteVisitComments);
-        Assert.Equal(reviewEntity.SiteVisitEvidences.Count, model.SiteVisitAttachments.Count);
-        foreach (var evidence in reviewEntity.SiteVisitEvidences)
-        {
-            Assert.Contains(model.SiteVisitAttachments, x => 
-                x.DocumentId == document.Id
-                && x.FileName == document.FileName
-                && x.Label == evidence.Label
-                && x.Comment == evidence.Comment
-                && x.VisibleToApplicant == document.VisibleToApplicant
-                && x.VisibleToConsultee == document.VisibleToConsultee);
-        }
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        _viewCaseNotesService.Verify(x => x.GetSpecificCaseNotesAsync(applicationId, new[] { CaseNoteType.SiteVisitComment }, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetPw14ChecksShouldReturnMaybeNoneIfNoEntryExists(Guid applicationId)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<WoodlandOfficerReview>.None);
-
-        var result = await sut.GetPw14ChecksAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasNoValue);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetPw14ChecksShouldReturnExpectedValuesIfDataExists(
-        Guid applicationId,
-        WoodlandOfficerReview reviewEntity)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<WoodlandOfficerReview>.From(reviewEntity));
-
-        var result = await sut.GetPw14ChecksAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.True(result.Value.HasValue);
-
-        var model = result.Value.Value;
-
-        Assert.Equal(reviewEntity.LandInformationSearchChecked, model.LandInformationSearchChecked);
-        Assert.Equal(reviewEntity.AreProposalsUkfsCompliant, model.AreProposalsUkfsCompliant);
-        Assert.Equal(reviewEntity.TpoOrCaDeclared, model.TpoOrCaDeclared);
-        Assert.Equal(reviewEntity.IsApplicationValid, model.IsApplicationValid);
-        Assert.Equal(reviewEntity.EiaThresholdExceeded, model.EiaThresholdExceeded);
-        Assert.Equal(reviewEntity.EiaTrackerCompleted, model.EiaTrackerCompleted);
-        Assert.Equal(reviewEntity.EiaChecklistDone, model.EiaChecklistDone);
-        
-        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetDetailsForConditionsNotification_WhenApplicationNotFound(
-        Guid applicationId)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<FellingLicenceApplication>.None);
-
-        var result = await sut.GetDetailsForConditionsNotificationAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
-    }
-
-    [Theory, AutoMoqData]
-    public async Task GetDetailsForConditionsNotification_WhenApplicationFound(
-        Guid applicationId,
-        FellingLicenceApplication application)
-    {
-        var sut = CreateSut();
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
-
-        var result = await sut.GetDetailsForConditionsNotificationAsync(applicationId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-
-        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
-        Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
-
-        _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
     }
 
     [Theory, AutoData]

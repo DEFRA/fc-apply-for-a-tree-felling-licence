@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -12,6 +13,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.Extensions.Logging;
@@ -37,6 +39,7 @@ public class ApproverReviewUseCaseTests
     private readonly Mock<IRetrieveUserAccountsService> _externalUserAccountService = new();
     private readonly Mock<IRetrieveWoodlandOwners> _woodlandOwnerService = new();
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private readonly RequestContext _requestContext = new("requestId", new RequestUserModel(new ClaimsPrincipal()));
 
     private readonly Mock<IOptions<FellingLicenceApplicationOptions> > _fellingLicenceApplicationOptions = new();
@@ -64,6 +67,7 @@ public class ApproverReviewUseCaseTests
             _getConfiguredFcAreas.Object,
             _requestContext,
             _fellingLicenceApplicationOptions.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             _logger.Object);
     }
 

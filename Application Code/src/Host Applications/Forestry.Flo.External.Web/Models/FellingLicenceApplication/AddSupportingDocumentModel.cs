@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication;
@@ -15,10 +16,10 @@ public class AddSupportingDocumentModel
     public Guid FellingLicenceApplicationId { get; set; }
 
     /// <summary>
-    /// A flag indicating whether or not the document should be visible to external consultees.
+    /// Always true - documents uploaded via the External app should now all be visible to external consultees.
     /// </summary>
-    [BindRequired]
-    public bool AvailableToConsultees { get; set; }
+    [BindNever]
+    public bool AvailableToConsultees { get; } = true;
 
     /// <summary>
     /// A count of how many documents are attached to the application.
@@ -29,4 +30,17 @@ public class AddSupportingDocumentModel
     /// A flag indicating whether or not to return to the Application Summary
     /// </summary>
     public bool ReturnToApplicationSummary { get; set; }
+
+    /// <summary>
+    /// A flag indicating whether the user navigated to this page via the data import.
+    /// </summary>
+    /// <remarks>
+    /// Only applicable when used on the WMP Documents page.
+    /// </remarks>
+    public bool FromDataImport { get; set; }
+
+    /// <summary>
+    /// Gets and sets the purpose of the document(s) being uploaded.
+    /// </summary>
+    public DocumentPurpose Purpose { get; set; } = DocumentPurpose.Attachment;
 }

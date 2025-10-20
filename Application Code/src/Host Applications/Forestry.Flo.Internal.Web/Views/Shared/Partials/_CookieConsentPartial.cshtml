@@ -70,35 +70,4 @@
             </div>
         </div>
     </div>
-    <script>
-        (function() {
-            var acceptButton = document.querySelector(".govuk-button-group button[data-cookie-string]");
-            acceptButton.addEventListener("click", function(event) {
-                var now = new Date();
-                var expires = (new Date(now.getFullYear() + 1, 12, 31).toUTCString());
-                document.cookie = '.AspNet.Consent=yes;expires=' + expires + ';path=/;';
-                $('#cookieMessage').hide();
-                $('#accepted').show();
-            }, false);
-
-            var rejectButton = document.querySelector("#rejectButton");
-            rejectButton.addEventListener("click", function(event) {
-                var now = new Date();
-                var expires = (new Date(now.getFullYear() + 1, 12, 31).toUTCString());
-                document.cookie = '.AspNet.Consent=no;expires=' + expires + ';path=/;';
-                $('#cookieMessage').hide();
-                $('#rejected').show();
-            }, false);
-
-            var acceptHideCookieButton = document.querySelector('#acceptHideCookieButton');
-            acceptHideCookieButton.addEventListener("click", function(event) {
-                $('.govuk-cookie-banner').hide();
-            }, false);
-
-            var rejectHideCookieButton = document.querySelector('#rejectHideCookieButton');
-            rejectHideCookieButton.addEventListener("click", function(event) {
-                $('.govuk-cookie-banner').hide();
-            }, false);
-        })();
-    </script>
 }

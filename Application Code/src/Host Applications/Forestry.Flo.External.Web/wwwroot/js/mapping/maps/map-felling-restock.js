@@ -6,6 +6,11 @@ define([
     "esri/config",
     "esri/Basemap",
     "esri/Graphic",
+    "esri/layers/WMSLayer",
+    "esri/layers/WMTSLayer",
+    "esri/layers/GraphicsLayer",
+    "esri/widgets/BasemapGallery",
+    "esri/widgets/Expand",
     "esri/layers/GraphicsLayer",
     "/js/mapping/mapSettings.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now()
@@ -17,6 +22,11 @@ define([
         config,
         Basemap,
         Graphic,
+        WMSLayer,
+        WMTSLayer,
+        GraphicsLayer,
+        BasemapToggle,
+        Expand,
         GraphicLayer,
         mapSettings,
         Maps_Common) {
@@ -53,8 +63,103 @@ define([
                 this.map.add(this.drawinglayer)
 
                 this.view.when(this.LoadData.bind(this))
-                    .then(this.WireUpHitTest.bind(this));
+                    .then(this.addWidgets.bind(this))
+                    .then(this.WireUpHitTest.bind(this))
+                    .then(this.addWatermark.bind(this));
             }
+
+            FellingRestock.prototype.addWatermark = function () {
+                // Create a new GraphicsLayer for the watermark
+                const watermarkLayer = new GraphicsLayer({
+                    visible: false,
+                    id: "watermarkLayer",
+                });
+
+                // Define the text symbol for the watermark
+                const textSymbol = fcconfig.BlueSkyTextSymbol;
+
+                //Function to update the watermark positions
+                const updateWatermarkPositions = () => {
+                    const extent = this.view.extent;
+                    const width = extent.width;
+                    const height = extent.height;
+                    const spacing = Math.min(width, height) / 4;
+                    const spatialReference = this.view.spatialReference;
+
+                    // Clear existing graphics
+                    watermarkLayer.removeAll();
+
+                    // Create watermark graphics at regular intervals
+                    for (let x = extent.xmin; x < extent.xmax; x += spacing) {
+                        for (let y = extent.ymin; y < extent.ymax; y += spacing) {
+                            const point = {
+                                type: "point",
+                                x: x,
+                                y: y,
+                                spatialReference: spatialReference
+                            };
+
+                            const watermarkGraphic = new Graphic({
+                                geometry: point,
+                                symbol: textSymbol
+                            });
+
+                            watermarkLayer.add(watermarkGraphic);
+                        }
+                    }
+                };
+
+                // Add the watermark layer to the map
+                this.map.add(watermarkLayer);
+
+                // Update the watermark positions initially and whenever the view changes
+                this.view.watch("stationary", (newValue) => {
+                    if (newValue) {
+                        updateWatermarkPositions();
+                    }
+                });
+                this.view.watch("extent", updateWatermarkPositions);
+
+                // Watch for basemap changes and toggle watermark visibility
+                this.view.watch("map.basemap", (newBasemap) => {
+                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK) {
+                        watermarkLayer.visible = true;
+                    } else {
+                        watermarkLayer.visible = false;
+                    }
+                });
+                return Promise.resolve();
+            };
+
+            FellingRestock.prototype.addWidgets = function () {
+
+                this.map.basemap.title = "OS Map";
+
+                var wmsLayer = new WMSLayer(mapSettings.wmsLayer);
+
+                var wmsBasemap = new Basemap({
+                    baseLayers: [wmsLayer],
+                    title: mapSettings.wmsLayerName,
+                    id: "wmsBasemap"
+                });
+
+
+                const basemapToggleWidget = new BasemapToggle({
+                    view: this.view,
+                    source: [this.map.basemap, wmsBasemap]
+                });
+
+                const expandLayer = new Expand({
+                    expandIconClass: "esri-icon-basemap",
+                    view: this.view,
+                    content: basemapToggleWidget
+                });
+
+                this.view.ui.add(expandLayer, { position: "top-left" });
+
+                return Promise.resolve();
+
+            };
 
             FellingRestock.prototype.WireUpHitTest = function () {
                 var that = this;
@@ -123,17 +228,10 @@ define([
             }
 
             FellingRestock.prototype.UpdateGraphic = function (graphic, value) {
-                switch (graphic.geometry.type) {
-                    case "polyline":
-                        graphic.symbol = (value) ? mapSettings.selectedLineSymbol : mapSettings.activeLineSymbol;
-                        break;
-                    case "point":
-                        graphic.symbol = (value) ? mapSettings.selectedPointSymbol : mapSettings.activePointSymbol;
-                        break;
-                    default:
-                        graphic.symbol = (value) ? mapSettings.selectedPolygonSymbol : mapSettings.activePolygonSymbol;
-                        break;
+                if (graphic.geometry.type !== "polygon") {
+                    return;
                 }
+                graphic.symbol = (value) ? mapSettings.selectedPolygonSymbol : mapSettings.activePolygonSymbol;
             }
 
             FellingRestock.prototype.LoadData = function () {
@@ -177,23 +275,6 @@ define([
                         }
                         workingSymbol = mapSettings.activePolygonSymbol;
                     }
-                    else if (geo.paths) {
-                        geometry = {
-                            type: "polyline",
-                            paths: geo.paths,
-                            spatialReference: geo.spatialReference.wkid,
-                        };
-                        workingSymbol = mapSettings.activeLineSymbol;
-                    }
-                    else {
-                        geometry = {
-                            type: "point",
-                            longitude: geo.x,
-                            latitude: geo.y,
-                            spatialReference: geo.spatialReference.wkid,
-                        };
-                        workingSymbol = mapSettings.activePointSymbol;
-                    }
 
                     if (geometry) {
                         try {
@@ -229,32 +310,14 @@ define([
             };
 
             FellingRestock.prototype.getLabelGrapic = function (shapeGraphic) {
-                var resx;
                 var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
                 labelSymbol.text = shapeGraphic.attributes.compartmentName;
 
-                if (shapeGraphic.geometry.type === "point") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry,
-                        symbol: labelSymbol,
-                    });
-                }
-                else if (shapeGraphic.geometry.type === "polyline") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.extent.center,
-                        symbol: labelSymbol,
-                    });
-                }
-                else {
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.centroid,
-                        symbol: labelSymbol,
-                    });
-                }
+                const resx = new Graphic({
+                    geometry: shapeGraphic.geometry.centroid,
+                    symbol: labelSymbol,
+                });
+
                 if (!resx.attributes) {
                     resx.attributes = {
                         shapeID: shapeGraphic.uid,

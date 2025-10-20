@@ -1,7 +1,9 @@
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
 using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 
 namespace Forestry.Flo.Internal.Web.Controllers.Api;
 
@@ -18,7 +20,7 @@ public class PublicRegisterCommentsController : ControllerBase
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(string), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> PullNewComments(
-        [FromServices] PublicRegisterCommentsUseCase useCase,
+        [FromServices] IPublicRegisterCommentsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var result = await useCase.GetNewCommentsFromPublicRegisterAsync(cancellationToken);

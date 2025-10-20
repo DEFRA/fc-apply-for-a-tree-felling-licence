@@ -79,6 +79,159 @@ public class UpdateWoodlandOfficerReviewHandleConfirmedFellingAndRestockingChang
         Assert.True(updatedFla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete);
     }
 
+    [Theory, AutoMoqData]
+    public async Task ShouldUpdateWoodlandOfficerReviewEntity_WhenCBWrequireWOReviewIsFalse(
+        FellingLicenceApplication application,
+        Guid performingUserId)
+    {
+        // Arrange
+        var sut = CreateSut();
+
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Status = FellingLicenceStatus.AdminOfficerReview,
+                CreatedById = performingUserId,
+                Created = DateTime.Today.ToUniversalTime()
+            }
+        ];
+        application.AssigneeHistories =
+        [
+            new AssigneeHistory
+            {
+                Role = AssignedUserRole.WoodlandOfficer,
+                AssignedUserId = performingUserId,
+                TimestampAssigned = DateTime.Today.ToUniversalTime()
+            }
+        ];
+
+        application.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = false;
+
+        _context.FellingLicenceApplications.Add(application);
+        await _internalRepository.UnitOfWork.SaveEntitiesAsync();
+
+        // Act
+        var result = await sut.HandleConfirmedFellingAndRestockingChangesAsync(
+            application.Id, performingUserId, true, CancellationToken.None, isSkippingWoReviewForCbw: true);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updatedFlaMaybe = await _internalRepository.GetAsync(application.Id, CancellationToken.None);
+        var updatedFla = updatedFlaMaybe.Value;
+        Assert.Equal(Now.ToDateTimeUtc(), updatedFla.WoodlandOfficerReview!.LastUpdatedDate);
+        Assert.Equal(performingUserId, updatedFla.WoodlandOfficerReview.LastUpdatedById);
+        Assert.True(updatedFla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldSucceed_WhenSkippingCbw_WithoutAssignedWoodlandOfficer(
+        FellingLicenceApplication application,
+        Guid performingUserId)
+    {
+        // Arrange
+        var sut = CreateSut();
+
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Status = FellingLicenceStatus.AdminOfficerReview,
+                CreatedById = performingUserId,
+                Created = DateTime.Today.ToUniversalTime()
+            }
+        ];
+        // No WO assignee on purpose to ensure bypass works
+
+        application.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = false;
+
+        _context.FellingLicenceApplications.Add(application);
+        await _internalRepository.UnitOfWork.SaveEntitiesAsync();
+
+        // Act
+        var result = await sut.HandleConfirmedFellingAndRestockingChangesAsync(
+            application.Id, performingUserId, true, CancellationToken.None, isSkippingWoReviewForCbw: true);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updatedFlaMaybe = await _internalRepository.GetAsync(application.Id, CancellationToken.None);
+        var updatedFla = updatedFlaMaybe.Value;
+        Assert.Equal(Now.ToDateTimeUtc(), updatedFla.WoodlandOfficerReview!.LastUpdatedDate);
+        Assert.Equal(performingUserId, updatedFla.WoodlandOfficerReview.LastUpdatedById);
+        Assert.True(updatedFla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldFail_WhenSkippingCbw_ButNotInAdminOfficerReview(
+        FellingLicenceApplication application,
+        Guid performingUserId)
+    {
+        // Arrange
+        var sut = CreateSut();
+
+        // Put into WO review state instead of AO review
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Status = FellingLicenceStatus.WoodlandOfficerReview,
+                CreatedById = performingUserId,
+                Created = DateTime.Today.ToUniversalTime()
+            }
+        ];
+        // No WO assignee either
+
+        application.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = false;
+
+        _context.FellingLicenceApplications.Add(application);
+        await _internalRepository.UnitOfWork.SaveEntitiesAsync();
+
+        // Act
+        var result = await sut.HandleConfirmedFellingAndRestockingChangesAsync(
+            application.Id, performingUserId, true, CancellationToken.None, isSkippingWoReviewForCbw: true);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        var updatedFlaMaybe = await _internalRepository.GetAsync(application.Id, CancellationToken.None);
+        var updatedFla = updatedFlaMaybe.Value;
+        Assert.False(updatedFla.WoodlandOfficerReview!.ConfirmedFellingAndRestockingComplete);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldUpdateConfirmedFlag_WhenSkippingCbw_SetToFalse(
+        FellingLicenceApplication application,
+        Guid performingUserId)
+    {
+        // Arrange
+        var sut = CreateSut();
+
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Status = FellingLicenceStatus.AdminOfficerReview,
+                CreatedById = performingUserId,
+                Created = DateTime.Today.ToUniversalTime()
+            }
+        ];
+        application.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true; // start true to ensure change to false
+
+        _context.FellingLicenceApplications.Add(application);
+        await _internalRepository.UnitOfWork.SaveEntitiesAsync();
+
+        // Act
+        var result = await sut.HandleConfirmedFellingAndRestockingChangesAsync(
+            application.Id, performingUserId, false, CancellationToken.None, isSkippingWoReviewForCbw: true);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var updatedFlaMaybe = await _internalRepository.GetAsync(application.Id, CancellationToken.None);
+        var updatedFla = updatedFlaMaybe.Value;
+        Assert.Equal(Now.ToDateTimeUtc(), updatedFla.WoodlandOfficerReview!.LastUpdatedDate);
+        Assert.Equal(performingUserId, updatedFla.WoodlandOfficerReview.LastUpdatedById);
+        Assert.False(updatedFla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete);
+    }
+
     private new UpdateWoodlandOfficerReviewService CreateSut()
     {
         FellingLicenceApplicationRepository.Reset();

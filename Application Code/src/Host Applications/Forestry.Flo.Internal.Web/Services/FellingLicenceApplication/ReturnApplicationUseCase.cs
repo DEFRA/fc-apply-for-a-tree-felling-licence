@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
@@ -21,7 +22,7 @@ public class ReturnApplicationUseCase(
     IAuditService<ApproveRefuseOrReferApplicationUseCase> auditService,
     IApproverReviewService approverReviewService,
     IAmendCaseNotes amendCaseNotes,
-    RequestContext requestContext)
+    RequestContext requestContext) : IReturnApplicationUseCase
 {
     private readonly ILogger<ApproveRefuseOrReferApplicationUseCase> _logger = Guard.Against.Null(logger);
     private readonly IGetFellingLicenceApplicationForInternalUsers _getFellingLicenceService = Guard.Against.Null(getFellingLicenceService);

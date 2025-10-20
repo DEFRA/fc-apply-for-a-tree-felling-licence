@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using AutoFixture;
+using AutoFixture.AutoMoq;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Services;
@@ -25,8 +26,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 {
     public class AddSupportingDocumentsUseCaseTests
     {
-        private static readonly Fixture FixtureInstance = new();
-        private readonly Mock<IFileStorageService> _fileStorageService;
+        private readonly Fixture _fixtureInstance = new();
         private readonly Mock<IRetrieveUserAccountsService> _retrieveUserAccountsService;
         private readonly Mock<IRetrieveWoodlandOwners> _retrieveWoodlandOwnersService;
         private readonly Mock<IGetFellingLicenceApplicationForExternalUsers> _getFellingLicenceApplicationForExternalUsersService;
@@ -38,13 +38,14 @@ namespace Forestry.Flo.External.Web.Tests.Services
         private readonly Mock<IAuditService<AddSupportingDocumentsUseCase>> _mockAddSupportingDocumentAuditService;
         private readonly Mock<IAuditService<AddDocumentService>> _mockAddDocumentAuditService;
         private readonly ExternalApplicant _externalApplicant;
-        private readonly WoodlandOwner _woodlandOwner;
         private FormFileCollection _formFileCollection;
         private readonly ModelStateDictionary _modelStateDictionary;
 
         public AddSupportingDocumentsUseCaseTests()
         {
-            _fileStorageService = new Mock<IFileStorageService>();
+            _fixtureInstance.CustomiseFixtureForFellingLicenceApplications();
+
+            var fileStorageService = new Mock<IFileStorageService>();
             _mockAddSupportingDocumentAuditService = new Mock<IAuditService<AddSupportingDocumentsUseCase>>();
             _mockAddDocumentAuditService = new Mock<IAuditService<AddDocumentService>>();
             _retrieveUserAccountsService = new Mock<IRetrieveUserAccountsService>();
@@ -60,19 +61,19 @@ namespace Forestry.Flo.External.Web.Tests.Services
             _formFileCollection = new FormFileCollection();
             _modelStateDictionary = new ModelStateDictionary();
 
-            _woodlandOwner = FixtureInstance.Build<WoodlandOwner>()
+            var woodlandOwner = _fixtureInstance.Build<WoodlandOwner>()
                 .With(wo => wo.IsOrganisation, true)
                 .Create();
 
             var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
-                FixtureInstance.Create<string>(),
-                FixtureInstance.Create<string>(),
-                FixtureInstance.Create<Guid>(),
-                _woodlandOwner.Id,
+                _fixtureInstance.Create<string>(),
+                _fixtureInstance.Create<string>(),
+                _fixtureInstance.Create<Guid>(),
+                woodlandOwner.Id,
                 AccountTypeExternal.WoodlandOwnerAdministrator);
             _externalApplicant = new ExternalApplicant(user);
 
-            _fileStorageService.Setup(f => f.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
+            fileStorageService.Setup(f => f.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
                     It.IsAny<bool>(), It.IsAny<FileUploadReason>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(SavedFileSuccessResult("testLocation",4));
         }
@@ -115,6 +116,67 @@ namespace Forestry.Flo.External.Web.Tests.Services
                     It.IsAny<CancellationToken>()), Times.Never);
 
             Assert.True(result.IsFailure);
+        }
+
+        [Theory]
+        [InlineData(DocumentPurpose.Attachment)]
+        [InlineData(DocumentPurpose.EiaAttachment)]
+        [InlineData(DocumentPurpose.WmpDocument)]
+        public async Task WhenSuccess(DocumentPurpose purpose)
+        {
+            var application = _fixtureInstance.Create<FellingLicenceApplication>();
+
+            //arrange
+            var sut = CreateSut();
+            AddFileToFormCollection("test");
+
+            _getFellingLicenceApplicationForExternalUsersService.Setup(f => f.GetApplicationByIdAsync(
+                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>())).ReturnsAsync(application);
+
+            // Simulate application in editable state
+
+            _getFellingLicenceApplicationForExternalUsersService.Setup(x => x.GetIsEditable(
+                application.Id, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+            var addSupportingDocumentModel = CreateAddSupportingDocumentModel(application);
+            addSupportingDocumentModel.Purpose = purpose;
+
+            _mockAddDocumentService.Setup(x =>
+                    x.AddDocumentsAsExternalApplicantAsync(It.IsAny<AddDocumentsExternalRequest>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult(
+                    [Guid.NewGuid()], [])));
+
+            //act
+            var result = await sut.AddDocumentsToApplicationAsync(
+                _externalApplicant,
+                addSupportingDocumentModel,
+                _formFileCollection,
+                _modelStateDictionary, 
+                CancellationToken.None
+            );
+
+            //assert
+            _mockAddSupportingDocumentAuditService.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                    It.IsAny<CancellationToken>()), Times.Never);
+
+            _mockAddDocumentService
+                .Verify(x => x.AddDocumentsAsExternalApplicantAsync(It.Is<AddDocumentsExternalRequest>(a =>
+                    a.ActorType == ActorType.ExternalApplicant
+                    && a.ApplicationDocumentCount == application.Documents!.Count(d => d.Purpose == DocumentPurpose.Attachment && d.DeletionTimestamp == null)
+                    && a.DocumentPurpose == purpose
+                    && a.FellingApplicationId == application.Id
+                    && a.FileToStoreModels.Count == 1
+                    && a.FileToStoreModels.Single().FileName == "test"
+                    && a.ReceivedByApi == false
+                    && a.UserAccountId == _externalApplicant.UserAccountId
+                    && a.VisibleToApplicant == true
+                    && a.VisibleToConsultee == addSupportingDocumentModel.AvailableToConsultees
+                    && a.WoodlandOwnerId == application.WoodlandOwnerId
+                    ), It.IsAny<CancellationToken>()), Times.Once);
+
+            Assert.True(result.IsSuccess);
         }
 
         [Theory, AutoMoqData]
@@ -180,7 +242,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
         private void AddFileToFormCollection(string fileName="test.csv", string expectedFileContents="test", string contentType="text/csv", bool isValid=true)
         {
-            var fileBytes = !isValid ? FixtureInstance.CreateMany<byte>(100000).ToArray() : Encoding.Default.GetBytes(expectedFileContents);
+            var fileBytes = !isValid ? _fixtureInstance.CreateMany<byte>(100000).ToArray() : Encoding.Default.GetBytes(expectedFileContents);
             Mock<IFormFile> formFileMock = new Mock<IFormFile>();
 
             formFileMock.Setup(ff => ff.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
@@ -208,7 +270,6 @@ namespace Forestry.Flo.External.Web.Tests.Services
         {
             return new AddSupportingDocumentModel
             {
-                AvailableToConsultees = true,
                 DocumentCount = application.Documents!.Count,
                 FellingLicenceApplicationId = application.Id
             };

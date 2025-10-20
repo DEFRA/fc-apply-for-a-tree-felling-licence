@@ -4,6 +4,7 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -23,8 +24,10 @@ using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Newtonsoft.Json;
 using System;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using ProposedFellingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel;
 using ProposedRestockingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel;
+using SubmittedFlaPropertyCompartment = Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SubmittedFlaPropertyCompartment;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 
@@ -63,27 +66,21 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
     IOptions<ReviewAmendmentsOptions> reviewAmendmentsOptions,
     RequestContext requestContext,
     ISendNotifications emailService,
+    IOptions<ExternalApplicantSiteOptions> externalApplicantSiteOptions,
+    IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
     ILogger<ConfirmedFellingAndRestockingDetailsUseCase> logger)
     : FellingLicenceApplicationUseCaseBase(internalUserAccountService,
         externalUserAccountService,
         fellingLicenceApplicationInternalRepository,
         woodlandOwnerService,
         agentAuthorityService,
-        getConfiguredFcAreasService)
+        getConfiguredFcAreasService,
+        woodlandOfficerReviewSubStatusService), IConfirmedFellingAndRestockingDetailsUseCase
 {
     private readonly IUpdateConfirmedFellingAndRestockingDetailsService _updateConfirmedFellingAndRestockingDetailsService = Guard.Against.Null(updateConfirmedFellingAndRestockingDetailsService);
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
 
-    /// <summary>
-    /// Retrieves the set of confirmed felling and restocking details for a given application, along with
-    /// the proposed details in order to show differences on the UI, and activity feed items related to the application.
-    /// </summary>
-    /// <param name="applicationId">The ID of the application to retrieve the data for.</param>
-    /// <param name="user">The user viewing the application.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <param name="pageName">The name of the page viewing the data, for the breadcrumbs.</param>
-    /// <returns>A <see cref="ConfirmedFellingRestockingDetailsModel"/> representing the application data,
-    /// or <see cref="Result.Failure"/> if an error occurs.</returns>
+    /// <inheritdoc/>
     public async Task<Result<ConfirmedFellingRestockingDetailsModel>> GetConfirmedFellingAndRestockingDetailsAsync(
         Guid applicationId,
         InternalUser user,
@@ -134,7 +131,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         var currentReviewResult = await FellingLicenceRepository.GetCurrentFellingAndRestockingAmendmentReviewAsync(
             applicationId,
             cancellationToken,
-            includeComplete: true);
+            includeComplete: false);
 
         var currentReview = currentReviewResult.Value.HasValue ? currentReviewResult.Value.Value : null;
 
@@ -152,26 +149,33 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                                 ? AmendmentStateEnum.ApplicantAgreed
                                 : AmendmentStateEnum.ApplicantDisagreed;
 
-        var relevantButton =RelevantFellingAndRestockingButton.None;
+        var canCurrentUserAmend =
+            summaryResult.StatusHistories.MaxBy(x => x.Created)?.Status is FellingLicenceStatus.WoodlandOfficerReview &&
+            summaryResult.AssigneeHistories.Any(y =>
+                y.Role is AssignedUserRole.WoodlandOfficer &&
+                y.UserAccount!.Id == user.UserAccountId &&
+                y.TimestampUnassigned is null) &&
+            !retrievalResult.ConfirmedFellingAndRestockingComplete;
 
         var result = new ConfirmedFellingRestockingDetailsModel
         {
             FellingLicenceApplicationSummary = summaryResult,
-            AmendmentState = amendmentState,
-            AmendmentReviewId = currentReview?.Id,
-            AmendmentsSentDate = currentReview?.AmendmentsSentDate,
+            Amendment = new AmendmentReview
+            {
+                AmendmentState = amendmentState,
+                AmendmentReviewId = currentReview?.Id,
+                AmendmentsSentDate = currentReview?.AmendmentsSentDate,
+                AmendmentReason = currentReview?.AmendmentsReason,
+                ApplicantDisagreementReason = currentReview?.ApplicantDisagreementReason,
+                CanCurrentUserAmend = canCurrentUserAmend,
+                IsAmended = amendmentsMade,
+                FurtherAmendments = false
+            },
             ActivityFeedItems = activityFeedItems.Value.ToList(),
             ApplicationId = applicationId,
-            PotentialRestockingCompartments = retrievalResult.SubmittedFlaPropertyCompartments
-                .Select(x => new PotentialRestockingCompartments(x.Id, Math.Round(x.TotalHectares!.Value, 2), x.DisplayName, x.CompartmentId))
+            SubmittedFlaPropertyCompartments = retrievalResult.SubmittedFlaPropertyCompartments
+                .Select(x => new SubmittedFlaPropertyCompartment(x.Id, Math.Round(x.TotalHectares!.Value, 2), x.DisplayName, x.CompartmentId, x.GISData))
                 .ToList(),
-            CanCurrentUserAmend =
-                summaryResult.StatusHistories.MaxBy(x => x.Created)?.Status is FellingLicenceStatus.WoodlandOfficerReview &&
-                summaryResult.AssigneeHistories.Any(y =>
-                    y.Role is AssignedUserRole.WoodlandOfficer &&
-                    y.UserAccount!.Id == user.UserAccountId &&
-                    y.TimestampUnassigned is null) &&
-                !retrievalResult.ConfirmedFellingAndRestockingComplete,
             Compartments = retrievalResult.ConfirmedFellingAndRestockingDetailModels.Select(x =>
                     new CompartmentConfirmedFellingRestockingDetailsModel
                     {
@@ -305,8 +309,6 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 .ThenBy(x => x.SubCompartmentName)
                 .ToArray(),
             ConfirmedFellingAndRestockingComplete = retrievalResult.ConfirmedFellingAndRestockingComplete,
-            // Decide the primary action button based on completion state and amendment review state
-            RelevantButton = relevantButton,
         };
 
         SetBreadcrumbs(result, pageName);
@@ -314,13 +316,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return Result.Success(result);
     }
 
-    /// <summary>
-    /// Saves amendments made to confirmed felling details for a specific compartment during woodland officer review.
-    /// </summary>
-    /// <param name="model">The view model containing amended confirmed felling details.</param>
-    /// <param name="user">The internal user performing the save operation.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
+    /// <inheritdoc/>
     public async Task<Result> SaveConfirmedFellingDetailsAsync(
         AmendConfirmedFellingDetailsViewModel model,
         InternalUser user,
@@ -376,13 +372,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return Result.Success();
     }
 
-    /// <summary>
-    /// Adds a new confirmed felling details to a specific compartment during woodland officer review.
-    /// </summary>
-    /// <param name="model">The view model containing the new confirmed felling details.</param>
-    /// <param name="user">The internal user performing the save operation.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
+    /// <inheritdoc/>
     public async Task<Result> SaveConfirmedFellingDetailsAsync(
         AddNewConfirmedFellingDetailsViewModel model,
         InternalUser user,
@@ -438,15 +428,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return Result.Success();
     }
 
-    /// <summary>
-    /// Retrieves a list of selectable compartments for a given felling licence application.
-    /// </summary>
-    /// <param name="applicationId">The unique identifier of the felling licence application.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>
-    /// A <see cref="Result{T}"/> containing a list of <see cref="SelectableCompartment"/> if successful,
-    /// or a failure result if retrieval was unsuccessful.
-    /// </returns>
+    /// <inheritdoc/>
     public async Task<Result<SelectFellingCompartmentModel>> GetSelectableFellingCompartmentsAsync(
         Guid applicationId,
         CancellationToken cancellationToken)
@@ -493,18 +475,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return model;
     }
 
-    /// <summary>
-    /// Reverts amendments made to a confirmed felling detail for a specific application and proposed felling details.
-    /// This operation reimports the proposed felling details, updates the woodland officer review, and commits the transaction.
-    /// If any step fails, the transaction is rolled back and the error is returned.
-    /// </summary>
-    /// <param name="applicationId">The unique identifier of the felling licence application.</param>
-    /// <param name="proposedFellingDetailsId">The unique identifier of the proposed felling details to revert.</param>
-    /// <param name="user">The internal user performing the revert operation.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>
-    /// A <see cref="Result"/> indicating the success or failure of the revert operation.
-    /// </returns>
+    /// <inheritdoc/>
     public async Task<Result> RevertConfirmedFellingDetailAmendmentsAsync(
         Guid applicationId,
         Guid proposedFellingDetailsId,
@@ -598,25 +569,17 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         }
     }
 
-    /// <summary>
-    /// Sends amendments to the applicant and triggers notification email.
-    /// </summary>
-    /// <param name="applicationId">The application ID.</param>
-    /// <param name="user">The internal user sending amendments.</param>
-    /// <param name="linkToApplication">Optional link to the application.</param>
-    /// <param name="amendmentsReason">Optional reason for amendments.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating success or failure.</returns>
+    /// <inheritdoc/>
     public async Task<Result> SendAmendmentsToApplicant(
         Guid applicationId,
         InternalUser user,
-        string? linkToApplication,
         string? amendmentsReason,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
         logger.LogDebug("Sending amendments for application {ApplicationId}", applicationId);
         var responseDeadline = DateTime.UtcNow.AddDays(reviewAmendmentsOptions.Value.ApplicationWithdrawalDays);
+
         var updateEntityResult = await _updateWoodlandOfficerReviewService.CreateFellingAndRestockingAmendmentReviewAsync(
             applicationId,
             user.UserAccountId!.Value,
@@ -672,6 +635,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         }
 
         var adminHubFooter = await GetAdminHubAddressDetailsAsync(getDetailsResult.Value.AdminHubName, cancellationToken);
+        var linkToApplication = $"{externalApplicantSiteOptions.Value.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         var woodlandOfficerModel = new AmendmentsSentToApplicantDataModel
         {
@@ -688,7 +652,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         var notificationResult = await emailService.SendNotificationAsync(
             woodlandOfficerModel,
             NotificationType.AmendmentsSentToApplicant,
-            new NotificationRecipient(user.EmailAddress, user.FullName),
+            new NotificationRecipient(applicant.Value.Email, applicant.Value.FullName()),
             cancellationToken: cancellationToken);
 
         if (notificationResult.IsFailure)
@@ -701,14 +665,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return Result.Success();
     }
 
-    /// <summary>
-    /// Marks further amendments as complete for a given amendment review.
-    /// Publishes audit events for completion and failure, and logs the result.
-    /// </summary>
-    /// <param name="user">The internal user completing the amendments.</param>
-    /// <param name="amendmentReviewId">The unique identifier of the amendment review to complete.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>A <see cref="Result"/> indicating success or failure of the completion operation.</returns>
+    /// <inheritdoc/>
     public async Task<Result> MakeFurtherAmendments(
         InternalUser user,
         Guid amendmentReviewId,
@@ -746,14 +703,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return updateEntityResult;
     }
 
-    /// <summary>
-    /// Deletes a confirmed felling detail from an application, including all associated restocking details.
-    /// </summary>
-    /// <param name="applicationId">The id of the application containing the confirmed felling detail.</param>
-    /// <param name="confirmedFellingDetailId">The id of the confirmed felling detail to delete.</param>
-    /// <param name="user">The internal user performing the deletion.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the confirmed felling detail has been deleted.</returns>
+    /// <inheritdoc />
     public async Task<Result> DeleteConfirmedFellingDetailAsync(
         Guid applicationId,
         Guid confirmedFellingDetailId,
@@ -802,14 +752,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return Result.Success();
     }
 
-    /// <summary>
-    /// Deletes a confirmed restocking detail from an application.
-    /// </summary>
-    /// <param name="applicationId">The id of the application containing the confirmed restocking detail.</param>
-    /// <param name="confirmedRestockingDetailId">The id of the confirmed restocking detail to delete.</param>
-    /// <param name="user">The internal user performing the deletion.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the confirmed restocking detail has been deleted.</returns>
+    /// <inheritdoc />
     public async Task<Result> DeleteConfirmedRestockingDetailAsync(
         Guid applicationId,
         Guid confirmedRestockingDetailId,
@@ -858,13 +801,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
         return Result.Success();
     }
 
-    /// <summary>
-    /// Saves an amended restocking details model back to the data store.
-    /// </summary>
-    /// <param name="model">A <see cref="AmendConfirmedRestockingDetailsViewModel"/> model of the restocking data to save.</param>
-    /// <param name="user">The user amending the data.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating whether the data saved successfully.</returns>
+    /// <inheritdoc/>
     public async Task<Result> SaveConfirmedRestockingDetailsAsync(
         AmendConfirmedRestockingDetailsViewModel model,
         InternalUser user,

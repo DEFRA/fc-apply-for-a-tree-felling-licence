@@ -1,5 +1,5 @@
 using Forestry.Flo.Internal.Web.Infrastructure;
-using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using AddConsulteeCommentModel = Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview.AddConsulteeCommentModel;
 
@@ -12,7 +12,7 @@ public class ExternalConsulteeReviewController : Controller
         [FromQuery] Guid applicationId, 
         [FromQuery] Guid accessCode,
         [FromQuery] string emailAddress,
-        [FromServices] ExternalConsulteeReviewUseCase externalConsulteeReviewUseCase,
+        [FromServices] IExternalConsulteeReviewUseCase externalConsulteeReviewUseCase,
         CancellationToken cancellationToken)
     {
         var validationResult = await externalConsulteeReviewUseCase.ValidateAccessCodeAsync(applicationId, accessCode, emailAddress, cancellationToken);
@@ -37,7 +37,7 @@ public class ExternalConsulteeReviewController : Controller
     public async Task<IActionResult> Index(
         AddConsulteeCommentModel commentModel, 
         FormFileCollection consulteeAttachmentFiles,
-        [FromServices] ExternalConsulteeReviewUseCase externalConsulteeReviewUseCase,
+        [FromServices] IExternalConsulteeReviewUseCase externalConsulteeReviewUseCase,
         CancellationToken cancellationToken)
     {
         if (ModelState.IsValid is false)
@@ -80,7 +80,7 @@ public class ExternalConsulteeReviewController : Controller
     }
 
     public async Task<IActionResult> DownloadSupportingDocument(
-        [FromServices] ExternalConsulteeReviewUseCase useCase,
+        [FromServices] IExternalConsulteeReviewUseCase useCase,
         [FromQuery] Guid applicationId,
         [FromQuery] Guid accessCode,
         [FromQuery] Guid documentId,

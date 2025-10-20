@@ -158,7 +158,8 @@ public interface IUpdateWoodlandOfficerReviewService
         Guid applicationId,
         Guid userId,
         bool complete,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool isSkippingWoReviewForCbw = false);
 
     /// <summary>
     /// Completes the Larch check for an application.
