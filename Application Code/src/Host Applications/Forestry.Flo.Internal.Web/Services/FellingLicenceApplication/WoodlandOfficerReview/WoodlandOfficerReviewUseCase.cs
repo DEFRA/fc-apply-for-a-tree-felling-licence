@@ -2,8 +2,9 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
-using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -13,11 +14,13 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using MassTransit;
 using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
@@ -35,14 +38,17 @@ public class WoodlandOfficerReviewUseCase(
     IAgentAuthorityService agentAuthorityService,
     IGetConfiguredFcAreas getConfiguredFcAreasService,
     IClock clock,
+    IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
     RequestContext requestContext,
+    IBus busControl,
     ILogger<WoodlandOfficerReviewUseCase> logger)
     : FellingLicenceApplicationUseCaseBase(internalUserAccountService,
         externalUserAccountService,
         fellingLicenceApplicationRepository,
         woodlandOwnerService,
         agentAuthorityService,
-        getConfiguredFcAreasService)
+        getConfiguredFcAreasService,
+        woodlandOfficerReviewSubStatusService), IWoodlandOfficerReviewUseCase
 {
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
     private readonly IClock _clock = Guard.Against.Null(clock);
@@ -52,6 +58,7 @@ public class WoodlandOfficerReviewUseCase(
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
     private readonly IActivityFeedItemProvider _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
 
+    /// <inheritdoc />
     public async Task<Result<WoodlandOfficerReviewModel>> WoodlandOfficerReviewAsync(
         Guid applicationId,
         InternalUser user,
@@ -123,6 +130,7 @@ public class WoodlandOfficerReviewUseCase(
         return Result.Success(result);
     }
 
+    /// <inheritdoc />
     public async Task<Result> CompleteWoodlandOfficerReviewAsync(
         Guid applicationId, 
         RecommendedLicenceDuration? recommendedLicenceDuration,
@@ -157,6 +165,12 @@ public class WoodlandOfficerReviewUseCase(
                 cancellationToken);
             return Result.Failure("Could not complete Woodland Officer Review");
         }
+
+        await busControl.Publish(
+            new GenerateSubmittedPdfPreviewMessage(
+                user.UserAccountId!.Value,
+                applicationId),
+            cancellationToken);
 
         await _auditService.PublishAuditEventAsync(new AuditEvent(
                 AuditEvents.ConfirmWoodlandOfficerReview,
@@ -208,19 +222,15 @@ public class WoodlandOfficerReviewUseCase(
             result.Value.AdminHubName,
             cancellationToken);
 
-        return sendNotificationsResult.IsSuccess
-            ? Result.Success()
-            : Result.Failure(notificationsError);
+        if (sendNotificationsResult.IsFailure)
+        {
+            return Result.Failure(notificationsError);
+        }
+
+        return Result.Success();
     }
 
-
-    /// <summary>
-    /// Completes the mapping check task in the woodland officer review.
-    /// </summary>
-    /// <param name="applicationId">The identifier for the application.</param>
-    /// <param name="performingUserId">The identifier for the internal user completing the check.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the mapping check has been updated successfully.</returns>
+    /// <inheritdoc />
     public async Task<Result> CompleteLarchCheckAsync(
         Guid applicationId,
         Guid performingUserId,
@@ -251,13 +261,7 @@ public class WoodlandOfficerReviewUseCase(
         return result;
     }
 
-    /// <summary>
-    /// Completes the Confirmed F&R task in the woodland officer review.
-    /// </summary>
-    /// <param name="applicationId">The identifier for the application.</param>
-    /// <param name="user">The user performing the update.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating success of the operation.</returns>
+    /// <inheritdoc />
     public async Task<Result> CompleteConfirmedFellingAndRestockingDetailsAsync(
         Guid applicationId,
         InternalUser user,
@@ -290,17 +294,7 @@ public class WoodlandOfficerReviewUseCase(
         return result;
     }
 
-    /// <summary>
-    /// Completes the Environmental Impact Assessment (EIA) screening check for the specified application.
-    /// Publishes an audit event indicating success or failure of the operation.
-    /// </summary>
-    /// <param name="applicationId">The unique identifier of the application to update.</param>
-    /// <param name="user">The internal user performing the update.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>
-    /// A <see cref="Task{Result}"/> representing the asynchronous operation, containing a <see cref="Result"/>
-    /// indicating the success or failure of the EIA screening completion.
-    /// </returns>
+    /// <inheritdoc />
     public async Task<Result> CompleteEiaScreeningAsync(
         Guid applicationId,
         InternalUser user,

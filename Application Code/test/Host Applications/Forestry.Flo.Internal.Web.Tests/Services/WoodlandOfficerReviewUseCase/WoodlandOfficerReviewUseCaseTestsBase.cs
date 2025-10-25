@@ -1,19 +1,21 @@
-﻿using Forestry.Flo.Services.Common;
+﻿using AutoFixture;
+using Forestry.Flo.Services.Applicants.Services;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Services;
 using Forestry.Flo.Tests.Common;
+using MassTransit;
 using Moq;
 using NodaTime;
 using System.Text.Json;
-using AutoFixture;
-using Forestry.Flo.Services.Applicants.Services;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
@@ -31,6 +33,7 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
 
     protected readonly Mock<IAddDocumentService> MockAddDocumentService = new();
     protected readonly Mock<IRemoveDocumentService> MockRemoveDocumentService = new();
+    protected readonly Mock<IBusControl> MockBus = new();
 
     protected readonly Mock<IPublicRegister> PublicRegisterService = new();
     protected readonly string RequestContextCorrelationId = Guid.NewGuid().ToString();
@@ -46,6 +49,7 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
     protected readonly Mock<IForestryServices>  _forestryServices = new();
     protected readonly Mock<IForesterServices> _foresterServices = new();
     protected readonly Mock<ISendNotifications> NotificationService = new();
+    protected readonly Mock<IWoodlandOfficerReviewSubStatusService> WoodlandOfficerReviewSubStatusService = new();
 
     protected readonly Mock<IGetConfiguredFcAreas> GetConfiguredFcAreas = new();
 

@@ -219,7 +219,7 @@ public class UpdateWoodlandOfficerReviewUpdateCompartmentDesignationsTests : Upd
         Assert.Equal(designations.Sssi, compartments[0].SubmittedCompartmentDesignations.Sssi);
         Assert.Equal(designations.Sacs, compartments[0].SubmittedCompartmentDesignations.Sacs);
         Assert.Equal(designations.Spa, compartments[0].SubmittedCompartmentDesignations.Spa);
-        Assert.Equal(designations.Ramser, compartments[0].SubmittedCompartmentDesignations.Ramser);
+        Assert.Equal(designations.Ramsar, compartments[0].SubmittedCompartmentDesignations.Ramsar);
         Assert.Equal(designations.Sbi, compartments[0].SubmittedCompartmentDesignations.Sbi);
         Assert.Equal(designations.Other, compartments[0].SubmittedCompartmentDesignations.Other);
         if (designations.Other)
@@ -278,7 +278,7 @@ public class UpdateWoodlandOfficerReviewUpdateCompartmentDesignationsTests : Upd
         Assert.Equal(designations.Sssi, compartments[0].SubmittedCompartmentDesignations.Sssi);
         Assert.Equal(designations.Sacs, compartments[0].SubmittedCompartmentDesignations.Sacs);
         Assert.Equal(designations.Spa, compartments[0].SubmittedCompartmentDesignations.Spa);
-        Assert.Equal(designations.Ramser, compartments[0].SubmittedCompartmentDesignations.Ramser);
+        Assert.Equal(designations.Ramsar, compartments[0].SubmittedCompartmentDesignations.Ramsar);
         Assert.Equal(designations.Sbi, compartments[0].SubmittedCompartmentDesignations.Sbi);
         Assert.Equal(designations.Other, compartments[0].SubmittedCompartmentDesignations.Other);
         if (designations.Other)

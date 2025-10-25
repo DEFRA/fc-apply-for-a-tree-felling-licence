@@ -3,14 +3,14 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
-using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
+using Forestry.Flo.Services.Common;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -22,7 +22,7 @@ public class ReturnApplicationController : Controller
     [HttpGet("")]
     public async Task<IActionResult> Index(
         Guid id,
-        [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
+        [FromServices] IFellingLicenceApplicationUseCase applicationUseCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -47,8 +47,8 @@ public class ReturnApplicationController : Controller
     public async Task<IActionResult> ReturnApplication(
         Guid id,
         ReturnApplicationModel model,
-        [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
-        [FromServices] ReturnApplicationUseCase approvalRefusalUseCase,
+        [FromServices] IFellingLicenceApplicationUseCase applicationUseCase,
+        [FromServices] IReturnApplicationUseCase approvalRefusalUseCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -82,6 +82,8 @@ public class ReturnApplicationController : Controller
         {
             var warnings = new StringBuilder();
 
+            warnings.AppendJoin(", ", result.SubProcessFailures.Select(x => x.GetDescription()));
+
             if (warnings.Length > 0)
             {
                 this.AddUserGuide("One or more issues occured", warnings.ToString());
@@ -93,7 +95,7 @@ public class ReturnApplicationController : Controller
 
 
     private async Task<Result<ReturnApplicationModel>> LoadViewModel(
-        FellingLicenceApplicationUseCase applicationUseCase,
+        IFellingLicenceApplicationUseCase applicationUseCase,
         Guid id,
         InternalUser user,
         CancellationToken cancellationToken)

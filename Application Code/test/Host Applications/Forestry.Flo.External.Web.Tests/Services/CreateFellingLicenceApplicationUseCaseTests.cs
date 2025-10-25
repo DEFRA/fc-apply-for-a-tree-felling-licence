@@ -1,7 +1,6 @@
 ﻿using AutoFixture;
 using AutoFixture.AutoMoq;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.External.Web.Controllers;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Services;
@@ -28,7 +27,6 @@ using Forestry.Flo.Services.PropertyProfiles.Entities;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Forestry.Flo.Services.PropertyProfiles.Services;
 using Forestry.Flo.Tests.Common;
-using LinqKit;
 using MassTransit;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -36,13 +34,12 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using NodaTime.Testing;
-using System.Linq;
 using IUserAccountRepository = Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository;
 using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
-public class CreateFellingLicenceApplicationUseCaseTests
+public partial class CreateFellingLicenceApplicationUseCaseTests
 {
     private static readonly DateTime UtcNow = DateTime.UtcNow;
     private readonly CreateFellingLicenceApplicationUseCase _sut;
@@ -50,6 +47,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
     private readonly Mock<IGetPropertyProfiles> _getPropertyProfilesService;
     private readonly Mock<IGetCompartments> _getCompartmentsService;
     private readonly Mock<IOptions<EiaOptions>> _mockEiaOptions = new();
+    private readonly Mock<IOptions<InternalUserSiteOptions>> _mockInternalSiteOptions = new();
 
     private readonly Mock<IRetrieveUserAccountsService> _mockRetrieveUserAccountsService;
     private readonly Mock<IRetrieveWoodlandOwners> _mockRetreiveWoodlandOwnersService;
@@ -163,6 +161,11 @@ public class CreateFellingLicenceApplicationUseCaseTests
             EiaApplicationExternalUri = "testURI"
         });
 
+        _mockInternalSiteOptions.Setup(x => x.Value).Returns(new InternalUserSiteOptions
+        {
+            BaseUrl = "testInternalSiteUrl"
+        });
+
         _sut = new CreateFellingLicenceApplicationUseCase(
             _mockRetrieveUserAccountsService.Object,
             _fellingLicenceApplicationRepository.Object,
@@ -190,6 +193,7 @@ public class CreateFellingLicenceApplicationUseCaseTests
             _publicRegisterService.Object,
             _mockEiaOptions.Object,
             _getWoodlandOfficerReviewService.Object,
+            _mockInternalSiteOptions.Object,
             _getConfiguredFcAreas.Object);
     }
 
@@ -2265,90 +2269,6 @@ public class CreateFellingLicenceApplicationUseCaseTests
         Assert.Equal(compartment.TotalHectares, result.Value.CompartmentTotalHectares);
         Assert.Equal(fellingLicenceApplicationModel.FellingAndRestockingDetails.DetailsList[0]
             .FellingDetails[0].OperationType, result.Value.OperationType);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldGetFellingAndRestockingDetailsPlaybackViewModel(FellingLicenceApplication application)
-    {
-        // arrange
-        _fellingLicenceApplicationRepository.Setup(x => x.GetIsEditable(application.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        _fellingLicenceApplicationRepository
-            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(application);
-
-        var compartments = application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
-            new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList();
-
-        _compartmentRepository
-            .Setup(r => r.ListAsync(It.IsAny<IList<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(compartments);
-
-        foreach (var felling in application.LinkedPropertyProfile!.ProposedFellingDetails!)
-        {
-            foreach (var restocking in felling.ProposedRestockingDetails!)
-            {
-                restocking.PropertyProfileCompartmentId = felling.PropertyProfileCompartmentId;
-            }
-        }
-
-        // act
-        var result =
-            await _sut.GetFellingAndRestockingDetailsPlaybackViewModel(application.Id, _externalApplicant,
-                CancellationToken.None);
-
-        // assert
-        Assert.True(result.HasValue);
-        Assert.Equal(application.Id, result.Value.ApplicationId);
-        application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(p =>
-            p.PropertyProfileCompartmentId.ToString().ToUpper()).ForEach(x => Assert.True(result.Value.GIS!.ToUpper().Contains(x)));
-        Assert.Equal("FellingLicenceApplication", result.Value.FellingCompartmentsChangeLink.Controller);
-        Assert.Equal(nameof(FellingLicenceApplicationController.SelectCompartments), result.Value.FellingCompartmentsChangeLink.Action);
-
-        object values = new
-            { applicationId = application.Id, isForRestockingCompartmentSelection = false, returnToPlayback = true };
-        Assert.Equivalent(values, result.Value.FellingCompartmentsChangeLink.Values);
-        Assert.Equal(application.LinkedPropertyProfile!.ProposedFellingDetails.Count, result.Value.FellingCompartmentDetails.Count);
-        
-        for (int i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails.Count; i++)
-        {
-            var resultCompartment = result.Value.FellingCompartmentDetails.Find(f =>
-                f.CompartmentId == application.LinkedPropertyProfile!.ProposedFellingDetails[i]
-                    .PropertyProfileCompartmentId);
-            Assert.NotNull(resultCompartment);
-            Assert.Equal("FellingLicenceApplication", resultCompartment.FellingOperationsChangeLink.Controller);
-            Assert.Equal(nameof(FellingLicenceApplicationController.SelectFellingOperationTypes), resultCompartment.FellingOperationsChangeLink.Action);
-
-            var fellingValues = new
-            {
-                applicationId = application.Id,
-                fellingCompartmentId = application.LinkedPropertyProfile!.ProposedFellingDetails[i]
-                    .PropertyProfileCompartmentId,
-                returnToPlayback = true
-            };
-            Assert.Equivalent(fellingValues, resultCompartment.FellingOperationsChangeLink.Values);
-            Assert.Single(resultCompartment.FellingDetails);
-
-            var actualFellingDetail = resultCompartment.FellingDetails[0];
-            var expectedfellingDetail = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
-
-            Assert.Equivalent(expectedfellingDetail, actualFellingDetail.FellingDetail);
-            Assert.Equal(resultCompartment.CompartmentName, actualFellingDetail.FellingCompartmentName);
-
-            Assert.Single(actualFellingDetail.RestockingCompartmentDetails);
-
-            Assert.Equal(expectedfellingDetail.PropertyProfileCompartmentId, actualFellingDetail.RestockingCompartmentDetails[0].CompartmentId);
-            Assert.Equal(expectedfellingDetail.ProposedRestockingDetails!.Count, actualFellingDetail.RestockingCompartmentDetails[0].RestockingDetails.Count);
-
-            for (int j = 0; j < expectedfellingDetail.ProposedRestockingDetails.Count; j++)
-            {
-                var restocking = actualFellingDetail.RestockingCompartmentDetails[0].RestockingDetails.Find(r =>
-                    r.RestockingDetail.Id == expectedfellingDetail.ProposedRestockingDetails[j].Id);
-
-                Assert.NotNull(restocking);
-                Assert.Equivalent(expectedfellingDetail.ProposedRestockingDetails[j], restocking.RestockingDetail);
-            }
-        }
     }
 
     [Theory, AutoMoqData]

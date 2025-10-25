@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.AdminHubs\Forestry.Flo.Services.AdminHubs.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.Applicants\Forestry.Flo.Services.Applicants.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.Common\Forestry.Flo.Services.Common.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.ConditionsBuilder\Forestry.Flo.Services.ConditionsBuilder.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.DataImport\Forestry.Flo.Services.DataImport.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.FellingLicenceApplications\Forestry.Flo.Services.FellingLicenceApplications.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.FileStorage\Forestry.Flo.Services.FileStorage.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.Gis\Forestry.Flo.Services.Gis.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.InternalUsers\Forestry.Flo.Services.InternalUsers.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.Notifications\Forestry.Flo.Services.Notifications.csproj" />
+    <ProjectReference Include="..\..\Services\Forestry.Flo.Services.PropertyProfiles\Forestry.Flo.Services.PropertyProfiles.csproj" />
+  </ItemGroup>
+
+</Project>

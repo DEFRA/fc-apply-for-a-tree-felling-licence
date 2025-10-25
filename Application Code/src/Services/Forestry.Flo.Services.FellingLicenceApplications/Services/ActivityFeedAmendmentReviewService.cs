@@ -40,62 +40,32 @@ public class ActivityFeedAmendmentReviewService : IActivityFeedService
 
         var activityFeedItems = new List<ActivityFeedItemModel>();
 
-        var assigneeHistoryItems = await _fellingLicenceApplicationRepository.GetAssigneeHistoryForApplicationAsync(
-    providerModel.FellingLicenceId, cancellationToken);
-
-        // Get only the last internal user ID
-        var lastInternalUserId = assigneeHistoryItems
-            .Where(x => x.Role != AssignedUserRole.Author && x.Role != AssignedUserRole.Applicant)
-            .Select(x => x.AssignedUserId)
-            .LastOrDefault();
-
-        // Get only the last external user ID
-        var lastExternalUserId = assigneeHistoryItems
-            .Where(x => x.Role == AssignedUserRole.Author || x.Role == AssignedUserRole.Applicant)
-            .Select(x => x.AssignedUserId)
-            .LastOrDefault();
-
-        var internalUsers = await _internalAccountsRepository.GetUsersWithIdsInAsync(new List<Guid> { lastInternalUserId }, cancellationToken);
-        if (internalUsers.IsFailure)
-        {
-            _logger.LogError("Could not load internal users for assignee history activity feed items, error: {Error}", internalUsers.Error);
-            return Result.Failure<IList<ActivityFeedItemModel>>("Could not load internal users for activity feed");
-        }
-
-        var externalApplicants = await _externalAccountsRepository.GetUsersWithIdsInAsync(new List<Guid> { lastExternalUserId }, cancellationToken);
-        if (externalApplicants.IsFailure)
-        {
-            _logger.LogError("Could not load external applicants for assignee history activity feed items, error: {Error}", externalApplicants.Error);
-            return Result.Failure<IList<ActivityFeedItemModel>>("Could not load external applicants for activity feed");
-        }
-        var internalUser = internalUsers.Value.FirstOrDefault(x => x.Id == lastInternalUserId);
-        var activityFeedItemInternalUserModel = internalUser != null
-            ? new ActivityFeedItemUserModel
-            {
-                AccountType = internalUser.AccountType,
-                FirstName = internalUser.FirstName,
-                Id = internalUser.Id,
-                LastName = internalUser.LastName,
-                IsActiveUser = internalUser.Status == Status.Confirmed
-            }
-            : null;
-
-        var externalUser = externalApplicants.Value.FirstOrDefault(x => x.Id == lastExternalUserId);
-        var activityFeedItemExternalUserModel = externalUser != null
-            ? new ActivityFeedItemUserModel
-            {
-                FirstName = externalUser.FirstName,
-                Id = externalUser.Id,
-                LastName = externalUser.LastName,
-                IsActiveUser = externalUser.Status == Applicants.Entities.UserAccount.UserAccountStatus.Active
-            }
-            : null;
-
         var amendmentReviewsResult = 
             await _fellingLicenceApplicationRepository.GetFellingAndRestockingAmendmentReviewsAsync(providerModel.FellingLicenceId, cancellationToken);
 
+        if (amendmentReviewsResult.IsFailure)
+        {
+            _logger.LogError("Could not load amendment reviews for application with ID {ApplicationId}, error: {Error}", providerModel.FellingLicenceId, amendmentReviewsResult.Error);
+            return Result.Failure<IList<ActivityFeedItemModel>>(amendmentReviewsResult.Error);
+        }
+
+        var internalUsersResult = await GetActivityFeedInternalUsers(amendmentReviewsResult.Value, cancellationToken);
+        if (internalUsersResult.IsFailure)
+        {
+            return Result.Failure<IList<ActivityFeedItemModel>>(internalUsersResult.Error);
+        }
+        var activityFeedItemInternalUsers = internalUsersResult.Value;
+
+        var externalUsersResult = await GetActivityFeedExternalUsers(amendmentReviewsResult.Value, cancellationToken);
+        if (externalUsersResult.IsFailure)
+        {
+            return Result.Failure<IList<ActivityFeedItemModel>>(externalUsersResult.Error);
+        }
+        var activityFeedItemExternalUsers = externalUsersResult.Value;
+
         foreach (var review in amendmentReviewsResult.Value)
         {
+            var activityFeedItemInternalUserModel = activityFeedItemInternalUsers.FirstOrDefault(x => x.Id == review.AmendingWoodlandOfficerId);
 
             var officerActivityFeedItem = new ActivityFeedItemModel
             {
@@ -105,7 +75,7 @@ public class ActivityFeedAmendmentReviewService : IActivityFeedService
                 VisibleToConsultee = false,
                 FellingLicenceApplicationId = providerModel.FellingLicenceId,
                 CreatedTimestamp = review.AmendmentsSentDate,
-                Text = review.AmendmentsReason,
+                Text = review.AmendmentsReason ?? string.Empty,
                 CreatedByUser = activityFeedItemInternalUserModel
             };
 
@@ -114,6 +84,9 @@ public class ActivityFeedAmendmentReviewService : IActivityFeedService
             if (review.ResponseReceivedDate != null && review.ApplicantDisagreementReason != null)
             {
                 var applicantText = "Applicant disagreed amendments: " + review.ApplicantDisagreementReason;
+
+                var activityFeedItemExternalUserModel = activityFeedItemExternalUsers.FirstOrDefault(x => x.Id == review.RespondingApplicantId);
+
                 var applicantActivityFeedItem = new ActivityFeedItemModel
                 {
                     ActivityFeedItemType = ActivityFeedItemType.AmendmentApplicantReason,
@@ -136,9 +109,64 @@ public class ActivityFeedAmendmentReviewService : IActivityFeedService
 
     public ActivityFeedItemType[] SupportedItemTypes()
     {
-        return new[]
-        {
+        return
+        [
             ActivityFeedItemType.AmendmentApplicantReason, ActivityFeedItemType.AmendmentOfficerReason
-        };
+        ];
+    }
+
+    private async Task<Result<List<ActivityFeedItemUserModel>>> GetActivityFeedInternalUsers(IEnumerable<FellingAndRestockingAmendmentReview> amendmentReviewsResult, CancellationToken cancellationToken)
+    {
+        var internalIds = amendmentReviewsResult
+            .Where(r => r.AmendingWoodlandOfficerId.HasValue)
+            .Select(r => r.AmendingWoodlandOfficerId!.Value)
+            .ToList();
+
+        var internalUsers = await _internalAccountsRepository.GetUsersWithIdsInAsync(internalIds, cancellationToken);
+        if (internalUsers.IsFailure)
+        {
+            _logger.LogError("Could not load internal users for assignee history activity feed items, error: {Error}", internalUsers.Error);
+            return Result.Failure<List<ActivityFeedItemUserModel>>("Could not load internal users for activity feed");
+        }
+
+        var activityFeedItemInternalUsers = internalUsers.Value
+            .Select(internalUser => new ActivityFeedItemUserModel
+            {
+                AccountType = internalUser.AccountType,
+                FirstName = internalUser.FirstName,
+                Id = internalUser.Id,
+                LastName = internalUser.LastName,
+                IsActiveUser = internalUser.Status == Status.Confirmed
+            })
+            .ToList();
+
+        return Result.Success(activityFeedItemInternalUsers);
+    }
+
+    private async Task<Result<List<ActivityFeedItemUserModel>>> GetActivityFeedExternalUsers(IEnumerable<FellingAndRestockingAmendmentReview> amendmentReviewsResult, CancellationToken cancellationToken)
+    {
+        var externalIds = amendmentReviewsResult
+            .Where(r => r.RespondingApplicantId.HasValue)
+            .Select(r => r.RespondingApplicantId!.Value)
+            .ToList();
+
+        var externalApplicants = await _externalAccountsRepository.GetUsersWithIdsInAsync(externalIds, cancellationToken);
+        if (externalApplicants.IsFailure)
+        {
+            _logger.LogError("Could not load external applicants for assignee history activity feed items, error: {Error}", externalApplicants.Error);
+            return Result.Failure<List<ActivityFeedItemUserModel>>("Could not load external applicants for activity feed");
+        }
+
+        var activityFeedItemExternalUsers = externalApplicants.Value
+            .Select(externalUser => new ActivityFeedItemUserModel
+            {
+                FirstName = externalUser.FirstName,
+                Id = externalUser.Id,
+                LastName = externalUser.LastName,
+                IsActiveUser = externalUser.Status == Applicants.Entities.UserAccount.UserAccountStatus.Active
+            })
+            .ToList();
+
+        return Result.Success(activityFeedItemExternalUsers);
     }
 }

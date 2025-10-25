@@ -9,6 +9,8 @@
 @{
     ViewData["Title"] = "Felling Licence Application Summary";
     ViewData.ShowBackLink();
+
+    var user = new ExternalApplicant(User);
 }
 
 <div class="govuk-grid-column-full">
@@ -133,6 +135,76 @@
         </div> 
     }
     
+    @if (user.IsFcUser)
+    {
+        <div class="govuk-summary-card">
+            <div class="govuk-summary-card__title-wrapper">
+                <h2 class="govuk-summary-card__title">Application is for a 10-year licence</h2>
+            </div>
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Application is for 10-year licence?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @(Model.Application.TenYearLicence?.IsForTenYearLicence is true ? "Yes" : "No")
+                        </dd>
+                        <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;if the application is for a ten-year licence</span></a>
+                        </dd>
+                    </div>
+                    @if (Model.Application.TenYearLicence?.IsForTenYearLicence is true)
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Woodland management plan reference
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @Model.Application.TenYearLicence?.WoodlandManagementPlanReference
+                            </dd>
+                            <dd class="govuk-summary-list__actions">
+                                <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan reference</span></a>
+                            </dd>
+                        </div>
+
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Woodland management plan documents
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @{
+                                    var wmpDocs = Model.Application.SupportingDocumentation.Documents.Where(x => x.DocumentPurpose == DocumentPurpose.WmpDocument).ToList();
+                                }
+                        
+                                @if (wmpDocs.Any())
+                                {
+                                    foreach (var document in wmpDocs)
+                                    {
+                                        <div>
+                                            @document.FileName
+                                        </div>
+                                        <br/>
+                                    }
+                                }
+                                else
+                                {
+                                    <div>
+                                        No documents uploaded
+                                    </div>
+                                }
+
+                            </dd>
+                            <dd class="govuk-summary-list__actions">
+                                <a class="govuk-link" href="@Url.Action("WmpDocuments", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan documents</span></a>
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        </div>
+    }
+
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
             <h2 class="govuk-summary-card__title">Woodland details</h2>
@@ -341,9 +413,13 @@
                         Supporting documents
                     </dt>
                     <dd class="govuk-summary-list__value">
-                        @if (Model.Application.SupportingDocumentation.Documents.Any())
+                        @{
+                            var supportingDocs = Model.Application.SupportingDocumentation.Documents.Where(x => x.DocumentPurpose == DocumentPurpose.Attachment).ToList();
+                        }
+                        
+                        @if (supportingDocs.Any())
                         {
-                            foreach (var document in Model.Application.SupportingDocumentation.Documents)
+                            foreach (var document in supportingDocs)
                             {
                                 <div>
                                     @document.FileName
@@ -411,7 +487,7 @@
 </div>
 
 @section Css {
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
     <link rel="stylesheet" href="/css/govuk-frontend-4.2.0.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
     <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
@@ -430,7 +506,7 @@
 
 @* Scripts to support the compartments map *@
 @section Scripts {
-    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script src="https://js.arcgis.com/4.24/"></script>
 
     <script>
         require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {

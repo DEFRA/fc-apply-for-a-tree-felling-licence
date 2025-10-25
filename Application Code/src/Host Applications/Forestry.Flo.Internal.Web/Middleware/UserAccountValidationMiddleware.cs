@@ -28,6 +28,15 @@ namespace Forestry.Flo.Internal.Web.Middleware
         private const string UserAccountAwaitingConfirmationUrl = "/Account/UserAccountAwaitingConfirmation";
         private const string UserAccountClosedUrl = "/Home/AccountError";
 
+        /// <summary>
+        /// A collection of URLs that should not require user account validation.
+        /// </summary>
+        private static readonly string[] PermissibleUrls = 
+        [
+            "/Home/Logout", 
+            "/Home/Error"
+        ];
+
         public UserAccountValidationMiddleware(
             IDbContextFactory<InternalUsersContext> dbContextFactory, 
             IUserAccountService userAccountService, 
@@ -45,97 +54,120 @@ namespace Forestry.Flo.Internal.Web.Middleware
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
-        {
+        {            
+            // don't run on permissible URLs
+            if (PermissibleUrls.Any(url => context.Request.Path.StartsWithSegments(url, StringComparison.OrdinalIgnoreCase)))
+            {
+                await next(context);
+                return;
+            }
 
-            if (context.User.Identity == null || !context.User.Identity.IsAuthenticated)
+
+            if (context.User.Identity is not { IsAuthenticated: true })
             {
                 // Handled by standard [Authorize] attributes
+                await next(context);
+                return;
+            }
+
+            var requestUrl = context.Request.GetDisplayUrl();
+
+            CancellationToken cancellationToken = default;
+
+            // determine if user email domain is permitted to access the system
+            var email = GetEmailFromClaims(context.User.Claims);
+            var domain = email?.Split("@")[1];
+            if (!_permittedRegisteredUserOptions.PermittedEmailDomainsForRegisteredUser
+                    .Any(x => x.Equals(domain, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                _logger.LogWarning("User with unauthorised email domain {Domain} is attempting to log in to Internal app", domain);
+                if (!IsUserAccountErrorUrl(requestUrl))
+                {
+                    context.Response.Redirect(UserAccountClosedUrl);
+                    return;
+                }
 
                 await next(context);
+                return;
             }
-            else
+
+            try
             {
-                var requestUrl = context.Request.GetDisplayUrl();
+                await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-                CancellationToken cancellationToken = default;
+                var identityProviderId = GetIdentityProviderId(context.User.Claims);
 
-                // verify user logged into AD B2C has a valid email address
-                var email = GetEmailFromClaims(context.User.Claims);
-                var domain = email?.Split("@")[1];
-                if (!_permittedRegisteredUserOptions.PermittedEmailDomainsForRegisteredUser
-                        .Any(x => x.Equals(domain, StringComparison.InvariantCultureIgnoreCase)))
+                // If user account cannot be identified by IdentityProviderId, we need to create a minimal record
+                // Note that LocalAccountId is not persisted in claims between requests so use of IdentityProviderId is optimal
+
+                var userAccount =
+                    await dbContext.UserAccounts.SingleOrDefaultAsync(x => x.IdentityProviderId == identityProviderId,
+                        cancellationToken);
+
+                if (userAccount is null)
                 {
-                    _logger.LogWarning("User with unauthorised email domain {Domain} is attempting to log in to Internal app", domain);
+                    // This should only occur if the user has existing authentication cookies but no user account record
+                    // Cookies need to be cleared as sign in process needs to be triggered
+                    context.Response.Headers.Append("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+
+                    switch (_authenticationOptions.Provider)
+                    {
+                        case AuthenticationProvider.OneLogin:
+                            await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                            await context.SignOutAsync(OneLoginDefaults.AuthenticationScheme);
+                            break;
+                        case AuthenticationProvider.Azure:
+                            await context.SignOutAsync("SignIn");
+                            await context.SignOutAsync("SignUp");
+                            break;
+                        default:
+                            await context.SignOutAsync();
+                            break;
+                    }
+
+                    return;
+                }
+
+                if (UserAccountIsInvalid(userAccount!))
+                {
                     if (!IsUserAccountErrorUrl(requestUrl))
                     {
                         context.Response.Redirect(UserAccountClosedUrl);
+                        return;
                     }
                 }
-                else
+                else if (!UserRegistrationDetailsComplete(userAccount))
                 {
-                    await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-                    var identityProviderId = GetIdentityProviderId(context.User.Claims);
-
-                    // If user account cannot be identified by IdentityProviderId, we need to create a minimal record
-                    // Note that LocalAccountId is not persisted in claims between requests so use of IdentityProviderId is optimal
-
-                    var userAccount = await dbContext.UserAccounts.SingleOrDefaultAsync(x => x.IdentityProviderId == identityProviderId, cancellationToken);
-
-                    if (userAccount is null)
+                    if (!IsUserAccountRegisterAccountDetailsUrl(requestUrl))
                     {
-                        // This should only occur if the user has existing authentication cookies but no user account record
-                        // Cookies need to be cleared as sign in process needs to be triggered
-                        context.Response.Headers.Append("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+                        // If user registration details not complete, redirect the user to update them.
+                        // Placing check here allows us to add additional fields and run the check on later sign ins
 
-                        switch (_authenticationOptions.Provider)
-                        {
-                            case AuthenticationProvider.OneLogin:
-                                await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                                await context.SignOutAsync(OneLoginDefaults.AuthenticationScheme);
-                                break;
-                            case AuthenticationProvider.Azure:
-                                await context.SignOutAsync("SignIn");
-                                await context.SignOutAsync("SignUp");
-                                break;
-                            default:
-                                await context.SignOutAsync();
-                                break;
-                        }
-                    }
-
-                    if (UserAccountIsInvalid(userAccount!))
-                    {
-                        if (!IsUserAccountErrorUrl(requestUrl))
-                        {
-                            context.Response.Redirect(UserAccountClosedUrl);
-                        }
-                    }
-                    else if (!UserRegistrationDetailsComplete(userAccount))
-                    {
-                        if (!IsUserAccountRegisterAccountDetailsUrl(requestUrl))
-                        {
-                            // If user registration details not complete, redirect the user to update them.
-                            // Placing check here allows us to add additional fields and run the check on later sign ins
-
-                            context.Response.Redirect(UserAccountRegisterAccountDetailsUrl);
-                        }
-                    }
-                    else if (userAccount.Status is not Status.Confirmed)
-                    {
-                        // Is FC user account type, but is not confirmed, return to awaiting confirmation screen
-
-                        if (!IsUserAccountAwaitingConfirmationUrl(requestUrl))
-                        {
-                            // Account not confirmed, redirect to warning route
-
-                            context.Response.Redirect(UserAccountAwaitingConfirmationUrl);
-                        }
+                        context.Response.Redirect(UserAccountRegisterAccountDetailsUrl);
+                        return;
                     }
                 }
+                else if (userAccount.Status is not Status.Confirmed)
+                {
+                    // Is FC user account type, but is not confirmed, return to awaiting confirmation screen
 
-                await next(context);
+                    if (!IsUserAccountAwaitingConfirmationUrl(requestUrl))
+                    {
+                        // Account not confirmed, redirect to warning route
+
+                        context.Response.Redirect(UserAccountAwaitingConfirmationUrl);
+                        return;
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating user account");
+                context.Response.Redirect("/Home/Error");
+                return;
+            }
+
+            await next(context);
         }
 
         private bool IsUserAccountRegisterAccountDetailsUrl(string url)

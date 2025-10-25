@@ -32,6 +32,24 @@
         fcconfig.esriApiKey = "AAPK3dfe831d59354a7b97e58425b66f968eGwNWMzPWa6UrLRkrtTnpujN2iCjDkyXJegZabNGlyJ28aXl90McRXCw3qUF1IzLi";
         fcconfig.defaultBaseMap = "arcgis-topographic";
         fcconfig.baseMapForUK = "778b49e161db47aba6dd4f5034f9d52b";
+
+        fcconfig.wmsLayer = {
+            url: "https://www.getmapping.com/GmWMS/1499a302-3ea8-40c8-9480-c16beab54b1f/ApgbBng.wmsx",
+            sublayers: [
+                {
+                    name: "APGB_Latest_UK_125mm",
+                    title: "Indexing for 25cm Aerial Photography (2024)"
+                }
+            ],
+            format: "image/png",
+            version: "1.3.0",
+            spatialReference: { wkid: fcconfig.spatialReference },
+            opacity: 1.0
+        };
+
+        fcconfig.wmsLayerName = "Aerial Photography";
+
+
         // //Start polygon
         fcconfig.invalidPolygonSymbol = {
             type: "simple-fill",
@@ -71,85 +89,21 @@
             },
         };
         //end polygon
-        //start: Point
-        fcconfig.invalidPointSymbol = {
-            type: "simple-marker",
-            style: "cross",
-            angle: -130,
-            outline: { width: 0.76 },
-            size: 14,
-            color: [0, 0, 0, 1],
-        };
-        fcconfig.activePointSymbol = {
-            type: "simple-marker",
-            style: "circle",
-            size: 14,
-            color: [0, 255, 127, 0.7],
-            outline: {
-                color: [0, 0, 0, 1],
-                width: 1,
+
+        fcconfig.BlueSkyTextSymbol = {
+            type: "text",
+            color: "rgba(128, 128, 128, 0.3)",
+            text: "\u00A9 Bluesky International Limited",
+            xoffset: 3,
+            yoffset: 3,
+            font: {
+                size: 16,
+                family: "Roboto",
+                weight: "bold",
             },
+            angle: -45
         };
 
-        fcconfig.selectedPointSymbol = {
-            type: "simple-marker",
-            style: "circle",
-            size: 14,
-            color: [5, 249, 252, 1],
-            outline: {
-                style: "dash",
-                color: [0, 0, 0, 1],
-                width: 1,
-            },
-        };
-
-        fcconfig.otherPointSymbol = {
-            type: "simple-marker",
-            style: "circle",
-            size: 14,
-            color: [34, 139, 34, 0.7],
-            outline: {
-                color: [0, 0, 0, 1],
-                width: 1,
-                style: "dash"
-            },
-        };
-        // //End: Point
-        // //Start: Line
-        fcconfig.invalidLineSymbol = {
-            type: "simple-line",
-            style: "dash-dot",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [227, 3, 3, 1],
-        };
-        fcconfig.activeLineSymbol = {
-            type: "simple-line",
-            style: "solid",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [0, 0, 0, 1],
-        };
-        fcconfig.otherLineSymbol = {
-            type: "simple-line",
-            style: "solid",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [0, 0, 0, 1],
-        };
-
-        fcconfig.selectedLineSymbol = {
-            type: "simple-line",
-            style: "dash",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [0, 0, 0, 1],
-        };
-        // //End: Line
         fcconfig.activeTextSymbol = {
             type: "text",
             backgroundColor: [255, 255, 255, 0],

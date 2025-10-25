@@ -36,9 +36,9 @@ public class SubmittedCompartmentDesignations
     public bool Spa { get; set; }
 
     /// <summary>
-    /// Gets and sets a value indicating whether the compartment is within a RAMSER.
+    /// Gets and sets a value indicating whether the compartment is within a RAMSAR.
     /// </summary>
-    public bool Ramser { get; set; }
+    public bool Ramsar { get; set; }
 
     /// <summary>
     /// Gets and sets a value indicating whether the compartment is within an SBI.

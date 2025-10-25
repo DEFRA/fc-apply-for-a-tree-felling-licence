@@ -20,28 +20,6 @@ public static class GisMappingExtensions
         return Create(compartment.CompartmentNumber, compartment.SubCompartmentName, compartment.GISData!);
     }
 
-    public static InternalFullCompartmentDetails ToInternalFullCompartmentDetails(
-        this SubmittedFlaPropertyCompartment submittedFlaPropertyCompartment)
-    {
-        var internalCompartmentDetails = new InternalFullCompartmentDetails
-        {
-            CompartmentNumber = submittedFlaPropertyCompartment.CompartmentNumber,
-            WoodlandName = submittedFlaPropertyCompartment.WoodlandName,
-            GISData = submittedFlaPropertyCompartment.GISData
-        };
-
-        if (!string.IsNullOrEmpty(submittedFlaPropertyCompartment.SubCompartmentName))
-        {
-            internalCompartmentDetails.SubCompartmentNo = submittedFlaPropertyCompartment.SubCompartmentName;
-        }
-
-        var compartmentPolygon = JsonConvert.DeserializeObject<Polygon>(submittedFlaPropertyCompartment.GISData!);
-
-        internalCompartmentDetails.ShapeGeometry = compartmentPolygon!;
-
-        return internalCompartmentDetails;
-    }
-    
     private static InternalCompartmentDetails<Polygon> Create(string compartmentNumber, string? subCompartmentName, string gisData)
     {
         var internalCompartmentDetails = new InternalCompartmentDetails<Polygon>

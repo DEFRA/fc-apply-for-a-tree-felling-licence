@@ -5,6 +5,7 @@
 @using Forestry.Flo.Services.FileStorage.Configuration
 @using Forestry.Flo.Services.FileStorage.Services
 @using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.Common.User
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.SupportingDocumentationModel
@@ -18,13 +19,18 @@
         applicationId = Model.ApplicationId
     }));
     ViewData.ShowBackLink();
-    
+
     var allowedTypes = (Settings?.Value ?? new UserFileUploadOptions()).AllowedFileTypes
         .Where(x => x.FileUploadReasons.Contains(FileUploadReason.SupportingDocument));
     var maxFileSize = (Settings?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
     var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
 
-    var sortedDocuments = Model.Documents.OrderByDescending(x => x.CreatedTimestamp);
+    var attachments = Model.Documents
+        .Where(x => x.DocumentPurpose is DocumentPurpose.Attachment or DocumentPurpose.EiaAttachment)
+        .OrderByDescending(x => x.CreatedTimestamp)
+        .ToList();
+
+    var sortedDocuments = Model.Documents.OrderByDescending(x => x.CreatedTimestamp).ToList();
 }
 
 <div class="govuk-grid-column-full">
@@ -53,13 +59,12 @@
     <p class="govuk-body">Each document must be less than @FileSizeToStringConverter.SizeSuffix(maxFileSize) in size and a maximum of @maxNumberDocs documents may be uploaded to support your application.</p>
 
     <form id="attachSupportingDocumentationForm" method="post" enctype="multipart/form-data" asp-action="AttachSupportingDocumentation">
-        @if (Model.Documents.Count() < (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments)
+        @if (attachments.Count < (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments)
         {
             var addSupportingDocumentModel = new AddSupportingDocumentModel
             { 
                 FellingLicenceApplicationId = Model.ApplicationId,
-                DocumentCount = Model.Documents.Count(),
-                AvailableToConsultees = false,
+                DocumentCount = attachments.Count,
                 ReturnToApplicationSummary = Model.ReturnToApplicationSummary
             };
 
@@ -70,7 +75,7 @@
     <div>
         <h2 class="govuk-heading-m">Attached documentation</h2>
 
-        @if (!Model.Documents.Any())
+        @if (!sortedDocuments.Any())
         {
             <p class="govuk-body">
                 No supporting documents have been uploaded.
@@ -86,6 +91,7 @@
                     <thead class="govuk-table__head">
                         <tr class="govuk-table__row">
                             <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
+                            <th scope="col" class="govuk-table__header" aria-sort="none">Category</th>
                             <th scope="col" class="govuk-table__header" aria-sort="descending">Upload Date</th>
                             <th scope="col" class="govuk-table__header">Actions</th>
                         </tr>
@@ -93,7 +99,6 @@
                     <tbody data-module="moj-sortable-table" class="govuk-table__body">
                         @foreach (var document in sortedDocuments)
                         {
-                            var fileType = FileTypesProvider.FindFileTypeByMimeTypeWithFallback(document.MimeType).KindOfDocument;
                             var userCanDelete = document.AttachedByType is ActorType.ExternalApplicant && document.DocumentPurpose is DocumentPurpose.Attachment;
 
                             <tr class="govuk-table__row" data-id="@document.Id">
@@ -102,11 +107,14 @@
                                         class="hidden-download-supporting-document"
                                         asp-controller="FellingLicenceApplication"
                                         asp-action="DownloadSupportingDocument"
-                                       asp-route-applicationId="@Model.ApplicationId"
+                                        asp-route-applicationId="@Model.ApplicationId"
                                         asp-route-documentIdentifier="@document.Id">
                                         @document.FileName
                                     </a>
                                 </td>
+                                
+                                <td class="govuk-table__cell" data-sort-value="@document.DocumentPurpose.GetDisplayName()">@document.DocumentPurpose.GetDisplayName()</td>
+
                                 <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">@DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)</td>
 
                                 <td class="govuk-table__cell">

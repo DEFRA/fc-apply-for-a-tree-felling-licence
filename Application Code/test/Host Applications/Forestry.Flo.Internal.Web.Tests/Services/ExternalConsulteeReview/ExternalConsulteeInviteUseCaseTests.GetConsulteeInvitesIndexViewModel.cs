@@ -14,6 +14,7 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Services;
 using Forestry.Flo.Tests.Common;
@@ -41,6 +42,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas;
     private readonly Mock<IUpdateWoodlandOfficerReviewService> _mockUpdateWoodlandOfficerReviewService;
     private readonly Mock<IExternalConsulteeReviewService> _mockExternalConsulteeReviewService;
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private readonly InternalUser _testUser;
     private readonly JsonSerializerOptions _serializerOptions = new()
     {
@@ -100,6 +102,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
             logger,
             _fakeClock,
             _userInviteOptions.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             new RequestContext("test", new RequestUserModel(_testUser.Principal)));
     }
 

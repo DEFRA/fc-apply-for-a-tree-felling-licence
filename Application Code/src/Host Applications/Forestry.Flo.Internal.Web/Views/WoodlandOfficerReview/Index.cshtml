@@ -3,13 +3,9 @@
 }
 @using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
 @using Forestry.Flo.Services.FellingLicenceApplications.Models
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Forestry.Flo.Internal.Web.Infrastructure
 @using Forestry.Flo.Services.FellingLicenceApplications.Extensions
-@using Forestry.Flo.Services.FellingLicenceApplications.Configuration
-@using Microsoft.Extensions.Options
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.WoodlandOfficerReviewModel
 
 @{
@@ -191,6 +187,22 @@
                     </label>
                     <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
                 </div>
+                
+                
+                <div class="govuk-form-group" condition="@Model.Editable(user)">
+                    <button 
+                        data-prevent-double-click="true" 
+                        type="submit" 
+                        asp-action="GenerateLicencePreview" 
+                        asp-route-applicationId="@Model.FellingLicenceApplicationSummary.Id" 
+                        class="govuk-button govuk-button--secondary" 
+                        data-module="govuk-button">
+                        Generate preview document
+                    </button>
+
+                    <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
+                </div>
+
                 
                 <div class="govuk-form-group">
                     <fieldset class="govuk-fieldset">

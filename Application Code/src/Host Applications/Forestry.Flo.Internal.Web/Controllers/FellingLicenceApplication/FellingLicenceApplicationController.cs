@@ -1,10 +1,9 @@
-﻿using Ardalis.GuardClauses;
-using CSharpFunctionalExtensions;
+﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +19,7 @@ public class FellingLicenceApplicationController() : Controller
     [HttpGet]
     public async Task<IActionResult> ApplicationSummary(
         Guid id,
-        [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
+        [FromServices] IFellingLicenceApplicationUseCase applicationUseCase,
         CancellationToken cancellationToken)
     {
         var model = await applicationUseCase.RetrieveFellingLicenceApplicationReviewSummaryAsync(
@@ -44,7 +43,7 @@ public class FellingLicenceApplicationController() : Controller
     [HttpGet]
     public async Task<IActionResult> ReopenWithdrawnApplication(
         Guid id,
-        [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
+        [FromServices] IFellingLicenceApplicationUseCase applicationUseCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -71,7 +70,7 @@ public class FellingLicenceApplicationController() : Controller
     [HttpPost]
     public async Task<IActionResult> ReopenWithdrawnApplication(
         ReopenWithdrawnApplicationModel model,
-        [FromServices] RevertApplicationFromWithdrawnUseCase useCase,
+        [FromServices] IRevertApplicationFromWithdrawnUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);

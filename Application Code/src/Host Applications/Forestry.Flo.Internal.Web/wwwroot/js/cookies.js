@@ -8,8 +8,59 @@
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            $('.govuk-cookie-banner').hide();
-            $('.govuk-notification-banner').show();
+            showOrHideElement('.govuk-cookie-banner', false);
+            showOrHideElement('.govuk-notification-banner', true);
         }
     });
+
+    var acceptButton = document.querySelector(".govuk-button-group button[data-cookie-string]");
+
+    if (acceptButton) {
+        acceptButton.addEventListener("click", function (event) {
+            var now = new Date();
+            var expires = (new Date(now.getFullYear() + 1, 12, 31).toUTCString());
+            document.cookie = '.AspNet.Consent=yes;expires=' + expires + ';path=/;';
+            showOrHideElement('#cookieMessage', false);
+            showOrHideElement('#accepted', true);
+        }, false);
+    }
+
+    var rejectButton = document.querySelector("#rejectButton");
+
+    if (rejectButton) {
+        rejectButton.addEventListener("click", function (event) {
+            var now = new Date();
+            var expires = (new Date(now.getFullYear() + 1, 12, 31).toUTCString());
+            document.cookie = '.AspNet.Consent=no;expires=' + expires + ';path=/;';
+            showOrHideElement('#cookieMessage', false);
+            showOrHideElement('#rejected', true);
+        }, false);
+    }
+
+    var acceptHideCookieButton = document.querySelector('#acceptHideCookieButton');
+
+    if (acceptHideCookieButton) {
+        acceptHideCookieButton.addEventListener("click", function (event) {
+            showOrHideElement('.govuk-cookie-banner', false);
+        }, false);
+    }
+
+    var rejectHideCookieButton = document.querySelector('#rejectHideCookieButton');
+
+    if (rejectHideCookieButton) {
+        rejectHideCookieButton.addEventListener("click", function (event) {
+            showOrHideElement('.govuk-cookie-banner', false);
+        }, false);
+    }
 });
+
+function showOrHideElement($element, show) {
+    const element = $($element);
+    if (show) {
+        element.show();
+        element.prop('aria-hidden', 'false');
+    } else {
+        element.hide();
+        element.prop('aria-hidden', 'true');
+    }
+};

@@ -2,6 +2,7 @@
 using FluentEmail.Core;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
@@ -12,6 +13,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Forestry.Flo.Tests.Common;
@@ -35,6 +37,7 @@ public partial class FellingLicenceApplicationUseCaseTests
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService;
     private readonly Mock<IAgentAuthorityInternalService> _agentAuthorityInternalService;
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas;
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private const string AdminHubAddress = "admin hub address";
 
     private FellingLicenceApplicationUseCase _sut;
@@ -72,6 +75,7 @@ public partial class FellingLicenceApplicationUseCaseTests
             _agentAuthorityService.Object,
             _agentAuthorityInternalService.Object, 
             _getConfiguredFcAreas.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             logger);
     }
 

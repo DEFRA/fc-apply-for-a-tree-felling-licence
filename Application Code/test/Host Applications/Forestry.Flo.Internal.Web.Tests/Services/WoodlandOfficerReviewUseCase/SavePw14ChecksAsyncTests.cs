@@ -131,6 +131,7 @@ public class SavePw14ChecksAsyncTests : WoodlandOfficerReviewUseCaseTestsBase<Pw
             GetConfiguredFcAreas.Object,
             RequestContext,
             ActivityFeedItemProvider.Object,
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<Pw14UseCase>());
     }
 }

@@ -1,22 +1,40 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using AutoFixture;
+﻿using AutoFixture;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Tests.Common;
-using MassTransit.Configuration;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
 public partial class GetWoodlandOfficerReviewServiceTests
 {
+
+    [Theory, AutoData]
+    public async Task GetDesignations_WhenRepositoryThrows(Guid applicationId)
+    {
+        var sut = CreateSut();
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception());
+
+        var result = await sut.GetCompartmentDesignationsAsync(applicationId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
+
+        _fellingLicenceApplicationRepository
+            .VerifyNoOtherCalls();
+    }
 
     [Theory, AutoData]
     public async Task GetDesignations_WhenGetSubmittedCompartmentsFails(Guid applicationId)
@@ -126,7 +144,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
             Assert.Equal(match.SubmittedCompartmentDesignations.Sssi, x.Sssi);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sacs, x.Sacs);
             Assert.Equal(match.SubmittedCompartmentDesignations.Spa, x.Spa);
-            Assert.Equal(match.SubmittedCompartmentDesignations.Ramser, x.Ramser);
+            Assert.Equal(match.SubmittedCompartmentDesignations.Ramsar, x.Ramsar);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sbi, x.Sbi);
             Assert.Equal(match.SubmittedCompartmentDesignations.Other, x.Other);
             Assert.Equal(match.SubmittedCompartmentDesignations.OtherDesignationDetails, x.OtherDesignationDetails);
@@ -188,7 +206,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
             Assert.Equal(match.SubmittedCompartmentDesignations.Sssi, x.Sssi);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sacs, x.Sacs);
             Assert.Equal(match.SubmittedCompartmentDesignations.Spa, x.Spa);
-            Assert.Equal(match.SubmittedCompartmentDesignations.Ramser, x.Ramser);
+            Assert.Equal(match.SubmittedCompartmentDesignations.Ramsar, x.Ramsar);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sbi, x.Sbi);
             Assert.Equal(match.SubmittedCompartmentDesignations.Other, x.Other);
             Assert.Equal(match.SubmittedCompartmentDesignations.OtherDesignationDetails, x.OtherDesignationDetails);

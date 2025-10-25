@@ -215,6 +215,7 @@ public class DesignationsUseCaseUpdateDesignationsTests : WoodlandOfficerReviewU
             GetConfiguredFcAreas.Object,
             AuditingService.Object,
             RequestContext,
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<DesignationsUseCase>());
     }
 }

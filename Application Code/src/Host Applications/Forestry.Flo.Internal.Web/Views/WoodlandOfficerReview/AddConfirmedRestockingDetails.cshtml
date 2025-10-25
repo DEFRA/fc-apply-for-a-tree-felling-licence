@@ -13,7 +13,7 @@
     var initialTotalHectares = rd.RestockingCompartmentTotalHectares ?? Model.ConfirmedFellingRestockingDetails.TotalHectares ?? 0;
 
     // Build a dictionary of CompartmentId and TotalHectares
-    var compartmentHectaresDict = Model.PotentialRestockingCompartments
+    var compartmentHectaresDict = Model.SubmittedFlaPropertyCompartments
         .GroupBy(x => x.SubmittedCompartmentId)
         .Select(g => g.First())
         .ToDictionary(
@@ -24,7 +24,7 @@
     // Serialize to JSON for use in JavaScript
     var compartmentHectaresJson = System.Text.Json.JsonSerializer.Serialize(compartmentHectaresDict);
  
-    var selectListItems = Model.PotentialRestockingCompartments
+    var selectListItems = Model.SubmittedFlaPropertyCompartments
         .Where(x => x.SubmittedCompartmentId != Model.ConfirmedFellingRestockingDetails.SubmittedFlaPropertyCompartmentId)
         .Select(x => new SelectListItem
         {
@@ -36,7 +36,7 @@
     var restockingTypes = rd.OperationType.AllowedRestockingForFellingType(false)
         .Where(x => x != TypeOfProposal.DoNotIntendToRestock);
 
-    // When PotentialRestockingCompartments is empty - exclude Alternative Compartment Types
+    // When SubmittedFlaPropertyCompartments is empty - exclude Alternative Compartment Types
     if (!selectListItems.Any())
     {
         restockingTypes = restockingTypes.Where(x => !x.IsAlternativeCompartmentRestockingType());
@@ -139,7 +139,6 @@
                         <input class="govuk-input govuk-input--width-5"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingDensity"
                                type="number"
-                               autocomplete="stems-per-ha"
                                aria-describedby="stems-per-ha">
                         <div class="govuk-input__suffix" aria-hidden="true">Stems per Ha</div>
                     </div>
@@ -154,7 +153,6 @@
                         <input class="govuk-input govuk-input--width-10"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.NumberOfTrees"
                                type="number"
-                               autocomplete="stems-per-ha"
                                aria-describedby="stems-per-ha">
                         <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
                     </div>

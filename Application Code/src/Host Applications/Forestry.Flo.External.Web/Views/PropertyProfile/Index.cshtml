@@ -37,7 +37,7 @@
     <partial name="Partials/_DataTablesJs" />
     <script src="~/js/compartment-list.js" asp-append-version="true"></script>
         <script type="module" src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js")"></script>
-    <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
+    <script src="https://js.arcgis.com/4.24/"></script>
    <script type="module">
 
         require(["/js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
@@ -51,7 +51,7 @@
 
 @section Css
 {
-<link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
     <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
     <partial name="Partials/_DataTablesCss" />
 }

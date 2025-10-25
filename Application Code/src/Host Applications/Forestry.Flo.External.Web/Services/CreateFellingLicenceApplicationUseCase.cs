@@ -5,6 +5,7 @@ using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Repositories;
@@ -13,6 +14,7 @@ using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Infrastructure;
+using Forestry.Flo.Services.Common.MassTransit.Messages;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
@@ -20,7 +22,6 @@ using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
-using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
@@ -34,7 +35,6 @@ using Forestry.Flo.Services.PropertyProfiles.Entities;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Forestry.Flo.Services.PropertyProfiles.Services;
 using MassTransit;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -76,6 +76,7 @@ public class CreateFellingLicenceApplicationUseCase(
     IPublicRegister publicRegisterService,
     IOptions<EiaOptions> eiaOptions,
     IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
+    IOptions<InternalUserSiteOptions> internalUserSiteOptions,
     IGetConfiguredFcAreas getConfiguredFcAreasService) 
     : ApplicationUseCaseCommon(retrieveUserAccountsService,
         retrieveWoodlandOwnersService,
@@ -125,6 +126,8 @@ public class CreateFellingLicenceApplicationUseCase(
     private readonly IPublicRegister _publicRegisterService = Guard.Against.Null(publicRegisterService);
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
 
+    private readonly InternalUserSiteOptions _internalUserSiteOptions =
+        Guard.Against.Null(internalUserSiteOptions?.Value);
 
     /// <summary>
     /// Returns a woodland owner application list
@@ -183,6 +186,14 @@ public class CreateFellingLicenceApplicationUseCase(
 
                 var woodlandOwnerNameAndAgencyDetails =
                     await GetWoodlandOwnerNameAndAgencyForApplication(applications.Value.First(), cancellationToken);
+                if (woodlandOwnerNameAndAgencyDetails.IsFailure)
+                {
+                    _logger.LogWarning("Unable to retrieve woodland owner name and agency details for user having id of {userId}, " +
+                                       "for the Woodland Owner Id supplied of {woodlandOwnerId}", user.UserAccountId,
+                        woodlandOwnerId);
+                    return Result.Failure<IEnumerable<FellingLicenceApplicationSummary>>(
+                        $"Unable to access woodland owner name and agency details for user with userId of {user.UserAccountId} and woodland owner id supplied of {woodlandOwnerId}");
+                }
 
                 var result = applications.Value.Select(a =>
                 {
@@ -199,8 +210,8 @@ public class CreateFellingLicenceApplicationUseCase(
                             ? profile!.NameOfWood
                             : null,
                         a.WoodlandOwnerId,
-                        woodlandOwnerNameAndAgencyDetails.WoodlandOwnerName,
-                        woodlandOwnerNameAndAgencyDetails.AgencyName);
+                        woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
+                        woodlandOwnerNameAndAgencyDetails.Value.AgencyName);
                 });
 
                 return Result.Success(result);
@@ -1270,6 +1281,8 @@ public class CreateFellingLicenceApplicationUseCase(
     {
         ArgumentNullException.ThrowIfNull(eiaOptions.Value);
 
+
+
         var application = await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
 
         if (application.IsFailure)
@@ -1291,18 +1304,13 @@ public class CreateFellingLicenceApplicationUseCase(
             .Where(x => x.DeletionTimestamp.HasValue == false && x.VisibleToApplicant)
             .ToList();
 
-        var profile = await GetPropertyProfileByIdAsync(application.Value.LinkedPropertyProfile!.PropertyProfileId,
-            user,
-            cancellationToken);
-
-        if (profile.IsFailure)
+        var applicationSummary = await GetApplicationSummaryAsync(application.Value, user, cancellationToken);
+        if (applicationSummary.IsFailure)
         {
-            _logger.LogWarning("unable to get property for application, error : {error}", profile.Error);
+            _logger.LogError("Unable to load application summary for application with id {ApplicationId}", applicationId);
             return Maybe<FellingLicenceApplicationModel>.None;
         }
 
-        var woodlandOwnerNameAndAgencyDetails =
-            await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, cancellationToken);
         var agency = await GetAgencyModelForWoodlandOwnerAsync(application.Value.WoodlandOwnerId, cancellationToken);
 
         var requiresEia = application.Value.ShouldApplicationRequireEia();
@@ -1324,16 +1332,7 @@ public class CreateFellingLicenceApplicationUseCase(
             AgencyId = agency.HasValue ? agency.Value.AgencyId : null,
             HasCaseNotes = activityFeedItems.IsSuccess && !activityFeedItems.Value.IsNullOrEmpty() &&
                            activityFeedItems.Value.Any(),
-            ApplicationSummary = new FellingLicenceApplicationSummary(
-                application.Value.Id,
-                application.Value.ApplicationReference,
-                fellingLicenceStatus,
-                profile.Value.Name,
-                application.Value.LinkedPropertyProfile?.PropertyProfileId ?? Guid.Empty,
-                profile.Value.NameOfWood,
-                application.Value.WoodlandOwnerId,
-                woodlandOwnerNameAndAgencyDetails.WoodlandOwnerName,
-                woodlandOwnerNameAndAgencyDetails.AgencyName),
+            ApplicationSummary = applicationSummary.Value,
             SelectedCompartments = new SelectedCompartmentsModel
             {
                 ApplicationId = application.Value.Id,
@@ -1361,7 +1360,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     ? new DatePart(application.Value.DateReceived.Value.ToLocalTime(), "date-received")
                     : null,
                 ApplicationSource = application.Value.Source,
-                DisplayDateReceived = user.IsFcUser || user.AccountType is AccountTypeExternal.FcUser
+                DisplayDateReceived = user.IsFcUser || user.AccountType is AccountTypeExternal.FcUser,
+                IsForTenYearLicence = application.Value.IsForTenYearLicence
             },
             FellingAndRestockingDetails = new FellingAndRestockingDetails
             {
@@ -1416,6 +1416,16 @@ public class CreateFellingLicenceApplicationUseCase(
                 ApplicationReference = application.Value.ApplicationReference,
                 EiaApplicationExternalUri = eiaOptions.Value.EiaApplicationExternalUri,
                 StepRequiredForApplication = requiresEia
+            },
+            TenYearLicence = new TenYearLicenceApplicationViewModel
+            {
+                ApplicationId = applicationId,
+                ApplicationReference = application.Value.ApplicationReference,
+                FellingLicenceStatus = application.Value.GetCurrentStatus(),
+                IsForTenYearLicence = application.Value.IsForTenYearLicence,
+                WoodlandManagementPlanReference = application.Value.WoodlandManagementPlanReference,
+                StepComplete = application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus,
+                StepRequiredForApplication = user.IsFcUser
             },
             CurrentReviewModel = currentReview.Value.TryGetValue(out var current)
                 ? current
@@ -1545,6 +1555,13 @@ public class CreateFellingLicenceApplicationUseCase(
             return Maybe<FellingAndRestockingPlaybackViewModel>.None;
         }
 
+        var maybeSubmittedProperty = await _fellingLicenceApplicationRepository
+            .GetExistingSubmittedFlaPropertyDetailAsync(applicationID, cancellationToken);
+
+        var submittedCompartments = maybeSubmittedProperty.HasValue
+            ? maybeSubmittedProperty.Value.SubmittedFlaPropertyCompartments
+            : [];
+
         var compartmentDetailList = compartments.ToList();
 
         var controllerName = "FellingLicenceApplication";
@@ -1605,6 +1622,17 @@ public class CreateFellingLicenceApplicationUseCase(
             if (compartmentDetail != null)
             {
                 newFellingCompartmentPlaybackViewModel.CompartmentName = compartmentDetail.CompartmentNumber;
+            }
+
+            if (!application.IsInApplicantEditableState())
+            {
+                var submittedCompartmentDetail = submittedCompartments
+                    .FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
+                if (submittedCompartmentDetail != null)
+                {
+                    newFellingCompartmentPlaybackViewModel.CompartmentName =
+                        submittedCompartmentDetail.CompartmentNumber;
+                }
             }
 
             foreach (var felling in fellings)
@@ -1695,6 +1723,17 @@ public class CreateFellingLicenceApplicationUseCase(
                             restockingCompartmentDetail.CompartmentNumber;
                     }
 
+                    if (!application.IsInApplicantEditableState())
+                    {
+                        var submittedRestockingCompartment = submittedCompartments
+                            .SingleOrDefault(x => x.CompartmentId == restockingCompartmentId);
+                        if (submittedRestockingCompartment != null)
+                        {
+                            newRestockingCompartmentPlaybackViewModel.CompartmentName =
+                                submittedRestockingCompartment.CompartmentNumber;
+                        }
+                    }
+
                     var restockings = felling.ProposedRestockingDetails
                         .Where(p => p.PropertyProfileCompartmentId == restockingCompartmentId).ToList();
 
@@ -1750,6 +1789,18 @@ public class CreateFellingLicenceApplicationUseCase(
         });
 
         fellingAndRestockingPlaybackViewModel.GIS = JsonConvert.SerializeObject(gisCompartment);
+
+        if (!application.IsInApplicantEditableState())
+        {
+            var submittedCompartmentGisDetails = submittedCompartments.Select(x => new
+            {
+                Id = x.CompartmentId,
+                x.GISData,
+                DisplayName = x.CompartmentNumber,
+                Selected = true
+            });
+            fellingAndRestockingPlaybackViewModel.GIS = JsonConvert.SerializeObject(submittedCompartmentGisDetails);
+        }
 
         return Maybe<FellingAndRestockingPlaybackViewModel>.From(fellingAndRestockingPlaybackViewModel);
     }
@@ -1865,6 +1916,13 @@ public class CreateFellingLicenceApplicationUseCase(
 
         var woodlandOwnerNameAndAgencyDetails =
             await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, cancellationToken);
+        if (woodlandOwnerNameAndAgencyDetails.IsFailure)
+        {
+            _logger.LogWarning("unable to get woodland owner details for application, error : {error}",
+                woodlandOwnerNameAndAgencyDetails.Error);
+            return Maybe<FellingAndRestockingDetailViewModel>.None;
+        }
+
 
         return Maybe<FellingAndRestockingDetailViewModel>.From(
             new FellingAndRestockingDetailViewModel
@@ -1880,8 +1938,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     result.Value.PropertyProfileId,
                     profile.Value.NameOfWood,
                     application.Value.WoodlandOwnerId,
-                    woodlandOwnerNameAndAgencyDetails.WoodlandOwnerName,
-                    woodlandOwnerNameAndAgencyDetails.AgencyName)
+                    woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
+                    woodlandOwnerNameAndAgencyDetails.Value.AgencyName)
             });
     }
 
@@ -2934,6 +2992,9 @@ public class CreateFellingLicenceApplicationUseCase(
 
                 if (internalUsers.IsSuccess)
                 {
+                    var internalSiteApplicationLink = 
+                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
+                    
                     foreach (var internalUser in internalUsers.Value)
                     {
                         // Send a notification
@@ -2947,7 +3008,7 @@ public class CreateFellingLicenceApplicationUseCase(
                             ApplicationReference = updateResult.Value.ApplicationReference,
                             Name = recipient.Name!,
                             PropertyName = submittedFlaPropertyDetail.Name,
-                            ViewApplicationURL = linkToApplication,
+                            ViewApplicationURL = internalSiteApplicationLink,
                             AdminHubFooter = adminHubFooter,
                             ApplicationId = applicationId
                         };
@@ -2996,8 +3057,10 @@ public class CreateFellingLicenceApplicationUseCase(
 
             if (!isResubmission)
             {
+                var internalSiteApplicationLink =
+                    $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
                 await _busControl.Publish(new AssignWoodlandOfficerMessage(
-                    linkToApplication,
+                    internalSiteApplicationLink,
                     updateResult.Value.WoodlandOwnerId,
                     user.UserAccountId.Value,
                     user.IsFcUser,
@@ -3330,12 +3393,15 @@ public class CreateFellingLicenceApplicationUseCase(
                         internalUser.Email,
                         internalUser.FullName(false));
 
+                    var internalSiteApplicationLink =
+                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
+
                     var notificationModel = new ApplicationWithdrawnConfirmationDataModel
                     {
                         ApplicationReference = fellingLicenceApplication.ApplicationReference,
                         Name = recipient.Name!,
                         PropertyName = propertyResult.Value.Name,
-                        ViewApplicationURL = linkToApplication,
+                        ViewApplicationURL = internalSiteApplicationLink,
                         AdminHubFooter = adminHubFooter,
                         ApplicationId = applicationId
                     };
@@ -3624,9 +3690,9 @@ public class CreateFellingLicenceApplicationUseCase(
         return null;
     }
 
-    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId)
+    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId, CancellationToken cancellationToken)
     {
-        return await _fellingLicenceApplicationRepository.GetApplicationStepStatus(applicationId);
+        return await _fellingLicenceApplicationRepository.GetApplicationStepStatus(applicationId, cancellationToken);
     }
 
     public bool FellingOperationRequiresStocking(FellingOperationType fellingOperationType)

@@ -20,9 +20,12 @@ public class AmendConfirmedRestockingDetailsViewModel : WoodlandOfficerReviewMod
     public required IndividualConfirmedRestockingDetailModel ConfirmedFellingRestockingDetails { get; set; }
 
     /// <summary>
-    /// Gets and sets a collection of potential restocking compartments.
+    /// Gets or sets a collection of submitted felling licence application property compartments.
     /// </summary>
-    public required List<PotentialRestockingCompartments> PotentialRestockingCompartments { get; set; }
+    /// <remarks>
+    /// This is the entirety of compartments submitted with the application.
+    /// </remarks>
+    public List<SubmittedFlaPropertyCompartment> SubmittedFlaPropertyCompartments { get; set; } = [];
 
     /// <summary>
     /// Gets a dictionary of species models keyed by species code, representing the species included in the confirmed felling details.
@@ -53,4 +56,12 @@ public class AmendConfirmedRestockingDetailsViewModel : WoodlandOfficerReviewMod
     }
 }
 
-public record PotentialRestockingCompartments(Guid SubmittedCompartmentId, double CompartmentArea, string Label, Guid PropertyCompartmentId);
+/// <summary>
+/// Represents a submitted FLA property compartment associated with a felling licence application. 
+/// </summary>
+public record SubmittedFlaPropertyCompartment(
+    Guid SubmittedCompartmentId,
+    double CompartmentArea,
+    string Label,
+    Guid PropertyCompartmentId,
+    string? GisData);

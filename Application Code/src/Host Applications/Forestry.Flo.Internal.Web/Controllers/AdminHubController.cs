@@ -1,7 +1,7 @@
 ﻿using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.AdminHub;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.AdminHub;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.AdminHubs.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +14,7 @@ public class AdminHubController : Controller
 {
     [HttpGet]
     public async Task<IActionResult> AdminHubSummary(
-        [FromServices] ManageAdminHubUseCase usecase,
+        [FromServices] IManageAdminHubUseCase usecase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -31,7 +31,7 @@ public class AdminHubController : Controller
     [HttpPost]
     public async Task<IActionResult> AddAdminOfficer(
         ViewAdminHubModel model,
-        [FromServices] ManageAdminHubUseCase usecase,
+        [FromServices] IManageAdminHubUseCase usecase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -51,7 +51,7 @@ public class AdminHubController : Controller
     [HttpPost]
     public async Task<IActionResult> RemoveAdminOfficer(
         ViewAdminHubModel model,
-        [FromServices] ManageAdminHubUseCase usecase,
+        [FromServices] IManageAdminHubUseCase usecase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -71,7 +71,7 @@ public class AdminHubController : Controller
     [HttpPost]
     public async Task<IActionResult> EditAdminHubDetails(
         ViewAdminHubModel model,
-        [FromServices] ManageAdminHubUseCase usecase,
+        [FromServices] IManageAdminHubUseCase usecase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);

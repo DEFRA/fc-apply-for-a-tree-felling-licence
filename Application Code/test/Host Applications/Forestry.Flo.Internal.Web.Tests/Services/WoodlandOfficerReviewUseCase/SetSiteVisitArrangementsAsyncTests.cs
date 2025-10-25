@@ -138,6 +138,7 @@ public class SetSiteVisitArrangementsAsyncTests : WoodlandOfficerReviewUseCaseTe
             MockRemoveDocumentService.Object,
             _foresterServices.Object,
             RequestContext,
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<SiteVisitUseCase>());
     }
 }

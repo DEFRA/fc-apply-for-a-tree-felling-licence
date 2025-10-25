@@ -2,6 +2,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.AccountAdministration;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
@@ -15,7 +16,7 @@ namespace Forestry.Flo.Internal.Web.Services.AccountAdministration;
 /// <summary>
 /// Handles use case for an account administrator to amend external user accounts.
 /// </summary>
-public class AmendExternalUserUseCase
+public class AmendExternalUserUseCase : IAmendExternalUserUseCase
 {
     private readonly ILogger<AmendExternalUserUseCase> _logger;
     private readonly IAmendUserAccounts _amendExternalAccounts;

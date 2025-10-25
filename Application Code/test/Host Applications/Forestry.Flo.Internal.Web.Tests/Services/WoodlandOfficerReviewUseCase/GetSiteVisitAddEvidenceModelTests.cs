@@ -239,6 +239,7 @@ public class GetSiteVisitAddEvidenceModelTests : WoodlandOfficerReviewUseCaseTes
             MockRemoveDocumentService.Object,
             _foresterServices.Object,
             RequestContext,
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<SiteVisitUseCase>());
     }
 }

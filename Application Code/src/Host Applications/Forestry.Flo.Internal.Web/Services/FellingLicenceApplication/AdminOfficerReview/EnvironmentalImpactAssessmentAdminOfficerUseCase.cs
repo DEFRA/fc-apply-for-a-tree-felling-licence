@@ -3,6 +3,7 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.AdminOfficerReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -11,6 +12,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Models;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
@@ -36,6 +38,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
     IUpdateFellingLicenceApplication updateFellingLicenceApplication,
     ISendNotifications sendNotifications,
     IOptions<EiaOptions> eiaOptions,
+    IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
     IClock clock,
     RequestContext requestContext)
     : AdminOfficerReviewUseCaseBase(internalUserAccountService,
@@ -48,18 +51,10 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
         auditService,
         agentAuthorityService,
         getConfiguredFcAreasService,
-        requestContext)
+        woodlandOfficerReviewSubStatusService,
+        requestContext), IEnvironmentalImpactAssessmentAdminOfficerUseCase
 {
-
-    /// <summary>
-    /// Retrieves the Environmental Impact Assessment (EIA) details for a specified felling licence application.
-    /// </summary>
-    /// <param name="applicationId">The unique identifier of the felling licence application.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>
-    /// A <see cref="Result{EnvironmentalImpactAssessmentModel}"/> containing the EIA model if successful,
-    /// or a failure result with an error message if the application or EIA cannot be retrieved.
-    /// </returns>
+    /// <inheritdoc />
     public async Task<Result<EnvironmentalImpactAssessmentModel>> GetEnvironmentalImpactAssessmentAsync(
         Guid applicationId,
         CancellationToken cancellationToken)
@@ -109,18 +104,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
         CancellationToken cancellationToken) =>
         GetFellingLicenceDetailsAsync(applicationId, cancellationToken);
 
-
-    /// <summary>
-    /// Confirms whether the attached EIA forms are correct for the specified application.
-    /// Updates the Environmental Impact Assessment record as an Admin Officer.
-    /// If the forms are not correct, sends a notification to the applicant and rolls back the transaction on failure.
-    /// </summary>
-    /// <param name="viewModel">The view model containing details about the EIA forms and their correctness.</param>
-    /// <param name="performingUserId">The ID of the user performing the confirmation.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>
-    /// A <see cref="Result"/> indicating success or failure of the confirmation and notification process.
-    /// </returns>
+    /// <inheritdoc />
     public async Task<Result> ConfirmAttachedEiaFormsAreCorrectAsync(
         EiaWithFormsPresentViewModel viewModel,
         Guid performingUserId,
@@ -227,17 +211,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
         return Result.Success();
     }
 
-    /// <summary>
-    /// Confirms whether the EIA forms have been received for the specified application.
-    /// Updates the Environmental Impact Assessment record as an Admin Officer and audits the operation.
-    /// If the forms have not been received, triggers a notification and handles transaction rollback on failure.
-    /// </summary>
-    /// <param name="viewModel">The view model containing EIA form receipt details.</param>
-    /// <param name="performingUserId">The ID of the user performing the confirmation.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>
-    /// A <see cref="Result"/> indicating success or failure of the confirmation and notification process.
-    /// </returns>
+    /// <inheritdoc />
     public async Task<Result> ConfirmEiaFormsHaveBeenReceivedAsync(
         EiaWithFormsAbsentViewModel viewModel,
         Guid performingUserId,
@@ -342,6 +316,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
         return Result.Success();
     }
 
+    /// <inheritdoc />
     public Task<Result<List<UserAccountModel>>> RetrieveUserAccountsByIdsAsync(
         List<Guid> ids,
         CancellationToken cancellationToken) =>

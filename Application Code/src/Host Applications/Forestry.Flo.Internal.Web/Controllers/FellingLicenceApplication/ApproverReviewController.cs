@@ -4,13 +4,15 @@ using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Text;
+using MassTransit;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -19,23 +21,23 @@ namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 public class ApproverReviewController : Controller
 {
     private readonly ILogger<ApproverReviewController> _logger;
+    private readonly IApproverReviewUseCase _approverReviewUseCase;
 
-    /// <summary>
-    /// Create a new instance of <see cref="ApproverReviewController"/>.
-    /// </summary>
-    /// <param name="logger">A logging instance.</param>
-    public ApproverReviewController(ILogger<ApproverReviewController> logger)
+    public ApproverReviewController(
+        IApproverReviewUseCase approverReviewUseCase,
+        ILogger<ApproverReviewController> logger)
     {
+        ArgumentNullException.ThrowIfNull(approverReviewUseCase);
+        _approverReviewUseCase = approverReviewUseCase;
         _logger = logger ?? new NullLogger<ApproverReviewController>();
     }
 
     [HttpGet]
     public async Task<IActionResult> Index(
         Guid id,
-        [FromServices] ApproverReviewUseCase applicationUseCase,
         CancellationToken cancellationToken)
     {
-        var model = await applicationUseCase.RetrieveApproverReviewAsync(
+        var model = await _approverReviewUseCase.RetrieveApproverReviewAsync(
             id,
             new InternalUser(User),
             cancellationToken);
@@ -75,7 +77,7 @@ public class ApproverReviewController : Controller
     [HttpPost]
     public async Task<IActionResult> SaveApproverReview(
         ApproverReviewSummaryModel model,
-        [FromServices] ApproverReviewUseCase useCase,
+        [FromServices] IApproverReviewUseCase useCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Saving approver review for application with ID {ApplicationId}", model.Id);
@@ -135,8 +137,8 @@ public class ApproverReviewController : Controller
     [HttpPost]
     public async Task<IActionResult> SaveGeneratePdfPreview(
         ApproverReviewSummaryModel model,
-        [FromServices] ApproverReviewUseCase useCase,
-        [FromServices] GeneratePdfApplicationUseCase generatePdfApplicationUseCase,
+        [FromServices] IApproverReviewUseCase useCase,
+        [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Saving approver review and generating PDF preview for application with ID {ApplicationId}", model.Id);
@@ -144,7 +146,7 @@ public class ApproverReviewController : Controller
         var user = new InternalUser(User);
 
         var resultPdfGenerated =
-            await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(user, model.Id, false, cancellationToken);
+            await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(user.UserAccountId!.Value, model.Id, cancellationToken);
 
         if (resultPdfGenerated.IsFailure)
         {
@@ -159,7 +161,7 @@ public class ApproverReviewController : Controller
     public async Task<IActionResult> ApproveRefuseApplicationConfirmation(
         Guid id,
         FellingLicenceStatus requestedStatus,
-        [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
+        [FromServices] IFellingLicenceApplicationUseCase applicationUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Showing confirmation page to change application status for application with ID {ApplicationId} to {RequestedStatus}", id, requestedStatus);
@@ -214,9 +216,9 @@ public class ApproverReviewController : Controller
 
     public async Task<IActionResult> RefuseApplication(
         Guid id,
-        [FromServices] ApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
-        [FromServices] GeneratePdfApplicationUseCase generatePdfApplicationUseCase,
-        [FromServices] RemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
+        [FromServices] IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
+        [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
+        [FromServices] IRemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Changing application status to Refused for application with ID {ApplicationId}", id);
@@ -225,15 +227,14 @@ public class ApproverReviewController : Controller
             FellingLicenceStatus.Refused,
             approvalRefusalUseCase,
             generatePdfApplicationUseCase,
-            removeSupportingDocumentUseCase,
             cancellationToken);
     }
 
     public async Task<IActionResult> ApproveApplication(
         Guid id,
-        [FromServices] ApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
-        [FromServices] GeneratePdfApplicationUseCase generatePdfApplicationUseCase,
-        [FromServices] RemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
+        [FromServices] IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
+        [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
+        [FromServices] IRemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Changing application status to Approved for application with ID {ApplicationId}", id);
@@ -242,15 +243,14 @@ public class ApproverReviewController : Controller
             FellingLicenceStatus.Approved,
             approvalRefusalUseCase,
             generatePdfApplicationUseCase,
-            removeSupportingDocumentUseCase,
             cancellationToken);
     }
 
     public async Task<IActionResult> ReferApplicationToLocalAuthority(
         Guid id,
-        [FromServices] ApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
-        [FromServices] GeneratePdfApplicationUseCase generatePdfApplicationUseCase,
-        [FromServices] RemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
+        [FromServices] IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
+        [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
+        [FromServices] IRemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Changing application status to ReferredToLocalAuthority for application with ID {ApplicationId}", id);
@@ -259,13 +259,12 @@ public class ApproverReviewController : Controller
             FellingLicenceStatus.ReferredToLocalAuthority,
             approvalRefusalUseCase,
             generatePdfApplicationUseCase,
-            removeSupportingDocumentUseCase,
             cancellationToken);
     }
 
     async Task<UnitResult<Dictionary<string, string>>> ValidateAndSaveApproverReview(
         ApproverReviewSummaryModel model,
-        ApproverReviewUseCase useCase,
+        IApproverReviewUseCase useCase,
         InternalUser user,
         CancellationToken cancellationToken)
     {
@@ -367,9 +366,8 @@ public class ApproverReviewController : Controller
     private async Task<IActionResult> ChangeApplicationStatus(
         Guid id,
         FellingLicenceStatus requestedStatus,
-        ApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
-        GeneratePdfApplicationUseCase generatePdfApplicationUseCase,
-        RemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
+        IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
+        IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Changing application status for application with ID {ApplicationId} to {RequestedStatus}", id, requestedStatus);
@@ -383,8 +381,22 @@ public class ApproverReviewController : Controller
             return RedirectToAction("Index", new { id });
         }
 
-        var generatedLicenceId = Guid.Empty;
-        if (requestedStatus == FellingLicenceStatus.Approved)
+        await using var transaction = await _approverReviewUseCase.BeginTransactionAsync(cancellationToken);
+
+        var result = await approvalRefusalUseCase.ApproveOrRefuseOrReferApplicationAsync(
+            internalUser,
+            id,
+            requestedStatus,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            this.AddErrorMessage($"Application status could not be updated to {requestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)}, please try again.");
+            return RedirectToAction("Index", new { id });
+        }
+
+        if (requestedStatus is FellingLicenceStatus.Approved)
         {
             _logger.LogDebug("Generating licence document for application with ID {ApplicationId} as it is being approved", id);
 
@@ -396,62 +408,29 @@ public class ApproverReviewController : Controller
 
             if (updateResult.IsFailure)
             {
+                await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError("Failed to update approver ID for application with ID {ApplicationId}. Error: {Error}", id, updateResult.Error);
                 this.AddErrorMessage("Unable to update the approver id for the application");
                 return RedirectToAction("Index", new { id });
             }
 
-            // generate a final licence document for applications being approved
+            // generate a final licence document for the approved application
+            // this cannot be asynchronous, as the approval should not complete if the document generation fails
             var resultPdfGenerated =
-                await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(internalUser, id, true, cancellationToken);
+                await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(internalUser.UserAccountId.Value, id, cancellationToken);
             if (resultPdfGenerated.IsFailure)
             {
+                await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError("Failed to generate licence document for application with ID {ApplicationId}. Error: {Error}", id, resultPdfGenerated.Error);
                 this.AddErrorMessage("Unable to generate the licence document for the application");
                 return RedirectToAction("Index", new { id });
             }
-            generatedLicenceId = resultPdfGenerated.Value.Id;
         }
 
-        var result = await approvalRefusalUseCase.ApproveOrRefuseOrReferApplicationAsync(
-            internalUser,
-            id,
-            requestedStatus,
-            cancellationToken);
-
-        if (result.IsFailure)
-        {
-            _logger.LogError("Failed to change application status for application with ID {ApplicationId} to {RequestedStatus}. Errors: {Errors}", id, requestedStatus, result.SubProcessFailures);
-            var resultRemoveDocument = await removeSupportingDocumentUseCase.RemoveFellingLicenceDocument(internalUser, id, generatedLicenceId, cancellationToken);
-            if (resultRemoveDocument.IsFailure)
-            {
-                _logger.LogError("Failed to remove invalid approved licence document for application with ID {ApplicationId}. Error: {Error}", id, resultRemoveDocument.Error);
-                this.AddErrorMessage("Could not remove the invalid approved licence document.");
-            }
-
-            if (requestedStatus == FellingLicenceStatus.Approved)
-            {
-                var revertApproverIdResult = await approvalRefusalUseCase.UpdateApproverIdAsync(
-                    id,
-                    null,
-                    cancellationToken);
-
-                if (revertApproverIdResult.IsFailure)
-                {
-                    _logger.LogError("Failed to revert approver ID for application with ID {ApplicationId}. Error: {Error}", id, revertApproverIdResult.Error);
-                    this.AddErrorMessage("Approver ID set on application which failed to be approved");
-                }
-            }
-            
-            this.AddErrorMessage($"Application status could not be updated to {requestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)}, please try again.");
-            return RedirectToAction("Index", new { id });
-        }
+        await transaction.CommitAsync(cancellationToken);
 
         if (result is { IsSuccess: true, SubProcessFailures.Count: > 0 })
         {
-            //TODO: awaiting the design for informing user, of successful transition, but non-blocking errors
-            //were encountered, so do something simplistic for now.
-
             _logger.LogWarning("Application with ID {ApplicationId} status changed to {RequestedStatus} with warnings: {Warnings}", id, requestedStatus, result.SubProcessFailures);
 
             var warnings = new StringBuilder();
@@ -479,7 +458,7 @@ public class ApproverReviewController : Controller
                 this.AddUserGuide("One or more issues occured", warnings.ToString());
             }
         }
-        
+
         this.AddConfirmationMessage($"Application status successfully set to {requestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)}.");
         return RedirectToAction("Index", new { id });
     }

@@ -1,7 +1,5 @@
 ﻿@using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Forestry.Flo.Services.FellingLicenceApplications.Models
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.AmendConfirmedRestockingDetailsViewModel;
@@ -13,7 +11,7 @@
     var initialTotalHectares = rd.RestockingCompartmentTotalHectares ?? Model.ConfirmedFellingRestockingDetails.TotalHectares ?? 0;
 
     // Build a dictionary of CompartmentId and TotalHectares
-    var compartmentHectaresDict = Model.PotentialRestockingCompartments
+    var compartmentHectaresDict = Model.SubmittedFlaPropertyCompartments
         .GroupBy(x => x.SubmittedCompartmentId)
         .Select(g => g.First())
         .ToDictionary(
@@ -24,7 +22,7 @@
     // Serialize to JSON for use in JavaScript
     var compartmentHectaresJson = System.Text.Json.JsonSerializer.Serialize(compartmentHectaresDict);
  
-    var selectListItems = Model.PotentialRestockingCompartments
+    var selectListItems = Model.SubmittedFlaPropertyCompartments
         .Where(x => x.SubmittedCompartmentId != Model.ConfirmedFellingRestockingDetails.SubmittedFlaPropertyCompartmentId)
         .Select(x => new SelectListItem
         {
@@ -36,7 +34,7 @@
     var restockingTypes = rd.OperationType.AllowedRestockingForFellingType(false)
         .Where(x => x != TypeOfProposal.DoNotIntendToRestock);
 
-    // When PotentialRestockingCompartments is empty - exclude Alternative Compartment Types
+    // When SubmittedFlaPropertyCompartments is empty - exclude Alternative Compartment Types
     if (!selectListItems.Any())
     {
         restockingTypes = restockingTypes.Where(x => !x.IsAlternativeCompartmentRestockingType());

@@ -6,6 +6,10 @@ define(["require",
     "esri/views/MapView",
     "esri/config",
     "esri/Basemap",
+    "esri/layers/WMSLayer",
+    "esri/layers/WMTSLayer",
+    "esri/layers/GraphicsLayer",
+    "esri/widgets/BasemapGallery",
     "/js/mapping/fcconfig.js?v=" + Date.now(),
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "esri/layers/GraphicsLayer",
@@ -13,10 +17,16 @@ define(["require",
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
     "/js/mapping/tokml.js?v=" + Date.now(),
-    "/js/mapping/shp-write.js?v=" + Date.now()
+    "/js/mapping/shp-write.js?v=" + Date.now(),
+    "esri/widgets/Expand"
 
 ],
-    function (require, exports, Map, MapView, config, BaseMap, fcconfig, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite) {
+    function (require, exports, Map, MapView, config, BaseMap,
+        WMSLayer,
+        WMTSLayer,
+        GraphicsLayer,
+        BasemapToggle,
+        fcconfig, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite, Expand) {
         var MapCompartmentSelection = /** @class */ (function () {
             MapCompartmentSelection.prototype.map;
             MapCompartmentSelection.prototype.view;
@@ -49,8 +59,106 @@ define(["require",
 
                 this.commonTools = new Maps_common(this.view);
 
-                this.view.when(this.loadGIS.bind(this)).then(this.GetStartingPoint.bind(this)).then(this.wireUpEvents.bind(this));
+                this.view.when(this.loadGIS.bind(this))
+                    .then(this.GetStartingPoint.bind(this))
+                    .then(this.wireUpEvents.bind(this))
+                    .then(this.SetUpWidgets.bind(this))
+                    .then(this.addWatermark.bind(this));
             }
+
+            MapCompartmentSelection.prototype.SetUpWidgets = function () {
+                var that = this;
+
+
+                that.map.basemap.title = "OS Map";
+
+                var wmsLayer = new WMSLayer(fcconfig.wmsLayer);
+
+                var wmsBasemap = new Basemap({
+                    baseLayers: [wmsLayer],
+                    title: fcconfig.wmsLayerName,
+                    id: "wmsBasemap"
+                });
+
+
+                const basemapToggleWidget = new BasemapToggle({
+                    view: this.view,
+                    source: [that.map.basemap, wmsBasemap]
+                });
+
+                const expandLayer = new Expand({
+                    expandIconClass: "esri-icon-basemap",
+                    view: this.view,
+                    content: basemapToggleWidget
+                });
+
+                this.view.ui.add(expandLayer, { position: "top-left" });
+
+
+                return Promise.resolve();
+            }
+
+            MapCompartmentSelection.prototype.addWatermark = function () {
+                // Create a new GraphicsLayer for the watermark
+                const watermarkLayer = new GraphicsLayer({
+                    visible: false,
+                    id: "watermarkLayer",
+                });
+
+                // Define the text symbol for the watermark
+                const textSymbol = fcconfig.BlueSkyTextSymbol;
+
+                //Function to update the watermark positions
+                const updateWatermarkPositions = () => {
+                    const extent = this.view.extent;
+                    const width = extent.width;
+                    const height = extent.height;
+                    const spacing = Math.min(width, height) / 4;
+                    const spatialReference = this.view.spatialReference;
+
+                    // Clear existing graphics
+                    watermarkLayer.removeAll();
+
+                    // Create watermark graphics at regular intervals
+                    for (let x = extent.xmin; x < extent.xmax; x += spacing) {
+                        for (let y = extent.ymin; y < extent.ymax; y += spacing) {
+                            const point = {
+                                type: "point",
+                                x: x,
+                                y: y,
+                                spatialReference: spatialReference
+                            };
+
+                            const watermarkGraphic = new Graphic({
+                                geometry: point,
+                                symbol: textSymbol
+                            });
+
+                            watermarkLayer.add(watermarkGraphic);
+                        }
+                    }
+                };
+
+                // Add the watermark layer to the map
+                this.map.add(watermarkLayer);
+
+                // Update the watermark positions initially and whenever the view changes
+                this.view.watch("stationary", (newValue) => {
+                    if (newValue) {
+                        updateWatermarkPositions();
+                    }
+                });
+                this.view.watch("extent", updateWatermarkPositions);
+
+                // Watch for basemap changes and toggle watermark visibility
+                this.view.watch("map.basemap", (newBasemap) => {
+                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK) {
+                        watermarkLayer.visible = true;
+                    } else {
+                        watermarkLayer.visible = false;
+                    }
+                });
+            };
 
             MapCompartmentSelection.prototype.wireUpEvents = function () {
                 var _this = this;
@@ -120,9 +228,7 @@ define(["require",
                         const options = {
                             folder: 'shapefile',
                             types: {
-                                point: 'points',
                                 polygon: 'polygons',
-                                polyline: 'lines'
                             }
                         };
                         const zipData = shpwrite.zip(jsonData, options);
@@ -138,17 +244,7 @@ define(["require",
 
             MapCompartmentSelection.prototype.UpdateGraphic = function (graphic, value) {
                 graphic.attributes.selected = value;
-                switch (graphic.geometry.type) {
-                    case "polyline":
-                        graphic.symbol = (graphic.attributes.selected) ? fcconfig.selectedLineSymbol : fcconfig.activeLineSymbol;
-                        break;
-                    case "point":
-                        graphic.symbol = (graphic.attributes.selected) ? fcconfig.selectedPointSymbol : fcconfig.activePointSymbol;
-                        break;
-                    default:
-                        graphic.symbol = (graphic.attributes.selected) ? fcconfig.selectedPolygonSymbol : fcconfig.activePolygonSymbol;
-                        break;
-                }
+                graphic.symbol = (graphic.attributes.selected) ? fcconfig.selectedPolygonSymbol : fcconfig.activePolygonSymbol;
             }
 
             MapCompartmentSelection.prototype.loadGIS = function () {
@@ -175,21 +271,6 @@ define(["require",
                                 spatialReference: item.GISData.spatialReference.wkid,
                             };
                             workingSymbol = (item.Selected) ? fcconfig.selectedPolygonSymbol : fcconfig.activePolygonSymbol;
-                        } else if (item.GISData.paths) {
-                            geometry = {
-                                type: "polyline",
-                                paths: item.GISData.paths,
-                                spatialReference: item.GISData.spatialReference.wkid,
-                            }
-                            workingSymbol = (item.Selected) ? fcconfig.selectedLineSymbol : fcconfig.activeLineSymbol;
-                        } else {
-                            geometry = {
-                                type: "point",
-                                longitude: item.GISData.x,
-                                latitude: item.GISData.y,
-                                spatialReference: item.GISData.spatialReference.wkid,
-                            };
-                            workingSymbol = (item.Selected) ? fcconfig.selectedPointSymbol : fcconfig.activePointSymbol;
                         }
                         if (geometry) {
                             try {
@@ -223,32 +304,14 @@ define(["require",
             };
 
             MapCompartmentSelection.prototype.getLabelGrapic = function (shapeGraphic) {
-                var resx;
                 var labelSymbol = JSON.parse(JSON.stringify(fcconfig.activeTextSymbol));
                 labelSymbol.text = shapeGraphic.attributes.DisplayName;
 
-                if (shapeGraphic.geometry.type === "point") {
-                    labelSymbol.xoffset = fcconfig.pointOffset.xoffset;
-                    labelSymbol.yoffset = fcconfig.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry,
-                        symbol: labelSymbol,
-                    });
-                }
-                else if (shapeGraphic.geometry.type === "polyline") {
-                    labelSymbol.xoffset = fcconfig.pointOffset.xoffset;
-                    labelSymbol.yoffset = fcconfig.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.extent.center,
-                        symbol: labelSymbol,
-                    });
-                }
-                else {
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.centroid,
-                        symbol: labelSymbol,
-                    });
-                }
+                const resx = new Graphic({
+                    geometry: shapeGraphic.geometry.centroid,
+                    symbol: labelSymbol,
+                });
+
                 if (!resx.attributes) {
                     resx.attributes = {
                         shapeID: shapeGraphic.uid,
@@ -268,13 +331,7 @@ define(["require",
             };
 
             MapCompartmentSelection.prototype.getShapeType = function (value) {
-                let result = "Polygon";
-                if (value === "point") {
-                    result = "Point";
-                } else if (value === "polyline") {
-                    result = "LineString";
-                }
-                return result;
+                return "Polygon";
             }
 
             MapCompartmentSelection.prototype.getCoordinates = function (graphic) {
@@ -283,19 +340,11 @@ define(["require",
                     result = graphic.geometry.rings.map((ring) =>
                         ring.map((point) => proj4('EPSG:27700', 'EPSG:4326', point))
                     );
-                } else if (graphic.geometry.type === "polyline") {
-                    if (graphic.geometry.paths.length < 1) {
-                        return [[]];
-                    }
-                    //Dropping to the first line as the rings struggle in GEOJSON
-                    result = graphic.geometry.paths[0].map((ring) => proj4('EPSG:27700', 'EPSG:4326', ring));
-                } else {
-                    result = proj4("EPSG:27700", "EPSG:4326", [graphic.geometry.x, graphic.geometry.y]);
-                }
+                } 
                 return result;
             }
 
-            MapCompartmentSelection.prototype.getJsonData = function() {
+            MapCompartmentSelection.prototype.getJsonData = function () {
                 const jsonData = {
                     type: "FeatureCollection",
                     features: []

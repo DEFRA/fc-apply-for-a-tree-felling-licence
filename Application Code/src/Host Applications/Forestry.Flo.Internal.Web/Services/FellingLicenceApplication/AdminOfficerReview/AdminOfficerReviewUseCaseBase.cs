@@ -1,9 +1,10 @@
-﻿using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.InternalUsers.Services;
-using Forestry.Flo.Services.Applicants.Services;
+﻿using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
+using Forestry.Flo.Services.InternalUsers.Services;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 
@@ -26,6 +27,7 @@ public class AdminOfficerReviewUseCaseBase : FellingLicenceApplicationUseCaseBas
         IAuditService<AdminOfficerReviewUseCaseBase> auditService,
         IAgentAuthorityService agentAuthorityService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         RequestContext requestContext)
         : base(
             internalUserAccountService, 
@@ -33,7 +35,8 @@ public class AdminOfficerReviewUseCaseBase : FellingLicenceApplicationUseCaseBas
             fellingLicenceApplicationInternalRepository, 
             woodlandOwnerService, 
             agentAuthorityService,
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService, 
+            woodlandOfficerReviewSubStatusService)
     {
         ArgumentNullException.ThrowIfNull(updateAdminOfficerReviewService);
         ArgumentNullException.ThrowIfNull(logger);

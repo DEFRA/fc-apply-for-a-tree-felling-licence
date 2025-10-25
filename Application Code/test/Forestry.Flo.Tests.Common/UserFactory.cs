@@ -94,7 +94,8 @@ public static class UserFactory
         string? username = null,
         Services.Common.User.AccountTypeInternal accountTypeInternal =
             Services.Common.User.AccountTypeInternal.FcStaffMember,
-        AuthenticationProvider? provider = null)
+        AuthenticationProvider? provider = null,
+        bool canApprove = false)
     {
         if (string.IsNullOrWhiteSpace(identityProviderId))
             identityProviderId = Guid.NewGuid().ToString();
@@ -128,6 +129,7 @@ public static class UserFactory
             if (string.IsNullOrWhiteSpace(username))
                 username = Guid.NewGuid().ToString();
             localClaims.Add(new Claim(FloClaimTypes.UserName, username));
+            localClaims.Add(new Claim(FloClaimTypes.UserCanApproveApplications, canApprove.ToString()));
 
             var localIdentity = new ClaimsIdentity(localClaims, FloClaimTypes.ClaimsIdentityAuthenticationType);
             result.AddIdentity(localIdentity);

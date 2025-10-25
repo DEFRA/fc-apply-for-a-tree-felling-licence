@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -14,6 +15,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
@@ -29,14 +31,16 @@ public class Pw14UseCase(
     IAgentAuthorityService agentAuthorityService,
     IGetConfiguredFcAreas getConfiguredFcAreasService,
     RequestContext requestContext,
-    IActivityFeedItemProvider activityFeedItemProvider, 
+    IActivityFeedItemProvider activityFeedItemProvider,
+    IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
     ILogger<Pw14UseCase> logger)
     : FellingLicenceApplicationUseCaseBase(internalUserAccountService,
         externalUserAccountService,
         fellingLicenceApplicationInternalRepository,
         woodlandOwnerService,
         agentAuthorityService,
-        getConfiguredFcAreasService)
+        getConfiguredFcAreasService, 
+        woodlandOfficerReviewSubStatusService), IPw14UseCase
 {
     private readonly RequestContext _requestContext = Guard.Against.Null(requestContext);
     private readonly IAuditService<Pw14UseCase> _auditService = Guard.Against.Null(auditService);

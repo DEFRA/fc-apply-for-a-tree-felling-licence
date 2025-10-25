@@ -3,15 +3,15 @@ using FluentValidation;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.AdminOfficerReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
 public partial class AdminOfficerReviewController(
-    EnvironmentalImpactAssessmentAdminOfficerUseCase eiaUseCase)
+    IEnvironmentalImpactAssessmentAdminOfficerUseCase eiaUseCase)
 {
 
     public async Task<IActionResult> EiaCheck(

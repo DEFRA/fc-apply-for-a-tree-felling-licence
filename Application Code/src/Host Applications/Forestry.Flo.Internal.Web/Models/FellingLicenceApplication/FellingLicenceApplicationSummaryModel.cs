@@ -128,6 +128,11 @@ public class FellingLicenceApplicationSummaryModel
     public string? AdministrativeRegion { get; set; }
 
     /// <summary>
+    /// Gets and sets the sub-statuses associated with the felling licence application during the Woodland Officer Review stage.
+    /// </summary>
+    public HashSet<WoodlandOfficerReviewSubStatus> WoodlandOfficerReviewSubStatuses { get; set; } = [];
+
+    /// <summary>
     /// Gets if there are any larch species in the proposed felling details for the application.
     /// </summary>
     public bool AreAnyLarchSpecies => (DetailsList

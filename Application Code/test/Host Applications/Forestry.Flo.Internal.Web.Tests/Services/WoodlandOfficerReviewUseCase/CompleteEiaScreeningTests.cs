@@ -130,7 +130,9 @@ public class CompleteEiaScreeningTests : WoodlandOfficerReviewUseCaseTestsBase<W
             MockAgentAuthorityService.Object,
             GetConfiguredFcAreas.Object,
             Clock.Object,
+            WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
+            MockBus.Object,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

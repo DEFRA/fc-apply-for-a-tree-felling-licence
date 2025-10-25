@@ -18,7 +18,7 @@ public class GetFellingLicenceApplicationForExternalUsersService : IGetFellingLi
         _repository = Guard.Against.Null(repository);
     }
 
-    /// <inheritdoc />>
+    /// <inheritdoc />
     public async Task<Result<IEnumerable<FellingLicenceApplication>>> GetApplicationsForWoodlandOwnerAsync(
         Guid woodlandOwnerId, 
         UserAccessModel userAccessModel,
@@ -33,7 +33,7 @@ public class GetFellingLicenceApplicationForExternalUsersService : IGetFellingLi
         return Result.Success(results);
     }
 
-    /// <inheritdoc />>
+    /// <inheritdoc />
     public async Task<Result<FellingLicenceApplication>> GetApplicationByIdAsync(
         Guid applicationId,
         UserAccessModel userAccessModel,
@@ -54,7 +54,8 @@ public class GetFellingLicenceApplicationForExternalUsersService : IGetFellingLi
             ? Result.Success(application.Value)
             : Result.Failure<FellingLicenceApplication>($"Unable to retrieve application with id {applicationId}");
     }
-
+    
+    /// <inheritdoc />
     public async Task<Result<bool>> GetIsEditable(
         Guid fellingLicenceApplicationId, 
         UserAccessModel userAccessModel,
@@ -70,5 +71,23 @@ public class GetFellingLicenceApplicationForExternalUsersService : IGetFellingLi
         }
 
         return await _repository.GetIsEditable(fellingLicenceApplicationId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<Maybe<SubmittedFlaPropertyDetail>>> GetExistingSubmittedFlaPropertyDetailAsync(
+        Guid applicationId, 
+        UserAccessModel userAccessModel,
+        CancellationToken cancellationToken)
+    {
+        var checkAccessResult = await _repository
+            .CheckUserCanAccessApplicationAsync(applicationId, userAccessModel, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (checkAccessResult.IsFailure || checkAccessResult.Value is false)
+        {
+            return Result.Failure<Maybe<SubmittedFlaPropertyDetail>>("Check user access failed");
+        }
+
+        return await _repository.GetExistingSubmittedFlaPropertyDetailAsync(applicationId, cancellationToken);
     }
 }

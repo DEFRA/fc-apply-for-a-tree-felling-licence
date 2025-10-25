@@ -2,6 +2,7 @@ using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Internal.Web.Services;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,10 @@ namespace Forestry.Flo.Internal.Web.Controllers;
 [AutoValidateAntiforgeryToken]
 public class AccountController : Controller
 {
-    private readonly ValidationProvider _validationProvider;
+    private readonly IValidationProvider _validationProvider;
     private readonly List<BreadCrumb> _breadCrumbsRoot;
 
-    public AccountController(ValidationProvider validationProvider)
+    public AccountController(IValidationProvider validationProvider)
     {
         _validationProvider = validationProvider;
 
@@ -26,7 +27,7 @@ public class AccountController : Controller
     }
 
     public async Task<IActionResult> RegisterAccountDetails(
-        [FromServices] RegisterUserAccountUseCase useCase,
+        [FromServices] IRegisterUserAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
@@ -48,7 +49,7 @@ public class AccountController : Controller
     [HttpPost]
     public async Task<IActionResult> RegisterAccountDetails(
         UserRegistrationDetailsModel userRegistrationDetailsModel,
-        [FromServices] RegisterUserAccountUseCase useCase,
+        [FromServices] IRegisterUserAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
         ApplySectionValidationModelErrors(userRegistrationDetailsModel, nameof(UserRegistrationDetailsModel));

@@ -1,18 +1,15 @@
 ﻿using System.Web;
-using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
-using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -24,7 +21,7 @@ public class ExternalConsulteeInviteController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(
         Guid id,
-        [FromServices] ExternalConsulteeInviteUseCase useCase,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, viewModel) = await useCase.GetConsulteeInvitesIndexViewModelAsync(
@@ -44,7 +41,7 @@ public class ExternalConsulteeInviteController : Controller
     [HttpPost]
     public async Task<IActionResult> Index(
         ExternalConsulteeIndexViewModel model,
-        [FromServices] ExternalConsulteeInviteUseCase useCase,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -97,7 +94,7 @@ public class ExternalConsulteeInviteController : Controller
     [HttpGet]
     public async Task<IActionResult> InviteNewConsultee(
         Guid id,
-        [FromServices] ExternalConsulteeInviteUseCase useCase,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, model) = await useCase
@@ -116,7 +113,7 @@ public class ExternalConsulteeInviteController : Controller
     [HttpPost]
     public async Task<IActionResult> InviteNewConsultee(
         ExternalConsulteeInviteFormModel model,
-        [FromServices] ExternalConsulteeInviteUseCase useCase,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -172,7 +169,7 @@ public class ExternalConsulteeInviteController : Controller
     public async Task<IActionResult> GetReceivedComments(
         Guid id,
         Guid accessCode,
-        [FromServices] ExternalConsulteeInviteUseCase useCase,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, viewModel) = await useCase.GetReceivedCommentsAsync(

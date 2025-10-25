@@ -34,17 +34,17 @@ public class Startup
 
         services.Configure<FormOptions>(o =>
         {
-            o.MultipartBodyLengthLimit = userFileUploadOptions.MaxFileSizeBytes;
+            o.MultipartBodyLengthLimit = userFileUploadOptions.ServerMaxUploadSizeBytes;
         });
 
         services.Configure<KestrelServerOptions>(o =>
         {
-            o.Limits.MaxRequestBodySize = userFileUploadOptions.MaxFileSizeBytes;
+            o.Limits.MaxRequestBodySize = userFileUploadOptions.ServerMaxUploadSizeBytes;
         });
         
         services.Configure<IISServerOptions>(o =>
         {
-            o.MaxRequestBodySize = userFileUploadOptions.MaxFileSizeBytes;
+            o.MaxRequestBodySize = userFileUploadOptions.ServerMaxUploadSizeBytes;
         });
 
         services.Configure<CookiePolicyOptions>(x =>

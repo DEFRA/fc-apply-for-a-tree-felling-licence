@@ -1,11 +1,10 @@
-﻿using System.Reflection;
-using System.Text;
-using AutoFixture;
+﻿using AutoFixture;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using FluentEmail.Core;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
+using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
@@ -19,15 +18,17 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
+using Forestry.Flo.Services.FileStorage.ResultModels;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
+using System.Reflection;
+using System.Text;
 using System.Text.Json;
-using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
-using Forestry.Flo.Services.FileStorage.ResultModels;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.ExternalConsulteeReview;
 
@@ -45,6 +46,7 @@ public class ExternalConsulteeReviewUseCaseTests
     private readonly Mock<IRemoveDocumentService> _mockRemoveDocumentService = new();
     private readonly Mock<IClock> _mockClock = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private const string AdminHubAddress = "admin hub address";
     private readonly string _requestContextCorrelationId = Guid.NewGuid().ToString();
     private readonly JsonSerializerOptions _serializerOptions = new()
@@ -700,6 +702,7 @@ public class ExternalConsulteeReviewUseCaseTests
             _mockGetDocumentService.Object,
             _mockAddDocumentService.Object,
             _mockRemoveDocumentService.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             new NullLogger<ExternalConsulteeReviewUseCase>(),
             new RequestContext(_requestContextCorrelationId, new RequestUserModel(UserFactory.CreateUnauthenticatedUser())),
             _mockClock.Object);

@@ -205,11 +205,6 @@ public static class AuditEvents
     public const string ReportExecutionNoDataFound = "Report Execution No Data Found";
     public const string ReportExecutionFailure = "Report Execution Failure";
 
-    // legacy documents
-    public const string AccessLegacyDocumentEvent = "Access Legacy Document";
-    public const string AccessLegacyDocumentFailureEvent = "Access Legacy Document Failure";
-
-
     public const string ConsultationPublicRegisterAutomatedExpirationRemovalSuccess =
         "Consultation Public Register Automated Expiration Removal Success";
 
@@ -246,6 +241,14 @@ public static class AuditEvents
 
     public const string CompleteFellingAndRestockingAmendmentReview = "Complete Felling And Restocking Amendment Review";
     public const string CompleteFellingAndRestockingAmendmentReviewFailure = "Complete Felling And Restocking Amendment Review Failure";
+    public const string LateAmendmentResponseNotification = "Late Amendment Response Notification";
+    public const string LateAmendmentResponseNotificationFailure = "Late Amendment Response Notification Failure";
+
+    // Ten-year licence step
+    public const string TenYearLicenceStepUpdated = "Ten Year Licence Step Updated Success";
+    public const string TenYearLicenceStepUpdatedFailure = "Ten Year Licence Step Updated Failure";
+    public const string TenYearLicenceStepCompleted = "Ten Year Licence Step Completed Success";
+    public const string TenYearLicenceStepCompletedFailure = "Ten Year Licence Step Completed Failure";
 
 
     /// <summary>
@@ -433,9 +436,6 @@ public static class AuditEvents
             ReportExecutionNoDataFound => SourceEntityType.FellingLicenceApplication,
             ReportExecutionFailure => SourceEntityType.FellingLicenceApplication,
 
-            AccessLegacyDocumentEvent => SourceEntityType.WoodlandOwner,
-            AccessLegacyDocumentFailureEvent => SourceEntityType.WoodlandOwner,
-
             ConsultationPublicRegisterAutomatedExpirationRemovalSuccess => SourceEntityType.FellingLicenceApplication,
             ConsultationPublicRegisterAutomatedExpirationRemovalFailure => SourceEntityType.FellingLicenceApplication,
             ConsultationPublicRegisterApplicationRemovalNotification => SourceEntityType.FellingLicenceApplication,
@@ -464,7 +464,13 @@ public static class AuditEvents
             SendAmendmentsToApplicantFailure => SourceEntityType.FellingLicenceApplication,
             CompleteFellingAndRestockingAmendmentReview => SourceEntityType.FellingLicenceApplication,
             CompleteFellingAndRestockingAmendmentReviewFailure => SourceEntityType.FellingLicenceApplication,
+            LateAmendmentResponseNotification => SourceEntityType.FellingLicenceApplication,
+            LateAmendmentResponseNotificationFailure => SourceEntityType.FellingLicenceApplication,
 
+            TenYearLicenceStepUpdated => SourceEntityType.FellingLicenceApplication,
+            TenYearLicenceStepUpdatedFailure => SourceEntityType.FellingLicenceApplication,
+            TenYearLicenceStepCompleted => SourceEntityType.FellingLicenceApplication,
+            TenYearLicenceStepCompletedFailure => SourceEntityType.FellingLicenceApplication,
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

@@ -3,70 +3,118 @@ using System.ComponentModel.DataAnnotations;
 namespace Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
 /// <summary>
-/// FellingAndRestockingAmendmentReview entity class
+/// Represents a single cycle of a felling and restocking amendment review initiated by a Woodland Officer.
 /// </summary>
 /// <remarks>
-/// This represents a single amendment review cycle where amendments have been sent to the applicant.
-/// Any further amendments required after the applicant has responded will create a new instance of this entity.
+/// A new instance is created each time amendments are sent to the applicant during the Woodland Officer review.
+/// If further amendments are needed after an applicant response, a new instance should be created to represent
+/// the next review cycle.
 /// </remarks>
 public class FellingAndRestockingAmendmentReview
 {
+    public FellingAndRestockingAmendmentReview()
+    {
+    }
+
+    public FellingAndRestockingAmendmentReview(bool? amendmentReviewCompleted)
+    {
+        AmendmentReviewCompleted = amendmentReviewCompleted;
+    }
+
     /// <summary>
-    /// Gets and Sets the entity ID.
+    /// Gets the unique identifier for this amendment review.
     /// </summary>
     [Key]
     public Guid Id { get; protected set; }
 
     /// <summary>
-    /// Gets or sets the woodland officer review ID associated with this amendment review.
+    /// Gets or sets the identifier of the parent <see cref="WoodlandOfficerReview"/> this amendment review belongs to.
     /// </summary>
     [Required]
     public Guid WoodlandOfficerReviewId { get; set; }
 
     /// <summary>
-    /// Gets or sets the woodland officer review associated with this amendment review.
+    /// Gets or sets the parent <see cref="WoodlandOfficerReview"/> navigation property.
     /// </summary>
     public WoodlandOfficerReview? WoodlandOfficerReview { get; set; }
 
     /// <summary>
-    /// Gets or sets the date when amendments were sent to the applicant.
+    /// Gets or sets the UTC timestamp when amendments were sent to the applicant.
     /// </summary>
+    /// <remarks>
+    /// Use UTC throughout the system. This value is set at the point the Woodland Officer sends amendments.
+    /// </remarks>
     public DateTime AmendmentsSentDate { get; set; }
 
     /// <summary>
-    /// Gets or sets the reason for the amendments sent to the applicant.
+    /// Gets or sets the reason provided by the Woodland Officer for requesting amendments.
     /// </summary>
+    /// <remarks>
+    /// This reason may be displayed to the applicant and shown in the activity feed.
+    /// </remarks>
     public string? AmendmentsReason { get; set; }
 
     /// <summary>
-    /// Gets or sets the deadline by which the applicant must respond to the amendments,
-    /// else the application will be automatically withdrawn.
+    /// Gets or sets the UTC deadline by which the applicant must respond to the amendments.
     /// </summary>
+    /// <remarks>
+    /// If the deadline passes without a response, the application may be automatically withdrawn by a background process.
+    /// </remarks>
     public DateTime ResponseDeadline { get; set; }
 
     /// <summary>
-    /// Gets or sets the date when a response was received from the applicant.
+    /// Gets or sets the UTC timestamp when a response was received from the applicant, if any.
     /// </summary>
     /// <remarks>
-    /// If this is null, it indicates that a response has not yet been received.
+    /// A null value indicates that a response has not yet been received.
     /// </remarks>
     public DateTime? ResponseReceivedDate { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the applicant agreed to the amendments.
+    /// Gets or sets whether the applicant agreed to the requested amendments.
     /// </summary>
+    /// <remarks>
+    /// True indicates agreement, false indicates disagreement, and null indicates no response yet.
+    /// </remarks>
     public bool? ApplicantAgreed { get; set; }
 
     /// <summary>
-    /// Gets or sets the reason provided by the applicant for disagreement, if any.
+    /// Gets or sets the reason provided by the applicant when disagreeing with the amendments.
     /// </summary>
     /// <remarks>
-    /// This should be null if the applicant agreed to the amendments or has not yet responded.
+    /// Should be null if <see cref="ApplicantAgreed"/> is true or no response has been received yet.
     /// </remarks>
     public string? ApplicantDisagreementReason { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the amendment review has been completed.
+    /// Gets or sets a value indicating whether this amendment review has been completed.
     /// </summary>
+    /// <remarks>
+    /// This flag should be set to true when the review cycle is formally concluded (for example, once changes are reconciled and no further action is required).
+    /// </remarks>
     public bool? AmendmentReviewCompleted { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC timestamp when a reminder notification was sent to the applicant to respond to the amendments.
+    /// </summary>
+    /// <remarks>
+    /// This may be used to determine if/when an automatic withdrawal reminder was issued.
+    /// </remarks>
+    public DateTime? ReminderNotificationTimeStamp { get; set; }
+
+    /// <summary>
+    /// Gets or sets the internal user identifier of the Woodland Officer who initiated these amendments.
+    /// </summary>
+    /// <remarks>
+    /// Used for attribution in the activity feed and reporting.
+    /// </remarks>
+    public Guid? AmendingWoodlandOfficerId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the external user identifier of the applicant who responded to these amendments, if any.
+    /// </summary>
+    /// <remarks>
+    /// Populated when a response is received from an applicant user.
+    /// </remarks>
+    public Guid? RespondingApplicantId { get; set; }
 }

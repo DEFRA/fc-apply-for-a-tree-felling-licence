@@ -161,8 +161,9 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
     /// Gets the current step status for the application with the given Id.
     /// </summary>
     /// <param name="applicationId">The application to retrieve the step status for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The <see cref="FellingLicenceApplicationStepStatus"/> for the given application id.</returns>
-    Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId);
+    Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a specific Submitted FLA Property Compartment by its ID.
@@ -191,7 +192,7 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
     /// <param name="updatedDate">The date and time that the resubmission is triggered.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="UnitResult"/> struct indicating if the operation fails.</returns>
-    Task<UnitResult<UserDbErrorReason>> UpdateExistingWoodlandOwnerReviewFlagsForResubmission(
+    Task<UnitResult<UserDbErrorReason>> UpdateExistingWoodlandOfficerReviewFlagsForResubmission(
         Guid applicationId,
         DateTime updatedDate,
         CancellationToken cancellationToken);

@@ -1,6 +1,8 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common.Auditing;
@@ -10,6 +12,7 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using ActivityFeedItemType = Forestry.Flo.Services.Common.Models.ActivityFeedItemType;
@@ -17,7 +20,7 @@ using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.En
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
-public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCaseBase
+public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCaseBase, IFellingLicenceApplicationUseCase
 {
     private readonly IAgentAuthorityInternalService _agentAuthorityInternalService;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
@@ -25,6 +28,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
     private readonly ILogger<FellingLicenceApplicationUseCase> _logger;
     private readonly Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository _userAccountRepository;
     private readonly IActivityFeedItemProvider _activityFeedItemProvider;
+    private readonly IWoodlandOfficerReviewSubStatusService _woodlandOfficerReviewSubStatusService;
     protected readonly IAuditService<ExtendApplicationsUseCase> _auditExtendApplications;
 
     public FellingLicenceApplicationUseCase(
@@ -39,13 +43,15 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         IAgentAuthorityService agentAuthorityService,
         IAgentAuthorityInternalService agentAuthorityInternalService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<FellingLicenceApplicationUseCase> logger)
         : base(internalUserAccountService,
             externalUserAccountService,
             fellingLicenceApplicationInternalRepository,
             woodlandOwnerService,
             agentAuthorityService,
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService, 
+            woodlandOfficerReviewSubStatusService)
     {
         _agentAuthorityInternalService = Guard.Against.Null(agentAuthorityInternalService);
         Guard.Against.Null(internalUserAccountService);
@@ -56,6 +62,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         _userAccountRepository = Guard.Against.Null(userAccountRepository);
         _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
         _auditExtendApplications = Guard.Against.Null(auditExtendApplications);
+        _woodlandOfficerReviewSubStatusService = Guard.Against.Null(woodlandOfficerReviewSubStatusService);
     }
 
     public static List<FellingLicenceStatus> PostSubmittedStatuses => new()
@@ -72,19 +79,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         FellingLicenceStatus.ReferredToLocalAuthority
     };
 
-    /// <summary>
-    /// Retrieves a filtered collection of applications to display on the dashboard.
-    /// </summary>
-    /// <param name="assignedToUserAccountIdOnly">A flag indicating whether only applications assigned to the logged-in user should be retrieved.</param>
-    /// <param name="assignedToUserAccountId">The identifier for the logged-in user account.</param>
-    /// <param name="includeFellingLicenceStatuses">A collection of <see cref="FellingLicenceStatus"/> to filter applications by.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <param name="pageNumber">The page number to retrieve.</param>
-    /// <param name="pageSize">The number of items per page.</param>
-    /// <param name="sortColumn">The column to sort the results by.</param>
-    /// <param name="sortDirection">The direction to sort the results (ascending or descending).</param>
-    /// <param name="searchText">The text to search for in the application references.</param>
-    /// <returns>A populated <see cref="FellingLicenceApplicationAssignmentListModel"/> containing a filtered collection of applications, or an error if unsuccessful.</returns>
+    /// <inheritdoc />
     public async Task<Result<FellingLicenceApplicationAssignmentListModel>> GetFellingLicenceApplicationAssignmentListModelAsync(
         bool assignedToUserAccountIdOnly,
         Guid assignedToUserAccountId,
@@ -136,17 +131,18 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         var briefAssigneeHistories = await base.GetBriefAssigneeHistory(currentAssigneeHistories, cancellationToken);
 
         IList<FellingLicenceAssignmentListItemModel> fellingLicenceAssignmentListItemModels =
-            fellingLicenceApplications.Select(x => new FellingLicenceAssignmentListItemModel
+            fellingLicenceApplications.Select(fla => new FellingLicenceAssignmentListItemModel
             {
-                AssignedUserIds = briefAssigneeHistories.Value.Where(y => y.FellingLicenceApplicationId == x.Id).DistinctBy(y => y.UserId).Select(y => y.UserId).ToList(),
-                Reference = x.ApplicationReference,
-                FellingLicenceApplicationId = x.Id,
-                Deadline = x.FinalActionDate,
-                FellingLicenceStatus = x.StatusHistories.OrderBy(y => y.Created).Last().Status,
-                Property = propertyProfiles.SingleOrDefault(y => y.Id == x.LinkedPropertyProfile?.PropertyProfileId)?.Name,
-                UserFirstLastNames = briefAssigneeHistories.Value.Where(y => y.FellingLicenceApplicationId == x.Id).DistinctBy(y => y.UserId).Select(y => y.UserName).ToList(),
-                SubmittedDate = x.StatusHistories.Any(sh => sh.Status == FellingLicenceStatus.Submitted) ? x.StatusHistories.Where(sh => sh.Status == FellingLicenceStatus.Submitted).Max(x => x.Created) : null,
-                CitizensCharterDate = x.CitizensCharterDate
+                AssignedUserIds = briefAssigneeHistories.Value.Where(y => y.FellingLicenceApplicationId == fla.Id).DistinctBy(y => y.UserId).Select(y => y.UserId).ToList(),
+                Reference = fla.ApplicationReference,
+                FellingLicenceApplicationId = fla.Id,
+                Deadline = fla.FinalActionDate,
+                FellingLicenceStatus = fla.StatusHistories.OrderBy(y => y.Created).Last().Status,
+                Property = propertyProfiles.SingleOrDefault(y => y.Id == fla.LinkedPropertyProfile?.PropertyProfileId)?.Name,
+                UserFirstLastNames = briefAssigneeHistories.Value.Where(y => y.FellingLicenceApplicationId == fla.Id).DistinctBy(y => y.UserId).Select(y => y.UserName).ToList(),
+                SubmittedDate = fla.StatusHistories.Any(sh => sh.Status == FellingLicenceStatus.Submitted) ? fla.StatusHistories.Where(sh => sh.Status == FellingLicenceStatus.Submitted).Max(x => x.Created) : null,
+                CitizensCharterDate = fla.CitizensCharterDate,
+                SubStatuses = _woodlandOfficerReviewSubStatusService.GetCurrentSubStatuses(fla)
             }).ToList();
 
         var model = new FellingLicenceApplicationAssignmentListModel
@@ -164,13 +160,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         return Result.Success(model);
     }
 
-    /// <summary>
-    /// Creates and returns a felling licence application review summary model from an application received by the application id
-    /// </summary>
-    /// <param name="applicationId">The application Id</param>
-    /// <param name="viewingUser">The logged in internal user</param>
-    /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public async Task<Maybe<FellingLicenceApplicationReviewSummaryModel>>
         RetrieveFellingLicenceApplicationReviewSummaryAsync(
             Guid applicationId,
@@ -303,17 +293,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         return Maybe<FellingLicenceApplicationReviewSummaryModel>.From(applicationReviewModel);
     }
 
-
-    /// <summary>
-    /// Retrieves the model required to reopen a withdrawn felling licence application.
-    /// </summary>
-    /// <param name="applicationId">The unique identifier of the felling licence application to be reopened.</param>
-    /// <param name="hostingPage">The page to return to after adding an activity feed comment.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>
-    /// A <see cref="Result{T}"/> containing a <see cref="ReopenWithdrawnApplicationModel"/> if successful, 
-    /// or an error message if the operation fails.
-    /// </returns>
+    /// <inheritdoc />
     public async Task<Result<ReopenWithdrawnApplicationModel>> RetrieveReopenWithdrawnApplicationModelAsync(
         Guid applicationId,
         string hostingPage,

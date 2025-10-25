@@ -1,7 +1,8 @@
-﻿using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
-using Microsoft.AspNetCore.Mvc;
-using Forestry.Flo.Internal.Web.Infrastructure;
+﻿using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure.Display;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Controllers.Api;
 
@@ -17,7 +18,7 @@ public class PublicRegisterExpiryController : ControllerBase
 
     [Route("PublicRegisterExpiryNotification")]
     public async Task<IActionResult> RemoveApplicationsFromConsultationPublicRegisterWhenEndDateReached(
-        [FromServices] PublicRegisterExpiryUseCase useCase,
+        [FromServices] IPublicRegisterExpiryUseCase useCase,
         CancellationToken cancellationToken)
     {
         await useCase.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(
@@ -30,7 +31,7 @@ public class PublicRegisterExpiryController : ControllerBase
     //Removes the application from the Decision public register once the end date is reached.
     [Route("RemoveApplicationsFromDecisionPublicRegisterWhenEndDateReached")]
     public async Task<IActionResult> RemoveApplicationsFromDecisionPublicRegisterWhenEndDateReached(
-        [FromServices] RemoveApplicationsFromDecisionPublicRegisterUseCase useCase,
+        [FromServices] IRemoveApplicationsFromDecisionPublicRegisterUseCase useCase,
         CancellationToken cancellationToken)
     {
         await useCase.ExecuteAsync(

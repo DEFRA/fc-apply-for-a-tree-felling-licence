@@ -6,10 +6,12 @@ using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FileStorage.Model;
+using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Forestry.Flo.Services.PropertyProfiles.Entities;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
@@ -310,6 +312,7 @@ public class ModelMappingTests
             Id = id;
             CompartmentNumber = _fixture.Create<int>().ToString();
             SubCompartmentName = _fixture.Create<string>();
+            GISData = JsonConvert.SerializeObject(_fixture.Create<Polygon>());
         }
     }
 

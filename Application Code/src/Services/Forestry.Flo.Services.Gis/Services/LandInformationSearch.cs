@@ -38,51 +38,61 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
         IReadOnlyList<InternalCompartmentDetails<Polygon>> compartments,
         CancellationToken cancellationToken)
     {
-        var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/addFeatures";
-
-        _logger.LogDebug("About to send geometries for felling licence having id of [{id}] to feature service at [{featurePath}]"
-            , fellingLicenceId, path);
-
-        var geometryResult = ShapeHelper.MakeMultiPart(compartments.Select(c => c.ShapeGeometry).ToList());
-
-
-        if (geometryResult.IsFailure)
+        using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = Guid.NewGuid(),
+                   ["FellingLicenceId"] = fellingLicenceId
+               }))
         {
-            _logger.LogDebug("Unable to convert compartment geometries to MultiPart Polygon - for felling licence having id of [{id}] to feature service at [{featurePath}], error is [{error}]."
-                , fellingLicenceId, path, geometryResult.Error);
+            _logger.LogInformation("AddFellingLicenceGeometriesAsync called for FellingLicenceId: {FellingLicenceId}", fellingLicenceId);
 
-            return Result.Failure<CreateUpdateDeleteResponse<int>>(geometryResult.Error);
-        }
+            var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/addFeatures";
 
-        var model = new BaseFeatureWithGeometryObject<Polygon, LandInformationSearchCompartmentAttributeModel<int>>
-        {
-            GeometryObject = geometryResult.Value,
-            Attributes = new LandInformationSearchCompartmentAttributeModel<int>
+            _logger.LogDebug("About to send geometries for felling licence having id of [{id}] to feature service at [{featurePath}]",
+                fellingLicenceId, path);
+
+            var geometryResult = ShapeHelper.MakeMultiPart(compartments.Select(c => c.ShapeGeometry).ToList());
+
+            if (geometryResult.IsFailure)
             {
-                CaseReference = fellingLicenceId.ToString()
+                _logger.LogError("Unable to convert compartment geometries to MultiPart Polygon for felling licence {FellingLicenceId}: {Error}",
+                    fellingLicenceId, geometryResult.Error);
+
+                return Result.Failure<CreateUpdateDeleteResponse<int>>(geometryResult.Error);
             }
-        };
 
-        var compartmentData = JsonConvert.SerializeObject(model);
+            var model = new BaseFeatureWithGeometryObject<Polygon, LandInformationSearchCompartmentAttributeModel<int>>
+            {
+                GeometryObject = geometryResult.Value,
+                Attributes = new LandInformationSearchCompartmentAttributeModel<int>
+                {
+                    CaseReference = fellingLicenceId.ToString()
+                }
+            };
 
-        _logger.LogDebug("Serialized data as: [{compartmentData}]", compartmentData);
+            var compartmentData = JsonConvert.SerializeObject(model);
 
-        var data = new EditFeaturesParameter(compartmentData);
+            _logger.LogDebug("Serialized data as: [{compartmentData}]", compartmentData);
 
-        var result = await PostQueryWithConversionAsync<CreateUpdateDeleteResponse<int>>(data, path, true, cancellationToken);
+            var data = new EditFeaturesParameter(compartmentData);
 
+            var result = await PostQueryWithConversionAsync<CreateUpdateDeleteResponse<int>>(data, path, true, cancellationToken);
 
-        if (result.IsFailure)
-        {
-            return result;
+            if (result.IsFailure)
+            {
+                _logger.LogError("Failed to add felling licence geometries for FellingLicenceId {FellingLicenceId}: {Error}", fellingLicenceId, result.Error);
+                return result;
+            }
+
+            if (result.Value?.AddResults == null || result.Value.AddResults.Count == 0 || result.Value.AddResults.Count((ar) => ar.WasSuccessful == false) != 0)
+            {
+                _logger.LogError("Unable to add compartment geometries for FellingLicenceId {FellingLicenceId}", fellingLicenceId);
+                return Result.Failure<CreateUpdateDeleteResponse<int>>("Unable to add compartment geometries");
+            }
+
+            _logger.LogInformation("Successfully added felling licence geometries for FellingLicenceId {FellingLicenceId}", fellingLicenceId);
+            return Result.Success(result.Value);
         }
-
-        if (result.Value?.AddResults == null || result.Value.AddResults!.Count == 0 || result.Value.AddResults!.Count((ar) => ar.WasSuccessful == false) != 0)
-        {
-            return Result.Failure<CreateUpdateDeleteResponse<int>>("Unable to add compartment geometries");
-        }
-
-        return Result.Success(result.Value);
     }
 
     /// <summary>
@@ -95,23 +105,39 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
         string fellingLicenceId,
         CancellationToken cancellationToken)
     {
-        var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/query";
-
-        _logger.LogDebug("About to query case [{id}] to feature service at [{featurePath}]"
-         , fellingLicenceId, path);
-
-        var query = new QueryFeatureServiceParameters()
+        using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = Guid.NewGuid(),
+                   ["FellingLicenceId"] = fellingLicenceId
+               }))
         {
-            WhereString = $"Case_Reference = '{fellingLicenceId}'",
-            ReturnGeometry = false,
-            OutFields = { "OBJECTID" }
-        };
+            _logger.LogInformation("GetCompartmentIdsAsync called for FellingLicenceId: {FellingLicenceId}", fellingLicenceId);
 
-        var result = await PostQueryWithConversionAsync<BaseQueryResponse<BaseAttribute<int>>>(query, path, true, cancellationToken);
+            var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/query";
 
-        return result.IsFailure ? result.ConvertFailure<List<int>>() :
-            Result.Success(!result.Value.Results.Any() ? [] :
-                result.Value.Results.Select(r => r.Record.ObjectId).ToList());
+            _logger.LogDebug("About to query case [{id}] to feature service at [{featurePath}]",
+                fellingLicenceId, path);
+
+            var query = new QueryFeatureServiceParameters()
+            {
+                WhereString = $"Case_Reference = '{fellingLicenceId}'",
+                ReturnGeometry = false,
+                OutFields = { "OBJECTID" }
+            };
+
+            var result = await PostQueryWithConversionAsync<BaseQueryResponse<BaseAttribute<int>>>(query, path, true, cancellationToken);
+
+            if (result.IsFailure)
+            {
+                _logger.LogError("Failed to get compartment ids for FellingLicenceId {FellingLicenceId}: {Error}", fellingLicenceId, result.Error);
+                return result.ConvertFailure<List<int>>();
+            }
+
+            var ids = !result.Value.Results.Any() ? new List<int>() : result.Value.Results.Select(r => r.Record.ObjectId).ToList();
+            _logger.LogInformation("Retrieved {Count} compartment ids for FellingLicenceId {FellingLicenceId}", ids.Count, fellingLicenceId);
+
+            return Result.Success(ids);
+        }
     }
 
     /// <inheritdoc />
@@ -119,31 +145,44 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
         string fellingLicenceId,
         CancellationToken cancellationToken)
     {
-        var items = await GetCompartmentIdsAsync(fellingLicenceId, cancellationToken);
-        if (items.IsFailure)
+        using (_logger.BeginScope(new Dictionary<string, object>
+               {
+                   ["CorrelationId"] = Guid.NewGuid(),
+                   ["FellingLicenceId"] = fellingLicenceId
+               }))
         {
-            return items.ConvertFailure();
-        }
+            _logger.LogInformation("ClearLayerAsync called for FellingLicenceId: {FellingLicenceId}", fellingLicenceId);
 
-        if (items.Value.Count == 0)
-        {
+            var items = await GetCompartmentIdsAsync(fellingLicenceId, cancellationToken);
+            if (items.IsFailure)
+            {
+                _logger.LogError("Failed to get compartment ids for clearing layer for FellingLicenceId {FellingLicenceId}: {Error}", fellingLicenceId, items.Error);
+                return items.ConvertFailure();
+            }
+
+            if (items.Value.Count == 0)
+            {
+                _logger.LogInformation("No compartment ids found for FellingLicenceId {FellingLicenceId}, nothing to delete.", fellingLicenceId);
+                return Result.Success();
+            }
+
+            var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/deleteFeatures";
+            _logger.LogDebug("About to delete case [{id}] to feature service at [{featurePath}]",
+                fellingLicenceId, path);
+
+            var data = new DeleteFeatureByObjectId<int>(items.Value.Select(i => i).ToList());
+
+            var result = await PostQueryWithConversionAsync<CreateUpdateDeleteResponse<BaseCreateDeleteResult<int>>>(data, path, true, cancellationToken);
+
+            if (result.IsFailure || result.Value == null || result.Value.WasSuccess != true)
+            {
+
+                _logger.LogError("Failed to clear layer for FellingLicenceId {FellingLicenceId}:Invalid Result from Esri", fellingLicenceId);
+                return Result.Failure("Invalid Result from Esri");
+            }
+
+            _logger.LogInformation("Successfully cleared layer for FellingLicenceId {FellingLicenceId}", fellingLicenceId);
             return Result.Success();
         }
-
-        var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/deleteFeatures";
-        _logger.LogDebug("About to delete case [{id}] to feature service at [{featurePath}]"
-         , fellingLicenceId, path);
-
-        var data = new DeleteFeatureByObjectId<int>(items.Value.Select(i => i).ToList());
-
-        var result = await PostQueryWithConversionAsync<CreateUpdateDeleteResponse<BaseCreateDeleteResult<int>>>(data, path, true, cancellationToken);
-
-        if (result.IsFailure || result.Value == null || result.Value.WasSuccess != true)
-        {
-            return Result.Failure("Invalid Result from Esri");
-        }
-
-        return Result.Success();
-
     }
 }

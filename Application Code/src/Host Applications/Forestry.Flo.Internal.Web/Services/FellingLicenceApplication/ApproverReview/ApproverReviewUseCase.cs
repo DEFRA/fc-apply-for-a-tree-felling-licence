@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -14,19 +15,21 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using ActivityFeedItemType = Forestry.Flo.Services.Common.Models.ActivityFeedItemType;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
 
-namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
 
 /// <summary>
 /// Use case for handling approver reviews of felling licence applications.
 /// </summary>
-public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
+public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IApproverReviewUseCase
 {
     private readonly IAgentAuthorityInternalService _agentAuthorityInternalService;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
@@ -73,13 +76,15 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
         IGetConfiguredFcAreas getConfiguredFcAreasService,
         RequestContext requestContext,
         IOptions<FellingLicenceApplicationOptions> fellingLicenceApplicationOptions,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<FellingLicenceApplicationUseCase> logger)
         : base(internalUserAccountService,
             externalUserAccountService,
             fellingLicenceApplicationInternalRepository,
             woodlandOwnerService,
             agentAuthorityService,
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService, 
+            woodlandOfficerReviewSubStatusService)
     {
         _agentAuthorityInternalService = Guard.Against.Null(agentAuthorityInternalService);
         Guard.Against.Null(internalUserAccountService);
@@ -112,13 +117,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
         FellingLicenceStatus.ReferredToLocalAuthority
     };
 
-    /// <summary>
-    /// Creates and returns a felling licence application review summary model from an application received by the application id.
-    /// </summary>
-    /// <param name="applicationId">The application Id.</param>
-    /// <param name="viewingUser">The logged in internal user.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="Maybe{ApproverReviewSummaryModel}"/>.</returns>
+    /// <inheritdoc />
     public async Task<Maybe<ApproverReviewSummaryModel>> RetrieveApproverReviewAsync(
         Guid applicationId,
         InternalUser viewingUser,
@@ -268,13 +267,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
         return Maybe<ApproverReviewSummaryModel>.From(applicationReviewModel);
     }
 
-    /// <summary>
-    /// Saves the approver review asynchronously.
-    /// </summary>
-    /// <param name="model">The approver review model.</param>
-    /// <param name="user">The internal user.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="Result"/>.</returns>
+    /// <inheritdoc />
     public async Task<Result> SaveApproverReviewAsync(
         ApproverReviewModel model,
         InternalUser user,
@@ -313,6 +306,10 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
 
         return Result.Failure(updateResult.Error);
     }
+
+    /// <inheritdoc />
+    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken) =>
+        _fellingLicenceApplicationInternalRepository.BeginTransactionAsync(cancellationToken);
 
     /// <summary>
     /// Creates the operation details model.

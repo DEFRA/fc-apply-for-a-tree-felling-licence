@@ -49,7 +49,11 @@ public class FileValidator
 
         if (!receivedByApi)
         {
-            if (fileBytes.Length > _userFileUploadOptions.MaxFileSizeBytes)
+            var maxFileSize = reason is FileUploadReason.WmpDocument
+                ? _userFileUploadOptions.ServerMaxUploadSizeBytes
+                : _userFileUploadOptions.MaxFileSizeBytes;
+
+            if (fileBytes.Length > maxFileSize)
             {
                 return CreateInvalidFileResult(FileInvalidReason.FileTooLarge);
             }

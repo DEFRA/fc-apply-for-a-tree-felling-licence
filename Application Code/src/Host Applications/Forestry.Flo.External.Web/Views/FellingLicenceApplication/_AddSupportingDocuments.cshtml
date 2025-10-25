@@ -1,11 +1,7 @@
-﻿@using Forestry.Flo.Services.Common.Extensions
-@using Forestry.Flo.Services.FileStorage.Configuration
-@using Microsoft.AspNetCore.Mvc.TagHelpers
+﻿@using Forestry.Flo.Services.FileStorage.Configuration
 @using Forestry.Flo.Services.Common
-@using Forestry.Flo.Services.FileStorage.Services
 @using Microsoft.Extensions.Options
 @inject IOptions<UserFileUploadOptions> Settings
-@inject FileTypesProvider FileTypesProvider
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.AddSupportingDocumentModel
 
 @{
@@ -21,6 +17,9 @@
 <form id="attachSupportingDocumentationForm" method="post" enctype="multipart/form-data" asp-controller="FellingLicenceApplication" asp-action="AttachSupportingDocumentation">
     <input asp-for="@Model.FellingLicenceApplicationId">
     <input type="hidden" asp-for="@Model.ReturnToApplicationSummary">
+    <input type="hidden" asp-for="@Model.FromDataImport">
+    <input type="hidden" asp-for="@Model.Purpose">
+
     <input id="allowed-extensions" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@string.Join(", ", allowedExtensions)" />
     <input id="allowed-max-size" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxFileSize" />
     <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)" />
@@ -33,17 +32,11 @@
         <input type="file" multiple class="custom-file-input govuk-file-upload" id="supporting-documentation-files" name="supportingDocumentationFiles" runat="server" />
     </div>
 
-    <div class="govuk-hint">
-        Select whether uploaded documents will be visible to individuals outside of the Forestry Commission that may be consulted about your application.
-    </div>
-    <div class="govuk-checkboxes__item">
-        <input class="govuk-checkboxes__input" type="checkbox" asp-for="AvailableToConsultees" />
-        <label class="govuk-label govuk-checkboxes__label" asp-for="AvailableToConsultees">Visible to external consultees</label>
-    </div>
     <br/>
+
     <div class="govuk-body">
         <div class="govuk-hint">You must select one or more files above to upload them</div>
-        <button id="submit-supporting-document-button" type="submit" class="govuk-button" data-module="govuk-button" name="store-supporting-documents" value="Upload" disabled="disabled">
+        <button id="submit-supporting-document-button" type="submit" class="govuk-button" data-module="govuk-button" name="store-supporting-documents" value="Upload">
             Upload
         </button>
     </div>

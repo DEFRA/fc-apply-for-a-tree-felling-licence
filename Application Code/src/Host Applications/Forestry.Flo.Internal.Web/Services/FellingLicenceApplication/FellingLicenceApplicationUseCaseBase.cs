@@ -5,10 +5,10 @@ using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Services;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
@@ -21,6 +21,7 @@ public abstract class FellingLicenceApplicationUseCaseBase
     protected readonly IFellingLicenceApplicationInternalRepository FellingLicenceRepository;
     protected readonly IRetrieveWoodlandOwners WoodlandOwnerService;
     protected readonly IAgentAuthorityService AgentAuthorityService;
+    protected readonly IWoodlandOfficerReviewSubStatusService WoodlandOfficerReviewSubStatusService;
 
     protected FellingLicenceApplicationUseCaseBase(
         IUserAccountService internalUserAccountService,
@@ -28,7 +29,8 @@ public abstract class FellingLicenceApplicationUseCaseBase
         IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository,
         IRetrieveWoodlandOwners woodlandOwnerService,
         IAgentAuthorityService agentAuthorityService,
-        IGetConfiguredFcAreas getConfiguredFcAreasService)
+        IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService)
     {
         GetConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
         InternalUserAccountService = Guard.Against.Null(internalUserAccountService);
@@ -36,6 +38,7 @@ public abstract class FellingLicenceApplicationUseCaseBase
         FellingLicenceRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
         WoodlandOwnerService = Guard.Against.Null(woodlandOwnerService);
         AgentAuthorityService = Guard.Against.Null(agentAuthorityService);
+        WoodlandOfficerReviewSubStatusService = Guard.Against.Null(woodlandOfficerReviewSubStatusService);
     }
 
     protected async Task<string> GetAdminHubAddressDetailsAsync(string? adminHubName, CancellationToken cancellationToken)
@@ -114,7 +117,8 @@ public abstract class FellingLicenceApplicationUseCaseBase
             Source = fla.Source,
             AreaCode = fla.AreaCode,
             AdministrativeRegion = fla.AdministrativeRegion,
-            CreatedById = fla.CreatedById
+            CreatedById = fla.CreatedById,
+            WoodlandOfficerReviewSubStatuses = WoodlandOfficerReviewSubStatusService.GetCurrentSubStatuses(fla)
         };
         return Result.Success(applicationSummary);
     }

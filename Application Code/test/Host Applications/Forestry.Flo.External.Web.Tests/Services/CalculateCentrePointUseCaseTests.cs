@@ -26,7 +26,6 @@ namespace Forestry.Flo.External.Web.Tests.Services;
 public class CalculateCentrePointUseCaseTests
 {
     private readonly Mock<IGetFellingLicenceApplicationForExternalUsers> _getFellingLicenceService;
-    private readonly Mock<ISendNotifications> _notificationsMock;
     private readonly Mock<IAuditService<CalculateCentrePointUseCase>> _auditMock;
     private readonly Mock<ISubmitFellingLicenceService> _submitFellingLicenceService;
     private readonly Mock<IUpdateCentrePoint> _updateCentrePointMock;
@@ -39,7 +38,6 @@ public class CalculateCentrePointUseCaseTests
     {
         _auditMock = new Mock<IAuditService<CalculateCentrePointUseCase>>();
         _getFellingLicenceService = new Mock<IGetFellingLicenceApplicationForExternalUsers>();
-        _notificationsMock = new Mock<ISendNotifications>();
         _submitFellingLicenceService = new Mock<ISubmitFellingLicenceService>();
         _updateCentrePointMock = new Mock<IUpdateCentrePoint>();
         _optionsMock = new Mock<IOptions<InternalUserSiteOptions>>();
@@ -698,7 +696,6 @@ public class CalculateCentrePointUseCaseTests
 
     private CalculateCentrePointUseCase CreateSut()
     {
-        _notificationsMock.Reset();
         _optionsMock.Setup(x => x.Value).Returns(new InternalUserSiteOptions{ BaseUrl = BaseUrl});
         _getFellingLicenceService.Reset();
         _updateCentrePointMock.Reset();
@@ -711,7 +708,6 @@ public class CalculateCentrePointUseCaseTests
             _submitFellingLicenceService.Object,
             _getFellingLicenceService.Object,
             _updateCentrePointMock.Object,
-            _notificationsMock.Object,
             new NullLogger<CalculateCentrePointUseCase>(),
             _optionsMock.Object,
             _propertyProfileRepositoryMock.Object);

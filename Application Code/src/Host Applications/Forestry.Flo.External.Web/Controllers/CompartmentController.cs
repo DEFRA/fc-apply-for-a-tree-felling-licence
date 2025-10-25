@@ -597,7 +597,6 @@ public class CompartmentController : Controller
 
         var documentModel = new AddSupportingDocumentModel
         {
-            AvailableToConsultees = true,
             DocumentCount = imageFiles.Count,
             FellingLicenceApplicationId = model.ApplicationId
         };

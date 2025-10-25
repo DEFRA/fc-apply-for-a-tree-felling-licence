@@ -12,6 +12,8 @@
     ViewData["Title"] = "Felling licence application";
     ViewData.ManuallySetBackLink(Url.Action("WoodlandOwner", "Home", new { woodlandOwnerId = Model.WoodlandOwnerId }));
     ViewData.ShowBackLink();
+
+    var user = new ExternalApplicant(User);
 }
 
 @functions
@@ -53,6 +55,15 @@
 
     <div>
         <ul class="app-task-list__items">
+            <li condition="@user.IsFcUser" class="app-task-list__item">
+                <span class="app-task-list__task-name">
+                    <a href="@Url.Action("TenYearLicence", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="ten-year-status">
+                        Confirm if 10-year licence is required
+                    </a>
+                </span>
+                <strong class="govuk-tag @GetStatusStyleName(Model.TenYearLicence.Status) app-task-list__tag" id="ten-year-status">@(Model.TenYearLicence.Status.GetDescription())</strong>
+            </li>
+
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
                     <a href="@Url.Action("SelectCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="select-compartments-status">
@@ -61,6 +72,7 @@
                 </span>
                 <strong class="govuk-tag @GetStatusStyleName(Model.SelectedCompartments.Status) app-task-list__tag" id="select-compartments-status">@(Model.SelectedCompartments.Status.GetDescription())</strong>
             </li>
+
             <li class="app-task-list__item">
                 <span class="app-task-list__task-name">
                     <a href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="operations-status">
@@ -69,8 +81,6 @@
                 </span>
                 <strong class="govuk-tag @GetStatusStyleName(Model.OperationDetails.Status) app-task-list__tag" id="operations-status">@(Model.OperationDetails.Status.GetDescription())</strong>
             </li>
-
-            <!-- temp -->
 
             <li class="app-task-list__item">
                 @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted || Model.FellingAndRestockingDetails.DetailsList.Count < 1)
@@ -112,8 +122,8 @@
             </li>
             <li class="app-task-list__item" condition="@Model.EnvironmentalImpactAssessment.StepRequiredForApplication">
                 <span class="app-task-list__task-name">
-                    <a 
-                        href="@Url.Action(nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" 
+                    <a
+                        href="@Url.Action(nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })"
                         aria-describedby="felling-and-restocking-details-status">
                         Environmental Impact Assessment
                     </a>
@@ -130,7 +140,7 @@
                     </span>
                     <strong class="govuk-tag @GetStatusStyleName(ApplicationStepStatus.NotStarted) app-task-list__tag" id="check-for-constraints-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</strong>
                     <span class="govuk-hint">
-                        <br />(Select compartments must be COMPLETED)
+                        <br/>(Select compartments must be COMPLETED)
                     </span>
                 }
                 else

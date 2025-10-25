@@ -247,6 +247,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
             ApplicantDisagreementReason = currentReview.Value.ApplicantDisagreementReason,
             ReviewDeadline = currentReview.Value.ResponseDeadline,
             AmendmentReviewCompleted = currentReview.Value.AmendmentReviewCompleted,
+            AmendmentsReason = currentReview.Value.AmendmentsReason
         };
 
         return Result.Success(viewModel);

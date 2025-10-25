@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
-public class GetFellingLicenceApplicationForInternalUsersServiceTests
+public partial class GetFellingLicenceApplicationForInternalUsersServiceTests
 {
     private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepository = new();
     private readonly Mock<IClock> _clock = new();
@@ -398,6 +398,50 @@ public class GetFellingLicenceApplicationForInternalUsersServiceTests
         Assert.Equal(fellingLicenceApplication.AdministrativeRegion, result.Value.AdminHubName);
         Assert.Equivalent(fellingLicenceApplication.AssigneeHistories
             .Where(x => x.TimestampUnassigned is null).Select(y => y.AssignedUserId).ToList(), result.Value.AssignedUserIds);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetSubmittedFlaPropertyCompartmentsByApplicationIdTest(
+        Guid applicationId,
+        List<SubmittedFlaPropertyCompartment> compartments)
+    {
+        var sut = CreateSut();
+        var expectedResult = Result.Success(compartments);
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResult);
+
+        var result = await sut.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedResult.Value, result.Value);
+
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetEnvironmentalImpactAssessmentTest(
+        Guid applicationId,
+        EnvironmentalImpactAssessment entity)
+    {
+        var sut = CreateSut();
+        var expectedResult = Result.Success(entity);
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetEnvironmentalImpactAssessmentAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResult);
+
+        var result = await sut.GetEnvironmentalImpactAssessmentAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedResult.Value, result.Value);
+
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetEnvironmentalImpactAssessmentAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
     }
 
     private GetFellingLicenceApplicationForInternalUsersService CreateSut()

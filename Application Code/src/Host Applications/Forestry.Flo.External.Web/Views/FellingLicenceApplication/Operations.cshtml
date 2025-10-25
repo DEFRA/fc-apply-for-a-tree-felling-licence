@@ -3,6 +3,16 @@
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.OperationDetailsModel
 @{
     ViewData["Title"] = "Proposed felling schedule";
+    var backLinkAction = Model.ReturnToApplicationSummary
+        ? "ApplicationSummary"
+        : Model.IsForTenYearLicence is true
+            ? "WmpDocuments"
+            : "TenYearLicence";
+
+    ViewData.ManuallySetBackLink(Url.Action(backLinkAction, "FellingLicenceApplication", new
+    {
+        applicationId = Model.ApplicationId
+    }));
     ViewData.ShowBackLink();
 }
 
@@ -21,7 +31,9 @@
         <input aria-hidden="True" type="hidden" asp-for="ApplicationId"/>
         <input aria-hidden="True" type="hidden" asp-for="StepComplete" value="true" />
         <input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary" />
+        <input aria-hidden="True" type="hidden" asp-for="IsForTenYearLicence" />
         <input aria-hidden="True" type="hidden" asp-for="DisplayDateReceived" />
+
         <div class="govuk-fieldset">
             
             <div condition="@Model.DisplayDateReceived">

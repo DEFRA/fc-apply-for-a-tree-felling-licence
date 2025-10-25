@@ -30,7 +30,7 @@
         <td class="govuk-table__cell">@Model.ApplicationReference</td>
     </tr>
     <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Status</th>
+        <th scope="row" class="govuk-table__header">Application status</th>
         <td class="govuk-table__cell">
             <vc:gds-application-status-tag application-state="@Model.Status"></vc:gds-application-status-tag> (@DateTimeDisplay.GetDateDisplayString(currentStatusHistoryItem.Created))
             @if (Model.IsWithFcStatus)
@@ -39,7 +39,20 @@
                 <a class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="AssignBackToApplicant" asp-route-applicationId="@Model.Id" asp-route-returnUrl="@returnUrl">Return to applicant</a>
             }
         </td>
-    </tr>
+        </tr>
+        <tr condition="@Model.WoodlandOfficerReviewSubStatuses.Any()" class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">Application sub status</th>
+            <td class="govuk-table__cell sub-status-container">
+                @foreach(var subStatus in Model.WoodlandOfficerReviewSubStatuses)
+                {
+                    <div>
+                        <strong class="govuk-tag govuk-tag--grey">
+                            @subStatus.GetDisplayName()
+                        </strong>
+                    </div>
+                }
+            </td>
+        </tr>
     <tr class="govuk-table__row">
         <th scope="row" class="govuk-table__header">Citizens charter deadline</th>
         <td class="govuk-table__cell">

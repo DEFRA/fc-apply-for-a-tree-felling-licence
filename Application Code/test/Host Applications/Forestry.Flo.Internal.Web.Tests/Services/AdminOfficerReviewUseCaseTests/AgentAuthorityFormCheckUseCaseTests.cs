@@ -15,6 +15,7 @@ using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -41,6 +42,7 @@ public class AgentAuthorityFormCheckUseCaseTests
     private readonly Mock<IRetrieveWoodlandOwners> _retrieveWoodlandOwnersMock = new();
     private readonly Mock<IAgentAuthorityService> _agentAuthorityServiceMock = new();
     private readonly Mock<IAuditService<AdminOfficerReviewUseCaseBase>> _auditServiceMock = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
 
     private readonly InternalUserContextFlaRepository _internalRepo;
     private readonly FellingLicenceApplicationsContext _fellingLicenceApplicationsContext;
@@ -150,6 +152,7 @@ public class AgentAuthorityFormCheckUseCaseTests
             _agentAuthorityServiceMock.Object,
             _auditServiceMock.Object,
             _getConfiguredFcAreas.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             new RequestContext("test", new RequestUserModel(_internalUser.Principal)));
     }
 

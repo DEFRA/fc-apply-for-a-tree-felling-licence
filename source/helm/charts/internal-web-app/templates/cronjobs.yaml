@@ -97,3 +97,43 @@ spec:
             - -c
             - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterComments/PullNewComments"
           restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: send-late-amendment-response-reminders
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: send-late-amendment-response-reminders
+            image: fsflo.azurecr.io/docker/qtools:1.2.1
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/AmendmentResponse/SendLateAmendmentResponseReminders"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: withdraw-late-amendment-applications
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: withdraw-late-amendment-applications
+            image: fsflo.azurecr.io/docker/qtools:1.2.1
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/AmendmentResponse/WithdrawLateAmendmentApplications"
+          restartPolicy: OnFailure

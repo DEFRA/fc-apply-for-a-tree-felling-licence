@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -10,6 +11,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
@@ -20,7 +22,7 @@ using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 
-public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
+public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase, IPublicRegisterUseCase
 {
     private readonly INotificationHistoryService _notificationHistoryService;
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
@@ -50,13 +52,15 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         ISendNotifications sendNotifications,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
         IOptions<WoodlandOfficerReviewOptions> publicRegisterOptions,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<PublicRegisterUseCase> logger) 
         : base(internalUserAccountService, 
             externalUserAccountService, 
             fellingLicenceApplicationInternalRepository, 
             woodlandOwnerService,
             agentAuthorityService, 
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService, 
+            woodlandOfficerReviewSubStatusService)
     {
         _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
@@ -71,6 +75,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
        
     }
 
+    /// <inheritdoc />
     public async Task<Result<PublicRegisterViewModel>> GetPublicRegisterDetailsAsync(
         Guid applicationId,
         CancellationToken cancellationToken)
@@ -128,6 +133,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(result);
     }
 
+    /// <inheritdoc />
     public async Task<Result> StorePublicRegisterExemptionAsync(
         Guid applicationId,
         bool isExempt,
@@ -175,6 +181,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Failure(updateResult.Error);
     }
 
+    /// <inheritdoc />
     public async Task<Result> PublishToConsultationPublicRegisterAsync(
         Guid applicationId,
         TimeSpan period,
@@ -272,6 +279,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Failure(updateResult.Error);
     }
 
+    /// <inheritdoc />
     public async Task<Result> RemoveFromPublicRegisterAsync(
         Guid applicationId,
         InternalUser user,
@@ -329,6 +337,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Failure(updateResult.Error);
     }
 
+    /// <inheritdoc />
     public async Task<Result<ReviewCommentModel>> GetPublicRegisterCommentAsync(Guid applicationId, Guid commentId, CancellationToken cancellationToken)
     {
         var commentResult = await _notificationHistoryService.GetNotificationHistoryByIdAsync(commentId, cancellationToken);
@@ -354,6 +363,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(viewModel);
     }
 
+    /// <inheritdoc />
     public async Task<Result> UpdatePublicRegisterDetailsAsync(Guid commentId, NotificationHistoryModel model, CancellationToken cancellationToken)
     {
         // Update Response, Status, LastUpdatedById, LastUpdatedDate on the notification history

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using AutoFixture;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
@@ -12,6 +11,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
@@ -22,8 +22,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
-using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
+using System.Text.Json;
 using ExternalUserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
+using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AdminOfficerReviewUseCaseTests;
 
@@ -42,6 +43,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
     private readonly Mock<IUpdateFellingLicenceApplication> _updateFellingLicenceApplication = new();
     private readonly Mock<ISendNotifications> _sendNotifications = new();
     private readonly Mock<IOptions<EiaOptions>> _eiaOptions = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private readonly Mock<IClock> _clock = new();
     private RequestContext _requestContext = null!;
     private readonly IFixture _fixture = new Fixture().CustomiseFixtureForFellingLicenceApplications();
@@ -84,6 +86,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
             _updateFellingLicenceApplication.Object,
             _sendNotifications.Object,
             _eiaOptions.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             _clock.Object,
             _requestContext
         );

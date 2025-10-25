@@ -170,7 +170,13 @@
         <input hidden="hidden" aria-hidden="True" asp-for="ReviewDeadline" />
 
         <div class="govuk-form-group">
-            <fieldset class="govuk-fieldset" id="@nameof(Model.ApplicantAgreed)">
+			<div class="govuk-heading-m">
+				Amendment reasons
+			</div>
+			<p>
+				@Model.AmendmentsReason
+			</p>
+			<fieldset class="govuk-fieldset" id="@nameof(Model.ApplicantAgreed)">
                 <legend class="govuk-heading-m">
                     Do you agree to the proposed amendments made by the Woodland Officer?
                 </legend>
@@ -238,7 +244,7 @@
 </div>
 
 @section Css {
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
     <link async rel="stylesheet" href="~/css/felling-and-restocking.css?v1.1" aria-busyasp-append-version="true" />
 
     <style>
@@ -256,7 +262,7 @@
 
 @section Scripts {
 
-    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script src="https://js.arcgis.com/4.24/"></script>
     <script>
         require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
             var mapObj = new ProfileMap("viewDiv", true);

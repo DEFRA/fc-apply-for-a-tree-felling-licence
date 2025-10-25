@@ -36,5 +36,6 @@ public enum NotificationType
     EiaReminderMissingDocuments,
     EiaReminderToSendDocuments,
     ApplicantReviewedAmendments,
-    AmendmentsSentToApplicant
+    AmendmentsSentToApplicant,
+    ReminderForApplicantToRespondToAmendments
 }

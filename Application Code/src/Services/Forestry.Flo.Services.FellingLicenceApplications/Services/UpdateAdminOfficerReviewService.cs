@@ -33,7 +33,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         Guid performingUserId,
         DateTime completedDateTime,
         bool isAgencyApplication,
-        bool requireWOReview,
+        bool isSkippingWoReviewForCbw,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to complete Admin Officer review for application with id {ApplicationId}", applicationId);
@@ -64,7 +64,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             return Result.Failure<CompleteAdminOfficerReviewNotificationsModel>("Unable to complete Admin Officer review for given application");
         }
 
-        if (AssertHasAssignedWoodlandOfficer(applicationMaybe.Value, requireWOReview) == false)
+        if (AssertHasAssignedWoodlandOfficer(applicationMaybe.Value, isSkippingWoReviewForCbw) == false)
         {
             _logger.LogError("Application with id {ApplicationId} does not have an assigned woodland officer, unable to complete the Admin Officer review", applicationId);
             return Result.Failure<CompleteAdminOfficerReviewNotificationsModel>("Unable to complete Admin Officer review for given application");
@@ -73,9 +73,9 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         Guid woodlandOfficerId = Guid.Empty;
         foreach (var assignee in applicationMaybe.Value.AssigneeHistories)
         {
-            if (requireWOReview)
+            if (isSkippingWoReviewForCbw)
             {
-                if (assignee.Role == AssignedUserRole.WoodlandOfficer && !assignee.TimestampUnassigned.HasValue)
+                if (assignee.Role == AssignedUserRole.FieldManager && !assignee.TimestampUnassigned.HasValue)
                 {
                     woodlandOfficerId = assignee.AssignedUserId;
                     break;
@@ -83,7 +83,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             }
             else
             {
-                if (assignee.Role == AssignedUserRole.FieldManager && !assignee.TimestampUnassigned.HasValue)
+                if (assignee.Role == AssignedUserRole.WoodlandOfficer && !assignee.TimestampUnassigned.HasValue)
                 {
                     woodlandOfficerId = assignee.AssignedUserId;
                     break;
@@ -105,7 +105,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             Created = completedDateTime,
             FellingLicenceApplicationId = applicationId,
             FellingLicenceApplication = applicationMaybe.Value,
-            Status = requireWOReview ? FellingLicenceStatus.WoodlandOfficerReview : FellingLicenceStatus.SentForApproval
+            Status = isSkippingWoReviewForCbw ? FellingLicenceStatus.SentForApproval : FellingLicenceStatus.WoodlandOfficerReview
         });
 
         var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
@@ -447,17 +447,17 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         return assignedAo?.AssignedUserId == performingUserId;
     }
 
-    private bool AssertHasAssignedWoodlandOfficer(FellingLicenceApplication application, bool requireWOReview)
+    private bool AssertHasAssignedWoodlandOfficer(FellingLicenceApplication application, bool isSkippingWoReviewForCbw)
     {
-        if (requireWOReview)
+        if (isSkippingWoReviewForCbw)
         {
             return application.AssigneeHistories.Any(x =>
-                (x.Role == AssignedUserRole.WoodlandOfficer) && x.TimestampUnassigned.HasValue == false);
+                (x.Role == AssignedUserRole.FieldManager) && x.TimestampUnassigned.HasValue == false);
         }
         else
         {
             return application.AssigneeHistories.Any(x =>
-                (x.Role == AssignedUserRole.FieldManager) && x.TimestampUnassigned.HasValue == false);
+                (x.Role == AssignedUserRole.WoodlandOfficer) && x.TimestampUnassigned.HasValue == false);
         }
 
     }

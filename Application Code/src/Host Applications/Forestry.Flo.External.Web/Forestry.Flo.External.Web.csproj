@@ -22,6 +22,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Build" Version="17.8.43" />
     <PackageReference Include="Microsoft.Identity.Web" Version="3.9.3" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.9.3" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
@@ -46,6 +47,7 @@
     <ProjectReference Include="..\..\Services\Forestry.Flo.Services.InternalUsers\Forestry.Flo.Services.InternalUsers.csproj" />
     <ProjectReference Include="..\..\Services\Forestry.Flo.Services.Notifications\Forestry.Flo.Services.Notifications.csproj" />
     <ProjectReference Include="..\..\Services\Forestry.Flo.Services.PropertyProfiles\Forestry.Flo.Services.PropertyProfiles.csproj" />
+    <ProjectReference Include="..\Forestry.Flo.HostApplicationsCommon\Forestry.Flo.HostApplicationsCommon.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\DataImport\" />

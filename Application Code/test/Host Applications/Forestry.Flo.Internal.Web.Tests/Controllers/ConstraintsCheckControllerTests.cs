@@ -1,32 +1,17 @@
-﻿using System;
-using System.Net;
-using System.Net.Http.Headers;
-using AutoFixture;
+﻿using System.Net.Http.Headers;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
-using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Models;
-using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses;
 using Forestry.Flo.Services.Gis.Models.Internal;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
-using Forestry.Flo.Services.InternalUsers.Repositories;
-using Forestry.Flo.Tests.Common;
 using Forestry.Flo.Tests.Common.Testing;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Microsoft.Graph;
 using Moq;
-using ExternalUserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
-using ProposedRestockingDetail = Forestry.Flo.Services.FellingLicenceApplications.Entities.ProposedRestockingDetail;
-using Status = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.Status;
 
 namespace Forestry.Flo.Internal.Web.Tests.Controllers;
 
@@ -94,7 +79,7 @@ public class ConstraintsCheckControllerTests : IClassFixture<InternalWebApplicat
         return client;
     }
 
-      private void EnsureSubmittedCompartments(FellingLicenceApplication application)
+      private void EnsureSubmittedCompartments(Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication application)
         {
           //arrange
             foreach (var submittedFlaPropertyCompartment in application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!)

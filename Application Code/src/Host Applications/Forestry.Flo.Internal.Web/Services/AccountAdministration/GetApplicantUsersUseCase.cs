@@ -2,6 +2,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.AccountAdministration;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
@@ -11,7 +12,7 @@ namespace Forestry.Flo.Internal.Web.Services.AccountAdministration;
 /// <summary>
 /// Handles use case for an account administrator to retrieve external user accounts.
 /// </summary>
-public class GetApplicantUsersUseCase
+public class GetApplicantUsersUseCase : IGetApplicantUsersUseCase
 {
     private readonly ILogger<GetApplicantUsersUseCase> _logger;
     private readonly IRetrieveUserAccountsService _externalAccountService;
@@ -24,14 +25,7 @@ public class GetApplicantUsersUseCase
         _externalAccountService = Guard.Against.Null(externalAccountService);
     }
 
-    /// <summary>
-    /// Populates an <see cref="ExternalUserListModel"/> with all active external user accounts.
-    /// </summary>
-    /// <param name="internalUser">The internal user requesting the list.</param>
-    /// <param name="returnUrl">A link to redirect to if the user selects cancel.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A populated <see cref="ExternalUserListModel"/>.</returns>
-    /// <remarks>This method can only be performed by account administrators.</remarks>
+    /// <inheritdoc />
     public async Task<Result<ExternalUserListModel>> RetrieveListOfActiveExternalUsersAsync(InternalUser internalUser, string returnUrl, CancellationToken cancellationToken)
     {
         if (internalUser.AccountType is not AccountTypeInternal.AccountAdministrator)
@@ -82,12 +76,7 @@ public class GetApplicantUsersUseCase
         return Result.Success(results);
     }
 
-    /// <summary>
-    /// Retrieves a populated <see cref="ExternalUserModel"/> for a given user account.
-    /// </summary>
-    /// <param name="userId">The identifier for the external user account.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result containing a populated <see cref="ExternalUserModel"/> if successful, or an error if not.</returns>
+    /// <inheritdoc />
     public async Task<Result<ExternalUserModel>> RetrieveExternalUserAsync(Guid userId, CancellationToken cancellationToken) 
      { 
         var user = await _externalAccountService.RetrieveUserAccountEntityByIdAsync(userId, cancellationToken);

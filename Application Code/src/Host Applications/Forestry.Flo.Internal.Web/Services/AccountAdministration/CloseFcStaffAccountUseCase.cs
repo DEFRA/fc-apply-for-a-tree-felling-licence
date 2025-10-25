@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.AccountAdministration;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
@@ -13,7 +14,7 @@ namespace Forestry.Flo.Internal.Web.Services.AccountAdministration;
 /// <summary>
 /// Handles use case for an account administrator to close FC staff user accounts.
 /// </summary>
-public class CloseFcStaffAccountUseCase
+public class CloseFcStaffAccountUseCase : ICloseFcStaffAccountUseCase
 {
     private readonly ILogger<CloseFcStaffAccountUseCase> _logger;
     private readonly IUserAccountService _internalAccountService;

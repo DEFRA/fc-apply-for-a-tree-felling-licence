@@ -47,4 +47,18 @@ public interface IGetFellingLicenceApplicationForExternalUsers
         Guid fellingLicenceApplicationId, 
         UserAccessModel userAccessModel,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the existing submitted FLA property detail for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the submitted FLA property detail for.</param>
+    /// <param name="userAccessModel">User access model to test access against.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Maybe{SubmittedFlaPropertyDetail}"/> containing the existing submitted FLA property detail if found; otherwise, an empty value.
+    /// </returns>
+    Task<Result<Maybe<SubmittedFlaPropertyDetail>>> GetExistingSubmittedFlaPropertyDetailAsync(
+        Guid applicationId, 
+        UserAccessModel userAccessModel,
+        CancellationToken cancellationToken);
 }

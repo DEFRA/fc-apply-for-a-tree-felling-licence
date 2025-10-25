@@ -9,6 +9,7 @@
     <PackageReference Include="AutoFixture.Xunit2" Version="4.18.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Build" Version="17.8.43" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
     <PackageReference Include="Microsoft.Identity.Web" Version="3.9.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
@@ -37,4 +38,22 @@
 	<ItemGroup>
 		<AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage" />
 	</ItemGroup>
+	<ItemGroup>
+		<Compile Update="Services\CreateFellingLicenceApplicationUseCaseTests.GetFellingAndRestockingDetailsPlaybackViewModel.cs">
+			<DependentUpon>CreateFellingLicenceApplicationUseCaseTests.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Services\TenYearLicenceUseCaseTests.UpdateTenYearLicenceStatus.cs">
+			<DependentUpon>TenYearLicenceUseCaseTests.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Services\TenYearLicenceUseCaseTests.CompleteTenYearLicenceStep.cs">
+			<DependentUpon>TenYearLicenceUseCaseTests.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Services\TenYearLicenceUseCaseTests.GetWmpDocumentsViewModel.cs">
+			<DependentUpon>TenYearLicenceUseCaseTests.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Services\TenYearLicenceUseCaseTests.IsTenYearLicenceApplication.cs">
+			<DependentUpon>TenYearLicenceUseCaseTests.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
+	
 </Project>

@@ -20,7 +20,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 public class SubmitFellingLicenceService : ISubmitFellingLicenceService
 {
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
-    private readonly ISendNotifications _notificationsService;
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
     private readonly IUserAccountRepository _userAccountRepository;
     private readonly IForesterServices _iForesterServices;
@@ -39,7 +38,6 @@ public class SubmitFellingLicenceService : ISubmitFellingLicenceService
         IForesterServices iForesterServices,
         IForestryServices forestryServices,
         IClock clock,
-        ISendNotifications notificationsService,
         IGetConfiguredFcAreas getConfiguredFcAreasService)
     {
         _fellingLicenceApplicationInternalRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
@@ -50,7 +48,6 @@ public class SubmitFellingLicenceService : ISubmitFellingLicenceService
         _logger = Guard.Against.Null(logger);
         _audit = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
-        _notificationsService = Guard.Against.Null(notificationsService);
         _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
     }
 

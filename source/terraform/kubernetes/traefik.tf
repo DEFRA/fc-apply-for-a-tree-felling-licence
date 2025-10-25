@@ -116,6 +116,16 @@ resource "kubectl_manifest" "metrics_service" {
   ]
 }
 
+# Deploy TLS Options
+resource "kubectl_manifest" "traefik_tlsoptions" {
+  yaml_body = file("values/traefik/tlsoption.yaml")
+
+  depends_on = [
+    helm_release.traefik
+  ]
+}
+
+
 # Deploy traefik service monitor
 #resource "kubectl_manifest" "traefik-service-monitor" {
 #    yaml_body = file("values/traefik/traefik-service-monitor.yaml")

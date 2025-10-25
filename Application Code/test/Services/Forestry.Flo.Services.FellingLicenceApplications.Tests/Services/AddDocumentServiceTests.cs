@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
-using AutoFixture;
+﻿using AutoFixture;
 using CSharpFunctionalExtensions;
+using FileSignatures;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -23,6 +18,13 @@ using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
 using NodaTime.Testing;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
@@ -32,28 +34,16 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         private static readonly Fixture FixtureInstance = new();
         private static readonly DateTime UtcNow = DateTime.UtcNow;
         private readonly IClock _fixedTimeClock = new FakeClock(Instant.FromDateTimeUtc(UtcNow));
-        private readonly Mock<IFileStorageService> _fileStorageService;
-        private readonly Mock<IFellingLicenceApplicationExternalRepository> _fellingLicenceApplicationRepository;
-        private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationInternalRepository;
-        private readonly Mock<IAuditService<AddDocumentService>> _mockAddDocumentServiceAudit;
-        private readonly Mock<IUnitOfWork> _unitOfWOrkMock;
+        private readonly Mock<IFileStorageService> _fileStorageService = new();
+
+        private readonly Mock<IFellingLicenceApplicationExternalRepository> _fellingLicenceApplicationRepository = new();
+        private readonly Mock<IFileFormatInspector> _mockFileFormatInspector = new();
+        private readonly Mock<IAuditService<AddDocumentService>> _mockAddDocumentServiceAudit = new();
+        private readonly Mock<IUnitOfWork> _unitOfWOrkMock = new();
 
         public AddDocumentServiceTests()
         {
-            FixtureInstance.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
-                .ForEach(b => FixtureInstance.Behaviors.Remove(b));
-            FixtureInstance.Behaviors.Add(new OmitOnRecursionBehavior());
-
-            _fileStorageService = new Mock<IFileStorageService>();
-            _mockAddDocumentServiceAudit = new Mock<IAuditService<AddDocumentService>>();
-            _fellingLicenceApplicationRepository = new Mock<IFellingLicenceApplicationExternalRepository>();
-            _fellingLicenceApplicationInternalRepository = new Mock<IFellingLicenceApplicationInternalRepository>();
-            _unitOfWOrkMock = new Mock<IUnitOfWork>();
-            _fellingLicenceApplicationRepository.SetupGet(r => r.UnitOfWork).Returns(_unitOfWOrkMock.Object);
-
-            _fileStorageService.Setup(f => f.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
-                    It.IsAny<bool>(), It.IsAny<FileUploadReason>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(SavedFileSuccessResult("testLocation",4));
+            FixtureInstance.CustomiseFixtureForFellingLicenceApplications();
         }
 
         [Theory, AutoMoqData]
@@ -61,7 +51,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         {
             //arrange
             var sut = CreateSut();
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(0).ToList();
+            var filesToStore = new List<FileToStoreModel>(0);
 
             var addDocumentRequest = new AddDocumentsExternalRequest()
             {
@@ -84,7 +74,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -107,12 +97,62 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         }
 
         [Theory, AutoMoqData]
+        public async Task WhenApplicationNotFoundForId(Guid applicationId)
+        {
+            //arrange
+            var sut = CreateSut();
+            var filesToStore = new List<FileToStoreModel>(0);
+
+            var addDocumentRequest = new AddDocumentsExternalRequest()
+            {
+                ActorType = ActorType.ExternalApplicant,
+                ApplicationDocumentCount = 0,
+                DocumentPurpose = DocumentPurpose.Attachment,
+                FellingApplicationId = applicationId,
+                FileToStoreModels = new ReadOnlyCollection<FileToStoreModel>(filesToStore),
+                ReceivedByApi = false,
+                UserAccountId = Guid.NewGuid(),
+                VisibleToApplicant = true,
+                VisibleToConsultee = true,
+                WoodlandOwnerId = Guid.NewGuid()
+            };
+
+            //setup
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            //act
+            var result = await sut.AddDocumentsAsExternalApplicantAsync(
+                addDocumentRequest,
+                CancellationToken.None);
+
+            //assert
+            _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+            _mockAddDocumentServiceAudit.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                    It.IsAny<CancellationToken>()), Times.Never);
+
+            Assert.True(result.IsFailure);
+            Assert.Single(result.Error.UserFacingFailureMessages);
+            Assert.Equal($"An application cannot be retrieved with an id of {applicationId}.", result.Error.UserFacingFailureMessages.First());
+
+        }
+
+        [Theory, AutoMoqData]
         public async Task WhenTooManyDocumentsToAdd(FellingLicenceApplication application)
         {
             //arrange
             const int maxNumberOfDocumentsToAdd = 2;
             var sut = CreateSut(maxNumberOfDocuments:maxNumberOfDocumentsToAdd);
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(maxNumberOfDocumentsToAdd+1).ToList();
+            var filesToStore = CreateFilesToStore(maxNumberOfDocumentsToAdd + 1);
 
             var addDocumentRequest = new AddDocumentsExternalRequest()
             {
@@ -135,7 +175,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -159,11 +199,62 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         }
 
         [Theory, AutoMoqData]
+        public async Task WhenGreaterThanDocumentLimitButIsAddingWmpDocument(FellingLicenceApplication application)
+        {
+            //arrange
+            const int maxNumberOfDocumentsToAdd = 2;
+            var sut = CreateSut(maxNumberOfDocuments: maxNumberOfDocumentsToAdd);
+            var filesToStore = CreateFilesToStore(maxNumberOfDocumentsToAdd + 1);
+
+            var addDocumentRequest = new AddDocumentsExternalRequest()
+            {
+                ActorType = ActorType.ExternalApplicant,
+                ApplicationDocumentCount = 100,
+                DocumentPurpose = DocumentPurpose.WmpDocument,
+                FellingApplicationId = application.Id,
+                FileToStoreModels = new ReadOnlyCollection<FileToStoreModel>(filesToStore),
+                ReceivedByApi = false,
+                UserAccountId = Guid.NewGuid(),
+                VisibleToApplicant = true,
+                VisibleToConsultee = true,
+                WoodlandOwnerId = application.WoodlandOwnerId
+            };
+
+            //setup
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            //act
+            var result = await sut.AddDocumentsAsExternalApplicantAsync(
+                addDocumentRequest,
+                new CancellationToken());
+
+            //assert
+            _mockAddDocumentServiceAudit.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                    It.IsAny<CancellationToken>()), Times.Exactly(filesToStore.Count));
+
+            _mockAddDocumentServiceAudit.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.AddFellingLicenceAttachmentFailureEvent),
+                    It.IsAny<CancellationToken>()), Times.Never);
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value.UserFacingFailureMessages);
+        }
+
+        [Theory, AutoMoqData]
         public async Task WithSingleValidDocumentToAdd(FellingLicenceApplication application)
         {
             //arrange
             var sut = CreateSut(maxNumberOfDocuments:application.Documents!.Count+1);
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(1).ToList();
+            var filesToStore = CreateFilesToStore();
 
             var addDocumentRequest = new AddDocumentsExternalRequest()
             {
@@ -186,7 +277,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -209,6 +300,60 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             Assert.Empty(result.Value.UserFacingFailureMessages);
         }
 
+        [Theory, AutoMoqData]
+        public async Task WhenAddingDocumentToRepositoryFails(FellingLicenceApplication application)
+        {
+            //arrange
+            var sut = CreateSut(maxNumberOfDocuments: application.Documents!.Count + 1);
+            var filesToStore = CreateFilesToStore();
+
+            var addDocumentRequest = new AddDocumentsExternalRequest()
+            {
+                ActorType = ActorType.ExternalApplicant,
+                ApplicationDocumentCount = 0,
+                DocumentPurpose = DocumentPurpose.Attachment,
+                FellingApplicationId = application.Id,
+                FileToStoreModels = new ReadOnlyCollection<FileToStoreModel>(filesToStore),
+                ReceivedByApi = false,
+                UserAccountId = Guid.NewGuid(),
+                VisibleToApplicant = true,
+                VisibleToConsultee = true,
+                WoodlandOwnerId = application.WoodlandOwnerId
+            };
+
+            //setup
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            _fellingLicenceApplicationRepository
+                .Setup(x => x.AddDocumentAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.General));
+
+            //act
+            var result = await sut.AddDocumentsAsExternalApplicantAsync(
+                addDocumentRequest,
+                CancellationToken.None);
+
+            //assert
+
+            _mockAddDocumentServiceAudit.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                    It.IsAny<CancellationToken>()), Times.Never);
+
+            _mockAddDocumentServiceAudit.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplicationFailure),
+                    It.IsAny<CancellationToken>()), Times.Once);
+
+            Assert.True(result.IsFailure);
+        }
+
         [Theory]
         [InlineData(DocumentPurpose.FcLisConstraintReport)]
         [InlineData(DocumentPurpose.ExternalLisConstraintReport)]
@@ -217,7 +362,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             //arrange
             var application = FixtureInstance.Create<FellingLicenceApplication>();
             var sut = CreateSut(maxNumberOfDocuments:application.Documents!.Count+1);
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(1).ToList();
+            var filesToStore = CreateFilesToStore();
 
             var addDocumentRequest = new AddDocumentsRequest
             {
@@ -239,7 +384,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -271,7 +416,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             //arrange
             var application = FixtureInstance.Create<FellingLicenceApplication>();
             var sut = CreateSut(maxNumberOfDocuments:application.Documents!.Count+1);
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(1).ToList();
+            var filesToStore = CreateFilesToStore();
 
             var addDocumentRequest = new AddDocumentsRequest
             {
@@ -293,7 +438,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -321,7 +466,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         {
             //arrange
             var sut = CreateSut(maxNumberOfDocuments:application.Documents!.Count+2);
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(2).ToList();
+            var filesToStore = CreateFilesToStore(2);
 
             var addDocumentRequest = new AddDocumentsExternalRequest()
             {
@@ -344,7 +489,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -372,7 +517,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             //arrange
             const int numberOfDocumentsToAdd = 2;
             var sut = CreateSut(maxNumberOfDocuments:application.Documents!.Count+numberOfDocumentsToAdd);
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(numberOfDocumentsToAdd).ToList();
+            var filesToStore = CreateFilesToStore(numberOfDocumentsToAdd);
 
             _fileStorageService.SetupSequence(x => x.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
                     It.IsAny<bool>(), It.IsAny<FileUploadReason>(), It.IsAny<CancellationToken>()))
@@ -400,7 +545,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -430,7 +575,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             //arrange
             const int numberOfDocumentsToAdd = 4;
             var sut = CreateSut(maxNumberOfDocuments:application.Documents!.Count+numberOfDocumentsToAdd);
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(numberOfDocumentsToAdd).ToList();
+            var filesToStore = CreateFilesToStore(numberOfDocumentsToAdd);
 
             _fileStorageService.SetupSequence(x => x.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
                     It.IsAny<bool>(), It.IsAny<FileUploadReason>(), It.IsAny<CancellationToken>()))
@@ -460,7 +605,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                         It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
@@ -490,7 +635,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         {
             //arrange
             var sut = CreateSut();
-            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(1).ToList();
+            var filesToStore = CreateFilesToStore();
 
             var addDocumentRequest = new AddDocumentsExternalRequest()
             {
@@ -530,10 +675,73 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             Assert.Contains($"External applicant lacks permission to add documents to application, app id: {addDocumentRequest.FellingApplicationId}, woodland owner id: {addDocumentRequest.WoodlandOwnerId}.", result.Error.UserFacingFailureMessages);
         }
 
+        [Theory, AutoMoqData]
+        public async Task WhenUploadingFileThatFailsValidation(FellingLicenceApplication application)
+        {
+            //arrange
+            var sut = CreateSut(maxNumberOfDocuments: application.Documents!.Count + 1);
+            var filesToStore = FixtureInstance.CreateMany<FileToStoreModel>(1).ToList();
+
+            var addDocumentRequest = new AddDocumentsExternalRequest()
+            {
+                ActorType = ActorType.ExternalApplicant,
+                ApplicationDocumentCount = 0,
+                DocumentPurpose = DocumentPurpose.Attachment,
+                FellingApplicationId = application.Id,
+                FileToStoreModels = new ReadOnlyCollection<FileToStoreModel>(filesToStore),
+                ReceivedByApi = false,
+                UserAccountId = Guid.NewGuid(),
+                VisibleToApplicant = true,
+                VisibleToConsultee = true,
+                WoodlandOwnerId = application.WoodlandOwnerId
+            };
+
+            //setup
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.CheckApplicationExists(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            //act
+            var result = await sut.AddDocumentsAsExternalApplicantAsync(
+                addDocumentRequest,
+                CancellationToken.None);
+
+            Assert.True(result.IsFailure);
+            Assert.Single(result.Error.UserFacingFailureMessages);
+            Assert.Contains($"The type of file '{filesToStore.First().FileName}' is not permitted to be attached.", result.Error.UserFacingFailureMessages);
+
+
+            //assert
+
+            _mockAddDocumentServiceAudit.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                    It.IsAny<CancellationToken>()), Times.Never);
+
+            _mockAddDocumentServiceAudit.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.AddFellingLicenceAttachmentFailureEvent),
+                    It.IsAny<CancellationToken>()), Times.Once);
+        }
+
         private AddDocumentService CreateSut(int maxNumberOfDocuments=2, int maxFileSizeBytes=1024)
         {
-            _mockAddDocumentServiceAudit.Reset();
+            _fileStorageService.Reset();
+            _fileStorageService.Setup(f => f.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
+                    It.IsAny<bool>(), It.IsAny<FileUploadReason>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(SavedFileSuccessResult("testLocation", 4));
+
+            _mockFileFormatInspector.Reset();
+            _fellingLicenceApplicationRepository.Reset();
             _unitOfWOrkMock.Reset();
+            _fellingLicenceApplicationRepository.
+                SetupGet(r => r.UnitOfWork).Returns(_unitOfWOrkMock.Object);
+
+            _mockAddDocumentServiceAudit.Reset();
 
             var settings = new UserFileUploadOptions
             {
@@ -543,22 +751,33 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 {
                     new AllowedFileType()
                     {
-                        FileUploadReasons = [FileUploadReason.SupportingDocument, FileUploadReason.AgentAuthorityForm],
+                        FileUploadReasons = [FileUploadReason.SupportingDocument, FileUploadReason.AgentAuthorityForm, FileUploadReason.WmpDocument, FileUploadReason.EiaDocument],
                         Description = "test",
-                        Extensions = new[] { "csv", "txt" }
+                        Extensions = ["csv", "txt"]
                     }
                 }
             };
+            var apiFileUploadOptions = new ApiFileUploadOptions()
+            {
+                MaxFileSizeBytes = maxFileSizeBytes,
+            };
 
-            return new AddDocumentService(_fixedTimeClock,
+            var fileValidator = new FileValidator(
+                _mockFileFormatInspector.Object,
+                Options.Create(settings),
+                Options.Create(apiFileUploadOptions));
+
+
+            return new AddDocumentService(
+                _fixedTimeClock,
                 _fileStorageService.Object,
                 new FileTypesProvider(),
                 Options.Create(settings),
                 _mockAddDocumentServiceAudit.Object,
                 _fellingLicenceApplicationRepository.Object,
+                fileValidator,
                 new RequestContext("test",new RequestUserModel(new ClaimsPrincipal())),
-                new NullLogger<AddDocumentService>(),
-                _fellingLicenceApplicationInternalRepository.Object
+                new NullLogger<AddDocumentService>()
             );
         }
 
@@ -571,6 +790,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         private static Result<StoreFileSuccessResult, StoreFileFailureResult> SavedFileFailureResultWithFailureReason(StoreFileFailureResultReason reason)
         {
             return Result.Failure<StoreFileSuccessResult, StoreFileFailureResult>(new StoreFileFailureResult(reason));
+        }
+
+        private static List<FileToStoreModel> CreateFilesToStore(int count = 1)
+        {
+            var results = FixtureInstance.CreateMany<FileToStoreModel>(count).ToList();
+            results.ForEach(f => f.FileName += ".txt");
+            return results;
         }
     }
 }

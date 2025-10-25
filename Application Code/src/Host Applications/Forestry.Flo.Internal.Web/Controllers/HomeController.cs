@@ -2,6 +2,7 @@ using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers.Services;
 using GovUk.OneLogin.AspNetCore;
@@ -20,7 +21,7 @@ namespace Forestry.Flo.Internal.Web.Controllers;
 
 public class HomeController : Controller
 {
-    private readonly FellingLicenceApplicationUseCase _fellingLicenceApplicationUseCase;
+    private readonly IFellingLicenceApplicationUseCase _fellingLicenceApplicationUseCase;
     private readonly IUserAccountService _userAccountService;
     private readonly ILogger<HomeController> _logger;
     private readonly List<BreadCrumb> _breadCrumbsRoot = new()
@@ -34,7 +35,7 @@ public class HomeController : Controller
         new[] { "Status", "Reference", "Property", "SubmittedDate", "CitizensCharterDate", "FinalActionDate" },
         StringComparer.OrdinalIgnoreCase);
 
-    public HomeController(FellingLicenceApplicationUseCase fellingLicenceApplicationUseCase, IUserAccountService userAccountService, ILogger<HomeController> logger)
+    public HomeController(IFellingLicenceApplicationUseCase fellingLicenceApplicationUseCase, IUserAccountService userAccountService, ILogger<HomeController> logger)
     {
         _fellingLicenceApplicationUseCase = fellingLicenceApplicationUseCase;
         _userAccountService = userAccountService;
@@ -99,20 +100,6 @@ public class HomeController : Controller
         }
 
         return View(homePageModel);
-    }
-
-    private void SetBreadcrumbs(PageWithBreadcrumbsViewModel model, string currentPage)
-    {
-        var breadCrumbsRoot = new List<BreadCrumb>
-        {
-            new("Home", "Home", "Index", null)
-        };
-
-        model.Breadcrumbs = new BreadcrumbsModel
-        {
-            Breadcrumbs = breadCrumbsRoot,
-            CurrentPage = currentPage
-        };
     }
 
     public IActionResult Login()
