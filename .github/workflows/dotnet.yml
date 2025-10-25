@@ -31,7 +31,7 @@ jobs:
 
     # Inject secrets only when Sonar is enabled (to avoid missing-secrets errors in private repo)
     - name: Inject User Secrets for External Project
-      if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+      if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) }}
       shell: bash
       run: |
         set -euo pipefail
@@ -58,7 +58,7 @@ jobs:
       working-directory: Application Code
 
     - name: Inject User Secrets for Internal Project
-      if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+      if: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) }}
       shell: bash
       run: |
         set -euo pipefail
