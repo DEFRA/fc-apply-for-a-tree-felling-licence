@@ -137,19 +137,33 @@ jobs:
       - name: Test (no coverage)
         if: ${{ vars.SONAR_ENABLED != 'true' }}
         run: dotnet test --no-build --verbosity normal
-        timeout-minutes: 30
         working-directory: Application Code
 
-      - name: Test (with OpenCover coverage for Sonar)
+
+      # When SONAR is ON — run each test project individually with coverage
+      - name: Test (per project, OpenCover coverage)
         if: ${{ vars.SONAR_ENABLED == 'true' }}
-        run: >
-          dotnet test "Application Code"
-          --no-build
-          --configuration Release
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-        timeout-minutes: 30
+        shell: bash
+        working-directory: Application Code
+        run: |
+          set -euo pipefail
+          # find all *.Tests.csproj tracked by git under Application Code/
+          mapfile -t TESTS < <(git ls-files '**/*.Tests.csproj' | sed 's|^|./|')
+          if [ ${#TESTS[@]} -eq 0 ]; then
+            echo "No test projects found"
+            exit 0
+          fi
+          for proj in "${TESTS[@]}"; do
+            echo "===> Running tests for: $proj"
+            # unique coverage output per project to avoid collisions
+            outdir="$(dirname "$proj")/TestResults"
+            mkdir -p "$outdir"
+            dotnet test "$proj" --no-build --configuration Release \
+              /p:CollectCoverage=true \
+              /p:CoverletOutput="$outdir/coverage.opencover.xml" \
+              /p:CoverletOutputFormat=opencover
+          done
+
 
       - name: SonarQube End
         if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
