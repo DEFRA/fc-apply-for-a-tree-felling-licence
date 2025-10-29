@@ -1,5 +1,4 @@
 ﻿@using Forestry.Flo.Services.Common.User
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.UserAccount.ListUsersLinkedWoodlandOwnerModel
 
 @{
@@ -10,11 +9,9 @@
     var currentUser = new ExternalApplicant(User);
 }
 
-<div class="govuk-grid-column-full">
+<div class="govuk-grid-column-two-thirds">
     
     <h1 class="govuk-heading-xl">Users for @currentUser.WoodlandOwnerName</h1>
-
-    <partial name="Partials/_PageErrors" />
     <partial name="Partials/_ConfirmationMessageDisplay" />
 
     <table class="govuk-table" id="users-linked-list-table">

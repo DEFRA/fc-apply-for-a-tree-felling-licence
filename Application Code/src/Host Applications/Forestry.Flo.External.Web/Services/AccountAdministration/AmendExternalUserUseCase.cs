@@ -106,7 +106,7 @@ public class AmendExternalUserUseCase
         {
             var errorMessage = $"Unable to retrieve user account with id {model.UserId}, error: {userAccountError}";
 
-            _logger.LogError(errorMessage);
+            _logger.LogError("Unable to retrieve user account with id {UserId}, error: {UserAccountError}", model.UserId, userAccountError);
             await CreateFailureAuditAsync(loggedInUser, model.UserId, errorMessage, cancellationToken);
 
             return Result.Failure("Unable to retrieve user account");
@@ -117,7 +117,7 @@ public class AmendExternalUserUseCase
             var errorMessage =
                 $"Logged in user lacks authority to amend woodland owner user account with id {model.UserId}";
 
-            _logger.LogError(errorMessage);
+            _logger.LogError("Logged in user lacks authority to amend woodland owner user account with id {UserId}", model.UserId);
             await CreateFailureAuditAsync(loggedInUser, model.UserId, errorMessage, cancellationToken);
 
             return Result.Failure("Logged in user lacks authority to amend woodland owner user account");
@@ -128,7 +128,7 @@ public class AmendExternalUserUseCase
             var errorMessage =
                 $"Logged in user lacks authority to amend agent user account with id {model.UserId}";
 
-            _logger.LogError(errorMessage);
+            _logger.LogError("Logged in user lacks authority to amend agent user account with id {UserId}", model.UserId);
             await CreateFailureAuditAsync(loggedInUser, model.UserId, errorMessage, cancellationToken);
 
             return Result.Failure("Logged in user lacks authority to amend agent user account");
@@ -140,7 +140,7 @@ public class AmendExternalUserUseCase
         {
             var errorMessage = $"Unable to update external user account {model.UserId}, error: {error}";
 
-            _logger.LogError(errorMessage);
+            _logger.LogError("Unable to update external user account {UserId}, error: {Error}", model.UserId, error);
             
             await _audit.PublishAuditEventAsync(
                 new AuditEvent(

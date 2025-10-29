@@ -209,7 +209,8 @@ public class LarchCheckUseCaseTests
             Zone3 = true,
             ConfirmMoratorium = true,
             ConfirmInspectionLog = true,
-            RecommendSplitApplicationDue = RecommendSplitApplicationEnum.MixLarchZone1
+            RecommendSplitApplicationDue = RecommendSplitApplicationEnum.MixLarchZone1,
+            FormLevelCaseNote = new FormLevelCaseNote()
         };
 
         _larchCheckServiceMock

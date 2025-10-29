@@ -13,26 +13,27 @@
 
 <partial name="../Shared/Partials/_LarchCheck.cshtml" model="@Model" />
 
-@{
-	var activityFeed = new ActivityFeedModel
-			{
-				ApplicationId = Model.ApplicationId,
-				NewCaseNoteType = CaseNoteType.LarchCheckComment,
-				DefaultCaseNoteFilter = CaseNoteType.LarchCheckComment,
-				ActivityFeedTitle = "Case notes",
+<div class="govuk-grid-column-two-thirds">
+    @{
+        var activityFeed = new ActivityFeedModel
+        {
+            ApplicationId = Model.ApplicationId,
+            NewCaseNoteType = CaseNoteType.LarchCheckComment,
+            DefaultCaseNoteFilter = CaseNoteType.LarchCheckComment,
+            ActivityFeedTitle = "Case notes",
 
-				ShowFilters = false,
-				ActivityFeedItemModels = Model.ActivityFeedItems!,
-				HostingPage = Url.Action("LarchCheck", new { id = Model.ApplicationId })!,
-				ShowAddCaseNote = false
-			};
+            ShowFilters = false,
+            ActivityFeedItemModels = Model.ActivityFeedItems!,
+            HostingPage = Url.Action("LarchCheck", new { id = Model.ApplicationId })!,
+            ShowAddCaseNote = false
+        };
 
-}
-<partial name="Partials/_ActivityFeed" model="activityFeed" />
+    }
+    <partial name="Partials/_ActivityFeed" model="activityFeed" />
+</div>
 
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
-<link rel="stylesheet" type="text/css"
-	  href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+<link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
+<script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
 
 @section Scripts
 {

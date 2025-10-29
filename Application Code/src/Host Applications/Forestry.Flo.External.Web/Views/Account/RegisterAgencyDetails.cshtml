@@ -8,21 +8,19 @@
 
 <div class="govuk-grid-column-two-thirds">
 
-    <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
-        <h1 class="govuk-fieldset__heading">
-            @ViewData["Title"]
-        </h1>
-    </legend>
-        
-    <partial name="Partials/_PageErrors" />
-
     <form method="post">
 
         <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
+
             <div class="govuk-form-group">
                 <label asp-for="OrganisationName" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationName"></validation>
-                <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationName" autocomplete="organization" />
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationName" autocomplete="organization"/>
             </div>
 
             <div class="govuk-form-group">

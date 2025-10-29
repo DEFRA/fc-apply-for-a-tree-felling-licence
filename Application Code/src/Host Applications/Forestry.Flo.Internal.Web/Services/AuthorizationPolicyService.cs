@@ -1,7 +1,7 @@
 ﻿using Forestry.Flo.Services.InternalUsers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 
@@ -12,13 +12,14 @@ namespace Forestry.Flo.Internal.Web.Services
     /// </summary>
     public class AuthorizationPolicyService
     {
-        public static Func<AuthorizationHandlerContext, IDbContextFactory<InternalUsersContext>, IList<Roles>, bool> AssertHasAnyOfRoles = (context, dbContextFactory, permissableRoles) =>
+        public static readonly Func<AuthorizationHandlerContext, IDbContextFactory<InternalUsersContext>, IList<Roles>, AuthenticationProvider, bool> 
+            AssertHasAnyOfRoles = (context, dbContextFactory, permissibleRoles, provider) =>
         {
             bool hasAnyOfRoles = false;
 
             // Option to verify information on claims directly
 
-            var identityProviderId = context.User.Claims.SingleOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
+            var identityProviderId = context.User.Claims.GetIdentityProviderId(provider);
 
             using var dbContext = dbContextFactory.CreateDbContext();
 
@@ -28,7 +29,7 @@ namespace Forestry.Flo.Internal.Web.Services
 
                 if (userAccount != null)
                 {
-                    hasAnyOfRoles = RolesService.RolesStringHasAnyOfRoles(userAccount.Roles, permissableRoles);
+                    hasAnyOfRoles = RolesService.RolesStringHasAnyOfRoles(userAccount.Roles, permissibleRoles);
                 }
             }
 

@@ -71,7 +71,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         var fellingLicenceApplication = await GetFellingLicenceDetailsAsync(applicationId, cancellationToken);
         if (fellingLicenceApplication.IsFailure)
         {
-            _logger.LogError(fellingLicenceApplication.Error);
+            _logger.LogError("Failed to get felling licence application with id {ApplicationId} to confirm reassignment, error: {Error}", applicationId, fellingLicenceApplication.Error);
             await AuditErrorAsync(user, applicationId, null, selectedRole, fellingLicenceApplication.Error, cancellationToken);
             return fellingLicenceApplication.ConvertFailure<ConfirmReassignApplicationModel>();
         }
@@ -96,7 +96,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         var users = await GetConfirmedUserAccountsAsync(cancellationToken);
         if (users.IsFailure)
         {
-            _logger.LogError(users.Error);
+            _logger.LogError("Failed to get confirmed user accounts for assigning to application with id {ApplicationId}, error: {Error}", applicationId, users.Error);
             await AuditErrorAsync(user, applicationId, null, selectedRole, users.Error, cancellationToken);
             return users.ConvertFailure<AssignToUserModel>();
         }
@@ -104,7 +104,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         var fellingLicenceApplication = await GetFellingLicenceDetailsAsync(applicationId, cancellationToken);
         if (fellingLicenceApplication.IsFailure)
         {
-            _logger.LogError(fellingLicenceApplication.Error);
+            _logger.LogError("Failed to get application with id {ApplicationId} to assign user, error: {Error}", applicationId, fellingLicenceApplication.Error);
             await AuditErrorAsync(user, applicationId, null, selectedRole, fellingLicenceApplication.Error, cancellationToken);
             return fellingLicenceApplication.ConvertFailure<AssignToUserModel>();
         }
@@ -113,7 +113,9 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         if (ApplicationCompletedStatuses.Contains(currentStatus))
         {
             var errorStatuses = $"The application with Id {applicationId} is {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)} and a user cannot be assigned to it.";
-            _logger.LogError(errorStatuses);
+            _logger.LogError(
+                "The application with Id {ApplicationId} is in state {CurrentStatus} and a user cannot be assigned to it.",
+                applicationId, currentStatus.GetDisplayNameByActorType(ActorType.InternalUser));
             await AuditErrorAsync(user, applicationId, null, null, errorStatuses, cancellationToken);
             return Result.Failure<AssignToUserModel>($"Cannot assign to an application that has been {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)}.");
         }
@@ -126,7 +128,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
 
         if (resultUsers.IsFailure)
         {
-            _logger.LogError(resultUsers.Error);
+            _logger.LogError("Failed to get users that can approve application with id {ApplicationId}, error: {Error}", applicationId, resultUsers.Error);
             await AuditErrorAsync(user, applicationId, null, selectedRole, resultUsers.Error, cancellationToken);
             return resultUsers.ConvertFailure<AssignToUserModel>();
         }
@@ -135,7 +137,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
 
         if (getConfiguredFcAreasResult.IsFailure)
         {
-            _logger.LogError(getConfiguredFcAreasResult.Error);
+            _logger.LogError("Failed to get configured FC areas to assign user to application with id {ApplicationId}, error: {Error}", applicationId, getConfiguredFcAreasResult.Error);
             await AuditErrorAsync(user, applicationId, null, null, getConfiguredFcAreasResult.Error, cancellationToken);
             return getConfiguredFcAreasResult.ConvertFailure<AssignToUserModel>();
         }
@@ -373,7 +375,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
             var usersResult = await GetConfirmedUserAccountsAsync(cancellationToken);
             if (usersResult.IsFailure)
             {
-                _logger.LogError(usersResult.Error);
+                _logger.LogError("Failed to get users that can approve application with Id {ApplicationId}, error: {Error}", flaId, usersResult.Error);
                 return Result.Failure<IEnumerable<UserAccountModel>>("Could not locate any approved internal users.");
             }
             users = usersResult.Value;
@@ -384,25 +386,26 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
             return Result.Success(users);
         }
 
-        _logger.LogDebug($"Attempting to retrieve status History of the felling licence application with Id: {flaId}.");
+        _logger.LogDebug("Attempting to retrieve status History of the felling licence application with Id: {ApplicationId}.", flaId);
 
         var statusHistory = await FellingLicenceRepository.GetStatusHistoryForApplicationAsync(flaId, cancellationToken);
         if (statusHistory.IsNullOrEmpty())
         {
-            _logger.LogError($"Failed to retrieve the status history of the application with Id: {flaId}");
+            _logger.LogError("Failed to retrieve the status history of the application with Id: {ApplicationId}", flaId);
             return Result.Failure<IEnumerable<UserAccountModel>>("Failed to retrieve the status history of the applicaiton.");
         }
 
-        _logger.LogDebug($"Attempting to retrieve id of the user who submitted the application with Id: {flaId}.");
+        _logger.LogDebug("Attempting to retrieve id of the user who submitted the application with Id: {ApplicationId}.", flaId);
 
         var submittedById = statusHistory.OrderByDescending(x => x.Created).First(x => x.Status == FellingLicenceStatus.Submitted)!.CreatedById;
         if (submittedById == null)
         {
-            _logger.LogError("Could not retrieve the user who submitted the application.");
+            _logger.LogError("Could not retrieve the user who submitted the application with id {ApplicationId}.", flaId);
             return Result.Failure<IEnumerable<UserAccountModel>>("Could not locate the user who submitted the application.");
         }
 
-        _logger.LogDebug($"Attempting to retrieve the user with Id; {submittedById} who submitted the application with Id: {flaId}.");
+        _logger.LogDebug("Attempting to retrieve the user with Id; {SubmittedById} who submitted the application with Id: {ApplicationId}.",
+            submittedById, flaId);
 
         var submittingUserResult = await GetSubmittingUserAsync((Guid)submittedById!, cancellationToken);
         if (submittingUserResult.IsFailure)

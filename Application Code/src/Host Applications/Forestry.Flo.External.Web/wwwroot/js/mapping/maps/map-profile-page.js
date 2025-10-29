@@ -8,11 +8,10 @@
     "esri/layers/WMSLayer",
     "esri/layers/WMTSLayer",
     "esri/layers/GraphicsLayer",
-    "esri/widgets/BasemapGallery",
-    "esri/widgets/Expand",
     "esri/Graphic",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
+    "esri/core/reactiveUtils",
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/mapSettings.js?v=" + Date.now()
@@ -26,17 +25,16 @@
     WMSLayer,
     WMTSLayer,
     GraphicsLayer,
-    BasemapToggle,
-    Expand,
     Graphic,
     locator,
     FeatureLayer,
+    reactiveUtils,
     maps_html_Helper,
     Maps_common,
     mapSettings) {
     var profileMap = /** @class */ (function () {
         function profileMap(location) {
-
+            this.location = location;
             config.apiKey = mapSettings.esriApiKey;
 
             //This is the default map for the FC system
@@ -45,20 +43,21 @@
                     id: mapSettings.baseMapForUK,
                 },
             });
+
             this.map = new Map({
                 basemap: baseMap,
             });
-            //Lets Work on the guide
-            this.view = new MapView({
-                map: this.map,
-                container: location,
-                extent: mapSettings.englandExtent,
-                constraints: {
-                    maxZoom: 20
-                }
-            });
-            this.view
-                .when(this.mapLoadEvt.bind(this))
+
+            const mapComponent = document.getElementById(location);
+            mapComponent.map = this.map;
+
+            this.view = mapComponent.view;
+
+            this.view.when(() => {
+                this.view.extent = mapSettings.englandExtent;
+                this.view.constraints = { maxZoom: 20 };
+                return this.mapLoadEvt();
+            })
                 .then(this.loadCompartments.bind(this))
                 .then(this.GetStartingPoint.bind(this))
                 .then(this.addWidgets.bind(this))
@@ -110,53 +109,54 @@
             // Add the watermark layer to the map
             this.map.add(watermarkLayer);
 
-            // Update the watermark positions initially and whenever the view changes
-            this.view.watch("stationary", (newValue) => {
-                if (newValue) {
-                    updateWatermarkPositions();
+            reactiveUtils.watch(
+                () => this.view.stationary,
+                (newValue) => {
+                    if (newValue) updateWatermarkPositions();
                 }
-            });
-            this.view.watch("extent", updateWatermarkPositions);
-
-            // Watch for basemap changes and toggle watermark visibility
-            this.view.watch("map.basemap", (newBasemap) => {
-                if (!newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK) {
-                    watermarkLayer.visible = true;
-                } else {
-                    watermarkLayer.visible = false;
+            );
+            reactiveUtils.watch(
+                () => this.view.extent,
+                updateWatermarkPositions
+            );
+            reactiveUtils.watch(
+                () => this.view.map.basemap,
+                (newBasemap) => {
+                    watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
                 }
-            });
+            );
             return Promise.resolve();
         };
 
-        profileMap.prototype.addWidgets = function () {
+        profileMap.prototype.addWidgets = async function () {
 
             this.map.basemap.title = "OS Map";
+            const mapComponent = document.getElementById(this.location)
+            await mapComponent.viewOnReady();
 
+            const [LocalBasemapsSource] = await $arcgis.import([
+                "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+            ]);
+
+            const basemapGallery = document.querySelector("arcgis-basemap-gallery");
+
+            // Create the WMS basemap
             var wmsLayer = new WMSLayer(mapSettings.wmsLayer);
 
-            var wmsBasemap = new Basemap({
+            const wmsBasemap = new Basemap({
                 baseLayers: [wmsLayer],
                 title: mapSettings.wmsLayerName,
                 id: "wmsBasemap"
             });
 
-
-            const basemapToggleWidget = new BasemapToggle({
-                view: this.view,
-                source: [this.map.basemap, wmsBasemap]
+            basemapGallery.source = new LocalBasemapsSource({
+                basemaps: [
+                    this.map.basemap,
+                    wmsBasemap                   
+                ]
             });
-
-            const expandLayer = new Expand({
-                expandIconClass: "esri-icon-basemap",
-                view: this.view,
-                content: basemapToggleWidget
-            });
-
-            this.view.ui.add(expandLayer, { position: "top-left" });
 
             return Promise.resolve();
-
         };
 
         profileMap.prototype.loadCompartments = function () {

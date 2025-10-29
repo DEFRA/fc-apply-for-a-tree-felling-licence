@@ -125,7 +125,7 @@ public class ImportApplicationsService : IImportApplications
         {
             await transaction.RollbackAsync(cancellationToken);
 
-            _logger.LogError("Error saving new application imports: " + saveResult.Error);
+            _logger.LogError("Error saving new application imports: {Error}", saveResult.Error);
             return Result.Failure<Dictionary<Guid, string>>("Could not save imported Applications");
         }
 

@@ -1,31 +1,39 @@
 using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers.Configuration;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Repositories;
-using GovUk.OneLogin.AspNetCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace Forestry.Flo.Services.InternalUsers.Services;
 
+/// <summary>
+/// Implementation of <see cref="ISignInInternalUser"/>.
+/// </summary>
 public class SignInInternalUserWithEf : ISignInInternalUser
 {
     private readonly IUserAccountRepository _userAccountRepository;
     private readonly IUserAccountService _userAccountService;
     private readonly PermittedRegisteredUserOptions _permittedUserOptions;
-    private readonly IAuditService<SignInInternalUserWithEf> _auditService;
     private readonly AuthenticationOptions _authenticationOptions;
     private readonly ILogger<SignInInternalUserWithEf> _logger;
+
+    /// <summary>
+    /// Creates a new instance of <see cref="SignInInternalUserWithEf"/>.
+    /// </summary>
+    /// <param name="userAccountRepository">A repository to manage internal user accounts.</param>
+    /// <param name="userAccountService">A service to manage internal user accounts.</param>
+    /// <param name="permittedUserOptions">Configuration options for internal user accounts.</param>
+    /// <param name="logger">A logging instance.</param>
+    /// <param name="authenticationOptions">Configuration options for the identity provider.</param>
     public SignInInternalUserWithEf(
         IUserAccountRepository userAccountRepository,
         IUserAccountService userAccountService,
         IOptions<PermittedRegisteredUserOptions> permittedUserOptions,
         ILogger<SignInInternalUserWithEf> logger,
-        IOptions<AuthenticationOptions> authenticationOptions,
-        IAuditService<SignInInternalUserWithEf> auditService)
+        IOptions<AuthenticationOptions> authenticationOptions)
     {
         ArgumentNullException.ThrowIfNull(userAccountRepository);
         ArgumentNullException.ThrowIfNull(userAccountService);
@@ -35,11 +43,11 @@ public class SignInInternalUserWithEf : ISignInInternalUser
         _userAccountRepository = userAccountRepository;
         _userAccountService = userAccountService;
         _permittedUserOptions = permittedUserOptions.Value;
-        _auditService = auditService;
         _logger = logger;
         _authenticationOptions = authenticationOptions.Value;
     }
 
+    /// <inheritdoc />
     public async Task HandleUserLoginAsync(ClaimsPrincipal user, string? inviteToken, CancellationToken cancellationToken = default)
     {
         var userIdentifier = GetIdentityProviderId(user.Claims);
@@ -85,6 +93,7 @@ public class SignInInternalUserWithEf : ISignInInternalUser
         }
     }
 
+    /// <inheritdoc />
     public ClaimsIdentity CreateClaimsIdentityFromUserAccount(UserAccount userAccount)
     {
         var claims = new List<Claim>();

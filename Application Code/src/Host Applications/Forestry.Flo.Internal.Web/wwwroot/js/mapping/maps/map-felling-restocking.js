@@ -7,20 +7,19 @@
     "esri/layers/WMSLayer",
     "esri/layers/WMTSLayer",
     "esri/layers/GraphicsLayer",
-    "esri/widgets/BasemapGallery",
     "esri/Graphic",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
-    "esri/Geometry/Polygon",
-    "esri/Geometry/Point",
-    "esri/Geometry/geometryEngine",
+    "esri/geometry/Polygon",
+    "esri/geometry/Point",
+    "esri/geometry/geometryEngine",
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-math.js?v=" + Date.now(),
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
     "/js/mapping/fcconfig.js?v=" + Date.now(),
-    "esri/widgets/Expand"],
+    "esri/core/reactiveUtils"],
     function (require,
         exports,
         config,
@@ -30,7 +29,6 @@
         WMSLayer,
         WMTSLayer,
         GraphicsLayer,
-        BasemapToggle,
         Graphic,
         locator,
         FeatureLayer,
@@ -42,9 +40,10 @@
         GT_WGS84,
         GT_Math,
         Proj4js,
-        fcconfig, Expand) {
+        fcconfig, reactiveUtils) {
         var confirmedFellingMap = /** @class */ (function () {
             function confirmedFellingMap(location, canMove, filter) {
+                this.location = location
                 this.canMove = false;
                 if (typeof canMove !== "undefined") {
                     this.canMove = canMove;
@@ -62,67 +61,31 @@
                     basemap: baseMap
                 });
 
-                var button = document.getElementById("view");
-                var that = this;
-
-                if (button !== null) {
-                    var items = maps_html_Helper.getCompartments("restocking");
-
-                    if (items && items.length > 0) {
-                        const panelMenu = document.getElementById("panelMenu");
-                        if (!panelMenu) {
-                            return;
-                        }
-
-                        panelMenu.removeAttribute("closed");
-                    }
-
-                    button.addEventListener("click", (evt) => {
-                        const state = document.getElementById("runningMode");
-                        const headerTitle = document.getElementById("header-title");
-                        if (state.value === "felling") {
-                            state.value = "restocking"
-                            if (headerTitle) {
-                                headerTitle.innerHTML = "Restocking";
-                            }
-                            button.text = "View Felling";
-                            button.icon = "analysis";
-                        } else {
-                            state.value = "felling"
-                            if (headerTitle) {
-                                headerTitle.innerHTML = "Felling";
-                            }
-                            button.text = "View Restocking";
-                            button.icon = "analysis";
-                        }
-
-                        that.map.layers.removeAll();
-                        that.loadCompartments()
-                            .then(that.GetStartingPoint.bind(that));
-
-                    });
-                }
-
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: fcconfig.englandExtent,
-                    constraints: {
-                        maxZoom: 20
-                    }
-                });
-
+ 
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
                 const splitIds = filter.split(",");
+                console.log(location);
 
-                this.view
-                    .when(this.mapLoadEvt.bind(this))
+                mapComponent.viewOnReady().then(() => {
+                    this.view = mapComponent.view;
+                    if (!this.view) {
+                        console.error("ArcGIS view is undefined. Map component may not be initialized or visible.");
+                        return;
+                    }
+                    this.view.extent = fcconfig.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    this.commonTools = new Maps_common(this.view);
+                    return Promise.resolve();
+                })
+                    .then(this.mapLoadEvt.bind(this))
+                    .then(this.SetUpWidgets.bind(this))
                     .then(() => this.loadCompartments(splitIds))
                     .then(this.GetStartingPoint.bind(this))
-                    .then(this.SetUpWidgets.bind(this))
                     .then(this.addWatermark.bind(this));
             }
 
-            confirmedFellingMap.prototype.SetUpWidgets = function () {
+            confirmedFellingMap.prototype.SetUpWidgets = async function () {
                 var that = this;
 
 
@@ -136,18 +99,23 @@
                     id: "wmsBasemap"
                 });
 
+                const mapComponent = document.getElementById(this.location);
+                await mapComponent.viewOnReady();
 
-                const basemapToggleWidget = new BasemapToggle({
-                    view: this.view,
-                    source: [that.map.basemap, wmsBasemap]
-                });
-                const expandLayer = new Expand({
-                    expandIconClass: "esri-icon-basemap",
-                    view: this.view,
-                    content: basemapToggleWidget
-                });
+                const [LocalBasemapsSource, centroidOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js",
+                ]);
 
-                this.view.ui.add(expandLayer, { position: "top-left" });
+                this.centroidOperator = centroidOperator;
+
+                const basemapGallery = document.getElementById(this.location).querySelector("arcgis-basemap-gallery");
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
+                });
 
                 return Promise.resolve();
             }
@@ -186,8 +154,9 @@
                                     compartmentRef: ""
                                 },
                             });
+                            
 
-                            graphic.attributes.compartmentRef = that.convertToOSGridReference(graphic.geometry.centroid);
+                            graphic.attributes.compartmentRef = that.convertToOSGridReference(that.centroidOperator.execute(graphic.geometry));
 
                             graphicsArray.push(graphic);
                         }
@@ -290,22 +259,23 @@
                 // Add the watermark layer to the map
                 this.map.add(watermarkLayer);
 
-                // Update the watermark positions initially and whenever the view changes
-                this.view.watch("stationary", (newValue) => {
-                    if (newValue) {
-                        updateWatermarkPositions();
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
                     }
-                });
-                this.view.watch("extent", updateWatermarkPositions);
-
-                // Watch for basemap changes and toggle watermark visibility
-                this.view.watch("map.basemap", (newBasemap) => {
-                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK) {
-                        watermarkLayer.visible = true;
-                    } else {
-                        watermarkLayer.visible = false;
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK;
                     }
-                });
+                );
+                return Promise.resolve();
             };
 
             confirmedFellingMap.prototype.mapLoadEvt = function () {

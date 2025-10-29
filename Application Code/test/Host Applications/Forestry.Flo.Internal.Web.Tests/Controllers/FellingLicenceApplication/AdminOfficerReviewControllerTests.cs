@@ -701,7 +701,10 @@ public class AdminOfficerReviewControllerTests
     [Fact]
     public async Task LarchCheck_Post_AddsCaseNote_WhenCaseNoteProvided()
     {
-        var model = _fixture.Build<LarchCheckModel>().With(x => x.CaseNote, "note").Create();
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
+            .With(x => x.CaseNote, "note")
+            .Create();
+        var model = _fixture.Build<LarchCheckModel>().With(x => x.FormLevelCaseNote, caseNote).Create();
         _larchCheckUseCaseMock.Setup(x => x.SaveLarchCheckAsync(model, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
         _adminOfficerReviewUseCaseMock.Setup(x => x.CompleteLarchCheckAsync(model.ApplicationId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -718,7 +721,10 @@ public class AdminOfficerReviewControllerTests
     [Fact]
     public async Task LarchCheck_Post_RedirectsToLarchFlyover_WhenCaseNoteFailure()
     {
-        var model = _fixture.Build<LarchCheckModel>().With(x => x.CaseNote, "note").Create();
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
+            .With(x => x.CaseNote, "note")
+            .Create();
+        var model = _fixture.Build<LarchCheckModel>().With(x => x.FormLevelCaseNote, caseNote).Create();
         _larchCheckUseCaseMock.Setup(x => x.SaveLarchCheckAsync(model, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
         _adminOfficerReviewUseCaseMock.Setup(x => x.CompleteLarchCheckAsync(model.ApplicationId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -809,7 +815,10 @@ public class AdminOfficerReviewControllerTests
     [Fact]
     public async Task LarchFlyover_Post_AddsCaseNote_WhenCaseNoteProvided()
     {
-        var model = _fixture.Build<LarchFlyoverModel>().With(x => x.CaseNote, "note").Create();
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
+            .With(x => x.CaseNote, "note")
+            .Create();
+        var model = _fixture.Build<LarchFlyoverModel>().With(x => x.FormLevelCaseNote, caseNote).Create();
         _larchFlyoverValidatorMock.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult());
         _larchCheckUseCaseMock.Setup(x => x.SaveLarchFlyoverAsync(model, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
@@ -825,7 +834,10 @@ public class AdminOfficerReviewControllerTests
     [Fact]
     public async Task LarchFlyover_Post_RedirectsToLarchFlyover_WhenCaseNoteFailure()
     {
-        var model = _fixture.Build<LarchFlyoverModel>().With(x => x.CaseNote, "note").Create();
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
+            .With(x => x.CaseNote, "note")
+            .Create();
+        var model = _fixture.Build<LarchFlyoverModel>().With(x => x.FormLevelCaseNote, caseNote).Create();
         _larchFlyoverValidatorMock.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult());
         _larchCheckUseCaseMock.Setup(x => x.SaveLarchFlyoverAsync(model, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
@@ -911,7 +923,10 @@ public class AdminOfficerReviewControllerTests
     [Fact]
     public async Task CBWCheck_Post_AddsCaseNote_WhenCaseNoteProvided()
     {
-        var model = _fixture.Build<CBWCheckModel>().With(x => x.CaseNote, "note").With(x => x.CheckPassed, true).Create();
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
+            .With(x => x.CaseNote, "note")
+            .Create();
+        var model = _fixture.Build<CBWCheckModel>().With(x => x.FormLevelCaseNote, caseNote).With(x => x.CheckPassed, true).Create();
         _cbwCheckUseCaseMock.Setup(x => x.CompleteCBWCheckAsync(
             model.ApplicationId, It.IsAny<Guid>(), true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
@@ -927,7 +942,10 @@ public class AdminOfficerReviewControllerTests
     [Fact]
     public async Task CBWCheck_Post_RedirectsToIndex_WhenCaseNoteFailure()
     {
-        var model = _fixture.Build<CBWCheckModel>().With(x => x.CaseNote, "note").With(x => x.CheckPassed, true).Create();
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
+            .With(x => x.CaseNote, "note")
+            .Create();
+        var model = _fixture.Build<CBWCheckModel>().With(x => x.FormLevelCaseNote, caseNote).With(x => x.CheckPassed, true).Create();
         _cbwCheckUseCaseMock.Setup(x => x.CompleteCBWCheckAsync(
             model.ApplicationId, It.IsAny<Guid>(), true, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));

@@ -19,7 +19,6 @@ public class SignInInternalUserWithEfTests
     private static readonly Fixture FixtureInstance = new();
     private readonly Mock<IUserAccountService> _userAccountService;
     private readonly Mock<IUserAccountRepository> _userAccountRepository;
-    private readonly Mock<IAuditService<SignInInternalUserWithEf>> _mockAuditService;
     private readonly Mock<IOptions<AuthenticationOptions>> _mockAuthenticationOptions = new();
 
     public SignInInternalUserWithEfTests()
@@ -28,7 +27,6 @@ public class SignInInternalUserWithEfTests
         _userAccountService = new Mock<IUserAccountService>();
         _userAccountRepository = new Mock<IUserAccountRepository>();
         _userAccountRepository.SetupGet(r => r.UnitOfWork).Returns(unitOfWork.Object);
-        _mockAuditService = new Mock<IAuditService<SignInInternalUserWithEf>>();
     }
 
     [Theory, CombinatorialData]
@@ -122,7 +120,6 @@ public class SignInInternalUserWithEfTests
             _userAccountRepository.Object,
             _userAccountService.Object,
             new OptionsWrapper<PermittedRegisteredUserOptions>(new PermittedRegisteredUserOptions()), new NullLogger<SignInInternalUserWithEf>(),
-            _mockAuthenticationOptions.Object,
-            _mockAuditService.Object);
+            _mockAuthenticationOptions.Object);
     }
 }

@@ -1,7 +1,6 @@
 ﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.DecisionToRestockViewModel
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.Common.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
     ViewData.ManuallySetBackLink(Url.Action(
@@ -17,12 +16,11 @@
     ViewData["Title"] = "Do you want to restock";
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
+<div class="govuk-grid-column-two-thirds">
 
     <form id="decision-to-restock" method="post">
 
@@ -41,6 +39,7 @@
                         Do you want to restock for the @Model.OperationType.GetDisplayName()?
                     </h1>
                 </legend>
+                <validation asp-for="IsRestockSelected"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
                         <input id="is-restock-selected-yes" type="radio" class="govuk-radios__input" asp-for="IsRestockSelected" value="@true">

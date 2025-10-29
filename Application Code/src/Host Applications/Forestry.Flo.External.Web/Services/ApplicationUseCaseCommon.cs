@@ -187,7 +187,7 @@ public class ApplicationUseCaseCommon
         var getWoodlandOwnerDetailsResult = await GetApplicationWoodlandOwnerNameByIdAsync(application.WoodlandOwnerId, cancellationToken);
         if (getWoodlandOwnerDetailsResult.IsFailure)
         {
-            _logger.LogError("Could not retrieve woodland owner name detail for {woodlandOwnerId}, error was {error}",
+            _logger.LogError("Could not retrieve woodland owner name detail for {WoodlandOwnerId}, error was {Error}",
                 application.WoodlandOwnerId, getWoodlandOwnerDetailsResult.Error);
             return Result.Failure<WoodlandOwnerWithAgencyRecord>(getWoodlandOwnerDetailsResult.Error);
         }
@@ -205,6 +205,13 @@ public class ApplicationUseCaseCommon
         CancellationToken cancellationToken)
     {
         return _agentAuthorityService.GetAgencyForWoodlandOwnerAsync(woodlandOwnerId, cancellationToken);
+    }
+
+    public async Task<Maybe<AgentAuthorityModel>> GetWoodlandOwnerAafAsync(
+        Guid woodlandOwnerId,
+        CancellationToken cancellationToken)
+    {
+        return await _agentAuthorityService.GetAgentAuthorityForWoodlandOwnerAsync(woodlandOwnerId, cancellationToken);
     }
 
     protected Task<Result<WoodlandOwnerModel>> GetWoodlandOwnerByIdAsync(
@@ -236,7 +243,7 @@ public class ApplicationUseCaseCommon
 
             if (submittedProperty.IsFailure)
             {
-                _logger.LogWarning("Unable to get submitted property for application, error : {error}", submittedProperty.Error);
+                _logger.LogWarning("Unable to get submitted property for application, error : {Error}", submittedProperty.Error);
                 return submittedProperty.ConvertFailure<FellingLicenceApplicationSummary>();
             }
 
@@ -255,7 +262,7 @@ public class ApplicationUseCaseCommon
 
             if (profile.IsFailure)
             {
-                _logger.LogWarning("Unable to get property for application, error : {error}", profile.Error);
+                _logger.LogWarning("Unable to get property for application, error : {Error}", profile.Error);
                 return profile.ConvertFailure<FellingLicenceApplicationSummary>();
             }
 
@@ -268,7 +275,7 @@ public class ApplicationUseCaseCommon
 
         if (woodlandOwnerNameAndAgencyDetails.IsFailure)
         {
-            _logger.LogWarning("Unable to get woodland owner name and agency for application, error : {error}", woodlandOwnerNameAndAgencyDetails.Error);
+            _logger.LogWarning("Unable to get woodland owner name and agency for application, error : {Error}", woodlandOwnerNameAndAgencyDetails.Error);
             return woodlandOwnerNameAndAgencyDetails.ConvertFailure<FellingLicenceApplicationSummary>();
         }
 
@@ -293,7 +300,7 @@ public class ApplicationUseCaseCommon
 
         if (woodlandOwnerResult.IsFailure)
         {
-            _logger.LogError("Could not retrieve woodland owner name detail for {woodlandOwnerId}, error was {error}",
+            _logger.LogError("Could not retrieve woodland owner name detail for {WoodlandOwnerId}, error was {Error}",
                 woodlandOwnerId, woodlandOwnerResult.Error);
            
             return Result.Failure<string>(woodlandOwnerResult.Error);

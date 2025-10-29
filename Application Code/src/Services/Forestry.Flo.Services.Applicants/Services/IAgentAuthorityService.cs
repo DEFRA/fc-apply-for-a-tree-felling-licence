@@ -99,6 +99,7 @@ public interface IAgentAuthorityService
     /// in the request.
     /// </summary>
     /// <param name="request">A populated <see cref="EnsureAgencyOwnsWoodlandOwnerRequest"/> model.</param>
+    /// <param name="validStatuses">Valid statuses to check for.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns><see langword="true"/> if the agency has an approved AAF for the woodland owner, otherwise <see langword="false"/>.</returns>
     Task<Result<bool>> EnsureAgencyAuthorityStatusAsync(
@@ -119,16 +120,6 @@ public interface IAgentAuthorityService
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Retrieves an agency using its identifier.
-    /// </summary>
-    /// <param name="id">The identifier for the agency.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result containing an <see cref="AgencyModel"/> representing the retrieved agency if successful, or an error if unsuccessful.</returns>
-    Task<Result<AgencyModel>> GetAgencyAsync(
-        Guid id,
-        CancellationToken cancellationToken);
-
-    /// <summary>
     /// Removes a newly created agency and removes references to it from a user account.
     /// </summary>
     /// <param name="userAccount">The user account linked to the agency to remove.</param>
@@ -138,4 +129,22 @@ public interface IAgentAuthorityService
     Task<Result> RemoveNewAgencyAsync(
         UserAccount userAccount,
         CancellationToken cancellationToken);
+
+    /// A <see cref="Maybe{T}"/> containing an <see cref="AgentAuthorityModel"/> if agent authority details exist for the woodland owner,
+    /// or <see cref="Maybe.None"/> if no agent authority is found.
+    /// </returns>
+    /// <remarks>
+    /// The returned model includes details about the agent authority relationship, such as the current status, 
+    /// associated forms, and linked woodland owner information.
+    /// </remarks>
+    Task<Maybe<AgentAuthorityModel>> GetAgentAuthorityForWoodlandOwnerAsync(Guid woodlandOwnerId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Attempts to locate an AgentAuthority id by Agency and Woodland Owner ids.
+    /// </summary>
+    /// <param name="agencyId">The id of the agency.</param>
+    /// <param name="woodlandOwnerId">The id of the woodland owner.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Maybe containing the AgentAuthority id if found.</returns>
+    Task<Maybe<Guid>> FindAgentAuthorityIdAsync(Guid agencyId, Guid woodlandOwnerId, CancellationToken cancellationToken);
 }

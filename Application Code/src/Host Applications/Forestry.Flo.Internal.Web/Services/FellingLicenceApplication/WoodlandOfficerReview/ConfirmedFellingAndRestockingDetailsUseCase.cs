@@ -666,7 +666,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
     }
 
     /// <inheritdoc/>
-    public async Task<Result> MakeFurtherAmendments(
+    public async Task<Result> CloseAmendmentReview(
         InternalUser user,
         Guid amendmentReviewId,
         CancellationToken cancellationToken)

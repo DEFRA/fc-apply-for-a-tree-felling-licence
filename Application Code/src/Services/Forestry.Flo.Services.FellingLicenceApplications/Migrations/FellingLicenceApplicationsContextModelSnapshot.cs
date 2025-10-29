@@ -908,6 +908,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
 
+                    b.Property<bool?>("AafStepStatus")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("ApplicationDetailsStatus")
                         .HasColumnType("boolean");
 

@@ -5,6 +5,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 public enum FellingLicenceApplicationSection
 {
+    [Description("Agent Authority Form")]
+    AgentAuthorityForm,
     [Description("Select compartments")]
     SelectedCompartments,
     [Description("Check for constraints")]

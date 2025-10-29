@@ -102,4 +102,18 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
         Guid applicationId,
         UserAccessModel userAccess,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the Agent Authority Form (AAF) step status for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to update.</param>
+    /// <param name="userAccess">The auth for the user performing the update.</param>
+    /// <param name="aafStepStatus">The status to set for the AAF step (true = complete, false = incomplete).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating if the update was successful.</returns>
+    Task<Result> UpdateAafStepAsync(
+        Guid applicationId,
+        UserAccessModel userAccess,
+        bool aafStepStatus,
+        CancellationToken cancellationToken);
 }

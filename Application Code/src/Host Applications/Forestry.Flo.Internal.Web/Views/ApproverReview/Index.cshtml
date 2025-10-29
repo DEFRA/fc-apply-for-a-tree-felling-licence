@@ -9,14 +9,16 @@
     var user = new InternalUser(User);
 }
 
-<div class="govuk-grid-column-full" id="summary-container">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+
+
+<div class="govuk-grid-column-two-thirds" id="summary-container">
 	<h1 class="govuk-heading-xl">
 		Application @Model.FellingLicenceApplicationSummary!.ApplicationReference
 	</h1>
-	<partial name="Partials/_ConfirmationMessageDisplay" />
-	<partial name="Partials/_UserGuideDisplay" />
-	<partial name="Partials/_PageErrors" />
-	<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     <form asp-action="SaveApproverReview" method="post">
@@ -64,7 +66,7 @@
         </div>
 
         <div class="govuk-form-group" condition-disabled="Model.IsReadonly">
-            <fieldset class="govuk-fieldset" aria-describedby="decision-hint">
+            <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
                         Is this application ready for a decision?
@@ -110,7 +112,7 @@
 			</div>
 		</div>
 
-		<div id="conditional-decision-yes">
+		<div id="conditional-decision-yes" aria-hidden="true">
 
             <div class="govuk-form-group">
 
@@ -131,7 +133,7 @@
                             </div>
                         </div>
 
-					    <fieldset class="govuk-fieldset" id="conditional-reason">
+					    <div id="conditional-reason">
                             <div class="govuk-radios__conditional">
                                 <div class="govuk-form-group">
                                     <label class="govuk-label" asp-for="ApproverReview.ApprovedLicenceDuration">Licence duration.</label>
@@ -155,7 +157,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </fieldset>
+                        </div>
                         <div class="govuk-radios__item">
                             <input id="status-refer" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.ReferredToLocalAuthority" asp-for="ApproverReview.RequestedStatus" />
                             <label class="govuk-label govuk-radios__label" for="status-refer">Refer to the local authority</label>
@@ -200,8 +202,10 @@
 
             <div class="govuk-form-group">
 
-			    <fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
-                    <h2 class="govuk-heading-m">Publish your decision</h2>
+                <fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                        <h2 class="govuk-heading-m">Publish your decision</h2>
+                    </legend>
 
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">

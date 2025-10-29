@@ -51,11 +51,11 @@ namespace Forestry.Flo.External.Web.Controllers.Api
             [FromForm] int offset, [FromForm] bool reduce, [FromForm] int round, [FromForm] IFormFile file, CancellationToken cancellationToken)
         {
 
-            Guard.Against.NullOrEmpty(Request.Form.Files);
+            Guard.Against.Null(file, nameof(file));
             try
             {
                 var resx = await mapping.GetShapesFromFileAsync(name, ext, generalize, offset, reduce, round,
-                     Request.Form.Files[0], cancellationToken);
+                    file, cancellationToken);
 
                 if (resx.IsSuccess)
                 {

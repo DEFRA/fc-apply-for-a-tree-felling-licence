@@ -93,7 +93,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             if (documentMaybe.HasNoValue)
             {
-                _logger.LogWarning("Could not find a document with id of [{documentIdentifier}] in application with id [{appId}]", documentIdentifier, applicationId);
+                _logger.LogWarning("Could not find a document with id of [{DocumentIdentifier}] in application with id [{ApplicationId}]", documentIdentifier, applicationId);
                 return await HandleFileRemovalFailureAsync(
                     userAccountId,
                     applicationId,
@@ -107,7 +107,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             if (document.Purpose is not (DocumentPurpose.Attachment or DocumentPurpose.EiaAttachment or DocumentPurpose.WmpDocument))
             {
-                _logger.LogWarning("Only attachments, EIA attachments or WMP documents may be deleted, document id: [{documentIdentifier}], document purpose: [{purpose}]", documentIdentifier, document.Purpose);
+                _logger.LogWarning("Only attachments, EIA attachments or WMP documents may be deleted, document id: [{DocumentIdentifier}], document purpose: [{Purpose}]", documentIdentifier, document.Purpose);
 
                 return await HandleFileRemovalFailureAsync(
                     userAccountId,
@@ -122,7 +122,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             if (document.AttachedByType != requiredActorType)
             {
-                _logger.LogWarning("Document not uploaded by {actorType}, document id: [{documentIdentifier}]", requiredActorType.GetDisplayName(), documentIdentifier);
+                _logger.LogWarning("Document not uploaded by {ActorType}, document id: [{DocumentIdentifier}]", requiredActorType.GetDisplayName(), documentIdentifier);
                 return await HandleFileRemovalFailureAsync(
                     userAccountId,
                     applicationId,
@@ -185,13 +185,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             var removeFileResult = await _storageService.RemoveFileAsync(document.Value.Location!, cancellationToken);
 
-            _logger.LogDebug("Call to remove file with id of [{documentIdentifier}] with location of [{location}] " +
-                             "has success result of [{result}],", document.Value.Id, document.Value.Location, removeFileResult.IsSuccess);
+            _logger.LogDebug("Call to remove file with id of [{DocumentIdentifier}] with location of [{Location}] " +
+                             "has success result of [{Result}],", document.Value.Id, document.Value.Location, removeFileResult.IsSuccess);
 
             if (removeFileResult.IsFailure)
             {
                 _logger.LogWarning(
-                    "Did not receive Success result when removing file with id of [{id}], received error [{error}].",
+                    "Did not receive Success result when removing file with id of [{Id}], received error [{Error}].",
                     document.Value.Id, removeFileResult.Error);
 
                 await HandleFileRemovalFailureAsync(
@@ -206,7 +206,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             }
             
             _logger.LogDebug(
-                "File with id of [{documentIdentifier}] and location of [{location}] was successfully removed from storage.",
+                "File with id of [{DocumentIdentifier}] and location of [{Location}] was successfully removed from storage.",
                 document.Value.Id, document.Value.Location);
 
             var deleteResult = await _fellingLicenceApplicationInternalRepository.DeleteDocumentAsync(document.Value, cancellationToken);
@@ -214,7 +214,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             if (deleteResult.IsFailure)
             {
                 _logger.LogWarning(
-                    "Unable to update database to remove entry for document [{id}], received error [{error}].",
+                    "Unable to update database to remove entry for document [{Id}], received error [{Error}].",
                     documentId, deleteResult.Error);
 
                 await HandleFileRemovalFailureAsync(

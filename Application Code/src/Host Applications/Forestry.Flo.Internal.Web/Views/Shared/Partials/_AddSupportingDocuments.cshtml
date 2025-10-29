@@ -38,7 +38,7 @@
         <div class="govuk-hint">
             Select whether uploaded documents will be visible to external applicants and consultees.
         </div>
-        <div class = "supporting-document-options">
+        <div class="govuk-checkboxes govuk-checkboxes--small">
             <div class="govuk-checkboxes__item">
                 <input class="govuk-checkboxes__input" type="checkbox" asp-for="AvailableToApplicant" />
                 <label class="govuk-label govuk-checkboxes__label" asp-for="AvailableToApplicant">Visible to applicants</label>
@@ -47,8 +47,8 @@
                 <input class="govuk-checkboxes__input" type="checkbox" asp-for="AvailableToConsultees"/>
             <label class="govuk-label govuk-checkboxes__label" asp-for="AvailableToConsultees">Visible to external consultees</label>
             </div>
-            <button id="submit-supporting-document-button" type="submit" class="govuk-button" data-module="govuk-button" name="store-supporting-documents" value="Upload">
-                Upload
-            </button>
         </div>
+        <button id="submit-supporting-document-button" type="submit" class="govuk-button" data-module="govuk-button" name="store-supporting-documents" value="Upload">
+            Upload
+        </button>
 </form>

@@ -789,30 +789,6 @@ public class AgentAuthorityService: IAgentAuthorityService, IAgentAuthorityInter
     }
 
     ///<inheritdoc />
-    public async Task<Result<AgencyModel>> GetAgencyAsync(
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        var (_, isFailure, agency, error) = await _repository.GetAsync(id, cancellationToken);
-
-        if (isFailure)
-        {
-            _logger.LogError("Unable to retrieve agency due to error: {error}", error);
-            return Result.Failure<AgencyModel>("Unable to retrieve agency");
-        }
-
-        return new AgencyModel
-        {
-            Address = agency.Address,
-            ContactEmail = agency.ContactEmail,
-            ContactName = agency.ContactName,
-            OrganisationName = agency.OrganisationName,
-            AgencyId = agency.Id,
-            IsFcAgency = agency.IsFcAgency
-        };
-    }
-
-    ///<inheritdoc />
     public async Task<Result> RemoveNewAgencyAsync(
         UserAccount userAccount,
         CancellationToken cancellationToken)
@@ -850,5 +826,55 @@ public class AgentAuthorityService: IAgentAuthorityService, IAgentAuthorityInter
         await _repository.UnitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<Maybe<AgentAuthorityModel>> GetAgentAuthorityForWoodlandOwnerAsync(
+        Guid woodlandOwnerId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug("Received request to look up agency for woodland owner with id {WoodlandOwnerId}", woodlandOwnerId);
+
+            var authority = await _repository.GetActiveAuthorityByWoodlandOwnerIdAsync(woodlandOwnerId, cancellationToken);
+
+            if (authority.HasNoValue)
+            {
+                return Maybe<AgentAuthorityModel>.None;
+            }
+
+            var result = new AgentAuthorityModel
+            {
+                Id = authority.Value.Id,
+
+            };
+            return Maybe<AgentAuthorityModel>.From(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in GetAgentAuthorityForWoodlandOwnerAsync");
+            return Maybe<AgentAuthorityModel>.None;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Maybe<Guid>> FindAgentAuthorityIdAsync(Guid agencyId, Guid woodlandOwnerId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var entity = await _repository.FindAgentAuthorityAsync(agencyId, woodlandOwnerId, cancellationToken);
+            if (entity.HasNoValue)
+            {
+                return Maybe<Guid>.None;
+            }
+
+            return Maybe<Guid>.From(entity.Value.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in FindAgentAuthorityIdAsync");
+            return Maybe<Guid>.None;
+        }
     }
 }

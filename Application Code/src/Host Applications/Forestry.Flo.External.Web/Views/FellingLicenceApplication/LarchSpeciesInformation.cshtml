@@ -1,15 +1,15 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.LarchSpeciesInformationModel
 @{
     ViewData["Title"] = "You have selected larch species in your application";
     ViewData.ShowBackLink();
 }
 
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+
 <form id="terms-and-conditions-form" method="POST" asp-controller="FellingLicenceApplication" asp-action="LarchSpeciesInformation">
-    <div class="govuk-grid-column-full">
-        <partial name="Partials/_ConfirmationMessageDisplay"/>
-        <partial name="Partials/_UserGuideDisplay"/>
+    <div class="govuk-grid-column-two-thirds">
         <input type="hidden" asp-for="ApplicationId" />
         <input type="hidden" asp-for="ApplicationReference" />
         <input type="hidden" asp-for="FellingCompartmentId" />
@@ -18,7 +18,7 @@
         <input type="hidden" asp-for="ReturnToPlayback" />
 		<input type="hidden" asp-for="ReturnToApplicationSummary" />
 
-        <div class="govuk-grid-column-full govuk-body">
+        <div class="govuk-body">
 
             <h1 class="govuk-heading-l">
                 @ViewData["Title"]

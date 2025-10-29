@@ -1,10 +1,8 @@
 ﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.SelectedCompartmentsModel
-@using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.External.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.FellingLicenceApplications.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
     ViewData["Title"] = "Select compartments";
@@ -35,34 +33,36 @@
                                       && Model.FellingOperationType.Value.SupportsAlternativeCompartmentRestocking());
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary"/>
 
-    <form asp-action="CreateFromApplication" asp-controller="Compartment"
-          method="post"
-          id="createCompartment">
-        <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
-        <input aria-hidden="True" type="hidden" asp-for="PropertyProfileId" />
-        <input aria-hidden="True" type="hidden" asp-for="IsForRestockingCompartmentSelection" />
-        <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentId" />
-        <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentName" />
-        <input aria-hidden="True" type="hidden" asp-for="ProposedFellingDetailsId" />
-        <input aria-hidden="True" type="hidden" asp-for="FellingOperationType" />
-        <input aria-hidden="True" type="hidden" asp-for="WoodlandOwnerId" />
-    </form>
 
-    <form id="select-compartments-form" method="post">
-        <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
-        <input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary" />
-        <input aria-hidden="True" type="hidden" asp-for="IsForRestockingCompartmentSelection" />
-        <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentId" />
-        <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentName" />
-        <input aria-hidden="True" type="hidden" asp-for="ProposedFellingDetailsId" />
-        <input aria-hidden="True" type="hidden" asp-for="FellingOperationType" />
-        <input aria-hidden="True" type="hidden" asp-for="WoodlandOwnerId" />
+<form asp-action="CreateFromApplication" asp-controller="Compartment"
+      method="post"
+      id="createCompartment">
+    <input aria-hidden="True" type="hidden" asp-for="ApplicationId"/>
+    <input aria-hidden="True" type="hidden" asp-for="PropertyProfileId"/>
+    <input aria-hidden="True" type="hidden" asp-for="IsForRestockingCompartmentSelection"/>
+    <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentId"/>
+    <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentName"/>
+    <input aria-hidden="True" type="hidden" asp-for="ProposedFellingDetailsId"/>
+    <input aria-hidden="True" type="hidden" asp-for="FellingOperationType"/>
+    <input aria-hidden="True" type="hidden" asp-for="WoodlandOwnerId"/>
+</form>
+
+<form id="select-compartments-form" method="post">
+    <input aria-hidden="True" type="hidden" asp-for="ApplicationId"/>
+    <input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary"/>
+    <input aria-hidden="True" type="hidden" asp-for="IsForRestockingCompartmentSelection"/>
+    <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentId"/>
+    <input aria-hidden="True" type="hidden" asp-for="FellingCompartmentName"/>
+    <input aria-hidden="True" type="hidden" asp-for="ProposedFellingDetailsId"/>
+    <input aria-hidden="True" type="hidden" asp-for="FellingOperationType"/>
+    <input aria-hidden="True" type="hidden" asp-for="WoodlandOwnerId"/>
+
+
+    <div class="govuk-grid-column-two-thirds">
 
         <div class="govuk-form-group">
             <fieldset class="govuk-fieldset">
@@ -83,8 +83,12 @@
             </fieldset>
         </div>
 
-        <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+    </div>
 
+    <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+
+
+    <div class="govuk-grid-column-full">
         <div class="govuk-tabs" data-module="govuk-tabs">
             <h2 class="govuk-tabs__title">
                 Woodland compartments
@@ -111,12 +115,13 @@
                     }
                     else
                     {
-                        @if (Model.DetailsList.Any(x=>x.Status != ApplicationStepStatus.NotStarted))
+                        @if (Model.DetailsList.Any(x => x.Status != ApplicationStepStatus.NotStarted))
                         {
                             <div class="govuk-hint" id="deselect-hint">
                                 Deselecting a compartment and clicking Continue will remove any felling and restocking data you may have entered for that compartment
                             </div>
                         }
+
                         <input type="hidden" aria-hidden="True" asp-for="@Model.GIS"/>
                         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                             @foreach (var compartment in ViewBag.Compartments)
@@ -133,9 +138,17 @@
                 </div>
             </div>
             <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="map">
-                <div id="viewDiv" aria-label="Map of compartments within the selected property"></div>
+                <arcgis-map id="viewDiv" aria-label="Map of the selected compartment" style="height: 85vh !important;">
+                    <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+                    <arcgis-zoom slot="top-right"></arcgis-zoom>
+                    <arcgis-compass slot="top-right"></arcgis-compass>
+                    <arcgis-expand slot="top-right">
+                        <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                    </arcgis-expand>
+                </arcgis-map>
             </div>
         </div>
+        
         <div class="govuk-form-group">
             <div class="govuk-button-group">
                 <button class="govuk-button" type="submit" data-module="govuk-button">
@@ -149,11 +162,11 @@
                 }
             </div>
         </div>
-    </form>
-</div>
+    </div>
+</form>
 
-    @section Css {
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+@section Css {
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css"/>
 
     <style>
         #viewDiv {
@@ -162,14 +175,15 @@
             border-width: 1px;
             padding: 0;
             margin: 0;
-            height: 85vh !important;
         }
     </style>
 }
 
 @section Scripts
 {
-    <script src="https://js.arcgis.com/4.24/"></script>
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
     <script>
         document.handleCheckboxClick= function (event){
             let elm = document.getElementById("GIS");

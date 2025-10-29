@@ -1,4 +1,5 @@
 ﻿using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -60,7 +61,8 @@ public class LarchCheckModel : FellingLicenceApplicationPageViewModel
 
     public string? MoratoriumPeriod { get; set; }
 
-    public string? CaseNote { get; set; }
-    public bool VisibleToApplicant { get; set; }
-    public bool VisibleToConsultee { get; set; }
+    /// <summary>
+    /// Gets and sets a model for the form-level case note for the larch check.
+    /// </summary>
+    public required FormLevelCaseNote FormLevelCaseNote { get; set; }
 }

@@ -14,13 +14,12 @@
     const string newDetailClassName = "new-confirmed-detail";
     const string deletedDetailClassName = "deleted-confirmed-detail";
 }
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
 <div class="govuk-grid-column-full">
-
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
@@ -190,8 +189,16 @@
 										        height: 50vh !important;
 									        }
 								        </style>
-
-                                        <div class="profileMap" id="viewDiv-@i-@j"></div>
+                                        
+                                        <arcgis-map class="profileMap" id="viewDiv-@i-@j">
+                                            <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+                                            <arcgis-zoom slot="top-right"></arcgis-zoom>
+                                            <arcgis-compass slot="top-right"> </arcgis-compass>
+                                            <arcgis-fullscreen slot="top-right" element="shell"></arcgis-fullscreen>
+                                            <arcgis-expand slot="top-right">
+                                                <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                                            </arcgis-expand>
+                                        </arcgis-map>
                                     </div>
                                 </div>
                             </div>
@@ -210,10 +217,13 @@
                                                 <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@compartment.SubmittedFlaPropertyCompartmentId')">Show on map</a>
                                             </li>
                                             <li condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__action">
-                                                <a id="amend-link-felling-@(confirmedFellingDetail.ConfirmedFellingDetailsId)"
+                                                <a class="govuk-link" id="amend-link-felling-@(confirmedFellingDetail.ConfirmedFellingDetailsId)"
                                                    href="@Url.Action("AmendConfirmedFellingDetails", new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId })" 
-                                                   aria-describedby="felling-and-restocking">
+                                                   aria-describedby="amend-link-felling-desc-@(confirmedFellingDetail.ConfirmedFellingDetailsId)">
                                                     Amend
+                                                    <span id="amend-link-felling-desc-@(confirmedFellingDetail.ConfirmedFellingDetailsId)" class="govuk-visually-hidden">
+                                                        felling operation for compartment @compartment.CompartmentNumber.
+                                                    </span>
                                                 </a>
                                             </li>
                                         </ul>
@@ -245,10 +255,13 @@
                                                     <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@restockingDetail!.RestockingCompartmentId')">Show on map</a>
                                                 </li>
                                                 <li condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__action">
-										            <a id="amend-link-restocking-@(restockingDetail.ConfirmedRestockingDetailsId)" href="@Url.Action("AmendConfirmedRestockingDetails", 
+										            <a class="govuk-link" id="amend-link-restocking-@(restockingDetail.ConfirmedRestockingDetailsId)" href="@Url.Action("AmendConfirmedRestockingDetails", 
 											            new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId, confirmedRestockingDetailsId = confirmedFellingDetail.ConfirmedRestockingDetails[k].ConfirmedRestockingDetailsId })" 
-										            aria-describedby="felling-and-restocking">
-											            Amend
+										            aria-describedby="amend-link-restocking-desc-@(restockingDetail.ConfirmedRestockingDetailsId)">
+                                                        Amend
+                                                        <span id="amend-link-restocking-desc-@(restockingDetail.ConfirmedRestockingDetailsId)" class="govuk-visually-hidden">
+                                                            restocking operation for compartment @restockingDetail.RestockingCompartmentNumber.
+                                                        </span>
 										            </a>
 									            </li>
 								            </ul>
@@ -369,8 +382,16 @@
 										        height: 50vh !important;
 									        }
 								        </style>
-
-                                        <div class="profileMap" id="@viewDivId"></div>
+                                        
+                                        <arcgis-map class="profileMap" id="@viewDivId">
+                                            <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+                                            <arcgis-zoom slot="top-right"></arcgis-zoom>
+                                            <arcgis-compass slot="top-right"> </arcgis-compass>
+                                            <arcgis-fullscreen slot="top-right" element="shell"></arcgis-fullscreen>
+                                            <arcgis-expand slot="top-right">
+                                                <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                                            </arcgis-expand>
+                                        </arcgis-map>
                                     </div>
                                 </div>
                             </div>
@@ -571,19 +592,21 @@
 	<!-- Following below guidance ensure it all works-->
 	<!-- Load DataTables and its extensions -->
 	<partial name="Partials/_DataTablesJs" />
+    <!-- ArcGIS scripts and styles -->
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
+    <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
 
-	<!-- Other scripts follow -->
+
+    <!-- Other scripts follow -->
 	<script src="~/js/confirmed-felling-and-restocking.js" asp-append-version="true"></script>
     <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
     <script src="~/js/confirmed-felling-and-restocking-revert-amendments.js" asp-append-version="true"></script>
     <script src="~/js/confirmed-felling-and-restocking-mapping.js" asp-append-version="true"></script>
 
-	<!-- ArcGIS scripts and styles -->
-    <script src="https://js.arcgis.com/4.24/"></script>
-	<script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
-	<link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
-}
+	}
 
 @section Css
 {

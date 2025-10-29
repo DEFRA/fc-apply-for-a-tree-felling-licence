@@ -150,11 +150,13 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
             SiteVisitComplete = siteVisit.SiteVisitComplete,
             SiteVisitNotNeededReason = new FormLevelCaseNote
             {
-                InsetTextHeading = "Explain why a site visit is not needed for this application"
+                InsetTextHeading = "Explain why a site visit is not needed for this application",
+                CaseNoteInputElementId = "site-visit-not-needed-reason"
             },
             SiteVisitArrangementNotes = new FormLevelCaseNote
             {
-                InsetTextHeading = "Describe any site visit arrangements, or give a reason why none are required"
+                InsetTextHeading = "Describe any site visit arrangements, or give a reason why none are required",
+                CaseNoteInputElementId = "site-visit-arrangement-notes"
             },
             SiteVisitComments = new ActivityFeedModel
             {

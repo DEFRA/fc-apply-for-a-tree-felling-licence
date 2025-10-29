@@ -106,7 +106,7 @@ public class AmendExternalUserUseCase : IAmendExternalUserUseCase
         {
             var errorMessage = $"Unable to update external user account {model.UserId}, error: {error}";
 
-            _logger.LogError(errorMessage);
+            _logger.LogError("Unable to update external user account {UserId}, error: {Error}", model.UserId, error);
             
             await _audit.PublishAuditEventAsync(
                 new AuditEvent(
@@ -211,7 +211,7 @@ public class AmendExternalUserUseCase : IAmendExternalUserUseCase
 
         if (isFailure)
         {
-            _logger.LogError(error);
+            _logger.LogError("Failed to close account for external user with id {UserAccountId} with error {Error}", userAccountId, error);
 
             await _audit.PublishAuditEventAsync(
                 new AuditEvent(
@@ -229,7 +229,7 @@ public class AmendExternalUserUseCase : IAmendExternalUserUseCase
             return Result.Failure(error);
         }
 
-        _logger.LogDebug("Closing FC staff user account with id {userId}, requested by: {internalUserId}", userAccountId, internalUser.UserAccountId);
+        _logger.LogDebug("Closing external user account with id {userId}, requested by: {internalUserId}", userAccountId, internalUser.UserAccountId);
 
         await _audit.PublishAuditEventAsync(
             new AuditEvent(

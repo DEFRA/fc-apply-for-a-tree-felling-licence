@@ -6,11 +6,10 @@
     var breadcrumbs = new BreadcrumbsModel { Breadcrumbs = new List<BreadCrumb>(0), CurrentPage = "Home" };
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
 
-    <partial name="Partials/_PageErrors" />
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
+<div class="govuk-grid-column-two-thirds">
     
     <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
 

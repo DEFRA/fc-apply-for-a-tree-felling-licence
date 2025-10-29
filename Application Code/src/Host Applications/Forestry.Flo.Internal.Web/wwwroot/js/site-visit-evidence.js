@@ -87,17 +87,17 @@
                 '<div>Comment<p class="govuk-hint">Add any relevant details about this file. For example the location, what it shows, or why it\'s important.</p></div>' +
                 '<div>' +
                 '<textarea ' + disabled + ' class="govuk-textarea" rows="4" id="SiteVisitEvidenceMetadata_' + index + '__Comment" name="SiteVisitEvidenceMetadata[' + index + '].Comment"></textarea>' +
-                '<div class="govuk-grid-row">' +
-                '<div class="govuk-grid-column-one-third"><div class="govuk-checkboxes__item">' +
+                '<div class="govuk-checkboxes govuk-checkboxes--small">' +
+                '<div class="govuk-checkboxes__item">' +
                 '<input ' + disabled + 'class="govuk-checkboxes__input" type="checkbox" data-val="true" id="SiteVisitEvidenceMetadata_' + index + '__VisibleToApplicants" name="SiteVisitEvidenceMetadata[' + index + '].VisibleToApplicants" value="false">' +
                 '<label class="govuk-label govuk-checkboxes__label" for="SiteVisitEvidenceMetadata_' + index + '__VisibleToApplicants">Visible to applicants</label>' +
-                '</div></div>' + //divs around first checkbox
-                '<div class="govuk-grid-column-one-third"><div class="govuk-checkboxes__item">' +
+                '</div>' + //divs around first checkbox
+                '<div class="govuk-checkboxes__item">' +
                 '<input ' + disabled + 'class="govuk-checkboxes__input" type="checkbox" data-val="true" id="SiteVisitEvidenceMetadata_' + index + '__VisibleToConsultees" name="SiteVisitEvidenceMetadata[' + index + '].VisibleToConsultees" value="false">' +
                 '<label class="govuk-label govuk-checkboxes__label" for="SiteVisitEvidenceMetadata_' + index + '__VisibleToConsultees">Visible to external consultees</label>' +
-                '</div></div>' + //divs around second checkbox
-                '</div>' +  //div under textarea
-                '</div>' +
+                '</div>' + //divs around second checkbox
+                '</div>' +  //div for checkboxes group
+                '</div>' +  //div containing textarea and checkboxes
                 '</dt>' +
                 '</div>' +
                 '</div></div>');

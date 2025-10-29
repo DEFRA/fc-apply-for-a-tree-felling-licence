@@ -44,18 +44,18 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
                    ["FellingLicenceId"] = fellingLicenceId
                }))
         {
-            _logger.LogInformation("AddFellingLicenceGeometriesAsync called for FellingLicenceId: {FellingLicenceId}", fellingLicenceId);
+            _logger.LogInformation("AddFellingLicenceGeometriesAsync called for application: {ApplicationId}", fellingLicenceId);
 
             var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/addFeatures";
 
-            _logger.LogDebug("About to send geometries for felling licence having id of [{id}] to feature service at [{featurePath}]",
+            _logger.LogDebug("About to send geometries for application [{ApplicationId}] to feature service at [{FeaturePath}]",
                 fellingLicenceId, path);
 
             var geometryResult = ShapeHelper.MakeMultiPart(compartments.Select(c => c.ShapeGeometry).ToList());
 
             if (geometryResult.IsFailure)
             {
-                _logger.LogError("Unable to convert compartment geometries to MultiPart Polygon for felling licence {FellingLicenceId}: {Error}",
+                _logger.LogError("Unable to convert compartment geometries to MultiPart Polygon for application {ApplicationId}: {Error}",
                     fellingLicenceId, geometryResult.Error);
 
                 return Result.Failure<CreateUpdateDeleteResponse<int>>(geometryResult.Error);
@@ -72,7 +72,7 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
 
             var compartmentData = JsonConvert.SerializeObject(model);
 
-            _logger.LogDebug("Serialized data as: [{compartmentData}]", compartmentData);
+            _logger.LogDebug("Serialized data as: [{CompartmentData}]", compartmentData);
 
             var data = new EditFeaturesParameter(compartmentData);
 
@@ -80,17 +80,17 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
 
             if (result.IsFailure)
             {
-                _logger.LogError("Failed to add felling licence geometries for FellingLicenceId {FellingLicenceId}: {Error}", fellingLicenceId, result.Error);
+                _logger.LogError("Failed to add felling licence geometries for application {ApplicationId}: {Error}", fellingLicenceId, result.Error);
                 return result;
             }
 
-            if (result.Value?.AddResults == null || result.Value.AddResults.Count == 0 || result.Value.AddResults.Count((ar) => ar.WasSuccessful == false) != 0)
+            if (result.Value?.AddResults == null || result.Value.AddResults.Count == 0 || result.Value.AddResults.Any(ar => !ar.WasSuccessful))
             {
-                _logger.LogError("Unable to add compartment geometries for FellingLicenceId {FellingLicenceId}", fellingLicenceId);
+                _logger.LogError("Unable to add compartment geometries for application {ApplicationId}", fellingLicenceId);
                 return Result.Failure<CreateUpdateDeleteResponse<int>>("Unable to add compartment geometries");
             }
 
-            _logger.LogInformation("Successfully added felling licence geometries for FellingLicenceId {FellingLicenceId}", fellingLicenceId);
+            _logger.LogInformation("Successfully added felling licence geometries for application {ApplicationId}", fellingLicenceId);
             return Result.Success(result.Value);
         }
     }
@@ -111,11 +111,11 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
                    ["FellingLicenceId"] = fellingLicenceId
                }))
         {
-            _logger.LogInformation("GetCompartmentIdsAsync called for FellingLicenceId: {FellingLicenceId}", fellingLicenceId);
+            _logger.LogInformation("GetCompartmentIdsAsync called for application: {ApplicationId}", fellingLicenceId);
 
             var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/query";
 
-            _logger.LogDebug("About to query case [{id}] to feature service at [{featurePath}]",
+            _logger.LogDebug("About to query application [{ApplicationId}] to feature service at [{FeaturePath}]",
                 fellingLicenceId, path);
 
             var query = new QueryFeatureServiceParameters()
@@ -129,12 +129,12 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
 
             if (result.IsFailure)
             {
-                _logger.LogError("Failed to get compartment ids for FellingLicenceId {FellingLicenceId}: {Error}", fellingLicenceId, result.Error);
+                _logger.LogError("Failed to get compartment ids for application {ApplicationId}: {Error}", fellingLicenceId, result.Error);
                 return result.ConvertFailure<List<int>>();
             }
 
             var ids = !result.Value.Results.Any() ? new List<int>() : result.Value.Results.Select(r => r.Record.ObjectId).ToList();
-            _logger.LogInformation("Retrieved {Count} compartment ids for FellingLicenceId {FellingLicenceId}", ids.Count, fellingLicenceId);
+            _logger.LogInformation("Retrieved {Count} compartment ids for application {ApplicationId}", ids.Count, fellingLicenceId);
 
             return Result.Success(ids);
         }
@@ -151,23 +151,23 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
                    ["FellingLicenceId"] = fellingLicenceId
                }))
         {
-            _logger.LogInformation("ClearLayerAsync called for FellingLicenceId: {FellingLicenceId}", fellingLicenceId);
+            _logger.LogInformation("ClearLayerAsync called for application: {ApplicationId}", fellingLicenceId);
 
             var items = await GetCompartmentIdsAsync(fellingLicenceId, cancellationToken);
             if (items.IsFailure)
             {
-                _logger.LogError("Failed to get compartment ids for clearing layer for FellingLicenceId {FellingLicenceId}: {Error}", fellingLicenceId, items.Error);
+                _logger.LogError("Failed to get compartment ids for clearing layer for application {ApplicationId}: {Error}", fellingLicenceId, items.Error);
                 return items.ConvertFailure();
             }
 
             if (items.Value.Count == 0)
             {
-                _logger.LogInformation("No compartment ids found for FellingLicenceId {FellingLicenceId}, nothing to delete.", fellingLicenceId);
+                _logger.LogInformation("No compartment ids found for application {ApplicationId}, nothing to delete.", fellingLicenceId);
                 return Result.Success();
             }
 
             var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/deleteFeatures";
-            _logger.LogDebug("About to delete case [{id}] to feature service at [{featurePath}]",
+            _logger.LogDebug("About to delete application [{ApplicationId}] from feature service at [{FeaturePath}]",
                 fellingLicenceId, path);
 
             var data = new DeleteFeatureByObjectId<int>(items.Value.Select(i => i).ToList());
@@ -177,11 +177,11 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
             if (result.IsFailure || result.Value == null || result.Value.WasSuccess != true)
             {
 
-                _logger.LogError("Failed to clear layer for FellingLicenceId {FellingLicenceId}:Invalid Result from Esri", fellingLicenceId);
+                _logger.LogError("Failed to clear layer for application {ApplicationId}: Invalid Result from Esri", fellingLicenceId);
                 return Result.Failure("Invalid Result from Esri");
             }
 
-            _logger.LogInformation("Successfully cleared layer for FellingLicenceId {FellingLicenceId}", fellingLicenceId);
+            _logger.LogInformation("Successfully cleared layer for application {ApplicationId}", fellingLicenceId);
             return Result.Success();
         }
     }

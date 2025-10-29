@@ -53,6 +53,7 @@ public class FellingLicenceApplicationRepositoryBase : IFellingLicenceApplicatio
             return UserDbErrorReason.NotFound;
         }
 
+        entity.AafStepStatus = applicationStepStatuses.AgentAuthorityFormComplete ?? entity.AafStepStatus;
         entity.ConstraintCheckStatus = applicationStepStatuses.ConstraintsCheckComplete ?? entity.ConstraintCheckStatus;
         entity.OperationsStatus = applicationStepStatuses.OperationDetailsComplete ?? entity.OperationsStatus;
         entity.TermsAndConditionsStatus = applicationStepStatuses.TermsAndConditionsComplete ?? entity.TermsAndConditionsStatus;

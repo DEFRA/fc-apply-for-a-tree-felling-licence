@@ -1356,10 +1356,15 @@ public class WoodlandOfficerReviewControllerTests
         var useCase = new Mock<ILarchCheckUseCase>();
         var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
         var amendCaseNotes = new Mock<IAmendCaseNotes>();
-        var model = _fixture.Build<LarchCheckModel>()
+
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
             .With(x => x.CaseNote, "Some note")
             .With(x => x.VisibleToApplicant, true)
             .With(x => x.VisibleToConsultee, false)
+            .Create();
+
+        var model = _fixture.Build<LarchCheckModel>()
+            .With(x => x.FormLevelCaseNote, caseNote)
             .Create();
 
         useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -1381,10 +1386,15 @@ public class WoodlandOfficerReviewControllerTests
         var useCase = new Mock<ILarchCheckUseCase>();
         var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
         var amendCaseNotes = new Mock<IAmendCaseNotes>();
-        var model = _fixture.Build<LarchCheckModel>()
+
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
             .With(x => x.CaseNote, "Some note")
             .With(x => x.VisibleToApplicant, true)
             .With(x => x.VisibleToConsultee, false)
+            .Create();
+
+        var model = _fixture.Build<LarchCheckModel>()
+            .With(x => x.FormLevelCaseNote, caseNote)
             .Create();
 
         useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -1406,8 +1416,13 @@ public class WoodlandOfficerReviewControllerTests
         var useCase = new Mock<ILarchCheckUseCase>();
         var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
         var amendCaseNotes = new Mock<IAmendCaseNotes>();
-        var model = _fixture.Build<LarchCheckModel>()
+
+        var caseNote = _fixture.Build<FormLevelCaseNote>()
             .With(x => x.CaseNote, "")
+            .Create();
+
+        var model = _fixture.Build<LarchCheckModel>()
+            .With(x => x.FormLevelCaseNote, caseNote)
             .Create();
 
         useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

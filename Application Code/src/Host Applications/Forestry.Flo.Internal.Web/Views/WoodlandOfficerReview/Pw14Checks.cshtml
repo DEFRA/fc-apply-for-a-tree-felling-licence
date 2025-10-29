@@ -10,12 +10,10 @@
     var user = new InternalUser(User);
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
-</div>
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
 <div class="govuk-grid-column-two-thirds">
 
@@ -27,9 +25,9 @@
         <div class="govuk-form-group">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Has the Land Information Search (LIS) been reviewed for constraints?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Check for any constraints affecting the planned works using the G&R Code – List of Constraints.
@@ -49,9 +47,9 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Are any trees protected by a Tree Preservation Order (TPO) or within a Conservation Area?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Check if any trees on the site are protected by a TPO or fall within a Conservation Area.
@@ -70,9 +68,9 @@
 
             <fieldset hidden="@Model.Pw14Checks.TpoOrCaDeclared is false" class="govuk-fieldset" id="authority-consulted-radio">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Has the local authority been consulted or advice sought, if needed?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Confirm the local authority has been consulted or advice has been requested, if needed.
@@ -91,9 +89,9 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Do the proposals follow the UK Forestry Standard (UKFS)?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Check the proposals against the UK Forestry Standard (UKFS) and related guidelines.
@@ -114,9 +112,9 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Is the application complete and valid?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Confirm all required information has been provided and meets the criteria.
@@ -135,9 +133,9 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Does anyone processing this application need to declare an interest?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Select ‘Yes’ if anyone processing the application has a personal or financial interest.
@@ -157,9 +155,9 @@
 
             <fieldset hidden="@Model.Pw14Checks.InterestDeclared is false" class="govuk-fieldset" id="interest-compliance-radio">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Has the declaration of interest form been filled in and sent to the FS Compliance Team?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Confirm that the form has been signed and sent to the FS Compliance Team.
@@ -178,9 +176,9 @@
 
             <fieldset hidden="@Model.Pw14Checks.InterestDeclared is false" class="govuk-fieldset" id="recommendation-enacted-radio">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Have the FS Compliance Team’s recommendations been put in place?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Measures may include reassigning the application to avoid a conflict of interest.
@@ -199,9 +197,9 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Have the maps been checked and confirmed as accurate?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Check that the mapping clearly shows the areas to be felled, is free from errors, and matches the application details.
@@ -220,14 +218,14 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Has the need for an EPS licence been considered and discussed with the applicant?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Check if the felling is on or near a European site.
                     Consider whether a European Protected Species (EPS) licence may be needed and record any discussion with the applicant. Refer to the
-                    <a target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
+                    <a class="govuk-link" target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
                         Conservation of Species and Habitats (Habitats Regulations) G&R code
                     </a>
                 </div>
@@ -245,13 +243,13 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Is a Stage 1 Habitat Regulations Assessment needed?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Check if the felling is near a designated site and whether an assessment is needed. Refer to the
-                    <a target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
+                    <a class="govuk-link" target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
                         Conservation of Species and Habitats (Habitats Regulations) G&R code
                     </a>
                 </div>
@@ -269,9 +267,9 @@
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Does the felling need an Environmental Impact Assessment (EIA)?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Assess whether the project falls under Environmental Impact Assessment (EIA) thresholds or criteria.
@@ -290,9 +288,9 @@
 
             <fieldset hidden="@Model.Pw14Checks.EiaThresholdExceeded is false" class="govuk-fieldset" id="eia-tracker-radio">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Has the EIA tracker been filled in?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Confirm that the tracker has been filled in if an EIA is required.
@@ -311,9 +309,9 @@
 
             <fieldset hidden="@Model.Pw14Checks.EiaThresholdExceeded is false" class="govuk-fieldset" id="eia-checklist-radio">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Have the EIA tracker and any required checklist been completed?
-                    </h3>
+                    </h2>
                 </legend>
                 <div class="govuk-hint">
                     Complete all parts of the tracker and any checklist that applies, if an EIA is required.
@@ -331,9 +329,9 @@
             </fieldset>
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                    <h3 class="govuk-fieldset__heading">
+                    <h2 class="govuk-fieldset__heading">
                         Woodland officer review comments
-                    </h3>
+                    </h2>
                 </legend>
                @Html.EditorFor(m => m.FormLevelCaseNote)
             </fieldset>

@@ -97,7 +97,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
 
         if (isFailure)
         {
-            _logger.LogWarning("Unable to retrieve internal user accounts in InformAssignedFcStaffOfNearingPublicRegisterPeriodEndAsync, error: {error}", error);
+            _logger.LogWarning("Unable to retrieve internal user accounts in InformAssignedFcStaffOfNearingPublicRegisterPeriodEndAsync, error: {Error}", error);
         }
 
         var timestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
@@ -207,7 +207,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
 
             if (user is null)
             {
-                _logger.LogError("Unable to retrieve internal user account for user {id}", userId);
+                _logger.LogError("Unable to retrieve internal user account for user {UserId}", userId);
                 continue;
             }
 
@@ -242,7 +242,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
             if (notificationResult.IsFailure)
             {
                 _logger.LogError("Unable to send notification for removal of application from consultation public register period end to " +
-                                 "{address} for application {id}", recipient.Address, dataModel.PublicRegister.FellingLicenceApplicationId);
+                                 "{EmailAddress} for application {ApplicationId}", recipient.Address, dataModel.PublicRegister.FellingLicenceApplicationId);
             }
         }
 

@@ -1,10 +1,10 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.HostApplicationsCommon.Services;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
@@ -15,15 +15,10 @@ using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FileStorage.Model;
 using Forestry.Flo.Services.Gis.Interfaces;
-using Forestry.Flo.Services.Gis.Models.Internal;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using NodaTime;
-using System.Globalization;
-using Forestry.Flo.HostApplicationsCommon.Services;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
@@ -34,23 +29,12 @@ public class GeneratePdfApplicationUseCase : GeneratePdfApplicationUseCaseBase, 
 {
     private readonly IAuditService<GeneratePdfApplicationUseCaseBase> _auditService;
     private readonly RequestContext _requestContext;
-    private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
-    private readonly IApproverReviewService _approverReviewService;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
-    private readonly IRetrieveUserAccountsService _externalAccountService;
-    private readonly IUserAccountService _internalAccountService;
-    private readonly IRetrieveWoodlandOwners _woodlandOwnerService;
-    private readonly IPropertyProfileRepository _propertyProfileRepository;
     private readonly IAddDocumentService _addDocumentService;
     private readonly ICreateApplicationSnapshotDocumentService _createApplicationSnapshotDocumentService;
-    private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
     private readonly ILogger<GeneratePdfApplicationUseCase> _logger;
-    private readonly IForesterServices _iForesterServices;
-    private readonly IForestryServices _forestryAccess;
     private readonly DocumentVisibilityOptions _documentVisibilityOptions;
     private readonly IClock _clock;
-    private readonly ICalculateConditions _calculateConditionsService;
-    private readonly PDFGeneratorAPIOptions _licencePdfOptions;
 
     public GeneratePdfApplicationUseCase(
         IAuditService<GeneratePdfApplicationUseCaseBase> auditService,
@@ -89,22 +73,12 @@ public class GeneratePdfApplicationUseCase : GeneratePdfApplicationUseCaseBase, 
     {
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
-        _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _fellingLicenceApplicationInternalRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
-        _internalAccountService = Guard.Against.Null(internalAccountService);
-        _externalAccountService = Guard.Against.Null(externalAccountService);
-        _woodlandOwnerService = Guard.Against.Null(woodlandOwnerService);
-        _propertyProfileRepository = Guard.Against.Null(propertyProfileRepository);
         _addDocumentService = Guard.Against.Null(addDocumentService);
         _createApplicationSnapshotDocumentService = Guard.Against.Null(createApplicationSnapshotDocumentServiceService);
-        _iForesterServices = Guard.Against.Null(iForesterServices);
         _documentVisibilityOptions = Guard.Against.Null(documentVisibilityOptions.Value);
         _clock = Guard.Against.Null(clock);
-        _calculateConditionsService = Guard.Against.Null(calculateConditionsService);
-        _licencePdfOptions = Guard.Against.Null(licencePdfOptions.Value);
-        _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
         _logger = logger;
-        _approverReviewService = Guard.Against.Null(approverReviewService);
     }
 
     /// <inheritdoc />
@@ -179,7 +153,7 @@ public class GeneratePdfApplicationUseCase : GeneratePdfApplicationUseCaseBase, 
             FellingApplicationId = application.Value.Id,
             FileToStoreModels = new List<FileToStoreModel> { fileModel },
             ReceivedByApi = false,
-            UserAccountId = (Guid)internalUserId!,
+            UserAccountId = internalUserId!,
             VisibleToApplicant = _documentVisibilityOptions.ApplicationDocument.VisibleToApplicant && isFinal,
             VisibleToConsultee = _documentVisibilityOptions.ApplicationDocument.VisibleToConsultees && isFinal
         };

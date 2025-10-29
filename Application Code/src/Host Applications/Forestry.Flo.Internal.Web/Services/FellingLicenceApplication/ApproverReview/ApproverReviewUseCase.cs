@@ -17,7 +17,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
-using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
@@ -33,9 +32,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
 {
     private readonly IAgentAuthorityInternalService _agentAuthorityInternalService;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
-    private readonly IPropertyProfileRepository _propertyProfileRepository;
     private readonly ILogger<FellingLicenceApplicationUseCase> _logger;
-    private readonly Flo.Services.InternalUsers.Repositories.IUserAccountRepository _userAccountRepository;
     private readonly IActivityFeedItemProvider _activityFeedItemProvider;
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
     private readonly IApproverReviewService _approverReviewService;
@@ -49,25 +46,24 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
     /// <param name="internalUserAccountService">The internal user account service.</param>
     /// <param name="externalUserAccountService">The external user account service.</param>
     /// <param name="fellingLicenceApplicationInternalRepository">The felling licence application internal repository.</param>
-    /// <param name="propertyProfileRepository">The property profile repository.</param>
     /// <param name="woodlandOwnerService">The woodland owner service.</param>
     /// <param name="auditService">The audit service.</param>
-    /// <param name="userAccountRepository">The user account repository.</param>
     /// <param name="activityFeedItemProvider">The activity feed item provider.</param>
     /// <param name="agentAuthorityService">The agent authority service.</param>
     /// <param name="agentAuthorityInternalService">The agent authority internal service.</param>
     /// <param name="getWoodlandOfficerReviewService">The get woodland officer review service.</param>
     /// <param name="approverReviewService">The approver review service.</param>
+    /// <param name="getConfiguredFcAreasService">A service to get FC admin hubs.</param>
     /// <param name="requestContext">The request context.</param>
+    /// <param name="woodlandOfficerReviewSubStatusService">A service to calculate WO Review substatuses.</param>
     /// <param name="logger">The logger.</param>
+    /// <param name="fellingLicenceApplicationOptions">Configuration options for applications.</param>
     public ApproverReviewUseCase(
         IUserAccountService internalUserAccountService,
         IRetrieveUserAccountsService externalUserAccountService,
         IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository,
-        IPropertyProfileRepository propertyProfileRepository,
         IRetrieveWoodlandOwners woodlandOwnerService,
         IAuditService<FellingLicenceApplicationUseCase> auditService,
-        Flo.Services.InternalUsers.Repositories.IUserAccountRepository userAccountRepository,
         IActivityFeedItemProvider activityFeedItemProvider,
         IAgentAuthorityService agentAuthorityService,
         IAgentAuthorityInternalService agentAuthorityInternalService,
@@ -91,31 +87,12 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
         _fellingLicenceApplicationInternalRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
-        _propertyProfileRepository = Guard.Against.Null(propertyProfileRepository);
         _logger = Guard.Against.Null(logger);
-        _userAccountRepository = Guard.Against.Null(userAccountRepository);
         _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
         _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _approverReviewService = Guard.Against.Null(approverReviewService);
         _fellingLicenceApplicationOptions = fellingLicenceApplicationOptions.Value;
     }
-
-    /// <summary>
-    /// Gets the post-submitted statuses.
-    /// </summary>
-    public static List<FellingLicenceStatus> PostSubmittedStatuses => new()
-    {
-        FellingLicenceStatus.Submitted,
-        FellingLicenceStatus.AdminOfficerReview,
-        FellingLicenceStatus.WithApplicant,
-        FellingLicenceStatus.WoodlandOfficerReview,
-        FellingLicenceStatus.SentForApproval,
-        FellingLicenceStatus.Approved,
-        FellingLicenceStatus.Refused,
-        FellingLicenceStatus.Withdrawn,
-        FellingLicenceStatus.ReturnedToApplicant,
-        FellingLicenceStatus.ReferredToLocalAuthority
-    };
 
     /// <inheritdoc />
     public async Task<Maybe<ApproverReviewSummaryModel>> RetrieveApproverReviewAsync(
@@ -149,7 +126,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
 
             var request = new GetAgentAuthorityFormRequest
             {
-                AgencyId = agencyForWoodlandOwner.Value.AgencyId.Value,
+                AgencyId = agencyForWoodlandOwner.Value!.AgencyId!.Value,
                 PointInTime = application.Value.StatusHistories
                 .OrderByDescending(x => x.Created)
                 .FirstOrDefault(x => x.Status == FellingLicenceStatus.Submitted)?.Created,
@@ -250,9 +227,8 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
                         e.GetDisplayName()
             }).ToList();
         
-        applicationReviewModel.ApproverReview.ApprovedLicenceDuration = applicationReviewModel.ApproverReview.ApprovedLicenceDuration 
-            ?? woodlandOfficerReview.Value.RecommendedLicenceDuration
-            ?? defaultRecommendedLicenceDuration;
+        applicationReviewModel.ApproverReview.ApprovedLicenceDuration ??= woodlandOfficerReview.Value.RecommendedLicenceDuration
+                                                                          ?? defaultRecommendedLicenceDuration;
 
         applicationReviewModel.IsReadonly = !(
             applicationReviewModel.FellingLicenceApplicationSummary!.StatusHistories.MaxBy(x => x.Created)?.Status is FellingLicenceStatus.SentForApproval

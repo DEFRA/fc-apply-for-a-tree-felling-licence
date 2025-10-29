@@ -134,10 +134,10 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
     /// Deletes the <see cref="FellingLicenceApplication"/> and the linked entities, recommended for use only with draft applicaitons.
     /// It will require any documents to be deleted by their specific location.
     /// </summary>
-    /// <param name="felingLicenceApplication">The FLA to be removed <see cref="FellingLicenceApplication"/>.</param>
+    /// <param name="fellingLicenceApplication">The FLA to be removed <see cref="FellingLicenceApplication"/>.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="UnitResult"/> indicating if there were any failure.</returns>
-    Task<UnitResult<UserDbErrorReason>> DeleteFlaAsync(FellingLicenceApplication felingLicenceApplication, CancellationToken cancellationToken);
+    Task<UnitResult<UserDbErrorReason>> DeleteFlaAsync(FellingLicenceApplication fellingLicenceApplication, CancellationToken cancellationToken);
 
     /// <summary>
     /// Gets the case notes for an application, optionally filtering by visibility to applicant only.

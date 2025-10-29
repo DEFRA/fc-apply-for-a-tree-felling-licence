@@ -136,7 +136,7 @@ public partial class ForesterServicesTests
             cancellationToken: CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Contains("Unable to set Polygon", result.Error);
+        Assert.Contains("No valid rings found in input polygons.", result.Error);
     }
 
     [Fact]

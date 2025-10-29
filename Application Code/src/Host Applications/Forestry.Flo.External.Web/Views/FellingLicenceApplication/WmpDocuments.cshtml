@@ -1,5 +1,4 @@
 @using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.Services.Common
 @using Microsoft.Extensions.Options
 @using Forestry.Flo.Services.FileStorage.Configuration
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications.WmpDocumentsViewModel
@@ -21,11 +20,11 @@
         .Where(x => x.FileUploadReasons.Contains(FileUploadReason.WmpDocument));
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
 
@@ -49,10 +48,7 @@
         }
     </ul>
 
-    @if (Model.Documents.Count() < (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments)
-    {
-        <partial name="_AddSupportingDocuments" model="@Model.AddSupportingDocumentModel"/>
-    }
+    <partial condition="@Model.AllowEditing" name="_AddSupportingDocuments" model="@Model.AddSupportingDocumentModel"/>
 
     <div>
         <h2 class="govuk-heading-m">Files you've uploaded</h2>
@@ -89,7 +85,7 @@
                                 </td>
 
                                 <td class="govuk-table__cell">
-                                    <input type="submit" asp-action="RemoveWmpDocument" class="govuk-button govuk-button--warning" asp-route-applicationId="@Model.ApplicationId" asp-route-documentIdentifier="@document.Id" asp-route-returnToApplicationSummary="@Model.ReturnToApplicationSummary" asp-route-fromDataImport="@Model.FromDataImport" data-module="govuk-button" name="delete-supporting-document" value="Remove" />
+                                    <input type="submit" condition="@Model.AllowEditing" asp-action="RemoveWmpDocument" class="govuk-button govuk-button--warning" asp-route-applicationId="@Model.ApplicationId" asp-route-documentIdentifier="@document.Id" asp-route-returnToApplicationSummary="@Model.ReturnToApplicationSummary" asp-route-fromDataImport="@Model.FromDataImport" data-module="govuk-button" name="delete-supporting-document" value="Remove" />
                                 </td>
                             </tr>
                         }
@@ -104,6 +100,7 @@
             @Html.HiddenFor(x => x.ApplicationId)
             @Html.HiddenFor(x => x.ReturnToApplicationSummary)
             @Html.HiddenFor(x => x.FromDataImport)
+            @Html.HiddenFor(x => x.FellingLicenceStatus)
 
             <div class="govuk-form-group">
                 <div class="govuk-button-group">
@@ -116,12 +113,3 @@
         </form>
     </div>
 </div>
-
-@section Scripts
-{
-
-    @if (!Model.AllowEditing)
-    {
-        <script src="/js/disable-form-elements.js"></script>
-    }
-}

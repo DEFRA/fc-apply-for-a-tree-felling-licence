@@ -1,24 +1,21 @@
-﻿using Forestry.Flo.Internal.Web.Middleware;
-using Forestry.Flo.Services.Applicants.Entities.UserAccount;
+﻿using AutoFixture;
+using Forestry.Flo.Internal.Web.Middleware;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers;
 using Forestry.Flo.Services.InternalUsers.Configuration;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
-using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Security.Claims;
-using AutoFixture;
 using AuthenticationOptions = Forestry.Flo.Services.Common.Infrastructure.AuthenticationOptions;
 using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 
@@ -33,7 +30,6 @@ public class UserAccountValidationMiddlewareTests
     private UserAccountValidationMiddleware CreateMiddleware(
         PermittedRegisteredUserOptions? permittedOptions = null,
         AuthenticationOptions? authOptions = null,
-        IUserAccountService? userAccountService = null,
         ILogger<UserAccountValidationMiddleware>? logger = null)
     {
         var dbContextFactoryMock = new Mock<IDbContextFactory<InternalUsersContext>>();
@@ -45,12 +41,10 @@ public class UserAccountValidationMiddlewareTests
             PermittedEmailDomainsForRegisteredUser = [ "test.com" ]
         };
         authOptions ??= new AuthenticationOptions { Provider = AuthenticationProvider.Azure };
-        userAccountService ??= Mock.Of<IUserAccountService>(); ;
         logger ??= Mock.Of<ILogger<UserAccountValidationMiddleware>>();
 
         return new UserAccountValidationMiddleware(
             dbContextFactoryMock.Object,
-            userAccountService,
             Options.Create(permittedOptions),
             Options.Create(authOptions),
             logger
@@ -85,11 +79,16 @@ public class UserAccountValidationMiddlewareTests
         string path = "/",
         ClaimsPrincipal? user = null)
     {
-        var context = new DefaultHttpContext();
-        context.Request.Path = path;
-        context.Request.Scheme = "https";
-        context.Request.Host = new HostString("localhost");
-        context.User = user ?? new ClaimsPrincipal(new ClaimsIdentity());
+        var context = new DefaultHttpContext
+        {
+            Request =
+            {
+                Path = path,
+                Scheme = "https",
+                Host = new HostString("localhost")
+            },
+            User = user ?? new ClaimsPrincipal(new ClaimsIdentity())
+        };
         return context;
     }
 
@@ -156,7 +155,7 @@ public class UserAccountValidationMiddlewareTests
 
         var signOutCalled = new List<string>();
         context.RequestServices = new ServiceCollection()
-            .AddSingleton<IAuthenticationService>(MockAuthService(signOutCalled))
+            .AddSingleton(MockAuthService(signOutCalled))
             .BuildServiceProvider();
 
         await middleware.InvokeAsync(context, _ => Task.CompletedTask);
@@ -175,7 +174,7 @@ public class UserAccountValidationMiddlewareTests
 
         var signOutCalled = new List<string>();
         context.RequestServices = new ServiceCollection()
-            .AddSingleton<IAuthenticationService>(MockAuthService(signOutCalled))
+            .AddSingleton(MockAuthService(signOutCalled))
             .BuildServiceProvider();
 
         await middleware.InvokeAsync(context, _ => Task.CompletedTask);
@@ -350,7 +349,7 @@ public class UserAccountValidationMiddlewareTests
     {
         var mock = new Mock<IAuthenticationService>();
         mock.Setup(x => x.SignOutAsync(It.IsAny<HttpContext>(), It.IsAny<string>(), It.IsAny<AuthenticationProperties>()))
-            .Returns<HttpContext, string, AuthenticationProperties>((ctx, scheme, props) =>
+            .Returns<HttpContext, string, AuthenticationProperties>((_, scheme, _) =>
             {
                 signOutCalled.Add(scheme);
                 return Task.CompletedTask;

@@ -1,5 +1,4 @@
 ﻿@using Forestry.Flo.Services.Common.User
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.External.Web.Infrastructure
 @model Forestry.Flo.External.Web.Models.Home.WoodlandOwnerHomePageModel
 
@@ -17,11 +16,10 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
 
-    <partial name="Partials/_PageErrors" />
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-xl">@title</h1>
     <p class="govuk-body">Start or make changes to a new application or view submitted applications.</p>
@@ -32,11 +30,14 @@
     <a class="govuk-button govuk-button--secondary" asp-controller="DataImport" asp-action="Index" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" draggable="false" data-module="govuk-button">
         Import a licence application
     </a>
+</div>
 
-    <partial name="Partials/_FellingLicenceApplicationList" model="Model.FellingLicenceApplications" />
-    
+<div class="govuk-grid-column-three-quarters">
+
+    <partial name="Partials/_FellingLicenceApplicationList" model="Model.FellingLicenceApplications"/>
+
     <User-Is-In-Role-Multiple role-names="new[] { AccountTypeExternal.FcUser, AccountTypeExternal.WoodlandOwnerAdministrator }">
-        <br />
+        <br/>
         <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@user.WoodlandOwnerId">
             Manage contact details for @user.WoodlandOwnerName
         </a>
@@ -44,32 +45,32 @@
             ViewBag.BackLinkShow = false;
         }
     </User-Is-In-Role-Multiple>
-    
+
     <user-is-in-role role-name="WoodlandOwnerAdministrator">
-        <br />
+        <br/>
         <a class="govuk-link" asp-controller="Account" asp-action="InviteUserToOrganisation">
             Invite another user to your organisation
         </a>
     </user-is-in-role>
     <user-is-in-role role-name="WoodlandOwnerAdministrator">
-        <br />
+        <br/>
         <a class="govuk-link" asp-controller="AccountAdministration" asp-action="WoodlandOwnerList">
             Manage user accounts associated with @user.WoodlandOwnerName
         </a>
     </user-is-in-role>
-    
-    <br />
+
+    <br/>
 
 </div>
 
 @section Scripts
 {
-    <partial name="Partials/_DataTablesJs" />
+    <partial name="Partials/_DataTablesJs"/>
     <script src="~/js/application-list.js" asp-append-version="true"></script>
     <script src="~/js/property-profile-list.js" asp-append-version="true"></script>
 }
 
 @section Css
 {
-    <partial name="Partials/_DataTablesCss" />
+    <partial name="Partials/_DataTablesCss"/>
 }

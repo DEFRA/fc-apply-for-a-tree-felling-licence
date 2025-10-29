@@ -88,10 +88,24 @@ public class Startup
         services.AddAuthorization<IDbContextFactory<InternalUsersContext>>((options, dbContextFactory) =>
         {
             options.AddPolicy(AuthorizationPolicyNameConstants.HasFcUserRole, policy 
-                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(x, dbContextFactory, new List<Roles> { Roles.FcUser })));
+                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(
+                    x, 
+                    dbContextFactory, 
+                    new List<Roles>
+                    {
+                        Roles.FcUser
+                    }, 
+                    authenticationOptions.Provider)));
           
             options.AddPolicy(AuthorizationPolicyNameConstants.HasFcAdministratorRole, policy 
-                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(x, dbContextFactory, new List<Roles> { Roles.FcAdministrator })));
+                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(
+                    x, 
+                    dbContextFactory, 
+                    new List<Roles>
+                    {
+                        Roles.FcAdministrator
+                    }, 
+                    authenticationOptions.Provider)));
         });
 
         // configure data protection to be not in-memory if the provided configuration setting is available

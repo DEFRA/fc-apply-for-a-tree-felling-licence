@@ -395,14 +395,14 @@ public partial class AdminOfficerReviewController : Controller
             return RedirectToAction(nameof(LarchCheck), new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.LarchCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
             var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
 
@@ -471,14 +471,14 @@ public partial class AdminOfficerReviewController : Controller
             return RedirectToAction(nameof(LarchFlyover), new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.LarchCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
 
             var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
@@ -552,14 +552,14 @@ public partial class AdminOfficerReviewController : Controller
             return RedirectToAction(nameof(MappingCheck), new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.CBWCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
             var caseNoteresult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, performingUser.UserAccountId.Value, cancellationToken);
 

@@ -1,50 +1,58 @@
 ﻿@using Forestry.Flo.External.Web.Models.UserAccount
-@using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.Common
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.UserAccount.OrganisationWoodlandOwnerUserModel
 
 @{
-    ViewBag.Title = "Invite a new user to manage applications for you/your organisation";
+    ViewData["Title"] = "Invite a new user to manage applications for you/your organisation";
     Layout = "_Layout";
 }
 
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">Invite a new user to manage applications for you/your organisation</h1>
-
-    <partial name="Partials/_PageErrors" />
-
     <form method="post">
+        <input type="hidden" asp-for="WoodlandOwnerId"/>
+        <input type="hidden" asp-for="WoodlandOwnerName"/>
+
         <fieldset class="govuk-fieldset">
-            <input type="hidden" asp-for="WoodlandOwnerId"/>
-            <input type="hidden" asp-for="WoodlandOwnerName"/>
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
+
             <div class="govuk-form-group">
                 <label asp-for="Name" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="Name"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="Name"/>
             </div>
+            
             <div class="govuk-form-group">
                 <label asp-for="Email" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="Email"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="Email"/>
             </div>
+            
             <div class="govuk-form-group">
-                <legend class="govuk-fieldset__legend">
-                    What level of access would you like to give them?
-                </legend>
-                <div class="govuk-radios" data-module="govuk-radios">
+                <fieldset class="govuk-fieldset">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                        <h2 class="govuk-fieldset__heading">
+                            What role is this user being invited to have?
+                        </h2>
+                    </legend>
                     <validation asp-for="@Model.WoodlandOwnerUserRole"></validation>
-                    @foreach (WoodlandOwnerUserRole value in Enum.GetValues(typeof(WoodlandOwnerUserRole)))
-                    {
-                        <div class="govuk-radios__item">
-                            <input class="govuk-radios__input" asp-for="@Model.WoodlandOwnerUserRole" type="radio" value="@value">
-                            <label class="govuk-label govuk-radios__label" asp-for="@Model.WoodlandOwnerUserRole">
-                                @value.GetDescription()
-                            </label>
-                        </div>
-                    }
-                </div>
+                    <div class="govuk-radios" data-module="govuk-radios">
+                    
+                        @foreach (WoodlandOwnerUserRole value in Enum.GetValues(typeof(WoodlandOwnerUserRole)))
+                        {
+                            <div class="govuk-radios__item">
+                                <input class="govuk-radios__input" asp-for="@Model.WoodlandOwnerUserRole" type="radio" value="@value" id="role-@value.ToString()">
+                                <label class="govuk-label govuk-radios__label" for="role-@value.ToString()">
+                                    @value.GetDescription()
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </fieldset>
             </div>
 
             <div class="govuk-form-group">

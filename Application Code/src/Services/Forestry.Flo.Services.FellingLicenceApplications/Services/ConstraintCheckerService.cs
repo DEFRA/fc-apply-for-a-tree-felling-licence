@@ -109,6 +109,8 @@ public class ConstraintCheckerService
                                 $"as could not get related property details having profile id of [{fellingLicenceApplication.LinkedPropertyProfile!.PropertyProfileId}] in order to retrieve compartments for the applicant's (non submitted) application." +
                                 $"Error reason is [{errorReason}]";
 
+                        _logger.LogError("Failed to get property profile id {PropertyProfileId} for LIS check of application {ApplicationId}, error: {Error}",
+                            fellingLicenceApplication!.LinkedPropertyProfile!.PropertyProfileId, constraintCheckRequest.ApplicationId, errorReason);
                         return await HandleFailureAsync(constraintCheckRequest, error, cancellationToken);
                     }
                 }
@@ -209,7 +211,6 @@ public class ConstraintCheckerService
         string error,
         CancellationToken cancellationToken)
     {
-        _logger.LogWarning(error);
         await RaiseFailureAuditEventAsync(constraintCheckRequest.ApplicationId, constraintCheckRequest.ApplicationId, error, cancellationToken);
         return Result.Failure<Uri>(error);
     }

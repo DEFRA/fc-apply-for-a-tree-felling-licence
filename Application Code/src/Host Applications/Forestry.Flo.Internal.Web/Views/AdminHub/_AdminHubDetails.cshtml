@@ -37,21 +37,33 @@
             <table class="govuk-table" id="admin-hub-details-table">
                 <tbody class="govuk-table__body">
                     <tr class="govuk-table__row">
-                        <th scope="row" class="govuk-table__header" style="width: 25%">Hub Name</th>
+                        <th scope="row" class="govuk-table__header" style="width: 25%">
+                            <label for="name-field-input">
+                                Name
+                            </label>
+                        </th>
                         <td class="govuk-table__cell" id="edit-name-field" style="display: none">
                             <input class="@GdsConstants.GdsInputCssClass" id="name-field-input" asp-for="@Model.Name"/>
                         </td>
                         <td class="govuk-table__cell" id="name-field" style="">@Model.Name</td>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th scope="row" class="govuk-table__header" style="width: 25%">Hub Address</th>
+                        <th scope="row" class="govuk-table__header" style="width: 25%">
+                            <label for="address-field-input">
+                                Hub Address
+                            </label>
+                        </th>
                         <td class="govuk-table__cell" id="edit-address-field" style="display: none">
                             <textarea rows="5" class="@GdsConstants.GdsTextAreaCssClass" id="address-field-input" asp-for="@Model.Address"></textarea>
                         </td>
                         <td class="govuk-table__cell" id="address-field" style=""><span style="white-space: pre-line">@Model.Address</span></td>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th scope="row" class="govuk-table__header">Hub Manager</th>
+                        <th scope="row" class="govuk-table__header">
+                            <label for="admin-hub-managers">
+                                Manager
+                            </label>
+                        </th>
                         <td class="govuk-table__cell" id="edit-manager-field">
                             <select class="govuk-select" id="admin-hub-managers" asp-items="@adminHubManagers" asp-for="@Model.SelectedOfficerId"></select>
                         </td>
@@ -71,7 +83,7 @@
             </table>
             <div class="govuk-form-group">
                 <div class="govuk-button-group">
-                    <a class="govuk-link" id="enable-edit-options" href="#edit">Edit Admin Hub</a>
+                    <a class="govuk-link" id="enable-edit-options" href="#enable-edit-options">Edit Admin Hub</a>
                     <a class="govuk-link" id="cancel-edit-options" href="">Cancel edit of Admin Hub</a>
                     <button id="save-admin-hub-button" data-prevent-double-click="true" type="submit" style="margin-bottom: 0px" class="govuk-button" data-module="govuk-button" formaction="EditAdminHubDetails">
                         Save changes

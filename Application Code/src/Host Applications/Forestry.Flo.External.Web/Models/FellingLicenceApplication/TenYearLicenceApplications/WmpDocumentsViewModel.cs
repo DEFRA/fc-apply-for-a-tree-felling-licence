@@ -19,7 +19,7 @@ public class WmpDocumentsViewModel : ApplicationStepBase, IApplicationWithBreadc
     /// <summary>
     /// Get or sets the list of WMP documents for the application
     /// </summary>
-    public IEnumerable<DocumentModel> Documents { get; set; } = Enumerable.Empty<DocumentModel>();
+    public IEnumerable<DocumentModel> Documents { get; set; } = [];
 
     /// <summary>
     /// Gets and sets a <see cref="AddSupportingDocumentModel"/> for adding additional supporting documents to the application.

@@ -18,6 +18,12 @@ public class AmendUserAccountsService : IAmendUserAccounts
     private readonly ILogger<AmendUserAccountsService> _logger;
     private readonly IClock _clock;
 
+    /// <summary>
+    /// Creates a new instance of the <see cref="AmendUserAccountsService"/>.
+    /// </summary>
+    /// <param name="userAccountRepository">A repository to interact with the database.</param>
+    /// <param name="logger">A logging instance.</param>
+    /// <param name="clock">A clock to get the current date and time.</param>
     public AmendUserAccountsService(
         IUserAccountRepository userAccountRepository,
         ILogger<AmendUserAccountsService> logger,
@@ -29,24 +35,24 @@ public class AmendUserAccountsService : IAmendUserAccounts
     }
 
     /// <inheritdoc />
-    public async Task<Result<bool>> UpdateUserAccountDetailsAsync(UpdateUserAccountModel model, CancellationToken cancellationToken)
+    public async Task<Result<bool>> UpdateUserAccountDetailsAsync(UpdateUserAccountModel userModel, CancellationToken cancellationToken)
     {
-        var (_, isFailure, userAccount, error) = await _userAccountRepository.GetAsync(model.UserAccountId, cancellationToken);
+        var (_, isFailure, userAccount, error) = await _userAccountRepository.GetAsync(userModel.UserAccountId, cancellationToken);
 
         if (isFailure)
         {
-            _logger.LogError("Unable to retrieve user account with id {id}, error: {error}", model.UserAccountId, error);
+            _logger.LogError("Unable to retrieve user account with id {id}, error: {error}", userModel.UserAccountId, error);
             return Result.Failure<bool>($"Unable to retrieve user account, error: {error}");
         }
 
-        userAccount.FirstName = model.FirstName;
-        userAccount.LastName = model.LastName;
-        userAccount.Title = model.Title;
-        userAccount.PreferredContactMethod = model.PreferredContactMethod;
+        userAccount.FirstName = userModel.FirstName;
+        userAccount.LastName = userModel.LastName;
+        userAccount.Title = userModel.Title;
+        userAccount.PreferredContactMethod = userModel.PreferredContactMethod;
 
-        userAccount.ContactAddress = model.ContactAddress;
-        userAccount.ContactMobileTelephone = model.ContactMobileNumber;
-        userAccount.ContactTelephone = model.ContactTelephoneNumber;
+        userAccount.ContactAddress = userModel.ContactAddress;
+        userAccount.ContactMobileTelephone = userModel.ContactMobileNumber;
+        userAccount.ContactTelephone = userModel.ContactTelephoneNumber;
 
         userAccount.LastChanged = _clock.GetCurrentInstant().ToDateTimeUtc();
 
@@ -58,7 +64,7 @@ public class AmendUserAccountsService : IAmendUserAccounts
         }
         catch (DbUpdateException ex)
         {
-            _logger.LogError("Unable to update agent user account with id {id}, exception: {Exception}", model.UserAccountId, ex.ToString());
+            _logger.LogError("Unable to update agent user account with id {id}, exception: {Exception}", userModel.UserAccountId, ex.ToString());
             return Result.Failure<bool>("Unable to update agent user account");
         }
     }

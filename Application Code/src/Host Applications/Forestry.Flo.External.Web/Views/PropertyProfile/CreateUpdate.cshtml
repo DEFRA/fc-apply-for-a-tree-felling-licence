@@ -1,10 +1,7 @@
 @using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.External.Web.Models.Compartment
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.PropertyProfile.PropertyProfileModel
 @{
-    ViewBag.Title = "Woodland profile";
     Layout = "_Layout";
     var editing = Model.Id != Guid.Empty;
     var verb = editing ? "Edit" : "Create";
@@ -25,212 +22,234 @@
 
     ViewData.ManuallySetBackLink(backLink);
 }
+
+<form method="post">
+<input type="hidden" asp-for="Id"/>
+<input type="hidden" asp-for="WoodlandOwnerId"/>
+<input type="hidden" asp-for="IsApplication"/>
+<input type="hidden" asp-for="AgencyId"/>
+<input type="hidden" name="CompartmentCount" value="@(Model.Compartments?.Count() ?? 0)"/>
+
+
 <div class="govuk-grid-column-two-thirds">
-    <h1 class="govuk-heading-xl">@title</h1>
 
-    <partial name="Partials/_PageErrors" />
+    <h1 class="govuk-fieldset__heading">
+        @ViewData["Title"]
+    </h1>
 
-    <form method="post">
-        <fieldset class="govuk-fieldset">
-            <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="WoodlandOwnerId" />
-            <input type="hidden" asp-for="IsApplication" />
-            <input type="hidden" asp-for="AgencyId" />
-            <input type="hidden" name="CompartmentCount" value="@(Model.Compartments?.Count() ?? 0)" />
-            <div class="govuk-form-group">
-                <label asp-for="Name" class="@GdsConstants.GdsLabelCssClass">Property name</label>
-                <validation asp-for="Name"></validation>
-                <input class="@GdsConstants.GdsInputCssClass" asp-for="Name" />
+    <div class="govuk-form-group">
+        <label asp-for="Name" class="@GdsConstants.GdsLabelCssClass">Property name</label>
+        <validation asp-for="Name"></validation>
+        <input class="@GdsConstants.GdsInputCssClass" asp-for="Name"/>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="NearestTown" class="@GdsConstants.GdsLabelCssClass govuk-input--width-20">Nearest town (Optional)</label>
+        <div class="govuk-hint">
+            This helps centre the map on the next page.
+            You can still search for the location manually if you leave this blank.
+        </div>
+        <validation asp-for="NearestTown"></validation>
+        <input class="@GdsConstants.GdsInputCssClass" asp-for="NearestTown"/>
+    </div>
+
+    <h2 class="govuk-heading-m">Why we need this information</h2>
+    <div>
+        <legend class="govuk-fieldset__legend">As the regulator, we require this information to make important decisions and ensure benefits for all of humanity.</legend>
+    </div>
+
+    <div class="govuk-form-group">
+        <legend class="govuk-heading-m">
+            Is there a woodland management plan?
+        </legend>
+        <details class="govuk-details" data-module="govuk-details">
+            <summary class="govuk-details__summary">
+                <span class="govuk-details__summary-text">
+                    What is a woodland management plan?
+                </span>
+            </summary>
+            <div class="govuk-details__text">
+                <p>A woodland management plan ensures sustainable management of woodlands to industry standards.</p>
+                <p>Learn <a class="govuk-link" href="https://www.gov.uk/guidance/create-a-woodland-management-plan#why-create-a-management-plan" target="_blank" rel="noreferrer noopener">how to create a woodland management plan.</a></p>
             </div>
-            <div class="govuk-form-group">
-                <label asp-for="NearestTown" class="@GdsConstants.GdsLabelCssClass govuk-input--width-20">Nearest town (Optional)</label>
-                <div class="govuk-hint">
-                    This helps centre the map on the next page.
-                    You can still search for the location manually if you leave this blank.
-                </div>
-                <validation asp-for="NearestTown"></validation>
-                <input class="@GdsConstants.GdsInputCssClass" asp-for="NearestTown" />
-            </div>
+        </details>
 
-            <h1 class="govuk-heading-m">Why we need this information</h1>
-            <div><legend class="govuk-fieldset__legend">As the regulator, we require this information to make important decisions and ensure benefits for all of humanity.</legend></div>
-
-            <div class="govuk-form-group">
-                <legend class="govuk-heading-m">
-                    Is there a woodland management plan?
-                </legend>
-                <validation asp-for="HasWoodlandManagementPlan"></validation>
-                <details class="govuk-details" data-module="govuk-details">
-                    <summary class="govuk-details__summary">
-                        <span class="govuk-details__summary-text">
-                            What is a woodland management plan?
-                        </span>
-                    </summary>
-                    <div class="govuk-details__text">
-                        <p>A woodland management plan ensures sustainable management of woodlands to industry standards.</p>
-                        <p>Learn <a class="govuk-link" href="https://www.gov.uk/guidance/create-a-woodland-management-plan#why-create-a-management-plan" target="_blank" rel="noreferrer noopener">how to create a woodland management plan.</a></p>
-                    </div>
-                </details>
-
-                <div class="govuk-radios" data-module="govuk-radios" id="@nameof(Model.HasWoodlandManagementPlan)">
-                    <div class="govuk-radios__item">
-                        <input id="has-woodland-management-plan-yes" type="radio" class="govuk-radios__input" asp-for="HasWoodlandManagementPlan" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.HasWoodlandManagementPlan)">
-                        <label class="govuk-label govuk-radios__label" for="has-woodland-management-plan-yes">
-                            Yes, there is a woodland management plan for this property.
-                        </label>
-                    </div>
-
-                    <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.HasWoodlandManagementPlan)">
-                        <div class="govuk-form-group">
-                            <label asp-for="WoodlandManagementPlanReference" class="@GdsConstants.GdsLabelCssClass">
-                                Woodland management plan reference
-                            </label>
-                            <div id="woodland-mgmt-plan-ref-hint" class="govuk-hint">For example FS-0000/0</div>
-                            <validation asp-for="@Model.WoodlandManagementPlanReference"></validation>
-                            <input class="@GdsConstants.GdsInputCssClass" asp-for="WoodlandManagementPlanReference" tabindex="0" />
-                        </div>
-                    </div>
-
-                    <div class="govuk-radios__item">
-                        <input id="has-woodland-management-plan-no" type="radio" class="govuk-radios__input" asp-for="HasWoodlandManagementPlan" value="@false">
-                        <label class="govuk-label govuk-radios__label" for="has-woodland-management-plan-no">
-                            No, there is not a woodland management plan for this property.
-                        </label>
-                    </div>
-                </div>
-
+        <validation asp-for="HasWoodlandManagementPlan"></validation>
+        <div class="govuk-radios" data-module="govuk-radios" id="@nameof(Model.HasWoodlandManagementPlan)">
+            <div class="govuk-radios__item">
+                <input id="has-woodland-management-plan-yes" type="radio" class="govuk-radios__input" asp-for="HasWoodlandManagementPlan" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.HasWoodlandManagementPlan)">
+                <label class="govuk-label govuk-radios__label" for="has-woodland-management-plan-yes">
+                    Yes, there is a woodland management plan for this property.
+                </label>
             </div>
 
-            <div class="govuk-form-group">
-                <legend class="govuk-heading-m">
-                    Is this covered by a woodland certification scheme?
-                </legend>
-                <validation asp-for="IsWoodlandCertificationScheme"></validation>
-                <details class="govuk-details" data-module="govuk-details">
-                    <summary class="govuk-details__summary">
-                        <span class="govuk-details__summary-text">
-                            What is woodland certification?
-                        </span>
-                    </summary>
-                    <div class="govuk-details__text">
-                        <p>Certification schemes for woodlands verify timber and wood products come from legal, sustainable sources.</p>
-                        <p>Learn more about <a class="govuk-link" href="https://www.forestryengland.uk/certification" target="_blank" rel="noreferrer noopener">woodland certification schemes.</a></p>
-                    </div>
-                </details>
-
-                <div class="govuk-radios" data-module="govuk-radios" id="@nameof(Model.IsWoodlandCertificationScheme)">
-                    <div class="govuk-radios__item">
-                        <input id="is-woodland-certification-scheme-no" type="radio" class="govuk-radios__input" asp-for="IsWoodlandCertificationScheme" value="@false">
-                        <label class="govuk-label govuk-radios__label" for="is-woodland-certification-scheme-no">
-                            No, this is not covered by a woodland certification scheme.
-                        </label>
-                    </div>
-
-                    <div class="govuk-radios__item">
-                        <input id="is-woodland-certification-scheme-yes" type="radio" class="govuk-radios__input" asp-for="IsWoodlandCertificationScheme" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWoodlandCertificationScheme)">
-                        <label class="govuk-label govuk-radios__label" for="is-woodland-certification-scheme-yes">
-                            Yes, this is covered by a woodland certification scheme.
-                        </label>
-                    </div>
-
-                    <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.IsWoodlandCertificationScheme)">
-                        <div class="govuk-form-group">
-                            <label asp-for="WoodlandCertificationSchemeReference" class="@GdsConstants.GdsLabelCssClass">
-                                Woodland certification scheme reference
-                            </label>
-                            <div id="woodland-cert-scheme-ref-hint" class="govuk-hint">For example SA-PEFC-FM/COC-000 ...</div>
-                            <validation asp-for="@Model.WoodlandCertificationSchemeReference"></validation>
-                            <input class="@GdsConstants.GdsInputCssClass" asp-for="WoodlandCertificationSchemeReference" tabindex="0" />
-                        </div>
-                    </div>
+            <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.HasWoodlandManagementPlan)">
+                <div class="govuk-form-group">
+                    <label asp-for="WoodlandManagementPlanReference" class="@GdsConstants.GdsLabelCssClass">
+                        Woodland management plan reference
+                    </label>
+                    <div id="woodland-mgmt-plan-ref-hint" class="govuk-hint">For example FS-0000/0</div>
+                    <validation asp-for="@Model.WoodlandManagementPlanReference"></validation>
+                    <input class="@GdsConstants.GdsInputCssClass" asp-for="WoodlandManagementPlanReference" tabindex="0"/>
                 </div>
             </div>
 
-            <div class="govuk-form-group" condition="@Model.Compartments.Any()">
-                <legend class="govuk-heading-m">
-                    Compartments
-                </legend>
-                <details class="govuk-details" data-module="govuk-details" style="margin-bottom: 3px;">
-                    <summary class="govuk-details__summary">
-                        <span class="govuk-details__summary-text">
-                            What is a compartment?
-                        </span>
-                    </summary>
-                    <div class="govuk-details__text">
-                        A compartment is a small farm woodland or part of a larger woodland.
-                        It can have specific features, such as roads, watercourses, or tracks.
-                    </div>
-                </details>
-
-                <table class="govuk-table govuk-!-padding-bottom-4" id="compartment-list-table" style="border-collapse: collapse">
-                    <thead class="govuk-table__head">
-                    <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header">Name</th>
-                        <th scope="col" class="govuk-table__header">Size (ha)</th>
-                    </tr>
-                    </thead>
-                    <tbody class="govuk-table__body">
-                    @foreach (var compartment in Model?.Compartments ?? Array.Empty<CompartmentModel>())
-                    {
-                        <tr data-id="@compartment.Id" class="govuk-table__row">
-                            <td class="govuk-table__cell">
-                                <a class="govuk-link" asp-controller="Compartment" asp-action="EditDetails" asp-route-id="@compartment.Id" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId">
-                                    @compartment.DisplayName
-                                </a> &nbsp;
-                            </td>
-                            <th scope="row" class="govuk-table__header">@Math.Round((compartment.TotalHectares.HasValue ? compartment.TotalHectares.Value : 0), 2)</th>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-
-                <input type="hidden" asp-for="@Model.GIS" />
-
-                <a class="govuk-link govuk-heading-s collapsible" href="#">View map of @Model.Name</a>
-                <br />
-                <div id="mapWrapper" style="display:none;" class="mapWrapper">
-                    <div id="viewDiv" aria-label="Map of the compartments within this property"></div>
-                    <br />
-                    <div class="govuk-button-group placer">
-                        <span>Download map data:</span>
-                        <a class="govuk-link" data-prevent-double-click="true" aira-role="button" id="Download-JSON">
-                            GeoJSON
-                        </a>
-                        <a class="govuk-link" data-prevent-double-click="true" id="Download-KML" aira-role="button">
-                            KML
-                        </a>
-                        <a class="govuk-link" data-prevent-double-click="true" aira-role="button" id="Download-SHP">
-                            ESRI shapefile
-                        </a>
-                    </div>
-                </div>
-
-                <br />
-                <button data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button" formaction="AddCompartment">
-                    Add new compartment
-                </button>
-
+            <div class="govuk-radios__item">
+                <input id="has-woodland-management-plan-no" type="radio" class="govuk-radios__input" asp-for="HasWoodlandManagementPlan" value="@false">
+                <label class="govuk-label govuk-radios__label" for="has-woodland-management-plan-no">
+                    No, there is not a woodland management plan for this property.
+                </label>
             </div>
-            
-            @{
-                var formAction = editing ? Url.Action("Edit") : Url.Action("Create");
-            }
+        </div>
 
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
+    </div>
 
-                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button" formaction="@formAction">
-                        @saveLabel
-                    </button>
+    <div class="govuk-form-group">
+        <legend class="govuk-heading-m">
+            Is this covered by a woodland certification scheme?
+        </legend>
+        <details class="govuk-details" data-module="govuk-details">
+            <summary class="govuk-details__summary">
+                <span class="govuk-details__summary-text">
+                    What is woodland certification?
+                </span>
+            </summary>
+            <div class="govuk-details__text">
+                <p>Certification schemes for woodlands verify timber and wood products come from legal, sustainable sources.</p>
+                <p>Learn more about <a class="govuk-link" href="https://www.forestryengland.uk/certification" target="_blank" rel="noreferrer noopener">woodland certification schemes.</a></p>
+            </div>
+        </details>
 
+        <validation asp-for="IsWoodlandCertificationScheme"></validation>
+        <div class="govuk-radios" data-module="govuk-radios" id="@nameof(Model.IsWoodlandCertificationScheme)">
+            <div class="govuk-radios__item">
+                <input id="is-woodland-certification-scheme-no" type="radio" class="govuk-radios__input" asp-for="IsWoodlandCertificationScheme" value="@false">
+                <label class="govuk-label govuk-radios__label" for="is-woodland-certification-scheme-no">
+                    No, this is not covered by a woodland certification scheme.
+                </label>
+            </div>
+
+            <div class="govuk-radios__item">
+                <input id="is-woodland-certification-scheme-yes" type="radio" class="govuk-radios__input" asp-for="IsWoodlandCertificationScheme" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWoodlandCertificationScheme)">
+                <label class="govuk-label govuk-radios__label" for="is-woodland-certification-scheme-yes">
+                    Yes, this is covered by a woodland certification scheme.
+                </label>
+            </div>
+
+            <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.IsWoodlandCertificationScheme)">
+                <div class="govuk-form-group">
+                    <label asp-for="WoodlandCertificationSchemeReference" class="@GdsConstants.GdsLabelCssClass">
+                        Woodland certification scheme reference
+                    </label>
+                    <div id="woodland-cert-scheme-ref-hint" class="govuk-hint">For example SA-PEFC-FM/COC-000 ...</div>
+                    <validation asp-for="@Model.WoodlandCertificationSchemeReference"></validation>
+                    <input class="@GdsConstants.GdsInputCssClass" asp-for="WoodlandCertificationSchemeReference" tabindex="0"/>
                 </div>
             </div>
-        </fieldset>
-    </form>
+        </div>
+    </div>
 </div>
 
+<div class="govuk-form-group" condition="@Model.Compartments.Any()">
+
+        <div class="govuk-grid-column-two-thirds">
+    <legend class="govuk-heading-m">
+        Compartments
+    </legend>
+    <details class="govuk-details" data-module="govuk-details" style="margin-bottom: 3px;">
+        <summary class="govuk-details__summary">
+            <span class="govuk-details__summary-text">
+                What is a compartment?
+            </span>
+        </summary>
+        <div class="govuk-details__text">
+            A compartment is a small farm woodland or part of a larger woodland.
+            It can have specific features, such as roads, watercourses, or tracks.
+        </div>
+    </details>
+
+    <table class="govuk-table govuk-!-padding-bottom-4" id="compartment-list-table" style="border-collapse: collapse">
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Name</th>
+            <th scope="col" class="govuk-table__header">Size (ha)</th>
+        </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+        @foreach (var compartment in Model?.Compartments ?? Array.Empty<CompartmentModel>())
+        {
+            <tr data-id="@compartment.Id" class="govuk-table__row">
+                <td class="govuk-table__cell">
+                    <a class="govuk-link" asp-controller="Compartment" asp-action="EditDetails" asp-route-id="@compartment.Id" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId">
+                        @compartment.DisplayName
+                    </a> &nbsp;
+                </td>
+                <th scope="row" class="govuk-table__header">@Math.Round((compartment.TotalHectares.HasValue ? compartment.TotalHectares.Value : 0), 2)</th>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+
+    <input type="hidden" asp-for="@Model.GIS"/>
+
+
+    <div class="govuk-grid-column-full">
+
+        <a class="govuk-link govuk-heading-s collapsible" href="#">View map of @Model.Name</a>
+        <br/>
+        <div id="mapWrapper" style="display:none;" class="mapWrapper">
+            <arcgis-map id="viewDiv" aria-label="Map of the compartments within this property">
+                <arcgis-zoom slot="top-right"></arcgis-zoom>
+                <arcgis-compass slot="top-right"> </arcgis-compass>
+                <arcgis-expand slot="top-right">
+                    <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                </arcgis-expand>
+            </arcgis-map>
+
+            <br/>
+            <div class="govuk-button-group placer">
+                <span>Download map data:</span>
+                <a class="govuk-link" data-prevent-double-click="true" aira-role="button" id="Download-JSON">
+                    GeoJSON
+                </a>
+                <a class="govuk-link" data-prevent-double-click="true" id="Download-KML" aira-role="button">
+                    KML
+                </a>
+                <a class="govuk-link" data-prevent-double-click="true" aira-role="button" id="Download-SHP">
+                    ESRI shapefile
+                </a>
+            </div>
+        </div>
+
+        <br/>
+        <button data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button" formaction="AddCompartment">
+            Add new compartment
+        </button>
+
+    </div>
+</div>
+
+
+<div class="govuk-grid-column-full">
+
+    @{
+        var formAction = editing ? Url.Action("Edit") : Url.Action("Create");
+    }
+
+    <div class="govuk-form-group">
+        <div class="govuk-button-group">
+
+            <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button" formaction="@formAction">
+                @saveLabel
+            </button>
+
+        </div>
+    </div>
+</div>
+</form>
+
 @section Css {
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css"/>
 
     <style>
         #viewDiv {
@@ -263,9 +282,12 @@
         }
     </style>
 }
+
 @section Scripts {
 
-    <script src="https://js.arcgis.com/4.24/"></script>
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
     <script>
         require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {
             var mapObj = new MapCompartmentSelection("viewDiv");            

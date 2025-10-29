@@ -10,6 +10,12 @@ public class AmendmentsWithApplicantSpecification : ISubStatusSpecification
 
     /// <inheritdoc />
     public bool IsSatisfiedBy(FellingLicenceApplication application)
-        => application.WoodlandOfficerReview?.FellingAndRestockingAmendmentReviews
-            .Any(x => x.AmendmentReviewCompleted is not true) ?? false;
+    {
+        var latestAmendmentReview = application.WoodlandOfficerReview?.FellingAndRestockingAmendmentReviews
+            .Where(x => x.AmendmentReviewCompleted != true)
+            .OrderByDescending(x => x.AmendmentsSentDate)
+            .FirstOrDefault();
+
+        return latestAmendmentReview is not null && latestAmendmentReview.ResponseReceivedDate is null;
+    }
 }

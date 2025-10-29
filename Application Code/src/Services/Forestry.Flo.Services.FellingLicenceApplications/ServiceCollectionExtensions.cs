@@ -82,6 +82,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ISubStatusSpecification, AmendmentsWithApplicantSpecification>();
         services.AddScoped<ISubStatusSpecification, OnPublicRegisterSpecification>();
+        services.AddScoped<ISubStatusSpecification, ConsultationSpecification>();
         services.AddScoped<IWoodlandOfficerReviewSubStatusService, WoodlandOfficerReviewSubStatusService>();
 
         return services;

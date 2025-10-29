@@ -1,139 +1,172 @@
+{{- /* Grab the jobs map safely from the subchart's values */ -}}
+{{- $jobs := default dict (index .Values "config" "cronJobs" "jobs") -}}
+
+{{- /* voluntary-withdrawal-notification */ -}}
+{{- $job := index $jobs "voluntary-withdrawal-notification" -}}
+{{- if and $job $job.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: voluntary-withdrawal-notification
+  name: {{ $job.name }}
 spec:
-  schedule: "0 0 * * *"
+  schedule: {{ $job.schedule | quote }}
   jobTemplate:
     spec:
       template:
         spec:
-          containers:
-          - name: voluntary-withdrawal-notification
-            image: fsflo.azurecr.io/docker/qtools:1.2.1
-            imagePullPolicy: IfNotPresent
-            command:
-            - bash
-            - -c
-            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/VoluntaryWithdrawNotification/VoluntaryWithdrawalNotificationFla"
           restartPolicy: OnFailure
+          containers:
+            - name: {{ $job.name }}
+              image: fsflo.azurecr.io/docker/qtools:1.2.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.secret_key_ref_name }}
+                      key:  {{ index .Values "config" "cronJobs" "apiKey" "secret_key" }}
+              command:
+                - bash
+                - -c
+                - >
+                  set -euo pipefail;
+                  curl -sS -k
+                  -H "X-Api-Key: ${API_KEY}"
+                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+{{- end }}
 ---
+{{- /* extend-applications */ -}}
+{{- $job = index $jobs "extend-applications" -}}
+{{- if and $job $job.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: extend-applications
+  name: {{ $job.name }}
 spec:
-  schedule: "0 0 * * *"
+  schedule: {{ $job.schedule | quote }}
   jobTemplate:
     spec:
       template:
         spec:
-          containers:
-          - name: extend-applications
-            image: fsflo.azurecr.io/docker/qtools:1.2.1
-            imagePullPolicy: IfNotPresent
-            command:
-            - bash
-            - -c
-            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/ApplicationExtension/ExtendApplications"
           restartPolicy: OnFailure
+          containers:
+            - name: {{ $job.name }}
+              image: fsflo.azurecr.io/docker/qtools:1.2.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.secret_key_ref_name }}
+                      key:  {{ index .Values "config" "cronJobs" "apiKey" "secret_key" }}
+              command:
+                - bash
+                - -c
+                - >
+                  set -euo pipefail;
+                  curl -sS -k
+                  -H "X-Api-Key: ${API_KEY}"
+                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+{{- end }}
 ---
+{{- /* public-register-expiry-notification */ -}}
+{{- $job = index $jobs "public-register-expiry-notification" -}}
+{{- if and $job $job.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: public-register-expiry-notification
+  name: {{ $job.name }}
 spec:
-  schedule: "0 0 * * *"
+  schedule: {{ $job.schedule | quote }}
   jobTemplate:
     spec:
       template:
         spec:
-          containers:
-          - name: publicy-register-expiry
-            image: fsflo.azurecr.io/docker/qtools:1.2.1
-            imagePullPolicy: IfNotPresent
-            command:
-            - bash
-            - -c
-            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterExpiry/PublicRegisterExpiryNotification"
           restartPolicy: OnFailure
+          containers:
+            - name: {{ $job.name }}
+              image: fsflo.azurecr.io/docker/qtools:1.2.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.secret_key_ref_name }}
+                      key:  {{ index .Values "config" "cronJobs" "apiKey" "secret_key" }}
+              command:
+                - bash
+                - -c
+                - >
+                  set -euo pipefail;
+                  curl -sS -k
+                  -H "X-Api-Key: ${API_KEY}"
+                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+{{- end }}
 ---
+{{- /* remove-applications-from-decision-public-register */ -}}
+{{- $job = index $jobs "remove-applications-from-decision-public-register" -}}
+{{- if and $job $job.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: remove-applications-from-decision-public-register
+  name: {{ $job.name }}
 spec:
-  schedule: "0 0 * * *"
+  schedule: {{ $job.schedule | quote }}
   jobTemplate:
     spec:
       template:
         spec:
-          containers:
-          - name: remove-applications-from-decision-public-register
-            image: fsflo.azurecr.io/docker/qtools:1.2.1
-            imagePullPolicy: IfNotPresent
-            command:
-            - bash
-            - -c
-            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterExpiry/RemoveApplicationsFromDecisionPublicRegisterWhenEndDateReached"
           restartPolicy: OnFailure
+          containers:
+            - name: {{ $job.name }}
+              image: fsflo.azurecr.io/docker/qtools:1.2.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.secret_key_ref_name }}
+                      key:  {{ index .Values "config" "cronJobs" "apiKey" "secret_key" }}
+              command:
+                - bash
+                - -c
+                - >
+                  set -euo pipefail;
+                  curl -sS -k
+                  -H "X-Api-Key: ${API_KEY}"
+                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+{{- end }}
 ---
+{{- /* public-register-consultation-comments */ -}}
+{{- $job = index $jobs "public-register-consultation-comments" -}}
+{{- if and $job $job.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: public-register-consultation-comments
+  name: {{ $job.name }}
 spec:
-  schedule: "0 0 * * *"
+  schedule: {{ $job.schedule | quote }}
   jobTemplate:
     spec:
       template:
         spec:
-          containers:
-          - name: public-register-consultation-comments
-            image: fsflo.azurecr.io/docker/qtools:1.2.1
-            imagePullPolicy: IfNotPresent
-            command:
-            - bash
-            - -c
-            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/PublicRegisterComments/PullNewComments"
           restartPolicy: OnFailure
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: send-late-amendment-response-reminders
-spec:
-  schedule: "0 0 * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
           containers:
-          - name: send-late-amendment-response-reminders
-            image: fsflo.azurecr.io/docker/qtools:1.2.1
-            imagePullPolicy: IfNotPresent
-            command:
-            - bash
-            - -c
-            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/AmendmentResponse/SendLateAmendmentResponseReminders"
-          restartPolicy: OnFailure
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: withdraw-late-amendment-applications
-spec:
-  schedule: "0 0 * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: withdraw-late-amendment-applications
-            image: fsflo.azurecr.io/docker/qtools:1.2.1
-            imagePullPolicy: IfNotPresent
-            command:
-            - bash
-            - -c
-            - "curl -v -k -H 'X-Api-Key: {{ .Values.config.cronJobs.apiKey }}' http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}/api/AmendmentResponse/WithdrawLateAmendmentApplications"
-          restartPolicy: OnFailure
+            - name: {{ $job.name }}
+              image: fsflo.azurecr.io/docker/qtools:1.2.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.secret_key_ref_name }}
+                      key:  {{ index .Values "config" "cronJobs" "apiKey" "secret_key" }}
+              command:
+                - bash
+                - -c
+                - >
+                  set -euo pipefail;
+                  curl -sS -k
+                  -H "X-Api-Key: ${API_KEY}"
+                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+{{- end }}

@@ -1,7 +1,6 @@
 ﻿using AutoFixture;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
-using CSharpFunctionalExtensions.ValueTasks;
 using Forestry.Flo.External.Web.Models.Agency;
 using Forestry.Flo.External.Web.Models.UserAccount;
 using Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels;
@@ -17,7 +16,6 @@ using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FileStorage.Services;
@@ -38,24 +36,16 @@ public class RegisterUserAccountUseCaseTests
 {
     private static readonly Fixture FixtureInstance = new Fixture();
 
-    private ApplicantsContext _testDatabase = null!;
+    private readonly ApplicantsContext _testDatabase = TestApplicantsDatabaseFactory.CreateDefaultTestContext();
     private static readonly DateTime UtcNow = DateTime.UtcNow;
     private readonly IClock _fixedTimeClock = new FakeClock(Instant.FromDateTimeUtc(UtcNow));
-    private Mock<IHttpContextAccessor> _mockHttpContextAccessor = null!;
-    private Mock<IUserAccountRepository> _userAccountRepository = null!;
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor = new();
+    private readonly Mock<IUserAccountRepository> _userAccountRepository = new();
     private readonly Mock<IAuditService<RegisterUserAccountUseCase>> _mockAuditService = new();
-    private readonly Mock<IAuditService<SignInApplicantWithEf>> _mockAuditServiceForSignIn = new();
     private readonly Mock<IPropertyProfileRepository> _mockPropertyProfileRepository = new();
     private readonly Mock<IFellingLicenceApplicationExternalRepository> _mockFellingLicenceApplicationRepository = new();
-    private Mock<IUnitOfWork> _unitOfWOrkMock = null!;
-    private ExternalApplicant _externalApplicant;
-
-    public RegisterUserAccountUseCaseTests()
-    {
-        _testDatabase = TestApplicantsDatabaseFactory.CreateDefaultTestContext();
-        _userAccountRepository = new Mock<IUserAccountRepository>();
-        _unitOfWOrkMock = new Mock<IUnitOfWork>();
-    }
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+    private ExternalApplicant? _externalApplicant;
 
     [Fact]
     public async Task ReturnsNothingWhenUserHasNoLocalAccount()
@@ -385,8 +375,6 @@ public class RegisterUserAccountUseCaseTests
         //arrange
         account.Agency = new Agency();
         account.AccountType = AccountTypeExternal.AgentAdministrator;
-        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             account.IdentityProviderId,
             account.Email,
@@ -395,7 +383,11 @@ public class RegisterUserAccountUseCaseTests
             accountTypeExternal: account.AccountType,
             agencyId: account.Agency?.Id);
         _externalApplicant = new ExternalApplicant(user);
+        
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
 
         //act
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
@@ -414,7 +406,7 @@ public class RegisterUserAccountUseCaseTests
             && u.Agency!.ContactName == agencyModel.ContactName
             && u.Agency.IsOrganisation
             )));
-        _unitOfWOrkMock.Verify(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _mockAuditService.Verify(s =>
             s.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                 e.EventName == AuditEvents.UpdateAccountEvent
@@ -497,8 +489,6 @@ public class RegisterUserAccountUseCaseTests
         //arrange
         account.Agency = new Agency();
         account.AccountType = AccountTypeExternal.AgentAdministrator;
-        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound));
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             account.IdentityProviderId,
             account.Email,
@@ -507,7 +497,11 @@ public class RegisterUserAccountUseCaseTests
             accountTypeExternal: account.AccountType,
             agencyId: account.Agency?.Id);
         _externalApplicant = new ExternalApplicant(user);
+        
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound));
 
         //act
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
@@ -527,10 +521,6 @@ public class RegisterUserAccountUseCaseTests
         //arrange
         account.Agency = new Agency();
         account.AccountType = AccountTypeExternal.AgentAdministrator;
-        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
-        _unitOfWOrkMock.Setup(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => UnitResult.Failure(UserDbErrorReason.General));
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             account.IdentityProviderId,
             account.Email,
@@ -540,6 +530,11 @@ public class RegisterUserAccountUseCaseTests
             agencyId: account.Agency?.Id);
         _externalApplicant = new ExternalApplicant(user);
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
+        _unitOfWorkMock.Setup(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => UnitResult.Failure(UserDbErrorReason.General));
 
         //act
         var result = await sut.UpdateUserAgencyDetails(_externalApplicant, agencyModel, CancellationToken.None);
@@ -923,8 +918,6 @@ public class RegisterUserAccountUseCaseTests
     {
         var account = await TestApplicantsDatabaseFactory.AddTestWoodlandOwnerAccount(_testDatabase, FixtureInstance, isOrganisation: true);
 
-        var landlordDetails = FixtureInstance.Create<LandlordDetails>();
-
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             account.IdentityProviderId,
             account.Email,
@@ -1118,12 +1111,12 @@ public class RegisterUserAccountUseCaseTests
             accountTypeExternal: account.AccountType,
             hasAcceptedTermsAndConditionsAndPrivacyPolicy: false);
 
-        _userAccountRepository.Setup(r => r.GetByEmailAsync(It.Is<string>(d => d == account.Email), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
-
         _externalApplicant = new ExternalApplicant(user);
 
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetByEmailAsync(It.Is<string>(d => d == account.Email), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
 
         var result = await sut.AccountSignupValidityCheck(
             _externalApplicant,
@@ -1148,15 +1141,15 @@ public class RegisterUserAccountUseCaseTests
     [Fact]
     public async Task AccountSignupValidityCheckTests_WhenAccountIsNotFound()
     {
-        _userAccountRepository.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound));
-
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             hasAcceptedTermsAndConditionsAndPrivacyPolicy: false);
 
         _externalApplicant = new ExternalApplicant(user);
 
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound));
 
         var result = await sut.AccountSignupValidityCheck(
             _externalApplicant,
@@ -1171,8 +1164,6 @@ public class RegisterUserAccountUseCaseTests
         //arrange
         account.Agency = new Agency();
         account.AccountType = AccountTypeExternal.AgentAdministrator;
-        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             account.IdentityProviderId,
             account.Email,
@@ -1181,7 +1172,11 @@ public class RegisterUserAccountUseCaseTests
             accountTypeExternal: account.AccountType,
             agencyId: account.Agency?.Id);
         _externalApplicant = new ExternalApplicant(user);
+
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
 
         //act
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
@@ -1193,7 +1188,7 @@ public class RegisterUserAccountUseCaseTests
             && u.Agency != null
             && u.Agency.IsOrganisation == false
             && u.Agency.OrganisationName == null)));
-        _unitOfWOrkMock.Verify(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _mockAuditService.Verify(s =>
             s.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                 e.EventName == AuditEvents.UpdateAccountEvent
@@ -1276,8 +1271,6 @@ public class RegisterUserAccountUseCaseTests
         //arrange
         account.Agency = new Agency();
         account.AccountType = AccountTypeExternal.AgentAdministrator;
-        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound));
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             account.IdentityProviderId,
             account.Email,
@@ -1286,7 +1279,11 @@ public class RegisterUserAccountUseCaseTests
             accountTypeExternal: account.AccountType,
             agencyId: account.Agency?.Id);
         _externalApplicant = new ExternalApplicant(user);
+        
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound));
 
         //act
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
@@ -1306,10 +1303,6 @@ public class RegisterUserAccountUseCaseTests
         //arrange
         account.Agency = new Agency();
         account.AccountType = AccountTypeExternal.AgentAdministrator;
-        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
-        _unitOfWOrkMock.Setup(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => UnitResult.Failure(UserDbErrorReason.General));
         var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
             account.IdentityProviderId,
             account.Email,
@@ -1318,7 +1311,13 @@ public class RegisterUserAccountUseCaseTests
             accountTypeExternal: account.AccountType,
             agencyId: account.Agency?.Id);
         _externalApplicant = new ExternalApplicant(user);
+        
         var sut = CreateSut();
+
+        _userAccountRepository.Setup(r => r.GetAsync(It.Is<Guid>(d => d == account.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<UserAccount, UserDbErrorReason>(account));
+        _unitOfWorkMock.Setup(r => r.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => UnitResult.Failure(UserDbErrorReason.General));
 
         //act
         var result = await sut.RevertAgencyOrganisationToIndividualAsync(_externalApplicant, CancellationToken.None);
@@ -1333,25 +1332,20 @@ public class RegisterUserAccountUseCaseTests
 
     private RegisterUserAccountUseCase CreateSut()
     {
-        _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        _mockHttpContextAccessor.Reset();
         var mockFileStorageService = new Mock<IFileStorageService>();
-        _userAccountRepository.SetupGet(r => r.UnitOfWork).Returns(_unitOfWOrkMock.Object);
+        _userAccountRepository.Reset();
+        _userAccountRepository.SetupGet(r => r.UnitOfWork).Returns(_unitOfWorkMock.Object);
+        _unitOfWorkMock.Reset();
         _mockAuditService.Reset();
+        _mockPropertyProfileRepository.Reset();
+        _mockFellingLicenceApplicationRepository.Reset();
 
         var userAccountRepository = new UserAccountRepository(_testDatabase);
 
         return new RegisterUserAccountUseCase(
             TestDatabaseContextFactory<ApplicantsContext>.CreateDefaultTestContextFactory(_testDatabase),
             _mockHttpContextAccessor.Object,
-            new SignInApplicantWithEf(
-                userAccountRepository,
-                new InvitedUserValidator(new NullLogger<InvitedUserValidator>(),
-                    _fixedTimeClock),
-                new NullLogger<SignInApplicantWithEf>(), 
-                _mockAuditServiceForSignIn.Object,
-                Options.Create(new FcAgencyOptions { PermittedEmailDomainsForFcAgent = new List<string> {"qxlva.com","forestrycommission.gov.uk"}}),
-                Options.Create(new AuthenticationOptions { Provider = AuthenticationProvider.OneLogin}),
-                new RequestContext("test", new RequestUserModel(_externalApplicant.Principal))),
             _fixedTimeClock,
             _mockAuditService.Object,
             new NullLogger<RegisterUserAccountUseCase>(),

@@ -139,6 +139,8 @@ public class CalculateCentrePointUseCase
 
         if (updateFla.IsFailure)
         {
+            _logger.LogError("Unable to update the Area Code, Admin Region, Centre Point, and OS grid reference for application of id {ApplicationId}, with error {Error}",
+                message.ApplicationId, updateFla.Error);
             errorMessage = $"Unable to update the Area Code, Admin Region, Centre Point, and OS grid reference for application of id {message.ApplicationId}, with error {updateFla.Error}";
             await PublishCentrePointFailures(message, errorMessage, cancellationToken);
 
@@ -179,8 +181,6 @@ public class CalculateCentrePointUseCase
                     Error = errorMessage
                 }),
             cancellationToken);
-
-        _logger.LogError("{error}", errorMessage);
 
         if (ex is not null)
         {

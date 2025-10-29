@@ -11,12 +11,18 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
 {
     private readonly IApplicationReferenceHelper _generateApplicationReference;
     private readonly IFellingLicenceApplicationReferenceRepository _fellingLicenceApplicationReferenceRepository;
-    
+
+    /// <summary>
+    /// Creates a new instance of the <see cref="ExternalUserContextFlaRepository"/> class.
+    /// </summary>
+    /// <param name="context">A database context.</param>
+    /// <param name="generateApplicationReference">A service to generate application reference numbers.</param>
+    /// <param name="fellingLicenceApplicationReferenceRepository">A repository class to interact with the database.</param>
     public ExternalUserContextFlaRepository(
         FellingLicenceApplicationsContext context,
         IApplicationReferenceHelper generateApplicationReference,
         IFellingLicenceApplicationReferenceRepository fellingLicenceApplicationReferenceRepository)
-    : base(context)
+        : base(context)
     {
         _generateApplicationReference = generateApplicationReference ?? throw new ArgumentNullException(nameof(generateApplicationReference));
         _fellingLicenceApplicationReferenceRepository = Guard.Against.Null(fellingLicenceApplicationReferenceRepository);
@@ -41,12 +47,12 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
     public async Task<FellingLicenceApplication> AddAsync(
         FellingLicenceApplication application, 
         string? postFix,
-        int? startingOffest, 
+        int? startingOffset, 
         CancellationToken cancellationToken)
     {
         var referenceId = await _fellingLicenceApplicationReferenceRepository.GetNextApplicationReferenceIdValueAsync(application.CreatedTimestamp.Year, cancellationToken);
 
-        application.ApplicationReference = _generateApplicationReference.GenerateReferenceNumber(application, referenceId, postFix, startingOffest);
+        application.ApplicationReference = _generateApplicationReference.GenerateReferenceNumber(application, referenceId, postFix, startingOffset);
 
         return Context.FellingLicenceApplications.Add(application).Entity;
     }
@@ -89,13 +95,16 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Where(p => p.LinkedPropertyProfile.FellingLicenceApplicationId == applicationId)
             .Select(p => p.PropertyProfileCompartmentId).ToListAsync(cancellationToken);
 
-        return result is null || !result.Any()
+        return !result.Any()
             ? Maybe<List<Guid>>.None
             : Maybe<List<Guid>>.From(result);
     }
 
     ///<inheritdoc />
-    public async Task<Maybe<ApplicationCompartmentDetail>> GetApplicationCompartmentDetailAsync(Guid applicationId, Guid woodlandOwnerId, Guid compartmentId,
+    public async Task<Maybe<ApplicationCompartmentDetail>> GetApplicationCompartmentDetailAsync(
+        Guid applicationId, 
+        Guid woodlandOwnerId, 
+        Guid compartmentId,
         CancellationToken cancellationToken)
     {
         var result = await Context.FellingLicenceApplications
@@ -120,16 +129,22 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return result is null ? Maybe<ApplicationCompartmentDetail>.None : Maybe<ApplicationCompartmentDetail>.From(result);
     }
 
+    ///<inheritdoc />
     public async Task<bool> GetIsEditable(Guid fellingLicenceApplicationId, CancellationToken cancellationToken)
     {
-        var currentStatus = Context.StatusHistories.Where(x => x.FellingLicenceApplicationId == fellingLicenceApplicationId).OrderByDescending(s => s.Created).FirstOrDefault()?.Status ?? FellingLicenceStatus.Draft;
+        var currentStatus = Context.StatusHistories
+            .Where(x => x.FellingLicenceApplicationId == fellingLicenceApplicationId)
+            .OrderByDescending(s => s.Created).FirstOrDefault()?.Status ?? FellingLicenceStatus.Draft;
 
-        // Draft or WithApplicant are statuses that are editable
+        // Draft, ReturnedToApplicant and WithApplicant are statuses that are editable in the external interface
 
         return currentStatus is FellingLicenceStatus.Draft or FellingLicenceStatus.WithApplicant or FellingLicenceStatus.ReturnedToApplicant;
     }
 
-    public async Task<LinkedPropertyProfile> GetLinkedPropertyProfileAsync(Guid applicationId, CancellationToken cancellationToken)
+    ///<inheritdoc />
+    public async Task<LinkedPropertyProfile> GetLinkedPropertyProfileAsync(
+        Guid applicationId, 
+        CancellationToken cancellationToken)
     {
         var linkedPropertyProfile = await Context.LinkedPropertyProfiles.SingleAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken);
 
@@ -137,7 +152,9 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     /// <inheritdoc />
-    public async Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken)
+    public async Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(
+        Guid applicationId, 
+        CancellationToken cancellationToken)
     {
         var existingSubmittedFlaPropertyDetail = await Context.SubmittedFlaPropertyDetails
             .Include(x => x.SubmittedFlaPropertyCompartments)
@@ -148,14 +165,20 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             : Maybe<SubmittedFlaPropertyDetail>.None;
     }
 
-    public async Task AddSubmittedFlaPropertyDetailAsync(SubmittedFlaPropertyDetail submittedFlaPropertyDetail, CancellationToken cancellationToken)
+    ///<inheritdoc />
+    public async Task AddSubmittedFlaPropertyDetailAsync(
+        SubmittedFlaPropertyDetail submittedFlaPropertyDetail, 
+        CancellationToken cancellationToken)
     {
         Context.SubmittedFlaPropertyDetails.Add(submittedFlaPropertyDetail);
 
         await Context.SaveEntitiesAsync(cancellationToken);
     }
 
-    public async Task DeleteSubmittedFlaPropertyDetailAsync(SubmittedFlaPropertyDetail submittedFlaPropertyDetail, CancellationToken cancellationToken)
+    ///<inheritdoc />
+    public async Task DeleteSubmittedFlaPropertyDetailAsync(
+        SubmittedFlaPropertyDetail submittedFlaPropertyDetail, 
+        CancellationToken cancellationToken)
     {
         Context.SubmittedFlaPropertyDetails.Remove(submittedFlaPropertyDetail);
 
@@ -163,7 +186,9 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     ///<inheritdoc />
-    public async Task<UnitResult<UserDbErrorReason>> DeleteSubmittedFlaPropertyDetailForApplicationAsync(Guid applicationId, CancellationToken cancellationToken)
+    public async Task<UnitResult<UserDbErrorReason>> DeleteSubmittedFlaPropertyDetailForApplicationAsync(
+        Guid applicationId, 
+        CancellationToken cancellationToken)
     {
         var existingRecord = await Context.SubmittedFlaPropertyDetails
             .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken)
@@ -177,25 +202,32 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return UnitResult.Success<UserDbErrorReason>();
     }
 
-    public async Task<UnitResult<UserDbErrorReason>> DeleteFlaAsync(FellingLicenceApplication felingLicenceApplication, CancellationToken cancellationToken)
+    ///<inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> DeleteFlaAsync(
+        FellingLicenceApplication fellingLicenceApplication, 
+        CancellationToken cancellationToken)
     {
-        var linkedPropertyProfile = Context.LinkedPropertyProfiles.First(x => x.FellingLicenceApplicationId == felingLicenceApplication.Id);
+        var linkedPropertyProfile = Context.LinkedPropertyProfiles.First(x => x.FellingLicenceApplicationId == fellingLicenceApplication.Id);
 
         Context.ProposedFellingDetails.RemoveRange(Context.ProposedFellingDetails.Where(x => x.LinkedPropertyProfileId == linkedPropertyProfile.Id));
         Context.LinkedPropertyProfiles.Remove(linkedPropertyProfile);
 
-        Context.AssigneeHistories.RemoveRange(Context.AssigneeHistories.Where(x => x.FellingLicenceApplicationId == felingLicenceApplication.Id));
+        Context.AssigneeHistories.RemoveRange(Context.AssigneeHistories.Where(x => x.FellingLicenceApplicationId == fellingLicenceApplication.Id));
 
-        Context.Documents.RemoveRange(Context.Documents.Where(x => x.FellingLicenceApplicationId == felingLicenceApplication.Id));
+        Context.Documents.RemoveRange(Context.Documents.Where(x => x.FellingLicenceApplicationId == fellingLicenceApplication.Id));
 
-        Context.StatusHistories.RemoveRange(Context.StatusHistories.Where(x => x.FellingLicenceApplicationId == felingLicenceApplication.Id));
+        Context.StatusHistories.RemoveRange(Context.StatusHistories.Where(x => x.FellingLicenceApplicationId == fellingLicenceApplication.Id));
 
-        Context.FellingLicenceApplications.Remove(Context.FellingLicenceApplications.First(x => x.Id == felingLicenceApplication.Id));
+        Context.FellingLicenceApplications.Remove(Context.FellingLicenceApplications.First(x => x.Id == fellingLicenceApplication.Id));
 
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
-    public async Task<IList<CaseNote>> GetCaseNotesAsync(Guid applicationId, bool visibleToApplicantOnly, CancellationToken cancellationToken)
+    ///<inheritdoc />
+    public async Task<IList<CaseNote>> GetCaseNotesAsync(
+        Guid applicationId, 
+        bool visibleToApplicantOnly, 
+        CancellationToken cancellationToken)
     {
         var caseNotes = await Context.CaseNote
             .Where(x => x.FellingLicenceApplicationId == applicationId && !visibleToApplicantOnly || x.VisibleToApplicant)
@@ -206,22 +238,29 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
     }
 
+    ///<inheritdoc />
     public async Task<bool> VerifyWoodlandOwnerIdForApplicationAsync(
         Guid woodlandOwnerId,
         Guid applicationId,
         CancellationToken cancellationToken)
     {
-        return await Context
-            .FellingLicenceApplications
+        return await Context.FellingLicenceApplications
             .AnyAsync(a => a.WoodlandOwnerId == woodlandOwnerId && a.Id == applicationId, cancellationToken);
     }
 
-    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId, CancellationToken cancellationToken)
+    ///<inheritdoc />
+    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(
+        Guid applicationId, 
+        CancellationToken cancellationToken)
     {
-        return await Context.FellingLicenceApplicationStepStatus.FirstAsync(flas => flas.FellingLicenceApplicationId == applicationId, cancellationToken);
+        return await Context.FellingLicenceApplicationStepStatus
+            .FirstAsync(a => a.FellingLicenceApplicationId == applicationId, cancellationToken);
     }
 
-    public async Task<Maybe<SubmittedFlaPropertyCompartment>> GetSubmittedFlaPropertyCompartmentByIdAsync(Guid compartmentId, CancellationToken cancellationToken)
+    ///<inheritdoc />
+    public async Task<Maybe<SubmittedFlaPropertyCompartment>> GetSubmittedFlaPropertyCompartmentByIdAsync(
+        Guid compartmentId, 
+        CancellationToken cancellationToken)
     {
         var compartment = await Context.SubmittedFlaPropertyCompartments
             .FirstOrDefaultAsync(c => c.Id == compartmentId, cancellationToken);
@@ -231,6 +270,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             : Maybe<SubmittedFlaPropertyCompartment>.From(compartment);
     }
 
+    ///<inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> UpdateSubmittedFlaPropertyCompartmentZonesAsync(
         Guid compartmentId,
         bool zone1,
@@ -254,6 +294,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
+    ///<inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> UpdateExistingWoodlandOfficerReviewFlagsForResubmission(
         Guid applicationId,
         DateTime updatedDate,

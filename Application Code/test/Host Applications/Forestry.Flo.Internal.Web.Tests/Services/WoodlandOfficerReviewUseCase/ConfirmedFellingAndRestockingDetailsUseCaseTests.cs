@@ -1832,7 +1832,7 @@ FellingLicenceApplication applicationEntity)
             .Setup(s => s.CompleteFellingAndRestockingAmendmentReviewAsync(amendmentReviewId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        var result = await sut.MakeFurtherAmendments(internalUser, amendmentReviewId, CancellationToken.None);
+        var result = await sut.CloseAmendmentReview(internalUser, amendmentReviewId, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
@@ -1865,7 +1865,7 @@ FellingLicenceApplication applicationEntity)
             .Setup(s => s.CompleteFellingAndRestockingAmendmentReviewAsync(amendmentReviewId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure(errorMessage));
 
-        var result = await sut.MakeFurtherAmendments(internalUser, amendmentReviewId, CancellationToken.None);
+        var result = await sut.CloseAmendmentReview(internalUser, amendmentReviewId, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(errorMessage, result.Error);

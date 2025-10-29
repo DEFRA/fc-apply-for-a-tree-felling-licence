@@ -12,7 +12,8 @@ public class WoodlandOfficerReviewSubStatusServiceTests
     private static FellingLicenceApplication CreateApplication(
         FellingLicenceStatus status = FellingLicenceStatus.WoodlandOfficerReview,
         WoodlandOfficerReview? woReview = null,
-        PublicRegister? publicRegister = null)
+        PublicRegister? publicRegister = null,
+        List<ExternalAccessLink>? externalLinks = null)
     {
         return new FellingLicenceApplication
         {
@@ -23,7 +24,8 @@ public class WoodlandOfficerReviewSubStatusServiceTests
                 }
             ],
             WoodlandOfficerReview = woReview,
-            PublicRegister = publicRegister
+            PublicRegister = publicRegister,
+            ExternalAccessLinks = externalLinks ?? []
         };
     }
 
@@ -177,5 +179,98 @@ public class WoodlandOfficerReviewSubStatusServiceTests
 
         // Assert
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public void IsSatisfiedBy_ReturnsTrue_WhenConsultationsNotComplete_AndExternalAccessLinksExist()
+    {
+        // Arrange
+        var woReview = new WoodlandOfficerReview
+        {
+            ConsultationsComplete = false
+        };
+        var externalLinks = new List<ExternalAccessLink>
+        {
+            new ExternalAccessLink { FellingLicenceApplicationId = Guid.NewGuid() }
+        };
+        var application = CreateApplication(FellingLicenceStatus.WoodlandOfficerReview, woReview, externalLinks: externalLinks);
+        var spec = new ConsultationSpecification();
+
+        // Act
+        var result = spec.IsSatisfiedBy(application);
+
+        // Assert
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsSatisfiedBy_ReturnsFalse_WhenConsultationsComplete()
+    {
+        // Arrange
+        var woReview = new WoodlandOfficerReview
+        {
+            ConsultationsComplete = true
+        };
+        var externalLinks = new List<ExternalAccessLink>
+        {
+            new ExternalAccessLink { FellingLicenceApplicationId = Guid.NewGuid() }
+        };
+        var application = CreateApplication(FellingLicenceStatus.WoodlandOfficerReview, woReview, externalLinks: externalLinks);
+        var spec = new ConsultationSpecification();
+
+        // Act
+        var result = spec.IsSatisfiedBy(application);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsSatisfiedBy_ReturnsFalse_WhenNoExternalAccessLinks()
+    {
+        // Arrange
+        var woReview = new WoodlandOfficerReview
+        {
+            ConsultationsComplete = false
+        };
+        var application = CreateApplication(FellingLicenceStatus.WoodlandOfficerReview, woReview);
+        var spec = new ConsultationSpecification();
+
+        // Act
+        var result = spec.IsSatisfiedBy(application);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsSatisfiedBy_ReturnsFalse_WhenWoodlandOfficerReviewIsNull()
+    {
+        // Arrange
+        var externalLinks = new List<ExternalAccessLink>
+        {
+            new ExternalAccessLink { FellingLicenceApplicationId = Guid.NewGuid() }
+        };
+        var application = CreateApplication();
+        var spec = new ConsultationSpecification();
+
+        // Act
+        var result = spec.IsSatisfiedBy(application);
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void SubStatus_ReturnsConsultation()
+    {
+        // Arrange
+        var spec = new ConsultationSpecification();
+
+        // Act
+        var subStatus = spec.SubStatus;
+
+        // Assert
+        Assert.Equal(WoodlandOfficerReviewSubStatus.Consultation, subStatus);
     }
 }

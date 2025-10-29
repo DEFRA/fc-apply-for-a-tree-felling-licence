@@ -19,7 +19,7 @@ namespace Forestry.Flo.Services.Notifications.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-
+            // no down migration necessary
         }
     }
 }

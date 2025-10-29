@@ -1,11 +1,9 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.Services.Common.User
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.WoodlandOwner.ManageWoodlandOwnerDetailsModel
 
 @{
-    ViewBag.Title = "Manage Woodland Owner";
     Layout = "_Layout";
     ViewData.ShowBackLink();
     
@@ -18,21 +16,23 @@
     var heading = Model.IsOrganisation
         ? $"What are the contact details for {pronoun} organisation?"
         : $"What are the contact details for {pronoun} woodland owner?";
+
+    ViewData["Title"] = heading;
 }
 
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">
-        @heading
-    </h1>
-        
-    <partial name="Partials/_PageErrors" />
-
     <form method="post">
+        <input asp-for="IsOrganisation"/>
+        <input asp-for="Id"/>
 
         <fieldset class="govuk-fieldset">
-            <input asp-for="IsOrganisation"/>
-            <input asp-for="Id"/>
+
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
 
             <div condition="@Model.IsOrganisation" class="govuk-form-group">
                 <label asp-for="OrganisationName" class="@GdsConstants.GdsLabelCssClass"></label>
@@ -60,9 +60,9 @@
             
             @if (Model.IsOrganisation)
             {
-                <h1 class="govuk-heading-s">
+                <h2 class="govuk-heading-s">
                     Registered address
-                </h1>
+                </h2>
                 <div class="govuk-form-group">
                     <label asp-for="OrganisationAddress.Line1" class="@GdsConstants.GdsLabelCssClass"></label>
                     <validation asp-for="OrganisationAddress.Line1"></validation>

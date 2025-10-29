@@ -86,19 +86,6 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Lists submitted felling licence applications according to user options selection
-    /// </summary>
-    /// <param name="assignedToUserAccountIdOnly"></param>
-    /// <param name="userId">The user identifier.</param>
-    /// <param name="userFellingLicenceSelectionOptions">The user felling licence selection options.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    Task<IList<FellingLicenceApplication>> ListByIncludedStatus(
-        bool assignedToUserAccountIdOnly,
-        Guid userId,
-        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
-        CancellationToken cancellationToken);
-
-    /// <summary>
     /// Lists submitted felling licence applications according to user options selection, with paging, ordering and optional text search
     /// across reference, property and assignee names.
     /// </summary>
@@ -597,15 +584,15 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         CancellationToken cancellationToken,
         bool includeComplete = true);
     Task AddFellingAndRestockingAmendmentReviewAsync(FellingAndRestockingAmendmentReview fellingAndRestockingAmendmentReview, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Sets the AmendmentReviewCompleted flag for a specific FellingAndRestockingAmendmentReview.
     /// </summary>
     /// <param name="amendmentReviewId">The unique identifier of the amendment review to update.</param>
-    /// <param name="completed">True to mark the review as completed, false otherwise.</param>
+    /// <param name="reviewCompleted">True to mark the review as completed, false otherwise.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A <see cref="UnitResult{UserDbErrorReason}"/> indicating success or failure of the update operation.</returns>
-    Task<UnitResult<UserDbErrorReason>> SetAmendmentReviewCompletedAsync(Guid amendmentReviewId, bool completed, CancellationToken cancellationToken);
+    Task<UnitResult<UserDbErrorReason>> SetAmendmentReviewCompletedAsync(Guid amendmentReviewId, bool reviewCompleted, CancellationToken cancellationToken);
 
     /// <summary>
     /// Gets all applications that have an active felling and restocking amendment review where a reminder notification

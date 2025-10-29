@@ -63,20 +63,31 @@
         var $yes = $('#decision-yes');
         var $no = $('#decision-no');
         var yesChecked = $yes.prop('checked');
-        var noChecked = $('#decision-no').prop('checked');
+        var noChecked = $no.prop('checked');
 
         if (yesChecked) {
-            $('#conditional-decision-yes').show();
-            $('#conditional-decision-no').hide();
-            $('#conditional-decision-empty').hide();
+            showOrHideElement($('#conditional-decision-yes'), true);
+            showOrHideElement($('#conditional-decision-no'), false);
+            showOrHideElement($('#conditional-decision-empty'), false);
         } else if (noChecked) {
-            $('#conditional-decision-yes').hide();
-            $('#conditional-decision-no').show();
-            $('#conditional-decision-empty').hide();
+            showOrHideElement($('#conditional-decision-yes'), false);
+            showOrHideElement($('#conditional-decision-no'), true);
+            showOrHideElement($('#conditional-decision-empty'), false);
         } else {
-            $('#conditional-decision-yes').hide();
-            $('#conditional-decision-no').hide();
-            $('#conditional-decision-empty').show();
+            showOrHideElement($('#conditional-decision-yes'), false);
+            showOrHideElement($('#conditional-decision-no'), false);
+            showOrHideElement($('#conditional-decision-empty'), true);
         }
     }
 });
+
+function showOrHideElement($element, show) {
+    const element = $($element);
+    if (show) {
+        element.show();
+        element.removeAttr('aria-hidden');
+    } else {
+        element.hide();
+        element.attr('aria-hidden', 'true');
+    }
+};

@@ -8,16 +8,12 @@ using Forestry.Flo.External.Web.Models.UserAccount;
 using Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels;
 using Forestry.Flo.External.Web.Models.WoodlandOwner;
 using Forestry.Flo.External.Web.Services;
-using Forestry.Flo.Services.Applicants.Configuration;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Services;
-using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.User;
-using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using AccountType = Forestry.Flo.External.Web.Models.UserAccount.AccountType;
 
 namespace Forestry.Flo.External.Web.Controllers;
@@ -30,15 +26,12 @@ public partial class AccountController : Controller
     private readonly ValidationProvider _validationProvider;
     private readonly List<BreadCrumb> _breadCrumbsRoot;
     private readonly ILogger<AccountController> _logger;
-    private readonly FcAgencyOptions _fcAgencyOptions;
 
     public AccountController(
         ValidationProvider validationProvider,
-        IOptions<FcAgencyOptions> fcAgencyOptions,
         ILogger<AccountController> logger)
     {
         _validationProvider = Guard.Against.Null(validationProvider);
-        _fcAgencyOptions = Guard.Against.Null(fcAgencyOptions.Value);
         _logger = logger;
 
         _breadCrumbsRoot = new List<BreadCrumb>

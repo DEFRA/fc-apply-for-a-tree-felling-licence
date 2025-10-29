@@ -72,6 +72,8 @@ public class CreateExternalUserProfileForInternalFcUserUseCase
 
         if (emailIsPermitted.IsFailure)
         {
+            _logger.LogError("Failed to create external FC user account for email address {EmailAddress} with error {Error}",
+                eventMessage.EmailAddress, emailIsPermitted.Error);
             return await HandleFailureAsync(eventMessage, emailIsPermitted.Error, cancellationToken);
         }
 
@@ -79,6 +81,7 @@ public class CreateExternalUserProfileForInternalFcUserUseCase
 
         if (emailAddressInUse)
         {
+            _logger.LogError("User account already exists using the email address provided {EmailAddress}", eventMessage.EmailAddress);
             return await HandleFailureAsync(
                 eventMessage,
                 $"User account already exists using the email address provided {eventMessage.EmailAddress}",
@@ -89,6 +92,8 @@ public class CreateExternalUserProfileForInternalFcUserUseCase
 
         if (fcAgency.HasNoValue)
         {
+            _logger.LogError("User account for email address {EmailAddress} could not be created as there is no FC agency to assign the user to",
+                eventMessage.EmailAddress);
             return await HandleFailureAsync(
                 eventMessage,
                 $"User account for email address {eventMessage.EmailAddress} could not be created as there is no FC agency to assign the user to",
@@ -99,6 +104,8 @@ public class CreateExternalUserProfileForInternalFcUserUseCase
 
         if (createUserAccountResult.IsFailure)
         {
+            _logger.LogError("Could not create the user account with the email address {EmailAddress} with the assigned FC agency, an error occurred {Error}",
+                eventMessage.EmailAddress, createUserAccountResult.Error);
             return await HandleFailureAsync(
                 eventMessage,
                 $"Could not create the user account with the email address {eventMessage.EmailAddress} with the assigned FC agency, an error occurred {createUserAccountResult.Error}",

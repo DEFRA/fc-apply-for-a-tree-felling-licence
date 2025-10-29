@@ -58,9 +58,9 @@ function showOrHideElement($element, show) {
     const element = $($element);
     if (show) {
         element.show();
-        element.prop('aria-hidden', 'false');
+        element.removeAttr('aria-hidden');
     } else {
         element.hide();
-        element.prop('aria-hidden', 'true');
+        element.attr('aria-hidden', 'true');
     }
 };

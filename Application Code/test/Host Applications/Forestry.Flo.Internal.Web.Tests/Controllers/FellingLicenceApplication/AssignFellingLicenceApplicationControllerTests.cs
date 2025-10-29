@@ -1,18 +1,13 @@
-﻿using System;
-using AutoFixture;
+﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using CSharpFunctionalExtensions.ValueTasks;
 using FluentValidation;
 using FluentValidation.Results;
 using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
-using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -23,6 +18,7 @@ public class AssignFellingLicenceApplicationControllerTests
     private readonly Mock<IAssignToUserUseCase> _assignToUserUseCaseMock;
     private readonly Mock<IAssignToApplicantUseCase> _assignToApplicantUseCaseMock;
     private readonly Mock<IValidator<AssignBackToApplicantModel>> _validatorMock;
+    private readonly Mock<IUrlHelper> _mockUrlHelper;
     private readonly AssignFellingLicenceApplicationController _controller;
     private readonly Guid _applicationId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
@@ -33,6 +29,7 @@ public class AssignFellingLicenceApplicationControllerTests
         _assignToUserUseCaseMock = new Mock<IAssignToUserUseCase>();
         _assignToApplicantUseCaseMock = new Mock<IAssignToApplicantUseCase>();
         _validatorMock = new Mock<IValidator<AssignBackToApplicantModel>>();
+        _mockUrlHelper = new Mock<IUrlHelper>();
         _controller = new AssignFellingLicenceApplicationController();
         _controller.PrepareControllerForTest(_userId);
     }
@@ -114,7 +111,7 @@ public class AssignFellingLicenceApplicationControllerTests
             .ReturnsAsync(reloadModel);
 
         var result = await _controller.SelectUser(
-            _applicationId, assignModel, _assignToUserUseCaseMock.Object, CancellationToken.None);
+            _applicationId, assignModel, _assignToUserUseCaseMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.IsType<AssignToUserModel>(viewResult.Model);
@@ -132,16 +129,45 @@ public class AssignFellingLicenceApplicationControllerTests
             .With(x => x.FormLevelCaseNote, caseNote)
             .Create();
 
+        _mockUrlHelper.Setup(x => x.IsLocalUrl(It.IsAny<string?>())).Returns(true);
+
         _assignToUserUseCaseMock.Setup(x => x.AssignToUserAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<AssignedUserRole>(), It.IsAny<string>(), It.IsAny<InternalUser>(),
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success(true));
 
         var result = await _controller.SelectUser(
-            _applicationId, assignModel, _assignToUserUseCaseMock.Object, CancellationToken.None);
+            _applicationId, assignModel, _assignToUserUseCaseMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var redirectResult = Assert.IsType<RedirectResult>(result);
         Assert.Equal(assignModel.ReturnUrl, redirectResult.Url);
+    }
+
+    [Fact]
+    public async Task SelectUser_Post_Redirects_WhenSuccessWithInvalidReturnUrl()
+    {
+        var caseNote = _fixture.Create<FormLevelCaseNote>();
+        var assignModel = _fixture.Build<AssignToUserModel>()
+            .With(x => x.SelectedUserId, Guid.NewGuid())
+            .With(x => x.SelectedRole, AssignedUserRole.AdminOfficer)
+            .With(x => x.SelectedFcAreaCostCode, "costCode")
+            .With(x => x.ReturnUrl, "returnUrl")
+            .With(x => x.FormLevelCaseNote, caseNote)
+            .Create();
+
+        _mockUrlHelper.Setup(x => x.IsLocalUrl(It.IsAny<string?>())).Returns(false);
+
+        _assignToUserUseCaseMock.Setup(x => x.AssignToUserAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<AssignedUserRole>(), It.IsAny<string>(), It.IsAny<InternalUser>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Success(true));
+
+        var result = await _controller.SelectUser(
+            _applicationId, assignModel, _assignToUserUseCaseMock.Object, _mockUrlHelper.Object, CancellationToken.None);
+
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("ApplicationSummary", redirectResult.ActionName);
+        Assert.Equal("FellingLicenceApplication", redirectResult.ControllerName);
     }
 
     [Fact]
@@ -162,7 +188,7 @@ public class AssignFellingLicenceApplicationControllerTests
             .ReturnsAsync(Result.Failure<bool>("fail"));
 
         var result = await _controller.SelectUser(
-            _applicationId, assignModel, _assignToUserUseCaseMock.Object, CancellationToken.None);
+            _applicationId, assignModel, _assignToUserUseCaseMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Error", redirectResult.ActionName);
@@ -184,16 +210,47 @@ public class AssignFellingLicenceApplicationControllerTests
             .With(x => x.FormLevelCaseNote, caseNote)
             .Create();
 
+        _mockUrlHelper.Setup(x => x.IsLocalUrl(It.IsAny<string?>())).Returns(true);
+
         _assignToUserUseCaseMock.Setup(x => x.AssignToUserAsync(
                 It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<AssignedUserRole>(), It.IsAny<string>(), It.IsAny<InternalUser>(),
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success(true));
 
         var result = await _controller.SelectUser(
-            _applicationId, assignModel, _assignToUserUseCaseMock.Object, CancellationToken.None);
+            _applicationId, assignModel, _assignToUserUseCaseMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var redirectResult = Assert.IsType<RedirectResult>(result);
         Assert.Equal(assignModel.ReturnUrl, redirectResult.Url);
+    }
+
+    [Fact]
+    public async Task SelectUser_Post_RemovesModelState_WhenSelectedRoleIsNotAdminOrWoodlandOfficer_WithInvalidReturnUrl()
+    {
+        _controller.ModelState.AddModelError(nameof(AssignToUserModel.SelectedFcAreaCostCode), "error");
+
+        var caseNote = _fixture.Create<FormLevelCaseNote>();
+        var assignModel = _fixture.Build<AssignToUserModel>()
+            .With(x => x.SelectedUserId, Guid.NewGuid())
+            .With(x => x.SelectedRole, AssignedUserRole.Applicant)
+            .With(x => x.SelectedFcAreaCostCode, "costCode")
+            .With(x => x.ReturnUrl, "returnUrl")
+            .With(x => x.FormLevelCaseNote, caseNote)
+            .Create();
+
+        _mockUrlHelper.Setup(x => x.IsLocalUrl(It.IsAny<string?>())).Returns(false);
+
+        _assignToUserUseCaseMock.Setup(x => x.AssignToUserAsync(
+                It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<AssignedUserRole>(), It.IsAny<string>(), It.IsAny<InternalUser>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Success(true));
+
+        var result = await _controller.SelectUser(
+            _applicationId, assignModel, _assignToUserUseCaseMock.Object, _mockUrlHelper.Object, CancellationToken.None);
+
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("ApplicationSummary", redirectResult.ActionName);
+        Assert.Equal("FellingLicenceApplication", redirectResult.ControllerName);
     }
 
     [Fact]
@@ -290,7 +347,7 @@ public class AssignFellingLicenceApplicationControllerTests
             .ReturnsAsync(reloadModel);
 
         var result = await _controller.AssignBackToApplicant(
-            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, CancellationToken.None);
+            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.IsType<AssignBackToApplicantModel>(viewResult.Model);
@@ -314,7 +371,7 @@ public class AssignFellingLicenceApplicationControllerTests
             .ReturnsAsync(Result.Failure<AssignBackToApplicantModel>("fail"));
 
         var result = await _controller.AssignBackToApplicant(
-            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, CancellationToken.None);
+            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var viewResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Error", viewResult.ActionName);
@@ -338,7 +395,7 @@ public class AssignFellingLicenceApplicationControllerTests
             .ReturnsAsync(Result.Failure("fail"));
 
         var result = await _controller.AssignBackToApplicant(
-            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, CancellationToken.None);
+            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var redirectResult = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Error", redirectResult.ActionName);
@@ -354,6 +411,8 @@ public class AssignFellingLicenceApplicationControllerTests
             .With(x => x.ReturnUrl, "returnUrl")
             .Create();
 
+        _mockUrlHelper.Setup(x => x.IsLocalUrl(It.IsAny<string?>())).Returns(true);
+
         _validatorMock.Setup(x => x.Validate(assignModel)).Returns(new ValidationResult());
         _assignToApplicantUseCaseMock.Setup(x => x.AssignApplicationToApplicantAsync(
                 It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
@@ -361,9 +420,34 @@ public class AssignFellingLicenceApplicationControllerTests
             .ReturnsAsync(Result.Success(true));
 
         var result = await _controller.AssignBackToApplicant(
-            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, CancellationToken.None);
+            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, _mockUrlHelper.Object, CancellationToken.None);
 
         var redirectResult = Assert.IsType<RedirectResult>(result);
         Assert.Equal(assignModel.ReturnUrl, redirectResult.Url);
+    }
+
+    [Fact]
+    public async Task AssignBackToApplicant_Post_RedirectsToDefaultUrl_WhenSuccessButInvalidReturnUrl()
+    {
+        var assignModel = _fixture.Build<AssignBackToApplicantModel>()
+            .With(x => x.FellingLicenceApplicationId, _applicationId)
+            .With(x => x.ExternalApplicantId, Guid.NewGuid())
+            .With(x => x.ReturnUrl, "returnUrl")
+            .Create();
+
+        _mockUrlHelper.Setup(x => x.IsLocalUrl(It.IsAny<string?>())).Returns(false);
+
+        _validatorMock.Setup(x => x.Validate(assignModel)).Returns(new ValidationResult());
+        _assignToApplicantUseCaseMock.Setup(x => x.AssignApplicationToApplicantAsync(
+                It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<Dictionary<FellingLicenceApplicationSection, bool>>(), It.IsAny<Dictionary<Guid, bool>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
+
+        var result = await _controller.AssignBackToApplicant(
+            assignModel, _assignToApplicantUseCaseMock.Object, _validatorMock.Object, _mockUrlHelper.Object, CancellationToken.None);
+
+        var redirectResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("ApplicationSummary", redirectResult.ActionName);
+        Assert.Equal("FellingLicenceApplication", redirectResult.ControllerName);
     }
 }

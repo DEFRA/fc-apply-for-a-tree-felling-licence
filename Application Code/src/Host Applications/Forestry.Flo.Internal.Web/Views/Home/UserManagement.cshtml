@@ -18,22 +18,22 @@
                     if (internalUser.AccountType == AccountTypeInternal.AccountAdministrator)
                     {
                         <li>
-                            <a href="@Url.Action("UnconfirmedUserAccounts", "AdminAccount")">Unconfirmed user accounts</a>
+                            <a class="govuk-link" href="@Url.Action("UnconfirmedUserAccounts", "AdminAccount")">Unconfirmed user accounts</a>
                         </li>
 
                         <li>
-                            <a href="@Url.Action("FcStaffList", "AccountAdministration")">Manage FC user accounts in the system</a>
+                            <a class="govuk-link" href="@Url.Action("FcStaffList", "AccountAdministration")">Manage FC user accounts in the system</a>
                         </li>
 
                         <li>
-                            <a href="@Url.Action("ExternalUserList", "ExternalAccountAdministration")">Manage applicant and FC user accounts in external applicant system</a>
+                            <a class="govuk-link" href="@Url.Action("ExternalUserList", "ExternalAccountAdministration")">Manage applicant and FC user accounts in external applicant system</a>
                         </li>
                     }
                 }
 
                 <require-user-account-type required-account-type="AdminHubManager">
                     <li>
-                        <a href="@Url.Action("AdminHubSummary", "AdminHub")">Manage admin hub</a>
+                        <a class="govuk-link" href="@Url.Action("AdminHubSummary", "AdminHub")">Manage admin hub</a>
                     </li>
                 </require-user-account-type>
 

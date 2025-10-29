@@ -29,9 +29,9 @@ public class InternalUserContextFlaRepositoryListByIncludedStatusTests
 
         // Act
         var page1 = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
-            pageNumber: 1, pageSize: 3, sortColumn: "FinalActionDate", sortDirection: "asc");
+            pageNumber: 1, pageSize: 3, orderBy: "FinalActionDate", sortDirection: "asc");
         var page2 = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
-            pageNumber: 2, pageSize: 3, sortColumn: "FinalActionDate", sortDirection: "asc");
+            pageNumber: 2, pageSize: 3, orderBy: "FinalActionDate", sortDirection: "asc");
 
         // Assert
         Assert.Equal(3, page1.Count);
@@ -65,7 +65,7 @@ public class InternalUserContextFlaRepositoryListByIncludedStatusTests
 
         // Act
         var result = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
-            pageNumber: 1, pageSize: 100, sortColumn: column, sortDirection: dir);
+            pageNumber: 1, pageSize: 100, orderBy: column, sortDirection: dir);
 
         // Assert
         Assert.Equal(expectedOrder.Length, result.Count);
@@ -82,7 +82,7 @@ public class InternalUserContextFlaRepositoryListByIncludedStatusTests
 
         // Act
         var result = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
-            pageNumber: 1, pageSize: 100, sortColumn: "Status", sortDirection: dir);
+            pageNumber: 1, pageSize: 100, orderBy: "Status", sortDirection: dir);
 
         // Assert latest status is monotonic according to direction
         var latestStatuses = result
@@ -104,11 +104,11 @@ public class InternalUserContextFlaRepositoryListByIncludedStatusTests
 
         // Baseline without search
         var baseline = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
-            pageNumber: 1, pageSize: 100, sortColumn: "Reference", sortDirection: "asc");
+            pageNumber: 1, pageSize: 100, orderBy: "Reference", sortDirection: "asc");
 
         // Act: pass whitespace search text (should behave like no search)
         var withWhitespaceSearch = await _sut.ListByIncludedStatus(false, Guid.NewGuid(), includeStatuses, CancellationToken.None,
-            pageNumber: 1, pageSize: 100, sortColumn: "Reference", sortDirection: "asc", searchText: "   ");
+            pageNumber: 1, pageSize: 100, orderBy: "Reference", sortDirection: "asc", searchText: "   ");
 
         // Assert
         Assert.Equal(baseline.Count, withWhitespaceSearch.Count);

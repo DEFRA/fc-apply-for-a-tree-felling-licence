@@ -57,7 +57,9 @@ namespace Forestry.Flo.External.Web.Services
 
             if (isApplicationEditable.IsFailure)
             {
-                _logger.LogError(isApplicationEditable.Error);
+                _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                    applicationId,
+                    isApplicationEditable.Error);
 
                 return isApplicationEditable;
             }

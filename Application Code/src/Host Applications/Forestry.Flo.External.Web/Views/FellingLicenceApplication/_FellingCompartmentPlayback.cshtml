@@ -1,12 +1,8 @@
 ﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingCompartmentPlaybackViewModel
 
-<form id="felling-compartment-playback-form">
-
-    @foreach (var fellingDetail in Model.FellingDetails)
-    {
-        <div>
-            <partial name="_FellingDetailPlayback" model="@fellingDetail" />
-        </div>
-    }
-
-</form>
+@foreach (var fellingDetail in Model.FellingDetails)
+{
+    <div>
+        <partial name="_FellingDetailPlayback" model="@fellingDetail" />
+    </div>
+}

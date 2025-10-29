@@ -49,7 +49,7 @@ public class NotificationHistoryService : INotificationHistoryService
 
         if (entities.IsFailure)
         {
-            _logger.LogError(entities.Error);
+            _logger.LogError("Failed to load notification history for application id {ApplicationId}, error: {Error}", applicationId, entities.Error);
             return entities.ConvertFailure<List<NotificationHistoryModel>>();
         }
 
