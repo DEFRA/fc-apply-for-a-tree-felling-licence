@@ -128,17 +128,25 @@ jobs:
           /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
       # --- Build always runs (Sonar Begin, if any, is already in place) ---
-      - name: Build
+      # Build (private / Sonar OFF) - same as before
+      - name: Build (Debug)
+        if: ${{ vars.SONAR_ENABLED != 'true' }}
         run: dotnet build --no-restore
-        timeout-minutes: 30
         working-directory: Application Code
+        timeout-minutes: 30
+
+      # Build (DEFRA / Sonar ON) - build Release so the Release test DLLs exist
+      - name: Build (Release for Sonar)
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        run: dotnet build --no-restore --configuration Release
+        working-directory: Application Code
+        timeout-minutes: 30
 
       # --- Tests: no coverage when Sonar OFF; coverage when Sonar ON ---
       - name: Test (no coverage)
         if: ${{ vars.SONAR_ENABLED != 'true' }}
         run: dotnet test --no-build --verbosity normal
-        working-directory: Application Code
-
+        working-directory: Application Codes
 
       # When SONAR is ON — run each test project individually with coverage
       - name: Test (per project, OpenCover coverage)
@@ -147,7 +155,6 @@ jobs:
         working-directory: Application Code
         run: |
           set -euo pipefail
-          # find all *.Tests.csproj tracked by git under Application Code/
           mapfile -t TESTS < <(git ls-files '**/*.Tests.csproj' | sed 's|^|./|')
           if [ ${#TESTS[@]} -eq 0 ]; then
             echo "No test projects found"
@@ -155,7 +162,6 @@ jobs:
           fi
           for proj in "${TESTS[@]}"; do
             echo "===> Running tests for: $proj"
-            # unique coverage output per project to avoid collisions
             outdir="$(dirname "$proj")/TestResults"
             mkdir -p "$outdir"
             dotnet test "$proj" --no-build --configuration Release \
@@ -163,7 +169,6 @@ jobs:
               /p:CoverletOutput="$outdir/coverage.opencover.xml" \
               /p:CoverletOutputFormat=opencover
           done
-
 
       - name: SonarQube End
         if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
