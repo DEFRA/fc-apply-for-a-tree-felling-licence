@@ -125,7 +125,7 @@ jobs:
           /d:sonar.login="${{ secrets.SONAR_TOKEN_ACTIONS }}"
           /d:sonar.verbose=true
           /d:sonar.qualitygate.wait=false
-          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+          /d:sonar.cs.cobertura.reportsPaths="**/TestResults/*/coverage.cobertura.xml"
 
       # --- Build always runs (Sonar Begin, if any, is already in place) ---
       # Build (private / Sonar OFF) - same as before
@@ -146,10 +146,11 @@ jobs:
       - name: Test (no coverage)
         if: ${{ vars.SONAR_ENABLED != 'true' }}
         run: dotnet test --no-build --verbosity normal
-        working-directory: Application Codes
+        working-directory: Application Code
+        timeout-minutes: 30
 
       # When SONAR is ON — run each test project individually with coverage
-      - name: Test (per project, OpenCover coverage)
+      - name: Test (per project, XPlat Cobertura coverage)
         if: ${{ vars.SONAR_ENABLED == 'true' }}
         shell: bash
         working-directory: Application Code
@@ -162,13 +163,10 @@ jobs:
           fi
           for proj in "${TESTS[@]}"; do
             echo "===> Running tests for: $proj"
-            outdir="$(dirname "$proj")/TestResults"
-            mkdir -p "$outdir"
-            dotnet test "$proj" --no-build --configuration Release \
-              /p:CollectCoverage=true \
-              /p:CoverletOutput="$outdir/coverage.opencover.xml" \
-              /p:CoverletOutputFormat=opencover
+            # Build & test in Release; XPlat writes Cobertura to TestResults/**/coverage.cobertura.xml
+            dotnet test "$proj" --configuration Release --collect:"XPlat Code Coverage"
           done
+
 
       - name: SonarQube End
         if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
