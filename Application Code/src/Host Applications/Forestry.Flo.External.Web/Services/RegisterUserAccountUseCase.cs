@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Exceptions;
 using Forestry.Flo.External.Web.Models.Agency;
@@ -9,15 +8,12 @@ using Forestry.Flo.External.Web.Models.WoodlandOwner;
 using Forestry.Flo.Services.Applicants;
 using Forestry.Flo.Services.Applicants.Configuration;
 using Forestry.Flo.Services.Applicants.Entities;
-using Forestry.Flo.Services.Applicants.Entities.Agent;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
-using Forestry.Flo.Services.Applicants.Migrations;
 using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
@@ -27,6 +23,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NodaTime;
+using System.Security.Claims;
 using Agency = Forestry.Flo.Services.Applicants.Entities.Agent.Agency;
 using TenantType = Forestry.Flo.Services.Applicants.Entities.WoodlandOwner.TenantType;
 using UserAccountEntity = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
@@ -41,7 +38,6 @@ public class RegisterUserAccountUseCase
     private readonly RequestContext _requestContext;
     private readonly IAuditService<RegisterUserAccountUseCase> _auditService;
     private readonly IClock _clock;
-    private readonly ISignInApplicant _signInApplicant;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IDbContextFactory<ApplicantsContext> _dbContextFactory;
     private readonly ILogger<RegisterUserAccountUseCase> _logger;
@@ -49,11 +45,23 @@ public class RegisterUserAccountUseCase
     private readonly IFellingLicenceApplicationExternalRepository _fellingLicenceApplicationRepository;
     private readonly FcAgencyOptions _fcAgencyOptions;
 
-
+    /// <summary>
+    /// Creates a new instance of the <see cref="RegisterUserAccountUseCase"/>.
+    /// </summary>
+    /// <param name="dbContextFactory">A db context factory.</param>
+    /// <param name="httpContextAccessor">A HTTP context accessor.</param>
+    /// <param name="clock">A clock to get the current date and time.</param>
+    /// <param name="auditService">An auditing service.</param>
+    /// <param name="logger">A logging instance.</param>
+    /// <param name="propertyProfileRepository">A repository for property profiles.</param>
+    /// <param name="fellingLicenceApplicationRepository">A repository for felling licence applications.</param>
+    /// <param name="userAccountRepository">A repository for user accounts.</param>
+    /// <param name="fcAgencyOptions">Configuration options for the FC agency.</param>
+    /// <param name="requestContext">A request context.</param>
+    /// <param name="agentAuthorityService">An agent authority service.</param>
     public RegisterUserAccountUseCase(
         IDbContextFactory<ApplicantsContext> dbContextFactory,
         IHttpContextAccessor httpContextAccessor,
-        ISignInApplicant signInApplicant,
         IClock clock,
         IAuditService<RegisterUserAccountUseCase> auditService,
         ILogger<RegisterUserAccountUseCase> logger,
@@ -69,7 +77,6 @@ public class RegisterUserAccountUseCase
         _agentAuthorityService = Guard.Against.Null(agentAuthorityService);
         _auditService = Guard.Against.Null(auditService);
         _clock = Guard.Against.Null(clock);
-        _signInApplicant = Guard.Against.Null(signInApplicant);
         _httpContextAccessor = Guard.Against.Null(httpContextAccessor);
         _dbContextFactory = Guard.Against.Null(dbContextFactory);
         _logger = logger ?? new NullLogger<RegisterUserAccountUseCase>();
@@ -108,6 +115,13 @@ public class RegisterUserAccountUseCase
         return Maybe<UserAccount>.None;
     }
 
+    /// <summary>
+    /// Validates that a new account signup is valid and not using an email address already associated with an invited,
+    /// migrated or deactivated account.
+    /// </summary>
+    /// <param name="user">A model of the new user account.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="AccountSignupValidityCheckOutcome"/> representing the result.</returns>
     public async Task<AccountSignupValidityCheckOutcome> AccountSignupValidityCheck(
         ExternalApplicant user,
         CancellationToken cancellationToken)

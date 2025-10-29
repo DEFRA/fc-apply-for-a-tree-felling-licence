@@ -34,10 +34,13 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IO;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Infrastructure;
 
@@ -153,6 +156,11 @@ public static class ServiceCollectionExtensions
         configuration.Bind("AzureAdB2C", settings);
 
         services
+            .AddHttpClient()
+            .ConfigureHttpClientDefaults(defaults =>
+            {
+                defaults.AddHttpMessageHandler(_ => new UserAgentHandler());
+            })
             .AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy", policyBuilder => policyBuilder
@@ -257,6 +265,13 @@ public static class ServiceCollectionExtensions
             && s.ValidatorType != typeof(ConfirmedRestockingOperationCrossValidator));
         services.AddTransient<AppVersionService>();
         services.AddTransient<IUserAccountService, UserAccountService>();
+
+        services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+        services.AddScoped<IUrlHelper>(x => {
+            var actionContext = x.GetRequiredService<IActionContextAccessor>().ActionContext;
+            var factory = x.GetRequiredService<IUrlHelperFactory>();
+            return factory.GetUrlHelper(actionContext!);
+        });
 
         //Site analytics:
         //Note, the service is registered as singleton - despite accessing HTTP Context for requests to check for cookies,

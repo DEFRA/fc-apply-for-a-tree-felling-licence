@@ -6,73 +6,73 @@
 }
 
 @using Forestry.Flo.External.Web.Infrastructure
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.Services.Common.Extensions
 @model Forestry.Flo.External.Web.Models.AccountAdministration.ExternalUserListModel;
 
-<div class="govuk-grid-column-full">
-    
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-m">Select a user account to amend or close</h1>
 
-    <partial name="Partials/_PageErrors"/>
-    
-    <fieldset class="govuk-fieldset">
-        <table class="govuk-table" id="external-user-table">
-            <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header">Name</th>
-                <th scope="col" class="govuk-table__header">Email</th>
-                <th scope="col" class="govuk-table__header">Account Type</th>
+</div>
+
+<div class="govuk-grid-column-three-quarters">
+    <table class="govuk-table" id="external-user-table">
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Name</th>
+            <th scope="col" class="govuk-table__header">Email</th>
+            <th scope="col" class="govuk-table__header">Account Type</th>
+        </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+        @foreach (var user in Model.ExternalUserList)
+        {
+            var username = $"{user.FirstName} {user.LastName}";
+
+            <tr data-id="@user.UserAccountId" id="@user.UserAccountId" class="govuk-table__row">
+                <td class="govuk-table__cell" data-order="@username">@username</td>
+                <td class="govuk-table__cell" data-order="@user.Email">@user.Email</td>
+                <td class="govuk-table__cell" data-order="@user.AccountType.GetDisplayName()">@user.AccountType.GetDisplayName()</td>
             </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-            @foreach (var user in Model.ExternalUserList)
-            {
-                var username = $"{user.FirstName} {user.LastName}";
+        }
+        </tbody>
+    </table>
 
-                <tr data-id="@user.UserAccountId" id="@user.UserAccountId" class="govuk-table__row">
-                    <td class="govuk-table__cell" data-order="@username">@username</td>
-                    <td class="govuk-table__cell" data-order="@user.Email">@user.Email</td>
-                    <td class="govuk-table__cell" data-order="@user.AccountType.GetDisplayName()">@user.AccountType.GetDisplayName()</td>
-                </tr>
-            }
-            </tbody>
-        </table>
+</div>
 
-        <form method="post">
-            <div class="govuk-form-group govuk-visually-hidden">
-                <input asp-for="@Model.ReturnUrl"/>
-                <input id="selected-user-id" asp-for="@Model.SelectedUserAccountId">
+<div class="govuk-grid-column-two-thirds">
+    <form method="post">
+        <div class="govuk-form-group govuk-visually-hidden">
+            <input asp-for="@Model.ReturnUrl"/>
+            <input id="selected-user-id" asp-for="@Model.SelectedUserAccountId">
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+
+                <button asp-action="AmendUserAccount" id="amend-submit" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                    Amend
+                </button>
+                @* close account logic not developed yet *@
+                <button condition="@false" id="close-submit" data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">
+                    Close
+                </button>
             </div>
-
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
-
-                    <button asp-action="AmendUserAccount" id="amend-submit" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                        Amend
-                    </button>
-                    @* close account logic not developed yet *@
-                    <button condition="@false" id="close-submit" data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </form>
-    </fieldset>
-
+        </div>
+    </form>
 </div>
 
 @section Scripts
 {
-    <partial name="Partials/_DataTablesJs" />
+    <partial name="Partials/_DataTablesJs"/>
     <script src="~/js/external-user-list.js" asp-append-version="true"></script>
 }
 
 @section Css
 {
-    <partial name="Partials/_DataTablesCss" />
-    <link rel="stylesheet" href="~/css/user-account-selectable-list.css" aria-busyasp-append-version="true" />
+    <partial name="Partials/_DataTablesCss"/>
+    <link rel="stylesheet" href="~/css/user-account-selectable-list.css" aria-busyasp-append-version="true"/>
 }

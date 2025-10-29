@@ -113,6 +113,7 @@ public class LarchCheckUseCase(
             InMoratorium = InMoratorium(applicationSummary.Value.DateReceived, _larchOptions),
             Disabled = !editable,
             ActivityFeedItems = activityFeedItems.Value,
+            FormLevelCaseNote = new FormLevelCaseNote()
         };
 
         model.CombineZones(applicationSummary.Value.DetailsList);
@@ -230,6 +231,7 @@ public class LarchCheckUseCase(
                     : null,
             SubmissionDate = applicationSummary.Value.DateReceived,
             FlightObservations = larchCheckDetails.HasValue ? larchCheckDetails.Value.FlightObservations : null,
+            FormLevelCaseNote = new FormLevelCaseNote()
         };
         return model;
     }

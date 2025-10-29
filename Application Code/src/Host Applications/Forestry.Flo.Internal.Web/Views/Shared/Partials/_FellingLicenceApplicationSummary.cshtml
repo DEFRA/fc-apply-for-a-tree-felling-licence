@@ -1,6 +1,5 @@
 ﻿@using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.Common.Extensions
-@using Forestry.Flo.Services.Common.User
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingLicenceApplicationSummaryModel
 
@@ -23,88 +22,107 @@
         : Url.ActionContext.HttpContext.Request.Path.ToString() + Url.ActionContext.HttpContext.Request.QueryString;
 }
 
-<table class="govuk-table" id="application-list-table">
-    <tbody class="govuk-table__body">
-    <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Application reference</th>
-        <td class="govuk-table__cell">@Model.ApplicationReference</td>
-    </tr>
-    <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Application status</th>
-        <td class="govuk-table__cell">
-            <vc:gds-application-status-tag application-state="@Model.Status"></vc:gds-application-status-tag> (@DateTimeDisplay.GetDateDisplayString(currentStatusHistoryItem.Created))
-            @if (Model.IsWithFcStatus)
-            {
-                <br/>
-                <a class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="AssignBackToApplicant" asp-route-applicationId="@Model.Id" asp-route-returnUrl="@returnUrl">Return to applicant</a>
-            }
-        </td>
-        </tr>
-        <tr condition="@Model.WoodlandOfficerReviewSubStatuses.Any()" class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">Application sub status</th>
-            <td class="govuk-table__cell sub-status-container">
-                @foreach(var subStatus in Model.WoodlandOfficerReviewSubStatuses)
+<div class="govuk-grid-column-two-thirds">
+    <table class="govuk-table" id="application-list-table">
+        <tbody class="govuk-table__body">
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Application reference</th>
+                <td class="govuk-table__cell" colspan="2">@Model.ApplicationReference</td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Application status</th>
+                @if (Model.IsWithFcStatus)
                 {
-                    <div>
-                        <strong class="govuk-tag govuk-tag--grey">
-                            @subStatus.GetDisplayName()
-                        </strong>
-                    </div>
+                    <td class="govuk-table__cell">
+                        <vc:gds-application-status-tag application-state="@Model.Status"></vc:gds-application-status-tag> (@DateTimeDisplay.GetDateDisplayString(currentStatusHistoryItem.Created))
+                    </td>
+                    <td class="govuk-table__cell govuk-table__cell--numeric">
+                        <a class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="AssignBackToApplicant" asp-route-applicationId="@Model.Id" asp-route-returnUrl="@returnUrl">Return to applicant</a>
+                    </td>
                 }
-            </td>
-        </tr>
-    <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Citizens charter deadline</th>
-        <td class="govuk-table__cell">
-            @(Model.CitizensCharterDate.HasValue
-                ? DateTimeDisplay.GetDateDisplayString(Model.CitizensCharterDate.Value)
-                : string.Empty)
-        </td>
-    </tr>
-    <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Final action date</th>
-        <td class="govuk-table__cell">
-            @(Model.FinalActionDate.HasValue
-                ? DateTimeDisplay.GetDateDisplayString(Model.FinalActionDate.Value)
-                : string.Empty)
-        </td>
-    </tr>
-    <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Property</th>
-            <td class="govuk-table__cell">@Model.PropertyName @(Model.NameOfWood != null ? " - " + Model.NameOfWood : "")</td>
-    </tr>
-    <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Woodland owner</th>
-        <td class="govuk-table__cell">@Model.WoodlandOwnerName</td>
-    </tr>
-    @if (!string.IsNullOrWhiteSpace(Model.AgentOrAgencyName))
-    {
-        <tr class="govuk-table__row">
-            <th scope="row" class="govuk-table__header">Agency</th>
-            <td class="govuk-table__cell">@Model.AgentOrAgencyName</td>
-        </tr>
-    }
-    <tr class="govuk-table__row">
-        <th scope="row" class="govuk-table__header">Assigned to</th>
-        <td class="govuk-table__cell">
-            @FellingLicenceStatus.AdminOfficerReview.GetDisplayNameByActorType(ActorType.InternalUser) phase: 
-            @(assignedOao == null ? "Unassigned" : $"{assignedOao.UserAccount.FirstName} {assignedOao.UserAccount.LastName}")
-            <a condition="@(assignedOao == null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="SelectUser" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.AdminOfficer" asp-route-returnUrl="@returnUrl">change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.AdminOfficer.GetDisplayName()</span></a>
-                <a condition="@(assignedOao != null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="ConfirmReassignApplication" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.AdminOfficer" asp-route-returnUrl="@returnUrl">change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.AdminOfficer.GetDisplayName()</span></a>
-            <br />
-
-            @FellingLicenceStatus.WoodlandOfficerReview.GetDisplayNameByActorType(ActorType.InternalUser) phase:
-            @(assignedWo == null ? "Unassigned" : $"{assignedWo.UserAccount.FirstName} {assignedWo.UserAccount.LastName}")
-                <a condition="@(assignedWo == null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="SelectUser" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.WoodlandOfficer" asp-route-returnUrl="@returnUrl">change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.WoodlandOfficer.GetDisplayName()</span></a>
-                <a condition="@(assignedWo != null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="ConfirmReassignApplication" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.WoodlandOfficer" asp-route-returnUrl="@returnUrl">change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.WoodlandOfficer.GetDisplayName()</span></a>
-            <br />
-
-            @FellingLicenceStatus.SentForApproval.GetDisplayNameByActorType(ActorType.InternalUser) phase:
-            @(assignedApprover == null ? "Unassigned" : $"{assignedApprover.UserAccount.FirstName} {assignedApprover.UserAccount.LastName}")
-                <a condition="@(assignedApprover == null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="SelectUser" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.FieldManager" asp-route-returnUrl="@returnUrl">change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.FieldManager.GetDisplayName()</span></a>
-                <a condition="@(assignedApprover != null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="ConfirmReassignApplication" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.FieldManager" asp-route-returnUrl="@returnUrl">change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.FieldManager.GetDisplayName()</span></a>
-        </td>
-    </tr>
-
-    </tbody>
-</table> 
+                else
+                {
+                    <td class="govuk-table__cell" colspan="2">
+                        <vc:gds-application-status-tag application-state="@Model.Status"></vc:gds-application-status-tag> (@DateTimeDisplay.GetDateDisplayString(currentStatusHistoryItem.Created))
+                    </td>
+                }
+            </tr>
+            <tr condition="@Model.WoodlandOfficerReviewSubStatuses.Any()" class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Application sub status</th>
+                <td class="govuk-table__cell" colspan="2">
+                    <div class="sub-status-container">
+                        @foreach (var subStatus in Model.WoodlandOfficerReviewSubStatuses)
+                        {
+                            <div>
+                                <strong class="govuk-tag govuk-tag--grey">
+                                    @subStatus.GetDisplayName()
+                                </strong>
+                            </div>
+                        }
+                    </div>
+                </td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Citizens charter deadline</th>
+                <td class="govuk-table__cell" colspan="2">
+                    @(Model.CitizensCharterDate.HasValue
+                        ? DateTimeDisplay.GetDateDisplayString(Model.CitizensCharterDate.Value)
+                        : string.Empty)
+                </td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Final action date</th>
+                <td class="govuk-table__cell" colspan="2">
+                    @(Model.FinalActionDate.HasValue
+                        ? DateTimeDisplay.GetDateDisplayString(Model.FinalActionDate.Value)
+                        : string.Empty)
+                </td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Property</th>
+                <td class="govuk-table__cell" colspan="2">@Model.PropertyName @(Model.NameOfWood != null ? " - " + Model.NameOfWood : "")</td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">Woodland owner</th>
+                <td class="govuk-table__cell" colspan="2">@Model.WoodlandOwnerName</td>
+            </tr>
+            @if (!string.IsNullOrWhiteSpace(Model.AgentOrAgencyName))
+            {
+                <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header">Agency</th>
+                    <td class="govuk-table__cell" colspan="2">@Model.AgentOrAgencyName</td>
+                </tr>
+            }
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">OAO review phase</th>
+                <td class="govuk-table__cell">
+                    @(assignedOao == null ? "Unassigned" : $"{assignedOao.UserAccount.FirstName} {assignedOao.UserAccount.LastName}")
+                </td>
+                <td class="govuk-table__cell govuk-table__cell--numeric">
+                    <a condition="@(assignedOao == null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="SelectUser" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.AdminOfficer" asp-route-returnUrl="@returnUrl">Change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.AdminOfficer.GetDisplayName()</span></a>
+                    <a condition="@(assignedOao != null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="ConfirmReassignApplication" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.AdminOfficer" asp-route-returnUrl="@returnUrl">Change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.AdminOfficer.GetDisplayName()</span></a>
+                </td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header">WO review phase</th>
+                <td class="govuk-table__cell">
+                    @(assignedWo == null ? "Unassigned" : $"{assignedWo.UserAccount.FirstName} {assignedWo.UserAccount.LastName}")
+                </td>
+                <td class="govuk-table__cell govuk-table__cell--numeric">
+                    <a condition="@(assignedWo == null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="SelectUser" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.WoodlandOfficer" asp-route-returnUrl="@returnUrl">Change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.WoodlandOfficer.GetDisplayName()</span></a>
+                    <a condition="@(assignedWo != null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="ConfirmReassignApplication" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.WoodlandOfficer" asp-route-returnUrl="@returnUrl">Change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.WoodlandOfficer.GetDisplayName()</span></a>
+                </td>
+            </tr>
+            <tr class="govuk-table__row">
+                <th class="govuk-table__cell">Approver phase</th>
+                <td class="govuk-table__cell">
+                    @(assignedApprover == null ? "Unassigned" : $"{assignedApprover.UserAccount.FirstName} {assignedApprover.UserAccount.LastName}")
+                </td>
+                <td class="govuk-table__cell govuk-table__cell--numeric">
+                    <a condition="@(assignedApprover == null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="SelectUser" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.FieldManager" asp-route-returnUrl="@returnUrl">Change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.FieldManager.GetDisplayName()</span></a>
+                    <a condition="@(assignedApprover != null && Model.IsWithFcStatus)" class="govuk-link" asp-controller="AssignFellingLicenceApplication" asp-action="ConfirmReassignApplication" asp-route-id="@Model.Id" asp-route-selectedRole="@AssignedUserRole.FieldManager" asp-route-returnUrl="@returnUrl">Change<span class="govuk-visually-hidden">&nbsp;@AssignedUserRole.FieldManager.GetDisplayName()</span></a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

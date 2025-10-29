@@ -133,10 +133,11 @@ public class ManageGeographicCompartmentUseCase
                     cancellationToken);
                 _compartmentRepository.Remove(compartmentModel);
                 _logger.LogError(
-                    $"A compartment couldn't be added to the database and rolled back from the stagedSave Details: ProfileID - {compartmentModel.PropertyProfileId}. " +
-                    $"Number -{compartmentModel.CompartmentNumber}. " +
-                    $"Total HA -{compartmentModel.TotalHectares}. " +
-                    $"GIS:{compartmentModel.GISData}. Reason: {r.ToString()}");
+                    "A compartment couldn't be added to the database and rolled back from the stagedSave Details: ProfileID - {PropertyProfileId}. " +
+                    "Number - {CompartmentNumber}. " +
+                    "Total HA - {TotalHectares}. " +
+                    "GIS: {GISData}. Reason: {ErrorReason}",
+                    compartmentModel.PropertyProfileId, compartmentModel.CompartmentNumber, compartmentModel.TotalHectares, compartmentModel.GISData, r.GetDescription());
             })
             .Map(() => compartment.Id)
             .MapError(e => e == UserDbErrorReason.NotUnique ?

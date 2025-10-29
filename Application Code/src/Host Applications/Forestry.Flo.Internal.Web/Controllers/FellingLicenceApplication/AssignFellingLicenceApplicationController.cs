@@ -3,7 +3,6 @@ using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -65,6 +64,7 @@ public class AssignFellingLicenceApplicationController : Controller
         Guid id,
         AssignToUserModel model,
         [FromServices] IAssignToUserUseCase useCase,
+        [FromServices] IUrlHelper urlHelper,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -106,7 +106,11 @@ public class AssignFellingLicenceApplicationController : Controller
          
         if (result.IsSuccess)
         {
-            return Redirect(model.ReturnUrl);
+            if (urlHelper.IsLocalUrl(model.ReturnUrl))
+            {
+                return Redirect(model.ReturnUrl);
+            }
+            return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id = id });
         }
 
         return RedirectToAction("Error", "Home");
@@ -141,6 +145,7 @@ public class AssignFellingLicenceApplicationController : Controller
         AssignBackToApplicantModel assignBackToApplicantModel,
         [FromServices] IAssignToApplicantUseCase useCase,
         [FromServices] IValidator<AssignBackToApplicantModel> validator,
+        [FromServices] IUrlHelper urlHelper,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
@@ -177,7 +182,12 @@ public class AssignFellingLicenceApplicationController : Controller
             return RedirectToAction("Error", "Home");
         }
 
-        return Redirect(assignBackToApplicantModel.ReturnUrl);
+        if (urlHelper.IsLocalUrl(assignBackToApplicantModel.ReturnUrl))
+        {
+            return Redirect(assignBackToApplicantModel.ReturnUrl);
+        }
+        
+        return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id = assignBackToApplicantModel.FellingLicenceApplicationId });
     }
 
     private string GetFellingLicenceUrlLink() => Url.AbsoluteAction("ApplicationSummary", "FellingLicenceApplication")!;

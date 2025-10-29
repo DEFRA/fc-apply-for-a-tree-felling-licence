@@ -242,7 +242,7 @@ public class BaseServices
             }
 
             var message = $"ESRI: Unable to deserialise content as {typeof(T)} : {postResult.Value}";
-            _logger.LogError(message);
+            _logger.LogError("ESRI: Unable to deserialise content as {TypeName} : {Content}", typeof(T), postResult.Value);
             return Result.Failure<T>(message);
         }
         catch (Exception ex)

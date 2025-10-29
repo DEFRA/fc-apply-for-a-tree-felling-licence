@@ -4,7 +4,6 @@ using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
-using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;

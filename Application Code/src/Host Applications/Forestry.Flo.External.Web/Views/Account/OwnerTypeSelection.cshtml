@@ -11,19 +11,18 @@
 
     <form method="post">
 
-        <fieldset class="govuk-fieldset">
+        <div class="govuk-form-group">
 
-            <div class="govuk-form-group">
-
+            <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
                         @ViewData["Title"]
                     </h1>
                 </legend>
 
-                <div class="govuk-radios" data-module="govuk-radios">
+                <validation asp-for="@Model.OrganisationStatus"></validation>
 
-                    <validation asp-for="@Model.OrganisationStatus"></validation>
+                <div class="govuk-radios" data-module="govuk-radios">
 
                     <div class="govuk-radios__item">
 
@@ -47,21 +46,21 @@
 
                 </div>
 
+            </fieldset>
+        </div>
+
+        <div class="govuk-form-group">
+
+            <div class="govuk-button-group">
+
+                <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                    Continue
+                </button>
+
             </div>
 
-            <div class="govuk-form-group">
+        </div>
 
-                <div class="govuk-button-group">
-
-                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                        Continue
-                    </button>
-
-                </div>
-
-            </div>
-
-        </fieldset>
 
     </form>
 

@@ -15,9 +15,9 @@
 
     var disableButton = latestExpiry.HasValue && latestExpiry.Value > Model.CurrentDateTimeUtc;
 }
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
 <div class="govuk-grid-column-two-thirds">
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
     <partial name="Partials/_ConfirmationMessageDisplay"/>

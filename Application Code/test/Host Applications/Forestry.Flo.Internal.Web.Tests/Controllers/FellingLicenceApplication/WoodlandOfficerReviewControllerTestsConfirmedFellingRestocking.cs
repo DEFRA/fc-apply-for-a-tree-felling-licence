@@ -1601,7 +1601,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
     {
         var cfrUseCaseMock = new Mock<IConfirmedFellingAndRestockingDetailsUseCase>();
         var woReviewUseCaseMock = new Mock<IWoodlandOfficerReviewUseCase>();
-        cfrUseCaseMock.Setup(x => x.MakeFurtherAmendments(It.IsAny<InternalUser>(), _amendmentReviewId, _cancellationToken))
+        cfrUseCaseMock.Setup(x => x.CloseAmendmentReview(It.IsAny<InternalUser>(), _amendmentReviewId, _cancellationToken))
             .ReturnsAsync(Result.Failure("fail"));
 
         var result = await _controller.MakeFurtherAmendments(_applicationId, _amendmentReviewId, cfrUseCaseMock.Object, woReviewUseCaseMock.Object, _cancellationToken);
@@ -1615,7 +1615,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
     {
         var cfrUseCaseMock = new Mock<IConfirmedFellingAndRestockingDetailsUseCase>();
         var woReviewUseCaseMock = new Mock<IWoodlandOfficerReviewUseCase>();
-        cfrUseCaseMock.Setup(x => x.MakeFurtherAmendments(It.IsAny<InternalUser>(), _amendmentReviewId, _cancellationToken))
+        cfrUseCaseMock.Setup(x => x.CloseAmendmentReview(It.IsAny<InternalUser>(), _amendmentReviewId, _cancellationToken))
             .ReturnsAsync(Result.Success());
 
 

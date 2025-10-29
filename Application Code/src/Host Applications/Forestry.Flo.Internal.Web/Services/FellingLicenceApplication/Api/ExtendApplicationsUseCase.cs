@@ -84,7 +84,7 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
         if (isFailure)
         {
-            _logger.LogError("Unable to update applications' final action dates, error: {error}",  error);
+            _logger.LogError("Unable to update applications' final action dates, error: {Error}",  error);
         }
 
         foreach (var application in relevantApplications)
@@ -142,7 +142,7 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
         if (createdByUserFailure)
         {
-            _logger.LogError("Unable to retrieve applicant user account of id {applicantId}, error: {error}", application.CreatedById, error);
+            _logger.LogError("Unable to retrieve applicant user account of id {ApplicantId}, error: {Error}", application.CreatedById, error);
             return;
         }
 
@@ -177,7 +177,7 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
         if (notificationResult.IsFailure)
         {
-            _logger.LogError("Unable to send notification of extension to {recipient}, error: {error}",
+            _logger.LogError("Unable to send notification of extension to {Recipient}, error: {Error}",
                 applicantRecipient.Address,
                 notificationResult.Error);
         }
@@ -196,7 +196,7 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
         if (fcStaffUserFailure)
         {
-            _logger.LogError("Unable to retrieve FC staff user accounts with ids {FCIds}, error: {error}", string.Join(", ", application.AssignedFCUserIds.Select(x => x.ToString())), error);
+            _logger.LogError("Unable to retrieve FC staff user accounts with ids {FcIds}, error: {Error}", string.Join(", ", application.AssignedFCUserIds.Select(x => x.ToString())), error);
             return 0;
         }
 
@@ -234,7 +234,7 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
             if (notificationResult.IsFailure)
             {
-                _logger.LogError("Unable to send notification of final action date exceeded to {recipient} with role {role}, error: {error}",
+                _logger.LogError("Unable to send notification of final action date exceeded to {Recipient} with role {Role}, error: {Error}",
                     fcRecipient.Address,
                     assignedUser.AccountType,
                     notificationResult.Error);

@@ -75,7 +75,7 @@ public class CloseFcStaffAccountUseCase : ICloseFcStaffAccountUseCase
 
         if (isFailure)
         {
-            _logger.LogError(error);
+            _logger.LogError("Failed to close internal account with id {UserId}, error: {Error}", userAccountId, error);
 
             await _audit.PublishAuditEventAsync(
                 new AuditEvent(

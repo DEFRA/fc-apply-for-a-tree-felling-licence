@@ -16,7 +16,7 @@ namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication
             {
                 if (RestockingDetails != null && RestockingDetails.Any())
                 {
-                    return string.Join(",", RestockingDetails.Select(r => r.RestockingDetail.RestockingProposal.GetDisplayName()));
+                    return string.Join(", ", RestockingDetails.Select(r => r.RestockingDetail.RestockingProposal.GetDisplayName()));
                 }
                 return string.Empty;
             }

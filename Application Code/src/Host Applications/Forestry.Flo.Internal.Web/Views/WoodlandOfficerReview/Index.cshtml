@@ -12,12 +12,12 @@
     var user = new InternalUser(User);
 }
 
-<div class="govuk-grid-column-full">
-    
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
+<div class="govuk-grid-column-two-thirds">
+    
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
     <partial name="Partials/_PageErrors"/>
@@ -25,147 +25,365 @@
     <input id="steps-complete" type="hidden" value="@Model.WoodlandOfficerReviewTaskListStates.IsCompletable().ToString()" />
     
     <div>
-        <ul class="app-task-list__items">
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action("SiteVisit", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="site-visit">
+        <ul class="govuk-task-list">
+            <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link" href="@Url.Action("SiteVisit", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="site-visit">
                         Site comments
                     </a>
-                </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus.GetStatusStyleName() app-task-list__tag" id="site-visit">@Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    @if (Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
+                </div>
+                <div class="govuk-task-list__status" id="site-visit">
+                    @if (Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus == InternalReviewStepStatus.Completed)
                     {
-                        <a aria-describedby="eia-check">
-                            EIA check
-                        </a>
+                        @Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus.GetDisplayName()
                     }
                     else
                     {
-                        <a href="@Url.Action(nameof(WoodlandOfficerReviewController.EiaScreening), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="eia-check">
+                        <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.SiteVisitStepStatus.GetDisplayName()</strong>
+                    }
+                </div>
+            </li>
+            @if (Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus is InternalReviewStepStatus.NotRequired)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        EIA check
+                        <div class="govuk-task-list__hint">
+                            (Deforestation or afforestation not detected for this application)
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status" id="constraints-check">
+                        <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetDisplayName()</strong>
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(WoodlandOfficerReviewController.EiaScreening), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="eia-check">
                             EIA check
                         </a>
-                    }
-                </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetStatusStyleName() app-task-list__tag" id="eia-check">@Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action("Pw14Checks", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="pw14-checks">
-                        Woodland officer checks
-                    </a>
-                </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus.GetStatusStyleName() app-task-list__tag" id="pw14-checks">@Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-					<a href="@Url.Action("ConfirmedFellingAndRestocking", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="felling-and-restocking">
-						Confirm felling and restocking
-					</a>
-				</span>
-				<strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetStatusStyleName() app-task-list__tag" id="felling-and-restocking">@Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetDisplayName()</strong>
-			</li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action("Conditions", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="conditions">
-                        Conditions and remarks
-                    </a>
-                </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetStatusStyleName() app-task-list__tag" id="conditions">@Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action("ViewDesignations", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="designations">
-                        Compartment designations
-                    </a>
-                </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus.GetStatusStyleName() app-task-list__tag" id="designations">@Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action("Index", "ExternalConsulteeInvite", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="consultation">
-                        Consultation
-                    </a>
-                </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetStatusStyleName() app-task-list__tag" id="consultation">@Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action("PublicRegister", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="public-register">
-                        Consultation public register
-                    </a>
-                </span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus.GetStatusStyleName() app-task-list__tag" id="public-register">@Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus.GetDisplayName()</strong>
-            </li>
-			<li class="app-task-list__item">
-				<span class="app-task-list__task-name">
-					@if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired || Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.CannotStartYet)
-					{
-						<a aria-describedby="larch-check">
-							Larch check
-						</a>
-						@if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired)
-						{
-							<a class="govuk-hint">
-								<br>(No larch species proposed in the application)
-							</a>
-						}
+                    </div>
+                    <div class="govuk-task-list__status" id="eia-check">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetDisplayName()
+                        }
                         else
                         {
-                            <a class="govuk-hint">
-                                <br>(Confirmed felling and restocking must be completed)
-                            </a>
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus.GetDisplayName()</strong>
                         }
-					}
-					else
-					{
-						<a href="@Url.Action("LarchCheck", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
-							Larch check
-						</a>
-					}
-				</span>
-				<strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName() app-task-list__tag" id="larch-check">@Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
-			</li>
-			<li class="app-task-list__item">
-				<span class="app-task-list__task-name">
-                    @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired || Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.CannotStartYet)
-					{
-						<a aria-describedby="larch-flyover-check">
-                            Larch flyover update
-						</a>
-                        @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired)
-						{
-							<a class="govuk-hint">
-								<br>(No larch species proposed in Zone 1)
-							</a>
-						}
-					}
-					else
-					{
-                        <a href="@Url.Action("LarchFlyover", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-flyover-check">
-                            Larch flyover update
-						</a>
-					}
-				</span>
-                <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName() app-task-list__tag" id="larch-flyover-check">@Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
-			</li>
-			<li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    @* <a href="@Url.Action("Index", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="final-checks">
-                        Final checks
-                    </a> *@
-                    <a aria-describedby="consultation">
-                        Final checks
+                    </div>
+                </li>
+            }
+
+            <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link" href="@Url.Action("Pw14Checks", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="pw14-checks">
+                        Woodland officer checks
                     </a>
-                    <a class="govuk-hint">
-                        <br/>(Not implemented yet)
-                    </a>
-                </span>
-                @* <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetStatusStyleName() app-task-list__tag" id="final-checks">@Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()</strong> *@
-                <strong class="govuk-tag @(InternalReviewStepStatus.NotRequired.GetStatusStyleName()) app-task-list__tag" id="final-checks">@(InternalReviewStepStatus.NotRequired.GetDisplayName())</strong>
+                </div>
+                <div class="govuk-task-list__status" id="pw14-checks">
+                    @if (Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus == InternalReviewStepStatus.Completed)
+                    {
+                        @Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus.GetDisplayName()
+                    }
+                    else
+                    {
+                        <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.Pw14ChecksStepStatus.GetDisplayName()</strong>
+                    }
+                </div>
             </li>
+
+            <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link" href="@Url.Action("ConfirmedFellingAndRestocking", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="felling-and-restocking">
+                        Confirm felling and restocking
+                    </a>
+                </div>
+                <div class="govuk-task-list__status" id="felling-and-restocking">
+                    @if (Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus == InternalReviewStepStatus.Completed)
+                    {
+                        @Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetDisplayName()
+                    }
+                    else
+                    {
+                        <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.FellingAndRestockingStepStatus.GetDisplayName()</strong>
+                    }
+                </div>
+            </li>
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus == InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Conditions and remarks
+                        <div class="govuk-task-list__hint">
+                            (Confirmed felling and restocking must be completed)  @* TODO code to check for this in back-end *@
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("Conditions", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="conditions">
+                            Conditions and remarks
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="conditions">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus == InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Compartment designations
+                        <div class="govuk-task-list__hint">
+                            (Confirmed felling and restocking must be completed)  @* TODO code to check for this in back-end *@
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("ViewDesignations", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="designations">
+                            Compartment designations
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="designations">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.CompartmentDesignationsStepStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus == InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Consultation
+                        <div class="govuk-task-list__hint">
+                            (Confirmed felling and restocking must be completed)  @* TODO code to check for this in back-end *@
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("Index", "ExternalConsulteeInvite", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="consultation">
+                            Consultation
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="consultation">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.ConsultationStepStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus == InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Consultation public register
+                        <div class="govuk-task-list__hint">
+                            (Confirmed felling and restocking must be completed)  @* TODO code to check for this in back-end *@
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("PublicRegister", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="public-register">
+                            Consultation public register
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="public-register">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.PublicRegisterStepStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.CannotStartYet or InternalReviewStepStatus.NotRequired)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Larch check
+                        @if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus == InternalReviewStepStatus.CannotStartYet)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Confirmed felling and restocking must be completed)
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-task-list__hint">
+                                (No larch species proposed in the application)
+                            </div>
+                        }
+                    </div>
+                    @if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus == InternalReviewStepStatus.CannotStartYet)
+                    {
+                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                    }
+                    else
+                    {
+                        <div class="govuk-task-list__status">
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
+                        </div>
+                    }
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("LarchCheck", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
+                            Larch check
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="larch-check">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.CannotStartYet or InternalReviewStepStatus.NotRequired)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Larch flyover update
+                        @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus == InternalReviewStepStatus.CannotStartYet)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Larch check must be completed)
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-task-list__hint">
+                                (No larch species proposed in Zone 1)
+                            </div>
+                        }
+                    </div>
+                    @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus == InternalReviewStepStatus.CannotStartYet)
+                    {
+                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                    }
+                    else
+                    {
+                        <div class="govuk-task-list__status">
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
+                        </div>
+                    }
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("LarchFlyover", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-flyover-check">
+                            Larch flyover update
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="larch-flyover-check">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus == InternalReviewStepStatus.CannotStartYet) @* TODO code to check for this in back-end *@
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Final checks
+                        <div class="govuk-task-list__hint">
+                            (All preceding steps must be completed)
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        @* <a class="govuk-link govuk-task-list__link" href="#" aria-describedby="final-checks">
+                            Final checks
+                        </a> *@
+                        Final checks
+                        <div class="govuk-task-list__hint">
+                            (Not implemented yet)
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status" id="final-checks">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
         </ul>
         
         <div class="govuk-form-group" condition="@(Model.FellingLicenceApplicationSummary.MostRecentFcLisReport.HasValue)">

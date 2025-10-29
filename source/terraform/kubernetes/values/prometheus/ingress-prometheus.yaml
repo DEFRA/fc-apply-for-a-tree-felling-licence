@@ -1,0 +1,16 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prometheus
+  namespace: lens-metrics
+  labels:
+    app: prometheus
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`flov2-prometheus.ps.conneqt.cloud`)
+      kind: Rule
+      services:
+        - name: prometheus
+          port: 80

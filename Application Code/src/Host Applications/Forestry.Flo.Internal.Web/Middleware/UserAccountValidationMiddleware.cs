@@ -1,9 +1,7 @@
-﻿using Forestry.Flo.Internal.Web.Infrastructure;
-using Forestry.Flo.Services.Common.Infrastructure;
+﻿using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers;
 using Forestry.Flo.Services.InternalUsers.Configuration;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
-using Forestry.Flo.Services.InternalUsers.Services;
 using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -11,15 +9,18 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
+using Forestry.Flo.Internal.Web.Services;
 using AuthenticationOptions = Forestry.Flo.Services.Common.Infrastructure.AuthenticationOptions;
 using ClaimsPrincipalExtensions = Forestry.Flo.Internal.Web.Infrastructure.ClaimsPrincipalExtensions;
 
 namespace Forestry.Flo.Internal.Web.Middleware
 {
+    /// <summary>
+    /// Middleware class designed to validate the user account of an authenticated user.
+    /// </summary>
     public class UserAccountValidationMiddleware : IMiddleware
     {
-        private IDbContextFactory<InternalUsersContext> _dbContextFactory;
-        private IUserAccountService _userAccountService;
+        private readonly IDbContextFactory<InternalUsersContext> _dbContextFactory;
         private readonly ILogger<UserAccountValidationMiddleware> _logger;
         private readonly PermittedRegisteredUserOptions _permittedRegisteredUserOptions;
         private readonly AuthenticationOptions _authenticationOptions;
@@ -37,9 +38,15 @@ namespace Forestry.Flo.Internal.Web.Middleware
             "/Home/Error"
         ];
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="UserAccountValidationMiddleware"/> class.
+        /// </summary>
+        /// <param name="dbContextFactory">A db context factory to interact with the database.</param>
+        /// <param name="permittedUserOptions">Configuration options related to permitted user email domains for the system.</param>
+        /// <param name="authenticationOptions">Configuration options related to the identity provider.</param>
+        /// <param name="logger">A logging instance.</param>
         public UserAccountValidationMiddleware(
             IDbContextFactory<InternalUsersContext> dbContextFactory, 
-            IUserAccountService userAccountService, 
             IOptions<PermittedRegisteredUserOptions> permittedUserOptions,
             IOptions<AuthenticationOptions> authenticationOptions,
             ILogger<UserAccountValidationMiddleware> logger)
@@ -48,11 +55,11 @@ namespace Forestry.Flo.Internal.Web.Middleware
 
             _permittedRegisteredUserOptions = permittedUserOptions.Value;
             _dbContextFactory = dbContextFactory;
-            _userAccountService = userAccountService;
             _logger = logger;
             _authenticationOptions = authenticationOptions.Value;
         }
 
+        /// <inheritdoc />
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {            
             // don't run on permissible URLs
@@ -61,7 +68,6 @@ namespace Forestry.Flo.Internal.Web.Middleware
                 await next(context);
                 return;
             }
-
 
             if (context.User.Identity is not { IsAuthenticated: true })
             {
@@ -72,10 +78,10 @@ namespace Forestry.Flo.Internal.Web.Middleware
 
             var requestUrl = context.Request.GetDisplayUrl();
 
-            CancellationToken cancellationToken = default;
+            CancellationToken cancellationToken = CancellationToken.None;
 
             // determine if user email domain is permitted to access the system
-            var email = GetEmailFromClaims(context.User.Claims);
+            var email = context.User.Claims.GetEmailFromClaims(_authenticationOptions.Provider);
             var domain = email?.Split("@")[1];
             if (!_permittedRegisteredUserOptions.PermittedEmailDomainsForRegisteredUser
                     .Any(x => x.Equals(domain, StringComparison.InvariantCultureIgnoreCase)))
@@ -95,14 +101,13 @@ namespace Forestry.Flo.Internal.Web.Middleware
             {
                 await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-                var identityProviderId = GetIdentityProviderId(context.User.Claims);
+                var identityProviderId = context.User.Claims.GetIdentityProviderId(_authenticationOptions.Provider);
 
                 // If user account cannot be identified by IdentityProviderId, we need to create a minimal record
                 // Note that LocalAccountId is not persisted in claims between requests so use of IdentityProviderId is optimal
 
-                var userAccount =
-                    await dbContext.UserAccounts.SingleOrDefaultAsync(x => x.IdentityProviderId == identityProviderId,
-                        cancellationToken);
+                var userAccount = await dbContext.UserAccounts
+                    .SingleOrDefaultAsync(x => x.IdentityProviderId == identityProviderId, cancellationToken);
 
                 if (userAccount is null)
                 {
@@ -128,7 +133,7 @@ namespace Forestry.Flo.Internal.Web.Middleware
                     return;
                 }
 
-                if (UserAccountIsInvalid(userAccount!))
+                if (UserAccountIsInvalid(userAccount))
                 {
                     if (!IsUserAccountErrorUrl(requestUrl))
                     {
@@ -172,14 +177,14 @@ namespace Forestry.Flo.Internal.Web.Middleware
 
         private bool IsUserAccountRegisterAccountDetailsUrl(string url)
         {
-            bool isUserAccountRegisterAccountDetailsUrl = url.Contains(UserAccountRegisterAccountDetailsUrl) || url.Contains("Home/Error");
+            var isUserAccountRegisterAccountDetailsUrl = url.Contains(UserAccountRegisterAccountDetailsUrl) || url.Contains("Home/Error");
 
             return isUserAccountRegisterAccountDetailsUrl;
         }
 
         private bool IsUserAccountAwaitingConfirmationUrl(string url)
         {
-            bool isUserAccountValidationUrl = url.Contains(UserAccountAwaitingConfirmationUrl) || url.Contains("Home/Error");
+            var isUserAccountValidationUrl = url.Contains(UserAccountAwaitingConfirmationUrl) || url.Contains("Home/Error");
 
             return isUserAccountValidationUrl;
         }
@@ -194,29 +199,6 @@ namespace Forestry.Flo.Internal.Web.Middleware
         private bool UserAccountIsInvalid(UserAccount userAccount)
         {
             return userAccount.Status is Status.Closed or Status.Denied;
-        }
-
-        private string? GetEmailFromClaims(IEnumerable<Claim> claims)
-        {
-            var claimType = _authenticationOptions.Provider switch
-            {
-                AuthenticationProvider.Azure => ClaimsPrincipalExtensions.IdentityProviderEmailClaimType,
-                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.EmailAddress,
-                _ => ClaimTypes.Email,
-            };
-
-            return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
-        }
-
-        private string? GetIdentityProviderId(IEnumerable<Claim> claims)
-        {
-            var claimType = _authenticationOptions.Provider switch
-            {
-                AuthenticationProvider.OneLogin => OneLoginPrincipalClaimTypes.NameIdentifier,
-                _ => ClaimTypes.NameIdentifier,
-            };
-
-            return claims.SingleOrDefault(x => x.Type == claimType)?.Value;
         }
     }
 }

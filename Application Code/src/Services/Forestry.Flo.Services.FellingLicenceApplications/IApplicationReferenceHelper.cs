@@ -16,6 +16,7 @@ public interface IApplicationReferenceHelper
 
     /// <summary>
     /// Updates the prefix of the reference number.
+    /// </summary>
     /// <param name="reference">The original reference number.</param>
     /// <param name="prefix">The new prefix to set.</param>
     /// <returns>The updated reference number.</returns>

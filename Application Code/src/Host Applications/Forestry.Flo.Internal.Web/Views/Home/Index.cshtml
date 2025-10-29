@@ -16,32 +16,6 @@
     var offset = user.AccountType is AccountTypeInternal.AccountAdministrator ? -1 : 0;
 }
 
-@functions
-{
-    public string GetStatusStyleName(FellingLicenceStatus status)
-    {
-        // Full list of gov tag colours available https://design-system.service.gov.uk/components/tag/
-
-        return status switch
-        {
-            // All felling licences included here for completeness though not all may be 
-            // valid post-submitted status values
-
-            FellingLicenceStatus.Submitted => "govuk-tag--blue",
-            FellingLicenceStatus.AdminOfficerReview => "govuk-tag--pink",
-            FellingLicenceStatus.WithApplicant => "govuk-tag--turquoise",
-            FellingLicenceStatus.ReturnedToApplicant => "govuk-tag--turquoise",
-            FellingLicenceStatus.WoodlandOfficerReview => "govuk-tag--yellow",
-            FellingLicenceStatus.SentForApproval => "govuk-tag--purple",
-            FellingLicenceStatus.Approved => "govuk-tag--green",
-            FellingLicenceStatus.Refused => "govuk-tag--red",
-            FellingLicenceStatus.Withdrawn => "govuk-tag--orange",
-            FellingLicenceStatus.ReferredToLocalAuthority => "govuk-tag--mid-grey",
-            _ => "govuk-tag--grey"
-        };
-    }
-}
-
 <not-logged-in>
 
     <div class="govuk-grid-column-full govuk-body">
@@ -81,7 +55,7 @@
 
                 @foreach (var fellingLicenceStatus in FellingLicenceApplicationUseCase.PostSubmittedStatuses)
                 {
-                    <strong fla-status-filter="@fellingLicenceStatus" class="govuk-tag app-task-list__tag govuk-!-margin-right-2  @GetStatusStyleName(fellingLicenceStatus)" id="company-information-status">
+                    <strong fla-status-filter="@fellingLicenceStatus" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 @(fellingLicenceStatus.GetStatusStyleName())" id="company-information-status">
                         @fellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)
 
                         (@(Model.FellingLicenceApplicationAssignmentListModel.FellingLicenceStatusCount.FirstOrDefault(x => x.FellingLicenceStatus == fellingLicenceStatus)?.Count ?? 0))
@@ -217,7 +191,7 @@
                             <tr class="govuk-table__row data-row">
 
                                 <td class="govuk-table__cell" style="width: @(12 + offset)%">
-                                    <strong class="govuk-tag app-task-list__tag @GetStatusStyleName(assignedFellingLicenceApplicationModel.FellingLicenceStatus)" id="company-information-status">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
+                                    <strong class="govuk-tag app-task-list__tag @(assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetStatusStyleName())" id="company-information-status">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
                                 </td>
 
                                 <td class="govuk-table__cell" style="width: @(12 + offset)%">
@@ -234,7 +208,7 @@
                                 </td>
 
                                 <td class="govuk-table__cell" style="width: @(10 + offset)%;" data-sort-value="@(assignedFellingLicenceApplicationModel.Reference)">
-                                    <a asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId">
+                                    <a class="govuk-link" asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId">
                                         @assignedFellingLicenceApplicationModel.Reference
                                     </a>
                                 </td>
@@ -273,7 +247,7 @@
                                         if (@assignedFellingLicenceApplicationModel.FellingLicenceStatus is FellingLicenceStatus.Withdrawn)
                                         {
                                             <td class="govuk-table__cell" style="width: 7%;">
-                                                <a asp-controller="FellingLicenceApplication" asp-action="ReopenWithdrawnApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId">
+                                                <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ReopenWithdrawnApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId">
                                                     Re-open
                                                 </a>
                                             </td>

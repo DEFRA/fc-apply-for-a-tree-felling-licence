@@ -7,6 +7,11 @@
     <UserSecretsId>flo-external-user-secrets</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Properties\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <None Remove="Properties\**" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,9 +30,6 @@
     <ProjectReference Include="..\Forestry.Flo.Services.Notifications\Forestry.Flo.Services.Notifications.csproj" />
     <ProjectReference Include="..\Forestry.Flo.Services.PropertyProfiles\Forestry.Flo.Services.PropertyProfiles.csproj" />
     <ProjectReference Include="..\Forestry.Flo.Services.InternalUsers\Forestry.Flo.Services.InternalUsers.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties" />
   </ItemGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage" />

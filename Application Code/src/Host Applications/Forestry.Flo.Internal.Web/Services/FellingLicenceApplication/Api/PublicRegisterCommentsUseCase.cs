@@ -79,12 +79,12 @@ public class PublicRegisterCommentsUseCase : IPublicRegisterCommentsUseCase
             if (addResult.IsFailure)
             {
                 var failMessage = $"Failed to persist public register comments: {addResult.Error}";
-                _logger.LogError(failMessage);
+                _logger.LogError("Failed to persist public register comments: {Error}", addResult.Error);
                 return Result.Failure<string>(failMessage);
             }
 
             var message = $"Total comments retrieved: {retrievedCount}, total comments imported: {notificationModels.Count}";
-            _logger.LogInformation(message);
+            _logger.LogInformation("Total comments retrieved: {RetrievedCount}, total comments imported: {ImportedCount}", retrievedCount, notificationModels.Count);
             return Result.Success(message);
         }
         catch (Exception ex)

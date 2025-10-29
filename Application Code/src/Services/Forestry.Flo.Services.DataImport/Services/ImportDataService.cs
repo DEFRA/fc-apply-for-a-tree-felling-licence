@@ -193,7 +193,7 @@ public class ImportDataService : IImportData
 
         if (importApplicationsResult.IsFailure)
         {
-            _logger.LogError("Failed to import applications provided: " + importApplicationsResult.Error);
+            _logger.LogError("Failed to import applications provided: {Error}", importApplicationsResult.Error);
             await PublishFailureEventAsync(
                 woodlandOwnerId,
                 userAccessModel.UserAccountId,

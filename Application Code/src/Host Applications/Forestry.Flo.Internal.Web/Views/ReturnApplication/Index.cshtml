@@ -5,10 +5,10 @@
 @{
     ViewBag.Title = "Return application";
 }
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
-<div class="govuk-grid-column-full govuk-body">
-    <partial name="Partials/_PageErrors" />
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+<div class="govuk-grid-column-two-thirds govuk-body">
     <h1 class="govuk-heading-l">Return to <b>@Model.RequestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)</b></h1>
     <p>
         Use this page to return the application to @Model.RequestedStatus.GetDisplayNameByActorType(ActorType.InternalUser) and add any relevant case notes.

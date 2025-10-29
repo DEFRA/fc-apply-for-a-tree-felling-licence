@@ -10,7 +10,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         [Display(Name = "Paper-based submission")]
         PaperBasedSubmission,
 
-        [Display(Name="10 year/WMP submission")]
-        WoodlandManagementPlan
+        [Display(Name="Digital assistance")]
+        DigitalAssistance
     }
 }

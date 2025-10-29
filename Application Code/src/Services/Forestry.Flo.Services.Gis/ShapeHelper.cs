@@ -2,6 +2,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Forestry.Flo.Services.Gis.Models.Internal.Request;
+using Forestry.Flo.Services.Gis.Models.MapObjects;
 using Newtonsoft.Json;
 
 namespace Forestry.Flo.Services.Gis
@@ -23,25 +24,29 @@ namespace Forestry.Flo.Services.Gis
                 switch (shapeName)
                 {
                     case "polygon":
-                        convertedObj = JsonConvert.DeserializeObject<Polygon>(shape.ShapeDetails);
-                        if (convertedObj != null && ((Polygon)convertedObj).Rings == null)
+
+                        var convertedObjAsPoly = JsonConvert.DeserializeObject<Polygon>(shape.ShapeDetails);
+                        if (convertedObjAsPoly?.Rings != null)
                         {
-                            convertedObj = null;
+                            convertedObj = convertedObjAsPoly;
                         }
+
                         break;
                     case "polyline":
-                        convertedObj = JsonConvert.DeserializeObject<Line>(shape.ShapeDetails);
-                        if (convertedObj != null && ((Line)convertedObj).Path == null)
+
+                        var convertedObjAsLine = JsonConvert.DeserializeObject<Line>(shape.ShapeDetails);
+                        if (convertedObjAsLine?.Path != null)
                         {
-                            convertedObj = null;
+                            convertedObj = convertedObjAsLine;
                         }
+
                         break;
                     case "point":
-                        convertedObj = JsonConvert.DeserializeObject<Point>(shape.ShapeDetails);
 
-                        if (convertedObj != null && (((Point)convertedObj).X == null | ((Point)convertedObj).Y == null))
+                        var convertedObjAsPoint = JsonConvert.DeserializeObject<Point>(shape.ShapeDetails);
+                        if (convertedObjAsPoint is { X: not null, Y: not null })
                         {
-                            convertedObj = null;
+                            convertedObj = convertedObjAsPoint;
                         }
 
                         break;
@@ -69,30 +74,34 @@ namespace Forestry.Flo.Services.Gis
         public static Result<Polygon> MakeMultiPart(List<Polygon> polygons)
         {
             Guard.Against.NullOrEmpty(polygons);
-            Polygon? polygon = null;
-            try
+
+            // Collect all rings from all polygons
+            var allRings = new List<List<List<float>>>();
+            SpatialReference? spatialRef = null;
+
+            foreach (var poly in polygons)
             {
-                polygons.ForEach(polygon1 =>
+                if (poly?.Rings is not { Count: > 0 })
                 {
-                    if (polygon == null)
-                    {
-                        polygon = polygon1;
-                    }
-                    else
-                    {
-                        if (polygon.Rings != null && polygon1.Rings != null)
-                        {
-                            polygon.Rings.Add(polygon1.Rings[0]);
-                        }
-                    }
-                });
+                    continue;
+                }
+                allRings.AddRange(poly.Rings);
+                spatialRef ??= poly.SpatialSettings;
             }
-            catch (Exception ex)
+
+            if (allRings.Count == 0)
             {
-                return Result.Failure<Polygon>(ex.Message);
+                return Result.Failure<Polygon>("No valid rings found in input polygons.");
             }
-            return polygon == null ? Result.Failure<Polygon>("Unable to set Polygon")
-                : Result.Success(polygon);
+
+
+            var multiPartPolygon = new Polygon
+            {
+                Rings = allRings,
+                SpatialSettings = spatialRef
+            };
+
+            return Result.Success(multiPartPolygon);
         }
     }
 }

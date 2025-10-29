@@ -286,7 +286,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
 
             if (updateWoReviewResult.IsFailure)
             {
-                _logger.LogError($"Unable to flag completed Confirmed F&R for application {applicationId}, error {updateWoReviewResult.Error}");
+                _logger.LogError("Unable to flag completed Confirmed F&R for application {ApplicationId}, error {Error}", applicationId, updateWoReviewResult.Error);
                 await AppendAuditFailure(
                     applicationId,
                     user.UserAccountId!.Value,
@@ -319,7 +319,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
 
         if (updateResult.IsFailure)
         {
-            _logger.LogError("Unable to update application to complete admin officer review");
+            _logger.LogError("Unable to update application to complete admin officer review for application {ApplicationId}, error: {Error}", applicationId, updateResult.Error);
             await AppendAuditFailure(
                 applicationId,
                 user.UserAccountId.Value,

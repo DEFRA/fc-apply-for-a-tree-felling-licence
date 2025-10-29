@@ -1,7 +1,5 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.External.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.Services.Common.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedFellingDetailModel
 
@@ -23,12 +21,11 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
+<div class="govuk-grid-column-two-thirds">
 
     <form id="felling-detail-form" method="post" asp-controller="FellingLicenceApplication" asp-action="FellingDetail">
 

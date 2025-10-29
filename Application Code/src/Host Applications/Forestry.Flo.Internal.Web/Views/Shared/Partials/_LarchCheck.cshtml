@@ -23,7 +23,7 @@
 	}
 </style>
 
-<div class="govuk-grid-column-full">
+<div class="govuk-grid-column-two-thirds">
 
 	<partial name="Partials/_ConfirmationMessageDisplay" />
 
@@ -75,7 +75,7 @@
 
 	<form id="admin-officer-review" method="post">
 		<div class="govuk-form-group">
-			<fieldset class="govuk-fieldset" role="group" aria-describedby="DateReceived-hint">
+			<fieldset class="govuk-fieldset" role="group">
 				<legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
 					<h3 class="govuk-fieldset__heading">
 						Confirm tree species to be felled
@@ -264,32 +264,7 @@
 			</fieldset>
 		</div>
 
-		<div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
-			<fieldset class="govuk-fieldset">
-				<label class="govuk-label--m" for="add-case-note-text">Case Note</label>
-				<div class="govuk-hint">
-					Case notes may be subject to Freedom of Information (FOI) requests and could be accessed by the public. Please ensure all information is recorded in line with privacy and policy guidelines.
-				</div>
-				<textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="CaseNote" id="add-case-note-text"></textarea>
-				<div id="add-case-note-text-info" class="govuk-hint govuk-character-count__message">
-					You can enter up to 65,535 characters
-				</div>
-				<div class="govuk-grid-row">
-					<div class="govuk-grid-column-one-third">
-						<div class="govuk-checkboxes__item">
-							<input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant" />
-							<label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
-						</div>
-					</div>
-					<div class="govuk-grid-column-one-third">
-						<div class="govuk-checkboxes__item">
-							<input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee" />
-							<label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
-						</div>
-					</div>
-				</div>
-			</fieldset>
-		</div>
+		@Html.EditorFor(m => m.FormLevelCaseNote)
 
 		<div class="govuk-button-group">
 

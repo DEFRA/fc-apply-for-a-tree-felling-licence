@@ -1,5 +1,4 @@
-﻿@using Forestry.Flo.External.Web.Infrastructure.Display
-@using Forestry.Flo.Services.Common
+﻿@using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Forestry.Flo.Services.FileStorage.Configuration
@@ -18,13 +17,12 @@
 
 <partial name="Partials/_ConfirmationMessageDisplay" />
 <partial name="Partials/_UserGuideDisplay" />
-<partial name="Partials/_PageErrors" />
+<partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary" />
 
 <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
 <input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary" />
 
-<div class="govuk-grid-column-full">
-    <partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary" />
+<div class="govuk-grid-column-two-thirds">
     <div class="govuk-body">
 
         <h1>@ViewData["Title"]</h1>
@@ -68,7 +66,7 @@
 
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-eia-completed-no">
                             <p>
-                                <a target="_blank" href="@Model.EiaApplicationExternalUri" tabindex="0">Complete an Environmental Impact Assessment application</a>
+                                <a class="govuk-link" target="_blank" href="@Model.EiaApplicationExternalUri" tabindex="0">Complete an Environmental Impact Assessment application</a>
                                 <br/>
                                 (opens in a new tab) and upload it
                             </p>
@@ -249,6 +247,6 @@
 
 
 @section Css {
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
     <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
 }

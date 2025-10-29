@@ -719,14 +719,14 @@ public partial class WoodlandOfficerReviewController(
             return RedirectToAction("Index", new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.LarchCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
 
             var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
@@ -796,14 +796,14 @@ public partial class WoodlandOfficerReviewController(
             return RedirectToAction(nameof(LarchFlyover), new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.LarchCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
 
             var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);

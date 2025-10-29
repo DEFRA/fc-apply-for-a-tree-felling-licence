@@ -134,7 +134,7 @@ public interface IConfirmedFellingAndRestockingDetailsUseCase
     /// <param name="amendmentReviewId">The unique identifier of the amendment review to complete.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A <see cref="Result"/> indicating success or failure of the completion operation.</returns>
-    Task<Result> MakeFurtherAmendments(
+    Task<Result> CloseAmendmentReview(
         InternalUser user,
         Guid amendmentReviewId,
         CancellationToken cancellationToken);

@@ -19,15 +19,15 @@
     var hasUnreviewedComments = Model.ReceivedPublicRegisterComments.Any(x => !x.Reviewed);
 }
 
-<div class="govuk-grid-column-full">
-    
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+<partial name="Partials/_PageErrors"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
-    <partial name="Partials/_PageErrors"/>
     
     @if (!Model.PublicRegister.ConsultationPublicRegisterPublicationTimestamp.HasValue)
     {
@@ -93,7 +93,7 @@
                         Select 'Yes' if the application meets the exemption criteria.
                     </div>
                     <div class="govuk-form-group" condition="@Model.Editable(user)">
-                        <label asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays" class="govuk-body govuk-label--s">Period on public register (days)</label>
+                        <label for="pr-period-days" class="govuk-body govuk-label--s">Period on public register (days)</label>
                         <validation asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays"></validation>
 
                         <div class="govuk-input__wrapper">
@@ -104,15 +104,13 @@
                 </fieldset>
                 
                 <br/>
-
-                <fieldset class="govuk-fieldset" id="publish-to-pr">
-                    <div class="govuk-button-group">
-                        <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
-                            Publish to public register
-                        </button>
-                        <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
-                    </div>
-                </fieldset>
+                
+                <div class="govuk-button-group">
+                    <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
+                        Publish to public register
+                    </button>
+                    <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
+                </div>
             </div>
         </form>
 

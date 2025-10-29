@@ -10,19 +10,24 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
 
-    <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+<partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
 
+<div class="govuk-grid-column-two-thirds">
     <form method="post">
         
         @Html.HiddenFor(x => x.ApplicationId)
         @Html.HiddenFor(x => x.ReturnToApplicationSummary)
         @Html.HiddenFor(x => x.FromDataImport)
+        @Html.HiddenFor(x => x.FellingLicenceStatus)
+        
+        @if (!Model.AllowEditing)
+        {
+            @Html.HiddenFor(x => x.IsForTenYearLicence)
+        }
 
         <div class="govuk-form-group">
             <fieldset class="govuk-fieldset">
@@ -34,9 +39,10 @@
                 <div class="govuk-inset-text">
                     To apply for a 10-year licence, a Forestry Commission approved-in-principle woodland management plan is needed.
                 </div>
+                <validation asp-for="IsForTenYearLicence"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" type="radio" value="true" asp-for="IsForTenYearLicence" id="is-ten-years-yes" data-aria-controls="conditional-wmp">
+                        <input condition-disabled="@(!Model.AllowEditing)" class="govuk-radios__input" type="radio" value="true" asp-for="IsForTenYearLicence" id="is-ten-years-yes" data-aria-controls="conditional-wmp">
                         <label class="govuk-label govuk-radios__label" for="is-ten-years-yes">
                             Yes
                         </label>
@@ -46,11 +52,12 @@
                             <label class="govuk-label" asp-for="WoodlandManagementPlanReference">
                                 Enter the woodland management plan reference
                             </label>
-                            <input class="govuk-input" asp-for="WoodlandManagementPlanReference">
+                            <validation asp-for="WoodlandManagementPlanReference"></validation>
+                            <input condition-disabled="@(!Model.AllowEditing)" class="govuk-input" asp-for="WoodlandManagementPlanReference">
                         </div>
                     </div>
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" type="radio" value="false" asp-for="IsForTenYearLicence" id="is-ten-years-no">
+                        <input condition-disabled="@(!Model.AllowEditing)" class="govuk-radios__input" type="radio" value="false" asp-for="IsForTenYearLicence" id="is-ten-years-no">
                         <label class="govuk-label govuk-radios__label" for="is-ten-years-no">
                             No
                         </label>
@@ -68,11 +75,3 @@
         </div>
     </form>
 </div>
-
-@section Scripts
-{
-    @if (!Model.AllowEditing)
-    {
-        <script src="/js/disable-form-elements.js"></script>
-    }
-}

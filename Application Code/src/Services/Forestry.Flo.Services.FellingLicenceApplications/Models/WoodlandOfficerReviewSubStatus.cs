@@ -17,4 +17,9 @@ public enum WoodlandOfficerReviewSubStatus
     /// </summary>
     [Display(Name = "Amendments")]
     AmendmentsWithApplicant,
+    /// <summary>
+    /// When the application is under consultation.
+    /// </summary>
+    [Display(Name = "Consultation")]
+    Consultation
 }

@@ -221,7 +221,9 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
             .Tap(async () => await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationSent, user, cancellationToken))
             .OnFailure(async e =>
             {
-                _logger.LogError(e);
+                _logger.LogError(
+                    "Error occurred adding external access link to application {ApplicationId}, error: {Error}",
+                    applicationId, e);
                 await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationFailure, user, cancellationToken, e);
             });
     }

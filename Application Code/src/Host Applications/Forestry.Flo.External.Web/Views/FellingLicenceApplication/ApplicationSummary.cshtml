@@ -1,10 +1,8 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.External.Web.Infrastructure.Display;
 @using Forestry.Flo.Services.Common;
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.Common.User
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingLicenceApplicationSummaryViewModel
 @{
     ViewData["Title"] = "Felling Licence Application Summary";
@@ -13,201 +11,17 @@
     var user = new ExternalApplicant(User);
 }
 
-<div class="govuk-grid-column-full">
-    
-    <h1 class="govuk-heading-l">
-        Check your answers
-    </h1>
-    
-    @if (Model.Agency != null)
-    {
-        <div class="govuk-summary-card">
-            <div class="govuk-summary-card__title-wrapper">
-                <h2 class="govuk-summary-card__title">Your details</h2>
-            </div>
-            <div class="govuk-summary-card__content">
-                <dl class="govuk-summary-list">
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Name
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.Agency.ContactName
-                        </dd>
-                    </div>
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Email
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.Agency.ContactEmail
-                        </dd>
-                    </div>
-                    @if (!string.IsNullOrWhiteSpace(Model.Agency.OrganisationName))
-                    {
-                        <div class="govuk-summary-list__row">
-                            <dt class="govuk-summary-list__key">
-                                Agency name
-                            </dt>
-                            <dd class="govuk-summary-list__value">
-                                @Model.Agency.OrganisationName
-                            </dd>
-                        </div>
-                    }
-                </dl>
-            </div>
-        </div>
+<div class="govuk-grid-column-two-thirds">
 
-        <div class="govuk-summary-card">
-            <div class="govuk-summary-card__title-wrapper">
-                <h2 class="govuk-summary-card__title">Woodland owner details</h2>
-            </div>
-            <div class="govuk-summary-card__content">
-                <dl class="govuk-summary-list">
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Name
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.WoodlandOwner.ContactName
-                        </dd>
-                    </div>
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Email
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.WoodlandOwner.ContactEmail
-                        </dd>
-                    </div>
-                    @if (Model.WoodlandOwner.IsOrganisation)
-                    {
-                        <div class="govuk-summary-list__row">
-                            <dt class="govuk-summary-list__key">
-                                Organisation
-                            </dt>
-                            <dd class="govuk-summary-list__value">
-                                @Model.WoodlandOwner.OrganisationName
-                            </dd>
-                        </div>
-                    }
-                </dl>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="govuk-summary-card">
-            <div class="govuk-summary-card__title-wrapper">
-                <h2 class="govuk-summary-card__title">Your details</h2>
-            </div>
-            <div class="govuk-summary-card__content">
-                <dl class="govuk-summary-list">
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Name
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.WoodlandOwner.ContactName
-                        </dd>
-                    </div>
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Email
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.WoodlandOwner.ContactEmail
-                        </dd>
-                    </div>
-                    @if (Model.WoodlandOwner.IsOrganisation)
-                    {
-                        <div class="govuk-summary-list__row">
-                            <dt class="govuk-summary-list__key">
-                                Organisation
-                            </dt>
-                            <dd class="govuk-summary-list__value">
-                                @Model.WoodlandOwner.OrganisationName
-                            </dd>
-                        </div>
-                    }
-                </dl>
-            </div>
-        </div> 
-    }
-    
-    @if (user.IsFcUser)
-    {
-        <div class="govuk-summary-card">
-            <div class="govuk-summary-card__title-wrapper">
-                <h2 class="govuk-summary-card__title">Application is for a 10-year licence</h2>
-            </div>
-            <div class="govuk-summary-card__content">
-                <dl class="govuk-summary-list">
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Application is for 10-year licence?
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @(Model.Application.TenYearLicence?.IsForTenYearLicence is true ? "Yes" : "No")
-                        </dd>
-                        <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;if the application is for a ten-year licence</span></a>
-                        </dd>
-                    </div>
-                    @if (Model.Application.TenYearLicence?.IsForTenYearLicence is true)
-                    {
-                        <div class="govuk-summary-list__row">
-                            <dt class="govuk-summary-list__key">
-                                Woodland management plan reference
-                            </dt>
-                            <dd class="govuk-summary-list__value">
-                                @Model.Application.TenYearLicence?.WoodlandManagementPlanReference
-                            </dd>
-                            <dd class="govuk-summary-list__actions">
-                                <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan reference</span></a>
-                            </dd>
-                        </div>
+<h1 class="govuk-heading-l">
+    Check your answers
+</h1>
 
-                        <div class="govuk-summary-list__row">
-                            <dt class="govuk-summary-list__key">
-                                Woodland management plan documents
-                            </dt>
-                            <dd class="govuk-summary-list__value">
-                                @{
-                                    var wmpDocs = Model.Application.SupportingDocumentation.Documents.Where(x => x.DocumentPurpose == DocumentPurpose.WmpDocument).ToList();
-                                }
-                        
-                                @if (wmpDocs.Any())
-                                {
-                                    foreach (var document in wmpDocs)
-                                    {
-                                        <div>
-                                            @document.FileName
-                                        </div>
-                                        <br/>
-                                    }
-                                }
-                                else
-                                {
-                                    <div>
-                                        No documents uploaded
-                                    </div>
-                                }
-
-                            </dd>
-                            <dd class="govuk-summary-list__actions">
-                                <a class="govuk-link" href="@Url.Action("WmpDocuments", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan documents</span></a>
-                            </dd>
-                        </div>
-                    }
-                </dl>
-            </div>
-        </div>
-    }
-
+@if (Model.Agency != null)
+{
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Woodland details</h2>
+            <h2 class="govuk-summary-card__title">Your details</h2>
         </div>
         <div class="govuk-summary-card__content">
             <dl class="govuk-summary-list">
@@ -216,36 +30,25 @@
                         Name
                     </dt>
                     <dd class="govuk-summary-list__value">
-                        @Model.PropertyProfile.Name
+                        @Model.Agency.ContactName
                     </dd>
                 </div>
                 <div class="govuk-summary-list__row">
                     <dt class="govuk-summary-list__key">
-                        Nearest town
+                        Email
                     </dt>
                     <dd class="govuk-summary-list__value">
-                        @Model.PropertyProfile.NearestTown
+                        @Model.Agency.ContactEmail
                     </dd>
                 </div>
-                @if (Model.PropertyProfile.HasWoodlandManagementPlan)
+                @if (!string.IsNullOrWhiteSpace(Model.Agency.OrganisationName))
                 {
                     <div class="govuk-summary-list__row">
                         <dt class="govuk-summary-list__key">
-                            Woodland Management Plan
+                            Agency name
                         </dt>
                         <dd class="govuk-summary-list__value">
-                            @Model.PropertyProfile.WoodlandManagementPlanReference
-                        </dd>
-                    </div>
-                }
-                @if (Model.PropertyProfile.IsWoodlandCertificationScheme)
-                {
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Woodland Certification Scheme
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.PropertyProfile.WoodlandCertificationSchemeReference
+                            @Model.Agency.OrganisationName
                         </dd>
                     </div>
                 }
@@ -255,91 +58,326 @@
 
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Felling schedule</h2>
-            <ul class="govuk-summary-card__actions">
-                <li class="govuk-summary-card__action">
-                    <a class="govuk-link" href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true})">
-                        Change<span class="govuk-visually-hidden">&nbsp;the felling schedule</span>
-                    </a>
-                </li>
-            </ul>
+            <h2 class="govuk-summary-card__title">Woodland owner details</h2>
         </div>
         <div class="govuk-summary-card__content">
             <dl class="govuk-summary-list">
                 <div class="govuk-summary-list__row">
                     <dt class="govuk-summary-list__key">
-                        Felling start date
+                        Name
                     </dt>
                     <dd class="govuk-summary-list__value">
-                        @DateTimeDisplay.GetDateDisplayString(Model.Application.OperationDetails.ProposedFellingStart.CalculateDate())
+                        @Model.WoodlandOwner.ContactName
                     </dd>
                 </div>
-            </dl>
-        </div>
-        <div class="govuk-summary-card__content">
-            <dl class="govuk-summary-list">
                 <div class="govuk-summary-list__row">
                     <dt class="govuk-summary-list__key">
-                        Felling completion date
+                        Email
                     </dt>
                     <dd class="govuk-summary-list__value">
-                        @DateTimeDisplay.GetDateDisplayString(Model.Application.OperationDetails.ProposedFellingEnd.CalculateDate())
+                        @Model.WoodlandOwner.ContactEmail
                     </dd>
                 </div>
+                @if (Model.WoodlandOwner.IsOrganisation)
+                {
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Organisation
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.WoodlandOwner.OrganisationName
+                        </dd>
+                    </div>
+                }
             </dl>
         </div>
     </div>
-    
+}
+else
+{
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Felling and restocking details</h2>
+            <h2 class="govuk-summary-card__title">Your details</h2>
         </div>
         <div class="govuk-summary-card__content">
             <dl class="govuk-summary-list">
                 <div class="govuk-summary-list__row">
                     <dt class="govuk-summary-list__key">
-                        Felling compartments
+                        Name
                     </dt>
                     <dd class="govuk-summary-list__value">
-                        @foreach (var comp in Model.FellingAndRestocking.FellingCompartmentDetails)
-                        {
-                            <div>
-                                @comp.CompartmentName <br />
-                            </div>
-                        }
+                        @Model.WoodlandOwner.ContactName
+                    </dd>
+                </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Email
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.WoodlandOwner.ContactEmail
+                    </dd>
+                </div>
+                @if (Model.WoodlandOwner.IsOrganisation)
+                {
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Organisation
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.WoodlandOwner.OrganisationName
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    </div>
+}
+
+@if (user.IsFcUser)
+{
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Application is for a 10-year licence</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Application is for 10-year licence?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Application.TenYearLicence?.IsForTenYearLicence is true ? "Yes" : "No")
                     </dd>
                     <dd class="govuk-summary-list__actions">
-                        <a class="govuk-link" href="@Url.Action(Model.FellingAndRestocking.FellingCompartmentsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                        <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;if the application is for a ten-year licence</span></a>
+                    </dd>
+                </div>
+                @if (Model.Application.TenYearLicence?.IsForTenYearLicence is true)
+                {
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Woodland management plan reference
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @Model.Application.TenYearLicence?.WoodlandManagementPlanReference
+                        </dd>
+                        <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan reference</span></a>
+                        </dd>
+                    </div>
+
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Woodland management plan documents
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @{
+                                var wmpDocs = Model.Application.SupportingDocumentation.Documents.Where(x => x.DocumentPurpose == DocumentPurpose.WmpDocument).ToList();
+                            }
+
+                            @if (wmpDocs.Any())
+                            {
+                                foreach (var document in wmpDocs)
+                                {
+                                    <div>
+                                        @document.FileName
+                                    </div>
+                                    <br/>
+                                }
+                            }
+                            else
+                            {
+                                <div>
+                                    No documents uploaded
+                                </div>
+                            }
+
+                        </dd>
+                        <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("WmpDocuments", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan documents</span></a>
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    </div>
+}
+
+<div class="govuk-summary-card" condition="Model.Application.AgentAuthorityForm.StepRequiredForApplication">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">Agent authority form</h2>
+        <ul class="govuk-summary-card__actions">
+            <li class="govuk-summary-card__action">
+                <a class="govuk-link" href="@Url.Action("AgentAuthorityForm", "FellingLicenceApplication", new { agentAuthorityId = Model.Application.AgentAuthorityForm.AgentAuthorityId, applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">
+                    Change<span class="govuk-visually-hidden"> the agent authority form</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Agent authority form
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @(Model.Application.AgentAuthorityForm.AafDocument ?? "No")
+                </dd>
+            </div>
+        </dl>
+    </div>
+</div>
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">Woodland details</h2>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Name
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.PropertyProfile.Name
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Nearest town
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.PropertyProfile.NearestTown
+                </dd>
+            </div>
+            @if (Model.PropertyProfile.HasWoodlandManagementPlan)
+            {
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Woodland Management Plan
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.PropertyProfile.WoodlandManagementPlanReference
+                    </dd>
+                </div>
+            }
+            @if (Model.PropertyProfile.IsWoodlandCertificationScheme)
+            {
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Woodland Certification Scheme
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.PropertyProfile.WoodlandCertificationSchemeReference
+                    </dd>
+                </div>
+            }
+        </dl>
+    </div>
+</div>
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">Felling schedule</h2>
+        <ul class="govuk-summary-card__actions">
+            <li class="govuk-summary-card__action">
+                <a class="govuk-link" href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">
+                    Change<span class="govuk-visually-hidden">&nbsp;the felling schedule</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Felling start date
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @DateTimeDisplay.GetDateDisplayString(Model.Application.OperationDetails.ProposedFellingStart.CalculateDate())
+                </dd>
+            </div>
+        </dl>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Felling completion date
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @DateTimeDisplay.GetDateDisplayString(Model.Application.OperationDetails.ProposedFellingEnd.CalculateDate())
+                </dd>
+            </div>
+        </dl>
+    </div>
+</div>
+
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">Felling and restocking details</h2>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Felling compartments
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @foreach (var comp in Model.FellingAndRestocking.FellingCompartmentDetails)
+                    {
+                        <div>
+                            @comp.CompartmentName <br/>
+                        </div>
+                    }
+                </dd>
+                <dd class="govuk-summary-list__actions">
+                    <a class="govuk-link" href="@Url.Action(Model.FellingAndRestocking.FellingCompartmentsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                </dd>
+            </div>
+        </dl>
+
+        @foreach (var compartmentDetails in Model.FellingAndRestocking.FellingCompartmentDetails)
+        {
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Felling operations in compartment @compartmentDetails.CompartmentName
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @compartmentDetails.OperationsString
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                        <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling operations in compartment @compartmentDetails.CompartmentName</span></a>
                     </dd>
                 </div>
             </dl>
-
-            @foreach (var compartmentDetails in Model.FellingAndRestocking.FellingCompartmentDetails)
-            {
-                <dl class="govuk-summary-list">
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Felling operations in compartment @compartmentDetails.CompartmentName
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @compartmentDetails.OperationsString
-                        </dd>
-                        <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling operations in compartment @compartmentDetails.CompartmentName</span></a>
-                        </dd>
-                    </div>
-                </dl>
-            }
-        </div>
+        }
     </div>
+</div>
 
-    <input type="hidden" id="GIS" asp-for="@Model.FellingAndRestocking.GIS" />
-    <div class="govuk-!-margin-bottom-6" id="viewDiv" aria-label="Map of compartments within this application"></div>
+</div>
+
+
+<div class="govuk-grid-column-full">
+
+    <input type="hidden" id="GIS" asp-for="@Model.FellingAndRestocking.GIS"/>
+    <arcgis-map id="viewDiv" class="govuk-!-margin-bottom-6" aria-label="Map of compartments within this application">
+        <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+        <arcgis-zoom slot="top-right"></arcgis-zoom>
+        <arcgis-compass slot="top-right"> </arcgis-compass>
+        <arcgis-expand slot="top-right">
+            <arcgis-basemap-gallery></arcgis-basemap-gallery>
+        </arcgis-expand>
+    </arcgis-map>
+
+</div>
+
+
+<div class="govuk-grid-column-two-thirds">
 
     @foreach (var compartment in Model.FellingAndRestocking.FellingCompartmentDetails)
     {
         <div>
-            <partial name="_FellingCompartmentPlayback" model="@compartment" />
+            <partial name="_FellingCompartmentPlayback" model="@compartment"/>
         </div>
     }
 
@@ -348,7 +386,7 @@
             <h2 class="govuk-summary-card__title">Constraint check</h2>
             <ul class="govuk-summary-card__actions">
                 <li class="govuk-summary-card__action">
-                    <a class="govuk-link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true})">
+                    <a class="govuk-link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">
                         Change<span class="govuk-visually-hidden">&nbsp;the constraints check</span>
                     </a>
                 </li>
@@ -394,13 +432,13 @@
             </dl>
         </div>
     </div>
-    
+
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
             <h2 class="govuk-summary-card__title">Supporting documentation</h2>
             <ul class="govuk-summary-card__actions">
                 <li class="govuk-summary-card__action">
-                    <a class="govuk-link" href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true  })">
+                    <a class="govuk-link" href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">
                         Change<span class="govuk-visually-hidden">&nbsp;the supporting documentation</span>
                     </a>
                 </li>
@@ -416,7 +454,7 @@
                         @{
                             var supportingDocs = Model.Application.SupportingDocumentation.Documents.Where(x => x.DocumentPurpose == DocumentPurpose.Attachment).ToList();
                         }
-                        
+
                         @if (supportingDocs.Any())
                         {
                             foreach (var document in supportingDocs)
@@ -442,7 +480,7 @@
     <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link">Return to your application</a>
     <br>
     <br>
-    
+
     @{
         var enabledStatuses = new[]
         {
@@ -473,8 +511,8 @@
         else if (finalStatuses.Contains(Model.Application.ApplicationSummary.Status))
         {
             var text = Model.Application.ApplicationSummary.Status == FellingLicenceStatus.ReferredToLocalAuthority
-            ? "is in consultation with your local authority."
-            : $"has been {Model.Application.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
+                ? "is in consultation with your local authority."
+                : $"has been {Model.Application.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
 
             <p class="govuk-body">This application @text</p>
         }
@@ -487,10 +525,10 @@
 </div>
 
 @section Css {
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
-    <link rel="stylesheet" href="/css/govuk-frontend-4.2.0.min.css" asp-append-version="true" />
-    <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
-    <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css"/>
+    <link rel="stylesheet" href="/css/govuk-frontend-4.2.0.min.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="/css/map.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true"/>
 
     <style>
         #viewDiv {
@@ -505,8 +543,11 @@
 }
 
 @* Scripts to support the compartments map *@
+
 @section Scripts {
-    <script src="https://js.arcgis.com/4.24/"></script>
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
 
     <script>
         require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {

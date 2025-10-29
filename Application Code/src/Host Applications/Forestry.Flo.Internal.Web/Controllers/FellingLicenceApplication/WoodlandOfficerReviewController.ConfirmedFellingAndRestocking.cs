@@ -366,7 +366,7 @@ public partial class WoodlandOfficerReviewController
     {
         var user = new InternalUser(User);
 
-        var result = await cfrUseCase.MakeFurtherAmendments(
+        var result = await cfrUseCase.CloseAmendmentReview(
             user,
             amendmentReviewId,
             cancellationToken);
@@ -405,6 +405,20 @@ public partial class WoodlandOfficerReviewController
         if (!validationResult.IsValid)
         {
             return RedirectToAction("ConfirmedFellingAndRestocking", new { id = applicationId });
+        }
+
+        if(model.Value.Amendment.AmendmentReviewId.HasValue)
+        {
+            var result = await cfrUseCase.CloseAmendmentReview(
+                user,
+                model.Value.Amendment.AmendmentReviewId.Value,
+                cancellationToken);
+
+            if (result.IsFailure)
+            {
+                this.AddErrorMessage("Could not close current felling and restocking amendment review");
+                return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+            }
         }
 
         var (_, isFailure, error) = await woReviewUseCase.CompleteConfirmedFellingAndRestockingDetailsAsync(

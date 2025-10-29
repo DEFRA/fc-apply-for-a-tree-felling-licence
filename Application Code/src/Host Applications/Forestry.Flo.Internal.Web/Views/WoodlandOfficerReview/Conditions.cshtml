@@ -3,24 +3,20 @@
 }
 
 @using Forestry.Flo.Services.Common.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure
 @using Forestry.Flo.Internal.Web.Extensions
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.ConditionsViewModel
 
 @{
     var user = new InternalUser(User);
 }
+<partial name="Partials/_PageErrors"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
-<div class="govuk-grid-column-full">
+<div class="govuk-grid-column-two-thirds">
     
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
-
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
-    
-    <partial name="Partials/_PageErrors"/>
             
     <div class="govuk-warning-text" condition="@(Model.ConfirmedFellingAndRestockingComplete == false)">
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>

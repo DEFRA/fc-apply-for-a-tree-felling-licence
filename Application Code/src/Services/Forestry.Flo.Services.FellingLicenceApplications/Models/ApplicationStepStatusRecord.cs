@@ -4,6 +4,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 public record ApplicationStepStatusRecord
 {
+    public bool? AgentAuthorityFormComplete { get; init; } = null;
+
     public bool? SelectedCompartmentsComplete { get; init; } = null;
 
     public bool? OperationDetailsComplete { get; init; } = null;

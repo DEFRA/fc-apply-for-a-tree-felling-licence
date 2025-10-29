@@ -12,14 +12,7 @@
                 }
                 else
                 {
-                    if (@breadCrumb.Controller == nameof(FellingLicenceApplicationController))
-                    {
-                        <a class="govuk-breadcrumbs__link" asp-controller="@breadCrumb.Controller" asp-action="@breadCrumb.Action" asp-route-applicationId="@breadCrumb.RouteId">@breadCrumb.Text</a>
-                    }
-                    else
-                    {
-                        <a class="govuk-breadcrumbs__link" asp-controller="@breadCrumb.Controller" asp-action="@breadCrumb.Action" asp-route-id="@breadCrumb.RouteId">@breadCrumb.Text</a>    
-                    }
+                    <a class="govuk-breadcrumbs__link" asp-controller="@breadCrumb.Controller" asp-action="@breadCrumb.Action" asp-route-id="@breadCrumb.RouteId">@breadCrumb.Text</a>    
                 }
             </li>
         }

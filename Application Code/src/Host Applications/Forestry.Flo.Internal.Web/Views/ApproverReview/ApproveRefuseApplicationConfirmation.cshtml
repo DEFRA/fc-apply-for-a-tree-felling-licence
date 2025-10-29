@@ -16,8 +16,9 @@
     };
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
     <h1 class="govuk-heading-m">
         Confirm that you wish to set the status of application @Model.FellingLicenceApplicationSummary!.ApplicationReference to
         <b>@Model.RequestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)</b>

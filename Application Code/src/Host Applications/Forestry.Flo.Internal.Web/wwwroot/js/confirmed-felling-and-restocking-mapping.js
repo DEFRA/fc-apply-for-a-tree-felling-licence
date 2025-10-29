@@ -6,7 +6,7 @@ $(function () {
 
         const filter = document.getElementById(divId + "-filters");
 
-        require(["../../js/mapping/maps/map-felling-restocking.js?v=" + Date.now()], function (ConfirmedFellingMap) {
+        require(["../../js/mapping/maps/map-felling-restocking.js"], function (ConfirmedFellingMap) {
             const mapInstance = new ConfirmedFellingMap(divId, true, filter.value);
 
 			window.profileMaps[divId] = mapInstance;
@@ -23,7 +23,7 @@ $(function () {
 });
 
 function viewOnMap(divId, compartmentName) {
-    require(["../../js/mapping/maps/map-felling-restocking.js?v=" + Date.now()], function () {
+    require(["../../js/mapping/maps/map-felling-restocking.js"], function () {
         const mapInstance = window.profileMaps[divId];
 
         if (!mapInstance) {

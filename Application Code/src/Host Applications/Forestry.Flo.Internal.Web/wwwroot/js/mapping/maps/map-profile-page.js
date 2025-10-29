@@ -7,19 +7,19 @@
     "esri/layers/WMSLayer",
     "esri/layers/WMTSLayer",
     "esri/layers/GraphicsLayer",
-    "esri/widgets/BasemapGallery",
     "esri/Graphic",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
-    "esri/Geometry/Polygon",
-    "esri/Geometry/Point",
-    "esri/Geometry/geometryEngine",
+    "esri/geometry/Polygon",
+    "esri/geometry/Point",
+    "esri/geometry/geometryEngine",
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-math.js?v=" + Date.now(),
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
-    "/js/mapping/fcconfig.js?v=" + Date.now()],
+    "/js/mapping/fcconfig.js?v=" + Date.now(),
+    "esri/core/reactiveUtils"],
     function (require,
         exports,
         config,
@@ -29,7 +29,6 @@
         WMSLayer,
         WMTSLayer,
         GraphicsLayer,
-        BasemapToggle,
         Graphic,
         locator,
         FeatureLayer,
@@ -41,9 +40,10 @@
         GT_WGS84,
         GT_Math,
         Proj4js,
-        fcconfig) {
+        fcconfig, reactiveUtils) {
         var profileMap = /** @class */ (function () {
             function profileMap(location, canMove) {
+                this.location = location;
                 this.canMove = false;
                 if (typeof canMove !== "undefined") {
                     this.canMove = canMove;
@@ -104,24 +104,28 @@
                 }
 
 
-                //Lets Work on the guide
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: fcconfig.englandExtent,
-                    constraints: {
-                        maxZoom: 20
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
+
+                mapComponent.viewOnReady().then(() => {
+                    this.view = mapComponent.view;
+                    if (!this.view) {
+                        console.error("ArcGIS view is undefined. Map component may not be initialized or visible.");
+                        return;
                     }
-                });
-                this.view
-                    .when(this.mapLoadEvt.bind(this))
+                    this.view.extent = fcconfig.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    this.commonTools = new Maps_common(this.view);
+                    return Promise.resolve();
+                })
+                    .then(this.mapLoadEvt.bind(this))
                     .then(this.SetUpWidgets.bind(this))
                     .then(this.loadCompartments.bind(this))
                     .then(this.GetStartingPoint.bind(this))
                     .then(this.addWatermark.bind(this));
             }
             profileMap.prototype.loadCompartments = async function () {
-                var items =  maps_html_Helper.getCompartments(maps_html_Helper.getViewString("runningMode"));
+                var items = maps_html_Helper.getCompartments(maps_html_Helper.getViewString("runningMode"));
 
 
                 if (typeof items === "undefined" || items.length === 0) {
@@ -140,7 +144,7 @@
                             spatialReference: item.GIS.spatialReference.wkid,
                         };
                     }
-                 
+
                     if (geometry) {
                         try {
                             let graphic = new Graphic({
@@ -151,7 +155,7 @@
                                 },
                             });
 
-                            graphic.attributes.compartmentRef = that.convertToOSGridReference(graphic.geometry.centroid);
+                            graphic.attributes.compartmentRef = that.convertToOSGridReference(this.centroidOperator.execute(graphic.geometry));
 
                             graphicsArray.push(graphic);
                         }
@@ -170,9 +174,12 @@
                 return Promise.resolve(graphicsArray);
             };
 
-            profileMap.prototype.SetUpWidgets = function () {
+            profileMap.prototype.SetUpWidgets = async function () {
                 var that = this;
-        
+
+                const mapComponent = document.getElementById(this.location)
+                await mapComponent.viewOnReady();
+
 
                 that.map.basemap.title = "OS Map";
 
@@ -184,12 +191,22 @@
                     id: "wmsBasemap"
                 });
 
+                const [LocalBasemapsSource, centroidOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js"
+                ]);
 
-                const basemapToggleWidget = new BasemapToggle({
-                    view: this.view,
-                    source: [that.map.basemap, wmsBasemap],
-                    container: "basemaps-container"
+                this.centroidOperator = centroidOperator;
+
+                const basemapGallery = document.getElementById("basemaps-container").querySelector("arcgis-basemap-gallery");
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
                 });
+
+                basemapGallery.view = this.view;
 
 
                 const baseMapHelpButton = document.getElementById("help-basemap-button");
@@ -198,7 +215,7 @@
                         that.OpenPopUp("/Compartment/help#basemapHelp");
                     });
                 }
-
+                this.view.ui.move("zoom", "top-right");
 
                 const baseMapCloseButton = document.getElementById("close-basemap-button");
                 if (baseMapCloseButton) {
@@ -220,9 +237,12 @@
                     }
 
                     const nextWidget = target.dataset.actionId;
+
                     if (nextWidget !== that.activeWidget) {
-                        document.querySelector(`[data-action-id=${nextWidget}]`).active = true;
-                        document.querySelector(`[data-panel-id=${nextWidget}]`).hidden = false;
+                        if (nextWidget) {
+                            document.querySelector(`[data-action-id=${nextWidget}]`).active = true;
+                            document.querySelector(`[data-panel-id=${nextWidget}]`).hidden = false;
+                        }
                         document.getElementById("panelMenu").collapsed = false;
                         that.activeWidget = nextWidget;
                     } else {
@@ -250,7 +270,7 @@
                 // Define the text symbol for the watermark
                 const textSymbol = fcconfig.BlueSkyTextSymbol;
 
-                 //Function to update the watermark positions
+                //Function to update the watermark positions
                 const updateWatermarkPositions = () => {
                     const extent = this.view.extent;
                     const width = extent.width;
@@ -284,22 +304,23 @@
                 // Add the watermark layer to the map
                 this.map.add(watermarkLayer);
 
-                // Update the watermark positions initially and whenever the view changes
-                this.view.watch("stationary", (newValue) => {
-                    if (newValue) {
-                        updateWatermarkPositions();
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
                     }
-                });
-                this.view.watch("extent", updateWatermarkPositions);
-
-                // Watch for basemap changes and toggle watermark visibility
-                this.view.watch("map.basemap", (newBasemap) => {
-                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK) {
-                        watermarkLayer.visible = true;
-                    } else {
-                        watermarkLayer.visible = false;
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
                     }
-                });
+                );
+                return Promise.resolve();
             };
 
             profileMap.prototype.loadPolygonLayer = function (graphicsArray) {
@@ -342,7 +363,7 @@
                 return Promise.resolve();
             };
 
-         
+
             profileMap.prototype.mapLoadEvt = function () {
                 this.commonTools = new Maps_common(this.view);
                 if (!this.canMove) {

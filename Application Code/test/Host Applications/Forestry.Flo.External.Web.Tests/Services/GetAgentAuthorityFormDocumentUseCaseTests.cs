@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Services.AgentAuthority;
 using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
@@ -93,8 +94,13 @@ public class GetAgentAuthorityFormDocumentUseCaseTests
 
         _mockAgentAuthorityService.Reset();
 
+        var mockRetrieveUserAccountsService = new Mock<IRetrieveUserAccountsService>();
+        var mockUpdateFlaForExternalUsers = new Mock<IUpdateFellingLicenceApplicationForExternalUsers>();
+
         return new GetAgentAuthorityFormDocumentsUseCase(
             _mockAgentAuthorityService.Object,
+            mockRetrieveUserAccountsService.Object,
+            mockUpdateFlaForExternalUsers.Object,
             new NullLogger<GetAgentAuthorityFormDocumentsUseCase>());
     }
 }

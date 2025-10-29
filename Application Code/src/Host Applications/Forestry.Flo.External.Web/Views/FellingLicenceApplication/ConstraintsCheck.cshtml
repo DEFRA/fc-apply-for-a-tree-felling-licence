@@ -21,11 +21,11 @@
     };
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-l">Check For Constraints</h1>
     <div id="constraint-hint" class="govuk-hint">

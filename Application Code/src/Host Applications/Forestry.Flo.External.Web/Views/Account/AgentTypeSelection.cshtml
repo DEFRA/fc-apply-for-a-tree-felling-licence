@@ -1,6 +1,5 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels.AgentTypeViewModel
 
 @{
@@ -12,9 +11,9 @@
 
     <form method="post">
 
-        <fieldset class="govuk-fieldset">
+        <div class="govuk-form-group">
 
-            <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
 
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
@@ -22,41 +21,32 @@
                     </h1>
                 </legend>
 
+                <validation asp-for="@Model.OrganisationStatus"></validation>
+                
                 <div class="govuk-radios" data-module="govuk-radios">
-
-                    <validation asp-for="@Model.OrganisationStatus"></validation>
-
                     <div class="govuk-radios__item">
-
                         @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input", @id = "individual-agent" })
-
                         <label class="govuk-label govuk-radios__label" for="individual-agent">
                             Individual
                         </label>
-                        
                         <div class="govuk-hint govuk-radios__hint">
                             Relative or friend
                         </div>
-
                     </div>
 
                     <div class="govuk-radios__item">
-
                         @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Organisation, new { @class = "govuk-radios__input", @id = "organisation-agent" })
-
                         <label class="govuk-label govuk-radios__label" for="organisation-agent">
                             Organisation
                         </label>
-                        
                         <div class="govuk-hint govuk-radios__hint">
                             I do this for my business
                         </div>
-
                     </div>
-
                 </div>
+            </fieldset>
 
-            </div>
+        </div>
 
             <div class="govuk-form-group">
 
@@ -70,7 +60,6 @@
 
             </div>
 
-        </fieldset>
 
     </form>
 

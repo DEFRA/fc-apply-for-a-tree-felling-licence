@@ -80,7 +80,12 @@
         <div class="govuk-form-group">
             <div class="govuk-button-group">
 
-                <button id="hidden-submit" type="submit" aria-hidden="true" class="govuk-visually-hidden" data-module="govuk-button">
+                <button id="hidden-submit"
+                        type="submit"
+                        tabindex="-1"
+                        aria-hidden="true"
+                        style="display:none"
+                        hidden>
                 </button>
 
                 <input id="visible-submit" type ="button" data-prevent-double-click="true" class="govuk-button govuk-button--warning" data-module="govuk-button" value="Close Account">

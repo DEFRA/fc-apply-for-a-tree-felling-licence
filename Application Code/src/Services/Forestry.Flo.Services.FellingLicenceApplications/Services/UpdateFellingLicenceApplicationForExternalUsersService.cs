@@ -438,6 +438,61 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
         }
     }
 
+    /// <inheritdoc />
+    public async Task<Result> UpdateAafStepAsync(
+        Guid applicationId,
+        UserAccessModel userAccess,
+        bool aafStepStatus,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            // get entity
+            var application = await _fellingLicenceApplicationRepository
+                .GetAsync(applicationId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (application.HasNoValue)
+            {
+                _logger.LogWarning("Could not locate application with id {ApplicationId} in the repository", applicationId);
+                return Result.Failure("Could not update AAF step status for the application");
+            }
+
+            // verify user access to the application
+            var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
+            if (userAccess.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
+            {
+                _logger.LogWarning(
+                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update AAF step status for the application with id {ApplicationId}",
+                    userAccess.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
+                return Result.Failure("Could not update AAF step status for the application");
+            }
+
+            // set step status as requested
+            application.Value.FellingLicenceApplicationStepStatus.AafStepStatus = aafStepStatus;
+
+            _fellingLicenceApplicationRepository.Update(application.Value);
+
+            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError(
+                    "Error {Error} encountered in UpdateAafStepAsync, application id {ApplicationId}",
+                    dbResult.Error, applicationId);
+                return Result.Failure(dbResult.Error + $" in UpdateAafStepAsync, application id {applicationId}");
+            }
+
+            _logger.LogDebug("Successfully updated AAF step status for application with id {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in UpdateAafStepAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
     private Result ConvertProposedFellingDetailsToConfirmedAsync(FellingLicenceApplication fla)
     {
         try

@@ -1,6 +1,5 @@
 ﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ReviewFellingAndRestockingAmendments.ReviewAmendmentsViewModel
 @using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.External.Web.Models.FellingLicenceApplication.ReviewFellingAndRestockingAmendments
 @using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.Common.Extensions
@@ -13,11 +12,10 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_PageErrors" />
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
@@ -33,15 +31,26 @@
     <p class="govuk-body">
         If we don’t hear from you by <b>@DateTimeDisplay.GetDateDisplayString(Model.ReviewDeadline)</b>, we’ll withdraw your application.
     </p>
+    
+</div>
 
+<div class="govuk-grid-column-full">
     <div class="govuk-form-group">
         @foreach (var item in Model.AmendedFellingAndRestockingDetails.CompartmentGisLookup)
         {
             <input type="hidden" id="@item.Key" value="@item.Value.GisData" data-label="@item.Value.DisplayName" data-group="compartments_GIS" name="@item.Key" />
         }
 
-        <div class="profileMap" id="viewDiv"></div>
+        <arcgis-map id="viewDiv" class="profileMap">
+            <arcgis-expand slot="top-right">
+                <arcgis-basemap-gallery></arcgis-basemap-gallery>
+            </arcgis-expand>
+        </arcgis-map>
     </div>
+    
+</div>
+
+<div class="govuk-grid-column-two-thirds">
 
     @foreach (var compartment in Model.AmendedFellingAndRestockingDetails.Compartments)
     {
@@ -244,7 +253,7 @@
 </div>
 
 @section Css {
-    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
     <link async rel="stylesheet" href="~/css/felling-and-restocking.css?v1.1" aria-busyasp-append-version="true" />
 
     <style>
@@ -262,8 +271,11 @@
 
 @section Scripts {
 
-    <script src="https://js.arcgis.com/4.24/"></script>
-    <script>
+    <script src="~/js/compartment-list.js" asp-append-version="true"></script>
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
+    <script type="module">
         require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
             var mapObj = new ProfileMap("viewDiv", true);
         });

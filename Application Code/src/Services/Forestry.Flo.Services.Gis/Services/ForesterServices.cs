@@ -17,6 +17,9 @@ using Newtonsoft.Json;
 
 namespace Forestry.Flo.Services.Gis.Services;
 
+/// <summary>
+/// Implementation of <see cref="IForesterServices"/>
+/// </summary>
 public class ForesterServices : BaseServices, IForesterServices
 {
     private readonly ForesterConfig _config;
@@ -166,7 +169,7 @@ public class ForesterServices : BaseServices, IForesterServices
         {
             _logger.LogInformation("GetWoodlandOfficerAsync called with compartments: {@Compartments}", compartments);
 
-            var pointResult = await base.CalculateCentrePointAsync(compartments, _config.BaseUrl, cancellationToken);
+            var pointResult = await CalculateCentrePointAsync(compartments, _config.BaseUrl, cancellationToken);
 
             if (pointResult.IsFailure)
             {
@@ -287,8 +290,7 @@ public class ForesterServices : BaseServices, IForesterServices
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AncientWoodland>>> GetAncientWoodlandAsync(BaseShape shape,
-        CancellationToken cancellationToken)
+    public async Task<Result<List<AncientWoodland>>> GetAncientWoodlandAsync(BaseShape shape, CancellationToken cancellationToken)
     {
         Guard.Against.Null(_config.LayerServices);
 
@@ -315,8 +317,7 @@ public class ForesterServices : BaseServices, IForesterServices
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<AncientWoodland>>> GetAncientWoodlandsRevisedAsync(BaseShape shape,
-        CancellationToken cancellationToken)
+    public async Task<Result<List<AncientWoodland>>> GetAncientWoodlandsRevisedAsync(BaseShape shape, CancellationToken cancellationToken)
     {
         Guard.Against.Null(_config.LayerServices);
 
@@ -388,7 +389,12 @@ public class ForesterServices : BaseServices, IForesterServices
     }
 
     /// <inheritdoc />
-    public async Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(InternalCompartmentDetails<BaseShape> compartment, CancellationToken cancellationToken, int delay, MapGeneration generationType, string title)
+    public async Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(
+        InternalCompartmentDetails<BaseShape> compartment, 
+        CancellationToken cancellationToken,
+        int delay = 30000,
+        MapGeneration generationType = MapGeneration.Other,
+        string title = "")
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -429,8 +435,13 @@ public class ForesterServices : BaseServices, IForesterServices
                 }
             }
 
-            WebMap_Json map = new();
-            map.ExportOptions.Size = new List<int> { 1100, 800 };
+            WebMap_Json map = new()
+            {
+                ExportOptions =
+                {
+                    Size = [1100, 800]
+                }
+            };
             map.BaseMap[0].Layers.Add(new BaseMapLayer(_config.UtilitiesService.ExportService.BaseMap));
             map.MapOptions.MapExtent.X_min = extend.Value.X_min - bufferX;
             map.MapOptions.MapExtent.Y_min = extend.Value.Y_min - bufferY;
@@ -452,8 +463,10 @@ public class ForesterServices : BaseServices, IForesterServices
 
             var shapeLayer = GetLayerDefinition(compartment.ShapeGeometry.GeometryType);
             var textLayer = GetLayerDefinition("text");
-            map.OperationalLayers.Add(new WebMapOperationalLayerFeatures(shapeLayer, new FeatureSetDetails(compartment.ShapeGeometry.GeometryType, new() { new FeatureDetails(compartment.ShapeGeometry) })));
-            map.OperationalLayers.Add(new WebMapOperationalLayerFeatures(textLayer, new FeatureSetDetails("esriGeometryPoint", new() { new FeatureDetails(compartment.ShapeGeometry, compartment.CompartmentLabel) })));
+            map.OperationalLayers.Add(new WebMapOperationalLayerFeatures(shapeLayer, new FeatureSetDetails(compartment.ShapeGeometry.GeometryType,
+                [new FeatureDetails(compartment.ShapeGeometry)])));
+            map.OperationalLayers.Add(new WebMapOperationalLayerFeatures(textLayer, new FeatureSetDetails("esriGeometryPoint",
+                [new FeatureDetails(compartment.ShapeGeometry, compartment.CompartmentLabel)])));
             ExportParameter parameters = new()
             {
                 LayoutTemplate = _layoutTemplate,
@@ -491,12 +504,17 @@ public class ForesterServices : BaseServices, IForesterServices
 
             _logger.LogInformation("Image generation succeeded for compartment: {@Compartment}", compartment);
 
-            return await base.GetEsriGeneratedImageAsync(outputResx.Value, delay, cancellationToken);
+            return await GetEsriGeneratedImageAsync(outputResx.Value, delay, cancellationToken);
         }
     }
 
     /// <inheritdoc />
-    public async Task<Result<Stream>> GenerateImage_MultipleCompartmentsAsync(List<InternalCompartmentDetails<BaseShape>> compartments, CancellationToken cancellationToken, int delay, MapGeneration generationType, string title)
+    public async Task<Result<Stream>> GenerateImage_MultipleCompartmentsAsync(
+        List<InternalCompartmentDetails<BaseShape>> compartments, 
+        CancellationToken cancellationToken,
+        int delay = 30000,
+        MapGeneration generationType = MapGeneration.Other,
+        string title = "")
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -543,8 +561,13 @@ public class ForesterServices : BaseServices, IForesterServices
             var bufferX = CalculateBuffer(xMin, xMax);
             var bufferY = CalculateBuffer(yMin, yMax);
 
-            WebMap_Json map = new();
-            map.ExportOptions.Size = new List<int> { 1100, 800 };
+            WebMap_Json map = new()
+            {
+                ExportOptions =
+                {
+                    Size = [1100, 800]
+                }
+            };
             map.BaseMap[0].Layers.Add(new BaseMapLayer(_config.UtilitiesService.ExportService.BaseMap));
             map.MapOptions.MapExtent.X_min = xMin - bufferX;
             map.MapOptions.MapExtent.Y_min = yMin - bufferY;
@@ -612,7 +635,7 @@ public class ForesterServices : BaseServices, IForesterServices
 
             _logger.LogInformation("Image generation succeeded for compartments: {@Compartments}", compartments);
 
-            return await base.GetEsriGeneratedImageAsync(outputResx.Value, delay, cancellationToken);
+            return await GetEsriGeneratedImageAsync(outputResx.Value, delay, cancellationToken);
         }
     }
 
@@ -719,13 +742,13 @@ public class ForesterServices : BaseServices, IForesterServices
 
             if (result.IsFailure)
             {
-                _logger.LogError("Attempting to add application reference {ApplicationReference} to {layer} failed with error {Error}", layer.Value.Name, applicationRef, result.Error);
+                _logger.LogError("Attempting to add application reference {ApplicationReference} to {Layer} failed with error {Error}", layer.Value.Name, applicationRef, result.Error);
                 return Result.Failure<int>(result.Error);
             }
 
             if (result.Value.AddResults == null)
             {
-                _logger.LogError("Attempting to add application reference {ApplicationReference}  to {layer}  returned no results", layer.Value.Name, applicationRef);
+                _logger.LogError("Attempting to add application reference {ApplicationReference}  to {Layer}  returned no results", layer.Value.Name, applicationRef);
                 return Result.Failure<int>("No Results");
             }
 
@@ -748,8 +771,7 @@ public class ForesterServices : BaseServices, IForesterServices
         string expiryCategory,
         List<InternalCompartmentDetails<Polygon>> compartments,
         DateTime? exDate,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -803,13 +825,13 @@ public class ForesterServices : BaseServices, IForesterServices
 
             if (result.IsFailure)
             {
-                _logger.LogError("Attempting to add application reference {ApplicationReference} to {layer} failed with error {Error}", layer.Value.Name, applicationRef, result.Error);
+                _logger.LogError("Attempting to add application reference {ApplicationReference} to {Layer} failed with error {Error}", layer.Value.Name, applicationRef, result.Error);
                 return Result.Failure<int>(result.Error);
             }
 
             if (result.Value.AddResults == null)
             {
-                _logger.LogError("Attempting to add application reference {ApplicationReference}  to {layer}  returned no results", layer.Value.Name, applicationRef);
+                _logger.LogError("Attempting to add application reference {ApplicationReference}  to {Layer}  returned no results", layer.Value.Name, applicationRef);
                 return Result.Failure<int>("No Results");
             }
 
@@ -818,7 +840,7 @@ public class ForesterServices : BaseServices, IForesterServices
             {
                 return Result.Success();
             }
-            _logger.LogError("Attempting to add application reference {ApplicationReference} to {layer}  returned errors: {Errors}", layer.Value.Name, applicationRef, string.Join(", ", errorResults.Select(r => r!.Details)));
+            _logger.LogError("Attempting to add application reference {ApplicationReference} to {Layer}  returned errors: {Errors}", layer.Value.Name, applicationRef, string.Join(", ", errorResults.Select(r => r!.Details)));
             return Result.Failure<int>(string.Join(", ", errorResults.Select(r => r!.Details)));
 
         }

@@ -17,15 +17,13 @@ define(["require",
     "esri/layers/WMSLayer",
     "esri/layers/WMTSLayer",
     "esri/layers/GraphicsLayer",
-    "esri/widgets/BasemapGallery",
-    "esri/widgets/Expand"
+    "esri/core/reactiveUtils"
 
 ],
-    function (require, exports, Map, MapView, config, BaseMap, mapSettings, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite, WMSLayer,
+    function (require, exports, Map, MapView, config, Basemap, mapSettings, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite, WMSLayer,
         WMTSLayer,
         GraphicsLayer,
-        BasemapToggle,
-        Expand) {
+        reactiveUtils) {
         var MapCompartmentSelection = /** @class */ (function () {
             MapCompartmentSelection.prototype.map;
             MapCompartmentSelection.prototype.view;
@@ -37,31 +35,39 @@ define(["require",
             proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
 
             function MapCompartmentSelection(location) {
-
+                this.location = location;
                 config.apiKey = mapSettings.esriApiKey;
 
                 this.graphicsArray = [];
 
+                var baseMap = new Basemap({
+                    portalItem: {
+                        id: mapSettings.baseMapForUK,
+                    },
+                });
+
                 this.map = new Map({
-                    basemap: new BaseMap({ portalItem: { id: mapSettings.baseMapForUK } })
+                    basemap: baseMap,
                 });
 
-                //Lets Work on the guide
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: mapSettings.englandExtent,
-                    constraints: {
-                        maxZoom: 20
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
+
+                mapComponent.viewOnReady().then(() => {
+                    this.view = mapComponent.view;
+                    if (!this.view) {
+                        console.error("ArcGIS view is undefined. Map component may not be initialized or visible.");
+                        return;
                     }
-                });
-
-                this.commonTools = new Maps_common(this.view);
-
-                this.view.when(this.loadGIS.bind(this))
-                    .then(this.GetStartingPoint.bind(this))
+                    this.view.extent = mapSettings.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    this.commonTools = new Maps_common(this.view);
+                    return Promise.resolve();
+                })
                     .then(this.addWidgets.bind(this))
                     .then(this.wireUpEvents.bind(this))
+                    .then(this.loadGIS.bind(this))
+                    .then(this.GetStartingPoint.bind(this))
                     .then(this.addWatermark.bind(this));
             }
 
@@ -109,49 +115,54 @@ define(["require",
                 // Add the watermark layer to the map
                 this.map.add(watermarkLayer);
 
-                // Update the watermark positions initially and whenever the view changes
-                this.view.watch("stationary", (newValue) => {
-                    if (newValue) {
-                        updateWatermarkPositions();
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
                     }
-                });
-                this.view.watch("extent", updateWatermarkPositions);
-
-                // Watch for basemap changes and toggle watermark visibility
-                this.view.watch("map.basemap", (newBasemap) => {
-                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK) {
-                        watermarkLayer.visible = true;
-                    } else {
-                        watermarkLayer.visible = false;
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
                     }
-                });
+                );
                 return Promise.resolve();
             };
 
-            MapCompartmentSelection.prototype.addWidgets = function () {
+            MapCompartmentSelection.prototype.addWidgets = async function () {
                 this.map.basemap.title = "OS Map";
+
+                const mapComponent = document.getElementById(this.location)
+                await mapComponent.viewOnReady();
 
                 var wmsLayer = new WMSLayer(mapSettings.wmsLayer);
 
-                var wmsBasemap = new BaseMap({
+                var wmsBasemap = new Basemap({
                     baseLayers: [wmsLayer],
                     title: mapSettings.wmsLayerName,
                     id: "wmsBasemap"
                 });
 
 
-                const basemapToggleWidget = new BasemapToggle({
-                    view: this.view,
-                    source: [this.map.basemap, wmsBasemap]
-                });
+                const [LocalBasemapsSource, centroidOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js"
+                ]);
 
-                const expandLayer = new Expand({
-                    expandIconClass: "esri-icon-basemap",
-                    view: this.view,
-                    content: basemapToggleWidget
-                });
+                this.centroidOperator = centroidOperator;
 
-                this.view.ui.add(expandLayer, { position: "top-left" });
+                const basemapGallery = document.querySelector("arcgis-basemap-gallery");
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
+                });
 
                 return Promise.resolve();
 
@@ -171,7 +182,7 @@ define(["require",
                         let graphic = result.results[0].graphic;
                         _this.UpdateGraphic(graphic, !graphic.attributes.selected)
 
-                        HTMLHelper.checkCheckbox('input[name="SelectedCompartmentIds"][value="' + graphic.attributes.Id + '"]', graphic.attributes.selected);
+                        HTMLHelper.checkCheckbox('input[name="SelectedCompartmentIds"][value="' + _this.sanitizeForSelector(graphic.attributes.Id) + '"]', graphic.attributes.selected);
                     });
                 });
 
@@ -247,6 +258,10 @@ define(["require",
                 graphic.symbol = (graphic.attributes.selected) ? mapSettings.selectedPolygonSymbol : mapSettings.activePolygonSymbol;
             }
 
+            MapCompartmentSelection.prototype.sanitizeForSelector = function (value) {
+                return String(value).replace(/[^a-zA-Z0-9_\-]/g, '');
+            }
+
             MapCompartmentSelection.prototype.loadGIS = function () {
                 try {
                     var gis = HTMLHelper.getGISDataJSON("GIS", true);
@@ -261,6 +276,13 @@ define(["require",
                         if (!item.GISData) {
                             return;
                         }
+
+                        const safeId = this.sanitizeForSelector(item.Id);
+                        const el = HTMLHelper.getElements('input[name="SelectedCompartmentIds"][value="' + safeId + '"]');
+
+                        if (el.length < 1) {
+                            return;
+                        }
                         let geometry;
                         let workingSymbol;
 
@@ -271,7 +293,7 @@ define(["require",
                                 spatialReference: item.GISData.spatialReference.wkid,
                             };
                             workingSymbol = (item.Selected) ? mapSettings.selectedPolygonSymbol : mapSettings.activePolygonSymbol;
-                        } 
+                        }
 
                         if (geometry) {
                             try {
@@ -311,7 +333,7 @@ define(["require",
 
                 if (shapeGraphic.geometry.type === "polygon") {
                     resx = new Graphic({
-                        geometry: shapeGraphic.geometry.centroid,
+                        geometry: this.centroidOperator.execute(shapeGraphic.geometry),
                         symbol: labelSymbol,
                     });
                 }

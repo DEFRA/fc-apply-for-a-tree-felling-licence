@@ -15,7 +15,7 @@ namespace Forestry.Flo.Services.InternalUsers.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-
+            // no down migration necessary
         }
     }
 }

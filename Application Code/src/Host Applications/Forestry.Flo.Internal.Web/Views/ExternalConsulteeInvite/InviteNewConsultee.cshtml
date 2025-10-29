@@ -7,8 +7,9 @@
     ViewData["Title"] = "Add a new consultee";
 }
 
+<partial name="Partials/_FellingLicenceApplicationSummary" model="Model.FellingLicenceApplicationSummary"/>
+
 <div class="govuk-grid-column-two-thirds">
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="Model.FellingLicenceApplicationSummary"/>
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <partial name="Partials/_PageErrors"/>

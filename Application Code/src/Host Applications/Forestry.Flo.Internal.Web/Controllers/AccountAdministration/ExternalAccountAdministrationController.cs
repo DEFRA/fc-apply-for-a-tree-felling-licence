@@ -45,7 +45,7 @@ public class ExternalAccountAdministrationController : Controller
         var model = 
             await useCase.RetrieveListOfActiveExternalUsersAsync(
                 user,
-                Url.Action("Index", "Home")!,
+                Url.Action(nameof(HomeController.UserManagement), "Home")!,
                 cancellationToken);
 
         if (model.IsFailure)

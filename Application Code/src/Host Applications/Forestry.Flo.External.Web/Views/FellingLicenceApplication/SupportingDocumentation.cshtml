@@ -1,7 +1,6 @@
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.External.Web.Models.FellingLicenceApplication
 @using Microsoft.Extensions.Options
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Forestry.Flo.Services.FileStorage.Configuration
 @using Forestry.Flo.Services.FileStorage.Services
 @using Forestry.Flo.Services.Common
@@ -10,7 +9,6 @@
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.SupportingDocumentationModel
 @inject IOptions<UserFileUploadOptions> Settings
-@inject FileTypesProvider FileTypesProvider
 
 @{
     ViewData["Title"] = "Add supporting documents";
@@ -33,15 +31,14 @@
     var sortedDocuments = Model.Documents.OrderByDescending(x => x.CreatedTimestamp).ToList();
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+<partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
-
-    <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
 
     <p class="govuk-body">Upload documents to support your application, for example:</p>
     <ul class="govuk-list govuk-list--bullet">
@@ -132,8 +129,8 @@
             <input type="hidden" asp-for="ReturnToApplicationSummary" />
             @Html.HiddenFor(x => x.ApplicationId)
 
-            <fieldset class="govuk-fieldset govuk-!-margin-top-4 govuk-!-margin-bottom-4">
-                <div class="govuk-form-group">
+            <div class="govuk-form-group">
+                <fieldset class="govuk-fieldset govuk-!-margin-top-4 govuk-!-margin-bottom-4">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         Have you uploaded all the supporting documents associated with this application?
                     </legend>
@@ -154,8 +151,8 @@
                             </label>
                         </div>
                     </div>
-                </div>
-            </fieldset>
+                </fieldset>
+            </div>
 
             <div class="govuk-form-group">
                 <div class="govuk-button-group">

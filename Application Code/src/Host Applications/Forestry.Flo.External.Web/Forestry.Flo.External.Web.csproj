@@ -6,9 +6,6 @@
     <UserSecretsId>flo-external-user-secrets</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <Content Remove="wwwroot\js\mapping\widgets\MergeWidget.tsx" />
-  </ItemGroup>
-  <ItemGroup>
     <None Remove="Resources\species.csv" />
   </ItemGroup>
   <ItemGroup>
@@ -56,10 +53,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Update="Views\AccountAdministration\ExternalUserList.cshtml">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Update="Views\FellingLicenceApplication\FellingAndRestockingDetailsCompartments.cshtml">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

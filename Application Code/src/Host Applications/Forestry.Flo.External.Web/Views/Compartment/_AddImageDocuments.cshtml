@@ -1,13 +1,8 @@
-﻿@using Forestry.Flo.Services.Common.Extensions
-@using Forestry.Flo.Services.FileStorage.Configuration
-@using Microsoft.AspNetCore.Mvc.TagHelpers
+﻿@using Forestry.Flo.Services.FileStorage.Configuration
 @using Forestry.Flo.Services.Common
-@using Forestry.Flo.Services.FileStorage.Services
 @using Microsoft.Extensions.Options
-@using System.Collections.Generic
 @using System.Linq
 @inject IOptions<UserFileUploadOptions> Settings
-@inject FileTypesProvider FileTypesProvider
 @model Forestry.Flo.External.Web.Models.Compartment.UploadMapModel
 
 @{

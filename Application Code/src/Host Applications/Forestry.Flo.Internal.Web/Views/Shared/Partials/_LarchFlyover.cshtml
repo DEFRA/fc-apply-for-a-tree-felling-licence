@@ -1,14 +1,7 @@
 ﻿@{
 	ViewData["Title"] = "Larch flyover update";
-	var user = new InternalUser(User);
+    const string flyoverDateId = "flyover-date";
 }
-@using Forestry.Flo.Internal.Web.Models.AdminOfficerReview
-@using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
-@using Forestry.Flo.Services.Common
-@using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure.Display
-@using Forestry.Flo.Internal.Web.Infrastructure
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.LarchFlyoverModel
 <style>
 	.no-border-left {
@@ -23,7 +16,7 @@
 	}
 </style>
 
-<div class="govuk-grid-column-full">
+<div class="govuk-grid-column-two-thirds">
 
 	<partial name="Partials/_ConfirmationMessageDisplay" />
 
@@ -35,16 +28,16 @@
 		<input type="hidden" asp-for="SubmissionDate" />
 
 		<div class="govuk-form-group">
-            <fieldset class="govuk-fieldset" role="group" aria-describedby="flight-date-hint">
-            <label class="govuk-label--m" for="FlyoverDate">Flight date</label>
-            <div class="govuk-hint">
-                For example, 24 6 2022
-            </div>
-            <validation asp-for="FlyoverDate.Day"></validation>
-            <validation asp-for="FlyoverDate.Month"></validation>
-            <validation asp-for="FlyoverDate.Year"></validation>
-            <validation asp-for="FlyoverDate"></validation>
-            @Html.EditorFor(m => m.FlyoverDate, new { htmlAttributes = new { id = "FlyoverDate" } })
+            <fieldset class="govuk-fieldset" role="group">
+                <legend class="govuk-label--m" for="@flyoverDateId">Flight date</legend>
+                <div class="govuk-hint">
+                    For example, 24 6 2022
+                </div>
+                <validation asp-for="FlyoverDate.Day"></validation>
+                <validation asp-for="FlyoverDate.Month"></validation>
+                <validation asp-for="FlyoverDate.Year"></validation>
+                <validation asp-for="FlyoverDate"></validation>
+				@Html.EditorFor(m => m.FlyoverDate, new { htmlAttributes = new { id = flyoverDateId } })
             </fieldset>
 		</div>
 
@@ -56,32 +49,7 @@
 			<input class="govuk-input" id="flight-observations" asp-for="FlightObservations" type="text">
 		</div>
 
-		<div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
-			<fieldset class="govuk-fieldset">
-                <label class="govuk-label--m" for="add-case-note-text">Case Note</label>  
-																			<div class="govuk-hint">
-					Case notes may be subject to Freedom of Information (FOI) requests and could be accessed by the public. Please ensure all information is recorded in line with privacy and policy guidelines.
-				</div>
-				<textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="CaseNote" id="add-case-note-text"></textarea>
-				<div id="add-case-note-text-info" class="govuk-hint govuk-character-count__message">
-					You can enter up to 65,535 characters
-				</div>
-				<div class="govuk-grid-row">
-					<div class="govuk-grid-column-one-third">
-						<div class="govuk-checkboxes__item">
-							<input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant" />
-							<label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
-						</div>
-					</div>
-					<div class="govuk-grid-column-one-third">
-						<div class="govuk-checkboxes__item">
-							<input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee" />
-							<label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
-						</div>
-					</div>
-				</div>
-			</fieldset>
-		</div>
+        @Html.EditorFor(m => m.FormLevelCaseNote)
 
 		<div class="govuk-button-group">
 			<button condition="@(!Model.Disabled)" type="submit" class="govuk-button" data-module="govuk-button">

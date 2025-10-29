@@ -323,7 +323,7 @@ public class ReportQueryService : IReportQueryService
             return comp.CompartmentNumber;
         }
 
-        _logger.LogWarning($"Could not find confirmed compartment having id {compartmentId}, which is linked to Linked Property Profile {application.SubmittedFlaPropertyDetail.PropertyProfileId}");
+        _logger.LogWarning("Could not find confirmed compartment having id {CompartmentId}, which is linked to Linked Property Profile {PropertyProfileId}", compartmentId, application.SubmittedFlaPropertyDetail?.PropertyProfileId);
 
         return string.Empty;
     }

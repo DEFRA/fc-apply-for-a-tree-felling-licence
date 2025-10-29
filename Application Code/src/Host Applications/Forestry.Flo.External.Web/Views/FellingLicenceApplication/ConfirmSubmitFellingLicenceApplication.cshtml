@@ -5,7 +5,7 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
+<div class="govuk-grid-column-two-thirds">
     
     <h1 class="govuk-heading-l">
         Please confirm your felling licence application submission
@@ -34,7 +34,7 @@
             {
             <button class="govuk-button" data-module="govuk-button" disabled="disabled">Submit application</button>
             }
-            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-action="ApplicationSummary" asp-route-applicationId="@Model.ApplicationId" asp-route-applicationId="@Model.ApplicationId">
+            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-action="ApplicationSummary" asp-route-applicationId="@Model.ApplicationId">
                 Application summary
             </a>
         </form>

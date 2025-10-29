@@ -95,31 +95,31 @@ public abstract class GeneratePdfApplicationUseCaseBase
         FellingLicenceApplication application,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Creating a PDF Generator Request for the application with id {applicationId}", application.Id);
+        _logger.LogDebug("Creating a PDF Generator Request for the application with id {ApplicationId}", application.Id);
         var userAccount = await _externalAccountService.RetrieveUserAccountByIdAsync(application.CreatedById, cancellationToken);
         if (userAccount.IsFailure)
         {
-            _logger.LogError("Unable to retrieve applicant user account of id {applicantId}, error: {error}", application.CreatedById, userAccount.Error);
+            _logger.LogError("Unable to retrieve applicant user account of id {ApplicantId}, error: {Error}", application.CreatedById, userAccount.Error);
             return Result.Failure<PDFGeneratorRequest>(userAccount.Error);
         }
 
         var woodlandOwner = await _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
-            _logger.LogError("Unable to retrieve woodland owner of id {woodlandOwnerId}, error: {error}", application.WoodlandOwnerId, woodlandOwner.Error);
+            _logger.LogError("Unable to retrieve woodland owner of id {WoodlandOwnerId}, error: {Error}", application.WoodlandOwnerId, woodlandOwner.Error);
             return Result.Failure<PDFGeneratorRequest>(woodlandOwner.Error);
         }
 
         var approverAccount = await _internalAccountService.GetUserAccountAsync(application.ApproverId ?? Guid.Empty, cancellationToken);
         if (application.ApproverId.HasValue && approverAccount.HasNoValue)
         {
-            _logger.LogError("Unable to retrieve approver user account of id {approverId}", application.ApproverId);
+            _logger.LogError("Unable to retrieve approver user account of id {ApproverId}", application.ApproverId);
         }
 
         var propertyProfile = await _propertyProfileRepository.GetAsync(application.LinkedPropertyProfile!.PropertyProfileId, application.WoodlandOwnerId, cancellationToken);
         if (propertyProfile.IsFailure)
         {
-            _logger.LogError("Unable to retrieve propertyProfile of id {propertyId}, error: {error}", application.LinkedPropertyProfile!.PropertyProfileId, propertyProfile.Error);
+            _logger.LogError("Unable to retrieve propertyProfile of id {PropertyId}, error: {Error}", application.LinkedPropertyProfile!.PropertyProfileId, propertyProfile.Error);
             return Result.Failure<PDFGeneratorRequest>($"Unable to retrieve propertyProfile of id {application.LinkedPropertyProfile!.PropertyProfileId}, error: {propertyProfile.Error}");
         }
 
@@ -311,7 +311,7 @@ public abstract class GeneratePdfApplicationUseCaseBase
         }
         // Part 4 - Felling maps ******
 
-        _logger.LogDebug($"Generating Felling maps for application with id {application.Id}");
+        _logger.LogDebug("Generating Felling maps for application with id {ApplicationId}", application.Id);
 
         var operationsMaps = new List<string>();
         if (fellingCompartments.Count > 0)
@@ -330,7 +330,7 @@ public abstract class GeneratePdfApplicationUseCaseBase
             var generatedMainFellingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(fellingCompartmentMap, cancellationToken, 3000);
             if (generatedMainFellingMap.IsFailure)
             {
-                _logger.LogError("Unable to retrieve Generated Map of application with id {applicantId}, error: {error}", application.WoodlandOwnerId, generatedMainFellingMap.Error);
+                _logger.LogError("Unable to retrieve Generated Map of application with id {ApplicationId}, error: {Error}", application.WoodlandOwnerId, generatedMainFellingMap.Error);
                 return Result.Failure<PDFGeneratorRequest>("Failed to Generate Felling Map");
             }
 
@@ -343,7 +343,7 @@ public abstract class GeneratePdfApplicationUseCaseBase
 
         // Part 5 - Restocking maps ******
 
-        _logger.LogDebug($"Generating Restocking maps for application with id {application.Id}");
+        _logger.LogDebug("Generating Restocking maps for application with id {ApplicationId}", application.Id);
 
 
         var restockingMaps = new List<string>();
@@ -362,7 +362,7 @@ public abstract class GeneratePdfApplicationUseCaseBase
             var generatedMainRestockingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(restockingCompartmentsMaps, cancellationToken, 3000);
             if (generatedMainRestockingMap.IsFailure)
             {
-                _logger.LogError("Unable to retrieve Generated Map of application with id {applicantId}, error: {error}", application.WoodlandOwnerId, generatedMainRestockingMap.Error);
+                _logger.LogError("Unable to retrieve Generated Map of application with id {ApplicationId}, error: {error}", application.Id, generatedMainRestockingMap.Error);
                 return Result.Failure<PDFGeneratorRequest>("Failed to Generate Restocking Map");
             }
 
@@ -374,7 +374,7 @@ public abstract class GeneratePdfApplicationUseCaseBase
             }
         }
 
-        _logger.LogDebug($"Creating Request for application with Id {application.Id}");
+        _logger.LogDebug("Creating Request for application with Id {ApplicationId}", application.Id);
         var result = new PDFGeneratorRequest
         {
             templateName = _licencePdfOptions.TemplateName,

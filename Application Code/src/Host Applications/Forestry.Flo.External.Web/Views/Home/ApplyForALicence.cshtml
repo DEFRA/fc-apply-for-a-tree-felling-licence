@@ -2,7 +2,7 @@
     ViewData["Title"] = "Apply for a tree felling licence in England";
 }
 
-<div class="govuk-grid-column-full">
+<div class="govuk-grid-column-two-thirds">
     @await Html.PartialAsync("_PreApplicationGuidanceContents")
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
@@ -25,7 +25,7 @@
         You’ll need a licence if you plan to fell trees on any land in England. This ensures that tree felling complies with legal and environmental guidelines.
     </p>
     <p class="govuk-body">
-        If you have an <a asp-action="WhenYouDoNotNeedALicence">exception</a>, you do not need a licence.
+        If you have an <a class="govuk-link" asp-action="WhenYouDoNotNeedALicence">exception</a>, you do not need a licence.
     </p>
     
     <h1 class="govuk-heading-m">Who can use this service</h1>

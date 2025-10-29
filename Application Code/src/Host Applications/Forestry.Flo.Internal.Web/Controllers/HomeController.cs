@@ -1,7 +1,6 @@
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.InternalUsers.Services;
@@ -13,7 +12,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
-using System.Threading;
 using AuthenticationOptions = Forestry.Flo.Services.Common.Infrastructure.AuthenticationOptions;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
 

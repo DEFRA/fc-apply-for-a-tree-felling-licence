@@ -1,10 +1,9 @@
 ﻿@model Forestry.Flo.External.Web.Models.Compartment.UploadMapModel
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_PageErrors" />
+<div class="govuk-grid-column-two-thirds">
 
     <form asp-action="UploadMap" asp-controller="Compartment"
           method="post"

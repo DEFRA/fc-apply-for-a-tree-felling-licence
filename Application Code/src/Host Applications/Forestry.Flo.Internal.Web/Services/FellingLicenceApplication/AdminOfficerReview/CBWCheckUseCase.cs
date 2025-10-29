@@ -4,6 +4,7 @@ using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
@@ -68,7 +69,8 @@ public class CBWCheckUseCase : AdminOfficerReviewUseCaseBase, ICBWCheckUseCase
             FellingAndRestockingDetails = ModelMapping.RetrieveFellingAndRestockingDetails(fellingLicence),
             CheckFailedReason = fellingLicence.AdminOfficerReview?.MappingCheckFailureReason,
             CheckPassed = fellingLicence.AdminOfficerReview?.CBWChecked,
-            FellingLicenceApplicationSummary = applicationSummary.Value
+            FellingLicenceApplicationSummary = applicationSummary.Value,
+            FormLevelCaseNote = new FormLevelCaseNote()
         };
     }
 

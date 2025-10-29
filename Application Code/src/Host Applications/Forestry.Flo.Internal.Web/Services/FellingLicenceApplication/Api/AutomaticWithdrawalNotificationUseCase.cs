@@ -68,7 +68,7 @@ public class AutomaticWithdrawalNotificationUseCase(
         CancellationToken cancellationToken)
     {
         logger.LogDebug(
-            "Attempting to automatic withdrawal of applications that have exceeded ThresholdAutomaticWithdrawal:{ThresholdAutomaticWithdrawal}",
+            "Attempting to automatic withdrawal of applications that have exceeded ThresholdAutomaticWithdrawal: {ThresholdAutomaticWithdrawal}",
             _notificationOptions.ThresholdAutomaticWithdrawal);
 
         var (_, isFailure, relevantApplications, error) =
@@ -78,7 +78,7 @@ public class AutomaticWithdrawalNotificationUseCase(
 
         if (isFailure)
         {
-            logger.LogError("Unable to retrieve applications for withdrawal, error: {error}", error);
+            logger.LogError("Unable to retrieve applications for withdrawal, error: {Error}", error);
             return;
         }
 
@@ -98,7 +98,7 @@ public class AutomaticWithdrawalNotificationUseCase(
 
                 if (resultWithdrawal.IsFailure)
                 {
-                    logger.LogError("Unable to withdraw application id {applicationId}, error: {error}",
+                    logger.LogError("Unable to withdraw application id {ApplicationId}, error: {Error}",
                         application.ApplicationId, resultWithdrawal.Error);
                     await _auditService.PublishAuditEventAsync(
                         new AuditEvent(
@@ -124,7 +124,7 @@ public class AutomaticWithdrawalNotificationUseCase(
                 if (isPublicRegisterFailure)
                 {
                     logger.LogError(
-                        "Unable to retrieve public register details for application id {applicationId}, error: {error}",
+                        "Unable to retrieve public register details for application id {ApplicationId}, error: {Error}",
                         application.ApplicationId,
                         publicRegisterError);
                     await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
@@ -173,7 +173,7 @@ public class AutomaticWithdrawalNotificationUseCase(
                     if (updateResult.IsFailure)
                     {
                         logger.LogError(
-                            "Unable to update public register details for application id {applicationId}, error: {error}",
+                            "Unable to update public register details for application id {ApplicationId}, error: {Error}",
                             application.ApplicationId,
                             updateResult.Error);
                         await _auditService.PublishAuditEventAsync(
@@ -232,7 +232,7 @@ public class AutomaticWithdrawalNotificationUseCase(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An error occurred while processing application id {applicationId}", application.ApplicationId);
+                logger.LogError(ex, "An error occurred while processing application id {ApplicationId}", application.ApplicationId);
                 await _auditService.PublishAuditEventAsync(
                     new AuditEvent(
                         AuditEvents.WithdrawFellingLicenceApplicationFailure,
@@ -248,7 +248,7 @@ public class AutomaticWithdrawalNotificationUseCase(
             }
         }
 
-        logger.LogDebug("Automatic withdrawal of {withdrawnApplications} applications", relevantApplications.Count);
+        logger.LogDebug("Automatic withdrawal of {WithdrawnApplications} applications", relevantApplications.Count);
     }
 
     private async Task InformApplicantOfApplicationWithdrawalOption(
@@ -266,7 +266,7 @@ public class AutomaticWithdrawalNotificationUseCase(
 
         if (createdByUserFailure)
         {
-            logger.LogError("Unable to retrieve applicant user account of id {applicantId}, error: {error}",
+            logger.LogError("Unable to retrieve applicant user account of id {ApplicantId}, error: {Error}",
                 application.CreatedById, error);
             return;
         }
@@ -301,7 +301,7 @@ public class AutomaticWithdrawalNotificationUseCase(
 
         if (notificationResult.IsFailure)
         {
-            logger.LogError("Unable to send automatic withdrawal notification to {recipient}, error: {error}",
+            logger.LogError("Unable to send automatic withdrawal notification to {Recipient}, error: {Error}",
                 applicantRecipient.Address,
                 notificationResult.Error);
         }
@@ -318,7 +318,7 @@ public class AutomaticWithdrawalNotificationUseCase(
             cancellationToken);
         if (createdByUserFailure)
         {
-            logger.LogError("Unable to retrieve creator user account when informing FC users of app withdrawal of id {userId}, error: {error}",
+            logger.LogError("Unable to retrieve creator user account when informing FC users of app withdrawal of id {UserId}, error: {Error}",
                 fla.CreatedById, error);
             return;
         }
@@ -331,7 +331,7 @@ public class AutomaticWithdrawalNotificationUseCase(
         var internalUsers = await _userAccountRepository.GetUsersWithIdsInAsync(resultWithdrawal, cancellationToken);
         if (internalUsers.IsFailure)
         {
-            logger.LogError("Unable to retrieve internal users when informing FC users of app withdrawal, error: {error}", internalUsers.Error);
+            logger.LogError("Unable to retrieve internal users when informing FC users of app withdrawal, error: {Error}", internalUsers.Error);
             return;
         }
 
@@ -367,7 +367,7 @@ public class AutomaticWithdrawalNotificationUseCase(
             if (sendNotificationResult.IsFailure)
             {
                 logger.LogError(
-                    "Could not send notification for withdrawal of {ApplicationId} back to internal user (Id {internalUserId}): error: {error}",
+                    "Could not send notification for withdrawal of {ApplicationId} back to internal user (Id {InternalUserId}): error: {Error}",
                     internalUser.Id, fla.ApplicationId, sendNotificationResult.Error);
             }
         }

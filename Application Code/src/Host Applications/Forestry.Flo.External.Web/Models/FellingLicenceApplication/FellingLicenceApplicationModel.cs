@@ -12,6 +12,7 @@ public class FellingLicenceApplicationModel
 
     public FellingLicenceApplicationModel()
     {
+        _steps.Add(FellingLicenceApplicationSection.AgentAuthorityForm, new AgentAuthorityFormModel());
         _steps.Add(FellingLicenceApplicationSection.SelectedCompartments, new SelectedCompartmentsModel());
         _steps.Add(FellingLicenceApplicationSection.ConstraintCheck, new ConstraintCheckModel());
         _steps.Add(FellingLicenceApplicationSection.OperationDetails, new OperationDetailsModel());
@@ -33,6 +34,12 @@ public class FellingLicenceApplicationModel
         .Count(s => s.Status == ApplicationStepStatus.Completed);
     
     public FellingLicenceApplicationSummary ApplicationSummary { get; set; } = null!;
+
+    public AgentAuthorityFormModel AgentAuthorityForm
+    {
+        get => (_steps[FellingLicenceApplicationSection.AgentAuthorityForm] as AgentAuthorityFormModel)!;
+        set => _steps[FellingLicenceApplicationSection.AgentAuthorityForm] = value;
+    }
 
     public SelectedCompartmentsModel SelectedCompartments
     {

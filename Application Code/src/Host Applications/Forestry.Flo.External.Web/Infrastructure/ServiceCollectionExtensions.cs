@@ -229,6 +229,11 @@ public static class ServiceCollectionExtensions
         configuration.Bind("AzureAdB2C", settings);
 
         services
+            .AddHttpClient()
+            .ConfigureHttpClientDefaults(defaults =>
+            {
+                defaults.AddHttpMessageHandler(_ => new UserAgentHandler());
+            })
             .AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy", policyBuilder => policyBuilder

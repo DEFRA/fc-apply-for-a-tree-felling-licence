@@ -23,11 +23,10 @@
     var orgName = Model.ManageWoodlandOwnerDetails.IsOrganisation ? Model.ManageWoodlandOwnerDetails.OrganisationName : "N/A";
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
 
-    <partial name="Partials/_PageErrors" />
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-xl">@Model.ManageWoodlandOwnerDetails.ContactName</h1>
 

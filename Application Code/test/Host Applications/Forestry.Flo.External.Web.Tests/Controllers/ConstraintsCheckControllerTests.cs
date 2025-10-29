@@ -68,10 +68,6 @@ public class ConstraintsCheckControllerTests : IClassFixture<ExternalWebApplicat
         _factory.WoodlandOwnerRepositoryMock.Setup(w => w.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<WoodlandOwner, UserDbErrorReason>(woodlandOwner));
 
-        _factory.FellingLicenceApplicationInternalRepositoryMock.Setup(r => r.ListByIncludedStatus(It.IsAny<bool>(),
-            It.IsAny<Guid>(), It.IsAny<List<FellingLicenceStatus>>(),
-            It.IsAny<CancellationToken>())).ReturnsAsync(new List<FellingLicenceApplication> { application });
-
         _factory.FellingLicenceApplicationRepositoryMock.Setup(r => r.GetAsync(application.Id,
             It.IsAny<CancellationToken>())).ReturnsAsync(application);
 

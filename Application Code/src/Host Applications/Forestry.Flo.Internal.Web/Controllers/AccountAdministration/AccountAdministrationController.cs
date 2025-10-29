@@ -37,19 +37,19 @@ public class AccountAdministrationController : Controller
 
         if (user.AccountType is not AccountTypeInternal.AccountAdministrator)
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction(nameof(HomeController.Index), "Home");
         }
 
         var model = 
             await useCase.GetAllFcStaffMembersAsync(
                 user,
-                Url.Action("Index", "Home")!,
+                Url.Action(nameof(HomeController.UserManagement), "Home")!,
                 true,
                 cancellationToken);
 
         if (model.IsFailure)
         {
-            return RedirectToAction("Error", "Home");
+            return RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
         model.Value.Breadcrumbs = new BreadcrumbsModel

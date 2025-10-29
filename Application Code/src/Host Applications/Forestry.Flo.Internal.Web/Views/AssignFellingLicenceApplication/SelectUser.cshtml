@@ -8,17 +8,18 @@
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.AssignToUserModel;
+@inject IUrlHelper UrlHelper
 
 @{
     var currentUser = new InternalUser(User);
 }
 
-<div class="govuk-grid-column-full">
-    
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
-    <partial name="Partials/_PageErrors"/>
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-l">Assign @Model.SelectedRole.GetDisplayName()?.ToLower()</h1>
     <fieldset class="govuk-fieldset">
@@ -125,7 +126,8 @@
                         Continue
                     </button>
 
-                    <a class="govuk-link" href="@Model.ReturnUrl" title="Cancel">Cancel</a>
+                    <a class="govuk-link" condition="@UrlHelper.IsLocalUrl(Model.ReturnUrl)" href="@Model.ReturnUrl">Cancel</a>
+                    <a class="govuk-link" condition="@(!UrlHelper.IsLocalUrl(Model.ReturnUrl))" asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" title="Abandon changes and go to the application page">Cancel</a>
                 </div>
             </div>
         </form>

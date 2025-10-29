@@ -344,6 +344,32 @@ internal-web-app:
     cronJobs:
       apiKey:
         secret_key: cronJobs.apiKey
+      jobs:
+        voluntary-withdrawal-notification:
+          name: voluntary-withdrawal-notification
+          path: /api/VoluntaryWithdrawNotification/VoluntaryWithdrawalNotificationFla
+          enabled: true
+          schedule: "0 0 * * *"
+        extend-applications:
+          name: extend-applications
+          path: /api/ApplicationExtension/ExtendApplications
+          enabled: true
+          schedule: "0 0 * * *"
+        public-register-expiry-notification:
+          name: public-register-expiry-notification
+          path: /api/PublicRegisterExpiry/PublicRegisterExpiryNotification
+          enabled: true
+          schedule: "0 0 * * *"
+        remove-applications-from-decision-public-register:
+          name: remove-applications-from-decision-public-register
+          path: /api/PublicRegisterExpiry/RemoveApplicationsFromDecisionPublicRegisterWhenEndDateReached
+          enabled: true
+          schedule: "0 0 * * *" 
+        public-register-consultation-comments:
+          name: public-register-consultation-comments
+          path: /api/PublicRegisterComments/PullNewComments
+          enabled: true
+          schedule: "0 0 * * *"
     publicRegisterExpiry:
       thresholdBeforePublicRegisterPeriodEnd: "14.00:00:00"
     voluntaryWithdrawApplication:

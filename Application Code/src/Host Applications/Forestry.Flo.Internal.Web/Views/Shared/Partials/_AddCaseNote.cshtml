@@ -27,24 +27,18 @@
             </ul>
         </div>
         <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="Text" id="add-case-note-text"></textarea>
-        <div class="govuk-grid-row">
-            <div class="govuk-grid-column-one-third">
-                <div class="govuk-checkboxes__item">
-                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant"/>
-                    <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
-                </div>
+        <div class="govuk-checkboxes govuk-checkboxes--small">
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant"/>
+                <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
             </div>
-            <div class="govuk-grid-column-one-third">
-                <div class="govuk-checkboxes__item">
-                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee"/>
-                    <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
-                </div>
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee"/>
+                <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
             </div>
-            <div class="govuk-grid-column-one-third">
-                <div class="govuk-button-group move-to-right">
-                    <button id="save-case-note-btn" class="govuk-button save-button-padding" data-module="govuk-button" type="submit">Save</button>
-                </div>
-            </div>
+        </div>
+        <div class="govuk-button-group">
+            <button id="save-case-note-btn" class="govuk-button save-button-padding" data-module="govuk-button" type="submit">Save</button>
         </div>
     </div>
 </form>

@@ -17,6 +17,9 @@ using NodaTime;
 
 namespace Forestry.Flo.External.Web.Services;
 
+/// <summary>
+/// Use case for inviting woodland owner users to join woodland owner organisations.
+/// </summary>
 public class InviteWoodlandOwnerToOrganisationUseCase : InviteUserBaseUseCase
 {
     private readonly IAuditService<OrganisationWoodlandOwnerUserModel> _auditService;
@@ -27,7 +30,18 @@ public class InviteWoodlandOwnerToOrganisationUseCase : InviteUserBaseUseCase
     private readonly ISendNotifications _emailService;
     private readonly IClock _clock;
 
-
+    /// <summary>
+    /// Creates a new instance of the <see cref="InviteWoodlandOwnerToOrganisationUseCase"/> class.
+    /// </summary>
+    /// <param name="auditService">An auditing service.</param>
+    /// <param name="userAccountRepository">A repository of user accounts.</param>
+    /// <param name="woodlandOwnerRepository">A repository of woodland owner entities.</param>
+    /// <param name="logger">A logging instance.</param>
+    /// <param name="emailService">A service to send emails.</param>
+    /// <param name="clock">A clock to get the current date and time.</param>
+    /// <param name="options">Configuration options related to inviting users.</param>
+    /// <param name="requestContext">The request context for the current operation.</param>
+    /// <param name="invitedUserValidator">A validator for invited user accounts.</param>
     public InviteWoodlandOwnerToOrganisationUseCase(
         IAuditService<OrganisationWoodlandOwnerUserModel> auditService,
         IUserAccountRepository userAccountRepository,
@@ -117,7 +131,9 @@ public class InviteWoodlandOwnerToOrganisationUseCase : InviteUserBaseUseCase
             );
     }
 
-    protected override async Task<Result> SendInvitationEmail(IInvitedUser woodlandOwnerUserModel,
+    /// <inheritdoc />
+    protected override async Task<Result> SendInvitationEmail(
+        IInvitedUser invitedUserModel,
         Guid token,
         string inviteAcceptanceLink,
         string? userName,
@@ -125,21 +141,22 @@ public class InviteWoodlandOwnerToOrganisationUseCase : InviteUserBaseUseCase
     {
         var inviteeModel = new InviteWoodlandOwnerToOrganisationDataModel
         {
-            Name = woodlandOwnerUserModel.Name,
-            WoodlandOwnerName = woodlandOwnerUserModel.OrganisationName,
+            Name = invitedUserModel.Name,
+            WoodlandOwnerName = invitedUserModel.OrganisationName,
             InviteLink =
-                CreateInviteLink(woodlandOwnerUserModel, token, inviteAcceptanceLink)
+                CreateInviteLink(invitedUserModel, token, inviteAcceptanceLink)
         };
 
         var result = await _emailService.SendNotificationAsync(inviteeModel,
             NotificationType.InviteWoodlandOwnerUserToOrganisation,
-            new NotificationRecipient(woodlandOwnerUserModel.Email, woodlandOwnerUserModel.Name),
+            new NotificationRecipient(invitedUserModel.Email, invitedUserModel.Name),
             senderName: userName,
             cancellationToken: cancellationToken);
         return result;
     }
 
-    protected override bool CheckIfTheUserIsAlreadyInvitedByAnotherUser(UserAccount userAccount,IInvitedUser organisationUserModel) =>
+    /// <inheritdoc />
+    protected override bool CheckIfTheUserIsAlreadyInvitedByAnotherUser(UserAccount userAccount, IInvitedUser organisationUserModel) =>
         userAccount.Status == UserAccountStatus.Invited &&
         userAccount.WoodlandOwnerId !=
         organisationUserModel.OrganisationId;

@@ -1,6 +1,4 @@
-﻿///<reference path="../fcconfig.js" />
-
-define(["require",
+﻿define(["require",
     "exports",
     "esri/Map",
     "esri/views/MapView",
@@ -9,7 +7,6 @@ define(["require",
     "esri/layers/WMSLayer",
     "esri/layers/WMTSLayer",
     "esri/layers/GraphicsLayer",
-    "esri/widgets/BasemapGallery",
     "/js/mapping/fcconfig.js?v=" + Date.now(),
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "esri/layers/GraphicsLayer",
@@ -18,15 +15,13 @@ define(["require",
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
     "/js/mapping/tokml.js?v=" + Date.now(),
     "/js/mapping/shp-write.js?v=" + Date.now(),
-    "esri/widgets/Expand"
-
+    "esri/core/reactiveUtils"
 ],
-    function (require, exports, Map, MapView, config, BaseMap,
+    function (require, exports, Map, MapView, config, Basemap,
         WMSLayer,
         WMTSLayer,
         GraphicsLayer,
-        BasemapToggle,
-        fcconfig, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite, Expand) {
+        fcconfig, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite, reactiveUtils) {
         var MapCompartmentSelection = /** @class */ (function () {
             MapCompartmentSelection.prototype.map;
             MapCompartmentSelection.prototype.view;
@@ -40,33 +35,36 @@ define(["require",
             function MapCompartmentSelection(location) {
 
                 config.apiKey = fcconfig.esriApiKey;
+                this.location = location;
 
                 this.graphicsArray = [];
 
                 this.map = new Map({
-                    basemap: new BaseMap({ portalItem: { id: fcconfig.baseMapForUK } })
+                    basemap: new Basemap({ portalItem: { id: fcconfig.baseMapForUK } })
                 });
 
-                //Lets Work on the guide
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: fcconfig.englandExtent,
-                    constraints: {
-                        maxZoom: 20
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
+
+                mapComponent.viewOnReady().then(() => {
+                    this.view = mapComponent.view;
+                    if (!this.view) {
+                        console.error("ArcGIS view is undefined. Map component may not be initialized or visible.");
+                        return;
                     }
-                });
-
-                this.commonTools = new Maps_common(this.view);
-
-                this.view.when(this.loadGIS.bind(this))
-                    .then(this.GetStartingPoint.bind(this))
-                    .then(this.wireUpEvents.bind(this))
+                    this.view.extent = fcconfig.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    this.commonTools = new Maps_common(this.view);
+                    return Promise.resolve();
+                })
                     .then(this.SetUpWidgets.bind(this))
+                    .then(this.loadGIS.bind(this))
+                    .then(this.wireUpEvents.bind(this))
+                    .then(this.GetStartingPoint.bind(this))
                     .then(this.addWatermark.bind(this));
             }
 
-            MapCompartmentSelection.prototype.SetUpWidgets = function () {
+            MapCompartmentSelection.prototype.SetUpWidgets = async function () {
                 var that = this;
 
 
@@ -80,19 +78,23 @@ define(["require",
                     id: "wmsBasemap"
                 });
 
+                const mapComponent = document.getElementById(this.location)
+                await mapComponent.viewOnReady();
 
-                const basemapToggleWidget = new BasemapToggle({
-                    view: this.view,
-                    source: [that.map.basemap, wmsBasemap]
+                const [LocalBasemapsSource, centroidOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js"
+                ]);
+
+                this.centroidOperator = centroidOperator;
+
+                const basemapGallery = document.querySelector("arcgis-basemap-gallery");
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
                 });
-
-                const expandLayer = new Expand({
-                    expandIconClass: "esri-icon-basemap",
-                    view: this.view,
-                    content: basemapToggleWidget
-                });
-
-                this.view.ui.add(expandLayer, { position: "top-left" });
 
 
                 return Promise.resolve();
@@ -142,31 +144,35 @@ define(["require",
                 // Add the watermark layer to the map
                 this.map.add(watermarkLayer);
 
-                // Update the watermark positions initially and whenever the view changes
-                this.view.watch("stationary", (newValue) => {
-                    if (newValue) {
-                        updateWatermarkPositions();
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
                     }
-                });
-                this.view.watch("extent", updateWatermarkPositions);
-
-                // Watch for basemap changes and toggle watermark visibility
-                this.view.watch("map.basemap", (newBasemap) => {
-                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK) {
-                        watermarkLayer.visible = true;
-                    } else {
-                        watermarkLayer.visible = false;
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK;
                     }
-                });
+                );
+                return Promise.resolve();
             };
+
+
+            MapCompartmentSelection.prototype.sanitizeForSelector = function (value) {
+                return String(value).replace(/[^a-zA-Z0-9_\-]/g, '');
+            }
 
             MapCompartmentSelection.prototype.wireUpEvents = function () {
                 var _this = this;
 
                 this.view.on("click", (evt) => {
                     _this.view.hitTest(evt).then((result) => {
-                        console.log(result);
-
                         if (typeof result.results === "undefined" || result.results.length === 0) {
                             return;
                         }
@@ -174,7 +180,7 @@ define(["require",
                         let graphic = result.results[0].graphic;
                         _this.UpdateGraphic(graphic, !graphic.attributes.selected)
 
-                        HTMLHelper.checkCheckbox('input[name="SelectedCompartmentIds"][value="' + graphic.attributes.Id + '"]', graphic.attributes.selected);
+                        HTMLHelper.checkCheckbox('input[name="SelectedCompartmentIds"][value="' + _this.sanitizeForSelector(graphic.attributes.Id) + '"]', graphic.attributes.selected);
                     });
                 });
 
@@ -308,7 +314,7 @@ define(["require",
                 labelSymbol.text = shapeGraphic.attributes.DisplayName;
 
                 const resx = new Graphic({
-                    geometry: shapeGraphic.geometry.centroid,
+                    geometry: this.centroidOperator.execute(shapeGraphic.geometry),
                     symbol: labelSymbol,
                 });
 
@@ -340,7 +346,7 @@ define(["require",
                     result = graphic.geometry.rings.map((ring) =>
                         ring.map((point) => proj4('EPSG:27700', 'EPSG:4326', point))
                     );
-                } 
+                }
                 return result;
             }
 

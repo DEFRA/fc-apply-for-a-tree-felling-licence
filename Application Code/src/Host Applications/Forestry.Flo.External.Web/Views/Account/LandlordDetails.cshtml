@@ -1,5 +1,4 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 
 @model Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels.LandlordDetailsViewModel
 
@@ -10,15 +9,14 @@
 
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-l">
-        @ViewData["Title"]
-    </h1>
-        
-    <partial name="Partials/_PageErrors" />
-
     <form method="post">
 
         <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
 
             <div class="govuk-form-group">
 

@@ -6,5 +6,8 @@ namespace Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers
     {
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
         public string? Name { get; set; }
+
+        [JsonProperty("status", NullValueHandling = NullValueHandling.Ignore)]
+        public string? Status { get; set; }
     }
 }

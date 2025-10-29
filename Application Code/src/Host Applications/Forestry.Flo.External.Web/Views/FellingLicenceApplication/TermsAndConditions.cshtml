@@ -1,5 +1,4 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FlaTermsAndConditionsViewModel
 
 @{
@@ -7,11 +6,11 @@
     ViewData.ShowBackLink();
 }
 
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+
 <form id="terms-and-conditions-form" method="POST" asp-controller="FellingLicenceApplication" asp-action="TermsAndConditions">
-    <div class="govuk-grid-column-full">
-        <partial name="Partials/_ConfirmationMessageDisplay"/>
-        <partial name="Partials/_UserGuideDisplay"/>
-        <partial name="Partials/_PageErrors" />
+    <div class="govuk-grid-column-two-thirds">
         
         <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
         

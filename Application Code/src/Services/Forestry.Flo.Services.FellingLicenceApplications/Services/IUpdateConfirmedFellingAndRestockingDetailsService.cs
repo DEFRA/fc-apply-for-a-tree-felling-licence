@@ -37,14 +37,14 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
     /// <param name="userId">The id of the user amending the details.</param>
-    /// <param name="newFelling">A <see cref="IndividualFellingRestockingDetailModel"/> containing felling and restocking details for a compartment.</param>
+    /// <param name="confirmedFellingDetailsModel">A <see cref="IndividualFellingRestockingDetailModel"/> containing felling and restocking details for a compartment.</param>
     /// <param name="speciesModel">A dictionary of <see cref="SpeciesModel"/> keyed by species code, representing the species included in the confirmed felling details.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result indicating whether confirmed felling details have been updated.</returns>
     Task<Result> SaveChangesToConfirmedFellingDetailsAsync(
         Guid applicationId,
         Guid userId,
-        IndividualFellingRestockingDetailModel newFelling,
+        IndividualFellingRestockingDetailModel confirmedFellingDetailsModel,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 
@@ -64,10 +64,19 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Saves amendments made to confirmed restocking details.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userId">The id of the user amending the details.</param>
+    /// <param name="confirmedRestockingDetailsModel">A <see cref="IndividualRestockingDetailModel"/> containing restocking details for a compartment.</param>
+    /// <param name="speciesModel">A dictionary of <see cref="SpeciesModel"/> keyed by species code, representing the species included in the confirmed felling details.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether confirmed restocking details have been updated.</returns>
     Task<Result> SaveChangesToConfirmedRestockingDetailsAsync(
         Guid applicationId,
         Guid userId,
-        IndividualRestockingDetailModel restockingDetailsModel,
+        IndividualRestockingDetailModel confirmedRestockingDetailsModel,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 

@@ -1,0 +1,49 @@
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common
+@model Forestry.Flo.External.Web.Models.AgentAuthorityForm.AgentAuthorityFormDocumentModel
+
+@{
+    ViewData["Title"] = "Agent Authority Forms";
+    var applicationId = Context.Request.Query["ApplicationId"];
+    var returnToApplicationSummary = Context.Request.Query["returnToApplicationSummary"];
+    ViewData.ShowBackLink();
+    var AafStepStatus = ViewData["AafStepStatus"] ?? false;   
+}
+
+<div class="govuk-grid-column-two-thirds">
+
+    <partial name="Partials/_AgentAuthorityForm" model="Model" />
+
+    <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
+       href="/@($"AgentAuthorityFormDocuments/{Model.AgentAuthorityId}/AddAgentAuthorityFormFiles?applicationId={applicationId}&returnToApplicationSummary={returnToApplicationSummary}")">
+        Add new agent authority form
+    </a>
+
+    <form asp-action="AgentAuthorityForm" asp-route-id="@Model.AgentAuthorityId">
+        <div class="govuk-form-group">
+            <validation asp-for="DoesNotHaveAnyAuthorityForms"></validation>
+            <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                <div class="govuk-checkboxes__item">
+                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="@AafStepStatus">
+                    <label class="govuk-label govuk-checkboxes__label" for="AgentAuthorityFormCorrect">
+                        Confirm the current agent authority form is correct
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-button-group">
+            <input aria-hidden="True" type="hidden" asp-for="@applicationId" />
+            <input aria-hidden="True" type="hidden" asp-for="@returnToApplicationSummary" />
+			<button class="govuk-button" type="submit" data-module="govuk-button">
+				Save and continue
+			</button>
+        </div>
+    </form>
+
+</div>
+@section Scripts
+{
+    <script src="~/js/agent-authority-form-documents.js" asp-append-version="true"></script>
+
+}

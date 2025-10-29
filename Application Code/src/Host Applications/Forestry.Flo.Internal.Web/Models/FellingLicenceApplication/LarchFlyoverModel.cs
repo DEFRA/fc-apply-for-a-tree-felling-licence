@@ -1,6 +1,7 @@
 ﻿using Forestry.Flo.Services.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 
@@ -27,9 +28,10 @@ public class LarchFlyoverModel : FellingLicenceApplicationPageViewModel
     /// </summary>
     public bool Disabled { get; set; }
 
-    public string? CaseNote { get; set; }
-    public bool VisibleToApplicant { get; set; }
-    public bool VisibleToConsultee { get; set; }
+    /// <summary>
+    /// Gets and sets a model for the form-level case note for the larch flyover details.
+    /// </summary>
+    public required FormLevelCaseNote FormLevelCaseNote { get; set; }  
 
     public DateTime? SubmissionDate { get; set; }
 }

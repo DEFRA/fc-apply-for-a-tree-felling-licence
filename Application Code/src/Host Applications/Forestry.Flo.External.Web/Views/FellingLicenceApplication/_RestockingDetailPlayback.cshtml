@@ -2,88 +2,69 @@
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.RestockingDetailPlaybackViewModel
 
-<form id="restocking-detail-playback-form">
+<h3 class="govuk-heading-m">
+    Restocking: @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName
+</h3>
 
-    <div class="govuk-form-group">
-        <fieldset class="govuk-fieldset">
-            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                <h1 class="govuk-fieldset__heading">
-                    Restocking: @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName
-                </h1>
-            </legend>
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        Estimated area to be restocked
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                        @Model.RestockingDetail.Area Ha
-                    </dd>
-                    <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
-                        <a class="govuk-link" href="@Url.Action(Model.AreaChangeLink)">Change<span class="govuk-visually-hidden"> the estimated area to restock for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        Estimated percentage of the area that will be restocked
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                        @Model.RestockingDetail.PercentageOfRestockArea%
-                    </dd>
-                    <dd class="govuk-summary-list__actions" condition="false"> @* Readonly item *@
-                        <a class="govuk-link" href="@Url.Action(Model.PercentageChangeLink)">Change<span class="govuk-visually-hidden"> the estimated percentage of the area that will be restocked for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-            <dl condition="@(Model.RestockingDetail.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround && Model.RestockingDetail.RestockingProposal != TypeOfProposal.RestockWithIndividualTrees && Model.RestockingDetail.RestockingProposal != TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)" class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        Estimate of the restocking density
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                        @Model.RestockingDetail.RestockingDensity Stems per Ha
-                    </dd>
-                    <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
-                        <a class="govuk-link" href="@Url.Action(Model.DensityChangeLink)">Change<span class="govuk-visually-hidden"> the estimated restocking density for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-            @if (Model.RestockingDetail.RestockingProposal is TypeOfProposal.RestockWithIndividualTrees or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
-            {
-                <dl class="govuk-summary-list">
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Estimate of the restocking number of trees
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @Model.RestockingDetail.NumberOfTrees Trees
-                        </dd>
-                        <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
-                            <a class="govuk-link" href="@Url.Action(Model.NumberOfTreesChangeLink)">Change<span class="govuk-visually-hidden"> the estimated number of trees being restocked for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
-                        </dd>
-                    </div>
-                </dl>
-            }
-
-            <dl condition="@(Model.RestockingDetail.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)" class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        Species and restocking percentage
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                        @Model.SpeciesAndRestockingPercentageDisplay
-                    </dd>
-                    <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
-                        <a class="govuk-link" href="@Url.Action(Model.SpeciesChangeLink)">Change<span class="govuk-visually-hidden"> the species and percentages thereof being restocked for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-        </fieldset>
+<dl class="govuk-summary-list">
+    <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">
+            Estimated area to be restocked
+        </dt>
+        <dd class="govuk-summary-list__value">
+            @Model.RestockingDetail.Area Ha
+        </dd>
+        <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+            <a class="govuk-link" href="@Url.Action(Model.AreaChangeLink)">Change<span class="govuk-visually-hidden"> the estimated area to restock for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
+        </dd>
     </div>
-</form>
+    <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">
+            Estimated percentage of the area that will be restocked
+        </dt>
+        <dd class="govuk-summary-list__value">
+            @Model.RestockingDetail.PercentageOfRestockArea%
+        </dd>
+        <dd class="govuk-summary-list__actions" condition="false"> @* Readonly item *@
+            <a class="govuk-link" href="@Url.Action(Model.PercentageChangeLink)">Change<span class="govuk-visually-hidden"> the estimated percentage of the area that will be restocked for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
+        </dd>
+    </div>
+    <div class="govuk-summary-list__row" condition="@(Model.RestockingDetail.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround && Model.RestockingDetail.RestockingProposal != TypeOfProposal.RestockWithIndividualTrees && Model.RestockingDetail.RestockingProposal != TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)">
+        <dt class="govuk-summary-list__key">
+            Estimate of the restocking density
+        </dt>
+        <dd class="govuk-summary-list__value">
+            @Model.RestockingDetail.RestockingDensity Stems per Ha
+        </dd>
+        <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+            <a class="govuk-link" href="@Url.Action(Model.DensityChangeLink)">Change<span class="govuk-visually-hidden"> the estimated restocking density for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
+        </dd>
+    </div>
+
+    @if (Model.RestockingDetail.RestockingProposal is TypeOfProposal.RestockWithIndividualTrees or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
+    {
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">
+                Estimate of the restocking number of trees
+            </dt>
+            <dd class="govuk-summary-list__value">
+                @Model.RestockingDetail.NumberOfTrees Trees
+            </dd>
+            <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+                <a class="govuk-link" href="@Url.Action(Model.NumberOfTreesChangeLink)">Change<span class="govuk-visually-hidden"> the estimated number of trees being restocked for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
+            </dd>
+        </div>
+    }
+
+    <div class="govuk-summary-list__row" condition="@(Model.RestockingDetail.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)" class="govuk-summary-list">
+        <dt class="govuk-summary-list__key">
+            Species and restocking percentage
+        </dt>
+        <dd class="govuk-summary-list__value">
+            @Model.SpeciesAndRestockingPercentageDisplay
+        </dd>
+        <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+            <a class="govuk-link" href="@Url.Action(Model.SpeciesChangeLink)">Change<span class="govuk-visually-hidden"> the species and percentages thereof being restocked for the @Model.RestockingDetail.RestockingProposal.GetDisplayName() in compartment @Model.RestockingCompartmentName</span></a>
+        </dd>
+    </div>
+</dl>

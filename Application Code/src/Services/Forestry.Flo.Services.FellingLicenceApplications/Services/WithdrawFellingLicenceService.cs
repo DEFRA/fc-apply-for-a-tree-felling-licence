@@ -106,7 +106,8 @@ public class WithdrawFellingLicenceService(
             if (result.IsFailure)
             {
                 _logger.LogError(
-                    $"Could not remove the assignment of the internal user with user ID {userId} from the {nameof(FellingLicenceApplication)} with ID {applicationId}");
+                    "Could not remove the assignment of the internal user with user ID {UserId} from the application with ID {ApplicationId}",
+                    userId, applicationId);
 
                 unassignedAll = false;
             }

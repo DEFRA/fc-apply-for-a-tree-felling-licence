@@ -11,12 +11,10 @@
     var maxFileSize = (Options?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
-</div>
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
 <div class="govuk-grid-column-two-thirds">
     
@@ -94,18 +92,14 @@
                                     </div>
                                     <div>
                                         <textarea condition-disabled="@(!Model.Editable(user))" class="govuk-textarea" rows="4" asp-for="@Model.SiteVisitEvidenceMetadata[i].Comment"></textarea>
-                                        <div class="govuk-grid-row">
-                                            <div class="govuk-grid-column-one-third">
-                                                <div class="govuk-checkboxes__item">
-                                                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" type="checkbox" asp-for="SiteVisitEvidenceMetadata[i].VisibleToApplicants"/>
-                                                    <label class="govuk-label govuk-checkboxes__label" asp-for="SiteVisitEvidenceMetadata[i].VisibleToApplicants">Visible to applicants</label>
-                                                </div>
+                                        <div class="govuk-checkboxes govuk-checkboxes--small">
+                                            <div class="govuk-checkboxes__item">
+                                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" type="checkbox" asp-for="SiteVisitEvidenceMetadata[i].VisibleToApplicants"/>
+                                                <label class="govuk-label govuk-checkboxes__label" asp-for="SiteVisitEvidenceMetadata[i].VisibleToApplicants">Visible to applicants</label>
                                             </div>
-                                            <div class="govuk-grid-column-one-third">
-                                                <div class="govuk-checkboxes__item">
-                                                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" type="checkbox" asp-for="SiteVisitEvidenceMetadata[i].VisibleToConsultees"/>
-                                                    <label class="govuk-label govuk-checkboxes__label" asp-for="SiteVisitEvidenceMetadata[i].VisibleToConsultees">Visible to external consultees</label>
-                                                </div>
+                                            <div class="govuk-checkboxes__item">
+                                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" type="checkbox" asp-for="SiteVisitEvidenceMetadata[i].VisibleToConsultees"/>
+                                                <label class="govuk-label govuk-checkboxes__label" asp-for="SiteVisitEvidenceMetadata[i].VisibleToConsultees">Visible to external consultees</label>
                                             </div>
                                         </div>
                                     </div>
