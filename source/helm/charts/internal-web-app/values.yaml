@@ -397,6 +397,8 @@ config:
         IsPublic: true
         IntersectService:
           Path: ""
+        AreaService:
+          Path: ""
         ProjectService:
           Path: ""
           OutSR: 0
