@@ -1,6 +1,3 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
 name: .NET
 
 on:
@@ -11,114 +8,151 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # helps Sonar with blame info; harmless when Sonar is off
 
-    - name: Restore dependencies
-      run: dotnet restore
-      working-directory: Application Code
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Inject User Secrets for External Project
-      shell: bash
-      run: |
-        externalProjectPath="src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: Application Code
 
-        # database
-        dotnet user-secrets set "ConnectionStrings:DefaultConnection" "just_text_for_secret" --project "$externalProjectPath"
-        
-        dotnet user-secrets set "AzureAdB2C:ClientId" "${{ secrets.AZURE_AD_B2C_CLIENT_ID }}" --project "$externalProjectPath"
-        dotnet user-secrets set "AzureAdB2C:ClientSecret" "${{ secrets.AZURE_AD_B2C_CLIENT_SECRET }}" --project "$externalProjectPath"
-        
-        dotnet user-secrets set "EsriConfig:Forestry:ApiKey" "${{ secrets.ESRI_FORESTRY_API_KEY }}" --project "$externalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientID" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_ID }}" --project "$externalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientSecret" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_SECRET }}" --project "$externalProjectPath"
+      # --- your existing secret injections (kept as-is) ---
+      - name: Inject User Secrets for External Project
+        shell: bash
+        run: |
+          externalProjectPath="src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
 
-        dotnet user-secrets set "EsriConfig:Forester:ApiKey" "${{ secrets.ESRI_FORESTER_API_KEY }}" --project "$externalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
+          dotnet user-secrets set "ConnectionStrings:DefaultConnection" "just_text_for_secret" --project "$externalProjectPath"
 
-        dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
-        dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
+          dotnet user-secrets set "AzureAdB2C:ClientId" "${{ secrets.AZURE_AD_B2C_CLIENT_ID }}" --project "$externalProjectPath"
+          dotnet user-secrets set "AzureAdB2C:ClientSecret" "${{ secrets.AZURE_AD_B2C_CLIENT_SECRET }}" --project "$externalProjectPath"
 
-        dotnet user-secrets set "LandInformationSearch:ClientID" "${{ secrets.LAND_INFO_CLIENT_ID }}" --project "$externalProjectPath"
-        dotnet user-secrets set "LandInformationSearch:ClientSecret" "${{ secrets.LAND_INFO_CLIENT_SECRET }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:ApiKey" "${{ secrets.ESRI_FORESTRY_API_KEY }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientID" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_ID }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientSecret" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_SECRET }}" --project "$externalProjectPath"
 
-        dotnet user-secrets set "RabbitMqOptions:Username" "guest" --project "$externalProjectPath"
-        dotnet user-secrets set "RabbitMqOptions:Password" "guest" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:ApiKey" "${{ secrets.ESRI_FORESTER_API_KEY }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
 
-        dotnet user-secrets set "FileStorage:ConnectionString" "${{ secrets.FILE_STORAGE_CONNECTION }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
 
-        dotnet user-secrets set "GovUkNotifyOptions:ApiKey" "${{ secrets.GOV_UK_NOTIFY_API_KEY }}" --project "$externalProjectPath"
+          dotnet user-secrets set "LandInformationSearch:ClientID" "${{ secrets.LAND_INFO_CLIENT_ID }}" --project "$externalProjectPath"
+          dotnet user-secrets set "LandInformationSearch:ClientSecret" "${{ secrets.LAND_INFO_CLIENT_SECRET }}" --project "$externalProjectPath"
 
-        dotnet user-secrets set "GovUkOneLoginOptions:ClientId" "${{ secrets.ONE_LOGIN_API_KEY }}" --project "$externalProjectPath"
-        
-        dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$externalProjectPath"
-      working-directory: Application Code
+          dotnet user-secrets set "RabbitMqOptions:Username" "guest" --project "$externalProjectPath"
+          dotnet user-secrets set "RabbitMqOptions:Password" "guest" --project "$externalProjectPath"
 
-    - name: Inject User Secrets for Internal Project
-      shell: bash
-      run: |
-        internalProjectPath="src/Host Applications/Forestry.Flo.Internal.Web/Forestry.Flo.Internal.Web.csproj"
+          dotnet user-secrets set "FileStorage:ConnectionString" "${{ secrets.FILE_STORAGE_CONNECTION }}" --project "$externalProjectPath"
 
-        # database
-        dotnet user-secrets set "ConnectionStrings:DefaultConnection" "just_text_for_secret" --project "$internalProjectPath"
-        
-        # Azure AD B2C
-        dotnet user-secrets set "AzureAdB2C:ClientId" "${{ secrets.AZURE_AD_B2C_CLIENT_ID }}" --project "$internalProjectPath"
-        dotnet user-secrets set "AzureAdB2C:ClientSecret" "${{ secrets.AZURE_AD_B2C_CLIENT_SECRET }}" --project "$internalProjectPath"
+          dotnet user-secrets set "GovUkNotifyOptions:ApiKey" "${{ secrets.GOV_UK_NOTIFY_API_KEY }}" --project "$externalProjectPath"
 
-        # Azure AD
-        dotnet user-secrets set "AzureAd:TenantId" "${{ secrets.AZURE_AD_TENANT_ID }}" --project "$internalProjectPath"
-        dotnet user-secrets set "AzureAd:ClientId" "${{ secrets.AZURE_AD_CLIENT_ID }}" --project "$internalProjectPath"
-        dotnet user-secrets set "AzureAd:ClientSecret" "${{ secrets.AZURE_AD_CLIENT_SECRET }}" --project "$internalProjectPath"
+          dotnet user-secrets set "GovUkOneLoginOptions:ClientId" "${{ secrets.ONE_LOGIN_API_KEY }}" --project "$externalProjectPath"
+          dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$externalProjectPath"
+        working-directory: Application Code
 
-        # Esri
-        dotnet user-secrets set "EsriConfig:Forestry:ApiKey" "${{ secrets.ESRI_FORESTRY_API_KEY }}" --project "$internalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientID" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_ID }}" --project "$internalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientSecret" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_SECRET }}" --project "$internalProjectPath"
+      - name: Inject User Secrets for Internal Project
+        shell: bash
+        run: |
+          internalProjectPath="src/Host Applications/Forestry.Flo.Internal.Web/Forestry.Flo.Internal.Web.csproj"
 
-        # Forester
-        dotnet user-secrets set "EsriConfig:Forester:ApiKey" "${{ secrets.ESRI_FORESTER_API_KEY }}" --project "$internalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$internalProjectPath"
-        dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$internalProjectPath"
+          dotnet user-secrets set "ConnectionStrings:DefaultConnection" "just_text_for_secret" --project "$internalProjectPath"
 
-        # Public Register
-        dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$internalProjectPath"
-        dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAdB2C:ClientId" "${{ secrets.AZURE_AD_B2C_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAdB2C:ClientSecret" "${{ secrets.AZURE_AD_B2C_CLIENT_SECRET }}" --project "$internalProjectPath"
 
-        # Land Info
-        dotnet user-secrets set "LandInformationSearch:ClientID" "${{ secrets.LAND_INFO_CLIENT_ID }}" --project "$internalProjectPath"
-        dotnet user-secrets set "LandInformationSearch:ClientSecret" "${{ secrets.LAND_INFO_CLIENT_SECRET }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAd:TenantId" "${{ secrets.AZURE_AD_TENANT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAd:ClientId" "${{ secrets.AZURE_AD_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAd:ClientSecret" "${{ secrets.AZURE_AD_CLIENT_SECRET }}" --project "$internalProjectPath"
 
-        dotnet user-secrets set "RabbitMqOptions:Username" "guest" --project "$internalProjectPath"
-        dotnet user-secrets set "RabbitMqOptions:Password" "guest" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:ApiKey" "${{ secrets.ESRI_FORESTRY_API_KEY }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientID" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientSecret" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_SECRET }}" --project "$internalProjectPath"
 
-        # File Storage
-        dotnet user-secrets set "FileStorage:ConnectionString" "${{ secrets.FILE_STORAGE_CONNECTION }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:ApiKey" "${{ secrets.ESRI_FORESTER_API_KEY }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$internalProjectPath"
 
-        # GOV.UK Notify
-        dotnet user-secrets set "GovUkNotifyOptions:ApiKey" "${{ secrets.GOV_UK_NOTIFY_API_KEY }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$internalProjectPath"
 
-        # One Login        
-        dotnet user-secrets set "GovUkOneLoginOptions:ClientId" "${{ secrets.ONE_LOGIN_API_KEY }}" --project "$internalProjectPath"
-        dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$internalProjectPath"
-        
-      working-directory: Application Code
-      
-    - name: Build
-      run: dotnet build --no-restore
-      timeout-minutes: 30
-      working-directory: Application Code
+          dotnet user-secrets set "LandInformationSearch:ClientID" "${{ secrets.LAND_INFO_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "LandInformationSearch:ClientSecret" "${{ secrets.LAND_INFO_CLIENT_SECRET }}" --project "$internalProjectPath"
 
-      
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
-      timeout-minutes: 30
-      working-directory: Application Code
+          dotnet user-secrets set "RabbitMqOptions:Username" "guest" --project "$internalProjectPath"
+          dotnet user-secrets set "RabbitMqOptions:Password" "guest" --project "$internalProjectPath"
+
+          dotnet user-secrets set "FileStorage:ConnectionString" "${{ secrets.FILE_STORAGE_CONNECTION }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "GovUkNotifyOptions:ApiKey" "${{ secrets.GOV_UK_NOTIFY_API_KEY }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "GovUkOneLoginOptions:ClientId" "${{ secrets.ONE_LOGIN_API_KEY }}" --project "$internalProjectPath"
+          dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$internalProjectPath"
+        working-directory: Application Code
+
+      # --- SONAR: only when SONAR_ENABLED == 'true' ---
+      - name: Setup Java (for SonarScanner)
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dotnet-sonarscanner
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Add dotnet tools to PATH
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: SonarQube Begin
+        if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+        run: >
+          dotnet sonarscanner begin
+          /k:"${{ vars.SONAR_PROJECT_KEY }}"
+          /o:"${{ vars.SONAR_ORG }}"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+          /d:sonar.verbose=true
+          /d:sonar.qualitygate.wait=false
+          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+
+      # --- Build always runs (Sonar Begin, if any, is already in place) ---
+      - name: Build
+        run: dotnet build --no-restore
+        timeout-minutes: 30
+        working-directory: Application Code
+
+      # --- Tests: no coverage when Sonar OFF; coverage when Sonar ON ---
+      - name: Test (no coverage)
+        if: ${{ vars.SONAR_ENABLED != 'true' }}
+        run: dotnet test --no-build --verbosity normal
+        timeout-minutes: 30
+        working-directory: Application Code
+
+      - name: Test (with OpenCover coverage for Sonar)
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        run: >
+          dotnet test "Application Code"
+          --no-build
+          --configuration Release
+          /p:CollectCoverage=true
+          /p:CoverletOutput=TestResults/coverage.opencover.xml
+          /p:CoverletOutputFormat=opencover
+        timeout-minutes: 30
+
+      - name: SonarQube End
+        if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN"
