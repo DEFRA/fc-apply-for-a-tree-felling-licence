@@ -55,6 +55,7 @@ EsriConfig:Forestry:GeometryService:Path                                        
 EsriConfig:Forestry:GeometryService:IsPublic        									      | Y				| n/a               							    | If the URI is to use the AGOL Base URI
 EsriConfig:Forestry:GeometryService:NeedsToken        									      | Y				| n/a              							        | If the service requires a token generated
 EsriConfig:Forestry:GeometryService:IntersectService:Path                                     | Y               | n/a                                               | The path to the service 
+EsriConfig:Forestry:GeometryService:Area:Path												  | Y               | n/a                                               | The path to the service 
 EsriConfig:Forestry:GeometryService:ProjectService:Path                                       | Y               | n/a                                               | The path to the service 
 EsriConfig:Forestry:GeometryService:ProjectService:OutSR                                      | Y               | n/a                                               | The Projection code that points should be returned in
 EsriConfig:Forestry:GeometryService:ProjectService:GridLength                                 | Y               | n/a                                               | The number of characters in the Grid format

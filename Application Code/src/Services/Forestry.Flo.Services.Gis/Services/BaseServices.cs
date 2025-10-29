@@ -496,7 +496,7 @@ public class BaseServices
     /// Unions the separate Polygons into one Multipart polygon.
     /// </summary>
     /// <param name="compartments">The compartments to join in to a multipart Polygon</param>
-    /// <param name="baseUrl">THe base url to use</param>
+    /// <param name="baseUrl">The base url to use</param>
     /// <param name="cancellationToken">The cancellation Token</param>
     /// <returns>The merged shape</returns>
     public async Task<Result<Geometry<Polygon>>> UnionPolygonsAsync(List<string> compartments, string baseUrl, CancellationToken cancellationToken)
@@ -552,6 +552,101 @@ public class BaseServices
             else
             {
                 _logger.LogInformation("Polygons unioned successfully.");
+            }
+
+            return result;
+        }
+    }
+
+
+    /// <summary>
+    /// Calculates the intersection between a compartment polygon and a layer shape polygon.
+    /// </summary>
+    /// <param name="compartment">The compartments to join in to a multipart Polygon</param>
+    /// <param name="layerShape">The shape on the layer to get the overlap</param>
+    /// <param name="baseUrl">The base url to use</param>
+    /// <param name="cancellationToken">The cancellation Token</param>
+    /// <returns>The merged shape</returns>
+    protected async Task<Result<Geometry<List<Polygon>>>> GetIntersectsAsync(Polygon compartment, Polygon layerShape, string baseUrl, CancellationToken cancellationToken)
+    {
+        using (_logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = Guid.NewGuid(),
+        }))
+        {
+            _logger.LogInformation("UnionPolygonsGetIntersectsAsync called");
+
+            Guard.Against.Null(GeometryService);
+            Guard.Against.Null(GeometryService.IntersectService);
+            Guard.Against.Zero(SpatialReference);
+           
+
+            var param = new IntersectParameter()
+            {
+                Compartment = compartment,
+                LayerShapes = [layerShape],
+                SpatialReference = SpatialReference
+            };
+
+            var path = GeometryService.IsPublic
+                  ? $"{GeometryService.Path}{GeometryService.IntersectService.Path}"
+                  : $"{baseUrl}{GeometryService.Path}/{GeometryService.IntersectService.Path}";
+
+            var result = await PostQueryWithConversionAsync<Geometry<List<Polygon>>>(param, path, GeometryService.NeedsToken, cancellationToken);
+
+            if (result.IsFailure)
+            {
+                _logger.LogError("Failed UnionPolygonsGetIntersectsAsync: {Error}", result.Error);
+            }
+            else
+            {
+                _logger.LogInformation("UnionPolygonsGetIntersectsAsync successfully.");
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Calculates the area and lengths of the specified polygon.
+    /// </summary>
+    /// <param name="polygon">The polygon to get the size of</param>
+    /// <param name="baseUrl">The base url to use</param>
+    /// <param name="cancellationToken">The cancellation Token</param>
+    /// <returns>The merged shape</returns>
+    protected async Task<Result<AreasAndLengthsParameters>> GetAreasAsync(Polygon polygon, string baseUrl, CancellationToken cancellationToken)
+    {
+        using (_logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = Guid.NewGuid(),
+        }))
+        {
+            _logger.LogInformation("UnionPolygonsGetIntersectsAsync called");
+
+            Guard.Against.Null(GeometryService);
+            Guard.Against.Null(GeometryService.AreaService);
+            Guard.Against.Zero(SpatialReference);
+
+
+            var parameters = new AreasAndLengthsParameters()
+            {
+                Compartment = polygon,
+                SpatialReference = SpatialReference
+            };
+
+            var path = GeometryService.IsPublic
+                  ? $"{GeometryService.Path}{GeometryService.AreaService.Path}"
+                  : $"{baseUrl}{GeometryService.Path}/{GeometryService.AreaService.Path}";
+
+            var result = await PostQueryWithConversionAsync<AreasAndLengthsParameters>(parameters, path, GeometryService.NeedsToken, cancellationToken);
+
+            if (result.IsFailure)
+            {
+                _logger.LogError("Failed GetAreasAsync: {Error}", result.Error);
+            }
+            else
+            {
+                _logger.LogInformation("GetAreasAsync successfully.");
             }
 
             return result;
@@ -624,7 +719,7 @@ public class BaseServices
         {
             _logger.LogInformation("CalculateCentrePointAsync called with {Count} compartments.", compartments?.Count ?? 0);
 
-            var mergeResult = await UnionPolygonsAsync(compartments, url, cancellationToken);
+            var mergeResult = await UnionPolygonsAsync(compartments ?? [], url, cancellationToken);
             if (mergeResult.IsFailure)
             {
                 _logger.LogError("Failed to merge polygons for centre point: {Error}", mergeResult.Error);

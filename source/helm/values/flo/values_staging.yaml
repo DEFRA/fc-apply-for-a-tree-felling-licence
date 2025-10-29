@@ -175,6 +175,8 @@ external-web-app:
           IsPublic: true
           IntersectService:
             Path: "intersect"
+          AreaService:
+            Path: "areasAndLengths"
           ProjectService:
             Path: "project"
             OutSR: 4326
@@ -234,6 +236,8 @@ external-web-app:
           IsPublic: true
           IntersectService:
             Path: "intersect"
+          AreaService:
+            Path: "areasAndLengths"
           ProjectService:
             Path: "project"
             OutSR: 4326
@@ -506,6 +510,8 @@ internal-web-app:
           IsPublic: true
           IntersectService:
             Path: "intersect"
+          AreaService:
+            Path: "areasAndLengths"
           ProjectService:
             Path: "project"
             OutSR: 4326

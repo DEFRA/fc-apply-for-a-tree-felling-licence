@@ -21,7 +21,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Forestry.Flo.Services.Common\Forestry.Flo.Services.Common.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Models\Internal\Responses\" />
-  </ItemGroup>
 </Project>

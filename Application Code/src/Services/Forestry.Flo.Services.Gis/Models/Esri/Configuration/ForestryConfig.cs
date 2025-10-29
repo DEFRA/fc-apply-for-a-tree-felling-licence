@@ -106,10 +106,21 @@ namespace Forestry.Flo.Services.Gis.Models.Esri.Configuration
         public BaseEsriServiceConfig IntersectService { get; set; } = null!;
 
         /// <summary>
+        /// Contains all the settings needed to get the area size
+        /// </summary>
+        public BaseEsriServiceConfig AreaService { get; set; } = null!;
+        
+        /// <summary>
         /// Merges all the polygons together
         /// </summary>
         public BaseEsriServiceConfig UnionService { get; set; } = null!;
 
+        /// <summary>
+        /// Gets the areas and lengths of the input geometries
+        /// </summary>
+        public BaseEsriServiceConfig AreasAndLengthsService { get; set; } = null!;
+
+        
         /// <summary>
         /// Converts the projection system into another
         /// </summary>

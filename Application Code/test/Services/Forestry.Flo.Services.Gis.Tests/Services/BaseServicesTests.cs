@@ -29,6 +29,10 @@ public partial class BaseServicesTests
         UnionService = new BaseEsriServiceConfig {
             Path = "union"
         },
+        AreaService = new BaseEsriServiceConfig
+        {
+            Path = "area"
+        },
         ProjectService = new ProjectServiceSettings {
             Path = "project",
             OutSR = 1
