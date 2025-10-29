@@ -47,7 +47,7 @@ namespace Forestry.Flo.External.Web.Tests.Infrastructure.Display
             
             //Assert
             _urlHelper.VerifyAll();
-            result.Should().Be($"{host}/{path}");
+            Assert.Equal($"{host}/{path}", result);
         }
         
         [Fact]
@@ -70,7 +70,7 @@ namespace Forestry.Flo.External.Web.Tests.Infrastructure.Display
             
             //Assert
             _urlHelper.VerifyAll();
-            result1.Should().Be(expectedUrl);
+            Assert.Equal(expectedUrl, result1);
         }
     }
 }

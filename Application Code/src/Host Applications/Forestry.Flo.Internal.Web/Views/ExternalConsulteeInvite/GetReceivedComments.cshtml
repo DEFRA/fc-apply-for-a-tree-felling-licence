@@ -1,0 +1,53 @@
+﻿@using Forestry.Flo.Services.Common
+@model Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite.ReceivedConsulteeCommentsViewModel
+
+@{
+    ViewData["Title"] = "Consultee comments received";
+}
+
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-l">@ViewData["Title"] via link sent to @Model.ConsulteeName</h1>
+    
+    @if (!Model.ReceivedComments.Any())
+    {
+        <div class="govuk-body govuk-!-padding-bottom-5">
+            <p>No comments have been received yet.</p>
+        </div>
+    }
+
+    @foreach (var comment in Model.ReceivedComments)
+    {
+        <div class="govuk-body govuk-!-padding-bottom-5">
+            <h2 class="govuk-heading-m">@comment.AuthorName on @DateTimeDisplay.GetDateDisplayString(comment.CreatedTimestamp)</h2>
+            <p>@comment.Comment</p>
+            @if (comment.Attachments.Any())
+            {
+                <div>
+                    <h3 class="govuk-heading-s">Attachments</h3>
+                    <ul class="govuk-list--bullet">
+                        @foreach (var attachment in comment.Attachments)
+                        {
+                            <li>
+                                <a class="govuk-link" asp-controller="SupportingDocuments" asp-action="GetDocument" asp-route-id="@Model.ApplicationId" asp-route-documentIdentifier="@attachment.Key">
+                                    @attachment.Value
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    }
+    
+    <div>
+        <a asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to consultation task</a>
+    </div>
+
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

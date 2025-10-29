@@ -6,12 +6,23 @@ using Forestry.Flo.Services.DataImport.Services;
 
 namespace Forestry.Flo.External.Web.Services;
 
+/// <summary>
+/// Use case class for the Import a felling licence application functionality.
+/// </summary>
 public class DataImportUseCase
 {
     private readonly IImportData _dataImport;
     private readonly IRetrieveUserAccountsService _retrieveUserAccountsService;
     private readonly ILogger<DataImportUseCase> _logger;
 
+    public static readonly string ParsedDataKey = "ImportFileSetContents";
+
+    /// <summary>
+    /// Create a new instance of the <see cref="DataImportUseCase"/> class.
+    /// </summary>
+    /// <param name="dataImport">An implementation of <see cref="IImportData"/> to perform the import.</param>
+    /// <param name="retrieveUserAccountsService">A <see cref="IRetrieveUserAccountsService"/> to retrieve the user's access.</param>
+    /// <param name="logger">A logging implementation.</param>
     public DataImportUseCase(
         IImportData dataImport, 
         IRetrieveUserAccountsService retrieveUserAccountsService,
@@ -22,8 +33,16 @@ public class DataImportUseCase
         _logger = logger;
     }
 
-    public static readonly string ParsedDataKey = "ImportFileSetContents";
-
+    /// <summary>
+    /// Parses the import data files provided, ensuring they meet the structural and business rules for a
+    /// data import file set.
+    /// </summary>
+    /// <param name="user">The user performing the import.</param>
+    /// <param name="woodlandOwnerId">The ID of the woodland owner the data is importing for.</param>
+    /// <param name="importFiles">The set of files to parse.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct, along with either a <see cref="ImportFileSetContents"/> model
+    /// of the parsed files if successful or a list of error/validation messages if unsuccessful.</returns>
     public async Task<Result<ImportFileSetContents, List<string>>> ParseImportDataFilesAsync(
         ExternalApplicant user,
         Guid woodlandOwnerId,
@@ -56,6 +75,15 @@ public class DataImportUseCase
         return result;
     }
 
+    /// <summary>
+    /// Performs the import of data provided in a populated <see cref="ImportFileSetContents"/> instance.
+    /// </summary>
+    /// <param name="user">The user performing the data import.</param>
+    /// <param name="woodlandOwnerId">The ID of the woodland owner the data is importing for.</param>
+    /// <param name="parsedData">The <see cref="ImportFileSetContents"/> model of the data to be imported.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct, along with a dictionary of imported application IDs and references
+    /// if successful, or a list of error/validation messages if unsuccessful.</returns>
     public async Task<Result<Dictionary<Guid, string>, List<string>>> ImportDataAsync(
         ExternalApplicant user,
         Guid woodlandOwnerId,

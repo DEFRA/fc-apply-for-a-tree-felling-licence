@@ -8,17 +8,9 @@ define([
     "esri/layers/FeatureLayer",
     "esri/Graphic",
     "esri/widgets/Sketch/SketchViewModel",
-    "esri/widgets/Search",
-    "esri/widgets/ScaleBar",
     "esri/geometry/geometryEngine",
-    "esri/widgets/Fullscreen",
     "esri/rest/locator",
-    "esri/core/reactiveUtils",
     "esri/geometry/Extent",
-    "esri/widgets/BasemapGallery",
-    "esri/widgets/CoordinateConversion",
-    "esri/widgets/Compass",
-    "esri/widgets/Home",
     "esri/Viewpoint",
     "esri/Basemap",
     "esri/layers/WMSLayer",
@@ -33,8 +25,10 @@ define([
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "/js/mapping/mapSettings.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
-    "/js/mapping/widgets/alert-widget.js?v=" + Date.now(),
-    "/js/mapping/KMLConvertor.js?v=" + Date.now()],
+    "/js/mapping/KMLConvertor.js?v=" + Date.now(),
+    "/js/mapping/CheckResults.js",
+    "/js/mapping/UseCases/ValidateShape.js",
+    "esri/core/reactiveUtils"],
     function (
         require,
         exports,
@@ -45,17 +39,9 @@ define([
         FeatureLayer,
         Graphic,
         Sketch,
-        Search,
-        ScaleBar,
         geometryEngine,
-        Fullscreen,
         locator,
-        reactiveUtils,
         Extent,
-        BasemapToggle,
-        CoordinateConversion,
-        Compass,
-        Home,
         Viewpoint,
         Basemap,
         WMSLayer,
@@ -70,8 +56,10 @@ define([
         maps_html_Helper,
         mapSettings,
         MapsCommon,
-        AlertWidget,
-        kml) {
+        kml,
+        CheckingResult,
+        ValidateShape,
+        reactiveUtils) {
         "use strict";
         var mapDrawCompartment = /** @class */ (function () {
 
@@ -80,19 +68,22 @@ define([
              *  @param {any} location the element that the map should be drawn to
              * */
             function mapDrawCompartment(location) {
+                this.location = location;
                 Proj4js.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.999601 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.06,0.15,0.247,0.842,-20.489 +units=m +no_defs");
                 Proj4js.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
                 //Widgets 
-                this.alertWidget;
                 this.lastSelection;
                 this.deletedGraphics = [];
                 this.viewOnClickEvt;
                 //Form Fields
                 this.submitBtn = document.getElementById("submit");
 
+                this._lastMessage = "";
+
                 config.apiKey = mapSettings.esriApiKey;
 
                 this.defaultMapExtentForEngland = new Extent(mapSettings.englandExtent);
+                this._validateShapeUseCase = new ValidateShape(geometryEngine, this.defaultMapExtentForEngland);
                 this.oc_GraphicsArray = [];
                 this.activeWidget
                 //Load Form
@@ -117,33 +108,31 @@ define([
                 this.actionBarExpanded = false;
 
                 //Added below baseMap for England by Forestry/ESRI team
-                const basemapUk = new Basemap({
+                let baseMap = new Basemap({
                     portalItem: {
-                        id: mapSettings.baseMapForUK
+                        id: mapSettings.baseMapForUK,
                     },
                 });
 
                 this.map = new Map({
-                    basemap: basemapUk,
+                    basemap: baseMap,
                 });
 
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: new Extent(mapSettings.englandExtent),
-                    constraints: {
-                        maxZoom: 20
-                    }
-                });
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
 
-                this.WireupDefaultOn();
+                this.view = mapComponent.view;
 
-                this._drawingLayer = new GraphicsLayer();
-                this.map.add(this._drawingLayer);
-                this._esriHelper = new MapsCommon(this.view);
+                this.view.when(() => {
+                    this.view.extent = mapSettings.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    this.WireupDefaultOn();
 
-                this.view
-                    .when(this.buildGraphics.bind(this))
+                    this._drawingLayer = new GraphicsLayer();
+                    this.map.add(this._drawingLayer);
+                    this._esriHelper = new MapsCommon(this.view);
+                    return this.buildGraphics();
+                })
                     .then(this.createSketchViewModel.bind(this))
                     .then(this.SetUpWidgets.bind(this))
                     .then(this.addCurrentCompartment.bind(this))
@@ -221,7 +210,7 @@ define([
 
                 items.forEach(function (item) {
                     if (!item.GISData || !item.GISData.spatialReference || !item.GISData.spatialReference.wkid) {
-                        that.alertwidget.ShowMessage("", `Invalid object:${JSON.stringify(item)}`);
+                        that.ShowMessage("", `Invalid object:${JSON.stringify(item)}`);
                         return;
                     }
 
@@ -231,21 +220,6 @@ define([
                         geometry = {
                             type: "polygon",
                             rings: item.GISData.rings,
-                            spatialReference: item.GISData.spatialReference.wkid
-                        };
-                    }
-                    else if (item.GISData.paths) {
-                        geometry = {
-                            type: "polyline",
-                            paths: item.GISData.paths,
-                            spatialReference: item.GISData.spatialReference.wkid
-                        };
-                    }
-                    else {
-                        geometry = {
-                            type: "point",
-                            longitude: item.GISData.x,
-                            latitude: item.GISData.y,
                             spatialReference: item.GISData.spatialReference.wkid
                         };
                     }
@@ -269,32 +243,25 @@ define([
                 this.buildPolygon_layer(this.oc_GraphicsArray.filter(function (item) {
                     return item.geometry.type === "polygon";
                 }));
-                this.buildPoint_layer(this.oc_GraphicsArray.filter(function (item) {
-                    return item.geometry.type === "point";
-                }));
-                this.buildLine_layer(this.oc_GraphicsArray.filter(function (item) {
-                    return item.geometry.type === "polyline";
-                }));
             };
 
             /**
              * Imports and sets up all the widgets in the application
              **/
-            mapDrawCompartment.prototype.SetUpWidgets = function () {
+            mapDrawCompartment.prototype.SetUpWidgets = async function () {
                 var that = this;
-                this.alertwidget = new AlertWidget({});
 
-                const fullscreenWidget = new Fullscreen({
-                    view: this.view,
-                    element: document.getElementById("shell")
-                });
+                const mapComponent = document.getElementById(this.location)
+                await mapComponent.viewOnReady();
 
-                this.homeWidget = new Home({
-                    view: this.view
-                });
-                const compassWidget = new Compass({
-                    view: this.view
-                });
+                const [LocalBasemapsSource, centroidOperator, simplifyOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js",
+                    "@arcgis/core/geometry/operators/simplifyOperator.js"
+                ]);
+
+                this.centroidOperator = centroidOperator;
+                this.simplifyOperator = simplifyOperator;
 
                 that.map.basemap.title = "OS Map";
 
@@ -307,19 +274,16 @@ define([
                 });
 
 
-                const basemapToggleWidget = new BasemapToggle({
-                    view: this.view,
-                    source: [that.map.basemap, wmsBasemap],
-                    container: "basemaps-container"
+                const basemapGallery = document.querySelector("arcgis-basemap-gallery");
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
                 });
 
-
-
-
-                const scalebarWidget = new ScaleBar({
-                    view: this.view,
-                    unit: "dual"
-                });
+                basemapGallery.view = this.view;
+                document.querySelector("arcgis-coordinate-conversion").view = this.view;
 
                 this.drawPolygonButton.addEventListener("click", (evt) => {
                     if (evt.target.active) {
@@ -481,26 +445,10 @@ define([
                         }
                     ]
                 });
-                const coordinateConversionWidget = new CoordinateConversion({
-                    view: that.view,
-                    container: "coordinate-container",
-                    visibleElements: {
-                        settingsButton: false,
-                        expandButton: false,
-                        editButton: false,
-                        captureButton: false,
-                    }
-                });
 
+                document.querySelector("arcgis-coordinate-conversion").formats.push(newFormat);
 
-
-                coordinateConversionWidget.formats.add(newFormat);
-                coordinateConversionWidget.conversions.splice(
-                    0,
-                    0,
-                    new Conversion({
-                        format: newFormat
-                    }));
+             
 
                 const osSearch = new SearchSource({
                     name: "OS Grid",
@@ -541,29 +489,22 @@ define([
                     }
                 });
 
-                const searchWidget = new Search({
-                    view: this.view,
-                    includeDefaultSources: false,
-                    locationEnabled: false,
-                    sources: [
-                        {
-                            url: mapSettings.esriGeoServiceLocatorUrl,
-                            countryCode: "GBR",
-                            singleLineFieldName: "SingleLine",
-                            name: "Search",
-                            placeholder: "Enter location to find...",
-                            minSuggestCharacters: 3
-                        },
-                        osSearch
-                    ]
-                });
-                this.view.ui.add(searchWidget, "top-right");
-                this.view.ui.move("zoom", "top-right");
-                this.view.ui.add(this.homeWidget, "top-right");
-                this.view.ui.add(compassWidget, "top-right");
-                this.view.ui.add(fullscreenWidget, "top-right");
-                this.view.ui.add(this.alertwidget, "top-right");
-                this.view.ui.add(scalebarWidget, "bottom-left");
+                this.homeWidget = document.querySelector("arcgis-home");
+
+                const searchComponent = document.querySelector("arcgis-search");
+                searchComponent.view = this.view;
+                searchComponent.sources = [
+                    {
+                        url: mapSettings.esriGeoServiceLocatorUrl,
+                        countryCode: "GBR",
+                        singleLineFieldName: "SingleLine",
+                        name: "Search",
+                        placeholder: "Enter location to find...",
+                        minSuggestCharacters: 3
+                    },
+                    osSearch 
+                ];
+
                 return;
             };
 
@@ -584,7 +525,7 @@ define([
 
                 // Check if the popup was blocked
                 if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-                    that.alertwidget.ShowMessage("info", "The popup window was blocked by the browser. Please allow pop-ups for this website.");
+                    that.ShowMessage("info", "The popup window was blocked by the browser. Please allow pop-ups for this website.");
                 }
             };
             /**
@@ -674,22 +615,23 @@ define([
                 // Add the watermark layer to the map
                 this.map.add(watermarkLayer);
 
-                // Update the watermark positions initially and whenever the view changes
-                this.view.watch("stationary", (newValue) => {
-                    if (newValue) {
-                        updateWatermarkPositions();
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
                     }
-                });
-                this.view.watch("extent", updateWatermarkPositions);
-
-                // Watch for basemap changes and toggle watermark visibility
-                this.view.watch("map.basemap", (newBasemap) => {
-                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK) {
-                        watermarkLayer.visible = true;
-                    } else {
-                        watermarkLayer.visible = false;
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
                     }
-                });
+                );
+                return Promise.resolve();
             };
 
 
@@ -717,97 +659,15 @@ define([
                                 expression: "$feature.compartmentName ",
                             },
                             symbol: labelSymbol,
-                           visualVariables: mapSettings.visualVariables.textSize
+                            visualVariables: mapSettings.visualVariables.textSize
                         },
                         renderer: {
                             type: "simple",
                             symbol: mapSettings.otherPolygonSymbol,
-                           visualVariables: mapSettings.visualVariables.size
+                            visualVariables: mapSettings.visualVariables.size
                         }
                     });
                     this.map.add(this.ocLayer_Polygon);
-                }
-                catch (e) {
-                    if (window.console) {
-                        console.error("Failed to create all required parts for view.", e);
-                    }
-                }
-            };
-
-            /**
-            * Draws all other compartment lines to the "Polyline Layer"
-            * @param {Geometry[]} lines The geometry of the lines 
-            **/
-            mapDrawCompartment.prototype.buildLine_layer = function (lines) {
-                try {
-                    if (typeof lines === "undefined" || lines === null || lines.length === 0) {
-                        return;
-                    }
-                    let labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-
-                    this.ocLayer_Line = new FeatureLayer({
-                        source: lines,
-                        geometryType: "polyline",
-                        objectIdField: "ObjectID",
-                        fields: [
-                            { name: "ObjectID", type: "oid" },
-                            { name: "compartmentName", type: "string" }
-                        ],
-                        labelingInfo: {
-                            labelExpressionInfo: {
-                                expression: "$feature.compartmentName "
-                            },
-                            symbol: labelSymbol,
-                            visualVariables: mapSettings.visualVariables.textSize
-                        },
-                        renderer: {
-                            type: "simple",
-                            symbol: mapSettings.otherLineSymbol,
-                            visualVariables: mapSettings.visualVariables.size
-                        }
-                    });
-                    this.map.add(this.ocLayer_Line);
-                }
-                catch (e) {
-                    if (window.console) {
-                        console.error("Failed to create all required parts for view.", e);
-                    }
-                }
-            };
-
-            /**
-            * Draws all other compartment polygons to the "Points Layer"
-            * @param {Geometry[]} points The geometry of the points 
-            **/
-            mapDrawCompartment.prototype.buildPoint_layer = function (points) {
-                try {
-                    if (typeof points === "undefined" || points === null || points.length === 0) {
-                        return;
-                    }
-                    let labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-
-                    this.ocLayer_Point = new FeatureLayer({
-                        source: points,
-                        geometryType: "point",
-                        objectIdField: "ObjectID",
-                        fields: [
-                            { name: "ObjectID", type: "oid" },
-                            { name: "compartmentName", type: "string" }
-                        ],
-                        labelingInfo: {
-                            labelExpressionInfo: {
-                                expression: "$feature.compartmentName "
-                            },
-                            symbol: labelSymbol,
-                            visualVariables: mapSettings.visualVariables.textSize
-                        },
-                        renderer: {
-                            type: "simple",
-                            symbol: mapSettings.otherPointSymbol,
-                            visualVariables: mapSettings.visualVariables.size
-                        }
-                    });
-                    this.map.add(this.ocLayer_Point);
                 }
                 catch (e) {
                     if (window.console) {
@@ -900,7 +760,7 @@ define([
                             }
                         }
                         else {
-                            this.alertwidget.ShowMessage("", `Unable to find town "${nearestTown}"`);
+                            this.ShowMessage("", `Unable to find town "${nearestTown}"`);
                             //Default the zoom level to 6, as GBR was set as country, if the place is invalid
                             this.view.goTo({
                                 zoom: 6
@@ -908,7 +768,7 @@ define([
                         }
                     }
                     else {
-                        this.alertwidget.ShowMessage("info", "Nearest town wasn't set");
+                        this.ShowMessage("info", "Nearest town wasn't set");
                         this.view.goTo({
                             target: this.defaultMapExtentForEngland.center,
                             zoom: 8
@@ -930,11 +790,7 @@ define([
                 const vp = new Viewpoint({
                     targetGeometry: extent
                 });
-
-                //Setting the Home view for Home Button. This will trigger when clicked
-                if (this.homeWidget) {
-                    this.homeWidget.viewpoint = vp;
-                }
+                this.homeWidget.viewpoint = vp;
             };
 
             /**
@@ -946,8 +802,6 @@ define([
                     layer: this._drawingLayer,
                     view: this.view,
                     availableCreateTools: [
-                        "point",
-                        "polyline",
                         "polygon"
                     ],
                     tool: "move",
@@ -978,12 +832,6 @@ define([
                         enabled: true,
                     });
                 }
-                if (this.ocLayer_Line) {
-                    sources.push({
-                        layer: this.ocLayer_Line,
-                        enabled: true,
-                    });
-                }
                 this.sketchViewModel.snappingOptions = {
                     enabled: true,
                     distance: 5,
@@ -1009,8 +857,8 @@ define([
                     }
                     if (evt.state === "complete" || evt.state === "create") {
                         if (that.isCutting === false) {
-                            that.onGraphicUpdate(evt);
-                            if (evt.state === "complete") {
+                            const result = that.onGraphicUpdate(evt);
+                            if (evt.state === "complete" && result === CheckingResult.Passed) {
                                 that.isInEngland(evt);
                             }
                         }
@@ -1033,6 +881,12 @@ define([
                         if (that.isCutting) {
                             const list = that._drawingLayer.graphics.items.filter(i => i.geometry.type === 'polygon');
                             var result = geometryEngine.difference(list[0].geometry, evt.graphic.geometry);
+                            if (that._validateShapeUseCase.Execute(that.createWorkingComparment(result).shape, []) !== CheckingResult.Passed) {
+                                that.deleteGraphics(that._drawingLayer.graphics);
+                                that._drawingLayer.add(list[0]);
+                                that.ShowMessage("error", "Cutting will result in an invalid shape and had been canceled");
+                                return;
+                            }
                             that.deleteGraphics(that._drawingLayer.graphics);
                             const currentShape = that.createWorkingComparment(result);
                             if (currentShape !== undefined && currentShape !== null) {
@@ -1056,7 +910,10 @@ define([
                         if (typeof graphics === "undefined" || graphics.length === 0) {
                             return;
                         }
-                        that._drawingLayer.add(that.getLabelGraphic(graphics[0]));
+
+                        const label = that.getLabelGraphic(graphics[0]);
+                        that.deleteGraphics(that._drawingLayer.graphics);
+                        that._drawingLayer.add(label);
 
                     }
                     that.UpdateSketchTools((evt.state === "complete" | evt.state === "cancel"));
@@ -1065,6 +922,7 @@ define([
 
                 this.sketchViewModel.on("update", function (evt) {
                     that.deleteButton.disabled = false;
+                    let result = CheckingResult.Passed;
                     if (evt.state === "start") {
                         that.CanSave(false);
                     }
@@ -1077,10 +935,13 @@ define([
                             });
 
                             that.CanSave();
-                            that.onGraphicUpdate(evt);
+                            result = that.onGraphicUpdate(evt);
                         }
-                        if (evt.state === "complete" | evt.state === "cancel") {
-                            that.isInEngland(evt);
+                        if ((evt.state === "complete" | evt.state === "cancel")) {
+                            result = that.onGraphicUpdate(evt);
+                            if (result === CheckingResult.Passed) {
+                                that.isInEngland(evt);
+                            }
                         }
                     }
                     if (evt.state === "complete" | evt.state === "cancel") {
@@ -1172,54 +1033,11 @@ define([
                 this.CanSave();
             };
 
-            /**
-             * Checks if the current state of the graphic is valid.
-             * @param {any} graphics THe Graphics from the evt to check
-             */
-            mapDrawCompartment.prototype.checkIsValid = function (graphics) {
-                const that = this;
-                let isValid = true;
-                graphics
-                    .filter(function (g) {
-                        return !g.symbol || !g.symbol.type || g.symbol.type !== "text";
-                    })
-                    .every(function (g) {
-                        const shape = g.geometry.type;
-                        if (shape === "polygon") {
-                            if (g.geometry.isSelfIntersecting) {
-                                isValid = false;
-                                return false;
-                            }
-                            if (!geometryEngine.contains(that.defaultMapExtentForEngland, g.geometry)) {
-                                isValid = false;
-                                return false;
-                            }
-                            if (typeof that.oc_GraphicsArray !== "undefined") {
-                                if (that.oc_GraphicsArray.length > 0) {
-                                    that.oc_GraphicsArray.every(function (ocGraphic) {
-                                        if (ocGraphic.geometry.type === "polygon") {
-                                            const overlaps = geometryEngine.overlaps(ocGraphic.geometry, g.geometry); // returns true if one geometry overlaps another, but is not contained or disjointed
-                                            const contained = geometryEngine.contains(ocGraphic.geometry, g.geometry);
-                                            const within = geometryEngine.within(ocGraphic.geometry, g.geometry);
-                                            if (overlaps || contained || within) {
-                                                isValid = false;
-                                                return false;
-                                            }
-                                        }
-                                        return true;
-                                    });
-                                }
-                            }
-                        }
-                        return true;
-                    });
-                return isValid;
-            }
 
             /**
              * Handles the Update event of the Graphic selected
              * @param {any} evt The event that is triggering the Update
-             * @param {any} state Overrides the isValid check
+             * @param {any} state Overrides the result check
              */
             mapDrawCompartment.prototype.onGraphicUpdate = function (evt, state) {
                 var _this = this;
@@ -1231,45 +1049,34 @@ define([
                     if (!g.attributes) {
                         g.attributes = {
                             name: _this.cc_Name,
-                            isValid: true
+                            resultCheck: CheckingResult.Notchecked
                         };
                     }
                 });
                 // lets test
-                var isValid;
+                var checkingResult;
                 if (typeof state === "undefined") {
-                    isValid = this.checkIsValid(graphics);
+                    checkingResult = this._validateShapeUseCase.Execute(graphics, _this.oc_GraphicsArray, this.simplifyOperator);
                 } else {
-                    isValid = state;
+                    checkingResult = state;
                 }
 
                 //Finally lets apply all fields
                 this._drawingLayer.graphics.items.forEach(function (g) {
-                    g.attributes.isValid = isValid;
-                    switch (g.geometry.type) {
-                        case "point":
-                            if (!g.symbol.type || g.symbol.type !== "text") {
-                                g.symbol = g.attributes.isValid
-                                    ? mapSettings.activePointSymbol
-                                    : mapSettings.invalidPointSymbol;
-                            }
-                            break;
-                        case "polyline":
-                            g.symbol = g.attributes.isValid
-                                ? mapSettings.activeLineSymbol
-                                : mapSettings.invalidLineSymbol;
-                            break;
-                        case "polygon":
-                            g.symbol = g.attributes.isValid
-                                ? mapSettings.activePolygonSymbol
-                                : mapSettings.invalidPolygonSymbol;
-                            break;
+                    g.attributes.resultCheck = checkingResult;
+                    if (g.geometry.type === "polygon") {
+                        const symbolMap = {
+                            [CheckingResult.Passed]: mapSettings.activePolygonSymbol,
+                            [CheckingResult.NotInEngland]: mapSettings.outsideEnglandRingsPolygonSymbol,
+                            [CheckingResult.TooManyRings]: mapSettings.tooManyRingsPolygonSymbol
+                        };
+                        g.symbol = symbolMap[g.attributes.resultCheck] || mapSettings.invalidPolygonSymbol;
                     }
                 });
                 if (evt.toolEventInfo &&
                     (evt.toolEventInfo.type === "move-stop" ||
                         evt.toolEventInfo.type === "reshape-stop")) {
-                    if (isValid) {
+                    if (checkingResult === CheckingResult.Passed) {
                         if (this.sketchViewModel) {
                             this.sketchViewModel.complete();
                         }
@@ -1280,14 +1087,10 @@ define([
                     }
                 }
                 else if (evt.state === "complete") {
-                    if (isValid) {
+                    if (checkingResult === CheckingResult.Passed) {
                         this.updateFormGisData();
                     }
                     else {
-                        var graphic = graphics[0];
-                        if (this.sketchViewModel) {
-                            this.sketchViewModel.update([graphic], { tool: "reshape" });
-                        }
                         this.clearCompartmentFormFields();
                     }
                     this.CanSave();
@@ -1295,6 +1098,8 @@ define([
                 if (!this.isCutting) {
                     this.UpdateLabels(graphics);
                 }
+
+                return checkingResult;
             };
 
             mapDrawCompartment.prototype.isInEngland = function (evt) {
@@ -1341,27 +1146,83 @@ define([
 
                         if (!json.isSuccess) {
                             that.CanSave(false);
-                            that.alertwidget.ShowMessage("", "Unable to validate the shape");
+                            that.ShowMessage("", "Unable to validate the shape");
                             return;
                         }
 
                         if (!json.result) {
                             that.CanSave(false);
-                            that.onGraphicUpdate(evt, false);
-                            that.alertwidget.ShowMessage("", "The shape falls outside of England. Please move or redraw");
+                            that.onGraphicUpdate(evt, CheckingResult.NotInEngland);
+                            that.ShowMessage("", "The shape falls outside of England. Please move or redraw");
                             return;
                         }
                         that.onGraphicUpdate(evt);
-                        that.alertwidget.CloseMessage();
                         that.CanSave();
                     }).catch((e) => {
                         that.CanSave(false);
-                        that.onGraphicUpdate(evt, false);
-                        that.alertwidget.ShowMessage("", "Unable to validate the shape");
+                        that.onGraphicUpdate(evt, CheckingResult.NotInEngland);
+                        that.ShowMessage("", "Unable to validate the shape");
                     });
 
                 return true;
             }
+
+            mapDrawCompartment.prototype.ShowMessage = function (style, message) {
+
+
+                const ms = document.getElementById("alert");
+
+
+                style = style === "" ? "error" : style;
+
+                if (!ms) {
+                    return;
+                }
+
+                if (ms.getAttribute("open") && this._lastMessage === message) {
+                    return;
+                }
+                ms.innerHTML = "";
+
+                let iconValue = "";
+                let titleString = "Error";
+                let kind = "danger";
+                switch (style) {
+                    case "success":
+                        iconValue = "check-square";
+                        titleString = "Success";
+                        kind = "success";
+                        break;
+                    case "info":
+                        iconValue = "add-in";
+                        titleString = "Information";
+                        kind = "info";
+                        break;
+                    case "warning":
+                        iconValue = "accessibility";
+                        titleString = "Warning";
+                        kind = "warning";
+                        break;
+                }
+
+                ms.setAttribute("icon", iconValue);
+                ms.setAttribute("kind", kind);
+
+                const title = document.createElement("div");
+                title.setAttribute("slot", "title");
+                title.innerText = titleString;
+                ms.appendChild(title);
+
+                const content = document.createElement("div");
+                content.setAttribute("slot", "title");
+                content.innerText = message;
+                ms.appendChild(content);
+
+                this._lastMessage = message;
+
+                ms.setAttribute("open", "");
+            }
+
             mapDrawCompartment.prototype.calculatePolygonArea = function (polygon) {
                 var area = geometryEngine.planarArea(polygon, "square-meters");
 
@@ -1381,19 +1242,6 @@ define([
              * Gets the size of the shape.
              */
             mapDrawCompartment.prototype.getSizeOfShape = function (workingGraphic) {
-                if (workingGraphic.geometry.type === "point") {
-                    return 0.01;
-                }
-                if (workingGraphic.geometry.type === "polyline") {
-                    let workingDistance = geometryEngine.planarLength(workingGraphic.geometry, "meters");
-                    workingDistance = Math.round(workingDistance / 10);
-                    let area = workingDistance * 0.01;
-
-                    if (area === 0) {
-                        area = 0.01;
-                    }
-                    return area;
-                }
                 return geometryEngine.planarArea(workingGraphic.geometry, "hectares");
             }
 
@@ -1432,24 +1280,18 @@ define([
              */
             mapDrawCompartment.prototype.UpdateLabels = function (graphics) {
                 var _this = this;
-                if (this._drawingLayer.graphics.items.length > 1) {
-                    graphics.forEach(function (graphic) {
-                        var compLabelIndex = _this._drawingLayer.graphics.items.findIndex(function (l) {
-                            return (l.symbol.type === "text" &&
-                                l.attributes.shapeID === graphic.uid);
-                        });
-                        var compLabel = _this._drawingLayer.graphics.items[compLabelIndex];
-                        _this._drawingLayer.remove(compLabel); //orig comp text label graphic
-                        if (_this.deletedGraphics.indexOf(graphic.uid) === -1) {
-                            _this._drawingLayer.add(_this.getLabelGraphic(graphic));
-                        }
+                graphics.forEach(function (graphic) {
+                    // Remove all label graphics for this shape
+                    var labelsToRemove = _this._drawingLayer.graphics.items.filter(function (l) {
+                        return l.symbol.type === "text" && l.attributes && l.attributes.shapeID === graphic.uid;
                     });
-                }
-                else {
-                    if (_this.deletedGraphics.indexOf(graphics[0].uid) === -1) {
-                        _this._drawingLayer.add(_this.getLabelGraphic(graphics[0]));
+                    _this._drawingLayer.removeMany(labelsToRemove);
+
+                    // Add the new label if not deleted
+                    if (_this.deletedGraphics.indexOf(graphic.uid) === -1) {
+                        _this._drawingLayer.add(_this.getLabelGraphic(graphic));
                     }
-                }
+                });
             };
 
             /**
@@ -1457,9 +1299,9 @@ define([
              * @param {any} shapeGraphic The Shape to add the label to.
              */
             mapDrawCompartment.prototype.getLabelGraphic = function (shapeGraphic) {
-                var resx;
-                var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-                var line = "";
+                let resx;
+                const labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
+                let line = "";
                 if (shapeGraphic.attributes === null) {
                     if (shapeGraphic.geometry.type === "polygon") {
                         labelSymbol.text = parseFloat(this.getSizeOfShape(shapeGraphic)).toFixed(2) + this.hectareLabel;
@@ -1467,15 +1309,15 @@ define([
                 }
                 else if (!shapeGraphic.attributes.SelectOrder) {
                     if (shapeGraphic.geometry.type === "polygon") {
-                        var size = parseFloat(this.getSizeOfShape(shapeGraphic));
+                        const size = parseFloat(this.getSizeOfShape(shapeGraphic));
 
                         if (!isNaN(size))
                             line = "\n " + size.toFixed(2) + this.hectareLabel;
 
-                        labelSymbol.text = shapeGraphic.attributes.name + line;
+                        labelSymbol.text = this.cc_Name + line;
                     }
                     else {
-                        labelSymbol.text = shapeGraphic.attributes.name;
+                        labelSymbol.text = this.cc_Name;
                     }
                 }
                 else {
@@ -1494,34 +1336,24 @@ define([
                     }
 
                 }
-                if (shapeGraphic.geometry.type === "point") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry,
-                        symbol: labelSymbol,
-                    });
+
+                let centroid;
+                if (shapeGraphic.geometry.type === "polygon") {
+                    centroid = this.centroidOperator.execute(shapeGraphic.geometry);
+                } else if (shapeGraphic.geometry.type === "point") {
+                    centroid = shapeGraphic.geometry;
                 }
-                else if (shapeGraphic.geometry.type === "polyline") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.extent.center,
-                        symbol: labelSymbol,
-                    });
-                }
-                else {
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.centroid,
-                        symbol: labelSymbol,
-                    });
-                }
+
+                resx = new Graphic({
+                    geometry: centroid,
+                    symbol: labelSymbol,
+                });
+
                 if (!resx.attributes) {
-                    resx.attributes = {
-                        shapeID: shapeGraphic.uid,
-                        isTemp: shapeGraphic.attributes === null
-                    };
+                    resx.attributes = {};
                 }
+                resx.attributes.shapeID = shapeGraphic.uid;
+                resx.attributes.isTemp = shapeGraphic.attributes === null;
                 return resx;
             };
 
@@ -1574,29 +1406,6 @@ define([
                             symbol: mapSettings.activePolygonSymbol,
                         });
                     }
-                    else if (this.cc_GIS.paths) {
-                        //Its a Path
-                        shape = new Graphic({
-                            geometry: {
-                                type: "polyline",
-                                paths: this.cc_GIS.paths,
-                                spatialReference: this.cc_GIS.spatialReference.wkid,
-                            },
-                            symbol: mapSettings.activeLineSymbol,
-                        });
-                    }
-                    else {
-                        //Its a Point
-                        shape = new Graphic({
-                            geometry: {
-                                type: "point",
-                                longitude: this.cc_GIS.x,
-                                latitude: this.cc_GIS.y,
-                                spatialReference: this.cc_GIS.spatialReference.wkid,
-                            },
-                            symbol: mapSettings.activePointSymbol,
-                        });
-                    }
                 }
                 else {
                     shape = new Graphic({
@@ -1608,7 +1417,7 @@ define([
                     name: this.cc_Name,
                     isValid: true
                 };
-                var labelGraphic = this.getLabelGraphic(shape);
+                const labelGraphic = this.getLabelGraphic(shape);
                 return {
                     shape: shape,
                     label: labelGraphic,

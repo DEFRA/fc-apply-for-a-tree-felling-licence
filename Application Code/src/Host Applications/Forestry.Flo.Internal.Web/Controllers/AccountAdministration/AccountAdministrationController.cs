@@ -3,12 +3,11 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.AccountAdministration;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
-using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.AccountAdministration;
 using Forestry.Flo.Services.Common.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using InternalUser = Forestry.Flo.Internal.Web.Services.InternalUser;
 
 namespace Forestry.Flo.Internal.Web.Controllers.AccountAdministration;
@@ -17,9 +16,9 @@ namespace Forestry.Flo.Internal.Web.Controllers.AccountAdministration;
 [AutoValidateAntiforgeryToken]
 public class AccountAdministrationController : Controller
 {
-    private readonly ValidationProvider _validationProvider;
+    private readonly IValidationProvider _validationProvider;
 
-    public AccountAdministrationController(ValidationProvider validationProvider)
+    public AccountAdministrationController(IValidationProvider validationProvider)
     {
         _validationProvider = Guard.Against.Null(validationProvider);
     }
@@ -31,26 +30,26 @@ public class AccountAdministrationController : Controller
 
     [HttpGet]
     public async Task<IActionResult> FcStaffList(
-        [FromServices]GetFcStaffMembersUseCase useCase,
+        [FromServices] IGetFcStaffMembersUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
 
         if (user.AccountType is not AccountTypeInternal.AccountAdministrator)
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction(nameof(HomeController.Index), "Home");
         }
 
         var model = 
             await useCase.GetAllFcStaffMembersAsync(
                 user,
-                Url.Action("Index", "Home")!,
+                Url.Action(nameof(HomeController.UserManagement), "Home")!,
                 true,
                 cancellationToken);
 
         if (model.IsFailure)
         {
-            return RedirectToAction("Error", "Home");
+            return RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
         model.Value.Breadcrumbs = new BreadcrumbsModel
@@ -85,7 +84,7 @@ public class AccountAdministrationController : Controller
     [HttpPost]
     public async Task<IActionResult> AmendInternalUserAccount(
         FcStaffListModel model,
-        [FromServices] GetFcStaffMembersUseCase useCase,
+        [FromServices] IGetFcStaffMembersUseCase useCase,
         CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
@@ -103,7 +102,7 @@ public class AccountAdministrationController : Controller
 
     public async Task<IActionResult> RedirectToStaffList(
         FcStaffListModel model,
-        GetFcStaffMembersUseCase useCase,
+        IGetFcStaffMembersUseCase useCase,
         CancellationToken cancellationToken)
     {
         var reloadModel = await useCase.GetAllFcStaffMembersAsync(
@@ -129,7 +128,7 @@ public class AccountAdministrationController : Controller
     [HttpGet]
     public async Task<IActionResult> AmendUserAccount(
         Guid userId,
-        [FromServices] RegisterUserAccountUseCase useCase,
+        [FromServices] IRegisterUserAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
@@ -160,7 +159,7 @@ public class AccountAdministrationController : Controller
     [HttpPost]
     public async Task<IActionResult> AmendUserAccount(
         UpdateUserRegistrationDetailsModel model,
-        [FromServices] RegisterUserAccountUseCase useCase,
+        [FromServices] IRegisterUserAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
         ApplySectionValidationModelErrors(model, nameof(UserRegistrationDetailsModel));
@@ -206,7 +205,7 @@ public class AccountAdministrationController : Controller
     [HttpGet]
     public async Task<IActionResult> CloseUserAccount(
         Guid userId,
-        [FromServices] CloseFcStaffAccountUseCase useCase,
+        [FromServices] ICloseFcStaffAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
@@ -242,7 +241,7 @@ public class AccountAdministrationController : Controller
     [HttpPost]
     public async Task<IActionResult> CloseUserAccount(
         CloseUserAccountModel model,
-        [FromServices] CloseFcStaffAccountUseCase useCase,
+        [FromServices] ICloseFcStaffAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);

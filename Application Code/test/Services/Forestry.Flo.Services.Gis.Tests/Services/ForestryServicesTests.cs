@@ -1,13 +1,13 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using Castle.Components.DictionaryAdapter;
-using Forestry.Flo.Services.Gis.Services;
+﻿using Castle.Components.DictionaryAdapter;
 using Forestry.Flo.Services.Gis.Models.Esri.Common;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
-using Forestry.Flo.Services.Gis.Tests.Access.Infrastructure;
+using Forestry.Flo.Services.Gis.Services;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Net;
+using System.Net.Http.Headers;
+using Forestry.Flo.Services.Gis.Tests.Services.Infrastructure;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 
@@ -108,7 +108,7 @@ public partial class ForestryServicesTests
         Assert.Equal("Value cannot be null. (Parameter 'Forestry not configured')", caughtException.Message);
     }
 
-    public ForestryServicesTestPipe CreateSut(EsriConfig? config = null)
+    private ForestryServicesTestPipe CreateSut(EsriConfig? config = null)
     {
         config ??= _config;
 

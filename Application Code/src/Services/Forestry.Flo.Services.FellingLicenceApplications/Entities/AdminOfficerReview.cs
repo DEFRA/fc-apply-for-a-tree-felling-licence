@@ -78,6 +78,11 @@ public class AdminOfficerReview
     public bool? CBWChecked { get; set; }
 
     /// <summary>
+    /// Gets and sets whether the Admin Officer has confirmed that the EIA details have been checked.
+    /// </summary>
+    public bool? EiaChecked { get; set; }
+
+    /// <summary>
     /// Gets and sets whether the Admin Officer has completed the review.
     /// </summary>
     public bool AdminOfficerReviewComplete { get; set; }

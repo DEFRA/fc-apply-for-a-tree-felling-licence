@@ -57,17 +57,18 @@ namespace Forestry.Flo.Services.Gis.Models.Internal.MapObjects
 
         public override Maybe<Extent> GetExtent()
         {
-            if (X == null | Y == null)
+            if (X == null || Y == null)
             {
                 return Maybe<Extent>.None;
             }
-            Extent result = new();
-            List<Point> points = new();
+            Extent result = new()
+            {
+                X_min = (float)X,
+                Y_min = (float)Y,
+                X_max = (float)X,
+                Y_max = (float)Y
+            };
 
-            result.X_min = (float)X;
-            result.Y_min = (float)Y;
-            result.X_max = (float)X;
-            result.Y_max = (float)Y;
             return Maybe.From(result);
         }
     }

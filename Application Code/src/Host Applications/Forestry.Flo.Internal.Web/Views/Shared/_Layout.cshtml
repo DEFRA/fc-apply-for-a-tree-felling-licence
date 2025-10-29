@@ -3,6 +3,7 @@
 @using Forestry.Flo.Internal.Web.Infrastructure.Display
 @using Forestry.Flo.Services.Common.Analytics
 @using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Services.Common.User
 @inject SiteSiteAnalyticsService SiteSiteAnalyticsService
 
 <!DOCTYPE html>
@@ -72,7 +73,7 @@
             </div>
         </div>
     </header>
-    <div class="govuk-service-navigation"
+    <div class="govuk-service-navigation no-print"
          data-module="govuk-service-navigation">
         <div class="govuk-width-container">
             <div class="govuk-service-navigation__container flo-navigation">
@@ -92,7 +93,24 @@
                                     Home
                                 </a>
                             </li>
-                            <li class="govuk-service-navigation__item">
+							<li class="govuk-service-navigation__item" id="site-nav-reports">
+                                <a class="govuk-service-navigation__link" asp-controller="Reports" asp-action="Index" role="menuitem">
+                                    Reporting
+								</a>
+							</li>
+                            @{
+                                var internalUser = new InternalUser(User);
+
+                                if (internalUser.AccountType == AccountTypeInternal.AccountAdministrator || internalUser.AccountType == AccountTypeInternal.AdminHubManager)
+                                {
+                                    <li class="govuk-service-navigation__item" id="site-nav-user-management">
+                                        <a class="govuk-service-navigation__link" asp-controller="Home" asp-action="UserManagement" role="menuitem">
+                                            User management
+                                        </a>
+                                    </li>
+                                }
+                            }
+							<li class="govuk-service-navigation__item">
                                 <a id="signout" class="govuk-service-navigation__link" asp-controller="Home" asp-action="Logout" role="menuitem">
                                     Sign out
                                 </a>
@@ -105,7 +123,7 @@
     </div>
 
     <div class="govuk-width-container">
-        <div class="govuk-phase-banner">
+        <div class="govuk-phase-banner no-print">
             <p class="govuk-phase-banner__content">
                 <strong class="govuk-tag govuk-phase-banner__content__tag">
                     Beta
@@ -115,7 +133,7 @@
                 </span>
             </p>
         </div>
-        <div class="govuk-grid-row" role="complementary">
+        <div class="govuk-grid-row no-print" role="complementary">
             <div class="govuk-grid-column-one-half">
                 <partial name="Partials/_BackLink" /> &nbsp;
             </div>
@@ -156,6 +174,7 @@
     <script src="@Url.AbsoluteContent("~/js/moj-frontend.min.js")"></script>
     <script src="@Url.AbsoluteContent("~/lib/jquery/dist/jquery.min.js")"></script>
     <script src="@Url.AbsoluteContent("~/js/site.js")" asp-append-version="true"></script>
+    <script src="@Url.AbsoluteContent("~/js/cookies.js")" asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.6.8/dist/sweetalert2.all.min.js" integrity="sha256-qLt5zH5nwjd+a4DbNUQBWk1HTAMWwvGa0eVaN4Qbjmw=" crossorigin="anonymous"></script>
 
     @await RenderSectionAsync("Scripts", required: false)

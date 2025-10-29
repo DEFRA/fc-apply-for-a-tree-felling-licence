@@ -79,6 +79,18 @@ public class BaseServicesTests : BaseServices
         return await base.UnionPolygonsAsync(compartments, "https://base.com", cancellationToken);
     }
 
+    public async Task<Result<Geometry<List<Polygon>>>> GetIntersectsAsync(Polygon compartment, Polygon layerShape,
+        CancellationToken cancellationToken)
+    {
+        return await base.GetIntersectsAsync(compartment, layerShape, "https://base.com", cancellationToken);
+    }
+
+    public async Task<Result<AreasAndLengthsParameters>> GetAreasAsync(Polygon compartment,
+        CancellationToken cancellationToken)
+    {
+        return await base.GetAreasAsync(compartment, "https://base.com", cancellationToken);
+    }
+
     public Maybe<EsriTokenResponse> Token {
         get { return base.Token; }
         set { base.Token = value; }

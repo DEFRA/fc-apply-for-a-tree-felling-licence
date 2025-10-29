@@ -1,19 +1,18 @@
-﻿using Ardalis.GuardClauses;
-using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+﻿using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
 {
     public class SupportingDocumentsController : Controller
     {
-        private readonly GetSupportingDocumentUseCase _getSupportingDocumentUseCase;
-        private readonly RemoveSupportingDocumentUseCase _removeSupportingDocumentUseCase;
+        private readonly IGetSupportingDocumentUseCase _getSupportingDocumentUseCase;
+        private readonly IRemoveSupportingDocumentUseCase _removeSupportingDocumentUseCase;
 
         public SupportingDocumentsController(
-            GetSupportingDocumentUseCase getSupportingDocumentUseCase,
-            RemoveSupportingDocumentUseCase removeSupportingDocumentUseCase)
+            IGetSupportingDocumentUseCase getSupportingDocumentUseCase,
+            IRemoveSupportingDocumentUseCase removeSupportingDocumentUseCase)
         {
             ArgumentNullException.ThrowIfNull(removeSupportingDocumentUseCase);
             ArgumentNullException.ThrowIfNull(getSupportingDocumentUseCase);
@@ -58,7 +57,7 @@ namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
         public async Task<IActionResult> AttachSupportingDocumentation(
             AddSupportingDocumentModel model,
             FormFileCollection supportingDocumentationFiles,
-            [FromServices] AddSupportingDocumentsUseCase useCase,
+            [FromServices] IAddSupportingDocumentsUseCase useCase,
             CancellationToken cancellationToken)
         {
             if (!supportingDocumentationFiles.Any())

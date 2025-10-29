@@ -66,10 +66,8 @@ public static class ModelMapping
 
             cfg.CreateMap<Document, DocumentModel>()
                 .ForMember(x => x.DocumentPurpose, opt => opt.MapFrom(s => s.Purpose));
-            cfg.CreateMap<ExternalAccessLink, ExternalInviteLink>()
-                .ForMember(dest => dest.AreCommentsProvided, opt => opt.Ignore());
+            cfg.CreateMap<ExternalAccessLink, ExternalInviteLink>();
             cfg.CreateMap<StatusHistory, StatusHistoryModel>();
-            cfg.CreateMap<Document, SupportingDocument>();
             
             cfg.CreateMap<CaseNote, CaseNoteModel>();
 
@@ -138,11 +136,21 @@ public static class ModelMapping
     public static IEnumerable<StatusHistoryModel> ToStatusHistoryModelList(IList<StatusHistory> statusHistoryItems) =>
         Mapper.Map<IList<StatusHistoryModel>>(statusHistoryItems);
     
-    public static IList<SupportingDocument> ToSupportingDocumentList(IList<Document>? documents) =>
-        Mapper.Map<IList<SupportingDocument>>(documents);
-    
-    public static IList<ExternalInviteLink> ToExternalInviteLinkList(IList<ExternalAccessLink>? documents) =>
-        Mapper.Map<IList<ExternalInviteLink>>(documents);
+    public static IList<ExternalInviteLink> ToExternalInviteLinkList(IList<ExternalAccessLink>? externalAccessLinks, IList<ConsulteeComment>? comments)
+    {
+        var result = Mapper.Map<IList<ExternalInviteLink>>(externalAccessLinks);
+
+        foreach (var link in result)
+        {
+            if (comments?.Any(x => x.AccessCode == link.AccessCode) ?? false)
+            {
+                link.HasResponded = true;
+            }
+        }
+
+        return result;
+    }
+        
 
     public static IList<CaseNoteModel> ToCaseNoteModelList(IList<CaseNote> caseNotes) =>
         Mapper.Map<IList<CaseNoteModel>>(caseNotes);

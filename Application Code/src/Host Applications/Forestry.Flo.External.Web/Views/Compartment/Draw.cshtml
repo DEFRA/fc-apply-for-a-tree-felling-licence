@@ -1,7 +1,6 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.Services.Common.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.Compartment.CompartmentDrawModel;
 
 @{
@@ -11,28 +10,27 @@
     var action = creating ? "Create" : "Edit";
     ViewData.ShowBackLink();
 }
-<div class="govuk-grid-column-full">
-    <form method="post" id="postBack">
-        <h1 class="govuk-heading-m">@action a compartment for @Model.CompartmentModelOfInterest.PropertyProfileName </h1>
+<form method="post" id="postBack">
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.Id"/>
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.PropertyProfileId"/>
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.PropertyProfileName"/>
+    <input type="hidden" asp-for="@Model.NearestTown"/>
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.DisplayName"/>
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.SubCompartmentName"/>
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.GISData"/>
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.TotalHectares"/>
+    <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.WoodlandOwnerId"/>
+    <input type="hidden" asp-for="@Model.AllOtherPropertyCompartmentJson"/>
+    <input type="hidden" asp-for="@Model.ApplicationId"/>
+    <input type="hidden" asp-for="@Model.IsForRestockingCompartmentSelection"/>
+    <input type="hidden" asp-for="@Model.FellingOperationType"/>
+    <input type="hidden" asp-for="@Model.ProposedFellingDetailsId"/>
+    <input type="hidden" asp-for="@Model.FellingCompartmentId"/>
+    <input type="hidden" asp-for="@Model.FellingCompartmentName"/>
 
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.Id" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.PropertyProfileId" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.PropertyProfileName" />
-        <input type="hidden" asp-for="@Model.NearestTown" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.DisplayName" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.Designation" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.SubCompartmentName" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.GISData" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.TotalHectares" />
-        <input type="hidden" asp-for="@Model.CompartmentModelOfInterest.WoodlandOwnerId" />
-        <input type="hidden" asp-for="@Model.AllOtherPropertyCompartmentJson" />
-        <input type="hidden" asp-for="@Model.ApplicationId" />
-        <input type="hidden" asp-for="@Model.IsForRestockingCompartmentSelection" />
-        <input type="hidden" asp-for="@Model.FellingOperationType" />
-        <input type="hidden" asp-for="@Model.ProposedFellingDetailsId" />
-        <input type="hidden" asp-for="@Model.FellingCompartmentId" />
-        <input type="hidden" asp-for="@Model.FellingCompartmentName" />
-        <partial name="Partials/_PageErrors" />
+
+    <div class="govuk-grid-column-two-thirds">
+        <h1 class="govuk-heading-m">@action a compartment for @Model.CompartmentModelOfInterest.PropertyProfileName </h1>
 
         <div class="govuk-form-group">
             <h2 class="govuk-label-wrapper">
@@ -41,6 +39,11 @@
             <validation asp-for="CompartmentModelOfInterest.CompartmentNumber"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="CompartmentModelOfInterest.CompartmentNumber"/>
         </div>
+
+    </div>
+
+
+    <div class="govuk-grid-column-full">
 
         <div class="component-sample-container" aria-label="Draw a compartment map">
 
@@ -51,61 +54,82 @@
                     </h2>
                     <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached>
                         <calcite-action-bar slot="action-bar" expanded>
-                            <calcite-action 
-                                data-action-id="basemaps" 
-                                icon="basemap" 
-                                text="Basemaps" 
-                                scale="l"></calcite-action>
+                            <calcite-action
+                                data-action-id="basemaps"
+                                icon="basemap"
+                                text="Basemaps"
+                                scale="l"
+                                text-enabled>
+                            </calcite-action>
                             <calcite-action
                                 data-action-id="drawing"
-                                icon="annotate-tool" 
-                                text="Draw" 
-                                scale="l"></calcite-action>
+                                icon="annotate-tool"
+                                text="Draw"
+                                scale="l"
+                                text-enabled>
+                            </calcite-action>
                             <calcite-action
                                 data-action-id="coordinates"
-                                icon="cursor-plus" 
-                                text="Coordinate Viewer" 
-                                scale="l"></calcite-action>
+                                icon="cursor-plus"
+                                text="Coordinate Viewer"
+                                text-enabled>
+                            </calcite-action>
                         </calcite-action-bar>
 
                         <calcite-panel description="Please select a tool to draw a shape" heading="Drawing Tools" data-panel-id="drawing" hidden>
                             <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-geometry-button" scale="s"></calcite-action>
                             <calcite-action icon="x" text="close" slot="header-actions-end" id="close-geometry-button" scale="s"></calcite-action>
                             <calcite-action-bar expand-disabled expanded overflow-actions-disabled>
-                                <calcite-action text="Polygon" 
+                                <calcite-action text="Polygon"
                                                 icon="polygon"
                                                 id="polygon-geometry-button"
                                                 value="polygon" scale="l"
-                                ></calcite-action>
-                                <calcite-action text="cut out polygon" 
+                                                text-enabled>
+                                </calcite-action>
+                                <calcite-action text="cut out polygon"
                                                 icon="scissors"
                                                 id="cut-geometry-button"
-                                                value="cut" scale="l"
-                                                disabled></calcite-action>
-                                <calcite-action text="Delete" 
+                                                value="cut"
+                                                scale="l"
+                                                text-enabled
+                                                disabled>
+                                </calcite-action>
+                                <calcite-action text="Delete"
                                                 icon="trash"
                                                 id="delete-geometry-button"
-                                                value="delete" scale="l"
-                                                disabled></calcite-action>
+                                                value="delete"
+                                                scale="l"
+                                                text-enabled
+                                                disabled>
+                                </calcite-action>
                             </calcite-action-bar>
-   
+
                         </calcite-panel>
 
                         <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden>
                             <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-basemap-button" scale="s"></calcite-action>
                             <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
-                            <div id="basemaps-container"></div>
+                            <arcgis-basemap-gallery></arcgis-basemap-gallery>
                         </calcite-panel>
 
                         <calcite-panel heading="Coordinate Viewer" description="Coordinate Details" height-scale="s" data-panel-id="coordinates" hidden>
                             <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-coordinate-button" scale="s"></calcite-action>
                             <calcite-action icon="x" text="close" slot="header-actions-end" id="close-coordinate-button" scale="s"></calcite-action>
-                            <div id="coordinate-container"></div>
+                            <arcgis-coordinate-conversion></arcgis-coordinate-conversion>
                         </calcite-panel>
                     </calcite-shell-panel>
-                    <div id="viewDivDraw"></div>
-
+                    <arcgis-map id="viewDivDraw">
+                        <arcgis-search id="search" position="top-right"></arcgis-search>
+                        <arcgis-home slot="top-right"></arcgis-home>
+                        <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+                        <arcgis-zoom slot="top-right"></arcgis-zoom>
+                        <arcgis-compass slot="top-right"> </arcgis-compass>
+                        <arcgis-fullscreen slot="top-right" element="shell"></arcgis-fullscreen>
+                    </arcgis-map>
+                    <calcite-alert slot="alerts" label="A report alert" closed placement="top" queue="immediate" id="alert">
+                    </calcite-alert>
                 </calcite-shell>
+
             </div>
             <div id="hoverLabel"></div>
         </div>
@@ -134,13 +158,13 @@
                 </div>
             </div>
         </div>
-    </form>
-</div>
+
+    </div>
+</form>
 
 @section Css {
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")" />
-    <link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css"/>
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")?v=@DateTime.UtcNow.Ticks"/>
 }
 
 <style>
@@ -169,12 +193,13 @@
 </style>
 
 @section Scripts{
-    <script type="module" src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js")"></script>
-    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
-    <script type="module">
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
+    <script>
 
 
-        require(["../../js/mapping/maps/map-draw-compartment.js?v=" + Date.now()], function (ProfileMap) {
+        require(["/js/mapping/maps/map-draw-compartment.js?v=" + Date.now()], function (ProfileMap) {
 
             var mapObj = new ProfileMap("viewDivDraw");
 

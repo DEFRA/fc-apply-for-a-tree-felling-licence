@@ -114,6 +114,8 @@ public static class AuditEvents
     public const string RevertApproveToWoodlandOfficerReview = "Revert Approve to Woodland Officer Review";
     public const string RevertConfirmedFellingDetails = "Revert Confirmed Felling Details";
     public const string RevertConfirmedFellingDetailsFailure = "Revert Confirmed Felling Details Failure";
+    public const string UpdateDesignations = "Update Compartment Designations";
+    public const string UpdateDesignationsFailure = "Update Compartment Designations Failure";
 
     //Admin officer review audit events
     public const string ConfirmAdminOfficerReview = "Confirm Operations Admin Officer Review";
@@ -203,11 +205,6 @@ public static class AuditEvents
     public const string ReportExecutionNoDataFound = "Report Execution No Data Found";
     public const string ReportExecutionFailure = "Report Execution Failure";
 
-    // legacy documents
-    public const string AccessLegacyDocumentEvent = "Access Legacy Document";
-    public const string AccessLegacyDocumentFailureEvent = "Access Legacy Document Failure";
-
-
     public const string ConsultationPublicRegisterAutomatedExpirationRemovalSuccess =
         "Consultation Public Register Automated Expiration Removal Success";
 
@@ -225,6 +222,34 @@ public static class AuditEvents
         "Decision Public Register Automated Expiration Removal Failure";
 
     public const string DecisionPublicRegisterApplicationRemovalNotification = "Decision Public Register Application Removal Notification";
+
+    // EIA
+    public const string ApplicantUploadEiaDocumentsSuccess = "Applicant Upload EIA Documents Success";
+    public const string ApplicantUploadEiaDocumentsFailure = "Applicant Upload EIA Documents Failure";
+    public const string ApplicantCompleteEiaSection = "Applicant Complete EIA Section";
+    public const string ApplicantCompleteEiaSectionFailure = "Applicant Complete EIA Section Failure";
+    public const string AdminOfficerCompleteEiaCheck = "Admin Officer Complete EIA Check";
+    public const string AdminOfficerCompleteEiaCheckFailure = "Admin Officer Complete EIA Check Failure";
+    public const string WoodlandOfficerReviewEiaScreening = "Woodland Officer Review EIA Screening";
+    public const string WoodlandOfficerReviewEiaScreeningFailure = "Woodland Officer Review EIA Screening Failure";
+
+    // amendment review
+    public const string ApplicantReviewedAmendments = "Applicant Reviewed Amendments";
+    public const string ApplicantReviewedAmendmentsFailure = "Applicant Reviewed Amendments Failure";
+    public const string SendAmendmentsToApplicant = "Send Amendments To Applicant";
+    public const string SendAmendmentsToApplicantFailure = "Send Amendments To Applicant Failure";
+
+    public const string CompleteFellingAndRestockingAmendmentReview = "Complete Felling And Restocking Amendment Review";
+    public const string CompleteFellingAndRestockingAmendmentReviewFailure = "Complete Felling And Restocking Amendment Review Failure";
+    public const string LateAmendmentResponseNotification = "Late Amendment Response Notification";
+    public const string LateAmendmentResponseNotificationFailure = "Late Amendment Response Notification Failure";
+
+    // Ten-year licence step
+    public const string TenYearLicenceStepUpdated = "Ten Year Licence Step Updated Success";
+    public const string TenYearLicenceStepUpdatedFailure = "Ten Year Licence Step Updated Failure";
+    public const string TenYearLicenceStepCompleted = "Ten Year Licence Step Completed Success";
+    public const string TenYearLicenceStepCompletedFailure = "Ten Year Licence Step Completed Failure";
+
 
     /// <summary>
     /// Returns the source entity type by a given audit event name.
@@ -341,6 +366,8 @@ public static class AuditEvents
             UpdateConfirmedRestockingDetailsFailure => SourceEntityType.FellingLicenceApplication,
             RevertConfirmedFellingDetails => SourceEntityType.ProposedFellingDetails,
             RevertConfirmedFellingDetailsFailure => SourceEntityType.ProposedFellingDetails,
+            UpdateDesignations => SourceEntityType.FellingLicenceApplication,
+            UpdateDesignationsFailure => SourceEntityType.FellingLicenceApplication,
 
             ConfirmAdminOfficerReview => SourceEntityType.FellingLicenceApplication,
             ConfirmAdminOfficerReviewFailure => SourceEntityType.FellingLicenceApplication,
@@ -409,9 +436,6 @@ public static class AuditEvents
             ReportExecutionNoDataFound => SourceEntityType.FellingLicenceApplication,
             ReportExecutionFailure => SourceEntityType.FellingLicenceApplication,
 
-            AccessLegacyDocumentEvent => SourceEntityType.WoodlandOwner,
-            AccessLegacyDocumentFailureEvent => SourceEntityType.WoodlandOwner,
-
             ConsultationPublicRegisterAutomatedExpirationRemovalSuccess => SourceEntityType.FellingLicenceApplication,
             ConsultationPublicRegisterAutomatedExpirationRemovalFailure => SourceEntityType.FellingLicenceApplication,
             ConsultationPublicRegisterApplicationRemovalNotification => SourceEntityType.FellingLicenceApplication,
@@ -422,6 +446,31 @@ public static class AuditEvents
 
             RevertApplicationFromWithdrawnSuccess => SourceEntityType.FellingLicenceApplication,
             RevertApplicationFromWithdrawnFailure => SourceEntityType.FellingLicenceApplication,
+
+            ApplicantUploadEiaDocumentsSuccess => SourceEntityType.FellingLicenceApplication,
+            ApplicantUploadEiaDocumentsFailure => SourceEntityType.FellingLicenceApplication,
+            ApplicantCompleteEiaSection => SourceEntityType.FellingLicenceApplication,
+            ApplicantCompleteEiaSectionFailure => SourceEntityType.FellingLicenceApplication,
+
+            AdminOfficerCompleteEiaCheck => SourceEntityType.FellingLicenceApplication,
+            AdminOfficerCompleteEiaCheckFailure => SourceEntityType.FellingLicenceApplication,
+
+            WoodlandOfficerReviewEiaScreening => SourceEntityType.FellingLicenceApplication,
+            WoodlandOfficerReviewEiaScreeningFailure => SourceEntityType.FellingLicenceApplication,
+
+            ApplicantReviewedAmendments => SourceEntityType.FellingLicenceApplication,
+            ApplicantReviewedAmendmentsFailure => SourceEntityType.FellingLicenceApplication,
+            SendAmendmentsToApplicant => SourceEntityType.FellingLicenceApplication,
+            SendAmendmentsToApplicantFailure => SourceEntityType.FellingLicenceApplication,
+            CompleteFellingAndRestockingAmendmentReview => SourceEntityType.FellingLicenceApplication,
+            CompleteFellingAndRestockingAmendmentReviewFailure => SourceEntityType.FellingLicenceApplication,
+            LateAmendmentResponseNotification => SourceEntityType.FellingLicenceApplication,
+            LateAmendmentResponseNotificationFailure => SourceEntityType.FellingLicenceApplication,
+
+            TenYearLicenceStepUpdated => SourceEntityType.FellingLicenceApplication,
+            TenYearLicenceStepUpdatedFailure => SourceEntityType.FellingLicenceApplication,
+            TenYearLicenceStepCompleted => SourceEntityType.FellingLicenceApplication,
+            TenYearLicenceStepCompletedFailure => SourceEntityType.FellingLicenceApplication,
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

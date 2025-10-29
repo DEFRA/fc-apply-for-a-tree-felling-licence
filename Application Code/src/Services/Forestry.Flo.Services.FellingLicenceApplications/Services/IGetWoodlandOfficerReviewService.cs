@@ -1,9 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.FellingLicenceApplications.Models.AdminOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
-using Forestry.Flo.Services.Gis.Models.Internal;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -65,16 +62,6 @@ public interface IGetWoodlandOfficerReviewService
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Gets the details of an application required to publish the application to the mobile apps layers.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to retrieve data for.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A populated <see cref="ApplicationDetailsForSiteVisitMobileLayers"/> instance.</returns>
-    Task<Result<ApplicationDetailsForSiteVisitMobileLayers>> GetApplicationDetailsForSiteVisitMobileLayersAsync(
-        Guid applicationId,
-        CancellationToken cancellationToken);
-
-    /// <summary>
     /// Gets the current status of conditions for the application in the woodland officer review.
     /// </summary>
     /// <param name="applicationId">The id of the application to retrieve conditions status for.</param>
@@ -91,6 +78,28 @@ public interface IGetWoodlandOfficerReviewService
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A populated <see cref="ApplicationDetailsForConditionsNotification"/> record.</returns>
     Task<Result<ApplicationDetailsForConditionsNotification>> GetDetailsForConditionsNotificationAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets the compartment designations entered by the woodland officer for the application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve data for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="ApplicationSubmittedCompartmentDesignations"/> model of the designations data.</returns>
+    Task<Result<ApplicationSubmittedCompartmentDesignations>> GetCompartmentDesignationsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the current (most recent) felling and restocking amendment review for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the current amendment review for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing the current <see cref="FellingAndRestockingAmendmentReviewModel"/> instance.
+    /// </returns>
+    Task<Result<Maybe<FellingAndRestockingAmendmentReviewModel>>> GetCurrentFellingAndRestockingAmendmentReviewAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
 }

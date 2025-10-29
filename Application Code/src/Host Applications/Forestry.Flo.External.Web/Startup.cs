@@ -1,5 +1,6 @@
 ﻿using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.FileStorage.Configuration;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
@@ -33,17 +34,17 @@ public class Startup
 
         services.Configure<FormOptions>(o =>
         {
-            o.MultipartBodyLengthLimit = userFileUploadOptions.MaxFileSizeBytes;
+            o.MultipartBodyLengthLimit = userFileUploadOptions.ServerMaxUploadSizeBytes;
         });
 
         services.Configure<KestrelServerOptions>(o =>
         {
-            o.Limits.MaxRequestBodySize = userFileUploadOptions.MaxFileSizeBytes;
+            o.Limits.MaxRequestBodySize = userFileUploadOptions.ServerMaxUploadSizeBytes;
         });
         
         services.Configure<IISServerOptions>(o =>
         {
-            o.MaxRequestBodySize = userFileUploadOptions.MaxFileSizeBytes;
+            o.MaxRequestBodySize = userFileUploadOptions.ServerMaxUploadSizeBytes;
         });
 
         services.Configure<CookiePolicyOptions>(x =>
@@ -51,6 +52,9 @@ public class Startup
             x.CheckConsentNeeded = _ => true;
             x.Secure = CookieSecurePolicy.Always;
         });
+
+        services.AddOptions<GovUkOneLoginOptions>().BindConfiguration(GovUkOneLoginOptions.ConfigurationKey);
+        services.AddOptions<AuthenticationOptions>().BindConfiguration(AuthenticationOptions.ConfigurationKey);
 
         var builder = services.AddControllersWithViews(options =>
         {
@@ -68,11 +72,24 @@ public class Startup
             builder.AddRazorRuntimeCompilation();
         }
 
+        var authenticationOptions = new AuthenticationOptions();
+        Configuration.Bind("authenticationOptions", authenticationOptions);
+
         services.AddHttpContextAccessor();
         services.AddRequestContext();
         services.AddDistributedMemoryCache();
         services.AddSession();
-        services.AddAzureAdB2CServices(Configuration);
+
+        switch (authenticationOptions.Provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                services.AddOneLoginServices(Configuration);
+                break;
+            case AuthenticationProvider.Azure:
+                services.AddAzureAdB2CServices(Configuration);
+                break;
+        }
+
         services.AddFloServices(Configuration);
         services.AddDomainServices(ConfigureDatabaseConnection, Configuration, HostEnvironment);
         services.RegisterMassTransit(Configuration);

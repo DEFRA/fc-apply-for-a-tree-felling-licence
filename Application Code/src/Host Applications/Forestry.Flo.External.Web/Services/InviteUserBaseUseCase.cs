@@ -13,6 +13,9 @@ using NodaTime;
 
 namespace Forestry.Flo.External.Web.Services;
 
+/// <summary>
+/// Base class for inviting users to organisations.
+/// </summary>
 public abstract class InviteUserBaseUseCase
 {
     private readonly IUserAccountRepository _userAccountRepository;
@@ -23,7 +26,13 @@ public abstract class InviteUserBaseUseCase
     private const string ErrorReceivedDuringInvitationProcessing =
         "An error received during processing of the user invitation request, please try again";
 
-
+    /// <summary>
+    /// Creates a new instance of <see cref="InviteUserBaseUseCase"/>.
+    /// </summary>
+    /// <param name="userAccountRepository">A <see cref="IUserAccountRepository"/> to interact with the database.</param>
+    /// <param name="invitedUserValidator">A validator for new invited user accounts.</param>
+    /// <param name="clock">A clock to get the current date and time.</param>
+    /// <param name="options">Configuration options related to inviting users.</param>
     protected InviteUserBaseUseCase( 
         IUserAccountRepository userAccountRepository,
         IInvitedUserValidator invitedUserValidator,
@@ -43,7 +52,9 @@ public abstract class InviteUserBaseUseCase
     /// <param name="token">Invited user invitation token </param>
     /// <param name="cancellationToken">A cancellation token</param>
     /// <returns>Success if the user invitation details are valid otherwise Failure result with the error message</returns>
-    public async Task<Result<InvitedUserModel>> VerifyInvitedUserAccountAsync(string email, string token,
+    public async Task<Result<InvitedUserModel>> VerifyInvitedUserAccountAsync(
+        string email, 
+        string token,
         CancellationToken cancellationToken = default)
     {
         Guard.Against.Null(email);
@@ -58,10 +69,20 @@ public abstract class InviteUserBaseUseCase
             .Map(userAccount =>
                 new InvitedUserModel(userAccount.Email,
                     userAccount.AccountType is AccountTypeExternal.WoodlandOwner or AccountTypeExternal.WoodlandOwner
-                        ? userAccount.WoodlandOwner?.OrganisationName
-                        : userAccount.Agency?.OrganisationName, token));
+                        ? userAccount.WoodlandOwner?.OrganisationName ?? userAccount.WoodlandOwner?.ContactName
+                        : userAccount.Agency?.OrganisationName ?? userAccount.Agency?.ContactName, token));
     }
 
+    /// <summary>
+    /// Invites a user to an organisation.
+    /// </summary>
+    /// <param name="organisationUserModel">A model of the invited user.</param>
+    /// <param name="userAccount">A new <see cref="UserAccount"/> for the invited user.</param>
+    /// <param name="systemUser">The user sending the invite.</param>
+    /// <param name="inviteAcceptanceLink">The acceptance link to send in the email.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct containing either the <see cref="UserAccount"/> of
+    /// the invited user, or a <see cref="InviteUserErrorDetails"/> if an error occurs.</returns>
     protected async Task<Result<UserAccount, InviteUserErrorDetails>> InviteUserToOrganisationAsync(
         IInvitedUser organisationUserModel,
         UserAccount userAccount,
@@ -92,6 +113,15 @@ public abstract class InviteUserBaseUseCase
             });
     }
 
+    /// <summary>
+    /// Resend an invitation to an already invited user.
+    /// </summary>
+    /// <param name="organisationUserModel">A model of the invited user.</param>
+    /// <param name="user">The user triggering the resend.</param>
+    /// <param name="inviteAcceptanceLink">The acceptance link to go in the resent email.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct containing either the <see cref="UserAccount"/> of the
+    /// invited user, or an error.</returns>
     protected async Task<Result<UserAccount>> ReInviteUserToOrganisationAsync(
         IInvitedUser organisationUserModel,
         ExternalApplicant user,
@@ -121,7 +151,9 @@ public abstract class InviteUserBaseUseCase
                     await SendInvitationEmail(organisationUserModel, userAccount.InviteToken!.Value, inviteAcceptanceLink, user.FullName, cancellationToken));
     }
 
-    private async Task<InviteUserErrorDetails> CreateInviteUserErrorDetails(IInvitedUser organisationUserModel, UserDbErrorReason error,
+    private async Task<InviteUserErrorDetails> CreateInviteUserErrorDetails(
+        IInvitedUser organisationUserModel, 
+        UserDbErrorReason error,
         CancellationToken cancellationToken) 
     {
         switch (error)
@@ -150,14 +182,37 @@ public abstract class InviteUserBaseUseCase
                     .OperationFailed, ErrorReceivedDuringInvitationProcessing);
         }
     }
-    
+
+    /// <summary>
+    /// Creates an invitation link for the invited user.
+    /// </summary>
+    /// <param name="organisationUserModel">A model of the user being invited.</param>
+    /// <param name="token">The access token for the invite.</param>
+    /// <param name="inviteAcceptanceLink">The base url for the accept invite location.</param>
+    /// <returns>A full invite link containing parameters to go in an email.</returns>
     protected static string CreateInviteLink(IInvitedUser organisationUserModel, Guid token, string inviteAcceptanceLink) =>
         $"{inviteAcceptanceLink}?email={HttpUtility.UrlEncode((string?)organisationUserModel.Email)}&token={token.ToString()}";
 
 
+    /// <summary>
+    /// Checks if an existing user account has already been invited to another organisation.
+    /// </summary>
+    /// <param name="userAccount">The user account to check.</param>
+    /// <param name="organisationUserModel">The invite model to check the existing account against.</param>
+    /// <returns>True of the state of the user account is invited to another organisation, otherwise false.</returns>
     protected abstract bool CheckIfTheUserIsAlreadyInvitedByAnotherUser(UserAccount userAccount, IInvitedUser organisationUserModel) ;
 
-    protected abstract Task<Result> SendInvitationEmail(IInvitedUser woodlandOwnerUserModel,
+    /// <summary>
+    /// Send an invitation email to the invited user.
+    /// </summary>
+    /// <param name="invitedUserModel">A model representing the invited user.</param>
+    /// <param name="token">The invite token to go in the email.</param>
+    /// <param name="inviteAcceptanceLink">The link to go in the email.</param>
+    /// <param name="userName">The name of the user sending the invite.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct indicating the outcome.</returns>
+    protected abstract Task<Result> SendInvitationEmail(
+        IInvitedUser invitedUserModel,
         Guid token,
         string inviteAcceptanceLink,
         string? userName,

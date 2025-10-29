@@ -10,14 +10,11 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.InternalUsers.Repositories;
 using NodaTime;
 using Xunit;
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Models;
 using AutoFixture;
 
@@ -60,7 +57,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.RemoveAssignedWoodlandOfficerAsync(fla.Id, internalUserIds, CancellationToken.None);
             
             // assert
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             _fellingLicenceApplicationInternalRepository.Verify(v => v.RemoveAssignedFellingLicenceApplicationStaffMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
@@ -85,7 +82,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             var result = await sut.RemoveAssignedWoodlandOfficerAsync(flaId, internalUserIds, CancellationToken.None);
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             _fellingLicenceApplicationInternalRepository.Verify(v => v.RemoveAssignedFellingLicenceApplicationStaffMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
@@ -158,9 +155,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.WithdrawApplication(fla.Id, userAccessModel, CancellationToken.None);
 
             // assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.First().Should().Be(fla.AssigneeHistories.First().AssignedUserId);
-            result.Value.Count.Should().Be(3);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(fla.AssigneeHistories.First().AssignedUserId, result.Value.First());
+            Assert.Equal(3, result.Value.Count);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.AddStatusHistory(applicantId, fla.Id, FellingLicenceStatus.Withdrawn, It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -231,9 +228,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.WithdrawApplication(fla.Id, userAccessModel, CancellationToken.None);
 
             // assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.First().Should().Be(fla.AssigneeHistories.First().AssignedUserId);
-            result.Value.Count.Should().Be(3);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(fla.AssigneeHistories.First().AssignedUserId, result.Value.First());
+            Assert.Equal(3, result.Value.Count);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.AddStatusHistory(userAccessModel.UserAccountId, fla.Id, FellingLicenceStatus.Withdrawn, It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -308,11 +305,41 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.WithdrawApplication(fla.Id, userAccessModel, CancellationToken.None);
 
             // assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.First().Should().Be(fla.AssigneeHistories.First().AssignedUserId);
-            result.Value.Count.Should().Be(3);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(fla.AssigneeHistories.First().AssignedUserId, result.Value.First());
+            Assert.Equal(3, result.Value.Count);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.AddStatusHistory(userAccessModel.UserAccountId, fla.Id, FellingLicenceStatus.Withdrawn, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShouldReturnFailure_WhenWithdrawingApplicationCannotBeFound()
+        {
+            var sut = CreateSut();
+            var externalUserId = Guid.NewGuid();
+
+            // dummy data
+            var applicationId = Guid.NewGuid();
+            var userAccessModel = new UserAccessModel
+            {
+                IsFcUser = false,
+                UserAccountId = Guid.NewGuid(),
+                AgencyId = null,
+                WoodlandOwnerIds = new List<Guid> { Guid.NewGuid() }
+            };
+
+            // setup
+
+            _fellingLicenceApplicationExternalRepository.Setup(r =>
+                    r.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Failure<bool>("error"));
+
+            var result = await sut.WithdrawApplication(applicationId, userAccessModel, CancellationToken.None);
+
+            // assert
+            Assert.True(result.IsFailure);
+            _fellingLicenceApplicationExternalRepository.Verify(v => v.CheckUserCanAccessApplicationAsync(applicationId, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
+            _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
         }
 
         [Theory]
@@ -321,6 +348,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         [InlineData(FellingLicenceStatus.Draft)]
         [InlineData(FellingLicenceStatus.Received)]
         [InlineData(FellingLicenceStatus.ReferredToLocalAuthority)]
+        [InlineData(FellingLicenceStatus.Withdrawn)]
         public async Task ShouldReturnFailure_WhenWithdrawingApplicationInWrongState(FellingLicenceStatus status)
         {
             var sut = CreateSut();
@@ -357,7 +385,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.WithdrawApplication(fla.Id, userAccessModel, CancellationToken.None);
 
             // assert
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationExternalRepository.Verify(v => v.AddStatusHistory(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<FellingLicenceStatus>(), It.IsAny<CancellationToken>()), Times.Never);
         }
@@ -387,8 +415,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.UpdatePublicRegisterEntityToRemovedAsync(applicationId, null, removedDateTime, CancellationToken.None);
 
             // Assert
-            result.IsSuccess.Should().BeTrue();
-            publicRegister.ConsultationPublicRegisterRemovedTimestamp.Should().Be(removedDateTime);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(removedDateTime, publicRegister.ConsultationPublicRegisterRemovedTimestamp);
             _fellingLicenceApplicationInternalRepository.Verify(r => r.UnitOfWork.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -407,8 +435,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.UpdatePublicRegisterEntityToRemovedAsync(applicationId, null, DateTime.UtcNow, CancellationToken.None);
 
             // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be("Public register does not have a publication date.");
+            Assert.True(result.IsFailure);
+            Assert.Equal("Public register does not have a publication date.", result.Error);
             _fellingLicenceApplicationInternalRepository.Verify(r => r.UnitOfWork.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
 
@@ -434,10 +462,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.General));
 
             // Act
-            var result = await sut.UpdatePublicRegisterEntityToRemovedAsync(applicationId, null, removedDateTime, CancellationToken.None);
+            var result = await sut.UpdatePublicRegisterEntityToRemovedAsync(applicationId, Guid.NewGuid(), removedDateTime, CancellationToken.None);
 
             // Assert
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
             _fellingLicenceApplicationInternalRepository.Verify(r => r.UnitOfWork.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -457,8 +485,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var result = await sut.UpdatePublicRegisterEntityToRemovedAsync(applicationId, null, removedDateTime, CancellationToken.None);
 
             // Assert
-            result.IsFailure.Should().BeTrue();
-            result.Error.Should().Be("Test exception");
+            Assert.True(result.IsFailure);
+            Assert.Equal("Test exception", result.Error);
             _fellingLicenceApplicationInternalRepository.Verify(r => r.UnitOfWork.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
         private WithdrawFellingLicenceService CreateSut()

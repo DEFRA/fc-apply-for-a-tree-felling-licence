@@ -8,13 +8,10 @@
 }
 
 .printerDiv {
-    border-color: black;
-    border-style: solid;
-    border-width: 1px;
-    padding: 0;
-    margin: 0;
-    height: 85vh !important;
+    height: 95% !important;
 }
+
+
 
 sup {
     vertical-align: top;
@@ -40,7 +37,7 @@ sup {
 }
 
 
-.modal.open {
+    .modal.open {
         visibility: visible;
         opacity: 1;
         transition-delay: 0s;
@@ -58,7 +55,8 @@ sup {
     background: #fff;
     position: relative;
     padding: 30px;
-    width: 90%
+    width: 90%;
+    height: 85vh;
 }
 
 .modal-close {

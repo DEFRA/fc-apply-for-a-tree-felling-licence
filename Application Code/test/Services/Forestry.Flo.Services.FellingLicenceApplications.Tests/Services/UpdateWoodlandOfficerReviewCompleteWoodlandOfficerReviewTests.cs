@@ -21,6 +21,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         Guid performingUserId,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         DateTime completedDateTime)
     {
         var sut = CreateSut();
@@ -30,7 +31,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.None);
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -46,6 +47,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         DateTime completedDateTime,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         FellingLicenceApplication application)
     {
         foreach (var applicationStatusHistory in application.StatusHistories)
@@ -63,7 +65,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -80,6 +82,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         DateTime completedDateTime,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         FellingLicenceApplication application)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -113,7 +116,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -129,6 +132,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         DateTime completedDateTime,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         FellingLicenceApplication application)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -156,7 +160,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -172,6 +176,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         DateTime completedDateTime,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         FellingLicenceApplication application)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -208,7 +213,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<WoodlandOfficerReview>.None);
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -226,6 +231,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
      FellingLicenceApplication application,
      RecommendedLicenceDuration recommendedLicenceDuration,
      bool recommendationForPublicRegister,
+     string recommendationForPublicRegisterReason,
      WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -253,9 +259,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -276,7 +282,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.None);
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -295,6 +301,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -322,9 +329,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -351,7 +358,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -370,6 +377,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -397,9 +405,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // site visit not started
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = null;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = null;
+        woodlandOfficerReview.SiteVisitNeeded = null;
+        woodlandOfficerReview.SiteVisitArrangementsMade = null;
+        woodlandOfficerReview.SiteVisitComplete = false;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -427,7 +435,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -446,6 +454,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -473,9 +482,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // site visit in progress
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = null;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = false;
 
         // complete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -502,7 +511,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -521,6 +530,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -548,10 +558,10 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
-        
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
+
         // incomplete PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = false;
         
@@ -578,7 +588,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -597,6 +607,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -624,9 +635,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -654,7 +665,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -673,6 +684,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -700,9 +712,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -733,7 +745,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -752,6 +764,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -779,9 +792,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -813,7 +826,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -833,6 +846,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -860,9 +874,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -877,6 +891,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         // completed confirmed f&r
         woodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
         woodlandOfficerReview.LarchCheckComplete = true;
+        woodlandOfficerReview.EiaScreeningComplete = true;
 
         //completed conditions
         woodlandOfficerReview.IsConditional = false;
@@ -897,7 +912,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.General));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -918,6 +933,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         FellingLicenceApplication application,
         RecommendedLicenceDuration recommendedLicenceDuration,
         bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
         WoodlandOfficerReview woodlandOfficerReview)
     {
         application.StatusHistories = new List<StatusHistory>
@@ -945,9 +961,9 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         };
 
         // completed site visit
-        woodlandOfficerReview.SiteVisitNotNeeded = false;
-        woodlandOfficerReview.SiteVisitArtefactsCreated = DateTime.UtcNow;
-        woodlandOfficerReview.SiteVisitNotesRetrieved = DateTime.UtcNow;
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
 
         // completed PW14 checks
         woodlandOfficerReview.Pw14ChecksComplete = true;
@@ -965,6 +981,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
 
         //completed conditions
         woodlandOfficerReview.IsConditional = false;
+        woodlandOfficerReview.EiaScreeningComplete = true;
 
         var sut = CreateSut();
 
@@ -982,7 +999,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
@@ -1004,5 +1021,204 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
         Assert.Equal(performingUserId, woodlandOfficerReview.LastUpdatedById);
         Assert.Equal(recommendedLicenceDuration, woodlandOfficerReview.RecommendedLicenceDuration);
         Assert.Equal(recommendationForPublicRegister, woodlandOfficerReview.RecommendationForDecisionPublicRegister);
+        Assert.Equal(recommendationForPublicRegisterReason, woodlandOfficerReview.RecommendationForDecisionPublicRegisterReason);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenEiaScreeningRequiredAndIncomplete(
+        Guid applicationId,
+        Guid performingUserId,
+        Guid fieldManagerId,
+        DateTime completedDateTime,
+        FellingLicenceApplication application,
+        RecommendedLicenceDuration recommendedLicenceDuration,
+        bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
+        WoodlandOfficerReview woodlandOfficerReview)
+    {
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory
+            {
+                Created = DateTime.UtcNow,
+                Status = FellingLicenceStatus.WoodlandOfficerReview
+            }
+        };
+        application.AssigneeHistories = new List<AssigneeHistory>
+        {
+            new AssigneeHistory
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = performingUserId,
+                Role = AssignedUserRole.WoodlandOfficer
+            },
+            new AssigneeHistory
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = fieldManagerId,
+                Role = AssignedUserRole.FieldManager
+            }
+        };
+
+        var deforestationProposed = application.LinkedPropertyProfile!.ProposedFellingDetails!.First();
+
+        deforestationProposed.ProposedRestockingDetails!.Clear();
+        deforestationProposed.IsRestocking = false;
+        deforestationProposed.NoRestockingReason = "not required";
+
+        // completed site visit
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
+
+        // completed PW14 checks
+        woodlandOfficerReview.Pw14ChecksComplete = true;
+
+        //completed pr
+        var publicRegister = new PublicRegister
+        {
+            ConsultationPublicRegisterPublicationTimestamp = DateTime.UtcNow,
+            ConsultationPublicRegisterRemovedTimestamp = DateTime.UtcNow
+        };
+
+        // completed confirmed f&r
+        woodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+        woodlandOfficerReview.LarchCheckComplete = true;
+
+        //completed conditions
+        woodlandOfficerReview.IsConditional = false;
+        woodlandOfficerReview.EiaScreeningComplete = false;
+
+        var sut = CreateSut();
+
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<WoodlandOfficerReview>.From(woodlandOfficerReview));
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
+        UnitOfWork
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+        var result = await sut.CompleteWoodlandOfficerReviewAsync(
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        FellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.GetPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.VerifyNoOtherCalls();
+        UnitOfWork.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenEiaScreeningRequiredAndComplete(
+        Guid applicationId,
+        Guid performingUserId,
+        Guid fieldManagerId,
+        DateTime completedDateTime,
+        FellingLicenceApplication application,
+        RecommendedLicenceDuration recommendedLicenceDuration,
+        bool recommendationForPublicRegister,
+        string recommendationForPublicRegisterReason,
+        WoodlandOfficerReview woodlandOfficerReview)
+    {
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory
+            {
+                Created = DateTime.UtcNow,
+                Status = FellingLicenceStatus.WoodlandOfficerReview
+            }
+        };
+        application.AssigneeHistories = new List<AssigneeHistory>
+        {
+            new AssigneeHistory
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = performingUserId,
+                Role = AssignedUserRole.WoodlandOfficer
+            },
+            new AssigneeHistory
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = fieldManagerId,
+                Role = AssignedUserRole.FieldManager
+            }
+        };
+
+        var deforestationProposed = application.LinkedPropertyProfile!.ProposedFellingDetails!.First();
+
+        deforestationProposed.ProposedRestockingDetails!.Clear();
+        deforestationProposed.IsRestocking = false;
+        deforestationProposed.NoRestockingReason = "not required";
+
+        // completed site visit
+        woodlandOfficerReview.SiteVisitNeeded = true;
+        woodlandOfficerReview.SiteVisitArrangementsMade = true;
+        woodlandOfficerReview.SiteVisitComplete = true;
+
+        // completed PW14 checks
+        woodlandOfficerReview.Pw14ChecksComplete = true;
+
+        //completed pr
+        var publicRegister = new PublicRegister
+        {
+            ConsultationPublicRegisterPublicationTimestamp = DateTime.UtcNow,
+            ConsultationPublicRegisterRemovedTimestamp = DateTime.UtcNow
+        };
+
+        // completed confirmed f&r
+        woodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+        woodlandOfficerReview.LarchCheckComplete = true;
+
+        //completed conditions
+        woodlandOfficerReview.IsConditional = false;
+        woodlandOfficerReview.EiaScreeningComplete = true;
+
+        var sut = CreateSut();
+
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<WoodlandOfficerReview>.From(woodlandOfficerReview));
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
+        UnitOfWork
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+        var result = await sut.CompleteWoodlandOfficerReviewAsync(
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        FellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.GetPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        UnitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.VerifyNoOtherCalls();
+        UnitOfWork.VerifyNoOtherCalls();
+
+        Assert.Equal(2, application.StatusHistories.Count);
+        Assert.Equal(FellingLicenceStatus.SentForApproval, application.StatusHistories.Last().Status);
+
+        Assert.Equal(application.CreatedById, result.Value.ApplicantId);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(fieldManagerId, result.Value.FieldManagerId);
+
+        Assert.Equal(completedDateTime, woodlandOfficerReview.LastUpdatedDate);
+        Assert.Equal(performingUserId, woodlandOfficerReview.LastUpdatedById);
+        Assert.Equal(recommendedLicenceDuration, woodlandOfficerReview.RecommendedLicenceDuration);
+        Assert.Equal(recommendationForPublicRegister, woodlandOfficerReview.RecommendationForDecisionPublicRegister);
+        Assert.Equal(recommendationForPublicRegisterReason, woodlandOfficerReview.RecommendationForDecisionPublicRegisterReason);
     }
 }

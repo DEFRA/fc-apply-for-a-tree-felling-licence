@@ -27,12 +27,12 @@ public interface IExternalConsulteeReviewService
     /// Retrieves any existing consultee comments from an author email address for a given application id.
     /// </summary>
     /// <param name="applicationId">The id of the application to retrieve comments for.</param>
-    /// <param name="emailAddress">The email address of the author to retrieve comments for.</param>
+    /// <param name="accessCode">The external access link code to retrieve comments for.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A list of any existing consultee comments for the given parameters.</returns>
-    Task<List<ConsulteeCommentModel>> RetrieveConsulteeCommentsForAuthorAsync(
+    Task<List<ConsulteeCommentModel>> RetrieveConsulteeCommentsForAccessCodeAsync(
         Guid applicationId,
-        string emailAddress,
+        Guid accessCode,
         CancellationToken cancellationToken);
 
     /// <summary>

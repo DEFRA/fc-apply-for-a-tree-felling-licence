@@ -2,17 +2,17 @@
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.AspNetCore.Mvc;
-
 namespace Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 
 /// <summary>
 /// Represents the details of confirmed felling and restocking for woodland officer review.
-/// Provides methods to retrieve deleted felling and restocking operations for compartments.
+/// This model is used to display and manage the compartments, felling, and restocking operations
+/// as reviewed and confirmed by a woodland officer, including tracking amendments and activity feed items.
 /// </summary>
 public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModelBase
 {
     /// <summary>
-    /// Gets or sets the unique identifier for the application.
+    /// Gets or sets the unique identifier for the felling licence application.
     /// </summary>
     [HiddenInput]
     public Guid ApplicationId { get; set; }
@@ -20,24 +20,28 @@ public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModel
     /// <summary>
     /// Gets or sets the collection of compartments with confirmed felling and restocking details.
     /// Each compartment contains the confirmed felling details and associated restocking information
-    /// as reviewed by the woodland officer.
+    /// as reviewed and confirmed by the woodland officer.
     /// </summary>
     public CompartmentConfirmedFellingRestockingDetailsModel[] Compartments { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the collection of proposed felling details for each compartment.
     /// Each item contains the proposed felling operations and associated restocking information
-    /// as submitted in the application, prior to woodland officer review.
+    /// as originally submitted in the application, prior to woodland officer review.
     /// </summary>
     public CompartmentProposedFellingRestockingDetailsModel[] ProposedFellingDetails { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets a collection of potential restocking compartments.
+    /// Gets or sets a collection of submitted felling licence application property compartments.
     /// </summary>
-    public List<PotentialRestockingCompartments> PotentialRestockingCompartments { get; set; } = [];
+    /// <remarks>
+    /// This is the entirety of compartments submitted with the application.
+    /// </remarks>
+    public List<SubmittedFlaPropertyCompartment> SubmittedFlaPropertyCompartments { get; set; } = [];
 
     /// <summary>
-    /// A collection of activity feed items related to the confirmed felling and restocking details.
+    /// Gets or sets a collection of activity feed items related to the confirmed felling and restocking details,
+    /// such as amendments, comments, or status changes.
     /// </summary>
     public List<ActivityFeedItemModel> ActivityFeedItems { get; set; } = [];
 
@@ -48,7 +52,8 @@ public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModel
     /// </summary>
     /// <param name="compartmentId">The unique identifier of the compartment.</param>
     /// <returns>
-    /// An array of <see cref="ProposedFellingDetailModel"/> representing the deleted felling operations.
+    /// An array of <see cref="ProposedFellingDetailModel"/> representing the deleted felling operations
+    /// for the specified compartment, or an empty array if none are found.
     /// </returns>
     public ProposedFellingDetailModel[] DeletedFellingOperations(Guid? compartmentId)
     {
@@ -77,7 +82,8 @@ public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModel
     /// </summary>
     /// <param name="proposedFellingDetailId">The unique identifier of the proposed felling detail.</param>
     /// <returns>
-    /// An array of <see cref="ProposedRestockingDetailModel"/> representing the deleted restocking operations.
+    /// An array of <see cref="ProposedRestockingDetailModel"/> representing the deleted restocking operations
+    /// for the specified felling detail, or an empty array if none are found.
     /// </returns>
     public ProposedRestockingDetailModel[] DeletedRestockingOperations(Guid? proposedFellingDetailId)
     {
@@ -105,37 +111,51 @@ public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModel
     public bool ConfirmedFellingAndRestockingComplete { get; set; }
 
     /// <summary>
-    /// Gets and sets the relevant primary button to display on the view.
+    /// Combined amendment information for this application.
     /// </summary>
-    public required RelevantFellingAndRestockingButton RelevantButton { get; set; }
+    public required AmendmentReview Amendment { get; set; }
+}
 
+public class AmendmentReview
+{
     /// <summary>
-    /// Gets and sets a value indicating whether the current user can amend the confirmed felling and restocking details.
+    /// Gets or sets a value indicating whether the current user can amend the confirmed felling and restocking details.
     /// </summary>
     public required bool CanCurrentUserAmend { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether any confirmed felling details have amended properties.
+    /// Gets or sets a value indicating whether further amendments are allowed or present.
     /// </summary>
-    public bool IsAmended
-    {
-        get
-        {
-            return Compartments
-                .Where(c => c?.ConfirmedFellingDetails != null)
-                .SelectMany(c => c.ConfirmedFellingDetails)
-                .Any(d => d?.AmendedProperties is { Count: > 0 });
-        }
-    }
-}
+    public bool FurtherAmendments { get; set; }
 
-/// <summary>
-/// An enumeration of possible buttons to display as a primary button on the confirmed
-/// felling and restocking page.
-/// </summary>
-public enum RelevantFellingAndRestockingButton
-{
-    None,
-    SendAmendmentsToApplicant,
-    ConfirmFellingAndRestocking
+    /// <summary>
+    /// Gets or sets the current amendment state for the application.
+    /// </summary>
+    public required FellingLicenceApplication.AmendmentStateEnum AmendmentState { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date when amendments were sent to the applicant, if applicable.
+    /// </summary>
+    public DateTime? AmendmentsSentDate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the unique identifier for the amendment review, if applicable.
+    /// </summary>
+    public Guid? AmendmentReviewId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the reason for the amendment, if provided by the woodland officer.
+    /// </summary>
+    public string? AmendmentReason { get; set; }
+
+    /// <summary>
+    /// Gets or sets the reason provided by the applicant for disagreeing with the amendment, if applicable.
+    /// </summary>
+    public string? ApplicantDisagreementReason { get; set; }
+
+    /// <summary>
+    /// Gets a value indicating whether any confirmed felling details have amended properties.
+    /// Returns true if at least one confirmed felling detail contains amended properties.
+    /// </summary>
+    public bool IsAmended { get; set; }
 }

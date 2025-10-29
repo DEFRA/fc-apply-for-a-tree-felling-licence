@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -18,6 +17,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using UserAccountModel = Forestry.Flo.Services.InternalUsers.Models.UserAccountModel;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 

@@ -1,10 +1,12 @@
 ﻿using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using Ardalis.GuardClauses;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 
+[ExcludeFromCodeCoverage(Justification = "Unable to unit test this class using the in-memory database")]
 public class FellingLicenceApplicationReferenceRepository: IFellingLicenceApplicationReferenceRepository
 {
     private readonly FellingLicenceApplicationsContext _context;

@@ -240,3 +240,24 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 .moj-timeline:has(:first-child.flo-timeline_item-casenote):before {
     top: 22px;
 }
+
+.sub-status-container{
+    display: flex;
+    gap: 10px;
+}
+
+.sub-status-vertical-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@media print {
+    .page-break {
+        page-break-before: always;
+    }
+
+    .no-print {
+        display: none;
+    }
+}

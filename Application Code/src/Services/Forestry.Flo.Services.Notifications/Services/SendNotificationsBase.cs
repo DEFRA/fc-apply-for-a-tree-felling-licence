@@ -181,6 +181,12 @@ public abstract class SendNotificationsBase : ISendNotifications
         return applicationModel?.ApplicationReference;
     }
 
+    private static Guid? GetApplicationId<T>(T model)
+    {
+        var applicationModel = model as IApplicationNotification;
+        return applicationModel?.ApplicationId;
+    }
+
     private async Task<Result> AddToNotificationHistoryAsync<T>(
         [DisallowNull] T model,
         NotificationType notificationType,
@@ -197,7 +203,8 @@ public abstract class SendNotificationsBase : ISendNotifications
             Text = content ?? "Content unavailable",
             CreatedTimestamp = _clock.GetCurrentInstant().ToDateTimeUtc(),
             NotificationType = notificationType,
-            ApplicationReference = GetApplicationReference(model)
+            ApplicationReference = GetApplicationReference(model),
+            ApplicationId = GetApplicationId(model)
         });
 
         await _notificationHistoryRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken)

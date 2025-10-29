@@ -1,11 +1,10 @@
-﻿using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
-using Forestry.Flo.Services.FellingLicenceApplications;
+﻿using Ardalis.GuardClauses;
+using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Internal.Web.Services;
-using Ardalis.GuardClauses;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -17,6 +16,7 @@ public class CaseNoteController : Controller
     public async Task<IActionResult> AddCaseNote(
         AddCaseNoteModel model, 
         [FromServices] IAmendCaseNotes amendCaseNotes,
+        [FromServices] IUrlHelper urlHelper,
         CancellationToken cancellationToken)
     {
         var user = Guard.Against.Null(new InternalUser(User));
@@ -36,7 +36,11 @@ public class CaseNoteController : Controller
             return RedirectToAction("Error", "Home");
         }
 
-        return Redirect(model.ReturnUrl);
+        if (urlHelper.IsLocalUrl(model.ReturnUrl))
+        {
+            return Redirect(model.ReturnUrl);
+        }
+        return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id = model.FellingLicenceApplicationId });
     }
 }
 

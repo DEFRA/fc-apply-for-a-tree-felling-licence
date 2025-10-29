@@ -9,6 +9,7 @@ using Forestry.Flo.Services.Common.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 
 namespace Forestry.Flo.Internal.Web.Controllers.AccountAdministration;
 
@@ -16,10 +17,10 @@ namespace Forestry.Flo.Internal.Web.Controllers.AccountAdministration;
 [AutoValidateAntiforgeryToken]
 public class ExternalAccountAdministrationController : Controller
 {
-    private readonly ValidationProvider _validationProvider;
+    private readonly IValidationProvider _validationProvider;
     private const string ExternalListTitle = "External User Account List";
 
-    public ExternalAccountAdministrationController(ValidationProvider validationProvider)
+    public ExternalAccountAdministrationController(IValidationProvider validationProvider)
     {
         _validationProvider = Guard.Against.Null(validationProvider);
     }
@@ -31,7 +32,7 @@ public class ExternalAccountAdministrationController : Controller
 
     [HttpGet]
     public async Task<IActionResult> ExternalUserList(
-        [FromServices] GetApplicantUsersUseCase useCase,
+        [FromServices] IGetApplicantUsersUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -44,7 +45,7 @@ public class ExternalAccountAdministrationController : Controller
         var model = 
             await useCase.RetrieveListOfActiveExternalUsersAsync(
                 user,
-                Url.Action("Index", "Home")!,
+                Url.Action(nameof(HomeController.UserManagement), "Home")!,
                 cancellationToken);
 
         if (model.IsFailure)
@@ -65,7 +66,7 @@ public class ExternalAccountAdministrationController : Controller
     [HttpPost]
     public async Task<IActionResult> CloseUserAccount(
         ExternalUserListModel model,
-        [FromServices] GetApplicantUsersUseCase useCase,
+        [FromServices] IGetApplicantUsersUseCase useCase,
         CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
@@ -84,7 +85,7 @@ public class ExternalAccountAdministrationController : Controller
     [HttpPost]
     public async Task<IActionResult> AmendUserAccount(
         ExternalUserListModel model,
-        [FromServices] GetApplicantUsersUseCase useCase,
+        [FromServices] IGetApplicantUsersUseCase useCase,
         CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
@@ -101,7 +102,7 @@ public class ExternalAccountAdministrationController : Controller
     }
     public async Task<IActionResult> RedirectToExternalList(
         ExternalUserListModel model,
-        GetApplicantUsersUseCase useCase,
+        IGetApplicantUsersUseCase useCase,
         CancellationToken cancellationToken)
     {
         var reloadModel = await useCase.RetrieveListOfActiveExternalUsersAsync(
@@ -126,7 +127,7 @@ public class ExternalAccountAdministrationController : Controller
     [HttpGet]
     public async Task<IActionResult> AmendExternalUserAccount(
         Guid userId,
-        [FromServices] AmendExternalUserUseCase useCase,
+        [FromServices] IAmendExternalUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
@@ -157,7 +158,7 @@ public class ExternalAccountAdministrationController : Controller
     [HttpPost]
     public async Task<IActionResult> AmendExternalUserAccount(
         AmendExternalUserAccountModel model,
-        [FromServices] AmendExternalUserUseCase useCase,
+        [FromServices] IAmendExternalUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         ApplySectionValidationModelErrors(model, nameof(AmendExternalUserAccountModel));
@@ -198,7 +199,7 @@ public class ExternalAccountAdministrationController : Controller
     [HttpGet]
     public async Task<IActionResult> CloseExternalUserAccount(
         Guid userId,
-        [FromServices] AmendExternalUserUseCase useCase,
+        [FromServices] IAmendExternalUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
@@ -229,7 +230,7 @@ public class ExternalAccountAdministrationController : Controller
     [HttpPost]
     public async Task<IActionResult> CloseExternalUserAccount(
         CloseExternalUserModel model,
-        [FromServices] AmendExternalUserUseCase useCase,
+        [FromServices] IAmendExternalUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);

@@ -182,40 +182,6 @@ public class CompartmentController : Controller
             agencyId,
             woodlandOwnerId
         });
-
-        if (woodlandOwnerId == Guid.Empty)
-        {
-            woodlandOwnerId = result.Value.WoodlandOwnerId;
-        }
-
-        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = woodlandOwnerId;
-
-        var compartmentModel = new CompartmentModel
-        {
-            PropertyProfileId = propertyProfileId,
-            PropertyProfileName = result.Value.Name,
-            ApplicationId = applicationId,
-            WoodlandOwnerId = woodlandOwnerId,
-            IsForRestockingCompartmentSelection = isForRestockingCompartmentSelection,
-            FellingCompartmentId = fellingCompartmentId.HasValue ? fellingCompartmentId.Value : Guid.Empty,
-            FellingCompartmentName = fellingCompartmentName,
-            ProposedFellingDetailsId = proposedFellingDetailsId,
-            FellingOperationType = fellingOperationType,
-            AgencyId = agencyId
-        };
-        
-        if (compartmentId.HasValue && compartmentId != Guid.Empty)
-        {
-            var (found, c) = await useCase.RetrieveCompartmentAsync(compartmentId.Value, user, cancellationToken);
-            if (found)
-            {
-                compartmentModel.CompartmentNumber = c.CompartmentNumber;
-                compartmentModel.SubCompartmentName = c.SubCompartmentName;
-                compartmentModel.Designation = c.Designation;
-            }
-        }
-
-        return CreateViewWithBreadcrumbs(compartmentModel, "CreateUpdateDetails");
     }
 
     // POST: Compartment/CreateUsingMap
@@ -631,7 +597,6 @@ public class CompartmentController : Controller
 
         var documentModel = new AddSupportingDocumentModel
         {
-            AvailableToConsultees = true,
             DocumentCount = imageFiles.Count,
             FellingLicenceApplicationId = model.ApplicationId
         };

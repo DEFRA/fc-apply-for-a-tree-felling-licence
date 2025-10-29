@@ -1,22 +1,19 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.FellingLicenceApplications;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.InternalUsers.Repositories;
+using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using NodaTime;
 
-namespace Forestry.Flo.Internal.Web;
+namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
 public class AmendCaseNotes : IAmendCaseNotes
 {
-    private readonly IDbContextFactory<FellingLicenceApplicationsContext> _dbContextFactory;
+    private readonly IFellingLicenceApplicationInternalRepository _repository;
     private readonly IClock _clock;
     private readonly ILogger<AmendCaseNotes> _logger;
 
@@ -24,26 +21,24 @@ public class AmendCaseNotes : IAmendCaseNotes
     /// Implementation of <see cref="IAmendCaseNotes"/> that amends case notes within applications.
     /// </summary>
     public AmendCaseNotes(
-        IDbContextFactory<FellingLicenceApplicationsContext> dbContextFactory,
+        IFellingLicenceApplicationInternalRepository repository,
         IClock clock,
         ILogger<AmendCaseNotes> logger)
     {
-        _dbContextFactory = Guard.Against.Null(dbContextFactory);
+        _repository = Guard.Against.Null(repository);
         _clock = Guard.Against.Null(clock);
         _logger = logger ?? new NullLogger<AmendCaseNotes>();
     }
 
     /// <inheritdoc />
     public async Task<Result> AddCaseNoteAsync(
-    AddCaseNoteRecord addCaseNoteRecord,
-    Guid userId,
-    CancellationToken cancellationToken)
+        AddCaseNoteRecord addCaseNoteRecord,
+        Guid userId,
+        CancellationToken cancellationToken)
     {
         try
         {
-            await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-            CaseNote CaseNote = new CaseNote()
+            var caseNote = new CaseNote
             {
                 FellingLicenceApplicationId = addCaseNoteRecord.FellingLicenceApplicationId,
                 Type = addCaseNoteRecord.Type,
@@ -54,8 +49,14 @@ public class AmendCaseNotes : IAmendCaseNotes
                 CreatedByUserId = userId,
             };
 
-            await dbContext.CaseNote.AddAsync(CaseNote, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await _repository.AddCaseNoteAsync(caseNote, cancellationToken);
+            var saveResult = await _repository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (saveResult.IsFailure)
+            {
+                _logger.LogError("Failed to save Case Note: {Error}", saveResult.Error);
+                return Result.Failure(saveResult.Error.GetDescription());
+            }
 
             return Result.Success();
         }

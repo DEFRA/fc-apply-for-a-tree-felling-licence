@@ -47,18 +47,6 @@ namespace Forestry.Flo.Services.Gis.Interfaces
             int roundTo, string conversionString, string uploadType, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Gets the all the Notes for a case.
-        ///
-        /// Note: Currently this is only wired up to allow for UX testing. Final Object and layer will change
-        /// There are no UNIT TESTS for this code
-        /// </summary>
-        /// <param name="caseRef">The case reference string to find </param>
-        /// <param name="cancellationToken">The cancellation Token</param>
-        /// <returns>The Admin area name and ID of the given point. NOTE: Its Possible that the name/id returned is null</returns>
-        Task<Result<List<SiteVisitNotes<Guid>>>>
-            GetVisitNotesAsync(string caseRef, CancellationToken cancellationToken);
-
-        /// <summary>
         /// Gets the Centre point of a collections of Polygons
         /// </summary>
         /// <param name="compartments">The Compartments to use</param>
@@ -74,17 +62,5 @@ namespace Forestry.Flo.Services.Gis.Interfaces
         /// <param name="cancellationToken">The cancellation Token</param>
         /// <returns>The centre point</returns>
         Task<Result<string>> GetOSGridReferenceAsync(Point point, CancellationToken cancellationToken);
-
-
-        /// <summary>
-        /// Saves the Case Details to the mobile Layers
-        /// </summary>
-        /// <param name="caseRef">The Case reference to identify the details to</param>
-        /// <param name="compartmentDetailsList">The Compartment details to save in the mobile Layers</param>
-        /// <param name="cancellationToken">The cancellation Token</param>
-        /// <returns>The Result of the process</returns>
-        Task<Result> SavesCaseToMobileLayersAsync(string caseRef,
-            List<InternalFullCompartmentDetails> compartmentDetailsList,
-            CancellationToken cancellationToken);
     }
 }

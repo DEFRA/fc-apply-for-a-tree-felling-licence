@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -14,25 +15,24 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
-using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using ActivityFeedItemType = Forestry.Flo.Services.Common.Models.ActivityFeedItemType;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
 
-namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
 
 /// <summary>
 /// Use case for handling approver reviews of felling licence applications.
 /// </summary>
-public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
+public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IApproverReviewUseCase
 {
     private readonly IAgentAuthorityInternalService _agentAuthorityInternalService;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
-    private readonly IPropertyProfileRepository _propertyProfileRepository;
     private readonly ILogger<FellingLicenceApplicationUseCase> _logger;
-    private readonly Flo.Services.InternalUsers.Repositories.IUserAccountRepository _userAccountRepository;
     private readonly IActivityFeedItemProvider _activityFeedItemProvider;
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
     private readonly IApproverReviewService _approverReviewService;
@@ -46,25 +46,24 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
     /// <param name="internalUserAccountService">The internal user account service.</param>
     /// <param name="externalUserAccountService">The external user account service.</param>
     /// <param name="fellingLicenceApplicationInternalRepository">The felling licence application internal repository.</param>
-    /// <param name="propertyProfileRepository">The property profile repository.</param>
     /// <param name="woodlandOwnerService">The woodland owner service.</param>
     /// <param name="auditService">The audit service.</param>
-    /// <param name="userAccountRepository">The user account repository.</param>
     /// <param name="activityFeedItemProvider">The activity feed item provider.</param>
     /// <param name="agentAuthorityService">The agent authority service.</param>
     /// <param name="agentAuthorityInternalService">The agent authority internal service.</param>
     /// <param name="getWoodlandOfficerReviewService">The get woodland officer review service.</param>
     /// <param name="approverReviewService">The approver review service.</param>
+    /// <param name="getConfiguredFcAreasService">A service to get FC admin hubs.</param>
     /// <param name="requestContext">The request context.</param>
+    /// <param name="woodlandOfficerReviewSubStatusService">A service to calculate WO Review substatuses.</param>
     /// <param name="logger">The logger.</param>
+    /// <param name="fellingLicenceApplicationOptions">Configuration options for applications.</param>
     public ApproverReviewUseCase(
         IUserAccountService internalUserAccountService,
         IRetrieveUserAccountsService externalUserAccountService,
         IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository,
-        IPropertyProfileRepository propertyProfileRepository,
         IRetrieveWoodlandOwners woodlandOwnerService,
         IAuditService<FellingLicenceApplicationUseCase> auditService,
-        Flo.Services.InternalUsers.Repositories.IUserAccountRepository userAccountRepository,
         IActivityFeedItemProvider activityFeedItemProvider,
         IAgentAuthorityService agentAuthorityService,
         IAgentAuthorityInternalService agentAuthorityInternalService,
@@ -73,52 +72,29 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
         IGetConfiguredFcAreas getConfiguredFcAreasService,
         RequestContext requestContext,
         IOptions<FellingLicenceApplicationOptions> fellingLicenceApplicationOptions,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<FellingLicenceApplicationUseCase> logger)
         : base(internalUserAccountService,
             externalUserAccountService,
             fellingLicenceApplicationInternalRepository,
             woodlandOwnerService,
             agentAuthorityService,
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService, 
+            woodlandOfficerReviewSubStatusService)
     {
         _agentAuthorityInternalService = Guard.Against.Null(agentAuthorityInternalService);
         Guard.Against.Null(internalUserAccountService);
         _fellingLicenceApplicationInternalRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
-        _propertyProfileRepository = Guard.Against.Null(propertyProfileRepository);
         _logger = Guard.Against.Null(logger);
-        _userAccountRepository = Guard.Against.Null(userAccountRepository);
         _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
         _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _approverReviewService = Guard.Against.Null(approverReviewService);
         _fellingLicenceApplicationOptions = fellingLicenceApplicationOptions.Value;
     }
 
-    /// <summary>
-    /// Gets the post-submitted statuses.
-    /// </summary>
-    public static List<FellingLicenceStatus> PostSubmittedStatuses => new()
-    {
-        FellingLicenceStatus.Submitted,
-        FellingLicenceStatus.AdminOfficerReview,
-        FellingLicenceStatus.WithApplicant,
-        FellingLicenceStatus.WoodlandOfficerReview,
-        FellingLicenceStatus.SentForApproval,
-        FellingLicenceStatus.Approved,
-        FellingLicenceStatus.Refused,
-        FellingLicenceStatus.Withdrawn,
-        FellingLicenceStatus.ReturnedToApplicant,
-        FellingLicenceStatus.ReferredToLocalAuthority
-    };
-
-    /// <summary>
-    /// Creates and returns a felling licence application review summary model from an application received by the application id.
-    /// </summary>
-    /// <param name="applicationId">The application Id.</param>
-    /// <param name="viewingUser">The logged in internal user.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="Maybe{ApproverReviewSummaryModel}"/>.</returns>
+    /// <inheritdoc />
     public async Task<Maybe<ApproverReviewSummaryModel>> RetrieveApproverReviewAsync(
         Guid applicationId,
         InternalUser viewingUser,
@@ -150,7 +126,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
 
             var request = new GetAgentAuthorityFormRequest
             {
-                AgencyId = agencyForWoodlandOwner.Value.AgencyId.Value,
+                AgencyId = agencyForWoodlandOwner.Value!.AgencyId!.Value,
                 PointInTime = application.Value.StatusHistories
                 .OrderByDescending(x => x.Created)
                 .FirstOrDefault(x => x.Status == FellingLicenceStatus.Submitted)?.Created,
@@ -251,9 +227,8 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
                         e.GetDisplayName()
             }).ToList();
         
-        applicationReviewModel.ApproverReview.ApprovedLicenceDuration = applicationReviewModel.ApproverReview.ApprovedLicenceDuration 
-            ?? woodlandOfficerReview.Value.RecommendedLicenceDuration
-            ?? defaultRecommendedLicenceDuration;
+        applicationReviewModel.ApproverReview.ApprovedLicenceDuration ??= woodlandOfficerReview.Value.RecommendedLicenceDuration
+                                                                          ?? defaultRecommendedLicenceDuration;
 
         applicationReviewModel.IsReadonly = !(
             applicationReviewModel.FellingLicenceApplicationSummary!.StatusHistories.MaxBy(x => x.Created)?.Status is FellingLicenceStatus.SentForApproval
@@ -268,13 +243,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
         return Maybe<ApproverReviewSummaryModel>.From(applicationReviewModel);
     }
 
-    /// <summary>
-    /// Saves the approver review asynchronously.
-    /// </summary>
-    /// <param name="model">The approver review model.</param>
-    /// <param name="user">The internal user.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="Result"/>.</returns>
+    /// <inheritdoc />
     public async Task<Result> SaveApproverReviewAsync(
         ApproverReviewModel model,
         InternalUser user,
@@ -313,6 +282,10 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase
 
         return Result.Failure(updateResult.Error);
     }
+
+    /// <inheritdoc />
+    public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken) =>
+        _fellingLicenceApplicationInternalRepository.BeginTransactionAsync(cancellationToken);
 
     /// <summary>
     /// Creates the operation details model.

@@ -1,7 +1,4 @@
-﻿using System.Text.Json;
-using AutoFixture;
-using FluentAssertions;
-using Forestry.Flo.Internal.Web.Models.UserAccount;
+﻿using AutoFixture;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.AccountAdministration;
 using Forestry.Flo.Services.Common.User;
@@ -45,7 +42,7 @@ public class GetFcStaffMembersUseCaseTests
 
         var result = await sut.GetAllFcStaffMembersAsync(user, "url", true, CancellationToken.None);
 
-        result.IsSuccess.Should().Be(accountType is AccountTypeInternal.AccountAdministrator);
+        Assert.Equal(accountType is AccountTypeInternal.AccountAdministrator, result.IsSuccess);
 
         _internalAccountServiceMock.Verify(v => 
             v.ListConfirmedUserAccountsAsync(CancellationToken.None, null),

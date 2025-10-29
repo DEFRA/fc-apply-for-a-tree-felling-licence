@@ -18,4 +18,6 @@ public enum CaseNoteType
     LarchCheckComment,
     [Display(Name = "Cricket bat willow comment")]
     CBWCheckComment,
+    [Display(Name="Approver review comment")]
+    ApproverReviewComment
 }

@@ -204,6 +204,7 @@ public class RemoveFromConsultationPublicRegisterAsyncTests : WoodlandOfficerRev
             NotificationService.Object,
             GetConfiguredFcAreas.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(WoodlandOfficerReviewOptions),
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<PublicRegisterUseCase>());
     }
 }

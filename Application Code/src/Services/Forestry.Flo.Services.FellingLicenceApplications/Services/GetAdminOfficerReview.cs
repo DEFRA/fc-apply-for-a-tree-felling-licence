@@ -30,6 +30,7 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
         bool isLarchApplication,
         bool isAssignedWoodlandOfficer,
         bool isCBWApplication,
+        bool isEiaApplication,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to retrieve admins officer review entry for application with id {ApplicationId}",
@@ -43,6 +44,10 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
         var LarchFlyoverComplete = adminOfficerReview != null && adminOfficerReview.LarchChecked == true &&
                                    adminOfficerReview.FellingLicenceApplication?.LarchCheckDetails?.FlightDate != null;
 
+        // Determine if flyover is required: only required when it's a larch application AND inspection log was confirmed true
+        var isFlyoverRequired = isLarchApplication &&
+                                (adminOfficerReview?.FellingLicenceApplication?.LarchCheckDetails?.ConfirmInspectionLog == true);
+
         return new AdminOfficerReviewStatusModel
         {
             AdminOfficerReviewTaskListStates = new AdminOfficerReviewTaskListStates(
@@ -55,14 +60,15 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
                     ? InternalReviewStepStatus.Completed
                     : InternalReviewStepStatus.NotStarted,
                 CalculateLarchCheckStatus(isLarchApplication, adminOfficerReview),
-                isLarchApplication
-                    ? adminOfficerReview?.LarchChecked != true
+                isFlyoverRequired
+                    ? (adminOfficerReview?.LarchChecked != true
                         ? InternalReviewStepStatus.CannotStartYet
                         : LarchFlyoverComplete
                             ? InternalReviewStepStatus.Completed
-                            : InternalReviewStepStatus.NotStarted
+                            : InternalReviewStepStatus.NotStarted)
                     : InternalReviewStepStatus.NotRequired,
                 CalculateCBWStatus(isCBWApplication, adminOfficerReview),
+                CalculateEiaStatus(isEiaApplication, adminOfficerReview),
                 isAgentApplication),
         };
     }
@@ -152,6 +158,25 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
             {
                 true => InternalReviewStepStatus.Completed,
                 false => InternalReviewStepStatus.Completed,
+                null => InternalReviewStepStatus.NotStarted
+            };
+        }
+
+        return InternalReviewStepStatus.CannotStartYet;
+    }
+
+    private static InternalReviewStepStatus CalculateEiaStatus(
+        bool isEiaApplication,
+        AdminOfficerReview? adminOfficerReview)
+    {
+        if (!isEiaApplication)
+            return InternalReviewStepStatus.NotRequired;
+
+        if (adminOfficerReview is { ConstraintsChecked: true, MappingCheckPassed: true })
+        {
+            return adminOfficerReview.EiaChecked switch
+            {
+                true or false => InternalReviewStepStatus.Completed,
                 null => InternalReviewStepStatus.NotStarted
             };
         }

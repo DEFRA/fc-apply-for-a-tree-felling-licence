@@ -1,10 +1,14 @@
 ﻿$(function() {
 
-    var _urlParameters = getUrlParameters();
+    let params = new URLSearchParams(window.location.search);
 
-    var _assignedToUserOnly = false;
+    let _assignedToUserOnly = false;
 
-    var _currentPath = window.location.href.split('?')[0];
+    const _currentPath = window.location.href.split('?')[0];
+
+    // Search elements
+    const $searchInput = $('#search');
+    const $searchButton = $('#searchButton');
 
     if (localStorage['currentPageUrl'] === _currentPath) {
         $(document).scrollTop(localStorage['flaAssignmentsScrollPosition']);
@@ -15,203 +19,136 @@
         localStorage['flaAssignmentsScrollPosition'] = $(document).scrollTop();
     });
 
-    $(document).ready(tableInfo);
-
     // Iterate through parameters as read on load and do CSS styling for active filters
+    renderUrlParameterSelections();
 
-    renderUrlParameterSelections(_urlParameters);
+    // Search handling
+    function updateSearchButtonState() {
+        const hasText = ($searchInput.val() || '').trim().length > 0;
+        const hasSearchParam = params.has('search');
+        const shouldEnable = hasText || hasSearchParam; // if a search param exists, keep button enabled
+        if (shouldEnable) {
+            $searchButton.removeClass('govuk-button--disabled')
+                .removeAttr('aria-disabled')
+                .prop('disabled', false);
+        } else {
+            $searchButton.addClass('govuk-button--disabled')
+                .attr('aria-disabled', 'true')
+                .prop('disabled', true);
+        }
+    }
+
+    function applySearchAndRedirect() {
+        const term = ($searchInput.val() || '').trim();
+        if (term.length > 0) {
+            params.set('search', term);
+        } else {
+            params.delete('search');
+        }
+        redirectOnNewParameters(true);
+    }
+
+    $searchInput.on('input change keyup', function () {
+        updateSearchButtonState();
+    });
+
+    $searchInput.on('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // Allow sending empty when a search param exists to clear it
+            if ($searchButton.hasClass('govuk-button--disabled') && !params.has('search')) return;
+            applySearchAndRedirect();
+        }
+    });
+
+    $searchButton.on('click', function (e) {
+        e.preventDefault();
+        if ($searchButton.hasClass('govuk-button--disabled')) return;
+        applySearchAndRedirect();
+    });
 
     $('[fla-status-filter]').click(function (e) {
-
         e.preventDefault();
 
-        var filterValue = $(this).attr('fla-status-filter');
+        const filterValue = $(this).attr('fla-status-filter');
 
-        // If array contains the key and val, remove it, else add it
-
-        if (_urlParameters.filter(e => e['key'] === 'fellingLicenceStatusArray' && e['val'] === filterValue).length > 0) {
-
-            _urlParameters = _urlParameters.filter(e => !(e['key'] === 'fellingLicenceStatusArray' && e['val'] === filterValue));
-
+        // Toggle value in multi-value param fellingLicenceStatusArray
+        const existing = params.getAll('fellingLicenceStatusArray');
+        if (existing.includes(filterValue)) {
+            // remove all occurrences of this value
+            const kept = existing.filter(v => v !== filterValue);
+            params.delete('fellingLicenceStatusArray');
+            kept.forEach(v => params.append('fellingLicenceStatusArray', v));
         } else {
-
-            _urlParameters.push({ 'key': 'fellingLicenceStatusArray', 'val': filterValue });
+            params.append('fellingLicenceStatusArray', filterValue);
         }
 
-        renderUrlParameterSelections(_urlParameters);
-
-        redirectOnNewParameters();
+        renderUrlParameterSelections();
+        redirectOnNewParameters(true);
     });
 
     $('#fla-assigned-to-user-filter').click(function(e) {
-
         e.preventDefault();
 
-        // Test if the array has an object with key assignedToUserOnly
+        _assignedToUserOnly = !(params.get('assignedToUserOnly') === 'true');
+        params.set('assignedToUserOnly', _assignedToUserOnly ? 'true' : 'false');
 
-        var idx = _urlParameters.findIndex((e => e['key'] === 'assignedToUserOnly'));
-
-        _assignedToUserOnly = !_assignedToUserOnly;
-
-        if (idx < 0) {
-
-            // If it doesn't exist, add it
-
-            _urlParameters.push({ 'key': 'assignedToUserOnly', 'val': _assignedToUserOnly ? 'true' : 'false' });
-
-        } else {
-
-            // Else add the value
-
-            _urlParameters[idx]['val'] = (_assignedToUserOnly).toString();
-        }
-
-        renderUrlParameterSelections(_urlParameters);
-
-        redirectOnNewParameters();
-    });
-
-    $("#keywords-text").on("input", function (e) {
-        var filterString = $("#keywords-text").val();
-        $('#application-list-table tbody tr').not('#no-applications-found').filter(function () {
-            if ($.trim($(this).text().toLowerCase()).indexOf(filterString.toLowerCase()) >= 0) {
-                $(this).show();
-                return;
-            }
-            $(this).hide();
-        });
-
-        tableInfo();
+        renderUrlParameterSelections();
+        redirectOnNewParameters(true);
     });
 
     $('#clear-all-filters').click(function(e) {
-
         e.preventDefault();
-
-        var currentPathUrl = window.location.href.split('?')[0];
-
+        const currentPathUrl = window.location.href.split('?')[0];
         location.replace(currentPathUrl);
     });
 
-    function renderUrlParameterSelections(urlParameters) {
-
+    function renderUrlParameterSelections() {
         // Clear existing selection styling
-
         applySelectionCss($('[fla-status-filter]'), false);
         applySelectionCss($('#fla-assigned-to-user-filter'), false);
 
-        // Iterate over parameters array to determine, which selection stylings to apply
+        // Status selections
+        const selectedStatuses = params.getAll('fellingLicenceStatusArray');
+        selectedStatuses.forEach(s => {
+            applySelectionCss($('[fla-status-filter="' + s + '"]'), true);
+        });
 
-        for (var i = 0; i < urlParameters.length; i++) {
-
-            console.log(urlParameters[i]);
-
-            // Multiple keys may match fellingLicenceStatusArray as this binds
-            // to ASP.NET MVC controller array argument
-
-            if (urlParameters[i]['key'] === 'fellingLicenceStatusArray') {
-
-                applySelectionCss($('[fla-status-filter="' + urlParameters[i]['val'] + '"]'), true);
-            }
-
-            if (urlParameters[i]['key'] === 'assignedToUserOnly') {
-
-                if (urlParameters[i]['val'] === 'true') {
-
-                    applySelectionCss($('#fla-assigned-to-user-filter'), true);
-
-                    _assignedToUserOnly = true;
-
-                } else {
-
-                    applySelectionCss($('#fla-assigned-to-user-filter'), false);
-
-                    _assignedToUserOnly = false;
-                }
-            }
-        }
-    }
-
-    /*
-     * Split query string parameters into an array of key value pairs
-     */
-    function getUrlParameters() {
-
-        var vars = [];
-
-        if (window.location.href.indexOf('?') > -1) {
-
-            // If we have a querystring, break into key values
-
-            var parameterKeyValues = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-
-            // Start from index 1 as 0 is path
-
-            for (var i = 0; i < parameterKeyValues.length; i++) {
-
-                // Check for empty string before split
-
-                if (parameterKeyValues[i]) {
-
-                    // If we have a value after split, add to parameters
-
-                    var parameterKeyValue = parameterKeyValues[i].split('=');
-                    vars.push({ 'key': parameterKeyValue[0], 'val': parameterKeyValue[1] });
-                }
-            }
+        // Assigned to user
+        if (params.get('assignedToUserOnly') === 'true') {
+            applySelectionCss($('#fla-assigned-to-user-filter'), true);
+            _assignedToUserOnly = true;
+        } else {
+            applySelectionCss($('#fla-assigned-to-user-filter'), false);
+            _assignedToUserOnly = false;
         }
 
-        return vars;
+        // Sync search input from URL and set initial button state
+        const searchTerm = params.get('search') || '';
+        $searchInput.val(searchTerm);
+        updateSearchButtonState();
     }
-
 
     /*
      * Construct the query string and navigate to load data
      */
-    function redirectOnNewParameters() {
-
-        var queryString = '?';
-
-        for (var i = 0; i < _urlParameters.length; i++) {
-
-            queryString += _urlParameters[i]['key'] + '=' + _urlParameters[i]['val'];
-
-            if (i + 1 < _urlParameters.length) {
-
-                queryString += '&';
-            }
+    function redirectOnNewParameters(resetPage) {
+        if (resetPage) {
+            // reset page when changing filters to avoid empty result sets
+            params.delete('page');
+            params.set('page', '1');
         }
 
-        var redirectUrl = window.location.href.split('?')[0];
-
-        redirectUrl = redirectUrl.replace('#', '');
-
-        redirectUrl += queryString;
-
-        location.replace(redirectUrl);
+        const redirectUrl = window.location.href.split('?')[0].replace('#', '');
+        const queryString = params.toString();
+        location.replace(queryString ? (redirectUrl + '?' + queryString) : redirectUrl);
     }
 
     function applySelectionCss($selector, selected) {
-
         if (selected) {
-
             $selector.css('outline', '3px solid orange');
-
         } else {
             $selector.css('outline', 'none');
         }
     }
-
-    function tableInfo() {
-        const totalDataRows = $('#application-list-table tbody').find('tr.data-row:visible').length;
-        if (totalDataRows === 0 && $('#no-applications-found').length === 0) {
-            $('#application-list-table > tbody').append('<tr class="govuk-table__row" id="no-applications-found"><td valign="top" colspan="5" class="govuk-table__cell">No applications found.</td></tr>');
-            return;
-        }
-        if (totalDataRows > 0) {
-            if ($('#no-applications-found').length > 0) {
-                $('#no-applications-found').remove();
-            }
-        }
-    };
 });

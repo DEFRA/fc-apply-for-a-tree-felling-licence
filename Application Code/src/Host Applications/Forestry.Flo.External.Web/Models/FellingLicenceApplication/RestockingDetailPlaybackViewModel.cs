@@ -22,7 +22,7 @@ namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication
 
                 if (RestockingDetail.RestockingSpecies != null && RestockingDetail.RestockingSpecies.Any())
                 {
-                    display = string.Join(",", RestockingDetail.RestockingSpecies.Select(rs => $"{TreeSpeciesFactory.SpeciesDictionary[rs.Species].Name}: {rs.Percentage}%"));
+                    display = string.Join(", ", RestockingDetail.RestockingSpecies.Select(rs => $"{TreeSpeciesFactory.SpeciesDictionary[rs.Species].Name}: {rs.Percentage}%"));
                 }
 
                 return display;

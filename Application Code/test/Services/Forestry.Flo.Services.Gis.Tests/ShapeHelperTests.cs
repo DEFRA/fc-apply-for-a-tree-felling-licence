@@ -80,14 +80,17 @@ namespace Forestry.Flo.Services.Gis.Tests
             Assert.IsType<Point>(resx.Value.ShapeDetails);
         }
 
-        [Fact]
-        public void ConvertShape_FailsWhenNotSetCorrectly()
+        [Theory]
+        [InlineData("polygon")]
+        [InlineData("polyline")]
+        [InlineData("point")]
+        public void ConvertShape_FailsWhenNotSetCorrectly(string shape)
         {
             var val = new
                 FlowShape<string>
             {
                 ShapeDetails = "{\"spatialReference\":{\"latestWkid\":27700,\"wkid\":27700},\"t\":414455.27571093803,\"y\":184971.48362504947}",
-                ShapeType = "point"
+                ShapeType = shape
             };
 
             var resx = ShapeHelper.ConvertShape(val);

@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -36,14 +37,14 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
     /// <param name="userId">The id of the user amending the details.</param>
-    /// <param name="newFelling">A <see cref="IndividualFellingRestockingDetailModel"/> containing felling and restocking details for a compartment.</param>
+    /// <param name="confirmedFellingDetailsModel">A <see cref="IndividualFellingRestockingDetailModel"/> containing felling and restocking details for a compartment.</param>
     /// <param name="speciesModel">A dictionary of <see cref="SpeciesModel"/> keyed by species code, representing the species included in the confirmed felling details.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result indicating whether confirmed felling details have been updated.</returns>
     Task<Result> SaveChangesToConfirmedFellingDetailsAsync(
         Guid applicationId,
         Guid userId,
-        IndividualFellingRestockingDetailModel newFelling,
+        IndividualFellingRestockingDetailModel confirmedFellingDetailsModel,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 
@@ -63,10 +64,19 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Saves amendments made to confirmed restocking details.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userId">The id of the user amending the details.</param>
+    /// <param name="confirmedRestockingDetailsModel">A <see cref="IndividualRestockingDetailModel"/> containing restocking details for a compartment.</param>
+    /// <param name="speciesModel">A dictionary of <see cref="SpeciesModel"/> keyed by species code, representing the species included in the confirmed felling details.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether confirmed restocking details have been updated.</returns>
     Task<Result> SaveChangesToConfirmedRestockingDetailsAsync(
         Guid applicationId,
         Guid userId,
-        IndividualRestockingDetailModel restockingDetailsModel,
+        IndividualRestockingDetailModel confirmedRestockingDetailsModel,
         Dictionary<string, SpeciesModel> speciesModel,
         CancellationToken cancellationToken);
 
@@ -108,4 +118,14 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
         Guid confirmedRestockingDetailId,
         Guid userId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the existing submitted FLA property detail for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the submitted FLA property detail for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Maybe{SubmittedFlaPropertyDetail}"/> containing the existing submitted FLA property detail if found; otherwise, an empty value.
+    /// </returns>
+    Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken);
 }

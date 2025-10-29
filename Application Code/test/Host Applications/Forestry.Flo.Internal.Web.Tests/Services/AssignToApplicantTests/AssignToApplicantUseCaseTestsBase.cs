@@ -14,6 +14,7 @@ using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Services;
@@ -47,6 +48,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
     private readonly Mock<IGetConfiguredFcAreas> _mockGetConfiguredFcAreas;
     protected readonly Mock<IPublicRegister> MockPublicRegister;
     protected readonly Mock<IUpdateFellingLicenceApplication> MockUpdateFellingLicenceApplication;
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
 
 
     protected const string AdminHubFooter = "admin hub address";
@@ -130,6 +132,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
             LarchSettings.Object,
             MockLarchCheckService.Object,
             MockPublicRegister.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             MockClock.Object);
     }
 

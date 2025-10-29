@@ -19,10 +19,11 @@
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.4.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.16" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.11" />
+    <PackageReference Include="Microsoft.Build" Version="17.8.43" />
     <PackageReference Include="Microsoft.Identity.Web" Version="3.9.3" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.9.3" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
@@ -45,6 +46,7 @@
     <ProjectReference Include="..\..\Services\Forestry.Flo.Services.FellingLicenceApplications\Forestry.Flo.Services.FellingLicenceApplications.csproj" />
     <ProjectReference Include="..\..\Services\Forestry.Flo.Services.InternalUsers\Forestry.Flo.Services.InternalUsers.csproj" />
     <ProjectReference Include="..\..\Services\Forestry.Flo.Services.Notifications\Forestry.Flo.Services.Notifications.csproj" />
+    <ProjectReference Include="..\Forestry.Flo.HostApplicationsCommon\Forestry.Flo.HostApplicationsCommon.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Forestry.Flo.Internal.Web.Tests" />

@@ -1,0 +1,115 @@
+@using Forestry.Flo.External.Web.Infrastructure
+@using Microsoft.Extensions.Options
+@using Forestry.Flo.Services.FileStorage.Configuration
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications.WmpDocumentsViewModel
+@inject IOptions<UserFileUploadOptions> Settings
+
+@{
+    ViewData["Title"] = "Upload the woodland management plan documents";
+    ViewData.ManuallySetBackLink(Url.Action("TenYearLicence", "FellingLicenceApplication", new
+    {
+        applicationId = Model.ApplicationId,
+        returnToApplicationSummary = Model.ReturnToApplicationSummary,
+        fromDataImport = Model.FromDataImport
+    }));
+    ViewData.ShowBackLink();
+
+    var sortedDocuments = Model.Documents.OrderByDescending(x => x.CreatedTimestamp);
+
+    var allowedTypes = (Settings?.Value ?? new UserFileUploadOptions()).AllowedFileTypes
+        .Where(x => x.FileUploadReasons.Contains(FileUploadReason.WmpDocument));
+}
+
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
+
+    <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+    
+    <div class="govuk-body">
+        Upload the following documents (if they apply to your woodland):
+        <ul class="govuk-list govuk-list--bullet">
+            <li>Woodland management plan (using the Full Plan Template)</li>
+            <li>Inventory of operations worksheet (current version)</li>
+            <li>Maps (showing compartments, operations, and constraints)</li>
+            <li>Any other relevant documents related to your WMP</li>
+        </ul>
+    </div>
+    
+    <p class="govuk-body">You can only upload documents in one of the following formats:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        @foreach (var allowedType in allowedTypes)
+        {
+            <li>@allowedType.Description: @string.Join(", ", allowedType.Extensions.Select(x => $".{x.ToLower()}"))</li>
+        }
+    </ul>
+
+    <partial condition="@Model.AllowEditing" name="_AddSupportingDocuments" model="@Model.AddSupportingDocumentModel"/>
+
+    <div>
+        <h2 class="govuk-heading-m">Files you've uploaded</h2>
+
+        @if (!Model.Documents.Any())
+        {
+            <p class="govuk-body">
+                No Woodland management plan documents have been uploaded.
+            </p>
+        }
+        else
+        {
+            <form method="post">
+                <table class="govuk-table" data-module="moj-sortable-table">
+                    <thead class="govuk-table__head">
+                        <tr class="govuk-table__row">
+                            <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
+                            <th scope="col" class="govuk-table__header">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody data-module="moj-sortable-table" class="govuk-table__body">
+                        @foreach (var document in sortedDocuments)
+                        {
+                            <tr class="govuk-table__row" data-id="@document.Id">
+                                <td class="govuk-table__cell wrapped-text">
+                                    <a
+                                        class="hidden-download-supporting-document"
+                                        asp-controller="FellingLicenceApplication"
+                                        asp-action="DownloadSupportingDocument"
+                                        asp-route-applicationId="@Model.ApplicationId"
+                                        asp-route-documentIdentifier="@document.Id">
+                                        @document.FileName
+                                    </a>
+                                </td>
+
+                                <td class="govuk-table__cell">
+                                    <input type="submit" condition="@Model.AllowEditing" asp-action="RemoveWmpDocument" class="govuk-button govuk-button--warning" asp-route-applicationId="@Model.ApplicationId" asp-route-documentIdentifier="@document.Id" asp-route-returnToApplicationSummary="@Model.ReturnToApplicationSummary" asp-route-fromDataImport="@Model.FromDataImport" data-module="govuk-button" name="delete-supporting-document" value="Remove" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </form>
+        }
+    </div>
+    <div>
+        <form id="supportingDocumentationForm" method="post">
+            
+            @Html.HiddenFor(x => x.ApplicationId)
+            @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+            @Html.HiddenFor(x => x.FromDataImport)
+            @Html.HiddenFor(x => x.FellingLicenceStatus)
+
+            <div class="govuk-form-group">
+                <div class="govuk-button-group">
+                    <button class="govuk-button" type="submit" data-module="govuk-button">
+                        Continue
+                    </button>
+
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

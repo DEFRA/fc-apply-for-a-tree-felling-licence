@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 
@@ -88,39 +89,24 @@ public interface IUpdateWoodlandOfficerReviewService
     Task<Result<bool>> SetSiteVisitNotNeededAsync(
         Guid applicationId,
         Guid userId,
-        string siteVisitNotNeededReason,
+        FormLevelCaseNote siteVisitNotNeededReason,
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Updates the <see cref="WoodlandOfficerReview"/> to indicate that the site visit artefacts have been
-    /// created and the application published to the mobile app layers.
+    /// Updates the <see cref="WoodlandOfficerReview"/> entity for an application to set the site visit as needed
+    /// with the given arrangements flag and arrangements case note.
     /// </summary>
-    /// <param name="applicationId">The id of the application.</param>
-    /// <param name="userId">The id of the user.</param>
-    /// <param name="publishedDateTime">The date and time the application site visit artefacts were generated.</param>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userId">The id of the user making the update.</param>
+    /// <param name="siteVisitArrangementsMade">A flag indicating whether arrangements for the site visit have been made.</param>
+    /// <param name="siteVisitArrangements">A case note describing the arrangements.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
-    Task<Result> PublishedToSiteVisitMobileLayersAsync(
+    /// <returns>A <see cref="Result"/> indicating whether the update was successful.</returns>
+    Task<Result> SaveSiteVisitArrangementsAsync(
         Guid applicationId,
         Guid userId,
-        DateTime publishedDateTime,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Updates the <see cref="WoodlandOfficerReview"/> to indicate that site visit notes have been retrieved
-    /// for an application.
-    /// </summary>
-    /// <param name="applicationId">The id of the application.</param>
-    /// <param name="userId">The id of the user.</param>
-    /// <param name="retrievedDateTime">The date and time that the site visit notes were retrieved.</param>
-    /// <param name="retrievedNotes">A list of site visit notes retrieved from the mobile app layers.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
-    Task<Result> SiteVisitNotesRetrievedAsync(
-        Guid applicationId,
-        Guid userId,
-        DateTime retrievedDateTime,
-        List<SiteVisitNotes<Guid>> retrievedNotes,
+        bool? siteVisitArrangementsMade,
+        FormLevelCaseNote siteVisitArrangements,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -132,6 +118,8 @@ public interface IUpdateWoodlandOfficerReviewService
     /// <param name="recommendedLicenceDuration">The chosen <see cref="RecommendedLicenceDuration"/> value from the woodland officer.</param>
     /// <param name="recommendationForDecisionPublicRegister">The woodland officer's recommendation for whether to publish this application
     /// to the decision public register.</param>
+    /// <param name="recommendationForDecisionPublicRegisterReason">The woodland officer's reason for their recommendation for
+    /// whether to publish this application to the decision public register.</param>
     /// <param name="completedDateTime">The date and time that the review was completed.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A populated <see cref="CompleteWoodlandOfficerReviewNotificationsModel"/> providing the ids of the
@@ -141,6 +129,7 @@ public interface IUpdateWoodlandOfficerReviewService
         Guid performingUserId,
         RecommendedLicenceDuration? recommendedLicenceDuration,
         bool? recommendationForDecisionPublicRegister,
+        string recommendationForDecisionPublicRegisterReason,
         DateTime completedDateTime,
         CancellationToken cancellationToken);
 
@@ -169,7 +158,8 @@ public interface IUpdateWoodlandOfficerReviewService
         Guid applicationId,
         Guid userId,
         bool complete,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool isSkippingWoReviewForCbw = false);
 
     /// <summary>
     /// Completes the Larch check for an application.
@@ -182,4 +172,103 @@ public interface IUpdateWoodlandOfficerReviewService
         Guid applicationId, 
         Guid userId, 
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Completes the EIA (Environmental Impact Assessment) screening check for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to be updated.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating the success or failure of the operation.
+    /// </returns>
+    Task<Result> CompleteEiaScreeningCheckAsync(
+        Guid applicationId,
+        Guid userId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the site visit evidence documents for an application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to be updated.</param>
+    /// <param name="userId">The id of the user performing the update.</param>
+    /// <param name="evidence">An array of <see cref="SiteVisitEvidenceDocument"/> models representing the documents</param>
+    /// <param name="observations">A <see cref="FormLevelCaseNote"/> with any additional observations from the woodland officer.</param>
+    /// <param name="isComplete">A flag indicating whether the site visit is confirmed as complete.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>An awaitable task.</returns>
+    Task<Result> UpdateSiteVisitEvidenceAsync(
+        Guid applicationId,
+        Guid userId,
+        SiteVisitEvidenceDocument[] evidence,
+        FormLevelCaseNote observations,
+        bool isComplete,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the status of consultations for an application.
+    /// </summary>
+    /// <param name="applicationId">The application to update.</param>
+    /// <param name="userId">The id of the user making the update.</param>
+    /// <param name="isNeeded">An optional flag indicating whether consultations are needed.</param>
+    /// <param name="isComplete">An optional flag indicating if the consultations phase is complete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating if the operation was successful.</returns>
+    Task<Result> UpdateConsultationsStatusAsync(
+        Guid applicationId,
+        Guid userId,
+        bool? isNeeded,
+        bool? isComplete,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the felling and restocking amendment review details for a given application.
+    /// </summary>
+    /// <param name="model">A <see cref="FellingAndRestockingAmendmentReviewUpdateRecord"/> containing the amendment review update details.</param>
+    /// <param name="userId">The id of the user making the update.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating the success or failure of the operation.
+    /// </returns>
+    Task<Result> UpdateFellingAndRestockingAmendmentReviewAsync(
+        FellingAndRestockingAmendmentReviewUpdateRecord model,
+        Guid userId,
+        CancellationToken cancellationToken);
+    Task<Result<FellingAndRestockingAmendmentReview>> CreateFellingAndRestockingAmendmentReviewAsync(Guid applicationId, Guid userId, DateTime responseDeadline, string? amendmentsReason, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the selected compartment designations for an application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to be updated.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="designations">A model of the designations for a compartment.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct indicating success or failure.</returns>
+    Task<Result> UpdateCompartmentDesignationsAsync(
+        Guid applicationId,
+        Guid userId,
+        SubmittedCompartmentDesignationsModel designations,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the woodland officer review to indicate that all compartment designations have been reviewed and completed.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to be updated.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="isComplete">A flag to indicate if the compartment designations are complete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> struct indicating success or failure.</returns>
+    Task<Result> UpdateApplicationCompartmentDesignationsCompletedAsync(
+        Guid applicationId,
+        Guid userId,
+        bool isComplete,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Marks a felling and restocking amendment review as completed.
+    /// </summary>
+    /// <param name="amendmentReviewId">The unique identifier of the amendment review to complete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
+    Task<Result> CompleteFellingAndRestockingAmendmentReviewAsync(Guid amendmentReviewId, CancellationToken cancellationToken);
 }

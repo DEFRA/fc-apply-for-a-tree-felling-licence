@@ -1,8 +1,12 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Controllers;
+using Forestry.Flo.External.Web.Infrastructure;
+using Forestry.Flo.External.Web.Models.AgentAuthorityForm;
 using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Repositories;
@@ -11,6 +15,7 @@ using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Infrastructure;
+using Forestry.Flo.Services.Common.MassTransit.Messages;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
@@ -40,6 +45,8 @@ using FellingLicenceApplicationStepStatus =
     Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplicationStepStatus;
 using IUserAccountRepository = Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository;
 using PropertyProfileDetails = Forestry.Flo.External.Web.Models.FellingLicenceApplication.PropertyProfileDetails;
+using ProposedFellingDetailModel = Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedFellingDetailModel;
+using ProposedRestockingDetailModel = Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedRestockingDetailModel;
 
 namespace Forestry.Flo.External.Web.Services;
 
@@ -68,6 +75,9 @@ public class CreateFellingLicenceApplicationUseCase(
     IForesterServices foresterServices,
     IApplicationReferenceHelper applicationHelper,
     IPublicRegister publicRegisterService,
+    IOptions<EiaOptions> eiaOptions,
+    IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
+    IOptions<InternalUserSiteOptions> internalUserSiteOptions,
     IGetConfiguredFcAreas getConfiguredFcAreasService) 
     : ApplicationUseCaseCommon(retrieveUserAccountsService,
         retrieveWoodlandOwnersService,
@@ -117,6 +127,8 @@ public class CreateFellingLicenceApplicationUseCase(
     private readonly IPublicRegister _publicRegisterService = Guard.Against.Null(publicRegisterService);
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
 
+    private readonly InternalUserSiteOptions _internalUserSiteOptions =
+        Guard.Against.Null(internalUserSiteOptions?.Value);
 
     /// <summary>
     /// Returns a woodland owner application list
@@ -161,8 +173,8 @@ public class CreateFellingLicenceApplicationUseCase(
 
             if (getPropertyProfilesResult.IsFailure)
             {
-                _logger.LogWarning("Unable to retrieve property profiles for user having id of {userId}, " +
-                                   "for the Woodland Owner Id supplied of {woodlandOwnerId}", user.UserAccountId,
+                _logger.LogWarning("Unable to retrieve property profiles for user having id of {UserId}, " +
+                                   "for the Woodland Owner Id supplied of {WoodlandOwnerId}", user.UserAccountId,
                     woodlandOwnerId);
 
                 return Result.Failure<IEnumerable<FellingLicenceApplicationSummary>>(
@@ -175,6 +187,14 @@ public class CreateFellingLicenceApplicationUseCase(
 
                 var woodlandOwnerNameAndAgencyDetails =
                     await GetWoodlandOwnerNameAndAgencyForApplication(applications.Value.First(), cancellationToken);
+                if (woodlandOwnerNameAndAgencyDetails.IsFailure)
+                {
+                    _logger.LogWarning("Unable to retrieve woodland owner name and agency details for user having id of {UserId}, " +
+                                       "for the Woodland Owner Id supplied of {WoodlandOwnerId}", user.UserAccountId,
+                        woodlandOwnerId);
+                    return Result.Failure<IEnumerable<FellingLicenceApplicationSummary>>(
+                        $"Unable to access woodland owner name and agency details for user with userId of {user.UserAccountId} and woodland owner id supplied of {woodlandOwnerId}");
+                }
 
                 var result = applications.Value.Select(a =>
                 {
@@ -191,8 +211,8 @@ public class CreateFellingLicenceApplicationUseCase(
                             ? profile!.NameOfWood
                             : null,
                         a.WoodlandOwnerId,
-                        woodlandOwnerNameAndAgencyDetails.WoodlandOwnerName,
-                        woodlandOwnerNameAndAgencyDetails.AgencyName);
+                        woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
+                        woodlandOwnerNameAndAgencyDetails.Value.AgencyName);
                 });
 
                 return Result.Success(result);
@@ -219,8 +239,8 @@ public class CreateFellingLicenceApplicationUseCase(
 
         if (getPropertyProfilesResult.IsFailure)
         {
-            _logger.LogWarning("Unable to retrieve property profiles for user having id of {userId}, " +
-                               "for the Woodland Owner Id of {woodlandOwnerId}, error is {error}",
+            _logger.LogWarning("Unable to retrieve property profiles for user having id of {UserId}, " +
+                               "for the Woodland Owner Id of {WoodlandOwnerId}, error is {error}",
                 user.UserAccountId, woodlandOwnerId, getPropertyProfilesResult.Error);
 
             return Result.Failure<IEnumerable<PropertyProfileDetails>>(
@@ -300,8 +320,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     AuditEvents.CreateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
                     new { woodlandOwnerId, Error = r.GetDescription() }), cancellationToken);
                 _logger.LogError(
-                    "The application has not been saved due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The application has not been saved due to the reason {ErrorReason} for  application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -317,7 +337,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}", 
+                applicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -400,8 +422,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         user.WoodlandOwnerId, Section = "Select Restocking Compartments", Error = r.GetDescription()
                     }), cancellationToken);
                 _logger.LogError(
-                    @"The restocking compartments have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The restocking compartments have not been updated due to the reason {ErrorReason} for application with id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -425,7 +447,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                applicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -512,8 +536,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         new { user.WoodlandOwnerId, Section = "Select Compartments", Error = r.GetDescription() }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The application compartments have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The application compartments have not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -537,7 +561,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                selectFellingOperationTypesViewModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -619,8 +645,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         user.WoodlandOwnerId, Section = "Select Felling Operation Types", Error = r.GetDescription()
                     }), cancellationToken);
                 _logger.LogError(
-                    @"The felling operation types have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The felling operation types have not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -645,7 +671,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                selectRestockingOptionsViewModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -734,8 +762,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The restocking options have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The restocking options have not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -750,7 +778,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                applicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -846,8 +876,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The restocking statuses have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The restocking statuses have not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -861,7 +891,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                applicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -913,8 +945,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         new { user.WoodlandOwnerId, Section = "Create felling statuses", Error = r.GetDescription() }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The felling statuses have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The felling statuses have not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -1260,6 +1292,10 @@ public class CreateFellingLicenceApplicationUseCase(
         Guid applicationId,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(eiaOptions.Value);
+
+
+
         var application = await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
 
         if (application.IsFailure)
@@ -1281,19 +1317,29 @@ public class CreateFellingLicenceApplicationUseCase(
             .Where(x => x.DeletionTimestamp.HasValue == false && x.VisibleToApplicant)
             .ToList();
 
-        var profile = await GetPropertyProfileByIdAsync(application.Value.LinkedPropertyProfile!.PropertyProfileId,
-            user,
-            cancellationToken);
-
-        if (profile.IsFailure)
+        var applicationSummary = await GetApplicationSummaryAsync(application.Value, user, cancellationToken);
+        if (applicationSummary.IsFailure)
         {
-            _logger.LogWarning("unable to get property for application, error : {error}", profile.Error);
+            _logger.LogError("Unable to load application summary for application with id {ApplicationId}", applicationId);
             return Maybe<FellingLicenceApplicationModel>.None;
         }
 
-        var woodlandOwnerNameAndAgencyDetails =
-            await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, cancellationToken);
         var agency = await GetAgencyModelForWoodlandOwnerAsync(application.Value.WoodlandOwnerId, cancellationToken);
+
+        var woodlandOwnerAafId =
+            await agentAuthorityService.GetAgentAuthorityForWoodlandOwnerAsync(application.Value.WoodlandOwnerId, cancellationToken);
+
+        var requiresEia = application.Value.ShouldApplicationRequireEia();
+
+        var currentReview =
+            await getWoodlandOfficerReviewService.GetCurrentFellingAndRestockingAmendmentReviewAsync(applicationId,
+                cancellationToken);
+
+        if (currentReview.IsFailure)
+        {
+            _logger.LogWarning("unable to get current review for application, error : {Error}", currentReview.Error);
+            return Maybe<FellingLicenceApplicationModel>.None;
+        }
 
         var applicationModel = new FellingLicenceApplicationModel
         {
@@ -1302,16 +1348,16 @@ public class CreateFellingLicenceApplicationUseCase(
             AgencyId = agency.HasValue ? agency.Value.AgencyId : null,
             HasCaseNotes = activityFeedItems.IsSuccess && !activityFeedItems.Value.IsNullOrEmpty() &&
                            activityFeedItems.Value.Any(),
-            ApplicationSummary = new FellingLicenceApplicationSummary(
-                application.Value.Id,
-                application.Value.ApplicationReference,
-                fellingLicenceStatus,
-                profile.Value.Name,
-                application.Value.LinkedPropertyProfile?.PropertyProfileId ?? Guid.Empty,
-                profile.Value.NameOfWood,
-                application.Value.WoodlandOwnerId,
-                woodlandOwnerNameAndAgencyDetails.WoodlandOwnerName,
-                woodlandOwnerNameAndAgencyDetails.AgencyName),
+            ApplicationSummary = applicationSummary.Value,
+            AgentAuthorityForm = new Models.FellingLicenceApplication.AgentAuthorityFormModel
+            {
+                ApplicationId = application.Value.Id,
+                ApplicationReference = application.Value.ApplicationReference,
+                StepComplete = application.Value.FellingLicenceApplicationStepStatus.AafStepStatus,
+                FellingLicenceStatus = fellingLicenceStatus,
+                WoodlandOwnerAafId = woodlandOwnerAafId.HasValue ? woodlandOwnerAafId.Value.Id : null,
+                StepRequiredForApplication = agency.HasValue,
+            },
             SelectedCompartments = new SelectedCompartmentsModel
             {
                 ApplicationId = application.Value.Id,
@@ -1339,7 +1385,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     ? new DatePart(application.Value.DateReceived.Value.ToLocalTime(), "date-received")
                     : null,
                 ApplicationSource = application.Value.Source,
-                DisplayDateReceived = user.IsFcUser || user.AccountType is AccountTypeExternal.FcUser
+                DisplayDateReceived = user.IsFcUser || user.AccountType is AccountTypeExternal.FcUser,
+                IsForTenYearLicence = application.Value.IsForTenYearLicence
             },
             FellingAndRestockingDetails = new FellingAndRestockingDetails
             {
@@ -1378,7 +1425,36 @@ public class CreateFellingLicenceApplicationUseCase(
                 SelectCompartmentStep = application.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus,
                 ExternalLisAccessedTimestamp = application.Value.ExternalLisAccessedTimestamp,
                 NotRunningExternalLisReport = application.Value.NotRunningExternalLisReport
-            }
+            },
+            EnvironmentalImpactAssessment = new EnvironmentalImpactAssessmentViewModel
+            {
+                ApplicationId = applicationId,
+                StepComplete = application.Value.FellingLicenceApplicationStepStatus.EnvironmentalImpactAssessmentStatus,
+                FellingLicenceStatus = application.Value.GetCurrentStatus(),
+                EiaDocuments = ModelMapping.ToDocumentsModelForApplicantView(
+                    application.Value.Documents?.Where(x =>
+                            x.Purpose is DocumentPurpose.EiaAttachment &&
+                            x.DeletionTimestamp is null)
+                        .ToList()).ToArray(),
+                HasApplicationBeenCompleted = application.Value.EnvironmentalImpactAssessment?.HasApplicationBeenCompleted,
+                HasApplicationBeenSent = application.Value.EnvironmentalImpactAssessment?.HasApplicationBeenSent,
+                ApplicationReference = application.Value.ApplicationReference,
+                EiaApplicationExternalUri = eiaOptions.Value.EiaApplicationExternalUri,
+                StepRequiredForApplication = requiresEia
+            },
+            TenYearLicence = new TenYearLicenceApplicationViewModel
+            {
+                ApplicationId = applicationId,
+                ApplicationReference = application.Value.ApplicationReference,
+                FellingLicenceStatus = application.Value.GetCurrentStatus(),
+                IsForTenYearLicence = application.Value.IsForTenYearLicence,
+                WoodlandManagementPlanReference = application.Value.WoodlandManagementPlanReference,
+                StepComplete = application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus,
+                StepRequiredForApplication = user.IsFcUser
+            },
+            CurrentReviewModel = currentReview.Value.TryGetValue(out var current)
+                ? current
+                : null
         };
 
         // In the event that SupportingDocumentation.StepComplete is null, indicating model has not been saved (which equates to NOT STARTED),
@@ -1456,7 +1532,7 @@ public class CreateFellingLicenceApplicationUseCase(
 
         if (!found)
         {
-            _logger.LogError($"ProposedRestockingDetailModel not found, restocking id: {restockingId}");
+            _logger.LogError("ProposedRestockingDetailModel not found, restocking id: {RestockingId}", restockingId);
             return Maybe<ProposedRestockingDetailModel>.None;
         }
 
@@ -1504,9 +1580,18 @@ public class CreateFellingLicenceApplicationUseCase(
             return Maybe<FellingAndRestockingPlaybackViewModel>.None;
         }
 
+        var maybeSubmittedProperty = await _fellingLicenceApplicationRepository
+            .GetExistingSubmittedFlaPropertyDetailAsync(applicationID, cancellationToken);
+
+        var submittedCompartments = maybeSubmittedProperty.HasValue
+            ? maybeSubmittedProperty.Value.SubmittedFlaPropertyCompartments
+            : [];
+
         var compartmentDetailList = compartments.ToList();
 
         var controllerName = "FellingLicenceApplication";
+
+        var requiresEia = application.ShouldApplicationRequireEia();
 
         var fellingAndRestockingPlaybackViewModel = new FellingAndRestockingPlaybackViewModel()
         {
@@ -1520,7 +1605,21 @@ public class CreateFellingLicenceApplicationUseCase(
                 Values = new
                     { applicationId = application.Id, isForRestockingCompartmentSelection = false, returnToPlayback = true }
             },
-            FellingLicenceStatus = application.GetCurrentStatus()
+            FellingLicenceStatus = application.GetCurrentStatus(),
+            SaveAndContinueContext = new UrlActionContext
+            {
+                Action = requiresEia
+                    ? nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment) 
+                    : nameof(FellingLicenceApplicationController.ConstraintsCheck),
+                Controller = controllerName,
+                Values = new Dictionary<string, string>
+                {
+                    {
+                        "applicationId",
+                        application.Id.ToString()
+                    }
+                }
+            }
         };
 
         var fellingCompartmentPlaybackViewModels = new List<FellingCompartmentPlaybackViewModel>();
@@ -1548,6 +1647,17 @@ public class CreateFellingLicenceApplicationUseCase(
             if (compartmentDetail != null)
             {
                 newFellingCompartmentPlaybackViewModel.CompartmentName = compartmentDetail.CompartmentNumber;
+            }
+
+            if (!application.IsInApplicantEditableState())
+            {
+                var submittedCompartmentDetail = submittedCompartments
+                    .FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
+                if (submittedCompartmentDetail != null)
+                {
+                    newFellingCompartmentPlaybackViewModel.CompartmentName =
+                        submittedCompartmentDetail.CompartmentNumber;
+                }
             }
 
             foreach (var felling in fellings)
@@ -1638,6 +1748,17 @@ public class CreateFellingLicenceApplicationUseCase(
                             restockingCompartmentDetail.CompartmentNumber;
                     }
 
+                    if (!application.IsInApplicantEditableState())
+                    {
+                        var submittedRestockingCompartment = submittedCompartments
+                            .SingleOrDefault(x => x.CompartmentId == restockingCompartmentId);
+                        if (submittedRestockingCompartment != null)
+                        {
+                            newRestockingCompartmentPlaybackViewModel.CompartmentName =
+                                submittedRestockingCompartment.CompartmentNumber;
+                        }
+                    }
+
                     var restockings = felling.ProposedRestockingDetails
                         .Where(p => p.PropertyProfileCompartmentId == restockingCompartmentId).ToList();
 
@@ -1693,6 +1814,18 @@ public class CreateFellingLicenceApplicationUseCase(
         });
 
         fellingAndRestockingPlaybackViewModel.GIS = JsonConvert.SerializeObject(gisCompartment);
+
+        if (!application.IsInApplicantEditableState())
+        {
+            var submittedCompartmentGisDetails = submittedCompartments.Select(x => new
+            {
+                Id = x.CompartmentId,
+                x.GISData,
+                DisplayName = x.CompartmentNumber,
+                Selected = true
+            });
+            fellingAndRestockingPlaybackViewModel.GIS = JsonConvert.SerializeObject(submittedCompartmentGisDetails);
+        }
 
         return Maybe<FellingAndRestockingPlaybackViewModel>.From(fellingAndRestockingPlaybackViewModel);
     }
@@ -1802,12 +1935,19 @@ public class CreateFellingLicenceApplicationUseCase(
 
         if (profile.IsFailure)
         {
-            _logger.LogWarning("unable to get property for application, error : {error}", profile.Error);
+            _logger.LogWarning("Unable to get property for application, error : {Error}", profile.Error);
             return Maybe<FellingAndRestockingDetailViewModel>.None;
         }
 
         var woodlandOwnerNameAndAgencyDetails =
             await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, cancellationToken);
+        if (woodlandOwnerNameAndAgencyDetails.IsFailure)
+        {
+            _logger.LogWarning("Unable to get woodland owner details for application, error : {Error}",
+                woodlandOwnerNameAndAgencyDetails.Error);
+            return Maybe<FellingAndRestockingDetailViewModel>.None;
+        }
+
 
         return Maybe<FellingAndRestockingDetailViewModel>.From(
             new FellingAndRestockingDetailViewModel
@@ -1823,8 +1963,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     result.Value.PropertyProfileId,
                     profile.Value.NameOfWood,
                     application.Value.WoodlandOwnerId,
-                    woodlandOwnerNameAndAgencyDetails.WoodlandOwnerName,
-                    woodlandOwnerNameAndAgencyDetails.AgencyName)
+                    woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
+                    woodlandOwnerNameAndAgencyDetails.Value.AgencyName)
             });
     }
 
@@ -1924,7 +2064,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                selectWoodlandModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -1967,8 +2109,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The application property profile has not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The application property profile has not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -1992,7 +2134,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                fellingDetailModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -2074,8 +2218,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         new { application.WoodlandOwnerId, Section = "Felling Details", Error = r.GetDescription() }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The application felling restocking details status has not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The application felling restocking details status has not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -2089,7 +2233,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                decisionToRestockViewModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -2182,8 +2328,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         new { application.WoodlandOwnerId, Section = "Felling Details", Error = r.GetDescription() }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The application felling restocking details status has not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The application felling restocking details status has not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -2232,8 +2378,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The application reference {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "Failed to update the application reference with error {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -2254,7 +2400,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                restockingDetailModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -2347,7 +2495,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         }),
                     cancellationToken);
                 _logger.LogError(
-                    @$"The application restocking details have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}, restocking id: {restockingDetailModel.Id}");
+                    "The application restocking details have not been updated due to reason {ErrorReason} for application id: {ApplicationId}, restocking id: {RestockingId}",
+                    r.GetDescription(), application.Id, restockingDetailModel.Id);
             });
     }
 
@@ -2422,7 +2571,9 @@ public class CreateFellingLicenceApplicationUseCase(
 
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                operationDetailsModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -2494,9 +2645,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     cancellationToken);
 
                 _logger.LogError(
-                    @"The operation details have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r,
-                    application);
+                    "The operation details have not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -2517,7 +2667,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                constraintCheckModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -2557,8 +2709,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         new { user.WoodlandOwnerId, Section = "Constraint Details", Error = r.GetDescription() }),
                     cancellationToken);
                 _logger.LogError(
-                    @"The Constraint details have not been updated due to the {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "The Constraint details have not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -2579,7 +2731,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                supportingDocumentationSaveModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -2615,8 +2769,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
                     new { user.WoodlandOwnerId, Section = "Supporting Documents" }), cancellationToken);
                 _logger.LogError(
-                    @"Supporting Documents status has not been updated due to: {r.GetDescription()} reason, application id: {fellingLicenceApplication?.Id}",
-                    r, fellingLicenceApplication);
+                    "Supporting Documents status has not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), fellingLicenceApplication.Id);
             });
     }
 
@@ -2637,7 +2791,9 @@ public class CreateFellingLicenceApplicationUseCase(
             .ConfigureAwait(false);
         if (isApplicationEditable.IsFailure)
         {
-            _logger.LogError(isApplicationEditable.Error);
+            _logger.LogError("Application with id {ApplicationId} is not in editable state, error: {Error}",
+                flaTermsAndConditionsViewModel.ApplicationId,
+                isApplicationEditable.Error);
 
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.General);
         }
@@ -2674,8 +2830,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
                     new { user.WoodlandOwnerId, Section = "Terms and Conditions" }), cancellationToken);
                 _logger.LogError(
-                    @"Terms and conditions has not been updated due to: {r.GetDescription()} reason, application id: {application?.Id}",
-                    r, application);
+                    "Terms and conditions has not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
+                    r.GetDescription(), application.Id);
             });
     }
 
@@ -2826,7 +2982,8 @@ public class CreateFellingLicenceApplicationUseCase(
                 Name = user.FullName!,
                 PropertyName = submittedFlaPropertyDetail.Name,
                 ViewApplicationURL = linkToApplication,
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = applicationId
             };
 
             // TODO this should be in a service not the repo
@@ -2876,6 +3033,9 @@ public class CreateFellingLicenceApplicationUseCase(
 
                 if (internalUsers.IsSuccess)
                 {
+                    var internalSiteApplicationLink = 
+                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
+                    
                     foreach (var internalUser in internalUsers.Value)
                     {
                         // Send a notification
@@ -2889,8 +3049,9 @@ public class CreateFellingLicenceApplicationUseCase(
                             ApplicationReference = updateResult.Value.ApplicationReference,
                             Name = recipient.Name!,
                             PropertyName = submittedFlaPropertyDetail.Name,
-                            ViewApplicationURL = linkToApplication,
-                            AdminHubFooter = adminHubFooter
+                            ViewApplicationURL = internalSiteApplicationLink,
+                            AdminHubFooter = adminHubFooter,
+                            ApplicationId = applicationId
                         };
 
                         var sendNotificationResult = await _sendNotifications.SendNotificationAsync(
@@ -2903,8 +3064,8 @@ public class CreateFellingLicenceApplicationUseCase(
                         if (sendNotificationResult.IsFailure)
                         {
                             _logger.LogError(
-                                $"Could not send notification for resubmission of {applicationId} back to internal user (Id {internalUser.Id}): {sendNotificationResult.Error}",
-                                internalUser.Id, applicationId, sendNotificationResult.Error);
+                                "Could not send notification for resubmission of {ApplicationId} back to internal user id {InternalUserId} due to error: {SendNotificationError}",
+                                applicationId, internalUser.Id, sendNotificationResult.Error);
                         }
                     }
                 }
@@ -2937,8 +3098,10 @@ public class CreateFellingLicenceApplicationUseCase(
 
             if (!isResubmission)
             {
+                var internalSiteApplicationLink =
+                    $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
                 await _busControl.Publish(new AssignWoodlandOfficerMessage(
-                    linkToApplication,
+                    internalSiteApplicationLink,
                     updateResult.Value.WoodlandOwnerId,
                     user.UserAccountId.Value,
                     user.IsFcUser,
@@ -2985,11 +3148,9 @@ public class CreateFellingLicenceApplicationUseCase(
                 new { WoodlandOwner = user.WoodlandOwnerId, Error = message }), cancellationToken);
         }
 
-        _logger.LogError(message);
-
         if (ex != null)
         {
-            _logger.LogError(ex, "Felling licence application failure, application id: {fellingLicenceApplicationId}",
+            _logger.LogError(ex, "Felling licence application failure, application id: {FellingLicenceApplicationId}",
                 applicationId);
         }
     }
@@ -3205,7 +3366,8 @@ public class CreateFellingLicenceApplicationUseCase(
                 PropertyName = propertyResult.Value.Name,
                 Name = user.FullName!,
                 ViewApplicationURL = linkToApplication,
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = applicationId
             };
 
             var woodlandOwner =
@@ -3270,13 +3432,17 @@ public class CreateFellingLicenceApplicationUseCase(
                         internalUser.Email,
                         internalUser.FullName(false));
 
+                    var internalSiteApplicationLink =
+                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
+
                     var notificationModel = new ApplicationWithdrawnConfirmationDataModel
                     {
                         ApplicationReference = fellingLicenceApplication.ApplicationReference,
                         Name = recipient.Name!,
                         PropertyName = propertyResult.Value.Name,
-                        ViewApplicationURL = linkToApplication,
-                        AdminHubFooter = adminHubFooter
+                        ViewApplicationURL = internalSiteApplicationLink,
+                        AdminHubFooter = adminHubFooter,
+                        ApplicationId = applicationId
                     };
 
                     var sendNotificationResult = await _sendNotifications.SendNotificationAsync(
@@ -3306,7 +3472,7 @@ public class CreateFellingLicenceApplicationUseCase(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while processing application id {applicationId}", applicationId);
+            _logger.LogError(ex, "An error occurred while processing application id {ApplicationId}", applicationId);
             await _auditService.PublishAuditEventAsync(new AuditEvent(
                 AuditEvents.WithdrawFellingLicenceApplicationFailure, applicationId, user.UserAccountId,
                 _requestContext,
@@ -3338,7 +3504,7 @@ public class CreateFellingLicenceApplicationUseCase(
                     Error = $"Failed to get {nameof(FellingLicenceApplication)} with ID {applicationId}"
                 }), cancellationToken);
 
-            _logger.LogError($"Failed to get {nameof(FellingLicenceApplication)} with ID {applicationId}");
+            _logger.LogError("Failed to get application with ID {ApplicationId}", applicationId);
 
             return Result.Failure<Guid>($"Failed to get {nameof(FellingLicenceApplication)}");
         }
@@ -3351,7 +3517,8 @@ public class CreateFellingLicenceApplicationUseCase(
         if (userAccessModel.IsFailure)
         {
             _logger.LogError(
-                $"Could not Delete the {nameof(FellingLicenceApplication)} with ID {applicationId} when requested by {user.UserAccountId}, user access to this application was denied");
+                "Could not Delete the application with ID {ApplicationId} when requested by user with id {UserId}, user access to this application was denied",
+                applicationId, user.UserAccountId);
             return Result.Failure<Guid>(
                 $"Attempt to access Felling Licence Application with id: {applicationId} by user with Id of {user.UserAccountId} resulted in access being denied");
         }
@@ -3369,7 +3536,8 @@ public class CreateFellingLicenceApplicationUseCase(
                 new { WoodlandOwner = user.WoodlandOwnerId, resultDelete.Error }), cancellationToken);
 
             _logger.LogError(
-                $"Could not Delete the {nameof(FellingLicenceApplication)} with ID {applicationId} when requested by {user.UserAccountId}");
+                "Could not Delete the application with ID {ApplicationId} when requested by user with id {UserId}",
+                applicationId, user.UserAccountId);
 
             return Result.Failure<Guid>($"Could not Delete the {nameof(FellingLicenceApplication)}");
         }
@@ -3383,7 +3551,8 @@ public class CreateFellingLicenceApplicationUseCase(
             if (resultFileDelete.IsFailure)
             {
                 _logger.LogError(
-                    $"Could not Delete the document with ID {document.Id} from {nameof(FellingLicenceApplication)} with ID {applicationId} when requested by {user.UserAccountId}");
+                    "Could not Delete the document with ID {DocumentId} from application with ID {ApplicationId} when requested by user with id {UserId}",
+                    document.Id, applicationId, user.UserAccountId);
             }
         }
 
@@ -3563,9 +3732,9 @@ public class CreateFellingLicenceApplicationUseCase(
         return null;
     }
 
-    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId)
+    public async Task<FellingLicenceApplicationStepStatus> GetApplicationStepStatus(Guid applicationId, CancellationToken cancellationToken)
     {
-        return await _fellingLicenceApplicationRepository.GetApplicationStepStatus(applicationId);
+        return await _fellingLicenceApplicationRepository.GetApplicationStepStatus(applicationId, cancellationToken);
     }
 
     public bool FellingOperationRequiresStocking(FellingOperationType fellingOperationType)
@@ -3615,7 +3784,7 @@ public class CreateFellingLicenceApplicationUseCase(
             // Skip processing if the compartment is null or lacks GIS data
             if (compartment == null || string.IsNullOrEmpty(compartment.GISData))
             {
-                _logger.LogWarning($"Compartment with ID {compartmentId} could not be found or has no GIS data.");
+                _logger.LogWarning("Compartment with ID {CompartmentId} could not be found or has no GIS data.", compartmentId);
                 continue;
             }
 

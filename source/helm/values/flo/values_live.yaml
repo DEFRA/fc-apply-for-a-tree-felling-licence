@@ -32,6 +32,16 @@ external-web-app:
       domain: "liveflo.onmicrosoft.com"
       signInPolicyId: "B2C_1_FLO_V2_Signin"
       signUpPolicyId: "B2C_1_FLO_V2_Signup"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: Azure
     environment: Live
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
@@ -84,6 +94,8 @@ external-web-app:
       microsoftClarity:
         enabled: true
         trackingId: "pcrkb95e7y"
+    internalUserSite:
+      baseUrl: "https://private-beta-internal.tree-felling.forestrycommission.gov.uk/"
     GovUkNotifyOptions:
       enabled: true
       ApiKey:
@@ -115,12 +127,16 @@ external-web-app:
         InformInternalUserOfAccountApproval: "76b887be-3e6c-47bb-9522-335a70fa02f5"
         InviteWoodlandOwnerUserToOrganisation: "9d1b50c3-b180-4fba-8fed-95fd46434b46"
         InviteAgentUserToOrganisation: "c45250a6-da09-4653-b30b-24fe4f721864"
+        EiaReminderMissingDocuments: "a5d3ef14-28ad-4a93-8a57-4ad5aa2b7eb5"
+        EiaReminderToSendDocuments: "f767d060-9ba4-485c-95e9-d4c8f148cac5"
+        ApplicantReviewedAmendments: "d6e5698a-0594-4998-9b9b-49f501cd9108"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
         - "qxlva.com"
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
+        - "forestresearch.gov.uk"
     logging:
       LogLevel:
         Default: "Information"
@@ -155,6 +171,8 @@ external-web-app:
           IsPublic: true
           IntersectService:
             Path: "intersect"
+          AreaService:
+            Path: "areasAndLengths"
           ProjectService:
             Path: "project"
             OutSR: 4326
@@ -214,6 +232,8 @@ external-web-app:
           IsPublic: true
           IntersectService:
             Path: "intersect"
+          AreaService:
+            Path: "areasAndLengths"
           ProjectService:
             Path: "project"
             OutSR: 4326
@@ -296,6 +316,16 @@ internal-web-app:
         secret_key: azureb2c.client_secret
       domain: "liveflo.onmicrosoft.com"
       signUpSignInPolicyId: "B2C_1_FLO_V2_Internal_Signup_Signin"
+    govUkOneLoginOptions:
+      clientId: 
+        secret_key: onelogin.client_id
+      callbackPath: "/signin-oidc"
+      environment: "Integration"
+      signingKeys:
+        - privateKeyPem:
+            secret_key: onelogin.private_key
+    authenticationOptions:
+      provider: Azure
     azureAD:
       tenantId: 
         secret_key: azuread.tennant_id
@@ -319,6 +349,8 @@ internal-web-app:
       connectionString: 
         secret_key: blob.connectionString
       container: liveflo
+    userInvite:
+      inviteLinkExpiryDays: 28
     externalApplicantSite:
       baseUrl: "https://private-beta.tree-felling.forestrycommission.gov.uk/"
     woodlandOfficerReview:
@@ -326,6 +358,32 @@ internal-web-app:
     cronJobs:
       apiKey:
         secret_key: cronJobs.apiKey
+      jobs:
+        voluntary-withdrawal-notification:
+          name: voluntary-withdrawal-notification
+          path: /api/VoluntaryWithdrawNotification/VoluntaryWithdrawalNotificationFla
+          enabled: true
+          schedule: "0 0 * * *"
+        extend-applications:
+          name: extend-applications
+          path: /api/ApplicationExtension/ExtendApplications
+          enabled: true
+          schedule: "0 0 * * *"
+        public-register-expiry-notification:
+          name: public-register-expiry-notification
+          path: /api/PublicRegisterExpiry/PublicRegisterExpiryNotification
+          enabled: true
+          schedule: "0 0 * * *"
+        remove-applications-from-decision-public-register:
+          name: remove-applications-from-decision-public-register
+          path: /api/PublicRegisterExpiry/RemoveApplicationsFromDecisionPublicRegisterWhenEndDateReached
+          enabled: true
+          schedule: "0 0 * * *" 
+        public-register-consultation-comments:
+          name: public-register-consultation-comments
+          path: /api/PublicRegisterComments/PullNewComments
+          enabled: true
+          schedule: "0 0 * * *"
     publicRegisterExpiry:
       thresholdBeforePublicRegisterPeriodEnd: "14.00:00:00"
     voluntaryWithdrawApplication:
@@ -408,12 +466,16 @@ internal-web-app:
         InformApplicantOfReturnedApplicationMixLarchZone1: "ba497334-da76-4861-b054-0ab9dea286b3"
         InformApplicantOfReturnedApplicationMixLarchMixZone: "2cc8767f-8633-4818-9570-1f040052e02c"
         InformApplicantOfReturnedApplicationLarchOnlyMixZone: "f64e9c3e-2f15-4a7a-83f9-8955d6e6bbb2"
+        EiaReminderMissingDocuments: "a5d3ef14-28ad-4a93-8a57-4ad5aa2b7eb5"
+        EiaReminderToSendDocuments: "f767d060-9ba4-485c-95e9-d4c8f148cac5"
+        ApplicantReviewedAmendments: "d6e5698a-0594-4998-9b9b-49f501cd9108"
     permittedRegisteredUser:
       enabled: true
       permittedEmailDomainsForRegisteredUser:
         - "qxlva.com"
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
+        - "forestresearch.gov.uk"
     logging:
       LogLevel:
         Default: "Information"
@@ -448,6 +510,8 @@ internal-web-app:
           IsPublic: true
           IntersectService:
             Path: "intersect"
+          AreaService:
+            Path: "areasAndLengths"
           ProjectService:
             Path: "project"
             OutSR: 4326
@@ -567,6 +631,11 @@ pdf-generation-service:
     spring:
       thymeleaf:
         prefix: "file:///templates/source/html-templates/"
+  env:
+    - name: SPRING_THYMELEAF_PREFIX
+      value: file:///templates/source/html-templates/
+    - name: ORGANISATION_CONFIGURATION_SERVICE_ENABLED
+      value: "false"
 
 rabbitmq:
   auth:

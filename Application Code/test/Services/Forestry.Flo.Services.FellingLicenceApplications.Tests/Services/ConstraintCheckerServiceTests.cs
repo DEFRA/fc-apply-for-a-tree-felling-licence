@@ -110,7 +110,54 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 }, _options)
             ), It.IsAny<CancellationToken>()), Times.Once);
         }
-        
+
+        [Theory, AutoMoqData]
+        public async Task WhenCalledByInternalUserButFailsToClearExistingData(FellingLicenceApplication application, string error)
+        {
+            //arrange
+            EnsureSubmittedCompartments(application);
+
+            _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(application.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Maybe.From(application));
+
+            _landInformationSearchService
+                .Setup(x => x.ClearLayerAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Failure(error));
+                
+
+            var sut = CreateSut(_testInternalUser);
+            var request = ConstraintCheckRequest.Create(_testInternalUser, application.Id);
+
+            //act
+            var result = await sut.ExecuteAsync(request, new CancellationToken());
+
+            //assert
+            Assert.True(result.IsFailure);
+
+            var expectedError = $"Unable to proceed with LIS Constraint Check for application having id of [{application.Id}] " +
+                    $"as could not clear the layer for the FLA having id of [{application.Id}]. Error is [{error}].";
+
+            _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _propertyProfileRepository.VerifyNoOtherCalls();
+
+            _landInformationSearchService.Verify(x => x.ClearLayerAsync(application.Id.ToString(), It.IsAny<CancellationToken>()), Times.Once);
+            _landInformationSearchService.VerifyNoOtherCalls();
+
+            _mockConstraintCheckerServiceAudit.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
+                y.EventName == AuditEvents.ConstraintCheckerExecutionFailure
+                && y.SourceEntityId == application.Id
+                && y.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && y.ActorType == ActorType.InternalUser
+                && JsonSerializer.Serialize(y.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    error = expectedError
+                }, _options)
+            ), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
         [Theory, AutoMoqData]
         public async Task WhenCalledByExternalUser(FellingLicenceApplication application)
         {
@@ -149,6 +196,43 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 {
                     url = result.Value,
                     esriFeatureServiceResponse = _expectedEsriSuccessObject
+                }, _options)
+            ), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task WhenCalledByExternalUserButCannotLoadPropertyProfile(FellingLicenceApplication application)
+        {
+            //arrange
+            EnsurePreSubmittedCompartmentsInApplication(application, p => p.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<PropertyProfile, UserDbErrorReason>(UserDbErrorReason.General)));
+            var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_settings.LisConfig}&caseId={application.Id}");
+
+            _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(application.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
+
+            var sut = CreateSut(_testExternalUser);
+            var request = ConstraintCheckRequest.Create(_testExternalUser, application.Id);
+
+            //act
+            var result = await sut.ExecuteAsync(request, new CancellationToken());
+
+            //assert
+            Assert.True(result.IsFailure);
+
+            var expectedError =
+                $"Unable to proceed with LIS Constraint Check for application having id of [{application.Id}] " +
+                $"as could not get related property details having profile id of [{application.LinkedPropertyProfile!.PropertyProfileId}] in order to retrieve compartments for the applicant's (non submitted) application." +
+                $"Error reason is [{UserDbErrorReason.General.ToString()}]";
+
+            _mockConstraintCheckerServiceAudit.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
+                y.EventName == AuditEvents.ConstraintCheckerExecutionFailure
+                && y.SourceEntityId == application.Id
+                && y.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && y.ActorType == ActorType.ExternalApplicant
+                && JsonSerializer.Serialize(y.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    error = expectedError
                 }, _options)
             ), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -263,7 +347,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             }
         }
 
-        private void EnsurePreSubmittedCompartmentsInApplication(FellingLicenceApplication application)
+        private void EnsurePreSubmittedCompartmentsInApplication(FellingLicenceApplication application, Action<Mock<IPropertyProfileRepository>>? setupPropertyProfileRepo = null)
         {
             var propertyProfile = FixtureInstance.Create<PropertyProfile>();
             propertyProfile.Compartments.Clear();
@@ -279,8 +363,16 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 pfd.PropertyProfileCompartmentId = propertyComps.ElementAt(i).Id;
             }
 
-            _propertyProfileRepository.Setup(x => x.GetByIdAsync(application.LinkedPropertyProfile.PropertyProfileId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Result.Success<PropertyProfile, UserDbErrorReason>(propertyProfile));
+            if (setupPropertyProfileRepo == null)
+            {
+                _propertyProfileRepository.Setup(x => x.GetByIdAsync(application.LinkedPropertyProfile.PropertyProfileId, It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(Result.Success<PropertyProfile, UserDbErrorReason>(propertyProfile));
+            }
+            else
+            {
+                setupPropertyProfileRepo(_propertyProfileRepository);
+            }
+
         }
 
         private ConstraintCheckerService CreateSut(ClaimsPrincipal userPrincipal)

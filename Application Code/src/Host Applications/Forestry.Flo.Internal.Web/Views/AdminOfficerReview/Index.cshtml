@@ -5,18 +5,16 @@
 }
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Forestry.Flo.Services.Common.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure
 @using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 @using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
 @using Forestry.Flo.Services.FellingLicenceApplications.Models
 @model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.AdminOfficerReviewModel
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-m">@ViewData["Title"]</h1>
 
@@ -35,126 +33,300 @@
 
         @* todo: populate hrefs for task list items *@
 
-        <ul class="app-task-list__items">
-            <li condition="@Model.AgentApplication" class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action(nameof(AdminOfficerReviewController.AgentAuthorityFormCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="agent-authority-form">
+        <ul class="govuk-task-list">
+            <li condition="@Model.AgentApplication" class="govuk-task-list__item govuk-task-list__item--with-link">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.AgentAuthorityFormCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="agent-authority-form">
                         Agent Authority Form
                     </a>
-                </span>
-                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus.GetStatusStyleName() app-task-list__tag" id="agent-authority-form">@Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus.GetDisplayName()</strong>
+                </div>
+                <div class="govuk-task-list__status" id="agent-authority-form">
+                    @if (Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus == InternalReviewStepStatus.Completed)
+                    {
+                        @Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus.GetDisplayName()
+                    }
+                    else
+                    {
+                        <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus.GetDisplayName()</strong>                        
+                    }
+                </div>
             </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    <a href="@Url.Action(nameof(AdminOfficerReviewController.MappingCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="mapping-check">
+            <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.MappingCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="mapping-check">
                         Mapping check
                     </a>
-                </span>
-                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.MappingCheckStepStatus.GetStatusStyleName() app-task-list__tag" id="mapping-check">@Model.AdminOfficerReviewTaskListStates.MappingCheckStepStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    @if (Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus is InternalReviewStepStatus.CannotStartYet)
+                </div>
+                <div class="govuk-task-list__status" id="mapping-check">
+                    @if (Model.AdminOfficerReviewTaskListStates.MappingCheckStepStatus == InternalReviewStepStatus.Completed)
                     {
-                        <a aria-describedby="constraints-check">
-                            Constraints check
-                        </a>
+                        @Model.AdminOfficerReviewTaskListStates.MappingCheckStepStatus.GetDisplayName()
                     }
                     else
                     {
-                        <a href="@Url.Action(nameof(AdminOfficerReviewController.ConstraintsCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="constraints-check">
+                        <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.MappingCheckStepStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.MappingCheckStepStatus.GetDisplayName()</strong>                        
+                    }
+                </div>
+            </li>
+            @if (Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus is InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Constraints check
+                        @if (Model.AgentApplication)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Agent authority form and mapping checks must have passed)
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Mapping checks must have passed)
+                            </div>
+                        }
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.ConstraintsCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="constraints-check">
                             Constraints check
                         </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="constraints-check">
+                        @if (Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus is InternalReviewStepStatus.Completed)
+                        {
+                            @Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.AdminOfficerReviewTaskListStates.EiaStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        EIA check
+                        @if (Model.AdminOfficerReviewTaskListStates.EiaStatus is InternalReviewStepStatus.CannotStartYet)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Mapping and constraints checks must have passed)
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Deforestation or afforestation not detected for this application)
+                            </div>
+                        }
+                    </div>
+                    @if (Model.AdminOfficerReviewTaskListStates.EiaStatus is InternalReviewStepStatus.CannotStartYet)
+                    {
+                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
                     }
-                </span>
-                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus.GetStatusStyleName() app-task-list__tag" id="constraints-check">@Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus.GetDisplayName()</strong>
+                    else
+                    {
+                        <div class="govuk-task-list__status" id="constraints-check">
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.EiaStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.EiaStatus.GetDisplayName()</strong>
+                        </div>
+                    }
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.EiaCheck), new { applicationId = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="eia-check">
+                            EIA check
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="eia-check">
+                        @if (Model.AdminOfficerReviewTaskListStates.EiaStatus is InternalReviewStepStatus.Completed)
+                        {
+                            @Model.AdminOfficerReviewTaskListStates.EiaStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.EiaStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.EiaStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
 
-                @if (Model.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus is InternalReviewStepStatus.CannotStartYet)
-                {
-                    <a class="govuk-hint" condition="@Model.AgentApplication">
-                        <br>(Agent authority form and mapping checks must have passed)
-                    </a>
-                    <a class="govuk-hint" condition="@(Model.AgentApplication == false)">
-                        <br>(Mapping checks must have passed)
-                    </a>
-                }
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired || Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.CannotStartYet)
+            @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Larch check
+                        @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.CannotStartYet)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Mapping and constraints checks must have passed)
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-task-list__hint">
+                                (The application is not felling Larch species in Zone 1)
+                            </div>
+                        }
+                    </div>
+                    @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.CannotStartYet)
                     {
-                        <a aria-describedby="larch-check">
+                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
+                    }
+                    else
+                    {
+                        <div class="govuk-task-list__status">
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
+                        </div>
+                    }
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.LarchCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
                             Larch check
                         </a>
-                        @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired)
+                    </div>
+                    <div class="govuk-task-list__status" id="larch-check">
+                        @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.Completed)
                         {
-                            <a class="govuk-hint">
-                                <br>(The application is not felling Larch species in Zone 1)
-                            </a>
+                            @Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()
                         }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Larch flyover update
+                        @if (Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.CannotStartYet)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Larch check must be completed)
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-task-list__hint">
+                                (The application is not felling Larch species in Zone 1)
+                            </div>
+                        }
+                    </div>
+                    @if (Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.CannotStartYet)
+                    {
+                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
                     }
                     else
                     {
-                        <a href="@Url.Action(nameof(AdminOfficerReviewController.LarchCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
-                            Larch check
-                        </a>
+                        <div class="govuk-task-list__status" id="constraints-check">
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
+                        </div>
                     }
-                </span>
-                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    @if (Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.NotRequired || Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.CannotStartYet)
-                    {
-                        <a aria-describedby="larch-check">
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.LarchFlyover), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-flyover-check">
                             Larch flyover update
                         </a>
-                        @if (Model.AdminOfficerReviewTaskListStates.LarchApplicationStatus is InternalReviewStepStatus.NotRequired)
+                    </div>
+                    <div class="govuk-task-list__status" id="larch-flyover-check">
+                        @if (Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus is InternalReviewStepStatus.Completed)
                         {
-                            <a class="govuk-hint">
-                                <br>(The application is not felling Larch species in Zone 1)
-                            </a>
+                            @Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()
                         }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Cricket Bat Willow check
+                        @if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.CannotStartYet)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Mapping and constraints checks must have passed)
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-task-list__hint">
+                                (The application is not for cricket bat willow)
+                            </div>
+                        }
+                    </div>
+                    @if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.CannotStartYet)
+                    {
+                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
                     }
                     else
                     {
-                        <a href="@Url.Action(nameof(AdminOfficerReviewController.LarchFlyover), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="larch-check">
-                            Larch flyover update
-                        </a>
+                        <div class="govuk-task-list__status" id="constraints-check">
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.CBWStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.CBWStatus.GetDisplayName()</strong>
+                        </div>
                     }
-                </span>
-                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-name">
-                    @if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.NotRequired || Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.CannotStartYet)
-                    {
-                        <a aria-describedby="cbw-check">
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.CBWCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="cbw-check">
                             Cricket Bat Willow check
                         </a>
-                    }
-                    else
-                    {
-                        <a href="@Url.Action(nameof(AdminOfficerReviewController.CBWCheck), new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="cbw-check">
-                            Cricket Bat Willow check
-                        </a>
-                    }
-                </span>
-                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.CBWStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.AdminOfficerReviewTaskListStates.CBWStatus.GetDisplayName()</strong>
-            </li>
-            <li class="app-task-list__item">
-                <span class="app-task-list__task-assign-woodland-officer">
-                    @if ((Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.NotRequired || Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.Completed) && Model.Editable)
-                    {
-                        if (Model.RequireWOReview)
+                    </div>
+                    <div class="govuk-task-list__status" id="cbw-check">
+                        @if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.Completed)
+                        {
+                            @Model.AdminOfficerReviewTaskListStates.CBWStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.CBWStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.CBWStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
+            
+            @if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.Completed && Model.Editable)
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        @if (Model.RequireWOReview)
                         {
                             <a class="govuk-link"
-                            asp-controller="AssignFellingLicenceApplication"
-                            asp-action="SelectUser"
-                            asp-route-id="@Model.FellingLicenceApplicationSummary.Id"
-                            asp-route-selectedRole="@AssignedUserRole.WoodlandOfficer"
-                            asp-route-returnUrl="@Url.Action("Index", "AdminOfficerReview", new { Model.FellingLicenceApplicationSummary.Id })"
-                            aria-describedby="assign-woodland-officer">
+                               asp-controller="AssignFellingLicenceApplication"
+                               asp-action="SelectUser"
+                               asp-route-id="@Model.FellingLicenceApplicationSummary.Id"
+                               asp-route-selectedRole="@AssignedUserRole.WoodlandOfficer"
+                               asp-route-returnUrl="@Url.Action("Index", "AdminOfficerReview", new { Model.FellingLicenceApplicationSummary.Id })"
+                               aria-describedby="assign-woodland-officer-status">
                                 Assign woodland officer
                             </a>
                         }
@@ -166,38 +338,63 @@
                                asp-route-id="@Model.FellingLicenceApplicationSummary.Id"
                                asp-route-selectedRole="@AssignedUserRole.FieldManager"
                                asp-route-returnUrl="@Url.Action("Index", "AdminOfficerReview", new { Model.FellingLicenceApplicationSummary.Id })"
-                               aria-describedby="assign-woodland-officer">
+                               aria-describedby="assign-woodland-officer-status">
                                 Assign approver
                             </a>
                         }
-                    }
-                    else
-                    {
-                        if (Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.CannotStartYet || Model.AdminOfficerReviewTaskListStates.CBWStatus is InternalReviewStepStatus.NotStarted)
+                    </div>
+                    <div class="govuk-task-list__status" id="assign-woodland-officer-status">
+                        @if (Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus is InternalReviewStepStatus.Completed)
                         {
-                            <a aria-describedby="assign-woodland-officer">
-                                Assign woodland officer / approver
-                            </a>
+                            @Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetDisplayName()
                         }
                         else
                         {
-                            <a aria-describedby="assign-woodland-officer">
-                                Assign woodland officer
-                            </a>
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetStatusStyleName()" id="assign-woodland-officer">@Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetDisplayName()</strong>
                         }
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Assign woodland officer/approver
+                        @if (Model.Editable)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (Cricket bat willow checks must be completed)
+                            </div>
+                        }
+                    </div>
+                    @if (Model.Editable)
+                    {
+                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet">@(InternalReviewStepStatus.CannotStartYet.GetDisplayName())</div>
                     }
-                </span>
-                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetStatusStyleName() app-task-list__tag" id="licence-sub-type-check">@Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetDisplayName()</strong>
-            </li>
+                    else
+                    {
+                        <div class="govuk-task-list__status">
+                            @if (Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus is InternalReviewStepStatus.Completed)
+                            {
+                                @Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetDisplayName()
+                            }
+                            else
+                            {
+                                <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus.GetDisplayName()</strong>
+                            }
+                        </div>
+                    }
+                </li>
+            }
         </ul>
 
         <div class="govuk-form-group">
             <h2 class="govuk-heading-s">Review actions</h2>
 
             <fieldset class="govuk-fieldset" condition="@Model.Editable">
-                <div id="return-to-applicant-hint" class="govuk-hint">
+                <legend id="return-to-applicant-hint" class="govuk-hint">
                     If there are issues with the application that require changes from the applicant, click here.
-                </div>
+                </legend>
                 <a id="assign-to-applicant" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="AssignFellingLicenceApplication" asp-action="AssignBackToApplicant" asp-route-applicationId="@Model.FellingLicenceApplicationSummary.Id" asp-route-returnUrl="@Url.Action("Index", "AdminOfficerReview", new { Model.FellingLicenceApplicationSummary.Id })">Return to applicant</a>
             </fieldset>
 
@@ -219,20 +416,17 @@
             </fieldset>
             <br/>
             <br/>
+            
+            <p condition="@Model.Editable" class="govuk-body">When you've completed all your checks, submit your review to move the application to the next stage.</p>
+            <div class="govuk-form-group">
+                <button condition="@Model.Editable" id="submit-admin-officer-review" data-prevent-double-click="true" class="govuk-button" type="submit" data-module="govuk-button" disabled="disabled">
+                    Submit review
+                </button>
 
-            <fieldset class="govuk-fieldset">
-                <p condition="@Model.Editable" class="govuk-body">When you've completed all your checks, submit your review to move the application to the next stage.</p>
-                <br/>
-                <div class="govuk-form-group">
-                    <button condition="@Model.Editable" id="submit-admin-officer-review" data-prevent-double-click="true" class="govuk-button" type="submit" data-module="govuk-button" disabled="disabled">
-                        Submit review
-                    </button>
-
-                    <a id="return-admin-officer-review" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary.Id">
-                        Return to application
-                    </a>
-                </div>
-            </fieldset>
+                <a id="return-admin-officer-review" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary.Id">
+                    Return to application
+                </a>
+            </div>
         </div>
     </form>
     

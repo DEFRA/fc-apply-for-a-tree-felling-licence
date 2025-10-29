@@ -6,9 +6,12 @@ using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FileStorage.Model;
+using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Forestry.Flo.Services.PropertyProfiles.Entities;
 using Forestry.Flo.Tests.Common;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
@@ -25,16 +28,16 @@ public class ModelMappingTests
         var result = ModelMapping.ToPropertyProfile(propertyProfileModel);
 
         //Assert
-        result.Should().NotBeNull();
-        result.Id.Should().Be(propertyProfileModel.Id);
-        result.Name.Should().Be(propertyProfileModel.Name);
-        result.WoodlandOwnerId.Should().Be(propertyProfileModel.WoodlandOwnerId);
-        result.NearestTown.Should().Be(propertyProfileModel.NearestTown);
-        result.NameOfWood.Should().Be(propertyProfileModel.NameOfWood);
-        result.HasWoodlandManagementPlan.Should().Be(propertyProfileModel.HasWoodlandManagementPlan!.Value);
-        result.IsWoodlandCertificationScheme.Should().Be(propertyProfileModel.IsWoodlandCertificationScheme!.Value);
-        result.OSGridReference.Should().Be(propertyProfileModel.OSGridReference);
-        result.WoodlandManagementPlanReference.Should().Be(propertyProfileModel.WoodlandManagementPlanReference);
+        Assert.NotNull(result);
+        Assert.Equal(propertyProfileModel.Id, result.Id);
+        Assert.Equal(propertyProfileModel.Name, result.Name);
+        Assert.Equal(propertyProfileModel.WoodlandOwnerId, result.WoodlandOwnerId);
+        Assert.Equal(propertyProfileModel.NearestTown, result.NearestTown);
+        Assert.Equal(propertyProfileModel.NameOfWood, result.NameOfWood);
+        Assert.Equal(propertyProfileModel.HasWoodlandManagementPlan!.Value, result.HasWoodlandManagementPlan);
+        Assert.Equal(propertyProfileModel.IsWoodlandCertificationScheme!.Value, result.IsWoodlandCertificationScheme);
+        Assert.Equal(propertyProfileModel.OSGridReference, result.OSGridReference);
+        Assert.Equal(propertyProfileModel.WoodlandManagementPlanReference, result.WoodlandManagementPlanReference);
     }
     
     [Theory, AutoMoqData]
@@ -45,16 +48,16 @@ public class ModelMappingTests
         var result = ModelMapping.ToPropertyProfileModel(propertyProfile);
 
         //Assert
-        result.Should().NotBeNull();
-        result.Id.Should().Be(propertyProfile.Id);
-        result.Name.Should().Be(propertyProfile.Name);
-        result.WoodlandOwnerId.Should().Be(propertyProfile.WoodlandOwnerId);
-        result.NearestTown.Should().Be(propertyProfile.NearestTown);
-        result.NameOfWood.Should().Be(propertyProfile.NameOfWood);
-        result.HasWoodlandManagementPlan.Should().Be(propertyProfile.HasWoodlandManagementPlan);
-        result.IsWoodlandCertificationScheme.Should().Be(propertyProfile.IsWoodlandCertificationScheme);
-        result.OSGridReference.Should().Be(propertyProfile.OSGridReference);
-        result.WoodlandManagementPlanReference.Should().Be(propertyProfile.WoodlandManagementPlanReference);
+        Assert.NotNull(result);
+        Assert.Equal(propertyProfile.Id, result.Id);
+        Assert.Equal(propertyProfile.Name, result.Name);
+        Assert.Equal(propertyProfile.WoodlandOwnerId, result.WoodlandOwnerId);
+        Assert.Equal(propertyProfile.NearestTown, result.NearestTown);
+        Assert.Equal(propertyProfile.NameOfWood, result.NameOfWood);
+        Assert.Equal(propertyProfile.HasWoodlandManagementPlan, result.HasWoodlandManagementPlan);
+        Assert.Equal(propertyProfile.IsWoodlandCertificationScheme, result.IsWoodlandCertificationScheme);
+        Assert.Equal(propertyProfile.OSGridReference, result.OSGridReference);
+        Assert.Equal(propertyProfile.WoodlandManagementPlanReference, result.WoodlandManagementPlanReference);
     }
     
     [Theory, AutoMoqData]
@@ -64,13 +67,12 @@ public class ModelMappingTests
         var result = ModelMapping.ToCompartment(compartmentModel);
 
         //Assert
-        result.Should().NotBeNull();
-        result.Id.Should().Be(compartmentModel.Id);
-        result.Designation.Should().Be(compartmentModel.Designation);
-        result.CompartmentNumber.Should().Be(compartmentModel.CompartmentNumber);
-        result.TotalHectares.Should().Be(compartmentModel.TotalHectares);
-        result.SubCompartmentName.Should().Be(compartmentModel.SubCompartmentName);
-        result.GISData.Should().Be(compartmentModel.GISData);
+        Assert.NotNull(result);
+        Assert.Equal(compartmentModel.Id, result.Id);
+        Assert.Equal(compartmentModel.CompartmentNumber, result.CompartmentNumber);
+        Assert.Equal(compartmentModel.TotalHectares, result.TotalHectares);
+        Assert.Equal(compartmentModel.SubCompartmentName, result.SubCompartmentName);
+        Assert.Equal(compartmentModel.GISData, result.GISData);
     }
     
     [Theory, AutoMoqData]
@@ -82,14 +84,13 @@ public class ModelMappingTests
         var result = ModelMapping.ToCompartmentModel(compartment);
 
         //Assert
-        result.Should().NotBeNull();
-        result.Id.Should().Be(compartment.Id);
-        result.Designation.Should().Be(compartment.Designation);
-        result.CompartmentNumber.Should().Be(compartment.CompartmentNumber);
-        result.TotalHectares.Should().Be(compartment.TotalHectares);
-        result.SubCompartmentName.Should().Be(compartment.SubCompartmentName);
-        result.GISData.Should().Be(compartment.GISData);
-        result.PropertyProfileName.Should().Be(compartment.PropertyProfile.Name);
+        Assert.NotNull(result);
+        Assert.Equal(compartment.Id, result.Id);
+        Assert.Equal(compartment.CompartmentNumber, result.CompartmentNumber);
+        Assert.Equal(compartment.TotalHectares, result.TotalHectares);
+        Assert.Equal(compartment.SubCompartmentName, result.SubCompartmentName);
+        Assert.Equal(compartment.GISData, result.GISData);
+        Assert.Equal(compartment.PropertyProfile.Name, result.PropertyProfileName);
     }
 
     [Theory, AutoMoqData]
@@ -117,17 +118,18 @@ public class ModelMappingTests
         var result = ModelMapping.ToProposedFellingDetailModel(proposedFellingDetail, totalHectares);
 
         //assert
-        result.Id.Should().Be(proposedFellingDetail.Id);
-        result.Species[speciesList.First().Code].Species.Should().Be(speciesList.First().Code);
-        result.Species[speciesList.First().Code].SpeciesName.Should().Be(speciesList.First().Name);
-        result.ProposedRestockingDetails.First().Species[speciesList.First().Code].SpeciesName.Should().Be(speciesList.First().Name);
-        result.OperationType.Should().Be(proposedFellingDetail.OperationType);
-        result.TreeMarking.Should().Be(proposedFellingDetail.TreeMarking);
-        result.NumberOfTrees.Should().Be(proposedFellingDetail.NumberOfTrees);
-        result.AreaToBeFelled.Should().Be(proposedFellingDetail.AreaToBeFelled);
-        result.IsWithinConservationArea.Should().Be(proposedFellingDetail.IsWithinConservationArea);
-        result.IsPartOfTreePreservationOrder.Should().Be(proposedFellingDetail.IsPartOfTreePreservationOrder);
-        result.CompartmentTotalHectares.Should().Be(totalHectares);
+        Assert.Equal(proposedFellingDetail.Id, result.Id);
+        Assert.Equal(speciesList.First().Code, result.Species[speciesList.First().Code].Species);
+        Assert.Equal(speciesList.First().Name, result.Species[speciesList.First().Code].SpeciesName);
+        Assert.Equal(speciesList.First().Name, result.ProposedRestockingDetails.First().Species[speciesList.First().Code].SpeciesName);
+        
+        Assert.Equal(proposedFellingDetail.OperationType, result.OperationType);
+        Assert.Equal(proposedFellingDetail.TreeMarking, result.TreeMarking);
+        Assert.Equal(proposedFellingDetail.NumberOfTrees, result.NumberOfTrees);
+        Assert.Equal(proposedFellingDetail.AreaToBeFelled, result.AreaToBeFelled);
+        Assert.Equal(proposedFellingDetail.IsWithinConservationArea, result.IsWithinConservationArea);
+        Assert.Equal(proposedFellingDetail.IsPartOfTreePreservationOrder, result.IsPartOfTreePreservationOrder);
+        Assert.Equal(totalHectares, result.CompartmentTotalHectares);
     }
     
     [Theory, AutoMoqData]
@@ -144,14 +146,14 @@ public class ModelMappingTests
         var result = ModelMapping.ToProposedRestockingDetailModel(proposedRestockingDetail, totalHectares);
 
         //assert
-        result.Id.Should().Be(proposedRestockingDetail.Id);
-        result.Species[speciesList.First().Code].Species.Should().Be(speciesList.First().Code);
-        result.Species[speciesList.First().Code].SpeciesName.Should().Be(speciesList.First().Name);
-        result.Area.Should().Be(proposedRestockingDetail.Area);
-        result.RestockingDensity.Should().Be(proposedRestockingDetail.RestockingDensity);
-        result.RestockingProposal.Should().Be(proposedRestockingDetail.RestockingProposal);
-        result.PercentageOfRestockArea.Should().Be(proposedRestockingDetail.PercentageOfRestockArea);
-        result.CompartmentTotalHectares.Should().Be(totalHectares);
+        Assert.Equal(proposedRestockingDetail.Id, result.Id);
+        Assert.Equal(speciesList.First().Code, result.Species[speciesList.First().Code].Species);
+        Assert.Equal(speciesList.First().Name, result.Species[speciesList.First().Code].SpeciesName);
+        Assert.Equal(proposedRestockingDetail.Area, result.Area);
+        Assert.Equal(proposedRestockingDetail.RestockingDensity, result.RestockingDensity);
+        Assert.Equal(proposedRestockingDetail.RestockingProposal, result.RestockingProposal);
+        Assert.Equal(proposedRestockingDetail.PercentageOfRestockArea, result.PercentageOfRestockArea);
+        Assert.Equal(totalHectares, result.CompartmentTotalHectares);
     }
     
     [Theory, AutoMoqData]
@@ -162,11 +164,11 @@ public class ModelMappingTests
         var result = ModelMapping.ToAddressEntity(address);
 
         //assert
-        result.PostalCode.Should().Be(address.PostalCode);
-        result.Line1.Should().Be(address.Line1);
-        result.Line2.Should().Be(address.Line2);
-        result.Line3.Should().Be(address.Line3);
-        result.Line4.Should().Be(address.Line4);
+        Assert.Equal(address.PostalCode, result.PostalCode);
+        Assert.Equal(address.Line1, result.Line1);
+        Assert.Equal(address.Line2, result.Line2);
+        Assert.Equal(address.Line3, result.Line3);
+        Assert.Equal(address.Line4, result.Line4);
     }
 
     [Theory, AutoMoqData]
@@ -183,24 +185,24 @@ public class ModelMappingTests
         var result = ModelMapping.ToDocumentsModelForApplicantView(documentEntities);
 
         //Assert
-        result.Should().NotBeNull();
-        result.Count().Should().Be(userDocumentEntities.Count);
+        Assert.NotNull(result);
+        Assert.Equal(userDocumentEntities.Count, result.Count());
 
         var orderedModelList = result.OrderBy(x=>x.Id).ToList();
         var orderedEntityList = documentEntities.OrderBy(x => x.Id).ToList();
 
         for (var i = 0; i < userDocumentEntities.Count; i++)
         {
-            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
-            orderedModelList[i].CreatedTimestamp.Should().Be(orderedEntityList[i].CreatedTimestamp);
-            orderedModelList[i].MimeType.Should().Be(orderedEntityList[i].MimeType);
-            orderedModelList[i].FileSize.Should().Be(orderedEntityList[i].FileSize);
-            orderedModelList[i].FileName.Should().Be(orderedEntityList[i].FileName);
-            orderedModelList[i].FileType.Should().Be(orderedEntityList[i].FileType);
-            orderedModelList[i].VisibleToApplicant.Should().Be(orderedEntityList[i].VisibleToApplicant);
-            orderedModelList[i].VisibleToConsultee.Should().Be(orderedEntityList[i].VisibleToConsultee);
-            orderedModelList[i].DocumentPurpose.Should().Be(orderedEntityList[i].Purpose);
-            orderedModelList[i].VisibleToApplicant.Should().BeTrue();
+            Assert.Equal(orderedEntityList[i].Id, orderedModelList[i].Id);
+            Assert.Equal(orderedEntityList[i].CreatedTimestamp, orderedModelList[i].CreatedTimestamp);
+            Assert.Equal(orderedEntityList[i].MimeType, orderedModelList[i].MimeType);
+            Assert.Equal(orderedEntityList[i].FileSize, orderedModelList[i].FileSize);
+            Assert.Equal(orderedEntityList[i].FileName, orderedModelList[i].FileName);
+            Assert.Equal(orderedEntityList[i].FileType, orderedModelList[i].FileType);
+            Assert.Equal(orderedEntityList[i].VisibleToApplicant, orderedModelList[i].VisibleToApplicant);
+            Assert.Equal(orderedEntityList[i].VisibleToConsultee, orderedModelList[i].VisibleToConsultee);
+            Assert.Equal(orderedEntityList[i].Purpose, orderedModelList[i].DocumentPurpose);
+            Assert.True(orderedModelList[i].VisibleToApplicant);
         }
     }
     
@@ -216,7 +218,7 @@ public class ModelMappingTests
 
         // Testing only configured PropertyProfileId mapping
 
-        result.PropertyProfileId.Should().Be(propertyProfile.Id);
+        Assert.Equal(propertyProfile.Id, result.PropertyProfileId);
     }
 
     [Theory, AutoMoqData]
@@ -310,6 +312,7 @@ public class ModelMappingTests
             Id = id;
             CompartmentNumber = _fixture.Create<int>().ToString();
             SubCompartmentName = _fixture.Create<string>();
+            GISData = JsonConvert.SerializeObject(_fixture.Create<Polygon>());
         }
     }
 

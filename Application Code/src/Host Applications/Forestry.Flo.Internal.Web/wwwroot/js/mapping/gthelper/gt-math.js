@@ -1,7 +1,5 @@
-define(["require", "exports", "tslib", "/js/mapping/gthelper/gt-osgb.js?v=" + Date.now(), "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now()], function (require, exports, tslib_1, GT_OSGB_1, GT_WGS84_1) {
+define(["require", "exports", "/js/mapping/gthelper/gt-osgb.js?v=" + Date.now(), "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now()], function (require, exports, GT_OSGB_1, GT_WGS84_1) {
     "use strict";
-    GT_OSGB_1 = tslib_1.__importDefault(GT_OSGB_1);
-    GT_WGS84_1 = tslib_1.__importDefault(GT_WGS84_1);
     var GT_Math = /** @class */ (function () {
         function GT_Math() {
         }
@@ -291,7 +289,7 @@ define(["require", "exports", "tslib", "/js/mapping/gthelper/gt-osgb.js?v=" + Da
             return I + (Math.pow(p, 2) * II) + (Math.pow(p, 4) * III) + (Math.pow(p, 6) * IIIA);
         };
         GT_Math.WGS84_To_OSGB = function (item) {
-            var osgb = new GT_OSGB_1.default();
+            var osgb = new GT_OSGB_1();
             if (item.isGreatBritain()) {
                 var height = 0;
                 var x1 = this.Lat_Long_H_to_X(item.Latitude, item.Longitude, height, 6378137.00, 6356752.313);
@@ -323,7 +321,7 @@ define(["require", "exports", "tslib", "/js/mapping/gthelper/gt-osgb.js?v=" + Da
             var z2 = this.Helmert_Z(x1, y1, z1, 542.060, 0.1502, 0.2470, -20.4894);
             var latitude = this.XYZ_to_Lat(x2, y2, z2, 6378137.000, 6356752.313);
             var longitude = this.XYZ_to_Long(x2, y2);
-            return new GT_WGS84_1.default(latitude, longitude);
+            return new GT_WGS84_1(latitude, longitude);
         };
         ;
         return GT_Math;

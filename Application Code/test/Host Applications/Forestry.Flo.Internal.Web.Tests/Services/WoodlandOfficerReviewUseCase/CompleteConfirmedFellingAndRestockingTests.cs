@@ -22,7 +22,7 @@ public class CompleteConfirmedFellingAndRestockingTests : WoodlandOfficerReviewU
         var user = new InternalUser(UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: userId));
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Failure(error));
 
         // Act
@@ -32,7 +32,7 @@ public class CompleteConfirmedFellingAndRestockingTests : WoodlandOfficerReviewU
         Assert.False(result.IsSuccess);
         Assert.Equal(error, result.Error);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(applicationId, userId, true, It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(applicationId, userId, true, It.IsAny<CancellationToken>(), It.IsAny<bool>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -57,7 +57,7 @@ public class CompleteConfirmedFellingAndRestockingTests : WoodlandOfficerReviewU
         var user = new InternalUser(UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: userId));
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
 
         // Act
@@ -66,7 +66,7 @@ public class CompleteConfirmedFellingAndRestockingTests : WoodlandOfficerReviewU
         // Assert
         Assert.True(result.IsSuccess);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(applicationId, userId, true, It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(applicationId, userId, true, It.IsAny<CancellationToken>(), It.IsAny<bool>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -97,7 +97,9 @@ public class CompleteConfirmedFellingAndRestockingTests : WoodlandOfficerReviewU
             MockAgentAuthorityService.Object,
             GetConfiguredFcAreas.Object,
             Clock.Object,
+            WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
+            MockBus.Object,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

@@ -3,11 +3,6 @@
 public record ExternalConsulteeInviteModel
 {
     /// <summary>
-    /// Gets and inits the invitation id.
-    /// </summary>
-    public Guid Id { get; init; }
-    
-    /// <summary>
     /// Gets and inits the name of the consultee being invited.
     /// </summary>
     public string ConsulteeName { get; init; } = null!;
@@ -26,11 +21,6 @@ public record ExternalConsulteeInviteModel
     /// Gets and inits the consultee email text.
     /// </summary>
     public string ConsulteeEmailText { get; init; } = null!;
-    
-    /// <summary>
-    /// Gets and inits the consultee email content of the email body.
-    /// </summary>
-    public string? ConsulteeEmailContent { get; init; }
     
     /// <summary>
     /// Gets and inits the external link access code.

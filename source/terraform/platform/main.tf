@@ -26,41 +26,39 @@ terraform {
     organization = "Quicksilva"
 
     workspaces {
-      name = "FLOv2"
+      name = "FLOv2-platform"
     }
   }
 }
 
 # Configure the Microsoft Azure Provider
 provider "azurerm" {
-  #alias = "cli"
+  alias = "cli"
 
   features {}
-
+  use_cli         = true
   subscription_id = "305d2b06-c358-4814-9905-ff2d46fadfbe"
 }
 
 provider "azurerm" {
-  alias = "flov2"
-  
+  #alias = "flov2"
   features {}
 
-  client_id       = "b4330e38-3476-48a6-8ae1-217f9c8f9ba3"
-  client_secret   = data.azurerm_key_vault_secret.azure_sp_token.value
-  subscription_id = "305d2b06-c358-4814-9905-ff2d46fadfbe"
-  tenant_id       = "2a89548a-7e9e-4ea6-99b6-74b88fd981c2"
+  client_id       = module.shared.tf_client_id
+  client_secret   = module.shared.azure_sp_token
+  subscription_id = module.shared.tf_sub_id
+  tenant_id       = module.shared.tf_tenant_id
 }
 
 provider "azurerm" {
   alias = "managedservices"
   features {}
 
-  client_id       = "b4330e38-3476-48a6-8ae1-217f9c8f9ba3"
-  client_secret   = data.azurerm_key_vault_secret.azure_sp_token.value
-  subscription_id = "4ecd58f4-0e91-4745-85d0-e07245b52245"
-  tenant_id       = "2a89548a-7e9e-4ea6-99b6-74b88fd981c2"
+  client_id       = module.shared.tf_client_id
+  client_secret   = module.shared.azure_sp_token
+  subscription_id = module.shared.tf_m_sub_id
+  tenant_id       = module.shared.tf_tenant_id
 }
-
 
 # provider "azuread" {
 #   alias     = "dev"
@@ -111,4 +109,12 @@ provider "azuread" {
 provider "azuread" {
   alias     = "migrate"
   tenant_id = "2a89548a-7e9e-4ea6-99b6-74b88fd981c2"
+}
+
+module "shared" {
+  source = "../modules/shared"
+
+  providers = {
+    azurerm = azurerm.cli
+  }
 }

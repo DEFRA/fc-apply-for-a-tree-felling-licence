@@ -1,24 +1,24 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
-using FlaEntities = Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.FileStorage.Model;
-using Microsoft.AspNetCore.Mvc;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FileStorage.Model;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using FlaEntities = Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
 /// <summary>
 /// Handles the use case for an external system adding a document to a specified Felling Licence.
 /// </summary>
-public class AddDocumentFromExternalSystemUseCase
+public class AddDocumentFromExternalSystemUseCase : IAddDocumentFromExternalSystemUseCase
 {
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceRepository;
     private readonly IAddDocumentService _addDocumentService;
@@ -43,16 +43,7 @@ public class AddDocumentFromExternalSystemUseCase
         _options = Guard.Against.Null(options.Value);
     }
 
-    /// <summary>
-    /// Adds LIS Constraint report.
-    /// </summary>
-    /// <param name="applicationId">The Felling Licence application Id to save the document with</param>
-    /// <param name="fileBytes">Bytes of the document which has been sent which are to be saved</param>
-    /// <param name="fileName">The original filename of document which has been sent</param>
-    /// <param name="contentType">The content-type of the document which has been sent</param>
-    /// <param name="documentPurpose">The DocumentPurpose</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public async Task<IActionResult> AddLisConstraintReportAsync(
         Guid applicationId, 
         byte[] fileBytes,

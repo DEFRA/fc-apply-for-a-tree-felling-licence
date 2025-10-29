@@ -1,11 +1,7 @@
 ﻿@model Forestry.Flo.External.Web.Models.Compartment.CompartmentCreationMethodModel
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.External.Web.Models.Compartment
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @{
-    var user = new ExternalApplicant(User);
-    var isAgent = user.AccountType == Forestry.Flo.Services.Common.User.AccountTypeExternal.Agent || user.AccountType == Forestry.Flo.Services.Common.User.AccountTypeExternal.AgentAdministrator || user.AccountType == Forestry.Flo.Services.Common.User.AccountTypeExternal.FcUser;
-
     ViewData.ManuallySetBackLink(Model.ApplicationId is not null
         ? Url.Action("SelectCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationId, agencyId = Model.AgencyId })
         : Url.Action("Edit", "PropertyProfile", new { id = Model.PropertyProfileId, woodlandOwnerId = Model.WoodlandOwnerId, agencyId = Model.AgencyId })
@@ -15,11 +11,10 @@
     ViewData["Title"] = "How would you like to create compartments?";
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
 
+<div class="govuk-grid-column-two-thirds">
     <form asp-action="ChooseCreationMethod" asp-controller="Compartment"
           method="post"
           id="chooseCreationMethod">
@@ -47,7 +42,8 @@
                 <div id="choice-hint" class="govuk-hint">
                     You can upload shapefiles from your GIS system, maps drawn on paper, or create compartments using an interactive map.
                 </div>
-
+                
+                <validation asp-for="CreationMethod"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
                         <input type="radio" class="govuk-radios__input" id="uploadShapefiles" asp-for="@Model.CreationMethod" value="@CreationMethod.UploadShapefiles">
@@ -59,20 +55,6 @@
                         </div>
                     </div>
                 </div>
-                @* @if (Model.ApplicationId != null) *@
-                @* { *@
-                @*     <div class="govuk-radios" data-module="govuk-radios"> *@
-                @*         <div class="govuk-radios__item"> *@
-                @*             <input type="radio" class="govuk-radios__input" id="uploadAMap" asp-for="@Model.CreationMethod" value="@CreationMethod.UploadAMap"> *@
-                @*             <label class="govuk-label govuk-radios__label" for="uploadAMap"> *@
-                @*                 I want to upload a paper-based map *@
-                @*             </label> *@
-                @*             <div class="govuk-hint govuk-radios__hint"> *@
-                @*                 You can upload your paper map using PDF, PNG and JPEG file formats. *@
-                @*             </div> *@
-                @*         </div> *@
-                @*     </div> *@
-                @* } *@
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
                         <input type="radio" class="govuk-radios__input" id="useMap" asp-for="@Model.CreationMethod" value="@CreationMethod.UseMap">

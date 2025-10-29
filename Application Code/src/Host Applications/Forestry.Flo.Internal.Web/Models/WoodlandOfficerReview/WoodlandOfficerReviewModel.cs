@@ -39,6 +39,12 @@ public class WoodlandOfficerReviewModel : WoodlandOfficerReviewModelBase
     public bool? RecommendationForDecisionPublicRegister { get; set; }
 
     /// <summary>
+    /// Gets and sets the reason provided by the Woodland Officer for their recommendation
+    /// that the application is or is not published to the decision public register.
+    /// </summary>
+    public string? RecommendationForDecisionPublicRegisterReason { get; set; }
+
+    /// <summary>
     /// Gets and sets the name of the field manager assigned to the application
     /// </summary>
     public string? AssignedFieldManager { get; set; }

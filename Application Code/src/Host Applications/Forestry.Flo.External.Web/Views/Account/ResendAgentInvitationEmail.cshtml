@@ -1,46 +1,47 @@
 ﻿@model Forestry.Flo.External.Web.Models.UserAccount.AgencyUserModel
 
 @{
-    ViewBag.Title = "Resend agent user invitation email";
+    ViewData["Title"] = "Resend agent user invitation email";
     Layout = "_Layout";
 }
 
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">Resend agent user invite email</h1>
-    <partial name="Partials/_PageErrors" />
-
     <form method="post">
+        <input type="hidden" asp-for="AgencyId"/>
+        <input type="hidden" asp-for="AgencyName"/>
+        <input type="hidden" asp-for="Name"/>
+        <input type="hidden" asp-for="Email"/>
+
         <fieldset class="govuk-fieldset">
-            <input type="hidden" asp-for="AgencyId"/>
-            <input type="hidden" asp-for="AgencyName"/>
-            <input type="hidden" asp-for="Name"/>
-            <input type="hidden" asp-for="Email"/>
-            <div class="govuk-form-group">
-                <legend class="govuk-fieldset__legend">
-                    An invitation email has already been sent to the provided email address. Select Continue to send another invitation email again.
-                </legend>
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
+            <div class="govuk-hint">
+                An invitation email has already been sent to the provided email address. Do you wish to send another invitation email?
             </div>
             <dl class="govuk-summary-list">
-              <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">
-                  Name
-                </dt>
-                <dd class="govuk-summary-list__value">
-                  @Model.Name
-                </dd>
-              </div>
-              <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">
-                  Email address
-                </dt>
-                <dd class="govuk-summary-list__value">
-                  @Model.Email
-                </dd>
-              </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Name
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.Name
+                    </dd>
+                </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Email address
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.Email
+                    </dd>
+                </div>
             </dl>
             <div class="govuk-form-group">
-                 <div class="govuk-button-group">
+                <div class="govuk-button-group">
                     <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
                         Continue
                     </button>

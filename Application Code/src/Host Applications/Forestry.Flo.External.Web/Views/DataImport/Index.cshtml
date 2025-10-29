@@ -10,7 +10,6 @@
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
-    <partial name="Partials/_PageErrors"/>
     <partial name="Partials/_ConfirmationMessageDisplay" />
     
     <p class="govuk-body">Upload the completed template files to import your data.</p>
@@ -28,9 +27,9 @@
         
         <input type="hidden" asp-for="WoodlandOwnerId"/>
 
-        <fieldset class="govuk-fieldset">
+        <div>
             <div class="govuk-form-group" id="file-select-group">
-                <label for="data-import-files" class="govuk-label govuk-label--m">Upload licence application templates</label>
+                <label id="data-import-files-label" for="data-import-files" class="govuk-label govuk-label--m">Upload licence application templates</label>
                 <p class="govuk-hint">Please select all 3 completed template files to upload together</p>
                 <p id="data-import-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
                     <span class="govuk-visually-hidden">Error:</span><span id="data-import-error-text"></span>
@@ -67,7 +66,7 @@
                     <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" title="Return to the home page">Cancel</a>
                 </div>
             </div>
-        </fieldset>
+        </div>
     </form>
 </div>
 

@@ -1,12 +1,8 @@
-﻿using System.Text.Json;
-using AutoFixture;
-using CSharpFunctionalExtensions;
-using FluentAssertions;
+﻿using AutoFixture;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
-using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -15,12 +11,13 @@ using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
-using NodaTime.Testing;
+using System.Text.Json;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AdminOfficerReviewUseCaseTests;
@@ -38,6 +35,7 @@ public class MappingCheckUseCaseTests
     private readonly Mock<IRetrieveWoodlandOwners> _retrieveWoodlandOwnersMock = new();
     private readonly Mock<IAuditService<AdminOfficerReviewUseCaseBase>> _auditServiceMock = new();
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
 
     private readonly InternalUserContextFlaRepository _internalRepo;
     private readonly FellingLicenceApplicationsContext _fellingLicenceApplicationsContext;
@@ -122,6 +120,7 @@ public class MappingCheckUseCaseTests
             _agentAuthorityServiceMock.Object,
             _auditServiceMock.Object,
             _getConfiguredFcAreas.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             new RequestContext("test", new RequestUserModel(_internalUser.Principal)));
     }
 
@@ -132,23 +131,23 @@ public class MappingCheckUseCaseTests
 
         var result = await _sut.GetMappingCheckModelAsync(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
-        result.Value.Should().NotBeNull();
-        result.Value.ApplicationId.Should().Be(_fellingLicenceApplication.Id);
+        Assert.NotNull(result.Value);
+        Assert.Equal(_fellingLicenceApplication.Id, result.Value.ApplicationId);
 
-        result.Value.FellingAndRestockingDetails.Should().NotBeNull();
-        result.Value.FellingAndRestockingDetails.Count.Should().Be(_fellingLicenceApplication.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Count);
+        Assert.NotNull(result.Value.FellingAndRestockingDetails);
+        Assert.Equal(_fellingLicenceApplication.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Count, result.Value.FellingAndRestockingDetails.Count);
 
         // verify mapped correctly
 
         var returnedModel = result.Value.FellingAndRestockingDetails.First();
         var expectedValues = _fellingLicenceApplication.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.First();
 
-        returnedModel.Should().NotBeNull();
-        returnedModel.ApplicationId.Should().Be(_fellingLicenceApplication.Id);
-        returnedModel.CompartmentId.Should().Be(expectedValues.CompartmentId);
-        returnedModel.GISData.Should().Be(expectedValues.GISData);
+        Assert.NotNull(returnedModel);
+        Assert.Equal(_fellingLicenceApplication.Id, returnedModel.ApplicationId);
+        Assert.Equal(expectedValues.CompartmentId, returnedModel.CompartmentId);
+        Assert.Equal(expectedValues.GISData, returnedModel.GISData);
     }
 
     [Fact]
@@ -162,7 +161,7 @@ public class MappingCheckUseCaseTests
 
         var result = await _sut.GetMappingCheckModelAsync(_fellingLicenceApplication.Id, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         _retrieveUserAccountsServiceMock.VerifyNoOtherCalls();
         _retrieveWoodlandOwnersMock.VerifyNoOtherCalls();
@@ -190,17 +189,22 @@ public class MappingCheckUseCaseTests
             failureReason,
             CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var aoReviewEntity =
             _fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x =>
                 x.FellingLicenceApplicationId == _fellingLicenceApplication.Id);
 
-        aoReviewEntity.Should().NotBeNull();
-        aoReviewEntity!.MappingCheckFailureReason.Should().Be(checkPassed 
-            ? null 
-            : failureReason);
-        aoReviewEntity!.MappingCheckPassed.Should().Be(checkPassed);
+        Assert.NotNull(aoReviewEntity);
+        if (checkPassed)
+        {
+            Assert.Null(aoReviewEntity!.MappingCheckFailureReason);
+        }
+        else
+        {
+            Assert.Equal(failureReason, aoReviewEntity!.MappingCheckFailureReason);
+        }
+        Assert.Equal(checkPassed, aoReviewEntity!.MappingCheckPassed);
             
         _auditServiceMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -231,9 +235,9 @@ public class MappingCheckUseCaseTests
             failureReason,
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
-        _fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x => x.FellingLicenceApplicationId == invalidId).Should().BeNull();
+        Assert.Null(_fellingLicenceApplicationsContext.AdminOfficerReviews.FirstOrDefault(x => x.FellingLicenceApplicationId == invalidId));
 
         _auditServiceMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -287,7 +291,7 @@ public class MappingCheckUseCaseTests
             "reason",
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         
         var error = correctStatus is false || reviewInProgress is false 
             ? "Cannot update admin officer review for application not in submitted state" 
@@ -372,9 +376,7 @@ public class MappingCheckUseCaseTests
                     CompartmentNumber = _fixture.Create<string>(),
                     SubCompartmentName = _fixture.Create<string>(),
                     TotalHectares = _fixture.Create<double>(),
-                    ConfirmedTotalHectares = _fixture.Create<double>(),
                     WoodlandName = _fixture.Create<string>(),
-                    Designation = _fixture.Create<string>(),
                     GISData = _fixture.Create<string>(),
                     PropertyProfileId = propertyProfileId,
                     SubmittedFlaPropertyDetail = application.SubmittedFlaPropertyDetail,

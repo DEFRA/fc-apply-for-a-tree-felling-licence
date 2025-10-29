@@ -1,11 +1,10 @@
-﻿using System.Text;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Extensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
-using Forestry.Flo.Services.Applicants.Repositories;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -16,6 +15,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
@@ -25,7 +25,7 @@ using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 
-public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
+public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditionsUseCase
 {
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
     private readonly ICalculateConditions _conditionsService;
@@ -54,13 +54,15 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
         IGetConfiguredFcAreas getConfiguredFcAreasService,
         IClock clock,
         IOptions<ExternalApplicantSiteOptions> settings,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<ConditionsUseCase> logger)
         : base(internalUserAccountService,
             externalUserAccountService,
             fellingLicenceApplicationInternalRepository, 
             woodlandOwnerService,
             agentAuthorityService,
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService, 
+            woodlandOfficerReviewSubStatusService)
     {
         _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _conditionsService = Guard.Against.Null(conditionsService);
@@ -74,6 +76,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<Result<ConditionsViewModel>> GetConditionsAsync(
         Guid applicationId,
         InternalUser user,
@@ -133,6 +136,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(model);
     }
 
+    /// <inheritdoc />
     public async Task<Result> SaveConditionStatusAsync(
         Guid applicationId,
         InternalUser user,
@@ -176,6 +180,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success();
     }
 
+    /// <inheritdoc />
     public async Task<Result<ConditionsResponse>> GenerateConditionsAsync(
         Guid applicationId,
         InternalUser user,
@@ -214,6 +219,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
         return result;
     }
 
+    /// <inheritdoc />
     public async Task<Result> SaveConditionsAsync(
         Guid applicationId,
         InternalUser user,
@@ -247,6 +253,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success();
     }
 
+    /// <inheritdoc />
     public async Task<Result> SendConditionsToApplicantAsync(
         Guid applicationId,
         InternalUser user,
@@ -293,7 +300,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
             conditionsText = ["No conditions apply to the application"];
         }
 
-        var externalViewURL = $"{_settings.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var externalViewURL = $"{_settings.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
         
         var adminHubFooter = await GetAdminHubAddressDetailsAsync(getDetails.Value.AdministrativeRegion, cancellationToken)
                 .ConfigureAwait(false);
@@ -308,7 +315,8 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase
             PropertyName = getDetails.Value.PropertyName,
             SenderName = user.FullName,
             SenderEmail = user.EmailAddress,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
         };
 
         var notificationResult = await _notificationsService.SendNotificationAsync(

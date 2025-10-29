@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using Castle.Components.DictionaryAdapter;
-using FluentAssertions;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
 using Forestry.Flo.Services.Gis.Models.Esri.RequestObjects.Form;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses;
@@ -29,6 +28,10 @@ public partial class BaseServicesTests
         },
         UnionService = new BaseEsriServiceConfig {
             Path = "union"
+        },
+        AreaService = new BaseEsriServiceConfig
+        {
+            Path = "area"
         },
         ProjectService = new ProjectServiceSettings {
             Path = "project",
@@ -297,8 +300,8 @@ public partial class BaseServicesTests
 
         var result = await classUnderTest.GetTokenString();
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to log into server");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to log into server", result.Error);
         _mockHttpHandler.Verify();
     }
 
@@ -311,8 +314,8 @@ public partial class BaseServicesTests
 
         var result = await classUnderTest.GetTokenString();
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.HasValue.Should().BeTrue();
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.HasValue);
         _mockHttpHandler.Protected().Verify("SendAsync", Times.AtMostOnce(), ItExpr.IsAny<HttpRequestMessage>(),
             ItExpr.IsAny<CancellationToken>());
     }
@@ -345,8 +348,8 @@ public partial class BaseServicesTests
 
         var result = await classUnderTest.GetTokenString();
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.HasValue.Should().BeTrue();
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.HasValue);
         _mockHttpHandler.Verify();
     }
 
@@ -378,8 +381,8 @@ public partial class BaseServicesTests
 
         var result = await classUnderTest.GetTokenString();
 
-        result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Be("Unable to log into server");
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Unable to log into server", result.Error);
         _mockHttpHandler.Verify();
     }
 
@@ -390,7 +393,7 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryWithConversionAsync<string>(new BaseParameter(), "path", false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
 
@@ -410,8 +413,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryWithConversionAsync<string>(new BaseParameter(), "https://www.AGOL.com/", true);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to log into server");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to log into server", result.Error);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -431,8 +434,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryWithConversionAsync<string>(new BaseParameter(), "https://www.AGOL.com/", false);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", result.Error);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -444,7 +447,7 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryAsync(new BaseParameter(), "path", false, false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -463,8 +466,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryAsync(new BaseParameter(), "https://www.AGOL.com/", false, false);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", result.Error);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -490,8 +493,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryAsync(new BaseParameter(), "https://www.AGOL.com/", true, false);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(html);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(html, result.Value);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -517,8 +520,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryAsync(new BaseParameter(), "https://www.AGOL.com/", false, false);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(html);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(html, result.Value);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -544,8 +547,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryAsync(new BaseParameter(), "https://www.AGOL.com/", false, false);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("ESRI Error-> Unable to complete operation.: Unable to perform query operation.)");
+        Assert.True(result.IsFailure);
+        Assert.Equal("ESRI Error-> Unable to complete operation.: Unable to perform query operation.)", result.Error);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -564,8 +567,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryWithConversionAsync<string>(new BaseParameter(), "https://www.AGOL.com/", false);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("This is an error message");
+        Assert.True(result.IsFailure);
+        Assert.Equal("This is an error message", result.Error);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -590,8 +593,8 @@ public partial class BaseServicesTests
 
         var result = await SUT.PostQueryWithConversionAsync<LabelPointResponse>(new BaseParameter(), "https://www.AGOL.com/", false);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
         _mockHttpHandler.VerifyAll();
     }
 
@@ -608,7 +611,7 @@ public partial class BaseServicesTests
         var SUT = CreateSut();
 
         var result = SUT.CheckForEsriErrors(message);
-        result.HasValue.Should().BeTrue();
+        Assert.True(result.HasValue);
     }
 
     [Fact]
@@ -628,7 +631,7 @@ public partial class BaseServicesTests
 
         var result = await classUnderTest.GetEsriGeneratedImageAsync("https://paul.com/image.png", 1, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
         _mockHttpHandler.Verify();
         _mockHttpHandler.Protected().Verify("SendAsync", Times.Exactly(3), ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://paul.com/image.png")),
             ItExpr.IsAny<CancellationToken>());
@@ -646,6 +649,6 @@ public partial class BaseServicesTests
         var SUT = CreateSut();
 
         var result = SUT.CheckForEsriErrors(message);
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 }

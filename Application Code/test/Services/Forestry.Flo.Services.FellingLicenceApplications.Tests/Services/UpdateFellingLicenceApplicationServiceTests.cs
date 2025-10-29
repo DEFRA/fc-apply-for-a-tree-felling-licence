@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
-using FluentAssertions;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Tests.Common;
@@ -77,12 +77,12 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.DateReceived.Should().Be(requestedTime);
+        Assert.True(updatedApp.HasValue);
+        Assert.Equal(requestedTime, updatedApp.Value.DateReceived);
     }
 
     [Theory]
@@ -96,15 +96,15 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
+        Assert.True(updatedApp.HasValue);
 
         var expectedCitizenCharterDate = updatedApp.Value.DateReceived!.Value.Add(Options.CitizensCharterDateLength);
 
-        updatedApp.Value.CitizensCharterDate.Should().Be(expectedCitizenCharterDate);
+        Assert.Equal(expectedCitizenCharterDate, updatedApp.Value.CitizensCharterDate);
     }
 
     [Theory]
@@ -113,11 +113,11 @@ public class UpdateFellingLicenceApplicationServiceTests
     {
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeFalse();
+        Assert.False(updatedApp.HasValue);
     }
 
     [Theory]
@@ -149,12 +149,12 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.UpdateDateReceivedAsync(application.Id, requestedTime, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.DateReceived.Should().BeNull();
+        Assert.True(updatedApp.HasValue);
+        Assert.Null(updatedApp.Value.DateReceived);
     }
 
     [Theory, AutoMoqData]
@@ -168,12 +168,12 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.SetApplicationApproverAsync(application.Id, approverId, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.ApproverId.Should().Be(approverId);
+        Assert.True(updatedApp.HasValue);
+        Assert.Equal(approverId, updatedApp.Value.ApproverId);
     }
 
     [Fact]
@@ -187,11 +187,150 @@ public class UpdateFellingLicenceApplicationServiceTests
 
         var result = await _sut.SetApplicationApproverAsync(application.Id, null, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
 
-        updatedApp.HasValue.Should().BeTrue();
-        updatedApp.Value.ApproverId.Should().BeNull();
+        Assert.True(updatedApp.HasValue);
+        Assert.Null(updatedApp.Value.ApproverId);
     }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsync_ReturnsFailure_WhenRepositoryFails(
+        FellingLicenceApplication application,
+        EnvironmentalImpactAssessmentRecord eiaRecord)
+    {
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsync_UpdatesEnvironmentalImpactAssessmentRecord(
+        EnvironmentalImpactAssessmentRecord eiaRecord)
+    {
+        var application = FixtureInstance.Create<FellingLicenceApplication>();
+        _fellingLicenceApplicationsContext.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
+        Assert.True(updatedApp.HasValue);
+        Assert.NotNull(updatedApp.Value.EnvironmentalImpactAssessment);
+        Assert.Equal(eiaRecord.HasApplicationBeenCompleted, updatedApp.Value.EnvironmentalImpactAssessment!.HasApplicationBeenCompleted);
+        Assert.Equal(eiaRecord.HasApplicationBeenSent, updatedApp.Value.EnvironmentalImpactAssessment!.HasApplicationBeenSent);
+    }
+    [Theory, AutoMoqData]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ReturnsFailure_WhenRepositoryFails(
+        FellingLicenceApplication application,
+        EnvironmentalImpactAssessmentAdminOfficerRecord eiaRecord)
+    {
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+    }
+
+    [Fact]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ValidatesMutualExclusivity()
+    {
+        var application = FixtureInstance.Create<FellingLicenceApplication>();
+        _fellingLicenceApplicationsContext.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Both HasTheEiaFormBeenReceived and AreAttachedFormsCorrect set (invalid)
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = CSharpFunctionalExtensions.Maybe<bool>.From(true),
+            AreAttachedFormsCorrect = CSharpFunctionalExtensions.Maybe<bool>.From(true),
+            EiaTrackerReferenceNumber = CSharpFunctionalExtensions.Maybe<string>.None
+        };
+
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+    }
+
+    [Fact]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_ValidatesRequiredReferenceNumber()
+    {
+        var application = FixtureInstance.Create<FellingLicenceApplication>();
+        _fellingLicenceApplicationsContext.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // HasTheEiaFormBeenReceived is true, but EiaTrackerReferenceNumber is missing (invalid)
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = CSharpFunctionalExtensions.Maybe<bool>.From(true),
+            AreAttachedFormsCorrect = CSharpFunctionalExtensions.Maybe<bool>.None,
+            EiaTrackerReferenceNumber = CSharpFunctionalExtensions.Maybe<string>.None
+        };
+
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+    }
+
+    [Fact]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_Succeeds_WithValidMutualExclusivityAndReferenceNumber()
+    {
+        var application = FixtureInstance.Create<FellingLicenceApplication>();
+        _fellingLicenceApplicationsContext.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Only HasTheEiaFormBeenReceived is set and EiaTrackerReferenceNumber is present (valid)
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = CSharpFunctionalExtensions.Maybe<bool>.From(true),
+            AreAttachedFormsCorrect = CSharpFunctionalExtensions.Maybe<bool>.None,
+            EiaTrackerReferenceNumber = CSharpFunctionalExtensions.Maybe<string>.From("TRACK-123")
+        };
+
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_Succeeds_WithAttachedFormsCorrectAndReferenceNumber()
+    {
+        var application = FixtureInstance.Create<FellingLicenceApplication>();
+        _fellingLicenceApplicationsContext.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Only AreAttachedFormsCorrect is set and EiaTrackerReferenceNumber is present (valid)
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = CSharpFunctionalExtensions.Maybe<bool>.None,
+            AreAttachedFormsCorrect = CSharpFunctionalExtensions.Maybe<bool>.From(true),
+            EiaTrackerReferenceNumber = CSharpFunctionalExtensions.Maybe<string>.From("TRACK-456")
+        };
+
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync_Succeeds_WhenNeitherBoolIsTrue_AndReferenceNumberIsNotRequired()
+    {
+        var application = FixtureInstance.Create<FellingLicenceApplication>();
+        _fellingLicenceApplicationsContext.Add(application);
+        await _fellingLicenceApplicationsContext.SaveChangesAsync();
+
+        // Neither HasTheEiaFormBeenReceived nor AreAttachedFormsCorrect is true, reference number not required
+        var eiaRecord = new EnvironmentalImpactAssessmentAdminOfficerRecord
+        {
+            HasTheEiaFormBeenReceived = CSharpFunctionalExtensions.Maybe<bool>.From(false),
+            AreAttachedFormsCorrect = CSharpFunctionalExtensions.Maybe<bool>.None,
+            EiaTrackerReferenceNumber = CSharpFunctionalExtensions.Maybe<string>.None
+        };
+
+        var result = await _sut.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(application.Id, eiaRecord, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+    }
+
 }

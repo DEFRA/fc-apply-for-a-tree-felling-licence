@@ -36,4 +36,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\species.csv" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Migrations\FellingLicenceApplicationsContextModelSnapshot.Attributes.cs">
+      <DependentUpon>FellingLicenceApplicationsContextModelSnapshot.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>

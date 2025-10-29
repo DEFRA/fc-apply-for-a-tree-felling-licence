@@ -1,6 +1,7 @@
-﻿using System.Security.Claims;
-using Forestry.Flo.Services.Common;
+﻿using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
+using System.Security.Claims;
 
 namespace Forestry.Flo.Tests.Common;
 
@@ -18,15 +19,30 @@ public static class UserFactory
         bool hasAcceptedTermsAndConditionsAndPrivacyPolicy = true,
         bool isFcUser = false,
         string? woodlandOwnerName = null,
-        bool invited = false)
+        bool invited = false,
+        AuthenticationProvider? provider = null)
     {
         if (string.IsNullOrWhiteSpace(identityProviderId))
             identityProviderId = Guid.NewGuid().ToString();
         if (string.IsNullOrWhiteSpace(emailAddress))
             emailAddress = Guid.NewGuid().ToString();
         var claims = new List<Claim>();
-        claims.Add(new Claim(ClaimTypes.NameIdentifier, identityProviderId));
-        claims.Add(new Claim(IdentityProviderEmailClaimType, emailAddress));
+
+        provider ??= AuthenticationProvider.OneLogin;
+
+        switch (provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                claims.Add(new Claim(OneLoginPrincipalClaimTypes.NameIdentifier, identityProviderId));
+                claims.Add(new Claim(OneLoginPrincipalClaimTypes.EmailAddress, emailAddress));
+                claims.Add(new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin)));
+                break;
+            case AuthenticationProvider.Azure:
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, identityProviderId));
+                claims.Add(new Claim(FloClaimTypes.Email, emailAddress));
+                claims.Add(new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure)));
+                break;
+        }
 
         if (hasAcceptedTermsAndConditionsAndPrivacyPolicy)
         {
@@ -77,15 +93,31 @@ public static class UserFactory
         Guid? localAccountId = null,
         string? username = null,
         Services.Common.User.AccountTypeInternal accountTypeInternal =
-            Services.Common.User.AccountTypeInternal.FcStaffMember)
+            Services.Common.User.AccountTypeInternal.FcStaffMember,
+        AuthenticationProvider? provider = null,
+        bool canApprove = false)
     {
         if (string.IsNullOrWhiteSpace(identityProviderId))
             identityProviderId = Guid.NewGuid().ToString();
         if (string.IsNullOrWhiteSpace(emailAddress))
             emailAddress = "test@forestrycommission.gov.uk";
         var claims = new List<Claim>();
-        claims.Add(new Claim(ClaimTypes.NameIdentifier, identityProviderId));
-        claims.Add(new Claim(IdentityProviderEmailClaimType, emailAddress));
+
+        provider ??= AuthenticationProvider.OneLogin;
+
+        switch (provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                claims.Add(new Claim(OneLoginPrincipalClaimTypes.NameIdentifier, identityProviderId));
+                claims.Add(new Claim(OneLoginPrincipalClaimTypes.EmailAddress, emailAddress));
+                claims.Add(new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin)));
+                break;
+            case AuthenticationProvider.Azure:
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, identityProviderId));
+                claims.Add(new Claim(FloClaimTypes.Email, emailAddress));
+                claims.Add(new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure)));
+                break;
+        }
 
         var identity = new ClaimsIdentity(claims, "test-setup");  //TODO - set authentication type to match what B2C sets
         var result = new ClaimsPrincipal(identity);
@@ -97,6 +129,7 @@ public static class UserFactory
             if (string.IsNullOrWhiteSpace(username))
                 username = Guid.NewGuid().ToString();
             localClaims.Add(new Claim(FloClaimTypes.UserName, username));
+            localClaims.Add(new Claim(FloClaimTypes.UserCanApproveApplications, canApprove.ToString()));
 
             var localIdentity = new ClaimsIdentity(localClaims, FloClaimTypes.ClaimsIdentityAuthenticationType);
             result.AddIdentity(localIdentity);

@@ -2,22 +2,29 @@
 using Forestry.Flo.External.Web.Models;
 using Forestry.Flo.External.Web.Models.Home;
 using Forestry.Flo.External.Web.Services;
+using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
+using GovUk.OneLogin.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
+using AuthenticationOptions = Forestry.Flo.Services.Common.Infrastructure.AuthenticationOptions;
 
 namespace Forestry.Flo.External.Web.Controllers;
 
 public partial class HomeController : Controller
 {
-    private readonly ILogger<HomeController> _logger;
+    private readonly AuthenticationOptions _authenticationOptions;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(
+        IOptions<AuthenticationOptions> authOptions)
     {
-        _logger = logger ?? new NullLogger<HomeController>();;
+        ArgumentNullException.ThrowIfNull(authOptions.Value);
+        _authenticationOptions = authOptions.Value;
     }
     
     // GET Home/AcceptInvitation?email=some@email.com&token=sometoken
@@ -27,7 +34,7 @@ public partial class HomeController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        if (user.IsLoggedIn && user.HasCompletedAccountRegistration)
+        if (user is { IsLoggedIn: true, HasCompletedAccountRegistration: true })
         {
             return RedirectToAction(nameof(WoodlandOwner));
         }
@@ -49,7 +56,7 @@ public partial class HomeController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        if (user.IsLoggedIn && user.HasCompletedAccountRegistration)
+        if (user is { IsLoggedIn: true, HasCompletedAccountRegistration: true })
         {
             return RedirectToAction(nameof(WoodlandOwner));
         }
@@ -81,26 +88,50 @@ public partial class HomeController : Controller
 
     public IActionResult SignIn()
     {
+        var scheme = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.Azure => FloAuthenticationScheme.SignIn,
+            AuthenticationProvider.OneLogin => OneLoginDefaults.AuthenticationScheme,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
         return Challenge(new AuthenticationProperties
         {
             RedirectUri = Url.Action(nameof(Index)),
-        }, "SignIn");
+        }, scheme);
     }
 
     public IActionResult SignUp()
     {
+        var scheme = _authenticationOptions.Provider switch
+        {
+            AuthenticationProvider.Azure => FloAuthenticationScheme.SignUp,
+            AuthenticationProvider.OneLogin => OneLoginDefaults.AuthenticationScheme,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
         return Challenge(new AuthenticationProperties
         {
             RedirectUri = Url.Action(nameof(Index)),
-        }, "SignUp");
+        }, scheme);
     }
 
-    public async Task Logout()
+    public async Task<IActionResult> Logout([FromServices] IOptions<AuthenticationOptions> options)
     {
-        await HttpContext.SignOutAsync();
-        await HttpContext.SignOutAsync("SignIn");
-        await HttpContext.SignOutAsync("SignUp");
-        HttpContext.Response.Headers.Add("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+        switch (options.Value.Provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return SignOut(OneLoginDefaults.AuthenticationScheme);
+            case AuthenticationProvider.Azure:
+                await HttpContext.SignOutAsync();
+                await HttpContext.SignOutAsync("SignIn");
+                await HttpContext.SignOutAsync("SignUp");
+                HttpContext.Response.Headers.Append("Clear-Site-Data", "\"cookies\", \"storage\", \"cache\"");
+                return SignOut();
+            default:
+                return SignOut();
+        }
     }
 
     public IActionResult Privacy()
@@ -126,7 +157,6 @@ public partial class HomeController : Controller
     [Authorize, RequireCompletedRegistration]
     public async Task<IActionResult> WoodlandOwner(
         Guid woodlandOwnerId,
-        [FromServices] WoodlandOwnerHomePageUseCase useCase,
         [FromServices] CreateFellingLicenceApplicationUseCase applicationUseCase,
         CancellationToken cancellationToken)
     {
@@ -178,7 +208,7 @@ public partial class HomeController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> AccountError()
+    public IActionResult AccountError()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }

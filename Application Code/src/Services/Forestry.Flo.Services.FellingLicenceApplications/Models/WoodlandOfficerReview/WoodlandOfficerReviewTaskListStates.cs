@@ -10,10 +10,11 @@ public record WoodlandOfficerReviewTaskListStates(
     InternalReviewStepStatus FellingAndRestockingStepStatus,
     InternalReviewStepStatus ConditionsStepStatus,
     InternalReviewStepStatus ConsultationStepStatus,
+    InternalReviewStepStatus CompartmentDesignationsStepStatus,
     InternalReviewStepStatus LarchApplicationStatus,
     InternalReviewStepStatus LarchFlyoverStatus,
-
-InternalReviewStepStatus FinalChecksStepStatus) : ICompletable
+    InternalReviewStepStatus EiaScreeningStatus,
+    InternalReviewStepStatus FinalChecksStepStatus) : ICompletable
 {
     public readonly InternalReviewStepStatus PublicRegisterStepStatus = PublicRegisterStepStatus;
     public readonly InternalReviewStepStatus SiteVisitStepStatus = SiteVisitStepStatus;
@@ -21,6 +22,7 @@ InternalReviewStepStatus FinalChecksStepStatus) : ICompletable
     public readonly InternalReviewStepStatus FellingAndRestockingStepStatus = FellingAndRestockingStepStatus;
     public readonly InternalReviewStepStatus ConditionsStepStatus = ConditionsStepStatus;
     public readonly InternalReviewStepStatus ConsultationStepStatus = ConsultationStepStatus;
+    public readonly InternalReviewStepStatus CompartmentDesignationsStepStatus = CompartmentDesignationsStepStatus;
     public readonly InternalReviewStepStatus LarchApplicationStatus = LarchApplicationStatus;
     public readonly InternalReviewStepStatus LarchFlyoverStatus = LarchFlyoverStatus;
     public readonly InternalReviewStepStatus FinalChecksStepStatus = FinalChecksStepStatus;
@@ -30,7 +32,10 @@ InternalReviewStepStatus FinalChecksStepStatus) : ICompletable
         SiteVisitStepStatus is InternalReviewStepStatus.Completed &&
         Pw14ChecksStepStatus is InternalReviewStepStatus.Completed &&
         FellingAndRestockingStepStatus is InternalReviewStepStatus.Completed &&
+        CompartmentDesignationsStepStatus is InternalReviewStepStatus.Completed &&
         (LarchApplicationStatus is InternalReviewStepStatus.Completed || LarchApplicationStatus is InternalReviewStepStatus.NotRequired) &&
-        (LarchFlyoverStatus is InternalReviewStepStatus.Completed || LarchApplicationStatus is InternalReviewStepStatus.NotRequired) &&
-        ConditionsStepStatus is InternalReviewStepStatus.Completed;  // TODO add the two new steps when those pages are implemented
+        (LarchFlyoverStatus is InternalReviewStepStatus.Completed || LarchFlyoverStatus is InternalReviewStepStatus.NotRequired) &&
+        ConditionsStepStatus is InternalReviewStepStatus.Completed &&
+        EiaScreeningStatus is InternalReviewStepStatus.Completed or InternalReviewStepStatus.NotRequired &&
+        (ConsultationStepStatus is InternalReviewStepStatus.NotRequired || ConsultationStepStatus is InternalReviewStepStatus.Completed);  // TODO add the two new steps when those pages are implemented
 }

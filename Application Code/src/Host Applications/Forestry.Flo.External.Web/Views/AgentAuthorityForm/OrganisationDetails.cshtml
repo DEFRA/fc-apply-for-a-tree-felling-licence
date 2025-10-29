@@ -1,15 +1,19 @@
 ﻿@model Forestry.Flo.External.Web.Models.AgentAuthorityForm.OrganisationDetailsFormModel
 
-<div class="govuk-grid-column-full">
-
-    <h1 class="govuk-heading-l">What are the organisation details of this applicant?</h1>
-        
-    <partial name="Partials/_PageErrors" />
+@{
+    ViewData["Title"] = "What are the organisation details of this applicant?";
+}
+<div class="govuk-grid-column-two-thirds">
 
     <form method="post">
 
         <fieldset class="govuk-fieldset">
-                       
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
+
             <div class="govuk-form-group">
                 <label asp-for="OrganisationName" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationName"></validation>

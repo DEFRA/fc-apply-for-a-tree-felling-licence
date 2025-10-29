@@ -4,9 +4,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
 {
     public enum DocumentPurpose
     {
-        [Display(Name = "Attachment")]
+        [Display(Name = "Supporting document")]
         Attachment,
-        [Display(Name = "Application document")]
+        [Display(Name = "Licence document")]
         ApplicationDocument,
         [Display(Name = "Correspondence")]
         Correspondence,
@@ -14,9 +14,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         FcLisConstraintReport,
         [Display(Name = "External constraint report")]
         ExternalLisConstraintReport,
-        [Display(Name = "Site Visit Attachment")]
+        [Display(Name = "Site visit evidence")]
         SiteVisitAttachment,
-        [Display(Name = "Consultation Attachment")]
+        [Display(Name = "Consultation attachment")]
         ConsultationAttachment,
+        [Display(Name = "Environmental Impact Assessment")]
+        EiaAttachment,
+        [Display(Name = "WMP document")]
+        WmpDocument
     }
 }

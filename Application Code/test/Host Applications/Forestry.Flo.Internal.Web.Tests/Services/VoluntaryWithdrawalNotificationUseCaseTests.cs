@@ -7,7 +7,6 @@ using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
@@ -19,7 +18,7 @@ using NodaTime;
 using System.Text.Json;
 using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccountModel;
 using VoluntaryWithdrawalNotificationOptions = Forestry.Flo.Internal.Web.Infrastructure.VoluntaryWithdrawalNotificationOptions;
-using VoluntaryWithdrawalNotificationUseCase = Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.VoluntaryWithdrawalNotificationUseCase;
+using VoluntaryWithdrawalNotificationUseCase = Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api.VoluntaryWithdrawalNotificationUseCase;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 
@@ -28,7 +27,6 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
     private readonly Mock<IClock> _clockMock;
     private readonly Mock<IVoluntaryWithdrawalNotificationService> _withdrawalNotificationApplicationsMock;
     private readonly Mock<IRetrieveUserAccountsService> _externalAccountServiceMock;
-    private readonly Mock<IUserAccountService> _internalAccountServiceMock;
     private readonly Mock<ISendNotifications> _notificationsMock;
     private readonly Mock<IOptions<VoluntaryWithdrawalNotificationOptions>> _settingsMock;
     private readonly Mock<IOptions<ExternalApplicantSiteOptions>> _externalSiteOptionsMock;
@@ -44,7 +42,6 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
     public VoluntaryWithdrawalNotificationUseCaseTests()
     {
         _clockMock = new Mock<IClock>();
-        _internalAccountServiceMock = new Mock<IUserAccountService>();
         _externalAccountServiceMock = new Mock<IRetrieveUserAccountsService>();
         _withdrawalNotificationApplicationsMock = new Mock<IVoluntaryWithdrawalNotificationService>();
         _notificationsMock = new Mock<ISendNotifications>();
@@ -134,7 +131,6 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
     private VoluntaryWithdrawalNotificationUseCase CreateSut()
     {
         _clockMock.Reset();
-        _internalAccountServiceMock.Reset();
         _withdrawalNotificationApplicationsMock.Reset();
         _externalAccountServiceMock.Reset();
         _notificationsMock.Reset();
@@ -153,7 +149,6 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
             _withdrawalNotificationApplicationsMock.Object,
             _settingsMock.Object,
             new NullLogger<VoluntaryWithdrawalNotificationUseCase>(),
-            _internalAccountServiceMock.Object,
             _externalAccountServiceMock.Object,
             _notificationsMock.Object,
             new RequestContext(

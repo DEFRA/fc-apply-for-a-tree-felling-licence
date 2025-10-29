@@ -1,0 +1,34 @@
+serverDefinitions:
+  enabled: true
+  servers:
+    firstServer:
+      Name: "Development Database"
+      Group: "Dev"
+      Port: 5432
+      Username: "qxlva"
+      Host: "dev-flo-postgresql.dev-flo"
+      SSLMode: "prefer"
+      MaintenanceDB: "postgres"
+    secondServer:
+      Name: "Test Database"
+      Group: "Test"
+      Port: 5432
+      Username: "qxlva"
+      Host: "test-flo-postgresql.test-flo"
+      SSLMode: "prefer"
+      MaintenanceDB: "postgres"
+    thirdServer:
+      Name: "Staging Database"
+      Group: "Staging"
+      Port: 5432
+      Username: "qxlva"
+      Host: "staging-flo.postgres.database.azure.com"
+      SSLMode: "prefer"
+      MaintenanceDB: "postgres"
+
+persistentVolume:
+  size: 50Mi
+
+env:
+  email: "admin@qxlva.com"
+  password: "pL%yMC!FUi*VuJUdXy4&#V9U"

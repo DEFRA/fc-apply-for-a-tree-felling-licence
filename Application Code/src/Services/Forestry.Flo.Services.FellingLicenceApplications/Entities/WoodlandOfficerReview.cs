@@ -144,6 +144,14 @@ public class WoodlandOfficerReview
     public bool? LarchCheckComplete { get; set; }
 
     /// <summary>
+    /// Gets and sets whether the EIA screening has been completed.
+    /// </summary>
+    /// <remarks>
+    /// This corresponds to the EIA task on the WO review task list.
+    /// </remarks>
+    public bool? EiaScreeningComplete { get; set; }
+
+    /// <summary>
     /// Gets and sets whether the Woodland Officer has completed the review.
     /// </summary>
     public bool WoodlandOfficerReviewComplete { get; set; }
@@ -160,17 +168,47 @@ public class WoodlandOfficerReview
     public bool? RecommendationForDecisionPublicRegister { get; set; }
 
     /// <summary>
+    /// Gets and sets the reason provided by the Woodland Officer for their recommendation
+    /// that the application is or is not published to the decision public register.
+    /// </summary>
+    public string? RecommendationForDecisionPublicRegisterReason { get; set; }
+
+    /// <summary>
     /// Gets and sets whether the Woodland Officer has indicated that a site visit is not needed.
     /// </summary>
-    public bool SiteVisitNotNeeded { get; set; }
+    public bool? SiteVisitNeeded { get; set; }
 
     /// <summary>
-    /// Gets and sets the date and time that the site visit artefacts were created, or null if they have not been.
+    /// Gets and sets a flag indicating that the site visit arrangements have been made.
     /// </summary>
-    public DateTime? SiteVisitArtefactsCreated { get; set; }
+    public bool? SiteVisitArrangementsMade { get; set; }
 
     /// <summary>
-    /// Gets and sets the date and time that the site visit notes were retrieved from ESRI, or null if they have not been.
+    /// Gets and sets a flag indicating that the site visit has been completed and resulting notes/attachments have been uploaded.
     /// </summary>
-    public DateTime? SiteVisitNotesRetrieved { get; set; }
+    public bool SiteVisitComplete { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the site visit evidence metadata.
+    /// </summary>
+    public IList<SiteVisitEvidence>? SiteVisitEvidences { get; set; } = new List<SiteVisitEvidence>();
+
+    /// <summary>
+    /// Gets and sets whether any consultations are required for this application.
+    /// </summary>
+    public bool? ApplicationNeedsConsultations { get; set; }
+
+    /// <summary>
+    /// Gets and sets whether the Woodland Officer has completed the consultations stage of the review.
+    /// </summary>
+    public bool ConsultationsComplete { get; set; }
+
+    /// <summary>
+    /// Gets and sets whether the Woodland Officer has completed the designations stage of the review.
+    /// </summary>
+    public bool DesignationsComplete { get; set; }
+
+    /// Gets and sets the felling and restocking amendment reviews associated with this WO review.
+    /// </summary>
+    public IList<FellingAndRestockingAmendmentReview> FellingAndRestockingAmendmentReviews { get; set; } = new List<FellingAndRestockingAmendmentReview>();
 }

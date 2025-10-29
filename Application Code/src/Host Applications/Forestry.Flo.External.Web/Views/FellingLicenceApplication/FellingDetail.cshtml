@@ -1,7 +1,5 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.External.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.Services.Common.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedFellingDetailModel
 
@@ -23,12 +21,11 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
+<div class="govuk-grid-column-two-thirds">
 
     <form id="felling-detail-form" method="post" asp-controller="FellingLicenceApplication" asp-action="FellingDetail">
 
@@ -113,7 +110,7 @@
                                         Explain how you will use tree marking. For example 'Red crosses to show the boundary of the area to be felled'.
                                     </label>
                                     <validation asp-for="@Model.TreeMarking"></validation>
-                                    <input type="text" class="@GdsConstants.GdsInputCssClass" asp-for="TreeMarking" />
+                                    <input type="text" class="@GdsConstants.GdsInputCssClass" asp-for="TreeMarking" tabindex="0" />
                                 </div>
                             </div>
 
@@ -186,7 +183,7 @@
                                         TPO number
                                     </label>
                                     <validation asp-for="@Model.TreePreservationOrderReference"></validation>
-                                    <input class="@GdsConstants.GdsInputCssClass" asp-for="TreePreservationOrderReference" />
+                                    <input class="@GdsConstants.GdsInputCssClass" asp-for="TreePreservationOrderReference" tabindex="0" />
                                 </div>
                             </div>
 
@@ -221,7 +218,7 @@
                                         Conservation area reference
                                     </label>
                                     <validation asp-for="@Model.ConservationAreaReference"></validation>
-                                    <input class="@GdsConstants.GdsInputCssClass" asp-for="ConservationAreaReference" />
+                                    <input class="@GdsConstants.GdsInputCssClass" asp-for="ConservationAreaReference" tabindex="0" />
                                 </div>
                             </div>
 

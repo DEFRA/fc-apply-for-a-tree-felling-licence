@@ -1,12 +1,10 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
-using Forestry.Flo.External.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.MassTransit.Messages;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.Notifications.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.Extensions.Options;
 
@@ -28,7 +26,6 @@ public class CalculateCentrePointUseCase
         ISubmitFellingLicenceService submitFellingLicenceService,
         IGetFellingLicenceApplicationForExternalUsers getFellingLicenceApplicationService,
         IUpdateCentrePoint updateCentrePoint,
-        ISendNotifications sendNotifications,
         ILogger<CalculateCentrePointUseCase> logger,
         IOptions<InternalUserSiteOptions> internalUserSiteOptions,
         IPropertyProfileRepository propertyProfileRepository)
@@ -38,7 +35,6 @@ public class CalculateCentrePointUseCase
         ArgumentNullException.ThrowIfNull(submitFellingLicenceService);
         ArgumentNullException.ThrowIfNull(getFellingLicenceApplicationService);
         ArgumentNullException.ThrowIfNull(updateCentrePoint);
-        ArgumentNullException.ThrowIfNull(sendNotifications);
         ArgumentNullException.ThrowIfNull(internalUserSiteOptions);
         ArgumentNullException.ThrowIfNull(propertyProfileRepository);
 
@@ -143,6 +139,8 @@ public class CalculateCentrePointUseCase
 
         if (updateFla.IsFailure)
         {
+            _logger.LogError("Unable to update the Area Code, Admin Region, Centre Point, and OS grid reference for application of id {ApplicationId}, with error {Error}",
+                message.ApplicationId, updateFla.Error);
             errorMessage = $"Unable to update the Area Code, Admin Region, Centre Point, and OS grid reference for application of id {message.ApplicationId}, with error {updateFla.Error}";
             await PublishCentrePointFailures(message, errorMessage, cancellationToken);
 
@@ -183,8 +181,6 @@ public class CalculateCentrePointUseCase
                     Error = errorMessage
                 }),
             cancellationToken);
-
-        _logger.LogError("{error}", errorMessage);
 
         if (ex is not null)
         {

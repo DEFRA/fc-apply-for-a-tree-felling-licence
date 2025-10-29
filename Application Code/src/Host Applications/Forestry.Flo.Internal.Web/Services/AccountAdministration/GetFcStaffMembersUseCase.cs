@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.AccountAdministration;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.InternalUsers.Models;
@@ -11,7 +12,7 @@ namespace Forestry.Flo.Internal.Web.Services.AccountAdministration;
 /// <summary>
 /// Handles use case for an account administrator to retrieve all FC staff user accounts.
 /// </summary>
-public class GetFcStaffMembersUseCase
+public class GetFcStaffMembersUseCase : IGetFcStaffMembersUseCase
 {
     private readonly ILogger<GetFcStaffMembersUseCase> _logger;
     private readonly IUserAccountService _internalAccountService;

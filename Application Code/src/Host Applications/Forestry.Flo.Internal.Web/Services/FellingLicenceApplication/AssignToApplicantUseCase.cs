@@ -2,6 +2,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -14,6 +15,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
@@ -24,7 +26,7 @@ using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
-public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
+public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IAssignToApplicantUseCase
 {
     private readonly IAuditService<AssignToApplicantUseCase> _auditService;
     private readonly RequestContext _requestContext;
@@ -55,13 +57,15 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
         IOptions<LarchOptions> larchOptions,
         ILarchCheckService larchCheckService,
         IPublicRegister publicRegister,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         IClock clock)
         : base(internalUserAccountService,
             retrieveUserAccountsService, 
             fellingLicenceApplicationInternalRepository, 
             woodlandOwnerService,
             agentAuthorityService,
-            getConfiguredFcAreasService)
+            getConfiguredFcAreasService,
+            woodlandOfficerReviewSubStatusService)
     {
         ArgumentNullException.ThrowIfNull(updateApplications);
         ArgumentNullException.ThrowIfNull(requestContext);
@@ -87,6 +91,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
         _larchOptions = larchOptions.Value;
     }
 
+    /// <inheritdoc />
     public async Task<Result<AssignBackToApplicantModel>> GetValidExternalApplicantsForAssignmentAsync(
         InternalUser internalUser,
         Guid applicationId,
@@ -97,7 +102,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
 
         if (fellingLicenceApplication.IsFailure)
         {
-            _logger.LogError(fellingLicenceApplication.Error);
+            _logger.LogError("Failed to get valid external applications for application Id {ApplicationId}, error: {Error}", applicationId, fellingLicenceApplication.Error);
             await AuditErrorAsync(internalUser.UserAccountId, applicationId, fellingLicenceApplication.Error, cancellationToken);
             return fellingLicenceApplication.ConvertFailure<AssignBackToApplicantModel>();
         }
@@ -106,7 +111,10 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
         if (ApplicationCompletedStatuses.Contains(currentStatus))
         {
             var errorStatuses = $"The application with Id {applicationId} is {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)} and a user cannot be assigned to it."; 
-            _logger.LogError(errorStatuses);
+            _logger.LogError(
+                "The application with Id {ApplicationId} is in status {CurrentStatus} and a user cannot be assigned to it.",
+                applicationId,
+                currentStatus.GetDisplayNameByActorType(ActorType.InternalUser));
             await AuditErrorAsync(internalUser.UserAccountId, applicationId, errorStatuses, cancellationToken);
             return Result.Failure<AssignBackToApplicantModel>($"Could not assign to an application that has been {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)}.");
         }
@@ -180,6 +188,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
         return Result.Success(confirmReassignBackToExternalApplicantModel);
     }
 
+    /// <inheritdoc />
     public async Task<Result> AssignApplicationToApplicantAsync(
         Guid applicationId, 
         InternalUser internalUser, 
@@ -207,6 +216,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
 
         var sectionsRequiringAttention = new ApplicationStepStatusRecord
         {
+            AgentAuthorityFormComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.AgentAuthorityForm, out var ticked0) && ticked0 ? false : null,
             SelectedCompartmentsComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.SelectedCompartments, out var ticked1) && ticked1 ? false : null,
             OperationDetailsComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.OperationDetails, out var ticked2) && ticked2  ? false : null,
             FellingAndRestockingDetailsComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.FellingAndRestockingDetails, out var ticked3) && ticked3
@@ -402,7 +412,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
         ApplicationNotificationDetails applicationDetails,
         CancellationToken cancellationToken)
     {
-        var externalViewURL = $"{_settings.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var externalViewURL = $"{_settings.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         var applicant = await ExternalUserAccountService
             .RetrieveUserAccountByIdAsync(applicantId, cancellationToken)
@@ -421,7 +431,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
             CaseNoteContent = caseNoteContent,
             ViewApplicationURL = externalViewURL,
             Name = applicant.Value.FullName,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = applicationId
         };
 
         var applicantResult = await _notificationsService.SendNotificationAsync(
@@ -468,7 +479,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
                 CaseNoteContent = caseNoteContent,
                 ViewApplicationURL = internalViewURL,
                 Name = user.Value.FullName(),
-                AdminHubFooter = adminHubFooter
+                AdminHubFooter = adminHubFooter,
+                ApplicationId = applicationId
             };
 
             var fcStaffResult = await _notificationsService.SendNotificationAsync(
@@ -528,7 +540,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
                     AdminHubFooter = adminHubFooter,
                     PublishDate = DateTimeDisplay.GetDateDisplayString(
                         prModel.PublicRegister.ConsultationPublicRegisterPublicationTimestamp!.Value),
-                    RegisterName = "Consultation"
+                    RegisterName = "Consultation",
+                    ApplicationId = prModel.PublicRegister.FellingLicenceApplicationId
                 };
 
             var notificationResult =
@@ -586,7 +599,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase
                 .Select(detail => $"{detail.CompartmentName} - {(detail.Zone1 ? "Zone 1" : detail.Zone2 ? "Zone 2" : "Zone 3")}")
                 .ToList(),
             ViewApplicationURL = externalViewURL,
-            Name = applicant.Value.FullName
+            Name = applicant.Value.FullName,
+            ApplicationId = applicationId
         };
 
         var notificationType = larchDetails.RecommendSplitApplicationDue switch

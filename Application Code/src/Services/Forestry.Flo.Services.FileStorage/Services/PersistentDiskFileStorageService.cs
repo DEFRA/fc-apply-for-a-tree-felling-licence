@@ -79,7 +79,7 @@ namespace Forestry.Flo.Services.FileStorage.Services
 
             var filePath = Path.Combine(_options.StorageRootPath, storeLocation, Path.GetRandomFileName());
 
-            _logger.LogDebug("Writing [{fileBytes.Length}] bytes to disk at location [{filePath}].",
+            _logger.LogDebug("Writing [{fileLength}] bytes to disk at location [{filePath}].",
                 fileBytes.Length, filePath);
 
             if (File.Exists(filePath))

@@ -1,380 +1,207 @@
-﻿using Ardalis.GuardClauses;
+﻿using System.Web;
 using CSharpFunctionalExtensions;
-using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
-using Forestry.Flo.Services.Notifications;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Services.Common.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
- [Authorize]
+[Authorize]
  [AutoValidateAntiforgeryToken]
 public class ExternalConsulteeInviteController : Controller
 {
-    private readonly IValidator<ExternalConsulteeInviteConfirmationModel> _validator;
-    private readonly ExternalConsulteeInviteUseCase _externalConsulteeReviewUseCase;
-
-    public ExternalConsulteeInviteController(
-        ExternalConsulteeInviteUseCase externalConsulteeReviewUseCase,
-        IValidator<ExternalConsulteeInviteConfirmationModel> validator)
-    {
-        _validator = Guard.Against.Null(validator);
-        _externalConsulteeReviewUseCase =  Guard.Against.Null(externalConsulteeReviewUseCase);
-    }
-
-    // GET
+    // GET index
     [HttpGet]
     public async Task<IActionResult> Index(
-        [FromRoute] Guid? id, 
-        [FromQuery] Guid applicationId,
-        [FromQuery] string? returnUrl, 
+        Guid id,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
         CancellationToken cancellationToken)
     {
-
-        var (hasValue, inviteModel) = GetInviteModel(id);
-        if (!hasValue)
-        {
-            ClearInviteModels();
-        }
-
-        var (_, isFailure, viewModel) = await _externalConsulteeReviewUseCase.RetrieveExternalConsulteeInviteViewModelAsync(
-            applicationId,
-            inviteModel, 
-            returnUrl ?? Url.Action("Index", "Home")!,cancellationToken);
+        var (_, isFailure, viewModel) = await useCase.GetConsulteeInvitesIndexViewModelAsync(
+            id,
+            cancellationToken);
 
         if (isFailure)
         {
             return RedirectToAction("Error", "Home");
         }
 
-        inviteModel = viewModel.ExternalConsulteeInvite;
-        StoreInviteModel(inviteModel);
-
-        viewModel.InviteFormModel.Breadcrumbs = CreateBreadcrumbs(viewModel.InviteFormModel.FellingLicenceApplicationSummary!,
-            viewModel.InviteFormModel.ReturnUrl);
-        return View(viewModel.InviteFormModel);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Index(
-        ExternalConsulteeInviteFormModel model, 
-        CancellationToken cancellationToken)
-    {
-        var (hasValue, inviteModel) = GetInviteModel(model.Id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { model.ApplicationId, model.ReturnUrl });
-        }
-        
-        if (!ModelState.IsValid)
-        {
-            StoreInviteModel(inviteModel);
-            return await CreateModelView(model, cancellationToken);
-        }
-
-        var (_, isFailure, isAlreadyInvited) = await _externalConsulteeReviewUseCase.CheckIfEmailHasAlreadyBeenSentToConsulteeForThisPurposeAsync(
-            model, cancellationToken);
-        if (isFailure)
-        {
-            return RedirectToAction("Error", "Home");
-        }
-        
-        inviteModel = inviteModel with
-        {
-            Email = model.Email, 
-            ConsulteeName = model.ConsulteeName, 
-            Purpose = model.Purpose, 
-            ExternalAccessLink = $"{GetExternalConsulteeInviteLink()}?applicationId={model.ApplicationId}&accessCode={inviteModel.ExternalAccessCode}&emailAddress={model.Email}",
-            ExemptFromConsultationPublicRegister = model.ExemptFromConsultationPublicRegister
-        };
-        StoreInviteModel(inviteModel);
-        return RedirectToAction(isAlreadyInvited ? "ReInvite" : "EmailText", new { model.Id, model.ApplicationId, model.ReturnUrl });
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> EmailText(Guid id, [FromQuery] Guid applicationId, [FromQuery]string returnUrl, CancellationToken cancellationToken)
-    {
-        var (hasValue, inviteModel) = GetInviteModel(id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { applicationId, returnUrl });
-        }
-        var (_, isFailure, viewModel) =
-            await _externalConsulteeReviewUseCase.RetrieveExternalConsulteeEmailTextViewModelAsync(applicationId,
-                returnUrl, inviteModel, cancellationToken);
-
-        if (isFailure)
-        {
-            return RedirectToAction("Error", "Home");
-        }
-        viewModel.Breadcrumbs = CreateBreadcrumbs(viewModel.FellingLicenceApplicationSummary!, returnUrl);
-        StoreInviteModel(inviteModel);
+        viewModel.Breadcrumbs = CreateBreadcrumbs(viewModel.FellingLicenceApplicationSummary!);
+            
         return View(viewModel);
     }
 
     [HttpPost]
-    public async Task<IActionResult> EmailText(ExternalConsulteeEmailTextModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(
+        ExternalConsulteeIndexViewModel model,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
+        CancellationToken cancellationToken)
     {
-        var (hasValue, inviteModel) = GetInviteModel(model.Id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { model.ApplicationId, model.ReturnUrl });
-        }
-
-        if (!ModelState.IsValid)
-        {
-            StoreInviteModel(inviteModel);
-            return await CreateModelView(model, cancellationToken);
-        }
-        
-        inviteModel = inviteModel with
-        {
-           ConsulteeEmailText = model.ConsulteeEmailText
-        };
-        
-        StoreInviteModel(inviteModel);
-        var routeValues = new { model.Id, model.ApplicationId, model.ReturnUrl};
-        return model.ApplicationDocumentsCount > 0 ?
-            RedirectToAction("EmailDocuments", routeValues)
-            : RedirectToAction("Confirmation", routeValues);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> EmailDocuments(Guid id, [FromQuery] Guid applicationId, [FromQuery]string returnUrl, CancellationToken cancellationToken)
-    {
-        var (hasValue, inviteModel) = GetInviteModel(id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { applicationId, returnUrl });
-        }
-        
-        var (_, isFailure, viewModel) =
-            await _externalConsulteeReviewUseCase.RetrieveExternalConsulteeEmailDocumentsViewModelAsync(applicationId,
-                returnUrl, inviteModel, cancellationToken);
-
-        if (isFailure)
-        {
-            return RedirectToAction("Error", "Home");
-        }
-        viewModel.Breadcrumbs = CreateBreadcrumbs(viewModel.FellingLicenceApplicationSummary!, returnUrl);
-        StoreInviteModel(inviteModel);
-        return View(viewModel);
-    }
-
-    [HttpPost]
-    public IActionResult EmailDocuments(ExternalConsulteeEmailDocumentsModel model)
-    {
-        var (hasValue, inviteModel) = GetInviteModel(model.Id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { model.ApplicationId, model.ReturnUrl });
-        }
-
-        if (model.SelectedDocumentIds.Count > NotificationConstants.MaxAttachments)
-        {
-            this.AddErrorMessage($"Please only select up to {NotificationConstants.MaxAttachments} files to attach");
-            var routeValues = new { model.Id, model.ApplicationId, model.ReturnUrl };
-            return RedirectToAction("EmailDocuments", routeValues);
-        }
-
-        inviteModel = inviteModel with
-        {
-            SelectedDocumentIds = model.SelectedDocumentIds 
-        };
-        
-        StoreInviteModel(inviteModel);
-        return RedirectToAction("Confirmation", new { model.Id,  model.ApplicationId, model.ReturnUrl });
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> Confirmation(Guid id, [FromQuery] Guid applicationId, [FromQuery]string returnUrl, CancellationToken cancellationToken)
-    {
-        var (hasValue, inviteModel) = GetInviteModel(id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { applicationId, returnUrl });
-        }
         var user = new InternalUser(User);
-        var (_, isFailure, model) =
-            await _externalConsulteeReviewUseCase.CreateExternalConsulteeInviteConfirmationAsync(applicationId,
-                returnUrl, inviteModel, user, cancellationToken);
+
+        if (!ModelState.IsValid)
+        {
+            var (_, isFailure, viewModel) = await useCase.GetConsulteeInvitesIndexViewModelAsync(
+                model.ApplicationId,
+                cancellationToken);
+
+            if (isFailure)
+            {
+                return RedirectToAction("Error", "Home");
+            }
+
+            viewModel.Breadcrumbs = CreateBreadcrumbs(viewModel.FellingLicenceApplicationSummary!);
+
+            return View(viewModel);
+        }
+
+        if (model.ApplicationNeedsConsultations is false)
+        {
+            var setNotNeededResult = await useCase.SetDoesNotRequireConsultationsAsync(
+                model.ApplicationId, user, cancellationToken);
+
+            if (setNotNeededResult.IsFailure)
+            {
+                this.AddErrorMessage("Could not update consultations to not needed");
+                return RedirectToAction("Index", new { id = model.ApplicationId });
+            }
+
+            this.AddConfirmationMessage("Consultations updated to not needed");
+            return RedirectToAction(nameof(Index), "WoodlandOfficerReview", new { id = model.ApplicationId });
+        }
+
+        var setCompleteResult = await useCase.SetConsultationsCompleteAsync(
+            model.ApplicationId, user, cancellationToken);
+
+        if (setCompleteResult.IsFailure)
+        {
+            this.AddErrorMessage("Could not complete consultations task");
+            return RedirectToAction("Index", new { id = model.ApplicationId });
+        }
+
+        this.AddConfirmationMessage("Consultations completed");
+        return RedirectToAction(nameof(Index), "WoodlandOfficerReview", new { id = model.ApplicationId });
+    }
+
+    // GET invite new consultee
+    [HttpGet]
+    public async Task<IActionResult> InviteNewConsultee(
+        Guid id,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var (_, isFailure, model) = await useCase
+            .GetNewExternalConsulteeInviteViewModelAsync(id, cancellationToken);
+        
         if (isFailure)
         {
             return RedirectToAction("Error", "Home");
         }
         
-        model.Breadcrumbs = CreateBreadcrumbs(model.FellingLicenceApplicationSummary!, returnUrl);
-        StoreInviteModel(inviteModel);
+        model.Breadcrumbs = CreateBreadcrumbs(model.FellingLicenceApplicationSummary!);
         return View(model);
     }
 
+    // POST invite new consultee
     [HttpPost]
-    public async Task<IActionResult> Confirmation(ExternalConsulteeInviteConfirmationModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> InviteNewConsultee(
+        ExternalConsulteeInviteFormModel model,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
+        CancellationToken cancellationToken)
     {
-        var (hasValue, inviteModel) = GetInviteModel(model.Id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { model.ApplicationId, model.ReturnUrl });
-        }
-
-        ApplyConfirmedEmailValidationModelErrors(model);
         var user = new InternalUser(User);
+
         if (!ModelState.IsValid)
         {
-            StoreInviteModel(inviteModel);
-            return await CreateModelView(model, cancellationToken);
+            var reloadModel = await useCase
+                .GetNewExternalConsulteeInviteViewModelAsync(model.ApplicationId, cancellationToken);
+
+            if (reloadModel.IsFailure)
+            {
+                return RedirectToAction("Error", "Home");
+            }
+
+            reloadModel.Value.ConsulteeName = model.ConsulteeName;
+            reloadModel.Value.Email = model.Email;
+            reloadModel.Value.Purpose = model.Purpose;
+            reloadModel.Value.AreaOfFocus = model.AreaOfFocus;
+            reloadModel.Value.SelectedDocumentIds = model.SelectedDocumentIds;
+            reloadModel.Value.ExemptFromConsultationPublicRegister = model.ExemptFromConsultationPublicRegister;
+            reloadModel.Value.Breadcrumbs = CreateBreadcrumbs(reloadModel.Value.FellingLicenceApplicationSummary!);
+
+            return View(reloadModel.Value);
         }
 
-        inviteModel = inviteModel with
+        var accessCode = Guid.NewGuid();
+        var inviteModel = new ExternalConsulteeInviteModel
         {
-            ConsulteeEmailContent = model.EmailContent
+            Email = model.Email,
+            ConsulteeEmailText = model.AreaOfFocus!,
+            ConsulteeName = model.ConsulteeName,
+            ExemptFromConsultationPublicRegister = model.ExemptFromConsultationPublicRegister!.Value,
+            ExternalAccessCode = accessCode,
+            ExternalAccessLink =
+                $"{GetExternalConsulteeInviteLink()}?applicationId={model.ApplicationId}&accessCode={accessCode}&emailAddress={HttpUtility.HtmlEncode(model.Email)}",
+            Purpose = model.Purpose!.GetDisplayName(),
+            SelectedDocumentIds = model.SelectedDocumentIds.Where(x => x.HasValue).Select(x => x!.Value).ToList()
         };
-        var result =
-            await _externalConsulteeReviewUseCase.InviteExternalConsulteeAsync(inviteModel, model.ApplicationId, user, cancellationToken);
 
-        ClearInviteModels();
+        var result =
+            await useCase.InviteExternalConsulteeAsync(inviteModel, model.ApplicationId, user, cancellationToken);
 
         if (result.IsSuccess)
         {
             this.AddConfirmationMessage("Consultee invite sent");
-            return Redirect(model.ReturnUrl);
+            return RedirectToAction("Index", new { id = model.ApplicationId });
         }
 
         return RedirectToAction("Error", "Home");
     }
 
     [HttpGet]
-    public async Task<IActionResult> ReInvite(Guid id, [FromQuery] Guid applicationId, [FromQuery]string returnUrl, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetReceivedComments(
+        Guid id,
+        Guid accessCode,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
+        CancellationToken cancellationToken)
     {
-        var (hasValue, inviteModel) = GetInviteModel(id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { applicationId, returnUrl });
-        }
+        var (_, isFailure, viewModel) = await useCase.GetReceivedCommentsAsync(
+            id,
+            accessCode, cancellationToken);
 
-        var (_, isFailure, model) =
-            await _externalConsulteeReviewUseCase.RetrieveExternalConsulteeReInviteViewModelAsync(applicationId,
-                returnUrl, inviteModel, cancellationToken);
         if (isFailure)
         {
             return RedirectToAction("Error", "Home");
         }
-        
-        model.Breadcrumbs = CreateBreadcrumbs(model.FellingLicenceApplicationSummary!, returnUrl);
-        StoreInviteModel(inviteModel);
-        return View(model);
+
+        viewModel.Breadcrumbs = CreateBreadcrumbs(viewModel.FellingLicenceApplicationSummary!);
+
+        return View(viewModel);
     }
 
-    [HttpPost]
-    public IActionResult ReInvite(ExternalConsulteeReInviteModel model)
-    {
-        var (hasValue, inviteModel) = GetInviteModel(model.Id);
-        if (!hasValue)
-        {
-            this.AddErrorMessage(FormDataExpiredError); 
-            return RedirectToAction("Index", new { model.ApplicationId, model.ReturnUrl });
-        }
-
-        StoreInviteModel(inviteModel);
-        return RedirectToAction("EmailText",
-            new { model.Id, model.ApplicationId, model.ReturnUrl });
-    }
-    
-    private static BreadcrumbsModel CreateBreadcrumbs(FellingLicenceApplicationSummaryModel summaryModel, string returnUrl, string currentPage = "External Consultee Invite")
+    private static BreadcrumbsModel CreateBreadcrumbs(FellingLicenceApplicationSummaryModel summaryModel, string currentPage = "Invite consultees")
     {
         var breadcrumbs = new BreadcrumbsModel
         {
             Breadcrumbs = new List<BreadCrumb> { 
-            new("Home", "Home", "Index", null) ,
-            new( summaryModel.ApplicationReference,
-                "FellingLicenceApplication",
-                "ApplicationSummary",
-                summaryModel.Id.ToString()),
-            new( IsAdminOfficerReview(returnUrl) ?"Operations Admin Officer Review" : "Woodland Officer Review",
-                  IsAdminOfficerReview(returnUrl) ?"AdminOfficerReview" : "WoodlandOfficerReview",
-                  "Index",
-                  summaryModel.Id.ToString())
+                new("Home", "Home", "Index", null) ,
+                new( summaryModel.ApplicationReference,
+                    "FellingLicenceApplication",
+                    "ApplicationSummary",
+                    summaryModel.Id.ToString()),
+                new( "Woodland Officer Review", "WoodlandOfficerReview", "Index", summaryModel.Id.ToString())
             },
             CurrentPage = currentPage
         };
         return breadcrumbs;
     }
     
-    private const string ConsulteeInviteModel = "ConsulteeInviteModel";
-
-    private void StoreInviteModel(ExternalConsulteeInviteModel viewModel) => 
-        TempData[$"{ConsulteeInviteModel}-{viewModel.Id}"] = JsonConvert.SerializeObject(viewModel);
-
-    private Maybe<ExternalConsulteeInviteModel> GetInviteModel(Guid? id)
-    {
-        if (id is null)
-        {
-            return Maybe<ExternalConsulteeInviteModel>.None;
-        }
-        
-        return TempData.ContainsKey($"{ConsulteeInviteModel}-{id}")
-            ? Maybe<ExternalConsulteeInviteModel>
-                .From(JsonConvert.DeserializeObject<ExternalConsulteeInviteModel>(
-                    (TempData[$"{ConsulteeInviteModel}-{id}"] as string)!)!)
-            : Maybe<ExternalConsulteeInviteModel>.None;
-    }
-
-    private void ClearInviteModels()
-    {
-        var keys = TempData.Keys.Where(k => k.Contains(ConsulteeInviteModel));
-        foreach (var key in keys)
-        {
-            TempData.Remove(key);
-        }
-    }
-
-    private static bool IsAdminOfficerReview(string viewModelReturnUrl)
-    {
-        return viewModelReturnUrl.Contains("AdminOfficerReview");
-    }
-
-    private void ApplyConfirmedEmailValidationModelErrors(ExternalConsulteeInviteConfirmationModel model)
-    {
-        if (!ModelState.IsValid) return;
-        
-        var validationErrors = _validator.Validate(model).Errors;
-        if (!validationErrors.Any()) return;
-
-        foreach (var validationFailure in validationErrors)
-        {
-            ModelState.AddModelError(validationFailure.PropertyName, validationFailure.ErrorMessage);
-        }
-    }
-    
-    private async Task<IActionResult> CreateModelView(IExternalConsulteeInvite model, CancellationToken cancellationToken)
-    {
-        var (_, isFailedInvite, applicationSummary) =
-            await _externalConsulteeReviewUseCase.RetrieveApplicationSummaryAsync(model.ApplicationId, cancellationToken);
-
-        if (isFailedInvite)
-            return RedirectToAction("Error", "Home");
-
-        model.Breadcrumbs = CreateBreadcrumbs(applicationSummary, model.ReturnUrl);
-        model.FellingLicenceApplicationSummary = applicationSummary;
-        return View(model);
-    }
-    
     private string GetExternalConsulteeInviteLink() => Url.AbsoluteAction("Index", "ExternalConsulteeReview")!;
-    private const string FormDataExpiredError = "Your form data has expired, please try again";
 }

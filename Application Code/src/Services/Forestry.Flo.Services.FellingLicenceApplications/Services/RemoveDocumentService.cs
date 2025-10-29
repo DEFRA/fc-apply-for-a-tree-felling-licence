@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using NodaTime;
+using Document = Forestry.Flo.Services.FellingLicenceApplications.Entities.Document;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 {
@@ -88,11 +89,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             ActorType requiredActorType,
             CancellationToken cancellationToken)
         {
-            var documentMaybe = await _fellingLicenceApplicationInternalRepository.GetDocumentByIdAsync(applicationId, documentIdentifier, cancellationToken);
+            var documentMaybe = await _fellingLicenceApplicationRepository.GetDocumentByIdAsync(applicationId, documentIdentifier, cancellationToken);
 
             if (documentMaybe.HasNoValue)
             {
-                _logger.LogWarning("Could not find a document with id of [{documentIdentifier}] in application with id [{appId}]", documentIdentifier, applicationId);
+                _logger.LogWarning("Could not find a document with id of [{DocumentIdentifier}] in application with id [{ApplicationId}]", documentIdentifier, applicationId);
                 return await HandleFileRemovalFailureAsync(
                     userAccountId,
                     applicationId,
@@ -104,16 +105,16 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             var document = documentMaybe.Value;
 
-            if (document.Purpose is not DocumentPurpose.Attachment)
+            if (document.Purpose is not (DocumentPurpose.Attachment or DocumentPurpose.EiaAttachment or DocumentPurpose.WmpDocument))
             {
-                _logger.LogWarning("Only attachments may be deleted, document id: [{documentIdentifier}, document purpose: [{purpose}]]", documentIdentifier, document.Purpose);
+                _logger.LogWarning("Only attachments, EIA attachments or WMP documents may be deleted, document id: [{DocumentIdentifier}], document purpose: [{Purpose}]", documentIdentifier, document.Purpose);
 
                 return await HandleFileRemovalFailureAsync(
                     userAccountId,
                     applicationId,
                     documentIdentifier,
                     document.Purpose,
-                    "Only attachments may be deleted",
+                    "Only attachments and EIA attachments may be deleted",
                     cancellationToken);
             }
 
@@ -121,7 +122,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             if (document.AttachedByType != requiredActorType)
             {
-                _logger.LogWarning("Document not uploaded by {actorType}, document id: [{documentIdentifier}]", requiredActorType.GetDisplayName(), documentIdentifier);
+                _logger.LogWarning("Document not uploaded by {ActorType}, document id: [{DocumentIdentifier}]", requiredActorType.GetDisplayName(), documentIdentifier);
                 return await HandleFileRemovalFailureAsync(
                     userAccountId,
                     applicationId,
@@ -135,6 +136,12 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             document.DeletedByUserId = userAccountId;
             document.DeletionTimestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
+
+            // if we removed a WMP document, check if we need to reset the step status to in progress (no WMP documents left on application)
+            if (document.Purpose is DocumentPurpose.WmpDocument)
+            {
+                await CheckWmpDocumentStepStatusAsync(applicationId, documentIdentifier, cancellationToken);
+            }
 
             var saveResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 
@@ -178,13 +185,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             var removeFileResult = await _storageService.RemoveFileAsync(document.Value.Location!, cancellationToken);
 
-            _logger.LogDebug("Call to remove file with id of [{documentIdentifier}] with location of [{location}] " +
-                             "has success result of [{result}],", document.Value.Id, document.Value.Location, removeFileResult.IsSuccess);
+            _logger.LogDebug("Call to remove file with id of [{DocumentIdentifier}] with location of [{Location}] " +
+                             "has success result of [{Result}],", document.Value.Id, document.Value.Location, removeFileResult.IsSuccess);
 
             if (removeFileResult.IsFailure)
             {
                 _logger.LogWarning(
-                    "Did not receive Success result when removing file with id of [{id}], received error [{error}].",
+                    "Did not receive Success result when removing file with id of [{Id}], received error [{Error}].",
                     document.Value.Id, removeFileResult.Error);
 
                 await HandleFileRemovalFailureAsync(
@@ -199,7 +206,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             }
             
             _logger.LogDebug(
-                "File with id of [{documentIdentifier}] and location of [{location}] was successfully removed from storage.",
+                "File with id of [{DocumentIdentifier}] and location of [{Location}] was successfully removed from storage.",
                 document.Value.Id, document.Value.Location);
 
             var deleteResult = await _fellingLicenceApplicationInternalRepository.DeleteDocumentAsync(document.Value, cancellationToken);
@@ -207,7 +214,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             if (deleteResult.IsFailure)
             {
                 _logger.LogWarning(
-                    "Unable to update database to remove entry for document [{id}], received error [{error}].",
+                    "Unable to update database to remove entry for document [{Id}], received error [{Error}].",
                     documentId, deleteResult.Error);
 
                 await HandleFileRemovalFailureAsync(
@@ -274,6 +281,32 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             ), cancellationToken);
 
             return Result.Failure(reason);
+        }
+
+        private async Task<Result> CheckWmpDocumentStepStatusAsync(
+            Guid applicationId,
+            Guid documentId,
+            CancellationToken cancellationToken)
+        {
+            var application =
+                await _fellingLicenceApplicationRepository.GetAsync(applicationId, cancellationToken);
+
+            if (application.HasNoValue)
+            {
+                _logger.LogError("Failed to retrieve application with id {ApplicationId}", applicationId);
+                return Result.Failure("Failed to retrieve application");
+            }
+
+            var wmpDocumentsCount = application.Value.Documents
+                .Count(d => d is { Purpose: DocumentPurpose.WmpDocument, DeletionTimestamp: null } && d.Id != documentId);
+
+            if (wmpDocumentsCount < 1
+                && application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus is true)
+            {
+                application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus = false;
+            }
+
+            return Result.Success();
         }
     }
 

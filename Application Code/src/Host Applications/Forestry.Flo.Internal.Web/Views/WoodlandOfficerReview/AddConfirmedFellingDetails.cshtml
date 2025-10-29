@@ -9,13 +9,12 @@
     ViewData["Title"] = $"Add felling details for compartment {Model.ConfirmedFellingRestockingDetails.CompartmentName}";
     var user = new InternalUser(User);
 }
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="Model.FellingLicenceApplicationSummary" />
 
-<div class="govuk-grid-column-full">
-
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_PageErrors" />
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="Model.FellingLicenceApplicationSummary" />
+<div class="govuk-grid-column-two-thirds">
 
     <form method="post">
         <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
@@ -69,7 +68,6 @@
                         <input class="govuk-input govuk-input--width-10"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NumberOfTrees"
                                type="number"
-                               autocomplete="no-of-trees"
                                aria-describedby="no-of-trees-hint">
                         <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
                     </div>
@@ -143,7 +141,7 @@
                     </label>
                     <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume"></validation>
                     <div class="govuk-input__wrapper">
-                        <input class="govuk-input govuk-input--width-10" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume" type="number" autocomplete="estimated-total-felling-volume" aria-describedby="estimated-total-felling-volume-hint">
+                        <input class="govuk-input govuk-input--width-10" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume" type="number" aria-describedby="estimated-total-felling-volume-hint">
                         <div class="govuk-input__suffix" aria-hidden="true">m<sup>3</sup></div>
                     </div>
                 </div>

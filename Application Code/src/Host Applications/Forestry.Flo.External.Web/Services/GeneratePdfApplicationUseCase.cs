@@ -1,26 +1,21 @@
-﻿using System.Globalization;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.HostApplicationsCommon.Services;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FileStorage.Model;
 using Forestry.Flo.Services.Gis.Interfaces;
-using Forestry.Flo.Services.Gis.Models.Internal;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
-using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using NodaTime;
 
 namespace Forestry.Flo.External.Web.Services;
@@ -28,26 +23,18 @@ namespace Forestry.Flo.External.Web.Services;
 /// <summary>
 /// Handles the use case for an external user generating a pdf of the felling licence application and attaching it to the application.
 /// </summary>
-public class GeneratePdfApplicationUseCase
+public class GeneratePdfApplicationUseCase : GeneratePdfApplicationUseCaseBase
 {
-    private readonly IAuditService<GeneratePdfApplicationUseCase> _auditService;
+    private readonly IAuditService<GeneratePdfApplicationUseCaseBase> _auditService;
     private readonly RequestContext _requestContext;
-    private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
-    private readonly IRetrieveUserAccountsService _externalAccountService;
-    private readonly IUserAccountService _internalAccountService;
-    private readonly IRetrieveWoodlandOwners _woodlandOwnerService;
-    private readonly IPropertyProfileRepository _propertyProfileRepository;
     private readonly IAddDocumentService _addDocumentService;
     private readonly ICreateApplicationSnapshotDocumentService _createApplicationSnapshotDocumentService;
-    private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
     private readonly ILogger<GeneratePdfApplicationUseCase> _logger;
-    private readonly IForesterServices _iForesterServices;
     private readonly IClock _clock;
-    private readonly PDFGeneratorAPIOptions _licencePdfOptions;
 
     public GeneratePdfApplicationUseCase(
-        IAuditService<GeneratePdfApplicationUseCase> auditService,
+        IAuditService<GeneratePdfApplicationUseCaseBase> auditService,
         RequestContext requestContext,
         IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
         IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository,
@@ -60,23 +47,33 @@ public class GeneratePdfApplicationUseCase
         IForesterServices iForesterServices,
         IGetConfiguredFcAreas getConfiguredFcAreasService, 
         IClock clock,
+        ICalculateConditions calculateConditions,
+        IApproverReviewService approverReviewService,
         IOptions<PDFGeneratorAPIOptions> licencePdfOptions,
-        ILogger<GeneratePdfApplicationUseCase> logger)
+        ILogger<GeneratePdfApplicationUseCase> logger) : 
+        base(
+            auditService, 
+            requestContext,
+            getWoodlandOfficerReviewService,
+            internalAccountService,
+            externalAccountService,
+            woodlandOwnerService,
+            propertyProfileRepository,
+            iForesterServices,
+            getConfiguredFcAreasService,
+            clock,
+            licencePdfOptions, 
+            calculateConditions,
+            approverReviewService,
+            logger)
     {
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
-        _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
+        Guard.Against.Null(getWoodlandOfficerReviewService);
         _fellingLicenceApplicationInternalRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
-        _internalAccountService = Guard.Against.Null(internalAccountService);
-        _externalAccountService = Guard.Against.Null(externalAccountService);
-        _woodlandOwnerService = Guard.Against.Null(woodlandOwnerService);
-        _propertyProfileRepository = Guard.Against.Null(propertyProfileRepository);
         _addDocumentService = Guard.Against.Null(addDocumentService);
         _createApplicationSnapshotDocumentService = Guard.Against.Null(createApplicationSnapshotDocumentServiceService);
-        _iForesterServices = Guard.Against.Null(iForesterServices);
         _clock = Guard.Against.Null(clock);
-        _licencePdfOptions = Guard.Against.Null(licencePdfOptions.Value);
-        _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
         _logger = logger;
     }
 
@@ -235,276 +232,5 @@ public class GeneratePdfApplicationUseCase
 
         _logger.LogError("Could not retrieve the new document from application with id {ApplicationId}", applicationId);
         return Result.Failure<Document>($"Could not retrieve the new document from application with id {applicationId}");
-    }
-
-
-    /// <summary>
-    /// Creates a <see cref="PDFGeneratorRequest"/> to send to the PDF generator to generate a felling licence document for the supplied application.
-    /// </summary>
-    /// <param name="application">The relevant application to create the PDF for. </param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>Returns a <see cref="PDFGeneratorRequest"/> for use in generating a pdf of the application.</returns>
-    private async Task<Result<PDFGeneratorRequest>> CreateRequestModelAsync(
-        FellingLicenceApplication application,
-        CancellationToken cancellationToken)
-    {
-        _logger.LogDebug($"Creating a PDF Generator Request for the application with id {application.Id}");
-        var userAccount = await _externalAccountService.RetrieveUserAccountByIdAsync(application.CreatedById, cancellationToken);
-        if (userAccount.IsFailure) {
-            _logger.LogError("Unable to retrieve applicant user account of id {applicantId}, error: {error}", application.CreatedById, userAccount.Error);
-            return Result.Failure<PDFGeneratorRequest>(userAccount.Error);
-        }
-
-        var woodlandOwner = await _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken);
-        if (woodlandOwner.IsFailure) {
-            _logger.LogError("Unable to retrieve woodland owner of id {woodlandOwnerId}, error: {error}", application.WoodlandOwnerId, woodlandOwner.Error);
-            return Result.Failure<PDFGeneratorRequest>(woodlandOwner.Error);
-        }
-
-        var approverAccount = await _internalAccountService.GetUserAccountAsync(application.ApproverId ?? Guid.Empty, cancellationToken);
-        if (approverAccount.HasNoValue) {
-            _logger.LogError("Unable to retrieve approver user account of id {approverId}", application.ApproverId ?? Guid.Empty);
-        }
-
-        var propertyProfile = await _propertyProfileRepository.GetAsync(application.LinkedPropertyProfile!.PropertyProfileId, application.WoodlandOwnerId, cancellationToken);
-        if (propertyProfile.IsFailure) {
-            _logger.LogError("Unable to retrieve propertyProfile of id {propertyId}, error: {error}", application.LinkedPropertyProfile!.PropertyProfileId, propertyProfile.Error);
-            return Result.Failure<PDFGeneratorRequest>($"Unable to retrieve propertyProfile of id {application.LinkedPropertyProfile!.PropertyProfileId}, error: {propertyProfile.Error}");
-        }
-
-        // Approved conditions
-        const string watermarked = "true";
-        const string approverDate = "To be confirmed";
-
-        // part 0 - Application General details
-        var approverName = "To be confirmed";
-        if (approverAccount.HasValue) {
-            approverName = approverAccount.Value.FullName(false);
-        }
-
-        // Admin hub contact info
-        var fcContactAddress = await _getConfiguredFcAreasService.TryGetAdminHubAddress(application.AdministrativeRegion!, cancellationToken);
-        var fcContactName = $"{application.AdministrativeRegion} Hub";
-
-        // Owner Address
-        var ownerAddress = new List<string>(){
-            woodlandOwner.Value.ContactAddress?.Line1 ?? string.Empty,
-            woodlandOwner.Value.ContactAddress?.Line2 ?? string.Empty,
-            woodlandOwner.Value.ContactAddress?.Line3 ?? string.Empty,
-            woodlandOwner.Value.ContactAddress?.Line4 ?? string.Empty,
-            woodlandOwner.Value.ContactAddress?.PostalCode ?? string.Empty
-        };
-        var ownerAddressFormatted = string.Join("\n", ownerAddress.Where(x => !string.IsNullOrEmpty(x)));
-
-        // Expiry Date
-        var expiryDate = "To be confirmed";
-        var woodlandOfficerReview = await _getWoodlandOfficerReviewService.GetWoodlandOfficerReviewStatusAsync(
-            application.Id, cancellationToken);
-        
-        if (woodlandOfficerReview.IsFailure) {
-            _logger.LogWarning("Could not retrieve recommended licence duration from WO Review for application with id {ApplicationId}, error {Error}", application.Id, woodlandOfficerReview.Error);
-        }
-        else {
-            expiryDate = woodlandOfficerReview.Value.RecommendedLicenceDuration.GetExpiryDateForRecommendedDuration(_clock);
-        }
-
-        // Part 1 - Description of the trees to be felled
-        // Part 2 - restocking Conditions & Set list of restocking and felling compartments for maps
-        var restockingConditions = new List<string>();
-        HashSet<Guid> restockingCompartments = [];
-        HashSet<Guid> fellingCompartments = [];
-
-        // For retrieving species names
-        var speciesDictionary = TreeSpeciesFactory.SpeciesDictionary;
-
-        var fellingDetails = new List<PDFGeneratorFellingDetails>();
-        if (application.WoodlandOfficerReview is { ConfirmedFellingAndRestockingComplete: true }) {
-            // generate from confirmed felling details
-
-            if (application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Select(x => x.ConfirmedFellingDetails).Any(x => x != null && x.Any()))
-            {
-                fellingDetails = application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments!.SelectMany(x => x.ConfirmedFellingDetails).Select(felling =>
-                        new PDFGeneratorFellingDetails
-                        {
-                            fellingSiteSubcompartment = $"{felling.SubmittedFlaPropertyCompartment!.CompartmentNumber} - {felling.SubmittedFlaPropertyCompartment.SubCompartmentName}",
-                            typeOfOperation = felling!.OperationType.GetDisplayName(),
-                            markingOfTrees = felling.TreeMarking?.ToString(),
-                            digitisedArea = felling.AreaToBeFelled.ToString(CultureInfo.InvariantCulture),
-                            totalNumberOfTrees = felling.NumberOfTrees.ToString(),
-                            estimatedVolume = felling.EstimatedTotalFellingVolume.ToString(),
-                            species = string.Join(" / ", felling.ConfirmedFellingSpecies!.Select(x =>
-                                speciesDictionary.TryGetValue(x.Species, out var speciesModel) ? speciesModel.Name : x.Species))
-                        })
-                    .ToList();
-            }
-
-            foreach (var confirmedFelling in application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
-                         .SelectMany(x => x.ConfirmedFellingDetails))
-            {
-                fellingCompartments.Add(confirmedFelling.SubmittedFlaPropertyCompartmentId);
-
-                foreach (var restocking in confirmedFelling.ConfirmedRestockingDetails)
-                {
-                    restockingCompartments.Add(restocking.SubmittedFlaPropertyCompartmentId);
-                }
-            }
-
-            // restocking conditions are not set up for external
-            restockingConditions.Add("To be confirmed\n");
-        }
-        else {
-            if (application.LinkedPropertyProfile.ProposedFellingDetails is not null && application.LinkedPropertyProfile.ProposedFellingDetails.Any()) {
-                fellingDetails = application.LinkedPropertyProfile.ProposedFellingDetails.Select(felling =>
-                    {
-                        var submittedCompartment = application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
-                            .First(x => x.CompartmentId == felling.PropertyProfileCompartmentId);
-
-                        return new PDFGeneratorFellingDetails
-                        {
-                            fellingSiteSubcompartment = $"{submittedCompartment.CompartmentNumber} - {submittedCompartment.SubCompartmentName}",
-                            typeOfOperation = felling.OperationType.GetDisplayName(),
-                            markingOfTrees = felling.TreeMarking?.ToString(),
-                            digitisedArea = felling.AreaToBeFelled.ToString(CultureInfo.InvariantCulture),
-                            totalNumberOfTrees = felling.NumberOfTrees.ToString(),
-                            estimatedVolume = felling.EstimatedTotalFellingVolume.ToString(),
-                            species = string.Join(" / ", felling.FellingSpecies!.Select(x =>
-                                speciesDictionary.TryGetValue(x.Species, out var speciesModel)
-                                    ? speciesModel.Name
-                                    : x.Species))
-                        };
-                    })
-                    .ToList();
-            }
-
-            foreach (var proposedFelling in application.LinkedPropertyProfile!.ProposedFellingDetails!)
-            {
-                var submittedCompartmentId = application
-                    .SubmittedFlaPropertyDetail!
-                    .SubmittedFlaPropertyCompartments!
-                    .FirstOrDefault(x => x.CompartmentId == proposedFelling.PropertyProfileCompartmentId)?.Id;
-                if (submittedCompartmentId.HasValue)
-                {
-                    fellingCompartments.Add(submittedCompartmentId.Value);
-                }
-
-                foreach (var restocking in proposedFelling.ProposedRestockingDetails!)
-                {
-                    var restockingSubmittedCompartment = application
-                        .SubmittedFlaPropertyDetail!
-                        .SubmittedFlaPropertyCompartments!
-                        .FirstOrDefault(x => x.CompartmentId == restocking.PropertyProfileCompartmentId)?.Id;
-
-                    if (restockingSubmittedCompartment.HasValue)
-                    {
-                        restockingCompartments.Add(restockingSubmittedCompartment.Value);
-                    }
-                }
-            }
-
-            restockingConditions.Add("To be confirmed\n");
-        }
-
-        // Part 3 - Supplementary point, this will need an update to match https://quicksilva.atlassian.net/browse/FLOV2-919
-        string supplementPoints;
-
-        if (woodlandOfficerReview.IsSuccess && woodlandOfficerReview.Value.RecommendedLicenceDuration ==
-            RecommendedLicenceDuration.TenYear) {
-            var managementPlanText = propertyProfile.Value.WoodlandManagementPlanReference == null ? string.Empty : "Management Plan referenced ";
-            supplementPoints =
-                $"This license is issued in summary relating to the {managementPlanText}{propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} and associated {propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} Final Plan of Ops and {propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} Final Maps. Full details of the felling and restocking conditions agreed under this licence can be found in the above mentioned Plan of Operations and maps that must be attached to this licence at all times.";
-        }
-        else {
-            supplementPoints = "To be confirmed\n";
-        }
-
-        // Part 4 - Felling maps ******
-        _logger.LogDebug($"Generating Felling maps for application with id {application.Id}");
-
-        var operationsMaps = new List<string>();
-        if (fellingCompartments.Count > 0) {
-            var fellingCompartmentMap =
-                application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
-                    .Where(x => fellingCompartments.Contains(x.Id)).Select(compartment => new InternalCompartmentDetails<BaseShape>
-                    {
-                        CompartmentNumber = compartment.CompartmentNumber,
-                        CompartmentLabel = compartment.CompartmentNumber,
-                        ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(compartment.GISData!)!,
-                        SubCompartmentNo = compartment.SubCompartmentName!
-                    }).ToList();
-
-            var generatedMainFellingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(fellingCompartmentMap, cancellationToken, 3000, MapGeneration.Felling);
-
-            if (generatedMainFellingMap.IsFailure) {
-                _logger.LogError("Unable to retrieve Generated Map of application with id {applicantId}, error: {error}", application.WoodlandOwnerId, generatedMainFellingMap.Error);
-                return Result.Failure<PDFGeneratorRequest>("Failed to Generate Felling Map");
-            }
-
-            if (generatedMainFellingMap.Value.CanRead) {
-                var readyMainFellingMap =
-                    Convert.ToBase64String(generatedMainFellingMap.Value.ConvertStreamToBytes());
-                operationsMaps.Add(readyMainFellingMap);
-            }
-        }
-
-        // Part 5 - Restocking maps ******
-        _logger.LogDebug($"Generating Restocking maps for application with id {application.Id}");
-
-        var restockingMaps = new List<string>();
-        if (restockingCompartments.Count > 0)
-        {
-            var restockingCompartmentsMaps =
-                application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!
-                    .Where(x => restockingCompartments.Contains(x.Id)).Select(compartment => new InternalCompartmentDetails<BaseShape>
-                    {
-                        CompartmentNumber = compartment.CompartmentNumber,
-                        CompartmentLabel = compartment.CompartmentNumber,
-                        ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(compartment.GISData!)!,
-                        SubCompartmentNo = compartment.SubCompartmentName!
-                    }).ToList();
-
-            var generatedMainRestockingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(restockingCompartmentsMaps,  cancellationToken, 3000, MapGeneration.Restocking);
-            if (generatedMainRestockingMap.IsFailure) {
-                // Disabled until we find a fix
-
-                _logger.LogError("Unable to retrieve Generated Map of application with id {applicantId}, error: {error}", application.WoodlandOwnerId, generatedMainRestockingMap.Error);
-                return Result.Failure<PDFGeneratorRequest>("Failed to Generate Restocking Map");
-            }
-
-            if (generatedMainRestockingMap.Value.CanRead) {
-                var readyMainRestockingMap =
-                    Convert.ToBase64String(generatedMainRestockingMap.Value.ConvertStreamToBytes());
-                restockingMaps.Add(readyMainRestockingMap);
-            }
-        }
-
-        _logger.LogDebug($"Creating Request for application with Id {application.Id}");
-        var result = new PDFGeneratorRequest {
-            templateName = _licencePdfOptions.TemplateName,
-            watermarked = watermarked,
-            data = new PDFGeneratorData {
-                version = _licencePdfOptions.Version,
-                date = _clock.GetCurrentInstant().ToDateTimeUtc().ToString("dd/MM/yyyy"),
-                fcContactName = fcContactName,
-                fcContactAddress = fcContactAddress,
-                approveDate = approverDate,
-                applicationRef = application.ApplicationReference,
-                managementPlan = propertyProfile.Value.WoodlandManagementPlanReference ?? "",
-                woodName = propertyProfile.Value.Name,
-                ownerNameWithTitle = woodlandOwner.Value.ContactName,
-                ownerAddress = ownerAddressFormatted,
-                expiryDate = expiryDate,
-                approverName = approverName,
-                propertyName = propertyProfile.Value.Name,
-                localAuthority = propertyProfile.Value.NearestTown,
-                approvedFellingDetails = fellingDetails!.OrderBy(x => x.fellingSiteSubcompartment).ToList(),
-                restockingConditions = restockingConditions,
-                operationsMaps = operationsMaps,
-                restockingAdvisoryDetails = supplementPoints,
-                restockingMaps = restockingMaps,
-            }
-        };
-
-        result.MakeSafeForPdfService();
-        return result;
     }
 }

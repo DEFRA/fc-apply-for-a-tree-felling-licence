@@ -1,0 +1,32 @@
+
+
+sources:
+  - service
+  #- ingress
+
+serviceTypeFilter:
+  - LoadBalancer
+
+provider: cloudflare
+
+cloudflare:
+  secretName: cloudflare-api-token
+  email: accounts@qxlva.com
+  proxied: true
+
+domainFilters:
+    - "qxlva.io"
+
+txtOwnerId: "FLOv2"
+
+replicas: 1
+
+publishHostIP: false
+
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+
+nodeSelector:
+  "environment": "system"

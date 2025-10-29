@@ -13,10 +13,17 @@ define(["require",
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
     "/js/mapping/tokml.js?v=" + Date.now(),
-    "/js/mapping/shp-write.js?v=" + Date.now()
+    "/js/mapping/shp-write.js?v=" + Date.now(),
+    "esri/layers/WMSLayer",
+    "esri/layers/WMTSLayer",
+    "esri/layers/GraphicsLayer",
+    "esri/core/reactiveUtils"
 
 ],
-    function (require, exports, Map, MapView, config, BaseMap, mapSettings, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite) {
+    function (require, exports, Map, MapView, config, Basemap, mapSettings, HTMLHelper, GraphicLayer, Graphic, Maps_common, proj4, tokml, shpwrite, WMSLayer,
+        WMTSLayer,
+        GraphicsLayer,
+        reactiveUtils) {
         var MapCompartmentSelection = /** @class */ (function () {
             MapCompartmentSelection.prototype.map;
             MapCompartmentSelection.prototype.view;
@@ -28,29 +35,138 @@ define(["require",
             proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
 
             function MapCompartmentSelection(location) {
-
+                this.location = location;
                 config.apiKey = mapSettings.esriApiKey;
 
                 this.graphicsArray = [];
 
+                var baseMap = new Basemap({
+                    portalItem: {
+                        id: mapSettings.baseMapForUK,
+                    },
+                });
+
                 this.map = new Map({
-                    basemap: new BaseMap({ portalItem: { id: mapSettings.baseMapForUK } })
+                    basemap: baseMap,
                 });
 
-                //Lets Work on the guide
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: mapSettings.englandExtent,
-                    constraints: {
-                        maxZoom: 20
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
+
+                mapComponent.viewOnReady().then(() => {
+                    this.view = mapComponent.view;
+                    if (!this.view) {
+                        console.error("ArcGIS view is undefined. Map component may not be initialized or visible.");
+                        return;
                     }
+                    this.view.extent = mapSettings.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    this.commonTools = new Maps_common(this.view);
+                    return Promise.resolve();
+                })
+                    .then(this.addWidgets.bind(this))
+                    .then(this.wireUpEvents.bind(this))
+                    .then(this.loadGIS.bind(this))
+                    .then(this.GetStartingPoint.bind(this))
+                    .then(this.addWatermark.bind(this));
+            }
+
+            MapCompartmentSelection.prototype.addWatermark = function () {
+                // Create a new GraphicsLayer for the watermark
+                const watermarkLayer = new GraphicsLayer({
+                    visible: false,
+                    id: "watermarkLayer",
                 });
 
-                this.commonTools = new Maps_common(this.view);
+                // Define the text symbol for the watermark
+                const textSymbol = mapSettings.BlueSkyTextSymbol;
 
-                this.view.when(this.loadGIS.bind(this)).then(this.GetStartingPoint.bind(this)).then(this.wireUpEvents.bind(this));
-            }
+                //Function to update the watermark positions
+                const updateWatermarkPositions = () => {
+                    const extent = this.view.extent;
+                    const width = extent.width;
+                    const height = extent.height;
+                    const spacing = Math.min(width, height) / 4;
+                    const spatialReference = this.view.spatialReference;
+
+                    // Clear existing graphics
+                    watermarkLayer.removeAll();
+
+                    // Create watermark graphics at regular intervals
+                    for (let x = extent.xmin; x < extent.xmax; x += spacing) {
+                        for (let y = extent.ymin; y < extent.ymax; y += spacing) {
+                            const point = {
+                                type: "point",
+                                x: x,
+                                y: y,
+                                spatialReference: spatialReference
+                            };
+
+                            const watermarkGraphic = new Graphic({
+                                geometry: point,
+                                symbol: textSymbol
+                            });
+
+                            watermarkLayer.add(watermarkGraphic);
+                        }
+                    }
+                };
+
+                // Add the watermark layer to the map
+                this.map.add(watermarkLayer);
+
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
+                    }
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
+                    }
+                );
+                return Promise.resolve();
+            };
+
+            MapCompartmentSelection.prototype.addWidgets = async function () {
+                this.map.basemap.title = "OS Map";
+
+                const mapComponent = document.getElementById(this.location)
+                await mapComponent.viewOnReady();
+
+                var wmsLayer = new WMSLayer(mapSettings.wmsLayer);
+
+                var wmsBasemap = new Basemap({
+                    baseLayers: [wmsLayer],
+                    title: mapSettings.wmsLayerName,
+                    id: "wmsBasemap"
+                });
+
+
+                const [LocalBasemapsSource, centroidOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js"
+                ]);
+
+                this.centroidOperator = centroidOperator;
+
+                const basemapGallery = document.querySelector("arcgis-basemap-gallery");
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
+                });
+
+                return Promise.resolve();
+
+            };
 
             MapCompartmentSelection.prototype.wireUpEvents = function () {
                 var _this = this;
@@ -66,7 +182,7 @@ define(["require",
                         let graphic = result.results[0].graphic;
                         _this.UpdateGraphic(graphic, !graphic.attributes.selected)
 
-                        HTMLHelper.checkCheckbox('input[name="SelectedCompartmentIds"][value="' + graphic.attributes.Id + '"]', graphic.attributes.selected);
+                        HTMLHelper.checkCheckbox('input[name="SelectedCompartmentIds"][value="' + _this.sanitizeForSelector(graphic.attributes.Id) + '"]', graphic.attributes.selected);
                     });
                 });
 
@@ -120,9 +236,7 @@ define(["require",
                         const options = {
                             folder: 'shapefile',
                             types: {
-                                point: 'points',
                                 polygon: 'polygons',
-                                polyline: 'lines'
                             }
                         };
                         const zipData = shpwrite.zip(jsonData, options);
@@ -138,17 +252,14 @@ define(["require",
 
             MapCompartmentSelection.prototype.UpdateGraphic = function (graphic, value) {
                 graphic.attributes.selected = value;
-                switch (graphic.geometry.type) {
-                    case "polyline":
-                        graphic.symbol = (graphic.attributes.selected) ? mapSettings.selectedLineSymbol : mapSettings.activeLineSymbol;
-                        break;
-                    case "point":
-                        graphic.symbol = (graphic.attributes.selected) ? mapSettings.selectedPointSymbol : mapSettings.activePointSymbol;
-                        break;
-                    default:
-                        graphic.symbol = (graphic.attributes.selected) ? mapSettings.selectedPolygonSymbol : mapSettings.activePolygonSymbol;
-                        break;
+                if (graphic.geometry.type !== "polygon") {
+                    return;
                 }
+                graphic.symbol = (graphic.attributes.selected) ? mapSettings.selectedPolygonSymbol : mapSettings.activePolygonSymbol;
+            }
+
+            MapCompartmentSelection.prototype.sanitizeForSelector = function (value) {
+                return String(value).replace(/[^a-zA-Z0-9_\-]/g, '');
             }
 
             MapCompartmentSelection.prototype.loadGIS = function () {
@@ -165,6 +276,13 @@ define(["require",
                         if (!item.GISData) {
                             return;
                         }
+
+                        const safeId = this.sanitizeForSelector(item.Id);
+                        const el = HTMLHelper.getElements('input[name="SelectedCompartmentIds"][value="' + safeId + '"]');
+
+                        if (el.length < 1) {
+                            return;
+                        }
                         let geometry;
                         let workingSymbol;
 
@@ -175,22 +293,8 @@ define(["require",
                                 spatialReference: item.GISData.spatialReference.wkid,
                             };
                             workingSymbol = (item.Selected) ? mapSettings.selectedPolygonSymbol : mapSettings.activePolygonSymbol;
-                        } else if (item.GISData.paths) {
-                            geometry = {
-                                type: "polyline",
-                                paths: item.GISData.paths,
-                                spatialReference: item.GISData.spatialReference.wkid,
-                            }
-                            workingSymbol = (item.Selected) ? mapSettings.selectedLineSymbol : mapSettings.activeLineSymbol;
-                        } else {
-                            geometry = {
-                                type: "point",
-                                longitude: item.GISData.x,
-                                latitude: item.GISData.y,
-                                spatialReference: item.GISData.spatialReference.wkid,
-                            };
-                            workingSymbol = (item.Selected) ? mapSettings.selectedPointSymbol : mapSettings.activePointSymbol;
                         }
+
                         if (geometry) {
                             try {
                                 let graphic = new Graphic({
@@ -227,34 +331,20 @@ define(["require",
                 var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
                 labelSymbol.text = shapeGraphic.attributes.DisplayName;
 
-                if (shapeGraphic.geometry.type === "point") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
+                if (shapeGraphic.geometry.type === "polygon") {
                     resx = new Graphic({
-                        geometry: shapeGraphic.geometry,
+                        geometry: this.centroidOperator.execute(shapeGraphic.geometry),
                         symbol: labelSymbol,
                     });
                 }
-                else if (shapeGraphic.geometry.type === "polyline") {
-                    labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                    labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.extent.center,
-                        symbol: labelSymbol,
-                    });
-                }
-                else {
-                    resx = new Graphic({
-                        geometry: shapeGraphic.geometry.centroid,
-                        symbol: labelSymbol,
-                    });
-                }
+
                 if (!resx.attributes) {
                     resx.attributes = {
                         shapeID: shapeGraphic.uid,
                     };
                 }
                 return resx;
+
             };
 
             MapCompartmentSelection.prototype.GetStartingPoint = function (graphicsArray) {
@@ -268,13 +358,7 @@ define(["require",
             };
 
             MapCompartmentSelection.prototype.getShapeType = function (value) {
-                let result = "Polygon";
-                if (value === "point") {
-                    result = "Point";
-                } else if (value === "polyline") {
-                    result = "LineString";
-                }
-                return result;
+                return "Polygon";
             }
 
             MapCompartmentSelection.prototype.getCoordinates = function (graphic) {
@@ -283,19 +367,11 @@ define(["require",
                     result = graphic.geometry.rings.map((ring) =>
                         ring.map((point) => proj4('EPSG:27700', 'EPSG:4326', point))
                     );
-                } else if (graphic.geometry.type === "polyline") {
-                    if (graphic.geometry.paths.length < 1) {
-                        return [[]];
-                    }
-                    //Dropping to the first line as the rings struggle in GEOJSON
-                    result = graphic.geometry.paths[0].map((ring) => proj4('EPSG:27700', 'EPSG:4326', ring));
-                } else {
-                    result = proj4("EPSG:27700", "EPSG:4326", [graphic.geometry.x, graphic.geometry.y]);
                 }
                 return result;
             }
 
-            MapCompartmentSelection.prototype.getJsonData = function() {
+            MapCompartmentSelection.prototype.getJsonData = function () {
                 const jsonData = {
                     type: "FeatureCollection",
                     features: []
@@ -303,16 +379,19 @@ define(["require",
                 // Loop through the layers
                 this.view.map.layers.forEach(layer => {
                     layer.graphics.items.forEach(graphic => {
-                        jsonData.features.push({
-                            type: "Feature",
-                            geometry: {
-                                type: this.getShapeType(graphic.geometry.type),
-                                coordinates: this.getCoordinates(graphic)
-                            },
-                            properties: {
-                                name: graphic.attributes.compartmentName,
-                            }
-                        });
+                        if (graphic.attributes) {
+
+                            jsonData.features.push({
+                                type: "Feature",
+                                geometry: {
+                                    type: this.getShapeType(graphic.geometry.type),
+                                    coordinates: this.getCoordinates(graphic)
+                                },
+                                properties: {
+                                    name: graphic.attributes?.DisplayName ?? "",
+                                }
+                            });
+                        }
                     });
                 });
                 return jsonData;

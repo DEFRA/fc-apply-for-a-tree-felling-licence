@@ -3,7 +3,7 @@ using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +20,7 @@ public class AssignFellingLicenceApplicationController : Controller
         Guid id,
         AssignedUserRole selectedRole,
         string returnUrl,
-        [FromServices] AssignToUserUseCase useCase,
+        [FromServices] IAssignToUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -42,7 +42,7 @@ public class AssignFellingLicenceApplicationController : Controller
         Guid id,
         AssignedUserRole selectedRole,
         string returnUrl,
-        [FromServices] AssignToUserUseCase useCase,
+        [FromServices] IAssignToUserUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -63,7 +63,8 @@ public class AssignFellingLicenceApplicationController : Controller
     public async Task<IActionResult> SelectUser(
         Guid id,
         AssignToUserModel model,
-        [FromServices] AssignToUserUseCase useCase,
+        [FromServices] IAssignToUserUseCase useCase,
+        [FromServices] IUrlHelper urlHelper,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -105,7 +106,11 @@ public class AssignFellingLicenceApplicationController : Controller
          
         if (result.IsSuccess)
         {
-            return Redirect(model.ReturnUrl);
+            if (urlHelper.IsLocalUrl(model.ReturnUrl))
+            {
+                return Redirect(model.ReturnUrl);
+            }
+            return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id = id });
         }
 
         return RedirectToAction("Error", "Home");
@@ -115,7 +120,7 @@ public class AssignFellingLicenceApplicationController : Controller
     public async Task<IActionResult> AssignBackToApplicant(
         Guid applicationId,
         string? returnUrl,
-        [FromServices] AssignToApplicantUseCase useCase,
+        [FromServices] IAssignToApplicantUseCase useCase,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
@@ -138,13 +143,14 @@ public class AssignFellingLicenceApplicationController : Controller
     [HttpPost]
     public async Task<IActionResult> AssignBackToApplicant(
         AssignBackToApplicantModel assignBackToApplicantModel,
-        [FromServices] AssignToApplicantUseCase useCase,
+        [FromServices] IAssignToApplicantUseCase useCase,
         [FromServices] IValidator<AssignBackToApplicantModel> validator,
+        [FromServices] IUrlHelper urlHelper,
         CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);
         
-        ValidateModel(assignBackToApplicantModel, validator, false);
+        ValidateModel(assignBackToApplicantModel, validator);
         if (!ModelState.IsValid)
         {
             var reloadModel = await useCase.GetValidExternalApplicantsForAssignmentAsync(internalUser, assignBackToApplicantModel.FellingLicenceApplicationId, assignBackToApplicantModel.ReturnUrl, cancellationToken);
@@ -176,7 +182,12 @@ public class AssignFellingLicenceApplicationController : Controller
             return RedirectToAction("Error", "Home");
         }
 
-        return Redirect(assignBackToApplicantModel.ReturnUrl);
+        if (urlHelper.IsLocalUrl(assignBackToApplicantModel.ReturnUrl))
+        {
+            return Redirect(assignBackToApplicantModel.ReturnUrl);
+        }
+        
+        return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id = assignBackToApplicantModel.FellingLicenceApplicationId });
     }
 
     private string GetFellingLicenceUrlLink() => Url.AbsoluteAction("ApplicationSummary", "FellingLicenceApplication")!;
@@ -207,12 +218,8 @@ public class AssignFellingLicenceApplicationController : Controller
         };
     }
 
-    private void ValidateModel<T>(T model, IValidator<T> validator, bool createErrors = true)
+    private void ValidateModel<T>(T model, IValidator<T> validator)
     {
-        if (createErrors)
-        {
-            ModelState.Clear();
-        }
         var validationErrors = validator.Validate(model).Errors;
 
         if (validationErrors.NotAny()) return;

@@ -6,36 +6,36 @@
 }
 <div class="govuk-grid-column-two-thirds">
 
-    <h1 class="govuk-heading-xl">
-        @ViewData["Title"]
-    </h1>
-        
-    <partial name="Partials/_PageErrors" />
-
     <form method="post">
 
         <fieldset class="govuk-fieldset">
-            <input type="hidden" asp-for="@Model.IsOrganisation" />
-            <input type="hidden" asp-for="@Model.OrganisationStatus" />
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                <h1 class="govuk-fieldset__heading">
+                    @ViewData["Title"]
+                </h1>
+            </legend>
+
+            <input type="hidden" asp-for="@Model.IsOrganisation"/>
+            <input type="hidden" asp-for="@Model.OrganisationStatus"/>
 
             <div class="govuk-form-group">
                 <label asp-for="ContactName" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="ContactName"></validation>
-                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactName" />
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactName"/>
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="ContactEmail" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="ContactEmail"></validation>
-                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactEmail" />
+                <input class="@GdsConstants.GdsInputCssClass" asp-for="ContactEmail"/>
             </div>
-            
+
             @if (Model.IsOrganisation)
             {
                 <div class="govuk-form-group">
                     <label asp-for="OrganisationName" class="@GdsConstants.GdsLabelCssClass"></label>
                     <validation asp-for="OrganisationName"></validation>
-                    <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationName" autocomplete="organization" />
+                    <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationName" autocomplete="organization"/>
                 </div>
             }
 

@@ -1,4 +1,5 @@
 ﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
@@ -13,10 +14,11 @@ public class ReturnApplicationModel : FellingLicenceApplicationPageViewModel
     /// </summary>
     public bool Disabled { get; set; }
 
-    public string? CaseNote { get; set; }
-    public bool VisibleToApplicant { get; set; }
-    public bool VisibleToConsultee { get; set; }
-
     [HiddenInput]
     public Guid ApplicationId { get; set; }
+
+    /// <summary>
+    /// Gets and sets a form level case note to provide the reason for returning the application
+    /// </summary>
+    public FormLevelCaseNote ReturnReason { get; set; }
 }

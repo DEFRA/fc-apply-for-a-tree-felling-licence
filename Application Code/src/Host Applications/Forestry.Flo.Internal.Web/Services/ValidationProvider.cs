@@ -1,11 +1,12 @@
 using FluentValidation.Results;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Internal.Web.Services.Validation;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Forestry.Flo.Internal.Web.Services
 {
-    public class ValidationProvider
+    public class ValidationProvider : IValidationProvider
     {
         public List<ValidationFailure> ValidateSection(UserRegistrationDetailsModel model, string modelSection, ModelStateDictionary modelState)
         {

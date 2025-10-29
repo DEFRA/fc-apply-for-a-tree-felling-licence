@@ -102,7 +102,7 @@ public class GetPublicRegisterDetailsAsyncTests : WoodlandOfficerReviewUseCaseTe
             .ReturnsAsync(Maybe.From(internalUser));
 
         NotificationHistoryService
-            .Setup(x => x.RetrieveNotificationHistoryAsync(It.IsAny<string>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveNotificationHistoryAsync(It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(notifications));
 
         var result = await sut.GetPublicRegisterDetailsAsync(applicationId, CancellationToken.None);
@@ -113,7 +113,7 @@ public class GetPublicRegisterDetailsAsyncTests : WoodlandOfficerReviewUseCaseTe
         Assert.Equal(publicRegister, result.Value.PublicRegister);
 
         WoodlandOfficerReviewService.Verify(x => x.GetPublicRegisterDetailsAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        NotificationHistoryService.Verify(x => x.RetrieveNotificationHistoryAsync(fla.ApplicationReference, new [] {  NotificationType.PublicRegisterComment  }, It.IsAny<CancellationToken>()), Times.Once);
+        NotificationHistoryService.Verify(x => x.RetrieveNotificationHistoryAsync(applicationId, new [] {  NotificationType.PublicRegisterComment  }, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private PublicRegisterUseCase CreateSut()
@@ -136,6 +136,7 @@ public class GetPublicRegisterDetailsAsyncTests : WoodlandOfficerReviewUseCaseTe
             NotificationService.Object,
             GetConfiguredFcAreas.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(WoodlandOfficerReviewOptions),
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<PublicRegisterUseCase>());
     }
 }

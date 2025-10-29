@@ -24,6 +24,11 @@ namespace Forestry.Flo.Internal.Web.Infrastructure;
 
         public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
         {
+            if (!ViewContext.ModelState.TryGetValue(For.Name, out var entry) || entry.Errors.Count == 0)
+            {
+                output.SuppressOutput();
+                return;
+            }
 
             var validationContext = CreateTagHelperContext();
             
@@ -31,6 +36,7 @@ namespace Forestry.Flo.Internal.Web.Infrastructure;
 
             var innerSpan = CreateTagHelperOutput("span");
             innerSpan.Attributes.SetAttribute("class","govuk-visually-hidden");
+            innerSpan.Attributes.SetAttribute("aria-hidden", "true");
             innerSpan.Content.SetContent("Error:");
 
             validationOutput.PreContent.AppendHtml(innerSpan);

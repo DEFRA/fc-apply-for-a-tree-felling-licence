@@ -4,6 +4,7 @@
 
 @using Forestry.Flo.Services.Common.Extensions
 @using Microsoft.AspNetCore.Mvc.TagHelpers
+@inject IUrlHelper UrlHelper
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ConfirmReassignApplicationModel;
 
 @{
@@ -13,11 +14,12 @@
     var currentUserName = $"{currentUserAssignment.UserAccount.FirstName} {currentUserAssignment.UserAccount.LastName}";
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
     
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
     <h1 class="govuk-heading-m">Are you sure you wish to reassign application @Model.FellingLicenceApplicationSummary.ApplicationReference ?</h1>
 
@@ -38,7 +40,8 @@
                 Continue
             </a>
 
-            <a class="govuk-link" href="@Model.ReturnUrl" title="Abandon changes and go to the application page">Cancel</a>
+            <a class="govuk-link" condition="@UrlHelper.IsLocalUrl(Model.ReturnUrl)" href="@Model.ReturnUrl" title="Abandon changes and go to the application page">Cancel</a>
+            <a class="govuk-link" condition="@(!UrlHelper.IsLocalUrl(Model.ReturnUrl))" asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" title="Abandon changes and go to the application page">Cancel</a>
 
         </div>
     </div>

@@ -1,0 +1,48 @@
+﻿@using Forestry.Flo.Services.InternalUsers.Entities.UserAccount
+@using Forestry.Flo.Services.Common.User
+@{
+    ViewData["Title"] = "User management";
+}
+
+<div class="govuk-grid-column-full">
+
+	<logged-in>
+    
+        <div>
+			<h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+            <ul class="govuk-list">
+
+                @{
+                    var internalUser = new InternalUser(User);
+                    if (internalUser.AccountType == AccountTypeInternal.AccountAdministrator)
+                    {
+                        <li>
+                            <a class="govuk-link" href="@Url.Action("UnconfirmedUserAccounts", "AdminAccount")">Unconfirmed user accounts</a>
+                        </li>
+
+                        <li>
+                            <a class="govuk-link" href="@Url.Action("FcStaffList", "AccountAdministration")">Manage FC user accounts in the system</a>
+                        </li>
+
+                        <li>
+                            <a class="govuk-link" href="@Url.Action("ExternalUserList", "ExternalAccountAdministration")">Manage applicant and FC user accounts in external applicant system</a>
+                        </li>
+                    }
+                }
+
+                <require-user-account-type required-account-type="AdminHubManager">
+                    <li>
+                        <a class="govuk-link" href="@Url.Action("AdminHubSummary", "AdminHub")">Manage admin hub</a>
+                    </li>
+                </require-user-account-type>
+
+            </ul>
+        </div>
+    </logged-in>
+
+</div>
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@ViewBag.Breadcrumbs" />
+}

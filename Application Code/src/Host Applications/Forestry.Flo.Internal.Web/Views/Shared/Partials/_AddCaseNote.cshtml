@@ -9,42 +9,36 @@
     <input asp-for="ReturnUrl"/>
     
     <div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
-        <fieldset class="govuk-fieldset">
-            <p class="govuk-body">New @Model.CaseNoteType.GetDisplayName()?.ToLower()</p>
-            <div class="govuk-inset-text">
-                <b>Use this section to record internal notes. </b>
-                <ul>
-                    <li>
-                        Notes are saved immediately
-                    </li>
-                    <li>
-                        You cannot delete them once saved
-                    </li>
-                    <li>
-                        They may be shared in response to Freedom of Information (FOI) requests
-                    </li>
-                </ul>
+        <label class="govuk-label govuk-label--s" for="add-case-note-text">
+            New @Model.CaseNoteType.GetDisplayName()?.ToLower()
+        </label>
+        <div class="govuk-inset-text">
+            <b>Use this section to record internal notes. </b>
+            <ul>
+                <li>
+                    Notes are saved immediately
+                </li>
+                <li>
+                    You cannot delete them once saved
+                </li>
+                <li>
+                    They may be shared in response to Freedom of Information (FOI) requests
+                </li>
+            </ul>
+        </div>
+        <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="Text" id="add-case-note-text"></textarea>
+        <div class="govuk-checkboxes govuk-checkboxes--small">
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant"/>
+                <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
             </div>
-            <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="Text" id="add-case-note-text"></textarea>
-            <div class="govuk-grid-row">
-                <div class="govuk-grid-column-one-third">
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant"/>
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToApplicant">Visible to applicants</label>
-                    </div>
-                </div>
-                <div class="govuk-grid-column-one-third">
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee"/>
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
-                    </div>
-                </div>
-                <div class="govuk-grid-column-one-third">
-                    <div class="govuk-button-group move-to-right">
-                        <button id="save-case-note-btn" class="govuk-button save-button-padding" data-module="govuk-button" type="submit">Save</button>
-                    </div>
-                </div>
+            <div class="govuk-checkboxes__item">
+                <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToConsultee"/>
+                <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
             </div>
-        </fieldset>
+        </div>
+        <div class="govuk-button-group">
+            <button id="save-case-note-btn" class="govuk-button save-button-padding" data-module="govuk-button" type="submit">Save</button>
+        </div>
     </div>
 </form>

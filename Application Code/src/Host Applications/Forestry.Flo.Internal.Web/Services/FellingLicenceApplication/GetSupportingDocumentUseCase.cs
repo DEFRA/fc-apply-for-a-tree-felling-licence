@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 /// Handles use case for a user getting/viewing a supporting document
 /// from a felling licence application
 /// </summary>
-public class GetSupportingDocumentUseCase
+public class GetSupportingDocumentUseCase : IGetSupportingDocumentUseCase
 {
     private readonly IGetDocumentServiceInternal _getDocumentService;
     private readonly ILogger<GetSupportingDocumentUseCase> _logger;

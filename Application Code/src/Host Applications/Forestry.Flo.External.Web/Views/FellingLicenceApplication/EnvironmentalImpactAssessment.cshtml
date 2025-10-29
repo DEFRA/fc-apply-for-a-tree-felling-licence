@@ -1,0 +1,252 @@
+﻿@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FileStorage.Configuration
+@using Microsoft.Extensions.Options
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment.EnvironmentalImpactAssessmentViewModel
+@inject IOptions<UserFileUploadOptions> Settings
+@{
+    ViewData["Title"] = "Environmental Impact Assessment";
+
+    var allowedTypes = (Settings?.Value ?? new UserFileUploadOptions()).AllowedFileTypes
+        .Where(x => x.FileUploadReasons.Contains(FileUploadReason.EiaDocument));
+    var allowedExtensions = allowedTypes.SelectMany(x => x.Extensions).ToArray();
+    var maxFileSize = (Settings?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
+    var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
+}
+
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary" />
+
+<input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
+<input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
+    <div class="govuk-body">
+
+        <h1>@ViewData["Title"]</h1>
+
+        <p>
+            Because your application may include activities that could be considered afforestation, deforestation,
+            a forest quarry project, or a forest road, you may need to complete an Environmental Impact Assessment (EIA) application if you have not already done so.
+        </p>
+
+        <form method="post" class="eia-form" enctype="multipart/form-data">
+
+            <div class="govuk-form-group">
+                <fieldset class="govuk-fieldset" id="@nameof(Model.HasApplicationBeenCompleted)">
+                    <legend class="govuk-heading-m">
+                        Have you completed Environmental Impact Assessment application?
+                    </legend>
+                    <validation asp-for="@Model.HasApplicationBeenCompleted"></validation>
+                    <div class="govuk-radios" data-module="govuk-radios">
+                        <div class="govuk-radios__item">
+                            <input id="eia-app-completed-yes"
+                                   asp-for="HasApplicationBeenCompleted"
+                                   type="radio"
+                                   class="govuk-radios__input"
+                                   value="true"/>
+                            <label class="govuk-label govuk-radios__label" for="eia-app-completed-yes">
+                                Yes
+                            </label>
+                        </div>
+
+                        <div class="govuk-radios__item">
+                            <input id="eia-app-completed-no"
+                                   asp-for="HasApplicationBeenCompleted"
+                                   type="radio"
+                                   class="govuk-radios__input"
+                                   data-aria-controls="conditional-eia-completed-no"
+                                   value="false"/>
+                            <label class="govuk-label govuk-radios__label" for="eia-app-completed-no">
+                                No
+                            </label>
+                        </div>
+
+                        <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-eia-completed-no">
+                            <p>
+                                <a class="govuk-link" target="_blank" href="@Model.EiaApplicationExternalUri" tabindex="0">Complete an Environmental Impact Assessment application</a>
+                                <br/>
+                                (opens in a new tab) and upload it
+                            </p>
+                        </div>
+
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="govuk-form-group" id="upload-form-container">
+                <fieldset class="govuk-fieldset" id="@nameof(Model.HasApplicationBeenSent)">
+                    <legend class="govuk-heading-m">
+                        Have you sent it to us?
+                    </legend>
+                    <validation asp-for="@Model.HasApplicationBeenSent"></validation>
+                    <div class="govuk-radios" data-module="govuk-radios">
+                        <div class="govuk-radios__item">
+                            <input
+                                id="eia-sent-yes"
+                                type="radio"
+                                class="govuk-radios__input"
+                                asp-for="HasApplicationBeenSent"
+                                value="@true"/>
+                            <label class="govuk-label govuk-radios__label" for="eia-sent-yes">
+                                Yes
+                            </label>
+                        </div>
+
+                        <div class="govuk-radios__item">
+                            <input
+                                id="eia-sent-no"
+                                type="radio"
+                                class="govuk-radios__input"
+                                value="@false"
+                                asp-for="HasApplicationBeenSent"
+                                data-aria-controls="conditional-eia-sent">
+                            <label class="govuk-label govuk-radios__label" for="eia-sent-no">
+                                No
+                            </label>
+                        </div>
+
+                        <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-eia-sent">
+                            <div class="govuk-form-group">
+                                <input type="hidden">
+                                <input id="allowed-extensions" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@string.Join(", ", allowedExtensions)"/>
+                                <input id="allowed-max-size" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxFileSize"/>
+                                <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)"/>
+                                <input id="allowed-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxNumberDocs"/>
+                                <input id="current-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@Model.EiaDocuments.Count()"/>
+                                <div class="govuk-form-group">
+                                    <label for="eia-file-upload" class="govuk-label">Upload all relevant EIA documents</label>
+                                    <div class="govuk-hint">
+                                        You can select one or more files to upload.
+                                    </div>
+                                    <div id="eia-file-upload-input-error" class="govuk-visually-hidden" aria-hidden="true"></div>
+                                    <div class="govuk-drop-zone"
+                                         data-module="govuk-file-upload">
+                                        <input multiple class="govuk-file-upload" id="eia-file-upload" name="eiaFiles" type="file" runat="server" tabindex="0">
+                                    </div>
+                                </div>
+                                <div class="govuk-body">
+                                    <button id="upload-eia-document-button"
+                                            type="submit"
+                                            class="govuk-button"
+                                            data-module="govuk-button"
+                                            name="store-supporting-documents"
+                                            value="Upload"
+                                            asp-action="AttachEiaDocument"
+                                            asp-route-applicationId="@Model.ApplicationSummary!.Id"
+                                            disabled="disabled">
+                                        Upload
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div div class="govuk-form-group">
+                <h2 class="govuk-heading-m">Files you’ve uploaded</h2>
+
+                @if (Model.EiaDocuments.NotAny())
+                {
+                    <p class="govuk-body">
+                        No EIA documents have been uploaded.
+                    </p>
+                }
+                else
+                {
+                    <table class="govuk-table" data-module="moj-sortable-table" id="documentation-list-table">
+
+                        <thead class="govuk-table__head">
+
+                        <tr class="govuk-table__row">
+                            <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
+                            <th scope="col" class="govuk-table__header" aria-sort="none">Category</th>
+                            <th scope="col" class="govuk-table__header" aria-sort="descending">Uploaded Date</th>
+                            <th scope="col" class="govuk-table__header">Actions</th>
+                        </tr>
+
+                        </thead>
+
+                        <tbody data-module="moj-sortable-table" class="govuk-table__body">
+                        @foreach (var document in Model.EiaDocuments)
+                        {
+                            <tr class="govuk-table__row" data-id="@document.Id">
+
+                                <td class="govuk-table__cell wrapped-text">
+                                    <a class="hidden-download-supporting-document"
+                                       asp-controller="FellingLicenceApplication"
+                                       asp-action="DownloadSupportingDocument"
+                                       asp-route-applicationId="@Model.ApplicationId"
+                                       asp-route-documentIdentifier="@document.Id">
+                                        @document.FileName
+                                    </a>
+                                </td>
+
+                                <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">
+                                    @DocumentPurpose.EiaAttachment.GetDisplayName()
+                                </td>
+
+                                <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">
+                                    @DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)
+                                </td>
+
+                                <td class="govuk-table__cell">
+                                    <a class="govuk-link"
+                                       condition="@Model.AllowEditing"
+                                       asp-action="RemoveEiaDocument"
+                                       asp-route-applicationId="@Model.ApplicationSummary!.Id"
+                                       asp-route-documentIdentifier="@document.Id">
+                                        Delete
+                                    </a>
+                                </td>
+
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </div>
+
+            <button
+                type="submit"
+                class="govuk-button"
+                data-module="govuk-button">
+                Continue
+            </button>
+
+        </form>
+    </div>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}
+
+@section Scripts
+{
+    <script src="/js/environmental-impact-assessment.js" asp-append-version="true"></script>
+
+    @if (!Model.AllowEditing)
+    {
+        <script src="/js/disable-form-elements.js"></script>
+
+        <script>
+
+            $(function () {
+
+                disableFormElements('.eia-form');
+            });
+
+        </script>
+    }
+}
+
+
+@section Css {
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
+    <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
+}

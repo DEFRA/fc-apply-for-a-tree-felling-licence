@@ -5,13 +5,16 @@
     "esri/Map",
     "esri/views/MapView",
     "esri/Basemap",
+    "esri/layers/WMSLayer",
+    "esri/layers/WMTSLayer",
+    "esri/layers/GraphicsLayer",
     "esri/Graphic",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
+    "esri/core/reactiveUtils",
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
-    "/js/mapping/mapSettings.js?v=" + Date.now(),
-    "/js/mapping/widgets/download-widget.js?v=" + Date.now()
+    "/js/mapping/mapSettings.js?v=" + Date.now()
 ], function (
     require,
     exports,
@@ -19,16 +22,19 @@
     Map,
     MapView,
     Basemap,
+    WMSLayer,
+    WMTSLayer,
+    GraphicsLayer,
     Graphic,
     locator,
     FeatureLayer,
+    reactiveUtils,
     maps_html_Helper,
     Maps_common,
-    mapSettings,
-    DownloadWidget) {
+    mapSettings) {
     var profileMap = /** @class */ (function () {
         function profileMap(location) {
-
+            this.location = location;
             config.apiKey = mapSettings.esriApiKey;
 
             //This is the default map for the FC system
@@ -37,30 +43,120 @@
                     id: mapSettings.baseMapForUK,
                 },
             });
+
             this.map = new Map({
                 basemap: baseMap,
             });
-            //Lets Work on the guide
-            this.view = new MapView({
-                map: this.map,
-                container: location,
-                extent: mapSettings.englandExtent,
-                constraints: {
-                    maxZoom: 20
-                }
-            });
-            this.view
-                .when(this.mapLoadEvt.bind(this))
+
+            const mapComponent = document.getElementById(location);
+            mapComponent.map = this.map;
+
+            this.view = mapComponent.view;
+
+            this.view.when(() => {
+                this.view.extent = mapSettings.englandExtent;
+                this.view.constraints = { maxZoom: 20 };
+                return this.mapLoadEvt();
+            })
                 .then(this.loadCompartments.bind(this))
                 .then(this.GetStartingPoint.bind(this))
-                .then(this.addWidgets.bind(this));
+                .then(this.addWidgets.bind(this))
+                .then(this.addWatermark.bind(this));
         }
 
-        profileMap.prototype.addWidgets = function () {
-            this.downloader = new DownloadWidget({
-                view: this.view
+
+        profileMap.prototype.addWatermark = function () {
+            // Create a new GraphicsLayer for the watermark
+            const watermarkLayer = new GraphicsLayer({
+                visible: false,
+                id: "watermarkLayer",
             });
-            this.view.ui.add(this.downloader, "top-right");
+
+            // Define the text symbol for the watermark
+            const textSymbol = mapSettings.BlueSkyTextSymbol;
+
+            //Function to update the watermark positions
+            const updateWatermarkPositions = () => {
+                const extent = this.view.extent;
+                const width = extent.width;
+                const height = extent.height;
+                const spacing = Math.min(width, height) / 4;
+                const spatialReference = this.view.spatialReference;
+
+                // Clear existing graphics
+                watermarkLayer.removeAll();
+
+                // Create watermark graphics at regular intervals
+                for (let x = extent.xmin; x < extent.xmax; x += spacing) {
+                    for (let y = extent.ymin; y < extent.ymax; y += spacing) {
+                        const point = {
+                            type: "point",
+                            x: x,
+                            y: y,
+                            spatialReference: spatialReference
+                        };
+
+                        const watermarkGraphic = new Graphic({
+                            geometry: point,
+                            symbol: textSymbol
+                        });
+
+                        watermarkLayer.add(watermarkGraphic);
+                    }
+                }
+            };
+
+            // Add the watermark layer to the map
+            this.map.add(watermarkLayer);
+
+            reactiveUtils.watch(
+                () => this.view.stationary,
+                (newValue) => {
+                    if (newValue) updateWatermarkPositions();
+                }
+            );
+            reactiveUtils.watch(
+                () => this.view.extent,
+                updateWatermarkPositions
+            );
+            reactiveUtils.watch(
+                () => this.view.map.basemap,
+                (newBasemap) => {
+                    watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
+                }
+            );
+            return Promise.resolve();
+        };
+
+        profileMap.prototype.addWidgets = async function () {
+
+            this.map.basemap.title = "OS Map";
+            const mapComponent = document.getElementById(this.location)
+            await mapComponent.viewOnReady();
+
+            const [LocalBasemapsSource] = await $arcgis.import([
+                "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+            ]);
+
+            const basemapGallery = document.querySelector("arcgis-basemap-gallery");
+
+            // Create the WMS basemap
+            var wmsLayer = new WMSLayer(mapSettings.wmsLayer);
+
+            const wmsBasemap = new Basemap({
+                baseLayers: [wmsLayer],
+                title: mapSettings.wmsLayerName,
+                id: "wmsBasemap"
+            });
+
+            basemapGallery.source = new LocalBasemapsSource({
+                basemaps: [
+                    this.map.basemap,
+                    wmsBasemap                   
+                ]
+            });
+
+            return Promise.resolve();
         };
 
         profileMap.prototype.loadCompartments = function () {
@@ -75,21 +171,6 @@
                     geometry = {
                         type: "polygon",
                         rings: item.GIS.rings,
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                }
-                else if (item.GIS.paths) {
-                    geometry = {
-                        type: "polyline",
-                        paths: item.GIS.paths,
-                        spatialReference: item.GIS.spatialReference.wkid,
-                    };
-                }
-                else {
-                    geometry = {
-                        type: "point",
-                        longitude: item.GIS.x,
-                        latitude: item.GIS.y,
                         spatialReference: item.GIS.spatialReference.wkid,
                     };
                 }
@@ -112,12 +193,6 @@
             });
             this.loadPolygonLayer(graphicsArray.filter(function (item) {
                 return item.geometry.type === "polygon";
-            }));
-            this.loadLineLayer(graphicsArray.filter(function (item) {
-                return item.geometry.type === "polyline";
-            }));
-            this.loadPointLayer(graphicsArray.filter(function (item) {
-                return item.geometry.type === "point";
             }));
             return Promise.resolve(graphicsArray);
         };
@@ -151,84 +226,6 @@
                     },
                 });
                 this.map.add(this.compartmentLayer_polygon);
-            }
-            catch (e) {
-                if (window.console) {
-                    console.error("Failed to create all required parts for view.", e);
-                    Promise.reject(e);
-                }
-            }
-            return Promise.resolve();
-        };
-
-        profileMap.prototype.loadPointLayer = function (graphicsArray) {
-            try {
-                if (typeof graphicsArray === "undefined" || graphicsArray.length === 0) {
-                    return Promise.resolve();
-                }
-                var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-                labelSymbol.xoffset = -20;
-                labelSymbol.yoffset = -15;
-                this.compartmentLayer_point = new FeatureLayer({
-                    labelsVisible: true,
-                    source: graphicsArray,
-                    geometryType: "point",
-                    objectIdField: "ObjectID",
-                    fields: [
-                        { name: "ObjectID", type: "oid" },
-                        { name: "compartmentName", type: "string" },
-                    ],
-                    labelingInfo: {
-                        labelExpressionInfo: {
-                            expression: "$feature.compartmentName",
-                        },
-                        symbol: labelSymbol,
-                    },
-                    renderer: {
-                        type: "simple",
-                        symbol: mapSettings.otherPointSymbol,
-                    },
-                });
-                this.map.add(this.compartmentLayer_point);
-            }
-            catch (e) {
-                if (window.console) {
-                    console.error("Failed to create all required parts for view.", e);
-                    Promise.reject(e);
-                }
-            }
-            return Promise.resolve();
-        };
-
-        profileMap.prototype.loadLineLayer = function (graphicsArray) {
-            try {
-                if (typeof graphicsArray === "undefined" || graphicsArray.length === 0) {
-                    return Promise.resolve();
-                }
-                var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
-                this.compartmentLayer_line = new FeatureLayer({
-                    labelsVisible: true,
-                    source: graphicsArray,
-                    geometryType: "polyline",
-                    objectIdField: "ObjectID",
-                    fields: [
-                        { name: "ObjectID", type: "oid" },
-                        { name: "compartmentName", type: "string" },
-                    ],
-                    labelingInfo: {
-                        labelExpressionInfo: {
-                            expression: "$feature.compartmentName",
-                        },
-                        symbol: labelSymbol,
-                        visualVariables: mapSettings.visualVariables.textSize
-                    },
-                    renderer: {
-                        type: "simple",
-                        symbol: mapSettings.otherLineSymbol,
-                        visualVariables: mapSettings.visualVariables.size
-                    },
-                });
-                this.map.add(this.compartmentLayer_line);
             }
             catch (e) {
                 if (window.console) {

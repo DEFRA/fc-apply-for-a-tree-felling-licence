@@ -2,36 +2,45 @@ using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure.Fakes;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.AccountAdministration;
+using Forestry.Flo.Internal.Web.Services.AdminHub;
 using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Consumers;
+using Forestry.Flo.Internal.Web.Services.Reports;
+using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.AdminHubs;
 using Forestry.Flo.Services.Applicants;
-using Forestry.Flo.Services.InternalUsers;
-using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Analytics;
+using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.ConditionsBuilder;
 using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FileStorage;
 using Forestry.Flo.Services.FileStorage.Configuration;
 using Forestry.Flo.Services.Gis;
+using Forestry.Flo.Services.InternalUsers;
+using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications;
 using Forestry.Flo.Services.PropertyProfiles;
+using GovUk.OneLogin.AspNetCore;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Forestry.Flo.Internal.Web.Services.AdminHub;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
-using Forestry.Flo.Internal.Web.Services.Reports;
-using Forestry.Flo.Services.Common.Infrastructure;
-using MassTransit;
 using Microsoft.IO;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
-using Forestry.Flo.Internal.Web.Services.Validation;
-using Forestry.Flo.Services.Common.Analytics;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Infrastructure;
 
@@ -98,8 +107,8 @@ public static class ServiceCollectionExtensions
                     }
                     catch (Exception ex)
                     {
-                        //TODO: Handle
-                        throw;
+                        context.Response.Redirect("/Home/Error");
+                        context.HandleResponse();
                     }
                 };
 
@@ -116,9 +125,102 @@ public static class ServiceCollectionExtensions
                 {
                     var principal = context.Principal;
                     var userSignIn = context.HttpContext.RequestServices.GetService<ISignInInternalUser>();
-                    if (principal != null && userSignIn != null)
+
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
+                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure))
+                    ]);
+
+                    context.Principal!.AddIdentity(newIdentity);
+
+                    try
                     {
-                        await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
+                        if (principal != null && userSignIn != null)
+                        {
+                            await userSignIn.HandleUserLoginAsync(principal, context.ProtocolMessage.State);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        context.Response.Redirect("/Home/Error");
+                        context.HandleResponse();
+                    }
+                };
+            });
+
+        return services;
+    }
+
+    public static IServiceCollection AddOneLoginServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var settings = new AzureAdB2COptions();
+        configuration.Bind("AzureAdB2C", settings);
+
+        services
+            .AddHttpClient()
+            .ConfigureHttpClientDefaults(defaults =>
+            {
+                defaults.AddHttpMessageHandler(_ => new UserAgentHandler());
+            })
+            .AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", policyBuilder => policyBuilder
+                    .WithOrigins(settings.Instance)
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials());
+            })
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = "Cookies";
+                options.DefaultChallengeScheme = OneLoginDefaults.AuthenticationScheme;
+            })
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddOneLogin(options =>
+            {
+                var govUkOptions = configuration.GetSection(GovUkOneLoginOptions.ConfigurationKey).Get<GovUkOneLoginOptions>();
+                if (govUkOptions is null)
+                {
+                    throw new InvalidOperationException("GovUkOneLoginOptions configuration section is missing or invalid.");
+                }
+
+                options.InitialiseGovUkOneLogin(govUkOptions);
+
+                options.Events.OnTokenValidated = context =>
+                {
+                    var token = context.ProtocolMessage.State;
+
+                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
+                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
+                    ]);
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        newIdentity.AddClaim(new System.Security.Claims.Claim("token", context.ProtocolMessage.State));
+                    }
+
+                    context.Principal!.AddIdentity(newIdentity);
+                    return Task.CompletedTask;
+                };
+
+                options.Events.OnTicketReceived = async context =>
+                {
+                    var principal = context.Principal;
+                    var userSignIn = context.HttpContext.RequestServices.GetService<ISignInInternalUser>();
+
+                    var token = context.Principal?.Claims.FirstOrDefault(x => x.Type == "token")?.Value;
+
+                    try
+                    {
+                        if (principal != null && userSignIn != null)
+                        {
+                            await userSignIn.HandleUserLoginAsync(principal, token);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        context.Response.Redirect("/Home/Error");
+                        context.HandleResponse();
                     }
                 };
             });
@@ -157,14 +259,19 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(new RecyclableMemoryStreamManager(options));
 
-
-        services.AddSingleton<ValidationProvider>();
+        services.AddSingleton<IValidationProvider, ValidationProvider>();
         services.AddValidatorsFromAssemblyContaining<ValidationProvider>(filter: s => 
             s.ValidatorType != typeof(ConfirmedFellingOperationCrossValidator)
-            && s.ValidatorType != typeof(ConfirmedRestockingOperationCrossValidator)
-            && s.ValidatorType != typeof(ConfirmedFellingAndRestockingCrossValidator));
+            && s.ValidatorType != typeof(ConfirmedRestockingOperationCrossValidator));
         services.AddTransient<AppVersionService>();
         services.AddTransient<IUserAccountService, UserAccountService>();
+
+        services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+        services.AddScoped<IUrlHelper>(x => {
+            var actionContext = x.GetRequiredService<IActionContextAccessor>().ActionContext;
+            var factory = x.GetRequiredService<IUrlHelperFactory>();
+            return factory.GetUrlHelper(actionContext!);
+        });
 
         //Site analytics:
         //Note, the service is registered as singleton - despite accessing HTTP Context for requests to check for cookies,
@@ -212,6 +319,8 @@ public static class ServiceCollectionExtensions
 
         services.AddMassTransit(x =>
         {
+            x.AddConsumer<GenerateSubmittedPdfPreviewConsumer>();
+
             x.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(options.Url, h =>
@@ -219,10 +328,28 @@ public static class ServiceCollectionExtensions
                     h.Username(options.Username);
                     h.Password(options.Password);
                 });
+
+                ReceiveEndpoint<GenerateSubmittedPdfPreviewConsumer>(
+                    GenerateSubmittedPdfPreviewConsumer.QueueName, 
+                    cfg,
+                    context);
             });
         });
 
         return services;
+    }
+
+    private static void ReceiveEndpoint<T>(
+        string queueName,
+        IRabbitMqBusFactoryConfigurator cfg,
+        IRegistrationContext context) where T : class, IConsumer
+    {
+        cfg.ReceiveEndpoint(queueName, r =>
+        {
+            r.SetQuorumQueue();
+            r.SetQueueArgument("declare", "lazy");
+            r.ConfigureConsumer<T>(context);
+        });
     }
 
     private static void RegisterUseCases(IServiceCollection services, IConfiguration configuration)
@@ -237,45 +364,51 @@ public static class ServiceCollectionExtensions
         services.Configure<PublicRegisterExpiryOptions>(configuration.GetSection("PublicRegisterExpiry"));
         services.Configure<VoluntaryWithdrawalNotificationOptions>(configuration.GetSection("VoluntaryWithdrawApplication"));
         services.Configure<LarchOptions>(configuration.GetSection("LarchOptions"));
+        services.AddOptions<EiaOptions>().BindConfiguration(EiaOptions.ConfigurationKey);
+        services.AddOptions<ReviewAmendmentsOptions>().BindConfiguration(ReviewAmendmentsOptions.ConfigurationKey);
 
-        services.AddScoped<RegisterUserAccountUseCase>();
-        services.AddScoped<ExternalConsulteeInviteUseCase>();
-        services.AddScoped<ExternalConsulteeReviewUseCase>();
-        services.AddScoped<FellingLicenceApplicationUseCase>();
-        services.AddScoped<AssignToUserUseCase>();
-        services.AddScoped<AssignToApplicantUseCase>();
-        services.AddScoped<WoodlandOfficerReviewUseCase>();
-        services.AddScoped<PublicRegisterUseCase>();
-        services.AddScoped<SiteVisitUseCase>();
-        services.AddScoped<Pw14UseCase>();
-        services.AddScoped<AdminOfficerReviewUseCase>();
-        services.AddScoped<AddDocumentFromExternalSystemUseCase>();
-        services.AddScoped<ManageAdminHubUseCase>();
-        services.AddScoped<ConfirmedFellingAndRestockingDetailsUseCase>();
-        services.AddScoped<GetSupportingDocumentUseCase>();
-        services.AddScoped<RunFcInternalUserConstraintCheckUseCase>();
-        services.AddScoped<AddSupportingDocumentsUseCase>();
-        services.AddScoped<RemoveSupportingDocumentUseCase>();
-        services.AddScoped<ConditionsUseCase>();
-        services.AddScoped<ExtendApplicationsUseCase>();
-        services.AddScoped<ApproveRefuseOrReferApplicationUseCase>();
-        services.AddScoped<ReturnApplicationUseCase>();
-        services.AddScoped<PublicRegisterExpiryUseCase>();
-        services.AddScoped<GetFcStaffMembersUseCase>();
-        services.AddScoped<CloseFcStaffAccountUseCase>();
-        services.AddScoped<GetApplicantUsersUseCase>();
-        services.AddScoped<AmendExternalUserUseCase>();
-        services.AddScoped<VoluntaryWithdrawalNotificationUseCase>();
-        services.AddScoped<AutomaticWithdrawalNotificationUseCase>();
-        services.AddScoped<GenerateReportUseCase>();
-        services.AddScoped<GeneratePdfApplicationUseCase>();
-        services.AddScoped<ViewAgentAuthorityFormUseCase>();
-        services.AddScoped<AgentAuthorityFormCheckUseCase>();
-        services.AddScoped<MappingCheckUseCase>();
-        services.AddScoped<LarchCheckUseCase>();
-        services.AddScoped<CBWCheckUseCase>();
-        services.AddScoped<ConstraintsCheckUseCase>();
-        services.AddScoped<ApproverReviewUseCase>();
-        services.AddScoped<RevertApplicationFromWithdrawnUseCase>();
+        services.AddScoped<IRegisterUserAccountUseCase, RegisterUserAccountUseCase>();
+        services.AddScoped<IExternalConsulteeInviteUseCase, ExternalConsulteeInviteUseCase>();
+        services.AddScoped<IExternalConsulteeReviewUseCase, ExternalConsulteeReviewUseCase>();
+        services.AddScoped<IFellingLicenceApplicationUseCase, FellingLicenceApplicationUseCase>();
+        services.AddScoped<IAssignToUserUseCase, AssignToUserUseCase>();
+        services.AddScoped<IAssignToApplicantUseCase, AssignToApplicantUseCase>();
+        services.AddScoped<IWoodlandOfficerReviewUseCase, WoodlandOfficerReviewUseCase>();
+        services.AddScoped<IPublicRegisterUseCase, PublicRegisterUseCase>();
+        services.AddScoped<ISiteVisitUseCase, SiteVisitUseCase>();
+        services.AddScoped<IPw14UseCase, Pw14UseCase>();
+        services.AddScoped<IDesignationsUseCase, DesignationsUseCase>();
+        services.AddScoped<IAdminOfficerReviewUseCase, AdminOfficerReviewUseCase>();
+        services.AddScoped<IAddDocumentFromExternalSystemUseCase, AddDocumentFromExternalSystemUseCase>();
+        services.AddScoped<IManageAdminHubUseCase, ManageAdminHubUseCase>();
+        services.AddScoped<IConfirmedFellingAndRestockingDetailsUseCase, ConfirmedFellingAndRestockingDetailsUseCase>();
+        services.AddScoped<IGetSupportingDocumentUseCase, GetSupportingDocumentUseCase>();
+        services.AddScoped<IRunFcInternalUserConstraintCheckUseCase, RunFcInternalUserConstraintCheckUseCase>();
+        services.AddScoped<IAddSupportingDocumentsUseCase, AddSupportingDocumentsUseCase>();
+        services.AddScoped<IRemoveSupportingDocumentUseCase, RemoveSupportingDocumentUseCase>();
+        services.AddScoped<IConditionsUseCase, ConditionsUseCase>();
+        services.AddScoped<IExtendApplicationsUseCase, ExtendApplicationsUseCase>();
+        services.AddScoped<IApproveRefuseOrReferApplicationUseCase, ApproveRefuseOrReferApplicationUseCase>();
+        services.AddScoped<IReturnApplicationUseCase, ReturnApplicationUseCase>();
+        services.AddScoped<IPublicRegisterExpiryUseCase, PublicRegisterExpiryUseCase>();
+        services.AddScoped<IPublicRegisterCommentsUseCase, PublicRegisterCommentsUseCase>();
+        services.AddScoped<IGetFcStaffMembersUseCase, GetFcStaffMembersUseCase>();
+        services.AddScoped<ICloseFcStaffAccountUseCase, CloseFcStaffAccountUseCase>();
+        services.AddScoped<IGetApplicantUsersUseCase, GetApplicantUsersUseCase>();
+        services.AddScoped<IAmendExternalUserUseCase, AmendExternalUserUseCase>();
+        services.AddScoped<IVoluntaryWithdrawalNotificationUseCase, VoluntaryWithdrawalNotificationUseCase>();
+        services.AddScoped<IAutomaticWithdrawalNotificationUseCase, AutomaticWithdrawalNotificationUseCase>();
+        services.AddScoped<IGenerateReportUseCase, GenerateReportUseCase>();
+        services.AddScoped<IGeneratePdfApplicationUseCase, GeneratePdfApplicationUseCase>();
+        services.AddScoped<IViewAgentAuthorityFormUseCase, ViewAgentAuthorityFormUseCase>();
+        services.AddScoped<IAgentAuthorityFormCheckUseCase, AgentAuthorityFormCheckUseCase>();
+        services.AddScoped<IMappingCheckUseCase, MappingCheckUseCase>();
+        services.AddScoped<ILarchCheckUseCase, LarchCheckUseCase>();
+        services.AddScoped<ICBWCheckUseCase, CBWCheckUseCase>();
+        services.AddScoped<IConstraintsCheckUseCase, ConstraintsCheckUseCase>();
+        services.AddScoped<IApproverReviewUseCase, ApproverReviewUseCase>();
+        services.AddScoped<IRevertApplicationFromWithdrawnUseCase, RevertApplicationFromWithdrawnUseCase>();
+        services.AddScoped<IEnvironmentalImpactAssessmentAdminOfficerUseCase, EnvironmentalImpactAssessmentAdminOfficerUseCase>();
+        services.AddScoped<ILateAmendmentResponseWithdrawalUseCase, LateAmendmentResponseWithdrawalUseCase>();
     }
 }

@@ -8,14 +8,16 @@
     ViewData["Title"] = "Add Agent Authority Form Files";
     var maxFileSize = (Settings?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
     var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
+    var applicationId = Context.Request.Query["ApplicationId"];
+    var returnToApplicationSummary = Context.Request.Query["ReturnToApplicationSummary"];
+
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
 
-    <partial name="Partials/_PageErrors" />
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
+<div class="govuk-grid-column-two-thirds">
     
     <h1 class="govuk-heading-xl">Add agent authority form files </h1>
     <p class="govuk-body">Upload the files which represent the authority given to you by the Woodland owner. This may be a single document or multiple.</p>
@@ -176,6 +178,8 @@
                     for (var i = 0; i < selectedFiles.length; i++) {
                         formData.append('agentAuthorityDocumentFiles', selectedFiles[i]);
                     }
+                    formData.append('applicationId', '@applicationId');
+                    formData.append('returnToApplicationSummary', '@returnToApplicationSummary');
                     $.ajax({
                         url: '@Url.Action("AttachAgentAuthorityFiles", "AgentAuthorityFormDocuments", new {agentAuthorityId=Model.AgentAuthorityId})',
                         type: 'POST',

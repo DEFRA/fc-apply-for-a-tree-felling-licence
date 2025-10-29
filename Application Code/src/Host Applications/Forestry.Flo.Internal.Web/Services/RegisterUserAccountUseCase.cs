@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
@@ -19,7 +20,7 @@ using MassTransit;
 
 namespace Forestry.Flo.Internal.Web.Services;
 
-public class RegisterUserAccountUseCase
+public class RegisterUserAccountUseCase : IRegisterUserAccountUseCase
 {
     private readonly RequestContext _requestContext;
     private readonly IAuditService<RegisterUserAccountUseCase> _auditService;

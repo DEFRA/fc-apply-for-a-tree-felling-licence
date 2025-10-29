@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Tests.Common;
 using System;
@@ -39,17 +38,17 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
             CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedRecord =
             FellingLicenceApplicationsContext.FellingLicenceApplications.FirstOrDefault(x => x.Id == application.Id);
 
-        updatedRecord.Should().NotBeNull();
-        updatedRecord!.AdminOfficerReview!.AgentAuthorityFormChecked.Should().Be(isChecked);
-        updatedRecord!.AdminOfficerReview!.MappingChecked.Should().Be(adminOfficerReview.MappingChecked);
-        updatedRecord!.AdminOfficerReview!.ConstraintsChecked.Should().Be(adminOfficerReview.ConstraintsChecked);
-        updatedRecord!.AdminOfficerReview!.LastUpdatedById.Should().Be(_userId);
-        updatedRecord!.AdminOfficerReview!.LastUpdatedDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromHours(1));
+        Assert.NotNull(updatedRecord);
+        Assert.Equal(isChecked, updatedRecord!.AdminOfficerReview!.AgentAuthorityFormChecked);
+        Assert.Equal(adminOfficerReview.MappingChecked, updatedRecord!.AdminOfficerReview!.MappingChecked);
+        Assert.Equal(adminOfficerReview.ConstraintsChecked, updatedRecord!.AdminOfficerReview!.ConstraintsChecked);
+        Assert.Equal(_userId, updatedRecord!.AdminOfficerReview!.LastUpdatedById);
+        Assert.Equal(Now, updatedRecord!.AdminOfficerReview!.LastUpdatedDate);
     }
 
     [Theory]
@@ -64,9 +63,9 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
-        FellingLicenceApplicationsContext.FellingLicenceApplications.Count().Should().Be(0);
+        Assert.Empty(FellingLicenceApplicationsContext.FellingLicenceApplications);
     }
 
     [Theory]
@@ -102,13 +101,13 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         var updatedRecord =
             FellingLicenceApplicationsContext.FellingLicenceApplications.FirstOrDefault(x => x.Id == application.Id);
 
-        updatedRecord.Should().NotBeNull();
-        updatedRecord!.AdminOfficerReview!.AgentAuthorityFormChecked.Should().Be(false);
+        Assert.NotNull(updatedRecord);
+        Assert.False(updatedRecord!.AdminOfficerReview!.AgentAuthorityFormChecked);
     }
 
     [Theory, CombinatorialData]
@@ -132,7 +131,7 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, CombinatorialData]
@@ -190,20 +189,28 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                         true,
                         CancellationToken.None)
                     .ConfigureAwait(false),
+            UpdateAdminOfficerReviewService.AdminOfficerReviewSections.EiaCheck =>
+                await Sut.SetEiaCheckCompletionAsync(
+                        application.Id,
+                        isAgencyApplication,
+                        _userId,
+                        true,
+                        CancellationToken.None)
+                    .ConfigureAwait(false),
             _ => throw new ArgumentOutOfRangeException(nameof(section), section, null)
         };
         
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
 
         var updatedRecord =
             FellingLicenceApplicationsContext.FellingLicenceApplications.FirstOrDefault(x => x.Id == application.Id);
 
-        updatedRecord.Should().NotBeNull();
-        updatedRecord!.AdminOfficerReview!.AgentAuthorityFormChecked.Should().Be(section is UpdateAdminOfficerReviewService.AdminOfficerReviewSections.AgentAuthorityForm);
-        updatedRecord!.AdminOfficerReview!.MappingChecked.Should().Be(section is UpdateAdminOfficerReviewService.AdminOfficerReviewSections.MappingCheck);
-        updatedRecord!.AdminOfficerReview!.ConstraintsChecked.Should().Be(section is UpdateAdminOfficerReviewService.AdminOfficerReviewSections.ConstraintsCheck);
-        updatedRecord!.AdminOfficerReview!.LastUpdatedById.Should().Be(_userId);
-        updatedRecord!.AdminOfficerReview!.LastUpdatedDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromHours(1));
+        Assert.NotNull(updatedRecord);
+        Assert.Equal(section is UpdateAdminOfficerReviewService.AdminOfficerReviewSections.AgentAuthorityForm, updatedRecord!.AdminOfficerReview!.AgentAuthorityFormChecked);
+        Assert.Equal(section is UpdateAdminOfficerReviewService.AdminOfficerReviewSections.MappingCheck, updatedRecord!.AdminOfficerReview!.MappingChecked);
+        Assert.Equal(section is UpdateAdminOfficerReviewService.AdminOfficerReviewSections.ConstraintsCheck, updatedRecord!.AdminOfficerReview!.ConstraintsChecked);
+        Assert.Equal(_userId, updatedRecord!.AdminOfficerReview!.LastUpdatedById);
+        Assert.Equal(Now, updatedRecord!.AdminOfficerReview!.LastUpdatedDate);
     }
 
     [Theory, CombinatorialData]
@@ -219,7 +226,7 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory]
@@ -243,7 +250,7 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory]
@@ -267,7 +274,7 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory]
@@ -291,7 +298,7 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory]
@@ -315,7 +322,7 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
     }
 
     [Theory]
@@ -339,6 +346,6 @@ public class UpdateAdminOfficerReviewServiceStatusConfirmationTests : UpdateAdmi
                 CancellationToken.None)
             .ConfigureAwait(false);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 }

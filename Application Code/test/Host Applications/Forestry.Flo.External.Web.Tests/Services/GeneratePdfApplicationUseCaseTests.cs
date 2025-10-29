@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using CSharpFunctionalExtensions.ValueTasks;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -29,6 +28,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using System.Text.Json;
+using Forestry.Flo.HostApplicationsCommon.Services;
 using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccountModel;
 using InternalUserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -43,7 +43,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
         private readonly Mock<IClock> _clock;
         private readonly Mock<IFileStorageService> _fileStorageService;
         private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepositoryMock;
-        private readonly Mock<IAuditService<GeneratePdfApplicationUseCase>> _GeneratePdfApplicationAuditServiceMock;
+        private readonly Mock<IAuditService<GeneratePdfApplicationUseCaseBase>> _GeneratePdfApplicationAuditServiceMock;
         private readonly Mock<IAuditService<AddDocumentService>> _AddDocumentAuditServiceMock;
         private readonly Mock<IAddDocumentService>? _addDocumentsServiceMock;
         private readonly Mock<IAuditService<CreateApplicationSnapshotDocumentService>> _createApplicationSnapshotDocumentAuditServiceMock;
@@ -58,6 +58,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
         private readonly Mock<IOptions<DocumentVisibilityOptions>> _documentVisibilityOptions;
         private readonly Mock<IOptions<PDFGeneratorAPIOptions>> _licencePDFGeneratorAPIOptions;
         private readonly Mock<IGetConfiguredFcAreas> _mockGetFcAreas;
+        private readonly Mock<IApproverReviewService> _approverReviewMock = new();
 
         private readonly ExternalApplicant _externalUser;
         private readonly Mock<IUnitOfWork> _unitOfWOrkMock;
@@ -96,7 +97,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
         public GeneratePdfApplicationUseCaseTests()
         {
             _fellingLicenceApplicationRepositoryMock = new Mock<IFellingLicenceApplicationInternalRepository>();
-            _GeneratePdfApplicationAuditServiceMock = new Mock<IAuditService<GeneratePdfApplicationUseCase>>();
+            _GeneratePdfApplicationAuditServiceMock = new Mock<IAuditService<GeneratePdfApplicationUseCaseBase>>();
             _AddDocumentAuditServiceMock = new Mock<IAuditService<AddDocumentService>>();
             _addDocumentsServiceMock = new Mock<IAddDocumentService>();
             _createApplicationSnapshotDocumentAuditServiceMock = new Mock<IAuditService<CreateApplicationSnapshotDocumentService>>();
@@ -161,8 +162,10 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!)
             {
+                comp.SubmittedCompartmentDesignations = null;
                 comp.Id = propertyProfile.Compartments[0].Id;
                 comp.CompartmentId = propertyProfile.Compartments[0].Id;
+                comp.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in comp.ConfirmedFellingDetails)
                 {
                     if (felling.SubmittedFlaPropertyCompartment == null)
@@ -211,7 +214,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -329,7 +332,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -439,7 +442,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -522,7 +525,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsSuccess.Should().BeTrue();
+            Assert.True(result.IsSuccess);
 
             // verify
 
@@ -592,6 +595,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
             {
                 comp.Id = propertyProfile.Compartments[0].Id;
                 comp.CompartmentId = propertyProfile.Compartments[0].Id;
+                comp.SubmittedCompartmentDesignations = null;
+                comp.GISData = JsonConvert.SerializeObject(gisData);
                 foreach (var felling in comp.ConfirmedFellingDetails)
                 {
                     if (felling.SubmittedFlaPropertyCompartment == null)
@@ -636,7 +641,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             // assert
 
-            result.IsFailure.Should().BeTrue();
+            Assert.True(result.IsFailure);
 
             // verify
 
@@ -743,6 +748,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
             _foresterAccessMock.Reset();
             _calculateConditionsServiceMock.Reset();
             _mockGetFcAreas.Reset();
+            _approverReviewMock.Reset();
 
             _unitOfWOrkMock.Reset();
             _fellingLicenceApplicationRepositoryMock.Reset();
@@ -766,6 +772,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
                 _foresterAccessMock.Object,
                 _mockGetFcAreas.Object,
                 _clock.Object,
+                _calculateConditionsServiceMock.Object,
+                _approverReviewMock.Object,
                 _licencePDFGeneratorAPIOptions.Object,
                 new NullLogger<GeneratePdfApplicationUseCase>());
         }

@@ -1,10 +1,12 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
@@ -18,12 +20,14 @@ public class ReturnApplicationUseCase(
     IUpdateFellingLicenceApplication updateFellingLicenceService,
     IAuditService<ApproveRefuseOrReferApplicationUseCase> auditService,
     IApproverReviewService approverReviewService,
-    RequestContext requestContext)
+    IAmendCaseNotes amendCaseNotes,
+    RequestContext requestContext) : IReturnApplicationUseCase
 {
     private readonly ILogger<ApproveRefuseOrReferApplicationUseCase> _logger = Guard.Against.Null(logger);
     private readonly IGetFellingLicenceApplicationForInternalUsers _getFellingLicenceService = Guard.Against.Null(getFellingLicenceService);
     private readonly IUpdateFellingLicenceApplication _updateFellingLicenceService = Guard.Against.Null(updateFellingLicenceService);
     private readonly IAuditService<ApproveRefuseOrReferApplicationUseCase> _auditService = Guard.Against.Null(auditService);
+    private readonly IAmendCaseNotes _amendCaseNotes = Guard.Against.Null(amendCaseNotes);
     private readonly RequestContext _requestContext = Guard.Against.Null(requestContext);
 
 
@@ -32,11 +36,12 @@ public class ReturnApplicationUseCase(
     /// </summary>
     /// <param name="user">The internal user making the request.</param>
     /// <param name="applicationId">The application id.</param>
-    /// <param name="requestedStatus">The requested status for the application.</param>
+    /// <param name="returnReason">The reason supplied for returning the application.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     public async Task<FinaliseFellingLicenceApplicationResult> ReturnApplication(
     InternalUser user,
     Guid applicationId,
+    FormLevelCaseNote returnReason,
     CancellationToken cancellationToken)
     {
         var applicationResult = await _getFellingLicenceService.GetApplicationByIdAsync(
@@ -50,6 +55,8 @@ public class ReturnApplicationUseCase(
         }
 
         var application = applicationResult.Value;
+        var currentStatus = application.GetCurrentStatus();
+
         var (hasPreviousStatus, previousStatus) = application.GetNthStatus(1);
         if (hasPreviousStatus is false)
         {
@@ -62,7 +69,7 @@ public class ReturnApplicationUseCase(
             return FinaliseFellingLicenceApplicationResult.CreateFailure("Application does not have a previous AO/WO status to revert to", FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState);
         }
 
-        // check the application has the sent for approval status
+        // check the application has the sent for approval status - TODO modify this check when we implement returning from WO review to AO review
         if (application.StatusHistories.MaxBy(x => x.Created)?.Status is not FellingLicenceStatus.SentForApproval)
         {
             _logger.LogError("Application must have a status of {sentForApproval} to be {requested}", FellingLicenceStatus.SentForApproval.GetDisplayName(), previousStatus.GetDisplayName());
@@ -70,7 +77,7 @@ public class ReturnApplicationUseCase(
                 FinaliseFellingLicenceApplicationProcessOutcomes.IncorrectFellingApplicationState);
         }
 
-        // check user is authorised to approve/refuse the application
+        // check user is authorised to approve/refuse the application - TODO modify this check when we implement returning from WO review to AO review
         if (application.AssigneeHistories.NotAny(x =>
                 x.AssignedUserId == user.UserAccountId && x.Role is AssignedUserRole.FieldManager))
         {
@@ -87,6 +94,32 @@ public class ReturnApplicationUseCase(
             cancellationToken);
 
         var nonBlockingFailures = new List<FinaliseFellingLicenceApplicationProcessOutcomes>();
+
+        if (!string.IsNullOrWhiteSpace(returnReason.CaseNote))
+        {
+            CaseNoteType caseNoteType = currentStatus switch
+            {
+                FellingLicenceStatus.SentForApproval => CaseNoteType.ApproverReviewComment,
+                FellingLicenceStatus.WoodlandOfficerReview => CaseNoteType.WoodlandOfficerReviewComment,
+                FellingLicenceStatus.AdminOfficerReview => CaseNoteType.AdminOfficerReviewComment,
+                _ => CaseNoteType.CaseNote
+            };
+
+            var caseNoteRecord = new AddCaseNoteRecord(
+                FellingLicenceApplicationId: applicationId,
+                Type: caseNoteType,
+                Text: returnReason.CaseNote,
+                VisibleToApplicant: returnReason.VisibleToApplicant,
+                VisibleToConsultee: returnReason.VisibleToConsultee
+            );
+            var caseNoteResult = await _amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
+
+            if (caseNoteResult.IsFailure)
+            {
+                _logger.LogError("Failed to store return reason case note: {Error}", caseNoteResult.Error);
+                nonBlockingFailures.Add(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotStoreCaseNote);
+            }
+        }
 
         switch (previousStatus)
         {

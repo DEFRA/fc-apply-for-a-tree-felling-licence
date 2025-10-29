@@ -23,6 +23,7 @@ public class AgentAuthorityFormDocumentsController : Controller
     [Route("{controller}/{agentAuthorityId}/{action=Index}")]
     public async Task<IActionResult> Index(
         Guid agentAuthorityId,
+        bool? returnToApplicationSummary,
         [FromServices] GetAgentAuthorityFormDocumentsUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -90,7 +91,7 @@ public class AgentAuthorityFormDocumentsController : Controller
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        
+
         var result = await useCase.RemoveAgentAuthorityDocumentAsync(
             user, 
             agentAuthorityId, 
@@ -101,7 +102,10 @@ public class AgentAuthorityFormDocumentsController : Controller
         {
             this.AddErrorMessage("Something went wrong removing the authority form information, please try again");
         }
-
+        if (Request.Headers.Referer.Count > 0)
+        {
+            return Redirect(Request.Headers.Referer);
+        }
         return RedirectToAction(nameof(Index), "AgentAuthorityFormDocuments", new { agentAuthorityId});
     }
 
@@ -112,7 +116,9 @@ public class AgentAuthorityFormDocumentsController : Controller
     /// <param name="id">The id of the agent authority to which the form is to be added to</param>
     /// <returns>Returns view model of <see cref="AddAgentAuthorityDocumentFilesModel"/> for the view to be rendered.</returns>
     [Route("{controller}/{id}/{action}")]
-    public IActionResult AddAgentAuthorityFormFiles(Guid id)
+    public IActionResult AddAgentAuthorityFormFiles(
+        Guid id, 
+        Guid? applicationId)
     {
         var model = new AddAgentAuthorityDocumentFilesModel
         {
@@ -139,6 +145,8 @@ public class AgentAuthorityFormDocumentsController : Controller
         Guid agentAuthorityId,
         FormFileCollection agentAuthorityDocumentFiles,
         [FromServices] AddAgentAuthorityFormDocumentFilesUseCase useCase,
+        [FromForm] Guid? applicationId,
+        [FromForm] bool returnToApplicationSummary,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -162,7 +170,16 @@ public class AgentAuthorityFormDocumentsController : Controller
             new { agentAuthorityId },
             ControllerContext.HttpContext.Request.Scheme
         );
-
+        if (applicationId is not null)
+        {
+            returnUrl = Url.Action
+            (
+                "AgentAuthorityForm",
+                "FellingLicenceApplication",
+                new { agentAuthorityId, applicationId, returnToApplicationSummary },
+                ControllerContext.HttpContext.Request.Scheme
+            );
+        }
         return new CreatedResult
         (
             returnUrl!,

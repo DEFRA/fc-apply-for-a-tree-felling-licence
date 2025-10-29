@@ -546,9 +546,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
 
-                    b.Property<string>("ApplicableToSection")
-                        .HasColumnType("text");
-
                     b.Property<string>("AuthorContactEmail")
                         .IsRequired()
                         .HasColumnType("text");

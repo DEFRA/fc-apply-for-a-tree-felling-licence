@@ -25,12 +25,8 @@ public class Compartment
     /// <summary>
     /// Gets and Sets the total hectares number
     /// </summary>
+    [Column(TypeName = "decimal(18,2)")]
     public double? TotalHectares { get; protected set; }
-
-    /// <summary>
-    /// Gets and Sets the designation
-    /// </summary>
-    public string? Designation { get; protected set; }
 
     /// <summary>
     /// Gets and Sets the GIS data
@@ -52,14 +48,12 @@ public class Compartment
     public Compartment(string compartmentNumber,
         string? subCompartmentName,
         double? totalHectares,
-        string? designation,
         string? gisData,
         Guid propertyProfileId)
     {
         CompartmentNumber = compartmentNumber;
         SubCompartmentName = subCompartmentName;
         TotalHectares = totalHectares;
-        Designation = designation;
         GISData = gisData;
         PropertyProfileId = propertyProfileId;
     }

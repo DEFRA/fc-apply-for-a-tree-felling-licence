@@ -51,9 +51,11 @@
             </dd>
         </div>
 
-        <div condition="@(Model.AccountType == AccountTypeInternal.FieldManager || Model.AccountType == AccountTypeInternal.WoodlandOfficer)" class="govuk-summary-list__row">
+        <div condition="@(Model.AccountType is AccountTypeInternal.FieldManager or AccountTypeInternal.WoodlandOfficer)" class="govuk-summary-list__row">
             <dt class="govuk-summary-list__key">
-                Can this user approve applications
+                <label for="can-approve-applications">
+                    Can this user approve applications
+                </label>
             </dt>
             <dd class="govuk-summary-list__value">
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">

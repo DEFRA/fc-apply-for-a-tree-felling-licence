@@ -11,23 +11,20 @@ define(["require",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
     "esri/geometry/Extent",
-    "esri/widgets/BasemapGallery",
-    "esri/widgets/CoordinateConversion",
-    "esri/widgets/Compass",
-    "esri/widgets/ScaleBar",
-    "esri/widgets/Fullscreen",
     "esri/geometry/geometryEngine",
     "esri/layers/GraphicsLayer",
     "esri/widgets/CoordinateConversion/support/Format",
     "esri/widgets/CoordinateConversion/support/Conversion",
+    "esri/core/reactiveUtils",
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-math.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/mapSettings.js?v=" + Date.now(),
-    "/js/mapping/widgets/alert-widget.js?v=" + Date.now(),
     "/js/mapping/KMLConvertor.js?v=" + Date.now(),
-"/js/JZip.js"],
+    "/js/JZip.js",
+    "/js/mapping/CheckResults.js",
+    "/js/mapping/UseCases/ValidateShape.js"],
     function (require,
         exports,
         config,
@@ -41,21 +38,19 @@ define(["require",
         locator,
         FeatureLayer,
         Extent,
-        BasemapToggle,
-        CoordinateConversion,
-        Compass, ScaleBar,
-        Fullscreen,
         geometryEngine,
         GraphicsLayer,
         Format,
         Conversion,
+        reactiveUtils,
         Proj4js,
         GT_WGS84,
         GT_Math,
         MapsCommon, mapSettings,
-        AlertWidget,
         kml,
-        JSZip    ) {
+        JSZip,
+        CheckingResult,
+        ValidateShape) {
         var bulkImportMap = /** @class */ (function () {
 
             /**
@@ -65,12 +60,14 @@ define(["require",
             function bulkImportMap(location) {
                 Proj4js.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.999601 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.06,0.15,0.247,0.842,-20.489 +units=m +no_defs");
                 Proj4js.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+                this.location = location;
                 this.viewOnClickEvt = null;
                 this.compartmentName = 1;
                 this.compartmentSub = 'A';
                 this.supportedFileTypes = [];
                 this.maxFileSize = 30;
                 this.currentHighlight = null;
+                this._lastMessage = "";
                 this.submitBtn = document.getElementById("submit");
 
                 this.importControl = document.getElementById("importFileControl");
@@ -84,22 +81,22 @@ define(["require",
                         }
 
                         if (e.target.files[0].size > that.maxFileSize) {
-                            that.alertWidget.ShowMessage("error", "The file you atemptting to upload is to big");
+                            that.ShowMessage("error", "The file you atemptting to upload is to big");
                             return;
                         }
 
                         const filePath = e.target.value;
                         if (typeof filePath === "undefined" || filePath.length === 0) {
-                            that.alertWidget.ShowMessage("error", "Unable to find file");
+                            that.ShowMessage("error", "Unable to find file");
                             return;
                         }
 
                         const fileExt = filePath.slice(filePath.lastIndexOf('.'));
                         if (!this.supportedFileTypes.includes(fileExt)) {
-                            that.alertWidget.ShowMessage("error", "File type is not supported");
+                            that.ShowMessage("error", "File type is not supported");
                             return;
                         }
-                        if (fileExt.toLocaleLowerCase() === ".kml" ) {
+                        if (fileExt.toLocaleLowerCase() === ".kml") {
                             var fileReader = new FileReader();
                             fileReader.readAsText(e.target.files[0]);
                             fileReader.onload = function () {
@@ -126,7 +123,7 @@ define(["require",
                                 })
                                     .then((obj) => {
                                         if (obj.status !== 200) {
-                                            that.alertWidget.ShowMessage("error", "Unable to load shape data");
+                                            that.ShowMessage("error", "Unable to load shape data");
                                             return;
                                         }
                                         that.processResult(obj.body);
@@ -140,11 +137,11 @@ define(["require",
                             fileReader.onload = async function () {
                                 try {
                                     const jszip = new JSZip();
-                                    const zip = await jszip.loadAsync(fileReader.result); 
+                                    const zip = await jszip.loadAsync(fileReader.result);
                                     const kmlFile = Object.keys(zip.files).find((fileName) => fileName.endsWith(".kml"));
 
                                     if (!kmlFile) {
-                                        that.alertWidget.ShowMessage("error", "No KML file found in the KMZ archive.");
+                                        that.ShowMessage("error", "No KML file found in the KMZ archive.");
                                         return;
                                     }
 
@@ -168,14 +165,14 @@ define(["require",
                                         })
                                         .then((obj) => {
                                             if (obj.status !== 200) {
-                                                that.alertWidget.ShowMessage("error", "Unable to load shape data");
+                                                that.ShowMessage("error", "Unable to load shape data");
                                                 return;
                                             }
                                             that.processResult(obj.body);
                                         });
                                 } catch (error) {
                                     console.error("Error processing KMZ file:", error);
-                                    that.alertWidget.ShowMessage("error", "Failed to process KMZ file.");
+                                    that.ShowMessage("error", "Failed to process KMZ file.");
                                 }
                             };
                             return;
@@ -201,7 +198,7 @@ define(["require",
                                 })
                                     .then((obj) => {
                                         if (obj.status !== 200) {
-                                            that.alertWidget.ShowMessage("error", "Unable to load shape data");
+                                            that.ShowMessage("error", "Unable to load shape data");
                                             return;
                                         }
                                         that.processResult(obj.body);
@@ -209,7 +206,6 @@ define(["require",
                             }
                             return;
                         }
-
 
                         fetch(window.origin + "/api/Gis/GetShapes", {
                             method: "POST",
@@ -247,23 +243,23 @@ define(["require",
                     basemap: baseMap
                 });
 
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: mapSettings.englandExtent,
-                    constraints: {
-                        maxZoom: 20
-                    }
-                });
 
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
+
+                this.view = mapComponent.view;
 
                 this.esriHelper = new MapsCommon(this.view);
                 this.defaultMapExtentForEngland = new Extent(mapSettings.englandExtent);
-
+                this._validateShapeUseCase = new ValidateShape(geometryEngine, this.defaultMapExtentForEngland);
                 this._drawingLayer = new GraphicsLayer();
                 this.map.add(this._drawingLayer);
                 this.addSelectionWatcher()
-                this.view.when(this.loadData.bind(this))
+                this.view.when(() => {
+                    this.view.extent = mapSettings.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    return this.loadData.bind(this);
+                })
                     .then(this.buildGraphics.bind(this))
                     .then(this.setUpWidgets.bind(this))
                     .then(this.addWatermark.bind(this))
@@ -321,22 +317,22 @@ define(["require",
                 // Add the watermark layer to the map
                 this.map.add(watermarkLayer);
 
-                // Update the watermark positions initially and whenever the view changes
-                this.view.watch("stationary", (newValue) => {
-                    if (newValue) {
-                        updateWatermarkPositions();
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
                     }
-                });
-                this.view.watch("extent", updateWatermarkPositions);
-
-                // Watch for basemap changes and toggle watermark visibility
-                this.view.watch("map.basemap", (newBasemap) => {
-                    if (!newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK) {
-                        watermarkLayer.visible = true;
-                    } else {
-                        watermarkLayer.visible = false;
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
                     }
-                });
+                );
             };
 
             /**
@@ -351,7 +347,6 @@ define(["require",
 
                 this.view.on("click", (e) => {
                     that.view.hitTest(e).then(async (r) => {
-                        console.log("here");
                         if (!r.results || r.results.length === 0) {
                             return;
                         }
@@ -363,11 +358,16 @@ define(["require",
                         }
                         const graphic = results[0].graphic;
 
+                        if (that._validateShapeUseCase.Execute(graphic, []) !== CheckingResult.Passed) {
+                            that.ShowMessage("error", "This shape is invalid and importing it has been canceled");
+                            return;
+                        }
+
+
                         const intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
 
                         if (intersects) {
-                            that.alertWidget.ShowMessage("error", "This shape intersects with another shape in the map.");
-                            checkbox.checked = false;
+                            that.ShowMessage("error", "This shape intersects with another shape in the map.");
                             return;
                         }
 
@@ -440,21 +440,6 @@ define(["require",
                         enabled: true
                     });
                 }
-                if (this.ocLayer_Line) {
-                    sources.push({
-                        layer: this.ocLayer_Line,
-                        enabled: true
-                    });
-                }
-
-                const fullscreenWidget = new Fullscreen({
-                    view: this.view,
-                    element: document.getElementById("shell")
-                });
-
-                const compassWidget = new Compass({
-                    view: this.view
-                });
 
                 that.map.basemap.title = "OS Map";
 
@@ -466,18 +451,30 @@ define(["require",
                     id: "wmsBasemap"
                 });
 
+                const mapComponent = document.getElementById(this.location)
+                await mapComponent.viewOnReady();
 
-                const basemapToggleWidget = new BasemapToggle({
-                    view: this.view,
-                    source: [that.map.basemap, wmsBasemap],
-                    container: "basemaps-container"
+                const basemapGallery = document.querySelector("arcgis-basemap-gallery");
+                const [LocalBasemapsSource, centroidOperator, simplifyOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js",
+                    "@arcgis/core/geometry/operators/simplifyOperator.js"
+                ]);
+
+                this.centroidOperator = centroidOperator;
+                this.simplifyOperator = simplifyOperator;
+
+
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
                 });
 
-                const scaleBarWidget = new ScaleBar({
-                    view: this.view,
-                    unit: "dual" // The scale bar displays both metric and non-metric units.
-                });
-
+                basemapGallery.view = this.view;
+                document.querySelector("arcgis-coordinate-conversion").view = this.view;
+       
                 const newFormat = new Format({
                     name: "OS Grid",
                     conversionInfo: {
@@ -518,23 +515,7 @@ define(["require",
                         }
                     ]
                 });
-                const coordinateConversionWidget = new CoordinateConversion({
-                    view: this.view,
-                    container: "coordinate-container",
-                    visibleElements: {
-                        settingsButton: false,
-                        expandButton: false,
-                        editButton: false,
-                        captureButton: false,
-                    }
-                });
-                coordinateConversionWidget.formats.add(newFormat);
-                coordinateConversionWidget.conversions.splice(
-                    0,
-                    0,
-                    new Conversion({
-                        format: newFormat
-                    }));
+                document.querySelector("arcgis-coordinate-conversion").formats.push(newFormat);
 
                 const coordinateHelpButton = document.getElementById("help-coordinate-button");
                 if (coordinateHelpButton) {
@@ -601,8 +582,6 @@ define(["require",
                     });
                 }
 
-                this.alertWidget = new AlertWidget({});
-
                 await fetch("/api/Gis/UploadSettings", mapSettings.requestParamsAPI).then((response) => {
                     if (!response.ok) {
                         throw new Error(`Failed with HTTP code ${response.status}`);
@@ -612,11 +591,6 @@ define(["require",
                 }).then((json) => {
                     that.supportedFileTypes = json.supportedFileTypes;
                     that.maxFileSize = json.maxSize;
-                    this.view.ui.move("zoom", "top-right");
-                    that.view.ui.add(compassWidget, "top-right");
-                    that.view.ui.add(fullscreenWidget, "top-right");
-                    that.view.ui.add(that.alertWidget, "top-right");
-                    that.view.ui.add(scaleBarWidget, "bottom-left");
                     that.view.ui.add(document.getElementById("editCompartment"), "top-left");
 
                     const editDetailsHelpButton = document.getElementById("help-editDetails-button");
@@ -626,7 +600,7 @@ define(["require",
                         });
                     }
                 }).catch(() => {
-                    that.alertWidget.ShowMessage("error", "Unable to load supported file types. Importing is blocked! ");
+                    that.ShowMessage("error", "Unable to load supported file types. Importing is blocked! ");
                 });
 
 
@@ -652,7 +626,7 @@ define(["require",
                     }
                 };
 
-                document.querySelector("calcite-action-bar").addEventListener("click", handleActionBarClick);
+                document.querySelector(".action-bar").addEventListener("click", handleActionBarClick);
                 document.addEventListener("calciteActionBarToggle", event => {
                     that.actionBarExpanded = !that.actionBarExpanded;
                     that.view.padding = {
@@ -676,7 +650,7 @@ define(["require",
                 const popupURL = `${window.location.origin}${path}`;
                 const popup = window.open(popupURL, 'Popup Window', settings);
                 if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-                    that.alertWidget.ShowMessage("info", "The popup window was blocked by the browser. Please allow pop-ups for this website.");
+                    that.ShowMessage("info", "The popup window was blocked by the browser. Please allow pop-ups for this website.");
                 }
             };
 
@@ -701,19 +675,77 @@ define(["require",
                     }).then(function (obj) {
                         if (obj.status !== 200) {
                             if (obj.status === 401) {
-                                that.alertWidget.ShowMessage("", "You don't have access to this property");
+                                that.ShowMessage("", "You don't have access to this property");
                                 return [];
                             }
-                            that.alertWidget("", "Unable to load the property");
+                            that.ShowMessage("", "Unable to load the property");
                             return [];
                         }
                         if (!obj.body) {
-                            that.alertWidget.ShowMessage("", "Unable to read settings");
+                            that.ShowMessage("", "Unable to read settings");
                             return [];
                         }
                         that.nearestTown = obj.body.nearestTown;
                         return obj.body.allPropertyCompartments;
                     });
+            }
+
+            bulkImportMap.prototype.ShowMessage = function (style, message, override) {
+
+
+                const ms = document.getElementById("alert");
+
+
+                style = style === "" ? "error" : style;
+
+                if (!ms) {
+                    return;
+                }
+
+                if (ms.getAttribute("open") && this._lastMessage === message) {
+                    return;
+                }
+
+                if (override === undefined) {
+                    ms.innerHTML = "";
+
+                    let iconValue = "";
+                    let titleString = "Error";
+                    let kind = "danger";
+                    switch (style) {
+                        case "success":
+                            iconValue = "check-square";
+                            titleString = "Success";
+                            kind = "success";
+                            break;
+                        case "info":
+                            iconValue = "add-in";
+                            titleString = "Information";
+                            kind = "info";
+                            break;
+                        case "warning":
+                            iconValue = "accessibility";
+                            titleString = "Warning";
+                            kind = "warning";
+                            break;
+                    }
+
+                    ms.setAttribute("icon", iconValue);
+                    ms.setAttribute("kind", kind);
+                    const title = document.createElement("div");
+                    title.setAttribute("slot", "title");
+                    title.innerText = titleString;
+                    ms.appendChild(title);
+                }
+
+                const content = document.createElement("div");
+                content.setAttribute("slot", "title");
+                content.innerText = message;
+                ms.appendChild(content);
+
+                this._lastMessage = message;
+
+                ms.setAttribute("open", "");
             }
 
             /**
@@ -733,7 +765,7 @@ define(["require",
 
                     const gisData = JSON.parse(item.gisData);
                     if (typeof gisData === "undefined" || gisData === null || !gisData.spatialReference || !gisData.spatialReference.wkid) {
-                        that.alertWidget.ShowMessage("", `Invalid object:${JSON.stringify(item)}`);
+                        that.ShowMessage("", `Invalid object:${JSON.stringify(item)}`);
                         return;
                     }
 
@@ -836,7 +868,7 @@ define(["require",
 
                 if (typeof graphics === "undefined" || graphics === null || graphics.length === 0) {
                     if (!that.nearestTown) {
-                        that.alertWidget.ShowMessage("info", "Nearest town wasn't set");
+                        that.ShowMessage("info", "Nearest town wasn't set");
                         this.view.goTo({
                             target: this.defaultMapExtentForEngland.center,
                             zoom: 8
@@ -851,7 +883,7 @@ define(["require",
                                     zoom: 15
                                 });
                             } else {
-                                that.alertWidget.ShowMessage("", `Unable to find town "${nearestTown}"`);
+                                that.ShowMessage("", `Unable to find town "${nearestTown}"`);
                                 //Default the zoom level to 6, as GBR was set as country, if the place is invalid
                                 that.view.goTo({
                                     zoom: 6
@@ -934,25 +966,9 @@ define(["require",
                     let label = shapeGraphic.attributes.compartmentName;
                     var labelSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
                     labelSymbol.text = label;
-                    if (shapeGraphic.geometry.type === "point") {
-                        labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                        labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
+                    if (shapeGraphic.geometry.type === "polygon") {
                         resx = new Graphic({
-                            geometry: shapeGraphic.geometry,
-                            symbol: labelSymbol
-                        });
-                    }
-                    else if (shapeGraphic.geometry.type === "polyline") {
-                        labelSymbol.xoffset = mapSettings.pointOffset.xoffset;
-                        labelSymbol.yoffset = mapSettings.pointOffset.yoffset;
-                        resx = new Graphic({
-                            geometry: shapeGraphic.geometry.extent.center,
-                            symbol: labelSymbol
-                        });
-                    }
-                    else {
-                        resx = new Graphic({
-                            geometry: shapeGraphic.geometry.centroid,
+                            geometry: this.centroidOperator.execute(shapeGraphic.geometry),
                             symbol: labelSymbol
                         });
                     }
@@ -963,6 +979,7 @@ define(["require",
                     }
                     return resx;
                 };
+
             bulkImportMap.prototype.getSizeOfShape = function (workingGraphic) {
                 var hectares = geometryEngine.planarArea(workingGraphic.geometry, "hectares");
                 if (hectares < 0) {
@@ -986,7 +1003,6 @@ define(["require",
                         ShapeID: g.uid,
                         CompartmentNumber: name,
                         TotalHectares: that.getSizeOfShape(g),
-                        designation: "",
                         woodlandName: "",
                         GISData: JSON.stringify(g.geometry.toJSON())
                     });
@@ -1015,12 +1031,12 @@ define(["require",
                         return response.json();
                     }).then(function (resx) {
                         if (resx.error) {
-                            that.alertWidget.ShowMessage("", resx.error);
+                            that.ShowMessage("", resx.error);
                             return;
                         }
 
                         if (typeof resx.failures === "undefined" || resx.failures === null || resx.failures.length === 0) {
-                            that.alertWidget.ShowMessage("success", "Shapes imported. Redirecting back to woodland");
+                            that.ShowMessage("success", "Shapes imported. Redirecting back to woodland");
                             try {
                                 var applicationId = document.getElementById("ApplicationId").value;
                                 var woodlandOwnerId = document.getElementById("WoodlandOwnerId").value;
@@ -1046,7 +1062,7 @@ define(["require",
                             }
                             return;
                         } else {
-                            that.alertWidget.ShowDetailedMessages("warning", "The following compartments couldn't be saved:", resx.failures.map((f) => f.value));
+                            that.ShowDetailedMessages("warning", "The following compartments couldn't be saved:", resx.failures.map((f) => f.value));
                             resx.success.forEach((s) => {
                                 that._drawingLayer.graphics.every((g) => {
                                     if (g.uid === s) {
@@ -1094,11 +1110,24 @@ define(["require",
 
             bulkImportMap.prototype.processResult = function (data) {
                 if (data.featureCollection.layers[0].layerDefinition.geometryType !== "esriGeometryPolygon") {
-                    this.alertWidget.ShowMessage("error", "Only Polygons are supported");
+                    this.ShowMessage("error", "Only Polygons are supported");
                     return;
                 }
 
                 const that = this;
+
+                if (data.featureCollection.layers.length === 0) {
+                    that.ShowMessage("error", "No layers found in the file");
+                    document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                    that.clearImportWidget();
+                    return;
+                }
+                if (data.featureCollection.layers[0].featureSet.features.length === 0) {
+                    that.ShowMessage("error", "No features found");
+                    document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                    that.clearImportWidget();
+                    return;
+                }
 
                 var nextPanel = document.getElementById(`SelectArea`);
                 if (nextPanel) {
@@ -1108,13 +1137,6 @@ define(["require",
                 nextPanel = document.getElementById(`SelectField`);
                 if (nextPanel) {
                     nextPanel.removeAttribute("hidden");
-                }
-
-                if (data.featureCollection.layers.length === 0) {
-                    return;
-                }
-                if (data.featureCollection.layers[0].featureSet.features.length === 0) {
-                    return;
                 }
 
                 data.featureCollection.layers[0].featureSet.features[0].attributes
@@ -1248,10 +1270,16 @@ define(["require",
                         }
 
                         if (checkbox.checked) {
+                            if (that._validateShapeUseCase.Execute(gotoItem, [], this.simplifyOperator) !== CheckingResult.Passed) {
+                                checkbox.checked = false;
+                                that.ShowMessage("error", "This shape is invalid and importing it has been canceled");
+                                return;
+                            }
+
                             const intersects = await this.checkIntersectionsWithFeatureLayer(gotoItem.geometry);
 
                             if (intersects) {
-                                that.alertWidget.ShowMessage("error", "This shape intersects with another shape in the map.");
+                                that.ShowMessage("error", "This shape intersects with another shape in the map.");
                                 checkbox.checked = false;
                                 return;
                             }
@@ -1293,7 +1321,7 @@ define(["require",
                 var checkbox = document.createElement("input");
                 checkbox.type = "checkbox";
                 all.appendChild(checkbox);
-                all.addEventListener("click", (e) => {
+                all.addEventListener("click", async (e) => {
                     e.stopPropagation();
                     let checkbox;
                     if (e.target.type === "checkbox") {
@@ -1304,30 +1332,47 @@ define(["require",
                     }
 
                     const childCheckboxes = main.querySelectorAll("input[type='checkbox']");
-                    childCheckboxes.forEach((childCheckbox) => {
-                        childCheckbox.checked = checkbox.checked;
-                    });
-
-
                     let items = [];
+
                     if (checkbox.checked) {
-                        items = this._drawingLayer.graphics.items.filter((i) => i.attributes).map((i) => {
-                            i.attributes.isSelected = true;
-                            i.symbol = mapSettings.importShapeSelected;
-                            return i
-                        });
-                    }
-                    else {
+                        for (let i = 0; i < childCheckboxes.length; i++) {
+                            const childCheckbox = childCheckboxes[i];
+                            const key = childCheckbox.getAttribute("data-ImportKey");
+                            const graphic = this._drawingLayer.graphics.items.find((g) => g.attributes && g.attributes["ImportKey"] === key);
+
+                            // Validate shape before selecting
+                            if (that._validateShapeUseCase.Execute(graphic, []) === CheckingResult.Passed) {
+                                // Optionally check for intersection here as well
+                                const intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
+                                if (!intersects) {
+                                    childCheckbox.checked = true;
+                                    graphic.attributes.isSelected = true;
+                                    graphic.symbol = mapSettings.importShapeSelected;
+                                    items.push(graphic);
+                                } else {
+                                    childCheckbox.checked = false;
+                                    graphic.attributes.isSelected = false;
+                                }
+                            } else {
+                                childCheckbox.checked = false;
+                                graphic.attributes.isSelected = false;
+                                that.ShowMessage("error", `Shape ${graphic.attributes.compartmentName} is invalid and was not selected.`, true);
+                                checkbox.checked = false;
+                            }
+                        }
+                    } else {
                         items = this._drawingLayer.graphics.items.filter((i) => i.attributes).map((i) => {
                             i.attributes.isSelected = false;
                             i.symbol = mapSettings.importShape;
-                            return i
+                            return i;
+                        });
+                        childCheckboxes.forEach((childCheckbox) => {
+                            childCheckbox.checked = false;
                         });
                     }
 
                     that._drawingLayer.removeMany(items);
                     that._drawingLayer.addMany(items);
-
                 });
                 all.appendChild(document.createTextNode("All"));
                 all.appendChild(main);
@@ -1364,11 +1409,30 @@ define(["require",
 
             }
 
+            bulkImportMap.prototype.clearImportWidget = function () {
+                this._drawingLayer.removeAll();
+                this.handleLabelsOnDrawingLayer();
+
+                var list = document.getElementById("selection");
+
+                this.removeAllChildNodes(list);
+
+                var nextPanel = document.getElementById(`SelectArea`);
+                if (nextPanel) {
+                    nextPanel.setAttribute("hidden", "true");
+                }
+                nextPanel = document.getElementById(`SelectField`);
+                if (nextPanel) {
+                    nextPanel.setAttribute("hidden", "true");
+                }
+            };
+
             bulkImportMap.prototype.removeAllChildNodes = function (parent) {
-                if (!parent)
-                    while (parent.firstChild) {
-                        parent.removeChild(parent.firstChild);
-                    }
+                if (!parent) return;
+
+                while (parent.firstChild) {
+                    parent.removeChild(parent.firstChild);
+                }
             }
 
             bulkImportMap.prototype.generateGuid = function () {
@@ -1389,15 +1453,8 @@ define(["require",
                 const labelGraphics = this._drawingLayer.graphics.items.map((graphic) => {
                     let textSymbol = JSON.parse(JSON.stringify(mapSettings.activeTextSymbol));
                     textSymbol.text = graphic.attributes[that.fieldControl.options[that.fieldControl.selectedIndex || 0].value] || "";
+                    labelGeometry = this.centroidOperator.execute(graphic.geometry);
 
-                    let labelGeometry;
-                    if (graphic.geometry.type === "point") {
-                        labelGeometry = graphic.geometry;
-                    } else if (graphic.geometry.type === "polygon") {
-                        labelGeometry = graphic.geometry.centroid;
-                    } else if (graphic.geometry.type === "polyline") {
-                        labelGeometry = graphic.geometry.extent.center;
-                    }
 
                     return new Graphic({
                         geometry: labelGeometry,

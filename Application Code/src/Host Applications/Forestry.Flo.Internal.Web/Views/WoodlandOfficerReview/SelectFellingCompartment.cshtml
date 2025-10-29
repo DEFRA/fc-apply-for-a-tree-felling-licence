@@ -6,11 +6,12 @@
     ViewData["Title"] = "Select felling compartment";
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_PageErrors" />
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="Model.FellingLicenceApplicationSummary" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="Model.FellingLicenceApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
 
     <form method="post">
         <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
@@ -59,7 +60,14 @@
                 </div>
             </div>
             <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="map">
-                <div id="viewDiv" aria-label="Map of compartments within the selected property"></div>
+                <arcgis-map id="viewDiv" aria-label="Map of the selected compartment">
+                    <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+                    <arcgis-zoom slot="top-right"></arcgis-zoom>
+                    <arcgis-compass slot="top-right"></arcgis-compass>
+                    <arcgis-expand slot="top-right">
+                        <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                    </arcgis-expand>
+                </arcgis-map>
             </div>
         </div>
 
@@ -76,7 +84,7 @@
 </div>
 
     @section Css {
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+        <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
 
     <style>
         #viewDiv {
@@ -92,7 +100,10 @@
 
 @section Scripts
 {
-    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
+
     <script>
         document.handleCheckboxClick= function (event){
             let elm = document.getElementById("GisData");

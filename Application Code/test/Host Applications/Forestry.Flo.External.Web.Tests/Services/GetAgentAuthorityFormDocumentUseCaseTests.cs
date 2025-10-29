@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Services.AgentAuthority;
 using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
@@ -37,7 +38,7 @@ public class GetAgentAuthorityFormDocumentUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.Equal(response.AgentAuthorityFormResponseModels.Count, result.Value.HistoricAuthorityForms.Count + (result.Value.HasCurrentAuthorityForm ? 1 :0));
         Assert.Equal(result.Value.WoodlandOwnerOrOrganisationName, response.WoodlandOwnerModel.IsOrganisation ? response.WoodlandOwnerModel.OrganisationName : response.WoodlandOwnerModel.ContactName );
         Assert.Equal(agentAuthorityId, result.Value.AgentAuthorityId);
@@ -70,7 +71,7 @@ public class GetAgentAuthorityFormDocumentUseCaseTests
             CancellationToken.None);
 
         // assert
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
 
         _mockAgentAuthorityService.Verify(
             x => x.GetAgentAuthorityFormDocumentsByAuthorityIdAsync(
@@ -93,8 +94,13 @@ public class GetAgentAuthorityFormDocumentUseCaseTests
 
         _mockAgentAuthorityService.Reset();
 
+        var mockRetrieveUserAccountsService = new Mock<IRetrieveUserAccountsService>();
+        var mockUpdateFlaForExternalUsers = new Mock<IUpdateFellingLicenceApplicationForExternalUsers>();
+
         return new GetAgentAuthorityFormDocumentsUseCase(
             _mockAgentAuthorityService.Object,
+            mockRetrieveUserAccountsService.Object,
+            mockUpdateFlaForExternalUsers.Object,
             new NullLogger<GetAgentAuthorityFormDocumentsUseCase>());
     }
 }

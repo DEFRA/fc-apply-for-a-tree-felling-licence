@@ -1,5 +1,4 @@
 ﻿using Forestry.Flo.Services.Gis.Models.Esri.Responses;
-using FluentAssertions;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 
@@ -15,8 +14,8 @@ public partial class ForestryServicesTests
 
         var result = sut.ConvertLatLongToOSGrid(new LatLongObj { Longitude = lon, Latitude = lat}, length, includeSpaces, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(expectedResult);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedResult, result.Value);
     }
 
     [Fact]
@@ -26,8 +25,8 @@ public partial class ForestryServicesTests
 
         var result = sut.ConvertLatLongToOSGrid(new LatLongObj { Longitude = 100, Latitude = 10 }, 0, true, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("The given points are not in the uk");
+        Assert.True(result.IsFailure);
+        Assert.Equal("The given points are not in the uk", result.Error);
     }
 
 
@@ -40,8 +39,8 @@ public partial class ForestryServicesTests
 
         var result = sut.ConvertLatLongToOSGrid(new LatLongObj { Longitude = lon, Latitude = lat }, length, includeSpaces, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(expectedResult);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedResult, result.Value);
     }
 
 }

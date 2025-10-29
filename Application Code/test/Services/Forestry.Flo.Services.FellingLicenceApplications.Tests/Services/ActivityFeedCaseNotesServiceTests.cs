@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
@@ -78,7 +77,7 @@ public class ActivityFeedCaseNotesServiceTests
 
         // assert
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         Assert.Equal(caseNoteModels.Count, result.Value.Count);
         foreach (var expected in caseNoteModels)
         {
@@ -115,7 +114,10 @@ public class ActivityFeedCaseNotesServiceTests
                 ActivityFeedItemType.AdminOfficerReviewComment,
                 ActivityFeedItemType.WoodlandOfficerReviewComment,
                 ActivityFeedItemType.SiteVisitComment,
-                ActivityFeedItemType.ReturnToApplicantComment
+                ActivityFeedItemType.ReturnToApplicantComment,
+                ActivityFeedItemType.CBWCheckComment,
+                ActivityFeedItemType.LarchCheckComment,
+                ActivityFeedItemType.ApproverReviewComment
         };
         var expectedCaseNoteTypes = new CaseNoteType[]
         {
@@ -123,7 +125,10 @@ public class ActivityFeedCaseNotesServiceTests
             CaseNoteType.AdminOfficerReviewComment,
             CaseNoteType.WoodlandOfficerReviewComment,
             CaseNoteType.SiteVisitComment,
-            CaseNoteType.ReturnToApplicantComment
+            CaseNoteType.ReturnToApplicantComment,
+            CaseNoteType.CBWCheckComment,
+            CaseNoteType.LarchCheckComment,
+            CaseNoteType.ApproverReviewComment
         };
 
         _viewCaseNotes.Setup(r => r.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
@@ -150,7 +155,7 @@ public class ActivityFeedCaseNotesServiceTests
 
         // assert
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -164,6 +169,8 @@ public class ActivityFeedCaseNotesServiceTests
             ActivityFeedItemType.SiteVisitComment,
             ActivityFeedItemType.ReturnToApplicantComment,
             ActivityFeedItemType.LarchCheckComment,
+            ActivityFeedItemType.CBWCheckComment,
+            ActivityFeedItemType.ApproverReviewComment
         };
 
         var sut = CreateSut();

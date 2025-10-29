@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -19,7 +20,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 /// on the Decision Public Register, and then invokes the call to remove them from the Decision public Register,
 /// finally sending notifications to the Approvers.
 /// </summary>
-public class RemoveApplicationsFromDecisionPublicRegisterUseCase
+public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplicationsFromDecisionPublicRegisterUseCase
 {
     private readonly IGetFellingLicenceApplicationForInternalUsers _getFellingLicenceApplicationService;
     private readonly IUpdateFellingLicenceApplication _updateFellingLicenceApplicationService;
@@ -215,7 +216,8 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase
                     AdminHubFooter = adminHubFooter,
                     PublishDate = DateTimeDisplay.GetDateDisplayString(
                         dataModel.PublicRegister.DecisionPublicRegisterPublicationTimestamp!.Value),
-                    RegisterName = "Decision"
+                    RegisterName = "Decision",
+                    ApplicationId = dataModel.PublicRegister.FellingLicenceApplicationId
                 };
 
             var notificationResult =

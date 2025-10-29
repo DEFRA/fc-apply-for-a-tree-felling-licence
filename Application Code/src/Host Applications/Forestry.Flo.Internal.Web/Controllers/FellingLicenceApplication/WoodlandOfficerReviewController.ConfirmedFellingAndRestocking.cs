@@ -1,9 +1,11 @@
 ﻿using CSharpFunctionalExtensions;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +23,7 @@ public partial class WoodlandOfficerReviewController
     public async Task<IActionResult> AmendConfirmedFellingDetails(
         [FromQuery] Guid applicationId,
         [FromQuery] Guid confirmedFellingDetailsId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, confirmedFellingRestockingDetailsModel) = await useCase.GetConfirmedFellingAndRestockingDetailsAsync(
@@ -60,7 +62,6 @@ public partial class WoodlandOfficerReviewController
                     SubCompartmentName = specificFellingDetail.SubCompartmentName,
                     SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
                     TotalHectares = specificFellingDetail.TotalHectares,
-                    Designation = specificFellingDetail.Designation,
                     ConfirmedFellingDetails =
                         specificFellingDetail.ConfirmedFellingDetails.First(x =>
                             x.ConfirmedFellingDetailsId == confirmedFellingDetailsId),
@@ -76,7 +77,7 @@ public partial class WoodlandOfficerReviewController
     [HttpPost]
     public async Task<IActionResult> AmendConfirmedFellingDetails(
         AmendConfirmedFellingDetailsViewModel model,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         [FromServices] IValidator<AmendConfirmedFellingDetailsViewModel> validator,
         CancellationToken cancellationToken)
     {
@@ -138,7 +139,7 @@ public partial class WoodlandOfficerReviewController
     public async Task<IActionResult> AddConfirmedFellingDetails(
         [FromQuery] Guid applicationId,
         [FromQuery] Guid compartmentId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, confirmedFellingRestockingDetailsModel) = await useCase.GetConfirmedFellingAndRestockingDetailsAsync(
@@ -175,7 +176,6 @@ public partial class WoodlandOfficerReviewController
                     CompartmentNumber = specificCompartment.CompartmentNumber,
                     SubCompartmentName = specificCompartment.SubCompartmentName,
                     TotalHectares = specificCompartment.TotalHectares,
-                    Designation = specificCompartment.Designation,
                     ConfirmedFellingDetails = new ConfirmedFellingDetailViewModel()
                 },
             Breadcrumbs = confirmedFellingRestockingDetailsModel.Breadcrumbs
@@ -187,7 +187,7 @@ public partial class WoodlandOfficerReviewController
     [HttpPost]
     public async Task<IActionResult> AddConfirmedFellingDetails(
         AddNewConfirmedFellingDetailsViewModel model,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         [FromServices] IValidator<AddNewConfirmedFellingDetailsViewModel> validator,
         CancellationToken cancellationToken)
     {
@@ -250,7 +250,7 @@ public partial class WoodlandOfficerReviewController
     [HttpGet]
     public async Task<IActionResult> SelectFellingCompartment(
         [FromQuery] Guid applicationId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, viewModel) = await useCase.GetSelectableFellingCompartmentsAsync(
@@ -269,7 +269,7 @@ public partial class WoodlandOfficerReviewController
     [HttpPost]
     public async Task<IActionResult> SelectFellingCompartment(
         SelectFellingCompartmentModel model,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         if (ModelState.IsValid)
@@ -299,7 +299,7 @@ public partial class WoodlandOfficerReviewController
     [HttpGet]
     public async Task<IActionResult> ConfirmedFellingAndRestocking(
         Guid id,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -326,10 +326,67 @@ public partial class WoodlandOfficerReviewController
     }
 
     [HttpPost]
+    public async Task<IActionResult> SendAmendmentsToApplicant(
+        Guid applicationId,
+        string? amendmentReason,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
+        [FromServices] IWoodlandOfficerReviewUseCase woReviewUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        if (string.IsNullOrWhiteSpace(amendmentReason))
+        {
+            this.AddErrorMessage("Enter a reason for the amendments");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+
+        var (_, isFailure, error) = await cfrUseCase.SendAmendmentsToApplicant(
+            applicationId,
+            user,
+            amendmentReason,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not send felling and restocking amendments");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+        this.AddConfirmationMessage("Amendments are sent successfully to the applicant");
+        return RedirectToAction("ConfirmedFellingAndRestocking", "WoodlandOfficerReview", new { id = applicationId });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> MakeFurtherAmendments(
+        Guid applicationId,
+        Guid amendmentReviewId,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
+        [FromServices] IWoodlandOfficerReviewUseCase woReviewUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var result = await cfrUseCase.CloseAmendmentReview(
+            user,
+            amendmentReviewId,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Could not close current felling and restocking amendment review");
+            return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+        }
+
+        this.AddConfirmationMessage("The current amendment review was closed. A new one can be sent to the applicant.");
+        return RedirectToAction("ConfirmedFellingAndRestocking", "WoodlandOfficerReview", new { id = applicationId });
+    }
+
+    [HttpPost]
     public async Task<IActionResult> ConfirmFellingAndRestocking(
         Guid applicationId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
-        [FromServices] WoodlandOfficerReviewUseCase woReviewUseCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
+        [FromServices] IWoodlandOfficerReviewUseCase woReviewUseCase,
+        [FromServices] IValidator<ConfirmedFellingRestockingDetailsModel> validator,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -344,10 +401,24 @@ public partial class WoodlandOfficerReviewController
             return RedirectToAction("Error", "Home");
         }
 
-        var validationResult = await new ConfirmedFellingAndRestockingCrossValidator().ValidateAsync(model.Value, cancellationToken);
+        var validationResult = await validator.ValidateAsync(model.Value, cancellationToken);
         if (!validationResult.IsValid)
         {
             return RedirectToAction("ConfirmedFellingAndRestocking", new { id = applicationId });
+        }
+
+        if(model.Value.Amendment.AmendmentReviewId.HasValue)
+        {
+            var result = await cfrUseCase.CloseAmendmentReview(
+                user,
+                model.Value.Amendment.AmendmentReviewId.Value,
+                cancellationToken);
+
+            if (result.IsFailure)
+            {
+                this.AddErrorMessage("Could not close current felling and restocking amendment review");
+                return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+            }
         }
 
         var (_, isFailure, error) = await woReviewUseCase.CompleteConfirmedFellingAndRestockingDetailsAsync(
@@ -367,7 +438,7 @@ public partial class WoodlandOfficerReviewController
     public async Task<IActionResult> DeleteConfirmedFellingDetails(
         [FromQuery] Guid applicationId,
         [FromQuery] Guid confirmedFellingDetailId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure) = await useCase.DeleteConfirmedFellingDetailAsync(
@@ -391,7 +462,7 @@ public partial class WoodlandOfficerReviewController
     public async Task<IActionResult> DeleteConfirmedRestockingDetails(
     [FromQuery] Guid applicationId,
     [FromQuery] Guid confirmedRestockingDetailId,
-    [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+    [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
     CancellationToken cancellationToken)
     {
         var (_, isFailure) = await useCase.DeleteConfirmedRestockingDetailAsync(
@@ -415,7 +486,7 @@ public partial class WoodlandOfficerReviewController
     public async Task<IActionResult> RevertAmendedConfirmedFellingDetails(
         [FromQuery] Guid applicationId,
         [FromQuery] Guid proposedFellingDetailsId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -442,7 +513,7 @@ public partial class WoodlandOfficerReviewController
         [FromQuery] Guid applicationId,
         [FromQuery] Guid confirmedFellingDetailsId,
         [FromQuery] Guid confirmedRestockingDetailsId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         return await HandleGetConfirmedRestockingDetails(applicationId, confirmedFellingDetailsId, confirmedRestockingDetailsId, useCase, cancellationToken, isAdd: false);
@@ -453,7 +524,7 @@ public partial class WoodlandOfficerReviewController
         [FromQuery] Guid applicationId,
         [FromQuery] Guid compartmentId,
         [FromQuery] Guid fellingDetailsId,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
         return await HandleGetConfirmedRestockingDetails(applicationId, fellingDetailsId, null, useCase, cancellationToken, isAdd: true);
@@ -463,7 +534,7 @@ public partial class WoodlandOfficerReviewController
         Guid applicationId,
         Guid fellingDetailsId,
         Guid? restockingDetailsId,
-        ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        IConfirmedFellingAndRestockingDetailsUseCase useCase,
         CancellationToken cancellationToken,
         bool isAdd)
     {
@@ -491,7 +562,7 @@ public partial class WoodlandOfficerReviewController
             {
                 FellingLicenceApplicationSummary = confirmedFellingRestockingDetailsModel.FellingLicenceApplicationSummary,
                 ApplicationId = confirmedFellingRestockingDetailsModel.ApplicationId,
-                PotentialRestockingCompartments = confirmedFellingRestockingDetailsModel.PotentialRestockingCompartments,
+                SubmittedFlaPropertyCompartments = confirmedFellingRestockingDetailsModel.SubmittedFlaPropertyCompartments,
                 ConfirmedFellingRestockingDetails =
                     new IndividualConfirmedRestockingDetailModel
                     {
@@ -500,7 +571,6 @@ public partial class WoodlandOfficerReviewController
                         SubCompartmentName = specificFellingDetail.SubCompartmentName,
                         SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
                         TotalHectares = specificFellingDetail.TotalHectares,
-                        Designation = specificFellingDetail.Designation,
                         ConfirmedRestockingDetails = new ConfirmedRestockingDetailViewModel()
                         {
                             ConfirmedFellingDetailsId = fellingDetailsId,
@@ -524,7 +594,7 @@ public partial class WoodlandOfficerReviewController
             {
                 FellingLicenceApplicationSummary = confirmedFellingRestockingDetailsModel.FellingLicenceApplicationSummary,
                 ApplicationId = confirmedFellingRestockingDetailsModel.ApplicationId,
-                PotentialRestockingCompartments = confirmedFellingRestockingDetailsModel.PotentialRestockingCompartments,
+                SubmittedFlaPropertyCompartments = confirmedFellingRestockingDetailsModel.SubmittedFlaPropertyCompartments,
                 ConfirmedFellingRestockingDetails =
                     new IndividualConfirmedRestockingDetailModel
                     {
@@ -532,7 +602,6 @@ public partial class WoodlandOfficerReviewController
                         CompartmentNumber = specificFellingDetail.CompartmentNumber,
                         SubCompartmentName = specificFellingDetail.SubCompartmentName,
                         SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
-                        Designation = specificFellingDetail.Designation,
                         ConfirmedRestockingDetails =
                             specificFellingDetail.ConfirmedFellingDetails.First(x =>
                                 x.ConfirmedFellingDetailsId == fellingDetailsId).ConfirmedRestockingDetails.First(x =>
@@ -547,7 +616,7 @@ public partial class WoodlandOfficerReviewController
     [HttpPost]
     public async Task<IActionResult> AmendConfirmedRestockingDetails(
         AmendConfirmedRestockingDetailsViewModel model,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         [FromServices] IValidator<AmendConfirmedRestockingDetailsViewModel> validator,
         CancellationToken cancellationToken)
     {
@@ -557,7 +626,7 @@ public partial class WoodlandOfficerReviewController
     [HttpPost]
     public async Task<IActionResult> AddConfirmedRestockingDetails(
         AmendConfirmedRestockingDetailsViewModel model,
-        [FromServices] ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase useCase,
         [FromServices] IValidator<AmendConfirmedRestockingDetailsViewModel> validator,
         CancellationToken cancellationToken)
     {
@@ -566,7 +635,7 @@ public partial class WoodlandOfficerReviewController
 
     private async Task<IActionResult> HandleConfirmedRestockingDetails(
         AmendConfirmedRestockingDetailsViewModel model,
-        ConfirmedFellingAndRestockingDetailsUseCase useCase,
+        IConfirmedFellingAndRestockingDetailsUseCase useCase,
         IValidator<AmendConfirmedRestockingDetailsViewModel> validator,
         CancellationToken cancellationToken,
         bool isAdd)
@@ -611,9 +680,16 @@ public partial class WoodlandOfficerReviewController
             var user = new InternalUser(User);
             var (_, retrievalFailure, confirmedFellingRestockingDetailsModel) = await useCase.GetConfirmedFellingAndRestockingDetailsAsync(model.ApplicationId, user, cancellationToken, AmendRestockingPageName);
 
+            if (retrievalFailure)
+            {
+                this.AddErrorMessage("Could not retrieve felling details");
+                return RedirectToAction("ConfirmedFellingAndRestocking", new { id = model.ApplicationId });
+            }
+
             var specificFellingDetail = confirmedFellingRestockingDetailsModel.Compartments
                 .FirstOrDefault(x => x.ConfirmedFellingDetails.Any(y => y.ConfirmedFellingDetailsId == model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedFellingDetailsId));
-            if (retrievalFailure || specificFellingDetail is null)
+
+            if (specificFellingDetail is null)
             {
                 this.AddErrorMessage("Could not retrieve felling details");
                 return RedirectToAction("ConfirmedFellingAndRestocking", new { id = model.ApplicationId });
@@ -623,7 +699,7 @@ public partial class WoodlandOfficerReviewController
             model.Breadcrumbs = confirmedFellingRestockingDetailsModel.Breadcrumbs;
             model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.OperationType = specificFellingDetail.ConfirmedFellingDetails.First(x =>
                                                 x.ConfirmedFellingDetailsId == model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedFellingDetailsId).OperationType ?? FellingOperationType.None;
-            model.PotentialRestockingCompartments = confirmedFellingRestockingDetailsModel.PotentialRestockingCompartments;
+            model.SubmittedFlaPropertyCompartments = confirmedFellingRestockingDetailsModel.SubmittedFlaPropertyCompartments;
 
             return View(model);
         }

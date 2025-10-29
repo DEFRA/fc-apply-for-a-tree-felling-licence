@@ -6,6 +6,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -528,6 +529,84 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
 
         await _fellingLicenceApplicationInternalRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 
+        return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateEnvironmentalImpactAssessmentAsync(
+        Guid applicationId,
+        EnvironmentalImpactAssessmentRecord eiaRecord,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Received request to update the Environmental Impact Assessment as an applicant for application with id {ApplicationId}", applicationId);
+
+        var result =
+            await _fellingLicenceApplicationInternalRepository.UpdateEnvironmentalImpactAssessmentAsync(
+                applicationId,
+                eiaRecord,
+                cancellationToken);
+
+        if (result.IsFailure)
+        {
+            _logger.LogError("Could not update EEnvironmental Impact Assessment as an applicant for application with id {ApplicationId}, error was {Error}", applicationId, result.Error);
+            return Result.Failure("Could not update Environmental Impact Assessment");
+        }
+
+        _logger.LogInformation("Updated Environmental Impact Assessment as an applicant for application with id {ApplicationId}", applicationId);
+        return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(
+        Guid applicationId,
+        EnvironmentalImpactAssessmentAdminOfficerRecord eiaRecord,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Received request to update the Environmental Impact Assessment as an admin officer for application with id {ApplicationId}", applicationId);
+
+        var result =
+            await _fellingLicenceApplicationInternalRepository.UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(
+                applicationId,
+                eiaRecord,
+                cancellationToken);
+
+        if (result.IsFailure)
+        {
+            _logger.LogError("Could not update Environmental Impact Assessment status for application with id {ApplicationId}, error was {Error}", applicationId, result.Error);
+            return Result.Failure("Could not update Environmental Impact Assessment as an admin officer");
+        }
+
+        _logger.LogInformation("Updated Environmental Impact Assessment as an admin officer for application with id {ApplicationId}", applicationId);
+        return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken) =>
+        await _fellingLicenceApplicationInternalRepository.BeginTransactionAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateEnvironmentalImpactAssessmentStatusAsync(
+        Guid applicationId,
+        bool status,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Received request to update the Environmental Impact Assessment status for application with id {ApplicationId}", applicationId);
+
+        var result = await _fellingLicenceApplicationInternalRepository.UpdateApplicationStepStatusAsync(
+            applicationId,
+            new ApplicationStepStatusRecord
+            {
+                EnvironmentalImpactAssessmentComplete = status
+            },
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            _logger.LogError("Could not update Environmental Impact Assessment status for application with id {ApplicationId}, error was {Error}", applicationId, result.Error);
+            return Result.Failure("Could not update Environmental Impact Assessment status");
+        }
+
+        _logger.LogInformation("Updated Environmental Impact Assessment status for application with id {ApplicationId} to {Status}", applicationId, status);
         return Result.Success();
     }
 

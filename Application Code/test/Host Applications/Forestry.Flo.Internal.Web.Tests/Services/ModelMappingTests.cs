@@ -1,8 +1,8 @@
-﻿using Forestry.Flo.Internal.Web.Services;
+﻿using AutoFixture;
+using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Tests.Common;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Models.Reports;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
@@ -25,15 +25,15 @@ public class ModelMappingTests
         var result = ModelMapping.ToProposedFellingDetailModel(proposedFellingDetail);
 
         //assert
-        result.Id.Should().Be(proposedFellingDetail.Id);
-        result.Species[speciesList.First().Code].Species.Should().Be(speciesList.First().Code);
-        result.Species[speciesList.First().Code].SpeciesName.Should().Be(speciesList.First().Name);
-        result.OperationType.Should().Be(proposedFellingDetail.OperationType);
-        result.TreeMarking.Should().Be(proposedFellingDetail.TreeMarking);
-        result.NumberOfTrees.Should().Be(proposedFellingDetail.NumberOfTrees);
-        result.AreaToBeFelled.Should().Be(proposedFellingDetail.AreaToBeFelled);
-        result.IsWithinConservationArea.Should().Be(proposedFellingDetail.IsWithinConservationArea);
-        result.IsPartOfTreePreservationOrder.Should().Be(proposedFellingDetail.IsPartOfTreePreservationOrder);
+        Assert.Equal(proposedFellingDetail.Id, result.Id);
+        Assert.Equal(speciesList.First().Code, result.Species[speciesList.First().Code].Species);
+        Assert.Equal(speciesList.First().Name, result.Species[speciesList.First().Code].SpeciesName);
+        Assert.Equal(proposedFellingDetail.OperationType, result.OperationType);
+        Assert.Equal(proposedFellingDetail.TreeMarking, result.TreeMarking);
+        Assert.Equal(proposedFellingDetail.NumberOfTrees, result.NumberOfTrees);
+        Assert.Equal(proposedFellingDetail.AreaToBeFelled, result.AreaToBeFelled);
+        Assert.Equal(proposedFellingDetail.IsWithinConservationArea, result.IsWithinConservationArea);
+        Assert.Equal(proposedFellingDetail.IsPartOfTreePreservationOrder, result.IsPartOfTreePreservationOrder);
     }
 
     [Theory, AutoMoqData]
@@ -50,13 +50,13 @@ public class ModelMappingTests
         var result = ModelMapping.ToProposedRestockingDetailModel(proposedRestockingDetail);
 
         //assert
-        result.Id.Should().Be(proposedRestockingDetail.Id);
-        result.Species[speciesList.First().Code].Species.Should().Be(speciesList.First().Code);
-        result.Species[speciesList.First().Code].SpeciesName.Should().Be(speciesList.First().Name);
-        result.Area.Should().Be(proposedRestockingDetail.Area);
-        result.RestockingDensity.Should().Be(proposedRestockingDetail.RestockingDensity);
-        result.RestockingProposal.Should().Be(proposedRestockingDetail.RestockingProposal);
-        result.PercentageOfRestockArea.Should().Be((int?)proposedRestockingDetail.PercentageOfRestockArea);
+        Assert.Equal(proposedRestockingDetail.Id, result.Id);
+        Assert.Equal(speciesList.First().Code, result.Species[speciesList.First().Code].Species);
+        Assert.Equal(speciesList.First().Name, result.Species[speciesList.First().Code].SpeciesName);
+        Assert.Equal(proposedRestockingDetail.Area, result.Area);
+        Assert.Equal(proposedRestockingDetail.RestockingDensity, result.RestockingDensity);
+        Assert.Equal(proposedRestockingDetail.RestockingProposal, result.RestockingProposal);
+        Assert.Equal((int?)proposedRestockingDetail.PercentageOfRestockArea, result.PercentageOfRestockArea);
     }
 
     [Theory, AutoMoqData]
@@ -67,45 +67,20 @@ public class ModelMappingTests
         var result = ModelMapping.ToDocumentModelList(documentEntities).ToList();
 
         //Assert
-        result.Should().NotBeNull();
-        result.Count.Should().Be(documentEntities.Count);
+        Assert.NotNull(result);
+        Assert.Equal(documentEntities.Count, result.Count);
 
         var orderedModelList = result.OrderBy(x => x.Id).ToList();
         var orderedEntityList = documentEntities.OrderBy(x => x.Id).ToList();
 
         for (var i = 0; i < documentEntities.Count; i++)
         {
-            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
-            orderedModelList[i].CreatedTimestamp.Should().Be(orderedEntityList[i].CreatedTimestamp);
-            orderedModelList[i].MimeType.Should().Be(orderedEntityList[i].MimeType);
-            orderedModelList[i].FileSize.Should().Be(orderedEntityList[i].FileSize);
-            orderedModelList[i].FileName.Should().Be(orderedEntityList[i].FileName);
-            orderedModelList[i].FileType.Should().Be(orderedEntityList[i].FileType);
-        }
-    }
-    
-    [Theory, AutoMoqData]
-    public void ShouldMapDocumentEntityList_ToSupportingDocumentModelList(List<Document> documentEntities)
-    {
-        //Arrange
-        //Act
-        var result = ModelMapping.ToSupportingDocumentList(documentEntities).ToList();
-
-        //Assert
-        result.Should().NotBeNull();
-        result.Count.Should().Be(documentEntities.Count);
-
-        var orderedModelList = result.OrderBy(x => x.Id).ToList();
-        var orderedEntityList = documentEntities.OrderBy(x => x.Id).ToList();
-
-        for (var i = 0; i < documentEntities.Count; i++)
-        {
-            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
-            orderedModelList[i].CreatedTimestamp.Should().Be(orderedEntityList[i].CreatedTimestamp);
-            orderedModelList[i].MimeType.Should().Be(orderedEntityList[i].MimeType);
-            orderedModelList[i].Location.Should().Be(orderedEntityList[i].Location);
-            orderedModelList[i].FileName.Should().Be(orderedEntityList[i].FileName);
-            orderedModelList[i].Purpose.Should().Be(orderedEntityList[i].Purpose);
+            Assert.Equal(orderedEntityList[i].Id, orderedModelList[i].Id);
+            Assert.Equal(orderedEntityList[i].CreatedTimestamp, orderedModelList[i].CreatedTimestamp);
+            Assert.Equal(orderedEntityList[i].MimeType, orderedModelList[i].MimeType);
+            Assert.Equal(orderedEntityList[i].FileSize, orderedModelList[i].FileSize);
+            Assert.Equal(orderedEntityList[i].FileName, orderedModelList[i].FileName);
+            Assert.Equal(orderedEntityList[i].FileType, orderedModelList[i].FileType);
         }
     }
     
@@ -117,18 +92,18 @@ public class ModelMappingTests
         var result = ModelMapping.ToStatusHistoryModelList(statusHistories).ToList();
 
         //Assert
-        result.Should().NotBeNull();
-        result.Count.Should().Be(statusHistories.Count);
+        Assert.NotNull(result);
+        Assert.Equal(statusHistories.Count, result.Count);
 
         var orderedModelList = result.OrderBy(x => x.Id).ToList();
         var orderedEntityList = statusHistories.OrderBy(x => x.Id).ToList();
 
         for (var i = 0; i < statusHistories.Count; i++)
         {
-            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
-            orderedModelList[i].Created.Should().Be(orderedEntityList[i].Created);
-            orderedModelList[i].Status.Should().Be(orderedEntityList[i].Status);
-            orderedModelList[i].FellingLicenceApplicationId.Should().Be(orderedEntityList[i].FellingLicenceApplicationId);
+            Assert.Equal(orderedEntityList[i].Id, orderedModelList[i].Id);
+            Assert.Equal(orderedEntityList[i].Created, orderedModelList[i].Created);
+            Assert.Equal(orderedEntityList[i].Status, orderedModelList[i].Status);
+            Assert.Equal(orderedEntityList[i].FellingLicenceApplicationId, orderedModelList[i].FellingLicenceApplicationId);
         }
     }
     
@@ -140,49 +115,93 @@ public class ModelMappingTests
         var result = ModelMapping.ToCaseNoteModelList(caseNoteEntities).ToList();
 
         //Assert
-        result.Should().NotBeNull();
-        result.Count.Should().Be(caseNoteEntities.Count);
+        Assert.NotNull(result);
+        Assert.Equal(caseNoteEntities.Count, result.Count);
 
         var orderedModelList = result.OrderBy(x => x.Id).ToList();
         var orderedEntityList = caseNoteEntities.OrderBy(x => x.Id).ToList();
 
         for (var i = 0; i < caseNoteEntities.Count; i++)
         {
-            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
-            orderedModelList[i].CreatedTimestamp.Should().Be(orderedEntityList[i].CreatedTimestamp);
-            orderedModelList[i].Text.Should().Be(orderedEntityList[i].Text);
-            orderedModelList[i].Type.Should().Be(orderedEntityList[i].Type);
-            orderedModelList[i].CreatedByUserId.Should().Be(orderedEntityList[i].CreatedByUserId);
-            orderedModelList[i].VisibleToApplicant.Should().Be(orderedEntityList[i].VisibleToApplicant);
-            orderedModelList[i].VisibleToConsultee.Should().Be(orderedEntityList[i].VisibleToConsultee);
+            Assert.Equal(orderedEntityList[i].Id, orderedModelList[i].Id);
+            Assert.Equal(orderedEntityList[i].CreatedTimestamp, orderedModelList[i].CreatedTimestamp);
+            Assert.Equal(orderedEntityList[i].Text, orderedModelList[i].Text);
+            Assert.Equal(orderedEntityList[i].Type, orderedModelList[i].Type);
+            Assert.Equal(orderedEntityList[i].CreatedByUserId, orderedModelList[i].CreatedByUserId);
+            Assert.Equal(orderedEntityList[i].VisibleToApplicant, orderedModelList[i].VisibleToApplicant);
+            Assert.Equal(orderedEntityList[i].VisibleToConsultee, orderedModelList[i].VisibleToConsultee);
         }
     }
     
     [Theory, AutoMoqData]
-    public void ShouldMapExternalAccessLinkList_ToExternalInviteLinkList(List<ExternalAccessLink> accessLinks)
+    public void ShouldMapExternalAccessLinkList_ToExternalInviteLinkList_NoCommentsProvided(List<ExternalAccessLink> accessLinks)
     {
         //Arrange
         //Act
-        var result = ModelMapping.ToExternalInviteLinkList(accessLinks).ToList();
+        var result = ModelMapping.ToExternalInviteLinkList(accessLinks, []).ToList();
 
         //Assert
-        result.Should().NotBeNull();
-        result.Count.Should().Be(accessLinks.Count);
+        Assert.NotNull(result);
+        Assert.Equal(accessLinks.Count, result.Count);
 
         var orderedModelList = result.OrderBy(x => x.Id).ToList();
         var orderedEntityList = accessLinks.OrderBy(x => x.Id).ToList();
 
         for (var i = 0; i < accessLinks.Count; i++)
         {
-            orderedModelList[i].Id.Should().Be(orderedEntityList[i].Id);
-            orderedModelList[i].Name.Should().Be(orderedEntityList[i].Name);
-            orderedModelList[i].Purpose.Should().Be(orderedEntityList[i].Purpose);
-            orderedModelList[i].ContactEmail.Should().Be(orderedEntityList[i].ContactEmail);
-            orderedModelList[i].CreatedTimeStamp.Should().Be(orderedEntityList[i].CreatedTimeStamp);
-            orderedModelList[i].ExpiresTimeStamp.Should().Be(orderedEntityList[i].ExpiresTimeStamp);
+            Assert.Equal(orderedEntityList[i].Id, orderedModelList[i].Id);
+            Assert.Equal(orderedEntityList[i].Name, orderedModelList[i].Name);
+            Assert.Equal(orderedEntityList[i].Purpose, orderedModelList[i].Purpose);
+            Assert.Equal(orderedEntityList[i].ContactEmail, orderedModelList[i].ContactEmail);
+            Assert.Equal(orderedEntityList[i].CreatedTimeStamp, orderedModelList[i].CreatedTimeStamp);
+            Assert.Equal(orderedEntityList[i].ExpiresTimeStamp, orderedModelList[i].ExpiresTimeStamp);
+            Assert.Equal(orderedEntityList[i].LinkType, orderedModelList[i].LinkType);
+            Assert.False(orderedModelList[i].HasResponded);
         }
     }
-    
+
+    [Theory, AutoMoqData]
+    public void ShouldMapExternalAccessLinkList_ToExternalInviteLinkList_CommentsProvided(List<ExternalAccessLink> accessLinks)
+    {
+        //Arrange
+
+        var fixture = new Fixture();
+
+        var comments = new List<ConsulteeComment>();
+        foreach (var accessLink in accessLinks)
+        {
+            var numberOfComments = fixture.Create<int>() % 5 + 1;
+            for (var i = 0; i < numberOfComments; i++)
+            {
+                comments.Add(fixture.Build<ConsulteeComment>()
+                    .With(x => x.AccessCode, accessLink.AccessCode)
+                    .Create());
+            }
+        }
+
+        //Act
+        var result = ModelMapping.ToExternalInviteLinkList(accessLinks, comments).ToList();
+
+        //Assert
+        Assert.NotNull(result);
+        Assert.Equal(accessLinks.Count, result.Count);
+
+        var orderedModelList = result.OrderBy(x => x.Id).ToList();
+        var orderedEntityList = accessLinks.OrderBy(x => x.Id).ToList();
+
+        for (var i = 0; i < accessLinks.Count; i++)
+        {
+            Assert.Equal(orderedEntityList[i].Id, orderedModelList[i].Id);
+            Assert.Equal(orderedEntityList[i].Name, orderedModelList[i].Name);
+            Assert.Equal(orderedEntityList[i].Purpose, orderedModelList[i].Purpose);
+            Assert.Equal(orderedEntityList[i].ContactEmail, orderedModelList[i].ContactEmail);
+            Assert.Equal(orderedEntityList[i].CreatedTimeStamp, orderedModelList[i].CreatedTimeStamp);
+            Assert.Equal(orderedEntityList[i].ExpiresTimeStamp, orderedModelList[i].ExpiresTimeStamp);
+            Assert.Equal(orderedEntityList[i].LinkType, orderedModelList[i].LinkType);
+            Assert.True(orderedModelList[i].HasResponded);
+        }
+    }
+
     [Theory, AutoMoqData]
     public void ShouldMapWoodlandOwnerEntity_ToWoodlandOwnerModel(WoodlandOwner woodlandOwner)
     {
@@ -191,51 +210,51 @@ public class ModelMappingTests
         var result = ModelMapping.ToWoodlandOwnerModel(woodlandOwner);
 
         //Assert
-        result.Should().NotBeNull();
-        result.ContactAddress.Should().BeEquivalentTo(woodlandOwner.ContactAddress);
-        result.OrganisationAddress.Should().BeEquivalentTo(woodlandOwner.OrganisationAddress);
-        result.ContactEmail.Should().Be(woodlandOwner.ContactEmail);
-        result.ContactName.Should().Be(woodlandOwner.ContactName);
-        result.IsOrganisation.Should().Be(woodlandOwner.IsOrganisation);
-        result.OrganisationName.Should().Be(woodlandOwner.OrganisationName);
-        result.ContactAddressMatchesOrganisationAddress.Should().Be(woodlandOwner.ContactAddress == woodlandOwner.OrganisationAddress);
+        Assert.NotNull(result);
+        Assert.Equivalent(woodlandOwner.ContactAddress, result.ContactAddress);
+        Assert.Equivalent(woodlandOwner.OrganisationAddress, result.OrganisationAddress);
+        Assert.Equal(woodlandOwner.ContactEmail, result.ContactEmail);
+        Assert.Equal(woodlandOwner.ContactName, result.ContactName);
+        Assert.Equal(woodlandOwner.IsOrganisation, result.IsOrganisation);
+        Assert.Equal(woodlandOwner.OrganisationName, result.OrganisationName);
+        Assert.Equal(woodlandOwner.ContactAddress == woodlandOwner.OrganisationAddress, result.ContactAddressMatchesOrganisationAddress);
     }
 
     [Fact]
     public void ShouldMapFellingOperationTypeForReport_To_EntityEnum()
     {
-        FellingOperationTypeForReporting.None.ToFellingOperationType().Should().Be(FellingOperationType.None);
-        FellingOperationTypeForReporting.FellingOfCoppice.ToFellingOperationType().Should().Be(FellingOperationType.FellingOfCoppice);
-        FellingOperationTypeForReporting.RegenerationFelling.ToFellingOperationType().Should().Be(FellingOperationType.RegenerationFelling);
-        FellingOperationTypeForReporting.Thinning.ToFellingOperationType().Should().Be(FellingOperationType.Thinning);
-        FellingOperationTypeForReporting.FellingIndividualTrees.ToFellingOperationType().Should().Be(FellingOperationType.FellingIndividualTrees);
-        FellingOperationTypeForReporting.ClearFelling.ToFellingOperationType().Should().Be(FellingOperationType.ClearFelling);
+        Assert.Equal(FellingOperationType.None, FellingOperationTypeForReporting.None.ToFellingOperationType());
+        Assert.Equal(FellingOperationType.FellingOfCoppice, FellingOperationTypeForReporting.FellingOfCoppice.ToFellingOperationType());
+        Assert.Equal(FellingOperationType.RegenerationFelling, FellingOperationTypeForReporting.RegenerationFelling.ToFellingOperationType());
+    Assert.Equal(FellingOperationType.Thinning, FellingOperationTypeForReporting.Thinning.ToFellingOperationType());
+        Assert.Equal(FellingOperationType.FellingIndividualTrees, FellingOperationTypeForReporting.FellingIndividualTrees.ToFellingOperationType());
+        Assert.Equal(FellingOperationType.ClearFelling, FellingOperationTypeForReporting.ClearFelling.ToFellingOperationType());
     }
 
     [Fact]
     public void ShouldMapDateRangeTypeForReporting_To_ServiceReportEnum()
     {
-        DateRangeTypeForReporting.ApprovedDate.ToReportDateRangeType().Should().Be(ReportDateRangeType.Approved);
-        DateRangeTypeForReporting.SubmittedDate.ToReportDateRangeType().Should().Be(ReportDateRangeType.Submitted);
-        DateRangeTypeForReporting.OnPublicRegister.ToReportDateRangeType().Should().Be(ReportDateRangeType.OnPublicRegister);
-        DateRangeTypeForReporting.OffPublicRegister.ToReportDateRangeType().Should().Be(ReportDateRangeType.OffPublicRegister);
-        DateRangeTypeForReporting.PublicRegisterExpiry.ToReportDateRangeType().Should().Be(ReportDateRangeType.PublicRegisterExpiry);
-        DateRangeTypeForReporting.CitizensCharter.ToReportDateRangeType().Should().Be(ReportDateRangeType.CitizensCharter);
-        DateRangeTypeForReporting.FinalAction.ToReportDateRangeType().Should().Be(ReportDateRangeType.FinalAction);
+        Assert.Equal(ReportDateRangeType.Approved, DateRangeTypeForReporting.ApprovedDate.ToReportDateRangeType());
+        Assert.Equal(ReportDateRangeType.Submitted, DateRangeTypeForReporting.SubmittedDate.ToReportDateRangeType());
+        Assert.Equal(ReportDateRangeType.OnPublicRegister, DateRangeTypeForReporting.OnPublicRegister.ToReportDateRangeType());
+        Assert.Equal(ReportDateRangeType.OffPublicRegister, DateRangeTypeForReporting.OffPublicRegister.ToReportDateRangeType());
+        Assert.Equal(ReportDateRangeType.PublicRegisterExpiry, DateRangeTypeForReporting.PublicRegisterExpiry.ToReportDateRangeType());
+        Assert.Equal(ReportDateRangeType.CitizensCharter, DateRangeTypeForReporting.CitizensCharter.ToReportDateRangeType());
+        Assert.Equal(ReportDateRangeType.FinalAction, DateRangeTypeForReporting.FinalAction.ToReportDateRangeType());
     }
 
     [Fact]
     public void ShouldMapFellingLicenceApplicationStatusesForReporting_To_EntityEnum()
     {
-        FellingLicenceApplicationStatusesForReporting.Draft.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.Draft);
-        FellingLicenceApplicationStatusesForReporting.Submitted.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.Submitted);
-        FellingLicenceApplicationStatusesForReporting.Received.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.Received);
-        FellingLicenceApplicationStatusesForReporting.WoodlandOfficerReview.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.WoodlandOfficerReview);
-        FellingLicenceApplicationStatusesForReporting.WithApplicant.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.WithApplicant);
-        FellingLicenceApplicationStatusesForReporting.ReturnedToApplicant.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.ReturnedToApplicant);
-        FellingLicenceApplicationStatusesForReporting.Approved.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.Approved);
-        FellingLicenceApplicationStatusesForReporting.Refused.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.Refused);
-        FellingLicenceApplicationStatusesForReporting.SentForApproval.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.SentForApproval);
-        FellingLicenceApplicationStatusesForReporting.Withdrawn.ToEntityFellingLicenceStatus().Should().Be(FellingLicenceStatus.Withdrawn);
+        Assert.Equal(FellingLicenceStatus.Draft, FellingLicenceApplicationStatusesForReporting.Draft.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.Submitted, FellingLicenceApplicationStatusesForReporting.Submitted.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.Received, FellingLicenceApplicationStatusesForReporting.Received.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.WoodlandOfficerReview, FellingLicenceApplicationStatusesForReporting.WoodlandOfficerReview.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.WithApplicant, FellingLicenceApplicationStatusesForReporting.WithApplicant.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.ReturnedToApplicant, FellingLicenceApplicationStatusesForReporting.ReturnedToApplicant.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.Approved, FellingLicenceApplicationStatusesForReporting.Approved.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.Refused, FellingLicenceApplicationStatusesForReporting.Refused.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.SentForApproval, FellingLicenceApplicationStatusesForReporting.SentForApproval.ToEntityFellingLicenceStatus());
+        Assert.Equal(FellingLicenceStatus.Withdrawn, FellingLicenceApplicationStatusesForReporting.Withdrawn.ToEntityFellingLicenceStatus());
     }
 }

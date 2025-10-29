@@ -162,6 +162,7 @@ public class StorePublicRegisterExemptionAsyncTests : WoodlandOfficerReviewUseCa
             NotificationService.Object,
             GetConfiguredFcAreas.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(WoodlandOfficerReviewOptions),
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<PublicRegisterUseCase>());
     }
 }

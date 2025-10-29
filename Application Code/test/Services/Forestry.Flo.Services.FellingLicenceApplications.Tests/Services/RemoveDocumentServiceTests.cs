@@ -21,6 +21,7 @@ using NodaTime;
 using Xunit;
 using Forestry.Flo.Services.Common.Models;
 using System.Collections.Generic;
+using AutoFixture;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 {
@@ -32,6 +33,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         private readonly Mock<IAuditService<RemoveDocumentService>> _auditService;
         private readonly Mock<IUnitOfWork> _unitOfWOrkMock;
         private readonly Mock<IClock> _clock;
+        private readonly IFixture _fixture = new Fixture();
 
         public RemoveDocumentServiceTests()
         {
@@ -42,6 +44,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _unitOfWOrkMock = new Mock<IUnitOfWork>();
             _clock = new Mock<IClock>();
             _fellingLicenceApplicationRepository.SetupGet(r => r.UnitOfWork).Returns(_unitOfWOrkMock.Object);
+            _fixture.CustomiseFixtureForFellingLicenceApplications();
         }
 
         private readonly JsonSerializerOptions _options = new()
@@ -56,7 +59,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             //arrange
             var sut = CreateSut();
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<Document>.None);
 
@@ -75,8 +78,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             );
 
             //assert
-            _fellingLicenceApplicationInternalRepository.Verify(v => v.GetDocumentByIdAsync(document.FellingLicenceApplicationId, document.Id, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository.Verify(v => v.GetDocumentByIdAsync(document.FellingLicenceApplicationId, document.Id, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
 
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
 
             _auditService.Verify(s =>
@@ -132,8 +137,52 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 .Verify(x => x.GetDocumentByIdAsync(applicationId, documentId, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
             _fileStorageService
                 .Verify(x => x.RemoveFileAsync(documentEntity.Location, It.IsAny<CancellationToken>()), Times.Once);
+            _fileStorageService.VerifyNoOtherCalls();
+        }
+
+        [Theory, AutoMoqData]
+        public async Task WhenDocumentCannotBeFoundToRemoveFromStorage(
+            Guid applicationId,
+            Guid documentId)
+        {
+            //arrange
+            var sut = CreateSut();
+
+            _fellingLicenceApplicationInternalRepository
+                .Setup(x => x.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Maybe<Document>.None);
+
+            //act
+
+            var result = await sut.PermanentlyRemoveDocumentAsync(
+                applicationId,
+                documentId,
+                CancellationToken.None);
+
+            //assert
+
+            _auditService.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(
+                        e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent
+                             && JsonSerializer.Serialize(e.AuditData, _options) ==
+                             JsonSerializer.Serialize(new
+                             {
+                                 purpose = (string)null,
+                                 documentId = documentId,
+                                 FailureReason = "Could not retrieve document to delete",
+                             }, _options)),
+                    It.IsAny<CancellationToken>()), Times.Once);
+
+            Assert.True(result.IsFailure);
+
+            _fellingLicenceApplicationInternalRepository
+                .Verify(x => x.GetDocumentByIdAsync(applicationId, documentId, It.IsAny<CancellationToken>()), Times.Once);
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
             _fileStorageService.VerifyNoOtherCalls();
         }
 
@@ -143,7 +192,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             //arrange
             var sut = CreateSut();
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<Document>.None);
 
@@ -162,7 +211,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             );
 
             //assert
-            _fellingLicenceApplicationInternalRepository.Verify(v => v.GetDocumentByIdAsync(internalRequest.ApplicationId, internalRequest.DocumentId, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository.Verify(v => v.GetDocumentByIdAsync(internalRequest.ApplicationId, internalRequest.DocumentId, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
 
@@ -209,6 +261,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             //assert
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+            _fellingLicenceApplicationRepository.Verify(x => x.GetDocumentByIdAsync(application.Id, externalRequest.DocumentId, It.IsAny<CancellationToken>()), Times.Once);
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
             _auditService.Verify(s =>
                 s.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -260,20 +317,74 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _fellingLicenceApplicationInternalRepository
                 .Verify(x => x.DeleteDocumentAsync(documentEntity, It.IsAny<CancellationToken>()), Times.Once);
             _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
         }
 
         [Theory, AutoMoqData]
-        public async Task WhenDocumentIsSuccessfullySoftDeleted(Document document)
+        public async Task WhenDocumentFailsToBeRemovedFromRepository(
+            Guid applicationId,
+            Guid documentId,
+            Document documentEntity)
         {
             //arrange
             var sut = CreateSut();
 
-            _fellingLicenceApplicationInternalRepository.Setup(r =>
+            _fellingLicenceApplicationInternalRepository
+                .Setup(x => x.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Maybe<Document>.From(documentEntity));
+            _fellingLicenceApplicationInternalRepository
+                .Setup(x => x.DeleteDocumentAsync(It.IsAny<Document>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(UnitResult.Failure<UserDbErrorReason>(UserDbErrorReason.General));
+            _fileStorageService
+                .Setup(x => x.RemoveFileAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(UnitResult.Success<FileAccessFailureReason>());
+
+            //act
+            var result = await sut.PermanentlyRemoveDocumentAsync(
+                applicationId,
+                documentId,
+                CancellationToken.None);
+
+            //assert
+
+            _auditService.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent),
+                    It.IsAny<CancellationToken>()), Times.Once);
+
+            Assert.True(result.IsFailure);
+
+            _fileStorageService
+                .Verify(x => x.RemoveFileAsync(documentEntity.Location, It.IsAny<CancellationToken>()), Times.Once);
+            _fileStorageService.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository
+                .Verify(x => x.GetDocumentByIdAsync(applicationId, documentId, It.IsAny<CancellationToken>()), Times.Once);
+            _fellingLicenceApplicationInternalRepository
+                .Verify(x => x.DeleteDocumentAsync(documentEntity, It.IsAny<CancellationToken>()), Times.Once);
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+        }
+
+        [Theory, CombinatorialData]
+        public async Task WhenDocumentIsSuccessfullySoftDeleted(
+            [CombinatorialValues(DocumentPurpose.EiaAttachment, DocumentPurpose.Attachment, DocumentPurpose.WmpDocument)] DocumentPurpose purpose)
+        {
+
+
+            //arrange
+            var sut = CreateSut();
+
+            var document = _fixture
+                .Build<Document>()
+                .With(x => x.Purpose, purpose)
+                .With(x => x.AttachedByType, ActorType.InternalUser)
+                .Create();
+
+            _fellingLicenceApplicationRepository.Setup(r =>
                     r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
-
-            document.AttachedByType = ActorType.InternalUser;
-            document.Purpose = DocumentPurpose.Attachment;
 
             var internalRequest = new RemoveDocumentRequest
             {
@@ -289,7 +400,97 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             );
 
             //assert
-            _fellingLicenceApplicationInternalRepository.Verify(v => v.GetDocumentByIdAsync(document.FellingLicenceApplicationId, document.Id, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository.Verify(v => v.GetDocumentByIdAsync(document.FellingLicenceApplicationId, document.Id, CancellationToken.None), Times.Once);
+
+            if (purpose == DocumentPurpose.WmpDocument)
+            {
+                // WMP documents require the application to be fetched to update the ten-year felling step status
+                _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(document.FellingLicenceApplicationId, It.IsAny<CancellationToken>()), Times.Once);
+            }
+
+            _unitOfWOrkMock.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
+
+            _auditService.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentEvent),
+                    It.IsAny<CancellationToken>()), Times.Once);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(document.DeletionTimestamp);
+            Assert.NotNull(document.DeletedByUserId);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task WhenWmpDocumentIsSuccessfullySoftDeletedAndIsLastWmpDocumentOnApplication(
+            FellingLicenceApplication application)
+        {
+
+
+            //arrange
+            var sut = CreateSut();
+
+            var document = _fixture
+                .Build<Document>()
+                .With(x => x.Purpose, DocumentPurpose.WmpDocument)
+                .With(x => x.AttachedByType, ActorType.InternalUser)
+                .Without(x => x.DeletionTimestamp)
+                .Create();
+
+            var otherDeletedWmpDocument = _fixture
+                .Build<Document>()
+                .With(x => x.Purpose, DocumentPurpose.WmpDocument)
+                .With(x => x.AttachedByType, ActorType.InternalUser)
+                .Create();
+
+            var otherNonWmpDocument = _fixture
+                .Build<Document>()
+                .With(x => x.Purpose, DocumentPurpose.Attachment)
+                .With(x => x.AttachedByType, ActorType.InternalUser)
+                .Without(x => x.DeletionTimestamp)
+                .Create();
+
+            application.Documents = new List<Document> { document, otherDeletedWmpDocument, otherNonWmpDocument };
+
+            application.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus = true;
+
+            _fellingLicenceApplicationRepository.Setup(r =>
+                    r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(document);
+
+            _fellingLicenceApplicationRepository
+                .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
+
+            var internalRequest = new RemoveDocumentRequest
+            {
+                ApplicationId = document.FellingLicenceApplicationId,
+                DocumentId = document.Id,
+                UserId = Guid.NewGuid(),
+            };
+
+            //act
+            var result = await sut.RemoveDocumentAsInternalUserAsync(
+                internalRequest,
+                CancellationToken.None
+            );
+
+            //assert
+            _fellingLicenceApplicationRepository.Verify(v => v.GetDocumentByIdAsync(document.FellingLicenceApplicationId, document.Id, CancellationToken.None), Times.Once);
+
+            // WMP documents require the application to be fetched to update the ten-year felling step status
+            _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(document.FellingLicenceApplicationId, It.IsAny<CancellationToken>()), Times.Once);
+
+            //assert that the ten-year licence status was reset to in progress
+            Assert.False(application.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus);
+
+            _unitOfWOrkMock.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
 
@@ -313,7 +514,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                     r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository
+            _fellingLicenceApplicationRepository
                 .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
 
@@ -346,8 +547,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             Assert.True(result.IsFailure);
 
-            _fellingLicenceApplicationInternalRepository
+            _fellingLicenceApplicationRepository
                 .Verify(r => r.GetDocumentByIdAsync(externalRequest.ApplicationId, externalRequest.DocumentId, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
             _auditService.Verify(s =>
                 s.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -362,22 +566,30 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Theory, AutoMoqData]
-        public async Task ShouldReturnFailure_DocumentIsNotAttachment(Document document)
+        [Theory, CombinatorialData]
+        public async Task ShouldReturnFailure_DocumentIsNotAttachmentOrEiaAttachmentOrWmpDocument(DocumentPurpose purpose)
         {
+            if (purpose is DocumentPurpose.EiaAttachment or DocumentPurpose.Attachment or DocumentPurpose.WmpDocument)
+            {
+                return;
+            }
+
             //arrange
             var sut = CreateSut();
+
+            var document = _fixture
+                .Build<Document>()
+                .With(x => x.Purpose, purpose)
+                .With(x => x.AttachedByType, ActorType.InternalUser)
+                .Create();
 
             _fellingLicenceApplicationRepository.Setup(r =>
                     r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository
+            _fellingLicenceApplicationRepository
                 .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
-
-            document.AttachedByType = ActorType.InternalUser;
-            document.Purpose = DocumentPurpose.Correspondence;
 
             var userAccessModel = new UserAccessModel
             {
@@ -405,8 +617,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             Assert.True(result.IsFailure);
 
-            _fellingLicenceApplicationInternalRepository
+            _fellingLicenceApplicationRepository
                 .Verify(r => r.GetDocumentByIdAsync(externalRequest.ApplicationId, externalRequest.DocumentId, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
             _auditService.Verify(s =>
                 s.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -416,7 +631,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                              {
                                  purpose = document.Purpose,
                                  documentId = document.Id,
-                                 FailureReason = "Only attachments may be deleted"
+                                 FailureReason = "Only attachments and EIA attachments may be deleted"
                              }, _options)),
                     It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -431,7 +646,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                     r.VerifyWoodlandOwnerIdForApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
-            _fellingLicenceApplicationInternalRepository
+            _fellingLicenceApplicationRepository
                 .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(document);
 
@@ -467,8 +682,20 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             //assert
             
-            _fellingLicenceApplicationInternalRepository
+            _fellingLicenceApplicationRepository
                 .Verify(r => r.GetDocumentByIdAsync(externalRequest.ApplicationId, externalRequest.DocumentId, CancellationToken.None), Times.Once);
+
+            if (document.Purpose == DocumentPurpose.WmpDocument)
+            {
+                // WMP documents require the application to be fetched to update the ten-year felling step status
+                _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(document.FellingLicenceApplicationId, It.IsAny<CancellationToken>()), Times.Once);
+            }
+
+            _unitOfWOrkMock.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            
+            _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+
+            _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
             _auditService.Verify(s =>
                 s.PublishAuditEventAsync(It.Is<AuditEvent>(

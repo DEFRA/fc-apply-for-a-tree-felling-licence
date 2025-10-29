@@ -9,6 +9,7 @@
 @using Microsoft.AspNetCore.Mvc.ModelBinding
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.AssignBackToApplicantModel;
+@inject IUrlHelper UrlHelper
 
 @{
     const string className = "govuk-form-group--error";
@@ -30,11 +31,11 @@
         : null;
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+<div class="govuk-grid-column-two-thirds">
 
     <h1 condition="Model.ShowListOfUsers" class="govuk-heading-m">Are you sure you wish to assign the application @Model.FellingLicenceApplicationSummary.ApplicationReference back to the applicant?</h1>
     <h1 condition="@(Model.ShowListOfUsers == false)" class="govuk-heading-m">Are you sure you wish to assign the application @Model.FellingLicenceApplicationSummary.ApplicationReference back to @defaultUserName?</h1>
@@ -62,7 +63,9 @@
 
         <div class="govuk-form-group">
             <div id="return-to-applicant-comment-hint" class="govuk-hint">
-                Please add a comment to explain why this application is being returned.
+                <label asp-for="ReturnToApplicantComment">
+                    Please add a comment to explain why this application is being returned.
+                </label>
             </div>
             <validation asp-for="ReturnToApplicantComment"></validation>
             <textarea class="govuk-textarea" asp-for="ReturnToApplicantComment" rows="5" aria-describedby="return-to-applicant-comment-hint"></textarea>
@@ -165,7 +168,8 @@
                     Continue
                 </button>
 
-                <a class="govuk-link" href="@Model.ReturnUrl" title="Cancel">Cancel</a>
+                <a class="govuk-link" condition="@UrlHelper.IsLocalUrl(Model.ReturnUrl)" href="@Model.ReturnUrl">Cancel</a>
+                <a class="govuk-link" condition="@(!UrlHelper.IsLocalUrl(Model.ReturnUrl))" asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" title="Abandon changes and go to the application page">Cancel</a>
 
             </div>
         </div>

@@ -31,7 +31,7 @@
         <li>A small pond would be acceptable, but a large fishing lake would be too big.</li>
     </ul>
 
-
+    <input type="hidden" id="runningMode" value="felling" />
     @foreach (var item in Model.FellingAndRestockingDetails)
     {
         <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling" />
@@ -41,7 +41,39 @@
         }
     }
 
-    <div class="profileMap" id="viewDiv"></div>
+    <calcite-shell id="shell" content-behind>
+        <h2 id="header-title" slot="header">
+            Felling
+        </h2>
+        <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed>
+
+            <calcite-action-bar slot="action-bar" expanded>
+                <calcite-action data-action-id="basemaps"
+                                icon="basemap"
+                                text="Basemaps"
+                                scale="l"
+                                text-enabled></calcite-action>
+                <calcite-action id="view"
+                                icon="analysis"
+                                text="View Restocking"
+                                scale="l"
+                                text-enabled></calcite-action>
+            </calcite-action-bar>
+
+            <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden>
+                <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-basemap-button" scale="s"></calcite-action>
+                <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
+                <div id="basemaps-container"><arcgis-basemap-gallery></arcgis-basemap-gallery></div>
+            </calcite-panel>
+
+        </calcite-shell-panel>
+        <arcgis-map id="viewDiv" class="profileMap" >
+            <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+            <arcgis-zoom slot="top-right"></arcgis-zoom>
+            <arcgis-compass slot="top-right"></arcgis-compass>
+        </arcgis-map>
+    </calcite-shell>
+
 
     <form id="admin-officer-review" method="post">
         <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
@@ -64,7 +96,7 @@
 
                     <div class="govuk-radios__item">
 
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-passed" asp-for="CheckPassed" type="radio" value="true"/>
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-passed" asp-for="CheckPassed" type="radio" value="true" />
 
                         <label class="govuk-label govuk-radios__label" for="check-passed">
                             Yes, the mapping is correct
@@ -74,7 +106,7 @@
 
                     <div class="govuk-radios__item">
 
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-failed" asp-for="CheckPassed" type="radio" value="false"/>
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-failed" asp-for="CheckPassed" type="radio" value="false" />
 
                         <label class="govuk-label govuk-radios__label" for="check-failed">
                             No, the mapping is not correct
@@ -106,7 +138,7 @@
                 Continue
             </button>
 
-            <a class="govuk-button govuk-button--secondary" asp-action="Index" asp-route-id="@Model.ApplicationId" title="Back to admin officer review">
+            <a class="govuk-button govuk-button--secondary" asp-action="Index" asp-route-id="@Model.ApplicationId">
                 Back to admin officer review
             </a>
 
@@ -114,14 +146,9 @@
     </form>
 </div>
 
-<link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
-<link rel="stylesheet" type="text/css" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.css")" />
+<link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
 
 <script type="module">
-    require(["../../js/mapping/maps/map-printer.js?v=" + Date.now()], function (PrinterMap) {
-        var mapObj = new PrinterMap("printerDiv");
-    });
-
     require(["../../js/mapping/maps/map-profile-page.js?v=" + Date.now()], function (ProfileMap) {
         var mapObj = new ProfileMap("viewDiv", true);
     });
@@ -130,11 +157,26 @@
 @section Scripts
 {
     <script src="~/js/agent-authority-form-check.js" asp-append-version="true"></script>
-    <script src="~/lib/arcgis_js_api/javascript/4.24/init.js"></script>
-    <script type="module" src="~/lib/arcgis_js_api/javascript/calcite/calcite/calcite.esm.js"></script>
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
 }
 
 @section Css
 {
     <link rel="stylesheet" href="~/css/mapping-check.css" aria-busyasp-append-version="true" />
 }
+
+<style>
+    #shell {
+        position: unset !important;
+        height: 600px;
+    }
+
+    #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100% !important;
+        width: 100%;
+    }
+</style>

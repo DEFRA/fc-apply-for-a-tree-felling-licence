@@ -4,6 +4,7 @@ using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -15,13 +16,14 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Microsoft.AspNetCore.Mvc;
 using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 
-public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBase
+public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBase, IExternalConsulteeReviewUseCase
 {
     private readonly IAddDocumentService _addDocumentService;
     private readonly IRemoveDocumentService _removeDocumentService;
@@ -44,6 +46,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         IGetDocumentServiceInternal getDocumentService,
         IAddDocumentService addDocumentService,
         IRemoveDocumentService removeDocumentService,
+        IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<ExternalConsulteeReviewUseCase> logger,
         RequestContext requestContext,
         IClock clock) : base(
@@ -52,7 +55,8 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         fellingLicenceApplicationInternalRepository,
         woodlandOwnerService,
         agentAuthorityService,
-        getConfiguredFcAreasService)
+        getConfiguredFcAreasService,
+        woodlandOfficerReviewSubStatusService)
     {
         _addDocumentService = Guard.Against.Null(addDocumentService);
         _removeDocumentService = Guard.Against.Null(removeDocumentService);
@@ -83,7 +87,9 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             ContactEmail = externalAccessLink.Value.ContactEmail,
             ExpiresTimeStamp = externalAccessLink.Value.ExpiresTimeStamp,
             Name = externalAccessLink.Value.ContactName,
-            Purpose = externalAccessLink.Value.Purpose
+            Purpose = externalAccessLink.Value.Purpose,
+            LinkType = externalAccessLink.Value.LinkType,
+            SharedSupportingDocuments = externalAccessLink.Value.SharedSupportingDocuments
         });
     }
 
@@ -115,10 +121,11 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             return Result.Failure<ExternalConsulteeReviewViewModel>($"Could not load application summary model: {error}");
         }
 
-        var comments = await _externalConsulteeReviewService.RetrieveConsulteeCommentsForAuthorAsync(
+        var comments = await _externalConsulteeReviewService.RetrieveConsulteeCommentsForAccessCodeAsync(
             applicationId,
-            externalInviteLink.ContactEmail,
+            accessCode, 
             cancellationToken);
+
         var items = comments
             .OrderByDescending(x => x.CreatedTimestamp)
             .Select(x => new ActivityFeedItemModel
@@ -148,7 +155,9 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         {
             ApplicationSummary = flaModel,
             ConsulteeDocuments = ModelMapping.ToDocumentModelList(fla.Documents
-                    .Where(x => x.VisibleToConsultee && x.DeletionTimestamp.HasNoValue())
+                    .Where(x => x.VisibleToConsultee 
+                                && x.DeletionTimestamp.HasNoValue()
+                                && externalInviteLink.SharedSupportingDocuments.Any(s => s == x.Id))
                     .OrderByDescending(x => x.CreatedTimestamp)
                     .ToList())
                     .ToList(),
@@ -224,7 +233,8 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             CreatedTimestamp = now,
             AuthorName = model.AuthorName,
             Comment = model.Comment,
-            ConsulteeAttachmentIds = attachmentIds
+            ConsulteeAttachmentIds = attachmentIds,
+            AccessCode = model.AccessCode
         };
         var addCommentResult = await _externalConsulteeReviewService.AddCommentAsync(
             consulteeCommentModel, cancellationToken);

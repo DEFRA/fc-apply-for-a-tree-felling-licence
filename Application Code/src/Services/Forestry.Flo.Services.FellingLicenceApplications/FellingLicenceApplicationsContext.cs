@@ -62,7 +62,9 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
     public DbSet<CaseNote> CaseNote { get; set; } = null!;
     
     public DbSet<WoodlandOfficerReview> WoodlandOfficerReviews { get; set; } = null!;
-    
+
+    public DbSet<SiteVisitEvidence> SiteVisitEvidences { get; set; } = null!;
+
     public DbSet<ApproverReview> ApproverReviews { get; set; } = null!;
 
     public DbSet<AdminOfficerReview> AdminOfficerReviews { get; set; } = null!;
@@ -80,6 +82,8 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
     public DbSet<PublicRegister> PublicRegister { get; set; } = null!;
 
     public DbSet<FellingLicenceApplicationStepStatus> FellingLicenceApplicationStepStatus { get; set; } = null!;
+
+    public DbSet<EnvironmentalImpactAssessment> EnvironmentalImpactAssessments { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -131,12 +135,19 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<ConfirmedFellingSpecies>().ToTable("ConfirmedFellingSpecies");
         modelBuilder.Entity<ConfirmedRestockingDetail>().ToTable("ConfirmedRestockingDetail");
         modelBuilder.Entity<ConfirmedRestockingSpecies>().ToTable("ConfirmedRestockingSpecies");
+        modelBuilder.Entity<SiteVisitEvidence>().ToTable("SiteVisitEvidence");
 
         modelBuilder.Entity<WoodlandOwner>().ToTable("WoodlandOwner","Applicants", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<UserAccount>().ToTable("UserAccount","Applicants", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<Agency>().ToTable("Agency", "Applicants", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<PropertyProfile>().ToTable("PropertyProfile", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<Compartment>().ToTable("Compartment", t => t.ExcludeFromMigrations());
+        modelBuilder.Entity<InternalUsers.Entities.UserAccount.UserAccount>()
+            .ToTable("UserAccount", "InternalUsers", t => t.ExcludeFromMigrations());
+        modelBuilder.Entity<EnvironmentalImpactAssessment>().ToTable("EnvironmentalImpactAssessment");
+        modelBuilder.Entity<EnvironmentalImpactAssessmentRequestHistory>().ToTable("EnvironmentalImpactAssessmentRequestHistory");
+        modelBuilder.Entity<SubmittedCompartmentDesignations>().ToTable("SubmittedCompartmentDesignations");
+        modelBuilder.Entity<FellingAndRestockingAmendmentReview>().ToTable("FellingAndRestockingAmendmentReview");
 
         modelBuilder.HasDefaultSchema(SchemaName);
 
@@ -211,6 +222,16 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .HasDefaultValue(false);
 
         modelBuilder
+            .Entity<ExternalAccessLink>()
+            .Property(p => p.LinkType)
+            .HasConversion<string>();
+
+        modelBuilder
+            .Entity<ExternalAccessLink>()
+            .Property(p => p.SharedSupportingDocuments)
+            .HasJsonConversion();
+
+        modelBuilder
             .Entity<ConsulteeComment>()
             .Property(x => x.Id)
             .HasColumnType("uuid")
@@ -244,6 +265,34 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .Entity<Document>()
             .Property(e => e.AttachedByType)
             .HasConversion<string>();
+
+        modelBuilder
+            .Entity<EnvironmentalImpactAssessmentRequestHistory>()
+            .Property(e => e.RequestType)
+            .HasConversion<string>();
+
+        modelBuilder
+            .Entity<SiteVisitEvidence>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
+        modelBuilder
+            .Entity<SiteVisitEvidence>(e =>
+            {
+                e.HasOne(p => p.WoodlandOfficerReview)
+                    .WithMany(p => p.SiteVisitEvidences)
+                    .HasForeignKey(p => p.WoodlandOfficerReviewId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        modelBuilder
+            .Entity<EnvironmentalImpactAssessmentRequestHistory>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
 
         modelBuilder
             .Entity<Document>(e =>
@@ -286,6 +335,14 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .HasDefaultValueSql("uuid_generate_v4()")
             .IsRequired();
 
+
+        modelBuilder
+            .Entity<FellingAndRestockingAmendmentReview>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
         // Configuring one to one mapping for LinkedPropertyProfile -> FellingLicenceApplication
         // Reference property on FellingLicenceApplication is nullable to allow FellingLicenceApplication to
         // exist without LinkedPropertyProfile
@@ -321,6 +378,10 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .HasIndex(i => new { i.LinkedPropertyProfileId, i.PropertyProfileCompartmentId, i.OperationType })
             .IsUnique();
 
+        modelBuilder.Entity<ProposedFellingDetail>()
+            .Property(e => e.AreaToBeFelled)
+            .HasPrecision(18, 2);
+
         // > A LinkedPropertyProfile will have zero to many Proposed Felling Details, and a ProposedFellingDetails will have zero to many Proposed Restocking
         // Details - each felling/restocking entry would be for a particular compartment. The Property Profile Compartment
         // Id would refer back to the compartment entity we already have in the application. [Users may edit property details
@@ -350,6 +411,14 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .Entity<ProposedRestockingDetail>()
             .HasIndex(i => new { i.ProposedFellingDetailsId, i.PropertyProfileCompartmentId, i.RestockingProposal })
             .IsUnique();
+
+        modelBuilder.Entity<ProposedRestockingDetail>()
+            .Property(e => e.Area)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ProposedRestockingDetail>()
+            .Property(e => e.PercentageOfRestockArea)
+            .HasPrecision(5, 2);
 
         modelBuilder
             .Entity<FellingSpecies>(e =>
@@ -447,6 +516,10 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                  .OnDelete(DeleteBehavior.Cascade);
             });
 
+        modelBuilder.Entity<SubmittedFlaPropertyCompartment>()
+            .Property(p => p.TotalHectares)
+            .HasPrecision(18, 2);
+
         modelBuilder
             .Entity<WoodlandOfficerReview>()
             .Property(x => x.Id)
@@ -534,6 +607,10 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+        modelBuilder.Entity<ConfirmedFellingDetail>()
+            .Property(e => e.AreaToBeFelled)
+            .HasPrecision(18, 2);
+
         modelBuilder
             .Entity<ConfirmedFellingSpecies>()
             .Property(x => x.Id)
@@ -567,6 +644,14 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                     .HasForeignKey(p => p.ConfirmedFellingDetailId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+        modelBuilder.Entity<ConfirmedRestockingDetail>()
+            .Property(e => e.Area)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ConfirmedRestockingDetail>()
+            .Property(e => e.PercentageOfRestockArea)
+            .HasPrecision(5, 2);
 
         modelBuilder
             .Entity<ConfirmedRestockingSpecies>()
@@ -639,6 +724,62 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                     .HasForeignKey<LarchCheckDetails>(p => p.FellingLicenceApplicationId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+
+        modelBuilder
+            .Entity<EnvironmentalImpactAssessment>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
+        modelBuilder
+            .Entity<EnvironmentalImpactAssessment>(e =>
+            {
+                e.HasOne(p => p.FellingLicenceApplication)
+                    .WithOne(p => p.EnvironmentalImpactAssessment)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        modelBuilder
+            .Entity<EnvironmentalImpactAssessment>(e =>
+            {
+                e.HasMany(x => x.EiaRequests)
+                    .WithOne(x => x.EnvironmentalImpactAssessment)
+                    .HasForeignKey(x => x.EnvironmentalImpactAssessmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        modelBuilder
+            .Entity<SubmittedCompartmentDesignations>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
+        modelBuilder
+            .Entity<SubmittedCompartmentDesignations>(e =>
+            {
+                e.HasOne(p => p.SubmittedFlaPropertyCompartment)
+                    .WithOne(x => x.SubmittedCompartmentDesignations)
+                    .HasForeignKey<SubmittedCompartmentDesignations>(p => p.SubmittedFlaPropertyCompartmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        modelBuilder.Entity<FellingAndRestockingAmendmentReview>()
+            .HasOne(x => x.WoodlandOfficerReview)
+            .WithMany(x => x.FellingAndRestockingAmendmentReviews)
+            .HasForeignKey(x => x.WoodlandOfficerReviewId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FellingAndRestockingAmendmentReview>()
+            .HasIndex(e => new
+            {
+                e.WoodlandOfficerReviewId,
+                e.ResponseReceivedDate
+            })
+            .IsUnique()
+            .HasFilter($"\"{nameof(FellingAndRestockingAmendmentReview.ResponseReceivedDate)}\" IS NULL");
     }
 
     public async Task<UnitResult<UserDbErrorReason>> SaveEntitiesAsync(CancellationToken cancellationToken = default)

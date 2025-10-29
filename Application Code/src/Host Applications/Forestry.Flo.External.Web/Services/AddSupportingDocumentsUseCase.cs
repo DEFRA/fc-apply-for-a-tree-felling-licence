@@ -4,6 +4,7 @@ using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -87,8 +88,8 @@ namespace Forestry.Flo.External.Web.Services
             var addDocumentRequest = new AddDocumentsExternalRequest
             {
                 ActorType = ActorType.ExternalApplicant,
-                ApplicationDocumentCount = applicationResult.Value.Documents!.Count(x => x.DeletionTimestamp is null),
-                DocumentPurpose = DocumentPurpose.Attachment,
+                ApplicationDocumentCount = applicationResult.Value.Documents!.Count(x => x.DeletionTimestamp.HasNoValue() && x.Purpose == DocumentPurpose.Attachment),
+                DocumentPurpose = addSupportingDocumentModel.Purpose,
                 FellingApplicationId = addSupportingDocumentModel.FellingLicenceApplicationId,
                 FileToStoreModels = filesModel,
                 ReceivedByApi = false,

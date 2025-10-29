@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -12,12 +13,11 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
-using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using System.Reflection;
 using System.Security.Claims;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
@@ -26,9 +26,7 @@ public class ApproverReviewUseCaseTests
 {
     private readonly Mock<IAgentAuthorityInternalService> _agentAuthorityInternalService = new();
     private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationInternalRepository = new();
-    private readonly Mock<IPropertyProfileRepository> _propertyProfileRepository = new();
     private readonly Mock<ILogger<FellingLicenceApplicationUseCase>> _logger = new();
-    private readonly Mock<Flo.Services.InternalUsers.Repositories.IUserAccountRepository> _userAccountRepository = new();
     private readonly Mock<IActivityFeedItemProvider> _activityFeedItemProvider = new();
     private readonly Mock<IGetWoodlandOfficerReviewService> _getWoodlandOfficerReviewService = new();
     private readonly Mock<IApproverReviewService> _approverReviewService = new();
@@ -37,6 +35,7 @@ public class ApproverReviewUseCaseTests
     private readonly Mock<IRetrieveUserAccountsService> _externalUserAccountService = new();
     private readonly Mock<IRetrieveWoodlandOwners> _woodlandOwnerService = new();
     private readonly Mock<IAgentAuthorityService> _agentAuthorityService = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private readonly RequestContext _requestContext = new("requestId", new RequestUserModel(new ClaimsPrincipal()));
 
     private readonly Mock<IOptions<FellingLicenceApplicationOptions> > _fellingLicenceApplicationOptions = new();
@@ -52,10 +51,8 @@ public class ApproverReviewUseCaseTests
             _internalUserAccountService.Object,
             _externalUserAccountService.Object,
             _fellingLicenceApplicationInternalRepository.Object,
-            _propertyProfileRepository.Object,
             _woodlandOwnerService.Object,
             _auditService.Object,
-            _userAccountRepository.Object,
             _activityFeedItemProvider.Object,
             _agentAuthorityService.Object,
             _agentAuthorityInternalService.Object,
@@ -64,6 +61,7 @@ public class ApproverReviewUseCaseTests
             _getConfiguredFcAreas.Object,
             _requestContext,
             _fellingLicenceApplicationOptions.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             _logger.Object);
     }
 

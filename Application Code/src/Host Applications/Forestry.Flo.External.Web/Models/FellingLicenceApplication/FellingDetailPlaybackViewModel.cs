@@ -25,7 +25,7 @@ namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication
             {
                 if (FellingDetail.FellingSpecies != null && FellingDetail.FellingSpecies.Any())
                 {
-                    return string.Join(",", FellingDetail.FellingSpecies.Select(f => TreeSpeciesFactory.SpeciesDictionary[f.Species].Name));
+                    return string.Join(", ", FellingDetail.FellingSpecies.Select(f => TreeSpeciesFactory.SpeciesDictionary[f.Species].Name));
                 }
 
                 return string.Empty;
@@ -38,7 +38,7 @@ namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication
             {
                 if (RestockingCompartmentDetails != null && RestockingCompartmentDetails.Any())
                 {
-                    return string.Join(",", RestockingCompartmentDetails.Select(r => r.CompartmentName));
+                    return string.Join(", ", RestockingCompartmentDetails.Select(r => r.CompartmentName));
                 }
                 return string.Empty;
             }

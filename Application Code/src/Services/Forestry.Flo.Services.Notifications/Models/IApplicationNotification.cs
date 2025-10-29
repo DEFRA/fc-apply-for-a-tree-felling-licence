@@ -1,4 +1,6 @@
-﻿namespace Forestry.Flo.Services.Notifications.Models;
+﻿using Newtonsoft.Json;
+
+namespace Forestry.Flo.Services.Notifications.Models;
 
 /// <summary>
 /// Contract for a notification data model referring to a specific application.
@@ -14,6 +16,11 @@ public interface IApplicationNotification
     /// Gets and sets the application reference id.
     /// </summary>
     public string ApplicationReference { get; set; }
+
+    /// <summary>
+    /// Gets and sets the application id.
+    /// </summary>
+    public Guid ApplicationId { get; set; }
 
     /// <summary>
     /// Gets and sets the name & address of the admin hub that the application is managed by.

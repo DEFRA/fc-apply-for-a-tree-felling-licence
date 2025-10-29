@@ -1,6 +1,6 @@
 resource "azurerm_virtual_network" "fs_flov2" {
-  name                = "${var.prefix}-network"
-  location            = var.azure_location
+  name                = "${module.shared.prefix}-network"
+  location            = module.shared.azure_location
   resource_group_name = azurerm_resource_group.fs_flov2.name
   address_space       = ["192.168.52.0/22"]
 }

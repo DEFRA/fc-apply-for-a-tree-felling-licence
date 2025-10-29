@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using FluentAssertions;
 using Moq;
 using Moq.Protected;
 
@@ -27,7 +26,7 @@ public partial class LandInformationSearchTests
         var response = await sut.ClearLayerAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -51,7 +50,7 @@ public partial class LandInformationSearchTests
         var response = await sut.ClearLayerAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
     }
 
     [Fact]
@@ -79,7 +78,7 @@ public partial class LandInformationSearchTests
         var response = await sut.ClearLayerAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
     }
 
     [Fact]
@@ -111,7 +110,7 @@ public partial class LandInformationSearchTests
         var response = await sut.ClearLayerAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsFailure.Should().BeTrue();
+        Assert.True(response.IsFailure);
 
     }
 
@@ -144,7 +143,7 @@ public partial class LandInformationSearchTests
         var response = await sut.ClearLayerAsync("", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
 
     }
 }

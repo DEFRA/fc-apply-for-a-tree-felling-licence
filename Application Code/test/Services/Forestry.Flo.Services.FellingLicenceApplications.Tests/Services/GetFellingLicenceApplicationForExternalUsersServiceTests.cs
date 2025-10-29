@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -59,6 +60,71 @@ public class GetFellingLicenceApplicationForExternalUsersServiceTests
         Assert.Equal(applications, result.Value);
 
         _fellingLicenceApplicationRepository.Verify(x => x.ListAsync(woodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetExistingSubmittedFlaPropertyDetail_WhenCheckAccessFails(
+        Guid applicationId,
+        UserAccessModel uam)
+    {
+        var sut = CreateSut();
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<bool>("error"));
+
+        var result = await sut.GetExistingSubmittedFlaPropertyDetailAsync(applicationId, uam, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _fellingLicenceApplicationRepository.Verify(x => x.CheckUserCanAccessApplicationAsync(applicationId, uam, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetExistingSubmittedFlaPropertyDetail_WhenCheckAccessReturnsFalse(
+        Guid applicationId,
+        UserAccessModel uam)
+    {
+        var sut = CreateSut();
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(false));
+
+        var result = await sut.GetExistingSubmittedFlaPropertyDetailAsync(applicationId, uam, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _fellingLicenceApplicationRepository.Verify(x => x.CheckUserCanAccessApplicationAsync(applicationId, uam, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetExistingSubmittedFlaPropertyDetail_WhenCheckAccessReturnsSuccess(
+        Guid applicationId,
+        UserAccessModel uam,
+        SubmittedFlaPropertyDetail submittedFlaPropertyDetail)
+    {
+        var sut = CreateSut();
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetExistingSubmittedFlaPropertyDetailAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<SubmittedFlaPropertyDetail>.From(submittedFlaPropertyDetail));
+
+        var result = await sut.GetExistingSubmittedFlaPropertyDetailAsync(applicationId, uam, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.HasValue);
+        Assert.Equal(submittedFlaPropertyDetail, result.Value.Value);
+
+        _fellingLicenceApplicationRepository.Verify(x => x.CheckUserCanAccessApplicationAsync(applicationId, uam, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.Verify(x => x.GetExistingSubmittedFlaPropertyDetailAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
     }
 

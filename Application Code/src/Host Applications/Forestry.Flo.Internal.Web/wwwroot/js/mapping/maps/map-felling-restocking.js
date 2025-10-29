@@ -4,24 +4,31 @@
     "esri/Map",
     "esri/views/MapView",
     "esri/Basemap",
+    "esri/layers/WMSLayer",
+    "esri/layers/WMTSLayer",
+    "esri/layers/GraphicsLayer",
     "esri/Graphic",
     "esri/rest/locator",
     "esri/layers/FeatureLayer",
-    "esri/Geometry/Polygon",
-    "esri/Geometry/Point",
-    "esri/Geometry/geometryEngine",
+    "esri/geometry/Polygon",
+    "esri/geometry/Point",
+    "esri/geometry/geometryEngine",
     "/js/mapping/maps-html-helper.js?v=" + Date.now(),
     "/js/mapping/maps-common.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-math.js?v=" + Date.now(),
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
-    "/js/mapping/fcconfig.js?v=" + Date.now()],
+    "/js/mapping/fcconfig.js?v=" + Date.now(),
+    "esri/core/reactiveUtils"],
     function (require,
         exports,
         config,
         Map,
         MapView,
         Basemap,
+        WMSLayer,
+        WMTSLayer,
+        GraphicsLayer,
         Graphic,
         locator,
         FeatureLayer,
@@ -33,9 +40,10 @@
         GT_WGS84,
         GT_Math,
         Proj4js,
-        fcconfig) {
+        fcconfig, reactiveUtils) {
         var confirmedFellingMap = /** @class */ (function () {
             function confirmedFellingMap(location, canMove, filter) {
+                this.location = location
                 this.canMove = false;
                 if (typeof canMove !== "undefined") {
                     this.canMove = canMove;
@@ -46,70 +54,78 @@
                 //This is the default map for the FC system
                 var baseMap = new Basemap({
                     portalItem: {
-                        id: fcconfig.baseMapForUK,
-                    },
+                        id: fcconfig.baseMapForUK
+                    }
                 });
                 this.map = new Map({
-                    basemap: baseMap,
+                    basemap: baseMap
                 });
 
-                var button = document.getElementById("view");
+ 
+                const mapComponent = document.getElementById(location);
+                mapComponent.map = this.map;
+                const splitIds = filter.split(",");
+                console.log(location);
+
+                mapComponent.viewOnReady().then(() => {
+                    this.view = mapComponent.view;
+                    if (!this.view) {
+                        console.error("ArcGIS view is undefined. Map component may not be initialized or visible.");
+                        return;
+                    }
+                    this.view.extent = fcconfig.englandExtent;
+                    this.view.constraints = { maxZoom: 20 };
+                    this.commonTools = new Maps_common(this.view);
+                    return Promise.resolve();
+                })
+                    .then(this.mapLoadEvt.bind(this))
+                    .then(this.SetUpWidgets.bind(this))
+                    .then(() => this.loadCompartments(splitIds))
+                    .then(this.GetStartingPoint.bind(this))
+                    .then(this.addWatermark.bind(this));
+            }
+
+            confirmedFellingMap.prototype.SetUpWidgets = async function () {
                 var that = this;
 
-                if (button !== null) {
-                    var items = maps_html_Helper.getCompartments("restocking");
 
-                    if (items && items.length > 0) {
-                        const panelMenu = document.getElementById("panelMenu");
-                        if (!panelMenu) {
-                            return
-                        }
+                that.map.basemap.title = "OS Map";
 
-                        panelMenu.removeAttribute("closed");
-                    }
+                var wmsLayer = new WMSLayer(fcconfig.wmsLayer);
 
-                    button.addEventListener("click", (evt) => {
-                        var state = document.getElementById("runningMode");
-                        if (state.value === "felling") {
-                            state.value = "restocking"
-                            document.getElementById("header-title").innerHTML = "Restocking";
-                            button.text = "View Felling";
-                            button.icon = "analysis";
-                        } else {
-                            state.value = "felling"
-                            document.getElementById("header-title").innerHTML = "Felling";
-                            button.text = "View Restocking";
-                            button.icon = "analysis";
-                        }
-
-                        that.map.layers.removeAll();
-                        that.loadCompartments()
-                            .then(that.GetStartingPoint.bind(that));
-
-                    });
-                }
-
-                this.view = new MapView({
-                    map: this.map,
-                    container: location,
-                    extent: fcconfig.englandExtent,
-                    constraints: {
-                        maxZoom: 20
-                    }
+                var wmsBasemap = new Basemap({
+                    baseLayers: [wmsLayer],
+                    title: fcconfig.wmsLayerName,
+                    id: "wmsBasemap"
                 });
 
-                const splitIds = filter.split(",");
+                const mapComponent = document.getElementById(this.location);
+                await mapComponent.viewOnReady();
 
-                this.view
-                    .when(this.mapLoadEvt.bind(this))
-                    .then(() => this.loadCompartments(splitIds))
-                    .then(this.GetStartingPoint.bind(this));
+                const [LocalBasemapsSource, centroidOperator] = await $arcgis.import([
+                    "@arcgis/core/widgets/BasemapGallery/support/LocalBasemapsSource.js",
+                    "@arcgis/core/geometry/operators/centroidOperator.js",
+                ]);
+
+                this.centroidOperator = centroidOperator;
+
+                const basemapGallery = document.getElementById(this.location).querySelector("arcgis-basemap-gallery");
+                basemapGallery.source = new LocalBasemapsSource({
+                    basemaps: [
+                        this.map.basemap,
+                        wmsBasemap
+                    ]
+                });
+
+                return Promise.resolve();
             }
+
             confirmedFellingMap.prototype.loadCompartments = async function (includeIds) {
+
                 var items = maps_html_Helper.getCompartments();
 
                 if (includeIds !== undefined && includeIds !== null && includeIds.length > 0) {
-                   items = items.filter(item => includeIds.includes(item.Id));
+                    items = items.filter(item => includeIds.includes(item.Id));
                 }
 
                 if (typeof items === "undefined" || items.length === 0) {
@@ -128,21 +144,7 @@
                             spatialReference: item.GIS.spatialReference.wkid,
                         };
                     }
-                    else if (item.GIS.paths) {
-                        geometry = {
-                            type: "polyline",
-                            paths: item.GIS.paths,
-                            spatialReference: item.GIS.spatialReference.wkid,
-                        };
-                    }
-                    else {
-                        geometry = {
-                            type: "point",
-                            longitude: item.GIS.x,
-                            latitude: item.GIS.y,
-                            spatialReference: item.GIS.spatialReference.wkid,
-                        };
-                    }
+                  
                     if (geometry) {
                         try {
                             let graphic = new Graphic({
@@ -152,20 +154,9 @@
                                     compartmentRef: ""
                                 },
                             });
+                            
 
-                            switch (graphic.geometry.type) {
-                                case "polygon":
-                                    centroid = graphic.geometry.centroid;
-                                    break;
-                                case "polyline":
-                                    centroid = graphic.geometry.extent.center;
-                                    break;
-                                default:
-                                    centroid = graphic.geometry;
-                                    break;
-                            }
-
-                            graphic.attributes.compartmentRef = that.convertToOSGridReference(centroid);
+                            graphic.attributes.compartmentRef = that.convertToOSGridReference(that.centroidOperator.execute(graphic.geometry));
 
                             graphicsArray.push(graphic);
                         }
@@ -180,12 +171,6 @@
 
                 this.loadPolygonLayer(graphicsArray.filter(function (item) {
                     return item.geometry.type === "polygon";
-                }));
-                this.loadLineLayer(graphicsArray.filter(function (item) {
-                    return item.geometry.type === "polyline";
-                }));
-                this.loadPointLayer(graphicsArray.filter(function (item) {
-                    return item.geometry.type === "point";
                 }));
                 return Promise.resolve(graphicsArray);
             };
@@ -230,85 +215,66 @@
                 return Promise.resolve();
             };
 
-            confirmedFellingMap.prototype.loadPointLayer = function (graphicsArray) {
-                try {
-                    if (typeof graphicsArray === "undefined" || graphicsArray.length === 0) {
-                        return Promise.resolve();
-                    }
-                    var labelSymbol = JSON.parse(JSON.stringify(fcconfig.activeTextSymbol));
-                    labelSymbol.font.size = 20;
-                    labelSymbol.xoffset = -20;
-                    labelSymbol.yoffset = -15;
-                    this.compartmentLayer_point = new FeatureLayer({
-                        source: graphicsArray,
-                        geometryType: "point",
-                        objectIdField: "ObjectID",
-                        fields: [
-                            { name: "ObjectID", type: "oid" },
-                            { name: "compartmentName", type: "string" },
-                            { name: "compartmentRef", type: "string" }
-                        ],
-                        labelingInfo: {
-                            labelExpressionInfo: {
-                                expression: "$feature.compartmentName + TextFormatting.NewLine + $feature.compartmentRef",
-                            },
-                            symbol: labelSymbol,
-                            visualVariables: fcconfig.visualVariables
-                        },
-                        renderer: {
-                            type: "simple",
-                            symbol: fcconfig.otherPointSymbol,
-                            visualVariables: fcconfig.visualVariables
-                        },
-                    });
-                    this.map.add(this.compartmentLayer_point);
-                }
-                catch (e) {
-                    if (window.console) {
-                        console.error("Failed to create all required parts for view.", e);
-                        Promise.reject(e);
-                    }
-                }
-                return Promise.resolve();
-            };
+            confirmedFellingMap.prototype.addWatermark = function () {
+                // Create a new GraphicsLayer for the watermark
+                const watermarkLayer = new GraphicsLayer({
+                    visible: false,
+                    id: "watermarkLayer",
+                });
 
-            confirmedFellingMap.prototype.loadLineLayer = function (graphicsArray) {
-                try {
-                    if (typeof graphicsArray === "undefined" || graphicsArray.length === 0) {
-                        return Promise.resolve();
+                // Define the text symbol for the watermark
+                const textSymbol = fcconfig.BlueSkyTextSymbol;
+
+                //Function to update the watermark positions
+                const updateWatermarkPositions = () => {
+                    const extent = this.view.extent;
+                    const width = extent.width;
+                    const height = extent.height;
+                    const spacing = Math.min(width, height) / 4;
+                    const spatialReference = this.view.spatialReference;
+
+                    // Clear existing graphics
+                    watermarkLayer.removeAll();
+
+                    // Create watermark graphics at regular intervals
+                    for (let x = extent.xmin; x < extent.xmax; x += spacing) {
+                        for (let y = extent.ymin; y < extent.ymax; y += spacing) {
+                            const point = {
+                                type: "point",
+                                x: x,
+                                y: y,
+                                spatialReference: spatialReference
+                            };
+
+                            const watermarkGraphic = new Graphic({
+                                geometry: point,
+                                symbol: textSymbol
+                            });
+
+                            watermarkLayer.add(watermarkGraphic);
+                        }
                     }
-                    var labelSymbol = JSON.parse(JSON.stringify(fcconfig.activeTextSymbol));
-                    labelSymbol.font.size = 20;
-                    this.compartmentLayer_line = new FeatureLayer({
-                        source: graphicsArray,
-                        geometryType: "polyline",
-                        objectIdField: "ObjectID",
-                        fields: [
-                            { name: "ObjectID", type: "oid" },
-                            { name: "compartmentName", type: "string" },
-                            { name: "compartmentRef", type: "string" }
-                        ],
-                        labelingInfo: {
-                            labelExpressionInfo: {
-                                expression: "$feature.compartmentName + TextFormatting.NewLine + $feature.compartmentRef",
-                            },
-                            symbol: labelSymbol,
-                            visualVariables: fcconfig.visualVariables
-                        },
-                        renderer: {
-                            type: "simple",
-                            symbol: fcconfig.otherLineSymbol,
-                            visualVariables: fcconfig.visualVariables
-                        },
-                    });
-                    this.map.add(this.compartmentLayer_line);
-                }
-                catch (e) {
-                    if (window.console) {
-                        console.error("Failed to create all required parts for view.", e);
-                        Promise.reject(e);
+                };
+
+                // Add the watermark layer to the map
+                this.map.add(watermarkLayer);
+
+                reactiveUtils.watch(
+                    () => this.view.stationary,
+                    (newValue) => {
+                        if (newValue) updateWatermarkPositions();
                     }
-                }
+                );
+                reactiveUtils.watch(
+                    () => this.view.extent,
+                    updateWatermarkPositions
+                );
+                reactiveUtils.watch(
+                    () => this.view.map.basemap,
+                    (newBasemap) => {
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK;
+                    }
+                );
                 return Promise.resolve();
             };
 

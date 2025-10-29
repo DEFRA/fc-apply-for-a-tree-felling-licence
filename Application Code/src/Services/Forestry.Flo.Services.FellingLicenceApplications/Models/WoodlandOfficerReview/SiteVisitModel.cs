@@ -7,22 +7,27 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOffice
 public class SiteVisitModel
 {
     /// <summary>
-    /// Gets and sets a flag indicating whether the woodland officer has decided that a site visit is not needed.
+    /// Gets and sets a flag indicating whether the woodland officer has decided that a site visit is needed.
     /// </summary>
-    public bool SiteVisitNotNeeded { get; set; }
+    public bool? SiteVisitNeeded { get; set; }
 
     /// <summary>
-    /// Gets and sets the date and time that site visit artefacts were created, effectively starting the site visit process.
+    /// Gets and sets a flag indicating that the site visit arrangements have been made.
     /// </summary>
-    public DateTime? SiteVisitArtefactsCreated { get; set; }
+    public bool? SiteVisitArrangementsMade { get; set; }
 
     /// <summary>
-    /// Gets and sets the date and time that site visit notes (from the mobile apps) were retrieved, effectively ending the site visit process.
+    /// Gets and sets a flag indicating that the site visit has been completed and resulting notes/attachments have been uploaded.
     /// </summary>
-    public DateTime? SiteVisitNotesRetrieved { get; set; }
+    public bool SiteVisitComplete { get; set; }
 
     /// <summary>
     /// Gets and sets a list of <see cref="CaseNoteModel"/> containing the site visit comments.
     /// </summary>
     public IList<CaseNoteModel> SiteVisitComments { get; set; }
+
+    /// <summary>
+    /// Gets and sets the list of site visit attachments uploaded by the woodland officer.
+    /// </summary>
+    public IList<SiteVisitEvidenceDocument> SiteVisitAttachments { get; set; }
 }

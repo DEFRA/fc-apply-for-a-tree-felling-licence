@@ -74,8 +74,8 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.CreatePropertyProfile(propertyProfileModel, _externalApplicant);
 
         //Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(propertyProfileModel.Id);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(propertyProfileModel.Id, result.Value.Id);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.CreatePropertyProfileEvent),
@@ -101,8 +101,8 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.CreatePropertyProfile(propertyProfileModel, _externalApplicant);
 
         //Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.Conflict);
+        Assert.False(result.IsSuccess);
+        Assert.Equivalent(ErrorTypes.Conflict, result.Error.ErrorType);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(
                 It.Is<AuditEvent>(e => e.EventName == AuditEvents.CreatePropertyProfileFailureEvent),
@@ -128,8 +128,8 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.CreatePropertyProfile(propertyProfileModel, _externalApplicant);
 
         //Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.InternalError);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorTypes.InternalError, result.Error.ErrorType);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(
                 It.Is<AuditEvent>(e => e.EventName == AuditEvents.CreatePropertyProfileFailureEvent),
@@ -148,7 +148,7 @@ public class ManagePropertyProfileUseCaseTests
         var act = async () => await _sut.CreatePropertyProfile(null!, _externalApplicant);
 
         //assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await act());
     }
     
     [Theory, AutoData]
@@ -192,8 +192,8 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.EditPropertyProfile(propertyProfileModel, _externalApplicant);
 
         //Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Name.Should().Be(propertyProfileModel.Name);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(propertyProfileModel.Name, result.Value.Name);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(It.Is<AuditEvent>(e =>
                     e.EventName == AuditEvents.UpdatePropertyProfileEvent),
@@ -236,8 +236,8 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.EditPropertyProfile(propertyProfileModel, _externalApplicant);
 
         //Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.NotFound);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorTypes.NotFound, result.Error.ErrorType);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(
                 It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdatePropertyProfileFailureEvent),
@@ -270,8 +270,8 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.EditPropertyProfile(propertyProfileModel, _externalApplicant);
 
         //Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Error.ErrorType.Should().Be(ErrorTypes.NotAuthorised);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorTypes.NotAuthorised, result.Error.ErrorType);
         _mockAuditService.Verify(
             a => a.PublishAuditEventAsync(
                 It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdatePropertyProfileFailureEvent),
@@ -289,7 +289,7 @@ public class ManagePropertyProfileUseCaseTests
        var act = async () => await _sut.EditPropertyProfile(null!, _externalApplicant);
 
         //assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => await act());
     }
     
     [Theory, AutoData]
@@ -310,7 +310,7 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.RetrievePropertyProfileAsync(propertyProfileModel.Id, _externalApplicant);
 
         //Assert
-        result.HasValue.Should().BeTrue();
+        Assert.True(result.HasValue);
     }
     
     [Theory, AutoData]
@@ -329,7 +329,7 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.RetrievePropertyProfileAsync(propertyProfileModel.Id, _externalApplicant);
 
         //Assert
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
     
     [Theory, AutoMoqData]
@@ -350,13 +350,12 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.RetrievePropertyProfileCompartments(propertyProfile.Id, _externalApplicant);
 
         //assert
-        result.HasValue.Should().BeTrue();
-        result.Value.Id.Should().Be(propertyProfile.Id);
-        result.Value.Name.Should().Be(propertyProfile.Name);
-        result.Value.WoodlandManagementPlanReference.Should().Be(propertyProfile.WoodlandManagementPlanReference);
-        result.Value.WoodlandCertificationSchemeReference.Should().Be(propertyProfile.WoodlandCertificationSchemeReference);
-        result.Value.Compartments.Should()
-            .BeEquivalentTo(ModelMapping.ToCompartmentModelList(propertyProfile.Compartments));
+        Assert.True(result.HasValue);
+        Assert.Equal(propertyProfile.Id, result.Value.Id);
+        Assert.Equal(propertyProfile.Name, result.Value.Name);
+        Assert.Equal(propertyProfile.WoodlandManagementPlanReference, result.Value.WoodlandManagementPlanReference);
+        Assert.Equal(propertyProfile.WoodlandCertificationSchemeReference, result.Value.WoodlandCertificationSchemeReference);
+        Assert.Equivalent(ModelMapping.ToCompartmentModelList(propertyProfile.Compartments), result.Value.Compartments);
     }
 
     [Theory, AutoMoqData]
@@ -381,6 +380,6 @@ public class ManagePropertyProfileUseCaseTests
         var result = await _sut.RetrievePropertyProfileCompartments(propertyProfile.Id, _externalApplicant);
 
         //assert
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
     }
 }

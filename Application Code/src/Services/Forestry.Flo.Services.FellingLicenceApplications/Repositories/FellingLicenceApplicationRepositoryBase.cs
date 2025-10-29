@@ -53,11 +53,13 @@ public class FellingLicenceApplicationRepositoryBase : IFellingLicenceApplicatio
             return UserDbErrorReason.NotFound;
         }
 
+        entity.AafStepStatus = applicationStepStatuses.AgentAuthorityFormComplete ?? entity.AafStepStatus;
         entity.ConstraintCheckStatus = applicationStepStatuses.ConstraintsCheckComplete ?? entity.ConstraintCheckStatus;
         entity.OperationsStatus = applicationStepStatuses.OperationDetailsComplete ?? entity.OperationsStatus;
         entity.TermsAndConditionsStatus = applicationStepStatuses.TermsAndConditionsComplete ?? entity.TermsAndConditionsStatus;
         entity.SupportingDocumentationStatus = applicationStepStatuses.SupportingDocumentationComplete ?? entity.SupportingDocumentationStatus;
         entity.SelectCompartmentsStatus = applicationStepStatuses.SelectedCompartmentsComplete ?? entity.SelectCompartmentsStatus;
+        entity.EnvironmentalImpactAssessmentStatus = applicationStepStatuses.EnvironmentalImpactAssessmentComplete ?? entity.EnvironmentalImpactAssessmentStatus;
 
         // only update the statuses for matched compartments
 

@@ -1,6 +1,5 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -26,6 +25,7 @@ using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccount
 using VoluntaryWithdrawalNotificationOptions = Forestry.Flo.Internal.Web.Infrastructure.VoluntaryWithdrawalNotificationOptions;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Microsoft.EntityFrameworkCore.Storage;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 

@@ -13,14 +13,14 @@ public class AddConsulteeCommentModel
     public Guid AccessCode { get; set; }
 
     [DisplayName("Your name or organisation name")]
-    [Required(ErrorMessage = "Your name or organisation name must be provided")]
+    [Required(ErrorMessage = "Enter your name or organisation name")]
     public string AuthorName { get; set; }
 
     [HiddenInput]
     public string AuthorContactEmail { get; set; }
 
     [DisplayName("Your comments")]
-    [Required(ErrorMessage = "Your comments must be provided")]
+    [Required(ErrorMessage = "Enter your comments on the application")]
     [MaxLength(DataValueConstants.ConsulteeCommentMaxLength)]
     public string Comment { get; set; } = null!;
 

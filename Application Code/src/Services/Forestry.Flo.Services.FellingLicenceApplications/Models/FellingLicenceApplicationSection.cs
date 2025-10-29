@@ -5,6 +5,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 public enum FellingLicenceApplicationSection
 {
+    [Description("Agent Authority Form")]
+    AgentAuthorityForm,
     [Description("Select compartments")]
     SelectedCompartments,
     [Description("Check for constraints")]
@@ -16,5 +18,9 @@ public enum FellingLicenceApplicationSection
     [Description("Supporting documentation")]
     SupportingDocumentation,
     [Description("Terms and conditions")]
-    FlaTermsAndConditionsViewModel
+    FlaTermsAndConditionsViewModel,
+    [Description("Environmental Impact Assessment")]
+    EnvironmentalImpactAssessment,
+    [Description("10 Year Licence")]
+    TenYearLicence
 }

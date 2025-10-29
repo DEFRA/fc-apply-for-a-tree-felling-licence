@@ -3,12 +3,13 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.AdminOfficerReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NodaTime;
@@ -17,11 +18,11 @@ namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
 [Authorize]
 [AutoValidateAntiforgeryToken]
-public class AdminOfficerReviewController : Controller
+public partial class AdminOfficerReviewController : Controller
 {
     public async Task<IActionResult> Index(
         Guid id,
-        [FromServices] AdminOfficerReviewUseCase useCase,
+        [FromServices] IAdminOfficerReviewUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -39,7 +40,7 @@ public class AdminOfficerReviewController : Controller
 
     public async Task<IActionResult> AssignWoodlandOfficer(
         Guid id,
-        [FromServices] AdminOfficerReviewUseCase useCase,
+        [FromServices] IAdminOfficerReviewUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -73,7 +74,7 @@ public class AdminOfficerReviewController : Controller
     [HttpPost]
     public async Task<IActionResult> ConfirmAdminOfficerReview(
         AdminOfficerReviewModel model,
-        [FromServices] AdminOfficerReviewUseCase useCase,
+        [FromServices] IAdminOfficerReviewUseCase useCase,
         [FromServices] IClock clock,
         CancellationToken cancellationToken)
     {
@@ -128,7 +129,7 @@ public class AdminOfficerReviewController : Controller
     [HttpGet]
     public async Task<IActionResult> AgentAuthorityFormCheck(
         Guid id,
-        [FromServices] AgentAuthorityFormCheckUseCase useCase,
+        [FromServices] IAgentAuthorityFormCheckUseCase useCase,
         CancellationToken cancellationToken)
     {
         var model = await useCase.GetAgentAuthorityFormCheckModelAsync(id, cancellationToken);
@@ -145,7 +146,7 @@ public class AdminOfficerReviewController : Controller
     [HttpPost]
     public async Task<IActionResult> AgentAuthorityFormCheck(
         AgentAuthorityFormCheckModel model,
-        [FromServices] AgentAuthorityFormCheckUseCase useCase,
+        [FromServices] IAgentAuthorityFormCheckUseCase useCase,
         [FromServices] IValidator<AgentAuthorityFormCheckModel> validator,
         CancellationToken cancellationToken)
     {
@@ -191,7 +192,7 @@ public class AdminOfficerReviewController : Controller
     [HttpGet]
     public async Task<IActionResult> MappingCheck(
         Guid id,
-        [FromServices] MappingCheckUseCase useCase,
+        [FromServices] IMappingCheckUseCase useCase,
         CancellationToken cancellationToken)
     {
         var model = await useCase.GetMappingCheckModelAsync(id, cancellationToken);
@@ -208,7 +209,7 @@ public class AdminOfficerReviewController : Controller
     [HttpPost]
     public async Task<IActionResult> MappingCheck(
         MappingCheckModel model,
-        [FromServices] MappingCheckUseCase useCase,
+        [FromServices] IMappingCheckUseCase useCase,
         [FromServices] IValidator<MappingCheckModel> validator,
         CancellationToken cancellationToken)
     {
@@ -254,8 +255,8 @@ public class AdminOfficerReviewController : Controller
     [HttpGet]
     public async Task<IActionResult> ConstraintsCheck(
     Guid id,
-    [FromServices] ConstraintsCheckUseCase useCase,
-    [FromServices] AdminOfficerReviewUseCase adminOfficerReviewUseCase,
+    [FromServices] IConstraintsCheckUseCase useCase,
+    [FromServices] IAdminOfficerReviewUseCase adminOfficerReviewUseCase,
     CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -288,7 +289,7 @@ public class AdminOfficerReviewController : Controller
     [HttpPost]
     public async Task<IActionResult> ConstraintsCheck(
         ConstraintsCheckModel model,
-        [FromServices] ConstraintsCheckUseCase useCase,
+        [FromServices] IConstraintsCheckUseCase useCase,
         CancellationToken cancellationToken)
     {
         var performingUser = new InternalUser(User);
@@ -333,8 +334,8 @@ public class AdminOfficerReviewController : Controller
     [HttpGet]
     public async Task<IActionResult> LarchCheck(
         Guid id,
-        [FromServices] LarchCheckUseCase useCase,
-        [FromServices] FellingLicenceApplicationUseCase applicationUseCase,
+        [FromServices] ILarchCheckUseCase useCase,
+        [FromServices] IFellingLicenceApplicationUseCase applicationUseCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -353,8 +354,8 @@ public class AdminOfficerReviewController : Controller
     public async Task<IActionResult> LarchCheck(
         Guid id,
         LarchCheckModel model,
-        [FromServices] LarchCheckUseCase useCase,
-        [FromServices] AdminOfficerReviewUseCase adminOfficerUseCase,
+        [FromServices] ILarchCheckUseCase useCase,
+        [FromServices] IAdminOfficerReviewUseCase adminOfficerUseCase,
         [FromServices] IAmendCaseNotes amendCaseNotes,
         CancellationToken cancellationToken)
     {
@@ -394,20 +395,20 @@ public class AdminOfficerReviewController : Controller
             return RedirectToAction(nameof(LarchCheck), new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.LarchCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
-            var caseNoteresult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
+            var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
 
-            if (caseNoteresult.IsFailure)
+            if (caseNoteResult.IsFailure)
             {
-                this.AddErrorMessage(result.Error);
+                this.AddErrorMessage("Unable to add case note");
                 return RedirectToAction(nameof(LarchFlyover), new { id = model.ApplicationId });
             }
         }
@@ -418,7 +419,7 @@ public class AdminOfficerReviewController : Controller
     [HttpGet]
     public async Task<IActionResult> LarchFlyover(
         Guid id,
-        [FromServices] LarchCheckUseCase useCase,
+        [FromServices] ILarchCheckUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
@@ -437,7 +438,7 @@ public class AdminOfficerReviewController : Controller
     public async Task<IActionResult> LarchFlyover(
         Guid id,
         LarchFlyoverModel model,
-        [FromServices] LarchCheckUseCase useCase,
+        [FromServices] ILarchCheckUseCase useCase,
         [FromServices] IAmendCaseNotes amendCaseNotes,
         [FromServices] IValidator<LarchFlyoverModel> larchFlyoverValidator,
         CancellationToken cancellationToken)
@@ -470,21 +471,21 @@ public class AdminOfficerReviewController : Controller
             return RedirectToAction(nameof(LarchFlyover), new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.LarchCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
 
-            var caseNoteresult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
+            var caseNoteResult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
 
-            if (caseNoteresult.IsFailure)
+            if (caseNoteResult.IsFailure)
             {
-                this.AddErrorMessage(result.Error);
+                this.AddErrorMessage("Unable to add case note");
                 return RedirectToAction(nameof(LarchFlyover), new { id = model.ApplicationId });
             }
         }
@@ -495,7 +496,7 @@ public class AdminOfficerReviewController : Controller
     [HttpGet]
     public async Task<IActionResult> CBWCheck(
     Guid id,
-    [FromServices] CBWCheckUseCase useCase,
+    [FromServices] ICBWCheckUseCase useCase,
     CancellationToken cancellationToken)
     {
         var model = await useCase.GetCBWCheckModelAsync(id, cancellationToken);
@@ -512,7 +513,7 @@ public class AdminOfficerReviewController : Controller
     [HttpPost]
     public async Task<IActionResult> CBWCheck(
         CBWCheckModel model,
-        [FromServices] CBWCheckUseCase useCase,
+        [FromServices] ICBWCheckUseCase useCase,
         [FromServices] IAmendCaseNotes amendCaseNotes,
         CancellationToken cancellationToken)
     {
@@ -551,14 +552,14 @@ public class AdminOfficerReviewController : Controller
             return RedirectToAction(nameof(MappingCheck), new { id = model.ApplicationId });
         }
 
-        if (!string.IsNullOrWhiteSpace(model.CaseNote))
+        if (!string.IsNullOrWhiteSpace(model.FormLevelCaseNote.CaseNote))
         {
             var caseNoteRecord = new AddCaseNoteRecord(
                 FellingLicenceApplicationId: model.ApplicationId,
                 Type: CaseNoteType.CBWCheckComment,
-                Text: model.CaseNote,
-                VisibleToApplicant: model.VisibleToApplicant,
-                VisibleToConsultee: model.VisibleToConsultee
+                Text: model.FormLevelCaseNote.CaseNote,
+                VisibleToApplicant: model.FormLevelCaseNote.VisibleToApplicant,
+                VisibleToConsultee: model.FormLevelCaseNote.VisibleToConsultee
             );
             var caseNoteresult = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, performingUser.UserAccountId.Value, cancellationToken);
 

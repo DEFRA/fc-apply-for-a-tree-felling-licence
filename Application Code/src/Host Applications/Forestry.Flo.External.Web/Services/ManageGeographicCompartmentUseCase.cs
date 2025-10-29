@@ -71,8 +71,7 @@ public class ManageGeographicCompartmentUseCase
                         {
                             compartmentEntity.PropertyProfileId,
                             compartmentEntity.CompartmentNumber,
-                            compartmentEntity.SubCompartmentName,
-                            compartmentEntity.Designation
+                            compartmentEntity.SubCompartmentName
                         }),
                     cancellationToken))
                 .OnFailure(async r =>
@@ -107,7 +106,6 @@ public class ManageGeographicCompartmentUseCase
             compartmentImport.CompartmentNumber,
             compartmentImport.SubCompartmentName, 
             compartmentImport.TotalHectares, 
-            compartmentImport.Designation, 
             compartmentImport.GISData, 
             propertyProfileId);
 
@@ -126,8 +124,7 @@ public class ManageGeographicCompartmentUseCase
                         compartmentModel.CompartmentNumber,
                         compartmentModel.SubCompartmentName,
                         compartmentModel.GISData,
-                        compartmentModel.TotalHectares,
-                        compartmentModel.Designation
+                        compartmentModel.TotalHectares
                     }),
                 cancellationToken))
             .OnFailure(async r =>
@@ -136,10 +133,11 @@ public class ManageGeographicCompartmentUseCase
                     cancellationToken);
                 _compartmentRepository.Remove(compartmentModel);
                 _logger.LogError(
-                    $"A compartment couldn't be added to the database and rolled back from the stagedSave Details: ProfileID - {compartmentModel.PropertyProfileId}. " +
-                    $"Number -{compartmentModel.CompartmentNumber}. " +
-                    $"Total HA -{compartmentModel.TotalHectares}. Designation - {compartmentModel.Designation}. " +
-                    $"GIS:{compartmentModel.GISData}. Reason: {r.ToString()}");
+                    "A compartment couldn't be added to the database and rolled back from the stagedSave Details: ProfileID - {PropertyProfileId}. " +
+                    "Number - {CompartmentNumber}. " +
+                    "Total HA - {TotalHectares}. " +
+                    "GIS: {GISData}. Reason: {ErrorReason}",
+                    compartmentModel.PropertyProfileId, compartmentModel.CompartmentNumber, compartmentModel.TotalHectares, compartmentModel.GISData, r.GetDescription());
             })
             .Map(() => compartment.Id)
             .MapError(e => e == UserDbErrorReason.NotUnique ?
@@ -185,7 +183,6 @@ public class ManageGeographicCompartmentUseCase
                         compartmentEntity.PropertyProfileId,
                         compartmentEntity.CompartmentNumber,
                         compartmentEntity.SubCompartmentName,
-                        compartmentEntity.Designation,
                         compartmentEntity.GISData
                     }),
                 cancellationToken))
@@ -276,7 +273,6 @@ public class ManageGeographicCompartmentUseCase
                 compartmentModel.PropertyProfileId,
                 compartmentModel.CompartmentNumber,
                 compartmentModel.SubCompartmentName,
-                compartmentModel.Designation,
                 compartmentModel.GISData,
                 compartmentModel.TotalHectares,
                 Error = error
@@ -297,7 +293,6 @@ public class ManageGeographicCompartmentUseCase
                 compartmentModel.CompartmentNumber,
                 compartmentModel.SubCompartmentName,
                 compartmentModel.WoodlandName,
-                compartmentModel.Designation,
                 compartmentModel.GISData,
                 compartmentModel.TotalHectares,
                 Error = error

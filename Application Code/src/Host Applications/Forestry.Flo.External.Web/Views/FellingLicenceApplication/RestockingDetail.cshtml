@@ -1,9 +1,6 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.Common.Extensions
-@using Forestry.Flo.External.Web.Infrastructure.Display
-@using Forestry.Flo.External.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedRestockingDetailModel
 
 @{
@@ -25,12 +22,11 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
+<div class="govuk-grid-column-two-thirds">
 
     <form id="restocking-detail-form" method="post" asp-controller="FellingLicenceApplication" asp-action="RestockingDetail">
         <div class="govuk-body">
@@ -176,6 +172,6 @@
 }
 
 @section Css {
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
     <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
 }

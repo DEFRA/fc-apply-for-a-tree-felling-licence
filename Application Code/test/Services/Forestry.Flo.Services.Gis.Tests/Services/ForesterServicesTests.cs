@@ -1,13 +1,15 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using Castle.Components.DictionaryAdapter;
-using Forestry.Flo.Services.Gis.Services;
+﻿using Castle.Components.DictionaryAdapter;
 using Forestry.Flo.Services.Gis.Models.Esri.Common;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
+using Forestry.Flo.Services.Gis.Models.Esri.Responses;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.Gis.Services;
 using Forestry.Flo.Services.Gis.Tests.Services.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Newtonsoft.Json;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace Forestry.Flo.Services.Gis.Tests.Services;
 
@@ -21,30 +23,37 @@ public partial class ForesterServicesTests
     private readonly Point _nullIsland = new(0.0f, 0.0f);
     private List<Polygon> _polygons;
     private Geometry<Polygon> _geometryPolygon;
-
-    public ForesterServicesTests()
+    private readonly HttpResponseMessage _successAddResponseMessage;
+  
+public ForesterServicesTests()
     {
         _mockLogger = new Mock<ILogger<ForesterServices>>();
         _mockHttpHandler = new Mock<HttpMessageHandler>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
-        _config = new EsriConfig() {
-            Forester = new ForesterConfig {
+        _config = new EsriConfig()
+        {
+            Forester = new ForesterConfig
+            {
                 BaseUrl = "https://www.AGOL.com/",
                 CountryCode = "E92000001",
-                GenerateTokenService = new OAuthServiceSettingsUser {
+                GenerateTokenService = new OAuthServiceSettingsUser
+                {
                     Password = "password",
                     Username = "username",
                     Path = "GetToken",
                 },
                 NeedsToken = true,
-                UtilitiesService = new UtilitiesServiceSettings {
+                UtilitiesService = new UtilitiesServiceSettings
+                {
                     NeedsToken = true,
-                    ExportService = new ExportServiceSettings {
+                    ExportService = new ExportServiceSettings
+                    {
                         BaseMap = "base",
                         BaseMapID = "baseID",
                         DefaultFormat = "PNG8",
                         Path = "Export",
-                        TextOverrides = new TextOverrideDetails {
+                        TextOverrides = new TextOverrideDetails
+                        {
                             RestockingTitle = "Restocking",
                             Copyright = "© 2021",
                             FellingTitle = "Felling",
@@ -53,14 +62,35 @@ public partial class ForesterServicesTests
                     Path = "Utils",
                     IsPublic = false,
 
-                    JobStatusService = new JobStatusServiceSettings {
+                    JobStatusService = new JobStatusServiceSettings
+                    {
                         Path = "jobs/{0}",
-                        Status = new StatusSettings {
+                        Status = new StatusSettings
+                        {
                             FailedStates = ["Failed"],
                             SuccessStates = ["Succeeded"],
                             PendingStates = ["Pending"]
                         }
                     }
+                },
+                GeometryService = new GeometryServiceSettings
+                {
+                    Path = "https://www.AGOL.com/geom/",
+                    IsPublic = true,
+                    NeedsToken = false,
+                    IntersectService = new BaseEsriServiceConfig
+                    {
+                        Path = "intersect"
+                    },
+                    UnionService = new BaseEsriServiceConfig
+                    {
+                        Path = "union"
+                    },
+                    ProjectService = new ProjectServiceSettings
+                    {
+                        Path = "project",
+                        OutSR = 1
+                    },
                 },
                 LayerServices =
                 [
@@ -91,21 +121,36 @@ public partial class ForesterServicesTests
                         {
                             Name = "Phytophthora_Ramorum_Risk_Zones", ServiceURI = "https://www.AGOL.com/Risk",
                             Fields = [], NeedsToken = true
-                        }
-
+                        },
+                    new FeatureLayerConfig()
+                    {
+                        Name = "Ancient_Woodland", ServiceURI = "https://www.AGOL.com/AW",
+                        Fields = [], NeedsToken = true
+                    },
+                    new FeatureLayerConfig()
+                    {
+                        Name = "Ancient_Woodlands_Revised", ServiceURI = "https://www.AGOL.com/AWR",
+                        Fields = [], NeedsToken = true
+                        }, new FeatureLayerConfig()
+                    {
+                        Name = "ExternalFLA", ServiceURI = "https://www.AGOL.com/ExternalFLA",
+                    Fields = [], NeedsToken = true
+                    }
                 ]
             },
             SpatialReference = 22770
         };
 
 
-        _successTokenRMessage = new HttpResponseMessage {
+        _successTokenRMessage = new HttpResponseMessage
+        {
             StatusCode = HttpStatusCode.OK,
             Content = new StringContent("{\"token\":\"T0\",\"expires\":1666259794347, \"expires_in\": 1}")
         };
         _successTokenRMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-        var localPolygon = new Polygon {
+        var localPolygon = new Polygon
+        {
             Rings = new List<List<List<float>>>
             {
                     new EditableList<List<float>>
@@ -118,6 +163,17 @@ public partial class ForesterServicesTests
         _polygons = [localPolygon];
 
         _geometryPolygon = new Geometry<Polygon>(localPolygon, "esriGeometryPolygon");
+
+        _successAddResponseMessage = new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(JsonConvert.SerializeObject(new CreateUpdateDeleteResponse<int>
+            {
+                AddResults = [new BaseCreateDeleteResult<int> { ObjectId = 1, WasSuccessful = true }]
+            }))
+        };
+
+        _successAddResponseMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
     }
 
     [Fact]

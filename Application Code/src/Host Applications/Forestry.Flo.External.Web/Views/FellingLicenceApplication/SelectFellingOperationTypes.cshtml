@@ -1,8 +1,6 @@
 ﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.SelectFellingOperationTypesViewModel
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.Common
 
@@ -12,22 +10,19 @@
         ? Url.Action("FellingAndRestockingPlayback", "FellingLicenceApplication", new { applicationId = Model.ApplicationId })
         : Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
     ViewData.ShowBackLink();
-
-    var selectedOperationTypes = Model.OperationTypes?.ToHashSet() ?? [];
 }
 
-<div class="govuk-grid-column-full">
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary"/>
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
-    <partial name="Partials/_PageErrors" />
 
-    <form id="select-operation-types" method="post">
+<form id="select-operation-types" method="post">
 
-        <input type="hidden" asp-for="ApplicationId" />
-        <input type="hidden" asp-for="FellingCompartmentId" />
+    <input type="hidden" asp-for="ApplicationId"/>
+    <input type="hidden" asp-for="FellingCompartmentId"/>
 
+    <div class="govuk-grid-column-two-thirds">
 
         <div class="govuk-form-group">
             <fieldset class="govuk-fieldset">
@@ -41,15 +36,30 @@
 
         <partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
 
-        <input type="hidden" asp-for="@Model.GIS" />
+        <input type="hidden" asp-for="@Model.GIS"/>
+
+    </div>
+
+    <div class="govuk-grid-column-full">
 
         <a class="govuk-link govuk-heading-s collapsible" href="#">View map of @Model.CompartmentName</a>
-        <br />
+        <br/>
         <div id="mapWrapper" style="display:none;" class="mapWrapper">
             <br/>
-            <div id="viewDiv" aria-label="Map of the selected compartment"></div>
-            <br />
+            <arcgis-map id="viewDiv" aria-label="Map of the selected compartment">
+                <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+                <arcgis-zoom slot="top-right"></arcgis-zoom>
+                <arcgis-compass slot="top-right"> </arcgis-compass>
+                <arcgis-expand slot="top-right">
+                    <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                </arcgis-expand>
+            </arcgis-map>
+            <br/>
         </div>
+
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
 
         <br/>
 
@@ -115,12 +125,12 @@
                 Continue
             </button>
         </div>
-    </form>
-</div>
+    </div>
+</form>
 
 
 @section Css {
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/esri/themes/light/main.css")" />
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css"/>
 
     <style>
         #viewDiv {
@@ -136,7 +146,9 @@
 
 @section Scripts{
 
-    <script src="@Url.AbsoluteContent("~/lib/arcgis_js_api/javascript/4.24/init.js")"></script>
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
     <script>
         require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {
             var mapObj = new MapCompartmentSelection("viewDiv");

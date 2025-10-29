@@ -1,0 +1,86 @@
+#viewDiv {
+    border-color: black;
+    border-style: solid;
+    border-width: 1px;
+    padding: 0;
+    margin: 0;
+    height: 50vh !important;
+}
+
+sup {
+    vertical-align: top;
+    font-size: small;
+}
+
+.govuk-accordion__controls {
+    display: none;
+}
+
+.outer {
+    position: relative
+}
+
+.fix {
+    position: absolute;
+    *position: relative; /*ie7*/
+    left: 0;
+    width: 200px;
+}
+
+.species {
+    white-space: nowrap;
+}
+
+.treemarking {
+    white-space: nowrap;
+}
+
+.felling-numeric-min-width {
+    min-width: 75px;
+}
+
+#felling-and-restocking-table > thead > tr > td.govuk-table__cell,
+#felling-and-restocking-table > tbody > tr > td.govuk-table__cell
+{
+    padding: 10px 20px 10px 0 !important;
+    border-top: 1px solid #b1b4b6 !important;
+    text-align: left !important;
+    border-bottom: none !important;
+    vertical-align: top !important;
+}
+
+#felling-and-restocking-table > thead > tr > th.govuk-table__header {
+    padding: 10px 20px 10px 0 !important;
+    text-align: left !important;
+    border-bottom: none !important;
+    vertical-align: top !important;
+}
+
+.form-control {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.form-control input {
+    min-width: 100px;
+}
+
+.new-confirmed-detail > * {
+    background-color: #fff3bf;
+}
+
+.deleted-confirmed-detail > * {
+    background-color: #F3F2F1;
+}
+
+.new-confirmed-detail .govuk-summary-card__title-wrapper,
+.deleted-confirmed-detail .govuk-summary-card__title-wrapper {
+    border-bottom: 1px solid #b1b4b6;
+}
+
+.compartment-info{
+    margin-top: 5px;
+    display: flex;
+    gap: 15px;
+}

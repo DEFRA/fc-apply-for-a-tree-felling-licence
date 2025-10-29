@@ -1,4 +1,6 @@
-﻿namespace Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
+﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+
+namespace Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 
 public record ExternalAccessLinkModel(
     string ContactName,
@@ -6,4 +8,6 @@ public record ExternalAccessLinkModel(
     string Purpose,
     DateTime CreatedTimeStamp,
     DateTime ExpiresTimeStamp,
-    Guid ApplicationId);
+    Guid ApplicationId,
+    ExternalAccessLinkType LinkType,
+    List<Guid> SharedSupportingDocuments);

@@ -8,15 +8,12 @@ using Forestry.Flo.External.Web.Models.UserAccount;
 using Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels;
 using Forestry.Flo.External.Web.Models.WoodlandOwner;
 using Forestry.Flo.External.Web.Services;
-using Forestry.Flo.Services.Applicants.Configuration;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Services;
-using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using AccountType = Forestry.Flo.External.Web.Models.UserAccount.AccountType;
 
 namespace Forestry.Flo.External.Web.Controllers;
@@ -29,15 +26,12 @@ public partial class AccountController : Controller
     private readonly ValidationProvider _validationProvider;
     private readonly List<BreadCrumb> _breadCrumbsRoot;
     private readonly ILogger<AccountController> _logger;
-    private readonly FcAgencyOptions _fcAgencyOptions;
 
     public AccountController(
         ValidationProvider validationProvider,
-        IOptions<FcAgencyOptions> fcAgencyOptions,
         ILogger<AccountController> logger)
     {
         _validationProvider = Guard.Against.Null(validationProvider);
-        _fcAgencyOptions = Guard.Against.Null(fcAgencyOptions.Value);
         _logger = logger;
 
         _breadCrumbsRoot = new List<BreadCrumb>
@@ -47,7 +41,6 @@ public partial class AccountController : Controller
         };
     }
 
-    [Authorize(AuthenticationSchemes = FloAuthenticationScheme.SignUp)]
     [HttpGet]
     public async Task<IActionResult> RegisterAccountType([FromQuery] string? token, 
         [FromServices] RegisterUserAccountUseCase useCase,
@@ -489,24 +482,28 @@ public partial class AccountController : Controller
         [FromServices] InviteAgentToOrganisationUseCase useCase,
         CancellationToken cancellationToken)
     {
-        // this functionality is being hidden until Agent Organisations are implemented again in a later phase FLOV2-1347
-        return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+        var user = new ExternalApplicant(User);
 
-        //var user = new ExternalApplicant(User);
-        //var agencyResult = await useCase.RetrieveUserAgencyAsync(user, cancellationToken);
-        //if (agencyResult.IsFailure)
-        //{
-        //    this.AddErrorMessage(agencyResult.Error);
-        //    return RedirectToAction(nameof(HomeController.AgentUser), "Home");
-        //}
+        if (user.IsFcUser)
+        {
+            this.AddErrorMessage("Forestry Commission users should sign up to the Internal site which will automatically create their external applicant site account.");
+            return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+        }
 
-        //var model = new AgencyUserModel
-        //{
-        //    AgencyId = agencyResult.Value.Id,
-        //    AgencyName = agencyResult.Value.Name
-        //};
-        //SetBreadcrumbs(model, "Invite Agent To Organisation");
-        //return View(model);
+        var agencyResult = await useCase.RetrieveUserAgencyAsync(user, cancellationToken);
+        if (agencyResult.IsFailure)
+        {
+            this.AddErrorMessage(agencyResult.Error);
+            return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+        }
+
+        var model = new AgencyUserModel
+        {
+            AgencyId = agencyResult.Value.Id,
+            AgencyName = agencyResult.Value.Name
+        };
+        SetBreadcrumbs(model, "Invite Agent To Organisation");
+        return View(model);
     }
 
     // POST account/InviteUserToOrganisation
@@ -517,43 +514,37 @@ public partial class AccountController : Controller
         [FromServices] InviteAgentToOrganisationUseCase useCase,
         CancellationToken cancellationToken)
     {
-        // this functionality is being hidden until Agent Organisations are implemented again in a later phase FLOV2-1347
-        return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+        var user = new ExternalApplicant(User);
 
-        //var user = new ExternalApplicant(User);
+        if (user.IsFcUser)
+        {
+            this.AddErrorMessage("Forestry Commission users should sign up to the Internal site which will automatically create their external applicant site account.");
+            return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+        }
 
-        //if (user.IsFcUser)
-        //{
-        //    var domain = model.Email.Split("@")[1];
-        //    if (!_fcAgencyOptions.PermittedEmailDomainsForFcAgent.Any(x => x.Equals(domain, StringComparison.InvariantCultureIgnoreCase)))
-        //    {
-        //        ModelState.AddModelError(nameof(AgencyUserModel.Email), "Email address must be from a permitted domain");
-        //    }
-        //}
+        if (!ModelState.IsValid)
+        {
+            SetBreadcrumbs(model, "Invite Agent To Organisation");
+            return View(model);
+        }
 
-        //if (!ModelState.IsValid)
-        //{
-        //    SetBreadcrumbs(model, "Invite Agent To Organisation");
-        //    return View(model);
-        //}
+        var inviteLink = GetAgentEmailInviteLink();
 
-        //var inviteLink = GetAgentEmailInviteLink();
-
-        //var result =
-        //    await useCase.InviteAgentToOrganisationAsync(model, user, inviteLink, cancellationToken);
-        //switch (result.IsFailure)
-        //{
-        //    case true when result.Error.ErrorResult is InviteUserErrorResult.OperationFailed or InviteUserErrorResult.UserAlreadyExists:
-        //        this.AddErrorMessage(result.Error.Message);
-        //        SetBreadcrumbs(model, "Invite Agent To Organisation");
-        //        return View(model);
-        //    case true when result.Error.ErrorResult == InviteUserErrorResult.UserAlreadyInvited:
-        //        return RedirectToAction(nameof(ResendAgentInvitationEmail),
-        //            new { invitedUserEmail = model.Email, invitedUserName = model.Name });
-        //    default:
-        //        this.AddConfirmationMessage("Invitation sent successfully.");
-        //        return RedirectToAction(nameof(HomeController.Index), "Home");
-        //}
+        var result =
+            await useCase.InviteAgentToOrganisationAsync(model, user, inviteLink, cancellationToken);
+        switch (result.IsFailure)
+        {
+            case true when result.Error.ErrorResult is InviteUserErrorResult.OperationFailed or InviteUserErrorResult.UserAlreadyExists:
+                this.AddErrorMessage(result.Error.Message);
+                SetBreadcrumbs(model, "Invite Agent To Organisation");
+                return View(model);
+            case true when result.Error.ErrorResult == InviteUserErrorResult.UserAlreadyInvited:
+                return RedirectToAction(nameof(ResendAgentInvitationEmail),
+                    new { invitedUserEmail = model.Email, invitedUserName = model.Name });
+            default:
+                this.AddConfirmationMessage("Invitation sent successfully.");
+                return RedirectToAction(nameof(HomeController.Index), "Home");
+        }
     }
 
     private string GetEmailInviteLink() => Url.AbsoluteAction("AcceptInvitation", "Home")!;

@@ -75,6 +75,7 @@ public class AssignWoodlandOfficerAsyncUseCase
 
         if (applicationRetrievalFailure)
         {
+            _logger.LogError("Unable to retrieve application with identifier {ApplicationId}, error: {Error}", message.ApplicationId, applicationRetrievalFailure.GetDescription());
             errorMessage = $"Unable to retrieve application with identifier {message.ApplicationId}";
             await PublishAssignWoodlandOfficerFailures(message, errorMessage, cancellationToken);
 
@@ -121,7 +122,8 @@ public class AssignWoodlandOfficerAsyncUseCase
             AssignedRole = AssignedUserRole.WoodlandOfficer.GetDisplayName()!,
             Name = autoAssignRecipient.Name!,
             ViewApplicationURL = linkToApplication,
-            AdminHubFooter = adminHubFooter
+            AdminHubFooter = adminHubFooter,
+            ApplicationId = fellingLicenceApplication.Id
         };
 
         var sendNotificationAssigneeResult = await _sendNotifications.SendNotificationAsync(
@@ -169,8 +171,6 @@ public class AssignWoodlandOfficerAsyncUseCase
                     Error = errorMessage
                 }),
             cancellationToken);
-
-        _logger.LogError("{error}", errorMessage);
 
         if (ex is not null)
         {

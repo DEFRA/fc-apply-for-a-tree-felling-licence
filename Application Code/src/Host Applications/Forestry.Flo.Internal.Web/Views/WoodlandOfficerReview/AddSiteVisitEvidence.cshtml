@@ -1,0 +1,161 @@
+﻿@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.FileStorage.Configuration
+@using Microsoft.Extensions.Options
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.AddSiteVisitEvidenceModel
+@inject IOptions<UserFileUploadOptions> Options
+
+@{
+    ViewData["Title"] = "Site visit summary";
+    var user = new InternalUser(User);
+
+    var maxFileSize = (Options?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
+}
+
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
+    
+    <h1 class="govuk-heading-l">
+        @ViewData["Title"]
+    </h1>
+    <p class="govuk-body">Review and confirm the information from the site visit. Add any final observations 
+        or indicate if there are any follow-up actions needed.</p>
+    
+    <form id="add-site-evidence-form" method="post" enctype="multipart/form-data" asp-action="AddSiteVisitEvidence">
+        
+        <div class="govuk-form-group" id="file-select-group" condition="@Model.Editable(user)">
+            <label for="site-visit-files" class="govuk-label govuk-label--m">Upload supporting documents</label>
+            <p class="govuk-hint">You can upload photos, sketches, maps or other files that support your visit notes. A maximum of @FileSizeToStringConverter.SizeSuffix(maxFileSize, 2) of files can be uploaded at once.</p>
+            <p class="govuk-hint">Acceptable file types: JPG, PNG, PDF</p>
+            <p id="site-visit-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
+                <span class="govuk-visually-hidden">Error:</span><span id="site-visit-files-error-text"></span>
+            </p>
+            <div class="govuk-drop-zone" data-module="govuk-file-upload">
+                <input type="file" accept=".png, .jpg, .jpeg, .pdf" multiple class="custom-file-input govuk-file-upload" id="site-visit-files" name="siteVisitAttachmentFiles" runat="server" />
+            </div>
+        </div>
+
+        <h2 class="govuk-heading-m">
+            Uploaded evidence
+        </h2>
+
+        <input asp-for="ApplicationId"/>
+        <input type="hidden" id="existing-files-count" value="@Model.SiteVisitEvidenceMetadata.Length"/>
+        <input type="hidden" id="is-disabled" value="@((!Model.Editable(user)).ToString().ToLower())"/>
+        <input type="hidden" id="max-file-size" value="@maxFileSize" />
+        <input type="hidden" id="max-files-size-description" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize, 2)" />
+        
+        <div id="file-metadata-cards">
+            @for (int i = 0; i < Model.SiteVisitEvidenceMetadata.Length; i++)
+            {
+                <div class="govuk-summary-card" id="site-visit-evidence-card-@i">
+                    <input type="hidden" asp-for="SiteVisitEvidenceMetadata[i].SupportingDocumentId"/>
+                    <input type="hidden" asp-for="SiteVisitEvidenceMetadata[i].FileName"/>
+                    <input type="hidden" asp-for="SiteVisitEvidenceMetadata[i].MarkedForDeletion"/>
+
+                    <div class="govuk-summary-card__title-wrapper">
+                        <h3 class="govuk-summary-card__title">
+                            File @(i + 1) of <span id="files-length-@i">@Model.SiteVisitEvidenceMetadata.Length</span>
+                        </h3>
+                        <ul class="govuk-summary-card__actions">
+                            <li class="govuk-summary-card__action">
+                                <a condition="@Model.Editable(user)" class="govuk-link" id="remove-@i" data-id="@i" href="#site-visit-evidence-card-@i">Remove</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="govuk-summary-card__content" id="site-visit-evidence-content-@i">
+                        <dl class="govuk-summary-list">
+                            <div class="govuk-summary-card__row">
+                                <dt class="govuk-summary-list__key">
+                                    <a class="govuk-link" asp-controller="SupportingDocuments" asp-action="GetDocument" asp-route-id="@Model.ApplicationId" asp-route-documentIdentifier="@Model.SiteVisitEvidenceMetadata[i].SupportingDocumentId">
+                                        @Model.SiteVisitEvidenceMetadata[i].FileName
+                                    </a>
+                                </dt>
+                            </div>
+                            <div class="govuk-summary-card__row">
+                                <dt class="govuk-summary-list__key">
+                                    <div>
+                                        Label this file
+                                        <p class="govuk-hint">Add a short title to identify this file in the summary.</p>
+                                    </div>
+                                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-input govuk-input--width-20" asp-for="@Model.SiteVisitEvidenceMetadata[i].Label"/>
+                                </dt>
+                            </div>
+                            <div class="govuk-summary-card__row">
+                                <dt class="govuk-summary-list__key">
+                                    <div>
+                                        Comment
+                                        <p class="govuk-hint">Add any relevant details about this file. For example the location, what it shows, or why it's important.</p>
+                                    </div>
+                                    <div>
+                                        <textarea condition-disabled="@(!Model.Editable(user))" class="govuk-textarea" rows="4" asp-for="@Model.SiteVisitEvidenceMetadata[i].Comment"></textarea>
+                                        <div class="govuk-checkboxes govuk-checkboxes--small">
+                                            <div class="govuk-checkboxes__item">
+                                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" type="checkbox" asp-for="SiteVisitEvidenceMetadata[i].VisibleToApplicants"/>
+                                                <label class="govuk-label govuk-checkboxes__label" asp-for="SiteVisitEvidenceMetadata[i].VisibleToApplicants">Visible to applicants</label>
+                                            </div>
+                                            <div class="govuk-checkboxes__item">
+                                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" type="checkbox" asp-for="SiteVisitEvidenceMetadata[i].VisibleToConsultees"/>
+                                                <label class="govuk-label govuk-checkboxes__label" asp-for="SiteVisitEvidenceMetadata[i].VisibleToConsultees">Visible to external consultees</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </dt>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <fieldset condition="@Model.Editable(user)" class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                <h2 class="govuk-fieldset__heading">
+                    Case notes
+                </h2>
+            </legend>
+            @Html.EditorFor(m => m.SiteVisitComment)
+            <br/>
+        </fieldset>
+
+        <div class="govuk-form-group">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                <h3 class="govuk-fieldset__heading">
+                    Confirm site visit is complete
+                </h3>
+            </legend>
+            <div class="govuk-checkboxes--small" data-module="govuk-checkboxes">
+                <div class="govuk-checkboxes__item">
+                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" asp-for="SiteVisitComplete" type="checkbox"/>
+                    <label class="govuk-label govuk-checkboxes__label" asp-for="SiteVisitComplete">I confirm that the information recorded is accurate</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+                <button id="submit-button" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">Save and continue</button>
+                <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
+            </div>
+        </div>
+    </form>
+    
+
+    <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/site-visit-evidence.js" asp-append-version="true"></script>
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

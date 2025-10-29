@@ -47,7 +47,7 @@ public class DeleteFellingLicenceService : IDeleteFellingLicenceService
 
         if (applicationResult.IsFailure || applicationResult.Value.LinkedPropertyProfile is null)
         {
-            _logger.LogError($"Failed to get {nameof(FellingLicenceApplication)} with ID {applicationId}, error {applicationResult.Error}");
+            _logger.LogError("Failed to get application with ID {ApplicationId}, error: {Error}", applicationId, applicationResult.Error);
 
             return Result.Failure($"Failed to get {nameof(FellingLicenceApplication)}");
         }
@@ -56,7 +56,7 @@ public class DeleteFellingLicenceService : IDeleteFellingLicenceService
             applicationResult.Value.StatusHistories.OrderByDescending(s => s.Created).First().Status;
         if (applicationStatus is not FellingLicenceStatus.Draft)
         {
-            _logger.LogError($"{nameof(FellingLicenceApplication)} with ID {applicationId} cannot be deleted as that option is only for applications currently in draft status");
+            _logger.LogError("Application with ID {ApplicationId} cannot be deleted as that option is only for applications currently in draft status", applicationId);
 
             return Result.Failure($"{nameof(FellingLicenceApplication)} is not a draft");
         }
@@ -64,7 +64,7 @@ public class DeleteFellingLicenceService : IDeleteFellingLicenceService
         var result = await _fellingLicenceApplicationExternalRepository.DeleteFlaAsync(applicationResult.Value,  cancellationToken);
         if (result.IsFailure)
         {
-            _logger.LogError($"Could not delete the {nameof(FellingLicenceApplication)} with ID {applicationId}");
+            _logger.LogError("Could not delete the application with ID {ApplicationId}, error: {Error}", applicationId, result.Error);
             
             return Result.Failure($"{nameof(FellingLicenceApplication)} could not be deleted!");
         }

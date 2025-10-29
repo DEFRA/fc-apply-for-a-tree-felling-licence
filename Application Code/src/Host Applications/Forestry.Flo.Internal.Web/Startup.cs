@@ -3,14 +3,16 @@ using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Middleware;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Analytics;
+using Forestry.Flo.Services.Common.Infrastructure;
+using Forestry.Flo.Services.FileStorage.Configuration;
 using Forestry.Flo.Services.InternalUsers;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Forestry.Flo.Services.FileStorage.Configuration;
 using Serilog;
 
 namespace Forestry.Flo.Internal.Web;
@@ -49,6 +51,9 @@ public class Startup
             o.MaxRequestBodySize = userFileUploadOptions.MaxFileSizeBytes;
         });
 
+        services.AddOptions<GovUkOneLoginOptions>().BindConfiguration(GovUkOneLoginOptions.ConfigurationKey);
+        services.AddOptions<AuthenticationOptions>().BindConfiguration(AuthenticationOptions.ConfigurationKey);
+
         var builder = services.AddControllersWithViews();
 
         //todo remove this an the related nuget package once GDS styling work is complete.
@@ -57,10 +62,23 @@ public class Startup
             builder.AddRazorRuntimeCompilation();
         }
 
+        var authenticationOptions = new AuthenticationOptions();
+        Configuration.Bind("authenticationOptions", authenticationOptions);
+
         services.AddHttpContextAccessor();
         services.AddRequestContext();
         services.AddValidationMiddlewareOptions(Configuration);
-        services.AddAzureAdB2CServices(Configuration);
+
+        switch (authenticationOptions.Provider)
+        {
+            case AuthenticationProvider.OneLogin:
+                services.AddOneLoginServices(Configuration);
+                break;
+            case AuthenticationProvider.Azure:
+                services.AddAzureAdB2CServices(Configuration);
+                break;
+        }
+
         services.AddAzureAdServices(Configuration);
         services.AddFloServices(Configuration);
         services.AddDomainServices(ConfigureDatabaseConnection, Configuration, HostEnvironment);
@@ -70,10 +88,24 @@ public class Startup
         services.AddAuthorization<IDbContextFactory<InternalUsersContext>>((options, dbContextFactory) =>
         {
             options.AddPolicy(AuthorizationPolicyNameConstants.HasFcUserRole, policy 
-                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(x, dbContextFactory, new List<Roles> { Roles.FcUser })));
+                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(
+                    x, 
+                    dbContextFactory, 
+                    new List<Roles>
+                    {
+                        Roles.FcUser
+                    }, 
+                    authenticationOptions.Provider)));
           
             options.AddPolicy(AuthorizationPolicyNameConstants.HasFcAdministratorRole, policy 
-                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(x, dbContextFactory, new List<Roles> { Roles.FcAdministrator })));
+                => policy.RequireAssertion(x => AuthorizationPolicyService.AssertHasAnyOfRoles(
+                    x, 
+                    dbContextFactory, 
+                    new List<Roles>
+                    {
+                        Roles.FcAdministrator
+                    }, 
+                    authenticationOptions.Provider)));
         });
 
         // configure data protection to be not in-memory if the provided configuration setting is available

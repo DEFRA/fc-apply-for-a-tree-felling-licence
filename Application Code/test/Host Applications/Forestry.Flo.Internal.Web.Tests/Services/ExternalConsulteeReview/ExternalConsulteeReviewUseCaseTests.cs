@@ -1,11 +1,10 @@
-﻿using System.Text;
-using AutoFixture;
+﻿using AutoFixture;
 using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
-using FluentAssertions;
 using FluentEmail.Core;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
+using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
@@ -19,14 +18,17 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
+using Forestry.Flo.Services.FileStorage.ResultModels;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
+using System.Reflection;
+using System.Text;
 using System.Text.Json;
-using Forestry.Flo.Services.FileStorage.ResultModels;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.ExternalConsulteeReview;
 
@@ -44,6 +46,7 @@ public class ExternalConsulteeReviewUseCaseTests
     private readonly Mock<IRemoveDocumentService> _mockRemoveDocumentService = new();
     private readonly Mock<IClock> _mockClock = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
+    private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
     private const string AdminHubAddress = "admin hub address";
     private readonly string _requestContextCorrelationId = Guid.NewGuid().ToString();
     private readonly JsonSerializerOptions _serializerOptions = new()
@@ -169,7 +172,8 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AuthorName == model.AuthorName
                 && c.AuthorContactEmail == model.AuthorContactEmail
                 && c.Comment == model.Comment
-                && !c.ConsulteeAttachmentIds.Any()),
+                && !c.ConsulteeAttachmentIds.Any()
+                && c.AccessCode == model.AccessCode),
             It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
@@ -226,7 +230,8 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AuthorContactEmail == model.AuthorContactEmail
                 && c.Comment == model.Comment
                 && c.ConsulteeAttachmentIds.Count() == addDocumentsResult.DocumentIds.Count()
-                && c.ConsulteeAttachmentIds.All(a => addDocumentsResult.DocumentIds.Any(z => z == a))), 
+                && c.ConsulteeAttachmentIds.All(a => addDocumentsResult.DocumentIds.Any(z => z == a))
+                && c.AccessCode == model.AccessCode), 
             It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
@@ -292,7 +297,8 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AuthorName == model.AuthorName
                 && c.AuthorContactEmail == model.AuthorContactEmail
                 && c.Comment == model.Comment
-                && c.ConsulteeAttachmentIds.Single() == addDocumentsResult.DocumentIds.Single()), It.IsAny<CancellationToken>()), Times.Once);
+                && c.ConsulteeAttachmentIds.Single() == addDocumentsResult.DocumentIds.Single()
+                && c.AccessCode == model.AccessCode), It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
         _mockClock.VerifyNoOtherCalls();
@@ -451,13 +457,23 @@ public class ExternalConsulteeReviewUseCaseTests
         WoodlandOwnerModel woodlandOwnerModel,
         UserAccount externalUserAccount,
         Flo.Services.InternalUsers.Entities.UserAccount.UserAccount internalUserAccount,
-        Guid accessCode,
-        ExternalInviteLink externalInviteLink)
+        Guid accessCode)
     {
         SyncApplicationCompartmentData(fellingLicenceApplication);
-        fellingLicenceApplication.Documents.ForEach(d => d.VisibleToConsultee = true);
-        fellingLicenceApplication.Documents.ForEach(d => d.DeletionTimestamp = null);
+        fellingLicenceApplication.Documents.ForEach(d =>
+        {
+            d.VisibleToConsultee = true;
+            d.DeletionTimestamp = null;
+            typeof(Document)
+                .GetProperty("Id", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .SetValue(d, Guid.NewGuid());
+        });
 
+        ExternalInviteLink externalInviteLink = new Fixture()
+            .Build<ExternalInviteLink>()
+            .With(c => c.SharedSupportingDocuments, fellingLicenceApplication.Documents.Take(2).Select(x => x.Id).ToList())
+            .Create();
+        
         var sut = CreateSut();
 
         _mockFellingLicenceApplicationInternalRepository.Setup(x =>
@@ -476,27 +492,36 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe.From(internalUserAccount));
 
         _mockExternalConsulteeReviewService.Setup(x => 
-                x.RetrieveConsulteeCommentsForAuthorAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var result = await sut.GetApplicationSummaryForConsulteeReviewAsync(applicationId, externalInviteLink, accessCode, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
-        result.Value.ApplicationSummary.Should().NotBeNull();
+        Assert.NotNull(result.Value.ApplicationSummary);
 
-        result.Value.ApplicationSummary.Id.Should().Be(fellingLicenceApplication.Id);
-        result.Value.ApplicationSummary.ApplicationReference.Should().Be(fellingLicenceApplication.ApplicationReference);
+        Assert.Equal(fellingLicenceApplication.Id, result.Value.ApplicationSummary.Id);
+        Assert.Equal(fellingLicenceApplication.ApplicationReference, result.Value.ApplicationSummary.ApplicationReference);
 
-        result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
-            fellingLicenceApplication.Documents.Where(x => x.VisibleToConsultee), o => o.ExcludingMissingMembers());
+        Assert.Equivalent(fellingLicenceApplication.Documents.Take(2).Select(d => new DocumentModel
+        {
+            Id = d.Id,
+            CreatedTimestamp = d.CreatedTimestamp,
+            FileName = d.FileName,
+            DocumentPurpose = d.Purpose,
+            FileSize = d.FileSize,
+            FileType = d.FileType,
+            AttachedByType = d.AttachedByType,
+            MimeType = d.MimeType
+        }), result.Value.ConsulteeDocuments);
 
-        result.Value.ActivityFeed.Should().NotBeNull();
-        result.Value.ActivityFeed.ActivityFeedItemModels.Should().BeEmpty();
-        result.Value.ActivityFeed.ApplicationId.Should().Be(applicationId);
-        result.Value.ActivityFeed.ShowAddCaseNote.Should().BeFalse();
-        result.Value.ActivityFeed.ActivityFeedTitle.Should().Be("Your added comments");
-        result.Value.ActivityFeed.ShowFilters.Should().BeFalse();
+        Assert.NotNull(result.Value.ActivityFeed);
+        Assert.Empty(result.Value.ActivityFeed.ActivityFeedItemModels);
+        Assert.Equal(applicationId, result.Value.ActivityFeed.ApplicationId);
+        Assert.False(result.Value.ActivityFeed.ShowAddCaseNote);
+        Assert.Equal("Your added comments", result.Value.ActivityFeed.ActivityFeedTitle);
+        Assert.False(result.Value.ActivityFeed.ShowFilters);
 
         _mockAuditService.VerifyNoOtherCalls();
 
@@ -522,7 +547,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockInternalUserAccountService.VerifyNoOtherCalls();
 
         _mockExternalConsulteeReviewService.Verify(x =>
-                x.RetrieveConsulteeCommentsForAuthorAsync(applicationId, externalInviteLink.ContactEmail, It.IsAny<CancellationToken>()), Times.Once);
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(applicationId, accessCode, It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
     }
 
@@ -533,12 +558,22 @@ public class ExternalConsulteeReviewUseCaseTests
         WoodlandOwnerModel woodlandOwnerModel,
         UserAccount externalUserAccount,
         Flo.Services.InternalUsers.Entities.UserAccount.UserAccount internalUserAccount,
-        Guid accessCode,
-        ExternalInviteLink externalInviteLink)
+        Guid accessCode)
     {
         SyncApplicationCompartmentData(fellingLicenceApplication);
-        fellingLicenceApplication.Documents.ForEach(d => d.VisibleToConsultee = true);
-        fellingLicenceApplication.Documents.ForEach(d => d.DeletionTimestamp = null);
+        fellingLicenceApplication.Documents.ForEach(d =>
+        {
+            d.VisibleToConsultee = true;
+            d.DeletionTimestamp = null;
+            typeof(Document)
+                .GetProperty("Id", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .SetValue(d, Guid.NewGuid());
+        });
+
+        ExternalInviteLink externalInviteLink = new Fixture()
+            .Build<ExternalInviteLink>()
+            .With(c => c.SharedSupportingDocuments, fellingLicenceApplication.Documents.Take(2).Select(x => x.Id).ToList())
+            .Create();
 
         var authoredComments = Fixture.Build<ConsulteeCommentModel>()
             .With(x => x.AuthorContactEmail, externalInviteLink.ContactEmail)
@@ -577,27 +612,38 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe.From(internalUserAccount));
 
         _mockExternalConsulteeReviewService.Setup(x =>
-                x.RetrieveConsulteeCommentsForAuthorAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(authoredComments);
 
         var result = await sut.GetApplicationSummaryForConsulteeReviewAsync(applicationId, externalInviteLink, accessCode, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
-        result.Value.ApplicationSummary.Should().NotBeNull();
+        Assert.NotNull(result.Value.ApplicationSummary);
 
-        result.Value.ApplicationSummary.Id.Should().Be(fellingLicenceApplication.Id);
-        result.Value.ApplicationSummary.ApplicationReference.Should().Be(fellingLicenceApplication.ApplicationReference);
+        Assert.Equal(fellingLicenceApplication.Id, result.Value.ApplicationSummary.Id);
+        Assert.Equal(fellingLicenceApplication.ApplicationReference, result.Value.ApplicationSummary.ApplicationReference);
 
-        result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
-            fellingLicenceApplication.Documents.Where(x => x.VisibleToConsultee), o => o.ExcludingMissingMembers());
+        Assert.Equivalent(fellingLicenceApplication.Documents.Take(2).Select(d => new DocumentModel
+        {
+            Id = d.Id,
+            CreatedTimestamp = d.CreatedTimestamp,
+            FileName = d.FileName,
+            DocumentPurpose = d.Purpose,
+            FileSize = d.FileSize,
+            FileType = d.FileType,
+            AttachedByType = d.AttachedByType,
+            MimeType = d.MimeType
+        }), result.Value.ConsulteeDocuments);
+        //result.Value.ConsulteeDocuments.Should().BeEquivalentTo(
+        //    fellingLicenceApplication.Documents.Take(2), o => o.ExcludingMissingMembers());
 
-        result.Value.ActivityFeed.Should().NotBeNull();
-        result.Value.ActivityFeed.ActivityFeedItemModels.Should().BeEquivalentTo(expectedItemFeedItems);
-        result.Value.ActivityFeed.ApplicationId.Should().Be(applicationId);
-        result.Value.ActivityFeed.ShowAddCaseNote.Should().BeFalse();
-        result.Value.ActivityFeed.ActivityFeedTitle.Should().Be("Your added comments");
-        result.Value.ActivityFeed.ShowFilters.Should().BeFalse();
+        Assert.NotNull(result.Value.ActivityFeed);
+        Assert.Equivalent(expectedItemFeedItems, result.Value.ActivityFeed.ActivityFeedItemModels);
+        Assert.Equal(applicationId, result.Value.ActivityFeed.ApplicationId);
+        Assert.False(result.Value.ActivityFeed.ShowAddCaseNote);
+        Assert.Equal("Your added comments", result.Value.ActivityFeed.ActivityFeedTitle);
+        Assert.False(result.Value.ActivityFeed.ShowFilters);
 
         _mockAuditService.VerifyNoOtherCalls();
 
@@ -623,7 +669,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockInternalUserAccountService.VerifyNoOtherCalls();
 
         _mockExternalConsulteeReviewService.Verify(x =>
-                x.RetrieveConsulteeCommentsForAuthorAsync(applicationId, externalInviteLink.ContactEmail, It.IsAny<CancellationToken>()), Times.Once);
+                x.RetrieveConsulteeCommentsForAccessCodeAsync(applicationId, accessCode, It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
     }
 
@@ -656,6 +702,7 @@ public class ExternalConsulteeReviewUseCaseTests
             _mockGetDocumentService.Object,
             _mockAddDocumentService.Object,
             _mockRemoveDocumentService.Object,
+            _woodlandOfficerReviewSubStatusService.Object,
             new NullLogger<ExternalConsulteeReviewUseCase>(),
             new RequestContext(_requestContextCorrelationId, new RequestUserModel(UserFactory.CreateUnauthenticatedUser())),
             _mockClock.Object);

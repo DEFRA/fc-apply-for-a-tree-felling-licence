@@ -1,8 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Microsoft.Extensions.Logging;
 using NodaTime;
 
@@ -33,7 +33,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         Guid performingUserId,
         DateTime completedDateTime,
         bool isAgencyApplication,
-        bool requireWOReview,
+        bool isSkippingWoReviewForCbw,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to complete Admin Officer review for application with id {ApplicationId}", applicationId);
@@ -64,7 +64,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             return Result.Failure<CompleteAdminOfficerReviewNotificationsModel>("Unable to complete Admin Officer review for given application");
         }
 
-        if (AssertHasAssignedWoodlandOfficer(applicationMaybe.Value, requireWOReview) == false)
+        if (AssertHasAssignedWoodlandOfficer(applicationMaybe.Value, isSkippingWoReviewForCbw) == false)
         {
             _logger.LogError("Application with id {ApplicationId} does not have an assigned woodland officer, unable to complete the Admin Officer review", applicationId);
             return Result.Failure<CompleteAdminOfficerReviewNotificationsModel>("Unable to complete Admin Officer review for given application");
@@ -73,9 +73,9 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         Guid woodlandOfficerId = Guid.Empty;
         foreach (var assignee in applicationMaybe.Value.AssigneeHistories)
         {
-            if (requireWOReview)
+            if (isSkippingWoReviewForCbw)
             {
-                if (assignee.Role == AssignedUserRole.WoodlandOfficer && !assignee.TimestampUnassigned.HasValue)
+                if (assignee.Role == AssignedUserRole.FieldManager && !assignee.TimestampUnassigned.HasValue)
                 {
                     woodlandOfficerId = assignee.AssignedUserId;
                     break;
@@ -83,7 +83,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             }
             else
             {
-                if (assignee.Role == AssignedUserRole.FieldManager && !assignee.TimestampUnassigned.HasValue)
+                if (assignee.Role == AssignedUserRole.WoodlandOfficer && !assignee.TimestampUnassigned.HasValue)
                 {
                     woodlandOfficerId = assignee.AssignedUserId;
                     break;
@@ -105,7 +105,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             Created = completedDateTime,
             FellingLicenceApplicationId = applicationId,
             FellingLicenceApplication = applicationMaybe.Value,
-            Status = requireWOReview ? FellingLicenceStatus.WoodlandOfficerReview : FellingLicenceStatus.SentForApproval
+            Status = isSkippingWoReviewForCbw ? FellingLicenceStatus.SentForApproval : FellingLicenceStatus.WoodlandOfficerReview
         });
 
         var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
@@ -193,6 +193,21 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             AdminOfficerReviewSections.CBWCheck,
             cancellationToken);
 
+    public async Task<Result> SetEiaCheckCompletionAsync(
+        Guid applicationId,
+        bool isAgencyApplication,
+        Guid performingUserId,
+        bool complete,
+        CancellationToken cancellationToken) =>
+        await SetCompletionFlagAsync(
+            applicationId,
+            isAgencyApplication,
+            performingUserId,
+            complete,
+            AdminOfficerReviewSections.EiaCheck,
+            cancellationToken);
+
+
     public async Task<Result> UpdateAgentAuthorityFormDetailsAsync(
         Guid applicationId,
         Guid performingUserId,
@@ -257,13 +272,33 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             : Result.Success();
     }
 
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> AddEnvironmentalImpactAssessmentRequestHistoryAsync(
+        EnvironmentalImpactAssessmentRequestHistoryRecord record,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Adding EIA request history record for application with id {ApplicationId}", record.ApplicationId);
+
+        var result = await _internalFlaRepository.AddEnvironmentalImpactAssessmentRequestHistoryAsync(record, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            _logger.LogError("Could not add EIA request history record for application with id {ApplicationId}, error: {Error}", record.ApplicationId, result.Error);
+            return UnitResult.Failure(result.Error);
+        }
+
+        _logger.LogInformation("Successfully added EIA request history record for application with id {ApplicationId}", record.ApplicationId);
+        return UnitResult.Success<UserDbErrorReason>();
+    }
+
     public enum AdminOfficerReviewSections
     {
         AgentAuthorityForm,
         MappingCheck,
         ConstraintsCheck,
         LarchCheck,
-        CBWCheck
+        CBWCheck,
+        EiaCheck
     }
 
     private async Task<Result> SetCompletionFlagAsync(
@@ -321,6 +356,9 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
                 break;
             case AdminOfficerReviewSections.CBWCheck:
                 adminOfficerReview.CBWChecked = complete;
+                break;
+            case AdminOfficerReviewSections.EiaCheck:
+                adminOfficerReview.EiaChecked = complete;
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(section), section, null);
@@ -409,17 +447,17 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         return assignedAo?.AssignedUserId == performingUserId;
     }
 
-    private bool AssertHasAssignedWoodlandOfficer(FellingLicenceApplication application, bool requireWOReview)
+    private bool AssertHasAssignedWoodlandOfficer(FellingLicenceApplication application, bool isSkippingWoReviewForCbw)
     {
-        if (requireWOReview)
+        if (isSkippingWoReviewForCbw)
         {
             return application.AssigneeHistories.Any(x =>
-                (x.Role == AssignedUserRole.WoodlandOfficer) && x.TimestampUnassigned.HasValue == false);
+                (x.Role == AssignedUserRole.FieldManager) && x.TimestampUnassigned.HasValue == false);
         }
         else
         {
             return application.AssigneeHistories.Any(x =>
-                (x.Role == AssignedUserRole.FieldManager) && x.TimestampUnassigned.HasValue == false);
+                (x.Role == AssignedUserRole.WoodlandOfficer) && x.TimestampUnassigned.HasValue == false);
         }
 
     }

@@ -21,9 +21,14 @@
             for (let i = 0; i < activityItems.length; i++) {
                 var activityItem = activityItems[i];
                 var type = activityItem.getAttribute("data-type");
+                var category = activityItem.getAttribute("data-category");
 
-                if (activityItem.getAttribute("data-category") === "OutgoingNotification") {
+                if (category === "OutgoingNotification") {
                     if (document.getElementById("AllOutgoingNotifications").classList.contains("selected"))
+                        toggleVisibility(activityItem, true);
+                    else toggleVisibility(activityItem, false);
+                } else if (category === "AmendmentReviews") {
+                    if (document.getElementById("AllAmendmentReviews") && document.getElementById("AllAmendmentReviews").classList.contains("selected"))
                         toggleVisibility(activityItem, true);
                     else toggleVisibility(activityItem, false);
                 } else {
@@ -36,7 +41,6 @@
             }
         } else count = activityItems.length;
 
-        
         var emptyElement = document.getElementById("empty-activity-feed-item");
         emptyElement.style.display = count === 0 ? "block" : "none";
     }

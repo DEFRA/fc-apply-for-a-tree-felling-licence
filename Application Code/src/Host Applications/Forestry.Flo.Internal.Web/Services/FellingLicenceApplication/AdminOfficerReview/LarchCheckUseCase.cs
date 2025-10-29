@@ -1,11 +1,13 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
+using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -13,7 +15,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Microsoft.Extensions.Options;
 using System;
-using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Result = CSharpFunctionalExtensions.Result;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
@@ -32,6 +34,7 @@ public class LarchCheckUseCase(
     IActivityFeedItemProvider activityFeedItemProvider,
     IOptions<LarchOptions> larchOptions,
     IGetConfiguredFcAreas getConfiguredFcAreasService,
+    IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
     RequestContext requestContext) : AdminOfficerReviewUseCaseBase(
         internalUserAccountService,
         externalUserAccountService,
@@ -43,12 +46,14 @@ public class LarchCheckUseCase(
         auditService,
         agentAuthorityService,
         getConfiguredFcAreasService,
-        requestContext)
+        woodlandOfficerReviewSubStatusService,
+        requestContext), ILarchCheckUseCase
 {
     private readonly ILarchCheckService _larchCheckService = larchCheckService;
     private readonly IActivityFeedItemProvider _activityFeedItemProvider = activityFeedItemProvider;
     private readonly LarchOptions _larchOptions = larchOptions.Value;
 
+    /// <inheritdoc />
     public async Task<Result<LarchCheckModel>> GetLarchCheckModelAsync(
         Guid applicationId,
         InternalUser user,
@@ -108,6 +113,7 @@ public class LarchCheckUseCase(
             InMoratorium = InMoratorium(applicationSummary.Value.DateReceived, _larchOptions),
             Disabled = !editable,
             ActivityFeedItems = activityFeedItems.Value,
+            FormLevelCaseNote = new FormLevelCaseNote()
         };
 
         model.CombineZones(applicationSummary.Value.DetailsList);
@@ -124,13 +130,7 @@ public class LarchCheckUseCase(
         return model;
     }
 
-    /// <summary>
-    /// Completes the mapping check task in the admin officer review.
-    /// </summary>
-    /// <param name="viewModel">The viewModel for the application.</param>
-    /// <param name="performingUserId">The identifier for the internal user completing the check.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the mapping check has been updated successfully.</returns>
+    /// <inheritdoc />
     public async Task<Result> SaveLarchCheckAsync(
         LarchCheckModel viewModel,
         Guid performingUserId,
@@ -144,7 +144,7 @@ public class LarchCheckUseCase(
             Zone2 = viewModel.Zone2,
             Zone3 = viewModel.Zone3,
             ConfirmMoratorium = viewModel.ConfirmMoratorium,
-            ConfirmInspectionLog = viewModel.ConfirmInspectionLog,
+            ConfirmInspectionLog = viewModel.Zone1 ? viewModel.ConfirmInspectionLog : false,
             RecommendSplitApplicationDue = viewModel.RecommendSplitApplicationDue.HasValue
                 ? (int)viewModel.RecommendSplitApplicationDue.Value
                 : 0
@@ -171,6 +171,7 @@ public class LarchCheckUseCase(
         return saveResult;
     }
 
+    /// <inheritdoc />
     public async Task<Result<LarchFlyoverModel>> GetLarchFlyoverModelAsync(
         Guid applicationId,
         InternalUser user,
@@ -230,17 +231,12 @@ public class LarchCheckUseCase(
                     : null,
             SubmissionDate = applicationSummary.Value.DateReceived,
             FlightObservations = larchCheckDetails.HasValue ? larchCheckDetails.Value.FlightObservations : null,
+            FormLevelCaseNote = new FormLevelCaseNote()
         };
         return model;
     }
 
-    /// <summary>
-    /// Completes the mapping check task in the admin officer review.
-    /// </summary>
-    /// <param name="viewModel">The viewModel for the application.</param>
-    /// <param name="performingUserId">The identifier for the internal user completing the check.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the mapping check has been updated successfully.</returns>
+    /// <inheritdoc />
     public async Task<Result> SaveLarchFlyoverAsync(
     LarchFlyoverModel viewModel,
     Guid performingUserId,

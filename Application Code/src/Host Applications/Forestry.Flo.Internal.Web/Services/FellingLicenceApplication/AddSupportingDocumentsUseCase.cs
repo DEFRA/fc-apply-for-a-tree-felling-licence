@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -7,8 +8,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Services.FileStorage.Model;
-using Forestry.Flo.Services.FileStorage.Services;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication
@@ -17,7 +16,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication
     /// Handles the use case for an internal user uploading one or more supporting documents as part
     /// of a felling licence application.
     /// </summary>
-    public class AddSupportingDocumentsUseCase
+    public class AddSupportingDocumentsUseCase : IAddSupportingDocumentsUseCase
     {
         private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationRepository;
         private readonly IAddDocumentService _service;
@@ -37,20 +36,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication
             _logger = logger;
         }
 
-        /// <summary>
-        /// Saves each uploaded file in <see cref="FormFileCollection"/> using the configured <see cref="IFileStorageService"/>, firstly validating the file with <see cref="FileValidator"/>.
-        /// </summary>
-        /// <remarks>
-        /// Adds a <see cref="ModelError"/> for each <see cref="FormFile"/> that could not be saved either due to validation failure or error.
-        /// </remarks>
-        /// <param name="user">The internal user uploading files.</param>
-        /// <param name="applicationId">The application id.</param>
-        /// <param name="supportingDocumentationFiles">The supporting document files.</param>
-        /// <param name="modelState">The model state.</param>
-        /// <param name="visibleToApplicant"> A flag indicating whether supporting documents are visible to external applicants.</param>
-        /// <param name="visibleToConsultees"> A flag indicating whether supporting documents are visible to consultees.</param>
-        /// <param name="cancellationToken">A cancellation token.</param>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public async Task<Result> AddDocumentsToApplicationAsync(
             InternalUser user,
             Guid applicationId,

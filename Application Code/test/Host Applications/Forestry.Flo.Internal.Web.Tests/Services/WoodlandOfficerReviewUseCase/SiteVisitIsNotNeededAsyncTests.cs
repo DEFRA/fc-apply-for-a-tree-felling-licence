@@ -1,15 +1,14 @@
-﻿using System.Text.Json;
-using AutoFixture.Xunit2;
+﻿using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
-using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Moq;
+using System.Text.Json;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
@@ -17,15 +16,15 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
 {
     [Theory, AutoData]
     public async Task ShouldStoreCorrectAuditOnSuccessfulUpdate(
-    Guid applicationId,
-    string reason)
+        Guid applicationId,
+        FormLevelCaseNote reason)
     {
         var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
         var user = new InternalUser(userPrincipal);
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
 
         var result = await sut.SiteVisitIsNotNeededAsync(applicationId, user, reason, CancellationToken.None);
@@ -67,14 +66,14 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
     [Theory, AutoData]
     public async Task ShouldNotStoreAuditOnSuccessButNoUpdate(
         Guid applicationId,
-        string reason)
+        FormLevelCaseNote reason)
     {
         var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
         var user = new InternalUser(userPrincipal);
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(false));
 
         var result = await sut.SiteVisitIsNotNeededAsync(applicationId, user, reason, CancellationToken.None);
@@ -89,16 +88,16 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
 
     [Theory, AutoData]
     public async Task ShouldStoreCorrectFailureAuditOnUnsuccessfulUpdate(
-    Guid applicationId,
-    string reason,
-    string error)
+        Guid applicationId,
+        FormLevelCaseNote reason,
+        string error)
     {
         var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
         var user = new InternalUser(userPrincipal);
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SetSiteVisitNotNeededAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<FormLevelCaseNote>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<bool>(error));
 
         var result = await sut.SiteVisitIsNotNeededAsync(applicationId, user, reason, CancellationToken.None);
@@ -150,13 +149,14 @@ public class SiteVisitIsNotNeededAsyncTests : WoodlandOfficerReviewUseCaseTestsB
             WoodlandOfficerReviewService.Object,
             UpdateWoodlandOfficerReviewService.Object,
             ActivityFeedItemProvider.Object,
-            _forestryServices.Object,
-            _foresterServices.Object,
             AuditingService.Object,
             MockAgentAuthorityService.Object,
             GetConfiguredFcAreas.Object,
+            MockAddDocumentService.Object,
+            MockRemoveDocumentService.Object,
+            _foresterServices.Object,
             RequestContext,
-            Clock.Object,
+            WoodlandOfficerReviewSubStatusService.Object,
             new NullLogger<SiteVisitUseCase>());
     }
 }

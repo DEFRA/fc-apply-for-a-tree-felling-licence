@@ -27,6 +27,18 @@ public class InviteAgentToOrganisationUseCase : InviteUserBaseUseCase
     private readonly ISendNotifications _emailService;
     private readonly IClock _clock;
 
+    /// <summary>
+    /// Creates a new instance of the <see cref="InviteAgentToOrganisationUseCase"/>.
+    /// </summary>
+    /// <param name="auditService">An auditing service.</param>
+    /// <param name="userAccountRepository">A repository of user accounts.</param>
+    /// <param name="agencyRepository">A repository of agency details.</param>
+    /// <param name="logger">A logging instance.</param>
+    /// <param name="emailService">A service to send emails.</param>
+    /// <param name="clock">A clock to get the current date and time.</param>
+    /// <param name="options">Configuration options related to inviting users.</param>
+    /// <param name="requestContext">The request context for the current operation.</param>
+    /// <param name="invitedUserValidator">A validator for invited user accounts.</param>
     public InviteAgentToOrganisationUseCase(
         IAuditService<AgencyUserModel> auditService,
         IUserAccountRepository userAccountRepository,
@@ -136,18 +148,18 @@ public class InviteAgentToOrganisationUseCase : InviteUserBaseUseCase
             return Result.Failure<AgencyDetails>("You do not have permissions to manage agents");
         }
 
-        return await _agencyRepository.GetAsync(Guid.Parse(user.AgencyId!),
-                cancellationToken).MapError(_ =>
+        return await _agencyRepository.GetAsync(Guid.Parse(user.AgencyId!), cancellationToken)
+            .MapError(_ =>
             {
                 _logger.LogError("The agency with id: {UserAgencyId} has not been found", user.AgencyId);
                 return "The agency organisation does not exists";
             })
-            .Ensure(agency => !string.IsNullOrEmpty(agency.OrganisationName),
-                "Please check the agency organisation name")
-            .Map(agency => new AgencyDetails(agency.Id, agency.OrganisationName!));
+            .Map(agency => new AgencyDetails(agency.Id, string.IsNullOrWhiteSpace(agency.OrganisationName) ? agency.ContactName : agency.OrganisationName));
     }
 
-    protected override async Task<Result> SendInvitationEmail(IInvitedUser agencyUserModel,
+    /// <inheritdoc />
+    protected override async Task<Result> SendInvitationEmail(
+        IInvitedUser invitedUserModel,
         Guid token,
         string inviteAcceptanceLink,
         string? userName,
@@ -155,20 +167,21 @@ public class InviteAgentToOrganisationUseCase : InviteUserBaseUseCase
     {
         var inviteeModel = new InviteAgentToOrganisationDataModel
         {
-            Name = agencyUserModel.Name,
-            AgencyName = agencyUserModel.OrganisationName,
+            Name = invitedUserModel.Name,
+            AgencyName = invitedUserModel.OrganisationName,
             InviteLink =
-                CreateInviteLink(agencyUserModel, token, inviteAcceptanceLink)
+                CreateInviteLink(invitedUserModel, token, inviteAcceptanceLink)
         };
 
         var result = await _emailService.SendNotificationAsync(inviteeModel,
             NotificationType.InviteAgentUserToOrganisation,
-            new NotificationRecipient(agencyUserModel.Email, agencyUserModel.Name),
+            new NotificationRecipient(invitedUserModel.Email, invitedUserModel.Name),
             senderName: userName,
             cancellationToken: cancellationToken);
         return result;
     }
 
+    /// <inheritdoc />
     protected override bool CheckIfTheUserIsAlreadyInvitedByAnotherUser(UserAccount userAccount, IInvitedUser organisationUserModel) =>
         userAccount.Status == UserAccountStatus.Invited &&
         userAccount.AgencyId !=

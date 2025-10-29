@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using FluentAssertions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -18,15 +16,14 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Newtonsoft.Json;
 using Xunit;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
 public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
 {
     private IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationRepository = null!;
+    private IFellingLicenceApplicationExternalRepository _fellingLicenceApplicationExternalRepository = null!;
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IAuditService<UpdateConfirmedFellingAndRestockingDetailsService>> _audit = new();
     private FellingLicenceApplicationsContext? _fellingLicenceApplicationsContext;
@@ -34,21 +31,27 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
     private const string Species2 = "PAR";
     private const string Species3 = "AH";
 
-
-    private readonly JsonSerializerOptions _options = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     protected UpdateConfirmedFellingAndRestockingDetailsService CreateSut()
     {
         _unitOfWork.Reset();
 
+        var referenceGenerator = new Mock<IApplicationReferenceHelper>();
+        referenceGenerator.Setup(r => r.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>()))
+            .Returns("test");
+
+        var mockReferenceRepository = new Mock<IFellingLicenceApplicationReferenceRepository>();
+        mockReferenceRepository
+            .Setup(x => x.GetNextApplicationReferenceIdValueAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
         _fellingLicenceApplicationsContext = TestFellingLicenceApplicationsDatabaseFactory.CreateDefaultTestContext();
         _fellingLicenceApplicationRepository = new InternalUserContextFlaRepository(_fellingLicenceApplicationsContext);
+        _fellingLicenceApplicationExternalRepository = new ExternalUserContextFlaRepository(
+            _fellingLicenceApplicationsContext, referenceGenerator.Object, mockReferenceRepository.Object);
 
         return new UpdateConfirmedFellingAndRestockingDetailsService(
             _fellingLicenceApplicationRepository,
+            _fellingLicenceApplicationExternalRepository,
             new NullLogger<UpdateConfirmedFellingAndRestockingDetailsService>(),
             _audit.Object,
             new RequestContext("test", new RequestUserModel(new ClaimsPrincipal()))
@@ -305,7 +308,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
 
         foreach (var species in speciesList)
         {
-            storedFd.ConfirmedFellingSpecies.Should().ContainSingle(x => x.Species == species);
+            Assert.Single(storedFd.ConfirmedFellingSpecies, x => x.Species == species);
         }
     }
 
@@ -332,7 +335,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
             [],
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Fact]
@@ -358,7 +361,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
             [],
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
     [Theory, AutoMoqData]
@@ -375,7 +378,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsServiceSaveChangesTests
             [],
             CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
+        Assert.True(result.IsFailure);
     }
 
 

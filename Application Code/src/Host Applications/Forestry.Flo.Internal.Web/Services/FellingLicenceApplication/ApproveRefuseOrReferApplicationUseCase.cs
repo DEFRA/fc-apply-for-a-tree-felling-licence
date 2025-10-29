@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
@@ -40,7 +41,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     RequestContext requestContext,
     IApproverReviewService approverReviewService,
     IGetConfiguredFcAreas getConfiguredFcAreasService,
-    IForesterServices agolServices)
+    IForesterServices agolServices) : IApproveRefuseOrReferApplicationUseCase
 {
     private readonly ILogger<ApproveRefuseOrReferApplicationUseCase> _logger = Guard.Against.Null(logger);
 
@@ -316,6 +317,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
             cancellationToken);
 
         await SendInternalPublicRegisterNotifications(
+            application.Id,
             application.ApplicationReference,
             application.SubmittedFlaPropertyDetail!.Name,
             adminHubAddress,
@@ -410,8 +412,9 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     Name = applicantUser.FullName,
                     PropertyName = application.SubmittedFlaPropertyDetail?.Name,
                     ApproverName = approverName,
-                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/SupportingDocumentation/{application.Id}",
-                    AdminHubFooter = adminHubFooter
+                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}",
+                    AdminHubFooter = adminHubFooter,
+                    ApplicationId = application.Id
                 };
 
                 return await _notificationsService.SendNotificationAsync(
@@ -430,8 +433,9 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     PropertyName = application.SubmittedFlaPropertyDetail?.Name,
                     ApproverName = approverName,
                     ApproverEmail = approverEmail,
-                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{application.Id}",
-                    AdminHubFooter = adminHubFooter
+                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}",
+                    AdminHubFooter = adminHubFooter,
+                    ApplicationId = application.Id
                 };
 
                 return await _notificationsService.SendNotificationAsync(
@@ -458,9 +462,10 @@ public class ApproveRefuseOrReferApplicationUseCase(
                         ? DateTimeDisplay.GetDateDisplayString(submittedDate)
                         : null,
                     ApproverName = approverName,
-                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{application.Id}",
+                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}",
                     LocalAuthorityName = localAuthorityName,
-                    AdminHubFooter = adminHubFooter
+                    AdminHubFooter = adminHubFooter,
+                    ApplicationId = application.Id
                 };
 
                 return await _notificationsService.SendNotificationAsync(
@@ -523,6 +528,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     }
 
     private async Task SendInternalPublicRegisterNotifications(
+        Guid applicationId,
         string applicationReference,
         string propertyName,
         string adminHubAddress,
@@ -548,7 +554,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
                 PublishedDate = DateTimeDisplay.GetDateDisplayString(publishedDate),
                 ExpiryDate = DateTimeDisplay.GetDateDisplayString(expiresAt),
                 Name = user.FullName,
-                AdminHubFooter = adminHubAddress
+                AdminHubFooter = adminHubAddress,
+                ApplicationId = applicationId
             };
 
             var notificationResult = await _notificationsService.SendNotificationAsync(

@@ -4,7 +4,9 @@ using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Infrastructure.Display;
 using Forestry.Flo.External.Web.Models;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Services;
+using Forestry.Flo.External.Web.Services.AgentAuthority;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.MassTransit.Messages;
 using Forestry.Flo.Services.Common.User;
@@ -23,42 +25,19 @@ using FellingLicenceStatusConstants = Forestry.Flo.External.Web.Models.FellingLi
 namespace Forestry.Flo.External.Web.Controllers;
 
 [Authorize, RequireCompletedRegistration, AutoValidateAntiforgeryToken]
-public class FellingLicenceApplicationController : Controller
+public partial class FellingLicenceApplicationController(
+    ILogger<FellingLicenceApplicationController> logger,
+    CreateFellingLicenceApplicationUseCase createFellingLicenceApplicationUseCase,
+    IBus busControl,
+    IValidator<OperationDetailsModel> operationsValidator,
+    IValidator<ProposedFellingDetailModel> fellingDetailsValidator,
+    IValidator<ProposedRestockingDetailModel> restockingDetailsValidator,
+    IValidator<DecisionToRestockViewModel> decisionToRestockValidator,
+    IValidator<SelectFellingOperationTypesViewModel> fellingOperationTypesValidator,
+    IValidator<SelectRestockingOptionsViewModel> restockingOptionsValidator,
+    IValidator<FlaTermsAndConditionsViewModel> flaTermsAndConditionsViewModelValidator)
+    : Controller
 {
-    private readonly ILogger<FellingLicenceApplicationController> _logger;
-    private readonly CreateFellingLicenceApplicationUseCase _createFellingLicenceApplicationUseCase;
-    private readonly IBus _busControl;
-    private readonly IValidator<OperationDetailsModel> _operationsValidator;
-    private readonly IValidator<ProposedFellingDetailModel> _fellingDetailsValidator;
-    private readonly IValidator<ProposedRestockingDetailModel> _restockingDetailsValidator;
-    private readonly IValidator<DecisionToRestockViewModel> _decisionToRestockValidator;
-    private readonly IValidator<SelectFellingOperationTypesViewModel> _fellingOperationTypesValidator;
-    private readonly IValidator<SelectRestockingOptionsViewModel> _restockingOptionsValidator;
-    private readonly IValidator<FlaTermsAndConditionsViewModel> _flaTermsAndConditionsViewModelValidator;
-
-    public FellingLicenceApplicationController(ILogger<FellingLicenceApplicationController> logger,
-        CreateFellingLicenceApplicationUseCase createFellingLicenceApplicationUseCase,
-        IBus busControl,
-        IValidator<OperationDetailsModel> operationsValidator,
-        IValidator<ProposedFellingDetailModel> fellingDetailsValidator,
-        IValidator<ProposedRestockingDetailModel> restockingDetailsValidator,
-        IValidator<DecisionToRestockViewModel> decisionToRestockValidator,
-        IValidator<SelectFellingOperationTypesViewModel> fellingOperationTypesValidator,
-        IValidator<SelectRestockingOptionsViewModel> restockingOptionsValidator,
-        IValidator<FlaTermsAndConditionsViewModel> flaTermsAndConditionsViewModelValidator)
-    {
-        _logger = logger;
-        _createFellingLicenceApplicationUseCase = createFellingLicenceApplicationUseCase;
-        _busControl = busControl;
-        _operationsValidator = operationsValidator;
-        _fellingDetailsValidator = fellingDetailsValidator;
-        _restockingDetailsValidator = restockingDetailsValidator;
-        _decisionToRestockValidator = decisionToRestockValidator;
-        _fellingOperationTypesValidator = fellingOperationTypesValidator;
-        _restockingOptionsValidator = restockingOptionsValidator;
-        _flaTermsAndConditionsViewModelValidator = flaTermsAndConditionsViewModelValidator;
-    }
-
     public IActionResult Index(
         Guid woodlandOwnerId)
     {
@@ -76,7 +55,7 @@ public class FellingLicenceApplicationController : Controller
         var user = new ExternalApplicant(User);
 
         var getPropertyProfilesResult =
-            await _createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
+            await createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
                 woodlandOwnerId,
                 user,
                 cancellationToken);
@@ -116,7 +95,7 @@ public class FellingLicenceApplicationController : Controller
         if (!ModelState.IsValid)
         {
             var getPropertyProfilesResult =
-                await _createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
+                await createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
                     selectWoodlandModel.WoodlandOwnerId,
                     user,
                     cancellationToken);
@@ -133,17 +112,22 @@ public class FellingLicenceApplicationController : Controller
 
             return View(selectWoodlandModel);
         }
+        var agentAuthorityId = await GetAgentAuthorityAsync(selectWoodlandModel.WoodlandOwnerId, cancellationToken);
 
-        var result = await _createFellingLicenceApplicationUseCase.CreateFellingLicenceApplication(
+        var result = await createFellingLicenceApplicationUseCase.CreateFellingLicenceApplication(
             user,
             selectWoodlandModel.PropertyProfileId, 
             selectWoodlandModel.WoodlandOwnerId,
             true, cancellationToken);
 
-        return result.IsFailure
-            ? RedirectToAction(nameof(HomeController.Error), "Home")
-            : RedirectToAction(nameof(Operations),
-                new { applicationId = result.Value });
+        if (result.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+        return user.IsFcUser
+            ? RedirectToAction(nameof(TenYearLicence), new { applicationId = result.Value })
+            : agentAuthorityId is not null ? RedirectToAction(nameof(AgentAuthorityForm), new { agentAuthorityId, applicationId = result.Value }) 
+            : RedirectToAction(nameof(Operations), new { applicationId = result.Value });
     }
 
     [HttpGet]
@@ -153,7 +137,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
         var application =
-            await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (application.HasNoValue)
         {
@@ -166,7 +150,7 @@ public class FellingLicenceApplicationController : Controller
         }
 
         var getPropertyProfilesResult =
-            await _createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
+            await createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
                 application.Value.WoodlandOwnerId,
                 user,
                 cancellationToken);
@@ -207,7 +191,7 @@ public class FellingLicenceApplicationController : Controller
         if (!ModelState.IsValid)
         {
             var getPropertyProfilesResult =
-                await _createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
+                await createFellingLicenceApplicationUseCase.RetrievePropertyProfilesForWoodlandOwnerAsync(
                     selectWoodlandModel.WoodlandOwnerId,
                     user,
                     cancellationToken);
@@ -225,13 +209,16 @@ public class FellingLicenceApplicationController : Controller
 
         selectWoodlandModel.StepComplete = true;
 
-        var result = await _createFellingLicenceApplicationUseCase.UpdateWoodland(user,
+        var result = await createFellingLicenceApplicationUseCase.UpdateWoodland(user,
             selectWoodlandModel, cancellationToken);
 
-        return result.IsFailure
-            ? RedirectToAction(nameof(HomeController.Error), "Home")
-            : RedirectToAction(nameof(SelectCompartments),
-                new { applicationId = result.Value });
+        if (result.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+        return user.IsFcUser
+            ? RedirectToAction(nameof(TenYearLicence), new { applicationId = result.Value })
+            : RedirectToAction(nameof(Operations), new { applicationId = result.Value });
     }
 
     /// <summary>
@@ -246,7 +233,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var viewModel = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
+        var viewModel = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
         if (viewModel.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -264,7 +251,7 @@ public class FellingLicenceApplicationController : Controller
 
         if (!isForRestockingCompartmentSelection)
         {
-            var result = await _createFellingLicenceApplicationUseCase.SelectApplicationCompartmentsAsync(user,
+            var result = await createFellingLicenceApplicationUseCase.SelectApplicationCompartmentsAsync(user,
                 model.ApplicationId, model.SelectedCompartmentIds!, model.StepComplete, cancellationToken);
 
             if (result.IsFailure)
@@ -290,7 +277,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var viewModel = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
+        var viewModel = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
 
         if (viewModel.HasNoValue)
         {
@@ -384,7 +371,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var viewModel = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(compartmentsModel.ApplicationId, user, cancellationToken);
+        var viewModel = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(compartmentsModel.ApplicationId, user, cancellationToken);
         if (viewModel.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -431,7 +418,7 @@ public class FellingLicenceApplicationController : Controller
 
         if (compartmentsModel.IsForRestockingCompartmentSelection)
         {
-            var result = await _createFellingLicenceApplicationUseCase.UpdateRestockingCompartmentsForFellingAsync
+            var result = await createFellingLicenceApplicationUseCase.UpdateRestockingCompartmentsForFellingAsync
                 (user,
                 compartmentsModel.ApplicationId, 
                 compartmentsModel.ProposedFellingDetailsId ?? Guid.Empty, 
@@ -444,7 +431,7 @@ public class FellingLicenceApplicationController : Controller
                 RedirectToAction(nameof(HomeController.Error), "Home");
             }
 
-            result = await _createFellingLicenceApplicationUseCase.CreateMissingRestockingStatuses
+            result = await createFellingLicenceApplicationUseCase.CreateMissingRestockingStatuses
                 (user,
                 compartmentsModel.ApplicationId,
                 compartmentsModel.FellingCompartmentId!.Value,
@@ -458,7 +445,7 @@ public class FellingLicenceApplicationController : Controller
         }
         else
         {
-            var result = await _createFellingLicenceApplicationUseCase.SelectApplicationCompartmentsAsync(user,
+            var result = await createFellingLicenceApplicationUseCase.SelectApplicationCompartmentsAsync(user,
                 compartmentsModel.ApplicationId, compartmentsModel.SelectedCompartmentIds!, compartmentsModel.StepComplete, cancellationToken);
             if (result.IsFailure)
             {
@@ -471,7 +458,7 @@ public class FellingLicenceApplicationController : Controller
         {
             // enqueue the asynchronous calculation of centre point, OS grid reference and set Area Code ready for when the FLA is submitted
 
-            await _busControl.Publish(
+            await busControl.Publish(
                 new CentrePointCalculationMessage(
                     viewModel.Value.Application.WoodlandOwnerId,
                     user.UserAccountId!.Value,
@@ -488,10 +475,14 @@ public class FellingLicenceApplicationController : Controller
 
         if (compartmentsModel.IsForRestockingCompartmentSelection)
         {
-            return await IterateRestockingCompartmentsForFellingOperationType(compartmentsModel.ApplicationId, compartmentsModel.FellingCompartmentId.Value, compartmentsModel.ProposedFellingDetailsId.Value);
+            return await IterateRestockingCompartmentsForFellingOperationType(
+                compartmentsModel.ApplicationId, 
+                compartmentsModel.FellingCompartmentId.Value, 
+                compartmentsModel.ProposedFellingDetailsId.Value,
+                cancellationToken);
         }
 
-        return await IterateCompartments(compartmentsModel.ApplicationId);
+        return await IterateCompartments(compartmentsModel.ApplicationId, cancellationToken);
     }
 
     [HttpGet]
@@ -499,7 +490,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var model = await _createFellingLicenceApplicationUseCase.GetSelectFellingOperationTypesViewModel(applicationId, fellingCompartmentId, user, cancellationToken);
+        var model = await createFellingLicenceApplicationUseCase.GetSelectFellingOperationTypesViewModel(applicationId, fellingCompartmentId, user, cancellationToken);
 
         if (model.HasNoValue)
         {
@@ -547,11 +538,11 @@ public class FellingLicenceApplicationController : Controller
 
         model.OperationTypes = operationTypes;
 
-        ValidateModel(model, _fellingOperationTypesValidator);
+        ValidateModel(model, fellingOperationTypesValidator);
 
         if (!ModelState.IsValid)
         {
-            var remodel = await _createFellingLicenceApplicationUseCase.GetSelectFellingOperationTypesViewModel(model.ApplicationId, model.FellingCompartmentId, user, cancellationToken);
+            var remodel = await createFellingLicenceApplicationUseCase.GetSelectFellingOperationTypesViewModel(model.ApplicationId, model.FellingCompartmentId, user, cancellationToken);
 
             remodel.Value.FellingCompartmentId = model.FellingCompartmentId;
             remodel.Value.OperationTypes = new List<FellingOperationType>();
@@ -565,7 +556,7 @@ public class FellingLicenceApplicationController : Controller
             return View(remodel.Value);
         }
 
-        var result = await _createFellingLicenceApplicationUseCase.CreateEmptyProposedFellingDetails
+        var result = await createFellingLicenceApplicationUseCase.CreateEmptyProposedFellingDetails
             (user,
             model,
             cancellationToken);
@@ -575,7 +566,7 @@ public class FellingLicenceApplicationController : Controller
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        var statusUpdateResult = await _createFellingLicenceApplicationUseCase.CreateMissingFellingStatuses(
+        var statusUpdateResult = await createFellingLicenceApplicationUseCase.CreateMissingFellingStatuses(
             user,
             model.ApplicationId,
             model.FellingCompartmentId,
@@ -586,7 +577,7 @@ public class FellingLicenceApplicationController : Controller
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        return await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId);
+        return await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId, cancellationToken);
     }
 
 
@@ -595,13 +586,13 @@ public class FellingLicenceApplicationController : Controller
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        var viewModel = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
+        var viewModel = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
         if (viewModel.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -624,7 +615,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
         
-        var resultModel = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var resultModel = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         var model = resultModel.Value.ConstraintCheck;
         model.StepComplete = null;
         model.NotRunningExternalLisReport = notRunningExternalLisReport;
@@ -638,7 +629,7 @@ public class FellingLicenceApplicationController : Controller
             model.StepComplete = false;
         }
 
-        var result = await _createFellingLicenceApplicationUseCase.SetApplicationConstraintCheckAsync(user,
+        var result = await createFellingLicenceApplicationUseCase.SetApplicationConstraintCheckAsync(user,
             model, cancellationToken);
 
         return result.IsFailure
@@ -658,14 +649,14 @@ public class FellingLicenceApplicationController : Controller
 
         if (result.IsSuccess)
         {
-            var resultModel = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            var resultModel = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
             if (resultModel.HasValue)
             {
                 var model = resultModel.Value.ConstraintCheck;
                 model.NotRunningExternalLisReport = false;
                 model.ExternalLisReportRun = true;
 
-                await _createFellingLicenceApplicationUseCase.SetApplicationConstraintCheckAsync(user,
+                await createFellingLicenceApplicationUseCase.SetApplicationConstraintCheckAsync(user,
                     model, cancellationToken);
             }
 
@@ -679,7 +670,7 @@ public class FellingLicenceApplicationController : Controller
     public async Task<IActionResult> Operations(Guid applicationId, bool returnToApplicationSummary, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -700,11 +691,11 @@ public class FellingLicenceApplicationController : Controller
     public async Task<IActionResult> Operations(OperationDetailsModel operationDetailsModel, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        ValidateModel(operationDetailsModel, _operationsValidator);
+        ValidateModel(operationDetailsModel, operationsValidator);
         if (!ModelState.IsValid)
         {
             var applicationResult =
-                await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(
+                await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(
                     user,
                     operationDetailsModel.ApplicationId,
                     cancellationToken);
@@ -723,7 +714,7 @@ public class FellingLicenceApplicationController : Controller
             return View(operationDetailsModel);
         }
 
-        var result = await _createFellingLicenceApplicationUseCase.SetApplicationOperationsAsync(
+        var result = await createFellingLicenceApplicationUseCase.SetApplicationOperationsAsync(
             user,
             operationDetailsModel, 
             cancellationToken);
@@ -739,7 +730,7 @@ public class FellingLicenceApplicationController : Controller
     public async Task<IActionResult> FellingDetail(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, bool? returnToPlayback, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, applicationId, fellingCompartmentId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, applicationId, fellingCompartmentId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -777,12 +768,12 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        ValidateModel(proposedFellingDetail, _fellingDetailsValidator);
+        ValidateModel(proposedFellingDetail, fellingDetailsValidator);
 
         if (ModelState.IsValid)
         {
             proposedFellingDetail.StepComplete = true;
-            var updateFellingRestockingResult = await _createFellingLicenceApplicationUseCase.UpdateApplicationFellingDetailsAsync(
+            var updateFellingRestockingResult = await createFellingLicenceApplicationUseCase.UpdateApplicationFellingDetailsAsync(
                 user,
                 proposedFellingDetail,
                 cancellationToken);
@@ -804,11 +795,11 @@ public class FellingLicenceApplicationController : Controller
                     ReturnToPlayback = proposedFellingDetail.ReturnToPlayback
                 });
 
-            return await DecideOnPostFellingDetailRedirect(proposedFellingDetail);
+            return await DecideOnPostFellingDetailRedirect(proposedFellingDetail, cancellationToken);
         }
         else
         {
-            var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, proposedFellingDetail.ApplicationId, proposedFellingDetail.FellingCompartmentId, cancellationToken);
+            var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, proposedFellingDetail.ApplicationId, proposedFellingDetail.FellingCompartmentId, cancellationToken);
             if (result.HasNoValue)
             {
                 return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -837,7 +828,7 @@ public class FellingLicenceApplicationController : Controller
     public async Task<IActionResult> LarchSpeciesInformationContinue(LarchSpeciesInformationModel informationModel, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, informationModel.ApplicationId, informationModel.FellingCompartmentId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, informationModel.ApplicationId, informationModel.FellingCompartmentId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -859,14 +850,14 @@ public class FellingLicenceApplicationController : Controller
 
         ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = result.Value.ApplicationSummary.WoodlandOwnerId;
 
-        return await DecideOnPostFellingDetailRedirect(model);
+        return await DecideOnPostFellingDetailRedirect(model, cancellationToken);
     }
 
     [HttpGet]
     public async Task<IActionResult> DecisionToRestock(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, FellingOperationType fellingOperationType, bool? returnToPlayback, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -922,11 +913,11 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        ValidateModel(model, _decisionToRestockValidator);
+        ValidateModel(model, decisionToRestockValidator);
 
         if (!ModelState.IsValid)
         {
-            var compartmentResult = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(model.ApplicationId, user, cancellationToken);
+            var compartmentResult = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(model.ApplicationId, user, cancellationToken);
             if (compartmentResult.HasNoValue)
             {
                 return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -937,7 +928,7 @@ public class FellingLicenceApplicationController : Controller
             return View(model);
         }
 
-        var result = await _createFellingLicenceApplicationUseCase.UpdateApplicationFellingDetailsWithRestockDecisionAsync
+        var result = await createFellingLicenceApplicationUseCase.UpdateApplicationFellingDetailsWithRestockDecisionAsync
             (user, model, cancellationToken);
 
         if (result.IsFailure)
@@ -955,7 +946,7 @@ public class FellingLicenceApplicationController : Controller
                 fellingCompartmentName = model.FellingCompartmentName,
                 proposedFellingDetailsId = model.ProposedFellingDetailsId
             })
-            : await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId);
+            : await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId, cancellationToken);
     }
 
     [HttpGet]
@@ -963,7 +954,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -971,7 +962,7 @@ public class FellingLicenceApplicationController : Controller
 
         ViewBag.ApplicationSummary = result.Value.Application.ApplicationSummary;
 
-        var model = await _createFellingLicenceApplicationUseCase.GetSelectRestockingOptionsViewModel
+        var model = await createFellingLicenceApplicationUseCase.GetSelectRestockingOptionsViewModel
                 (applicationId, 
                 fellingCompartmentId, 
                 restockingCompartmentId, 
@@ -1024,11 +1015,11 @@ public class FellingLicenceApplicationController : Controller
 
         model.RestockingOptions = restockingOptions;
 
-        ValidateModel(model, _restockingOptionsValidator);
+        ValidateModel(model, restockingOptionsValidator);
 
         if (!ModelState.IsValid)
         {
-            var compartmentViewModel = await _createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(model.ApplicationId, user, cancellationToken);
+            var compartmentViewModel = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(model.ApplicationId, user, cancellationToken);
             if (compartmentViewModel.HasNoValue)
             {
                 return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -1036,7 +1027,7 @@ public class FellingLicenceApplicationController : Controller
 
             ViewBag.ApplicationSummary = compartmentViewModel.Value.Application.ApplicationSummary;
 
-            var remodel = await _createFellingLicenceApplicationUseCase.GetSelectRestockingOptionsViewModel
+            var remodel = await createFellingLicenceApplicationUseCase.GetSelectRestockingOptionsViewModel
                     (model.ApplicationId,
                     model.FellingCompartmentId,
                     model.RestockingCompartmentId,
@@ -1053,7 +1044,7 @@ public class FellingLicenceApplicationController : Controller
             return View(remodel.Value);
         }
 
-        var result = await _createFellingLicenceApplicationUseCase.CreateEmptyProposedRestockingDetails
+        var result = await createFellingLicenceApplicationUseCase.CreateEmptyProposedRestockingDetails
             (user,
             model,
             cancellationToken);
@@ -1063,7 +1054,7 @@ public class FellingLicenceApplicationController : Controller
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        var statusUpdateResult = await _createFellingLicenceApplicationUseCase.CreateMissingRestockingStatuses(
+        var statusUpdateResult = await createFellingLicenceApplicationUseCase.CreateMissingRestockingStatuses(
             user,
             model.ApplicationId,
             model.FellingCompartmentId,
@@ -1075,17 +1066,19 @@ public class FellingLicenceApplicationController : Controller
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        return await IterateRestockingTypesForRestockingCompartment(model.ApplicationId,
+        return await IterateRestockingTypesForRestockingCompartment(
+            model.ApplicationId,
             model.FellingCompartmentId,
             model.ProposedFellingDetailsId,
-            model.RestockingCompartmentId);
+            model.RestockingCompartmentId,
+            cancellationToken);
     }
 
     [HttpGet]
     public async Task<IActionResult> RestockingDetail(Guid applicationId, Guid restockingId, Guid fellingCompartmentId, Guid restockingCompartmentId, Guid proposedFellingDetailsId, bool? returnToPlayback, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -1093,7 +1086,7 @@ public class FellingLicenceApplicationController : Controller
         
         ViewBag.ApplicationSummary = result.Value.ApplicationSummary;
 
-        var model = await _createFellingLicenceApplicationUseCase.GetRestockingDetailViewModel(user, applicationId, restockingId, result.Value, cancellationToken);
+        var model = await createFellingLicenceApplicationUseCase.GetRestockingDetailViewModel(user, applicationId, restockingId, result.Value, cancellationToken);
 
         if (model.HasNoValue)
         {
@@ -1125,7 +1118,7 @@ public class FellingLicenceApplicationController : Controller
             ? Math.Round(model.Area.Value / model.CompartmentTotalHectares.Value * 100, 2)
             : null;
 
-        ValidateModel(model, _restockingDetailsValidator);
+        ValidateModel(model, restockingDetailsValidator);
 
         if (ModelState.IsValid)
         {
@@ -1133,7 +1126,7 @@ public class FellingLicenceApplicationController : Controller
         }
         else
         {
-            var res = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, model.ApplicationId, model.FellingCompartmentId, cancellationToken);
+            var res = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplicationCompartmentDetail(user, model.ApplicationId, model.FellingCompartmentId, cancellationToken);
             if (res.HasNoValue)
             {
                 return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -1144,24 +1137,26 @@ public class FellingLicenceApplicationController : Controller
             return View(model);
         }
 
-        var result = await _createFellingLicenceApplicationUseCase.UpdateApplicationRestockingDetailsAsync(user, model, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.UpdateApplicationRestockingDetailsAsync(user, model, cancellationToken);
 
         if (result.IsFailure)
         {
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        return await IterateRestockingTypesForRestockingCompartment(model.ApplicationId,
+        return await IterateRestockingTypesForRestockingCompartment(
+            model.ApplicationId,
             model.FellingCompartmentId,
             model.ProposedFellingDetailsId,
-            model.RestockingCompartmentId);
+            model.RestockingCompartmentId,
+            cancellationToken);
     }
 
     [HttpGet]
     public async Task<IActionResult> FellingAndRestockingPlayback(Guid applicationId, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -1169,7 +1164,7 @@ public class FellingLicenceApplicationController : Controller
 
         ViewBag.ApplicationSummary = result.Value.ApplicationSummary;
 
-        var model = await _createFellingLicenceApplicationUseCase.GetFellingAndRestockingDetailsPlaybackViewModel(applicationId, user, cancellationToken);
+        var model = await createFellingLicenceApplicationUseCase.GetFellingAndRestockingDetailsPlaybackViewModel(applicationId, user, cancellationToken);
 
         if (model.HasNoValue)
         {
@@ -1182,13 +1177,287 @@ public class FellingLicenceApplicationController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> TenYearLicence(
+        Guid applicationId,
+        bool returnToApplicationSummary,
+        bool fromDataImport,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport, null);
+        }
+
+        var viewModel = await tenYearLicenceUseCase
+            .GetTenYearLicenceApplicationViewModel(user, applicationId, returnToApplicationSummary, fromDataImport, cancellationToken);
+
+        if (viewModel.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+        ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+        SetTaskBreadcrumbs(viewModel.Value);
+
+        return View(viewModel.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> TenYearLicence(
+        TenYearLicenceApplicationViewModel model,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+        var reloadModel = await ReloadViewModel(model);
+        var agentAuthorityId = await GetAgentAuthorityAsync(reloadModel.Value.ApplicationSummary.WoodlandOwnerId, cancellationToken);
+
+        // only FC users should be able to post this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agentAuthorityId);
+        }
+
+        //don't post data if not in editable state
+        if (!model.AllowEditing)
+        {
+            if (model.IsForTenYearLicence is true)
+            {
+                return RedirectToAction(nameof(WmpDocuments), new
+                {
+                    applicationId = model.ApplicationId,
+                    returnToApplicationSummary = model.ReturnToApplicationSummary,
+                    fromDataImport = model.FromDataImport
+                });
+            }
+            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agentAuthorityId);
+        }
+
+        ModelState.Clear();
+
+        // WMP reference is mandatory if the user has selected to apply for a 10-year licence
+        if (model.IsForTenYearLicence.HasNoValue() ||
+            model.IsForTenYearLicence is true && string.IsNullOrWhiteSpace(model.WoodlandManagementPlanReference))
+        {
+            if (model.IsForTenYearLicence.HasNoValue())
+            {
+                ModelState.AddModelError(
+                    nameof(TenYearLicenceApplicationViewModel.IsForTenYearLicence),
+                    "Select if this application is for a 10-year licence");
+            }
+            else
+            {
+                ModelState.AddModelError(
+                    nameof(TenYearLicenceApplicationViewModel.WoodlandManagementPlanReference),
+                    "Enter the woodland management plan reference");
+            }
+
+            if (reloadModel.IsFailure)
+            {
+                return RedirectToAction(nameof(HomeController.Error), "Home");
+            }
+
+            return View(reloadModel.Value);
+        }
+
+        var updateResult = await tenYearLicenceUseCase.UpdateTenYearLicenceStatusAsync(
+            model.ApplicationId,
+            user,
+            model.IsForTenYearLicence!.Value,
+            model.WoodlandManagementPlanReference,
+            cancellationToken);
+
+        if (updateResult.IsFailure)
+        {
+            if (reloadModel.IsFailure)
+            {
+                return RedirectToAction(nameof(HomeController.Error), "Home");
+            }
+            this.AddErrorMessage("Could not update ten-year licence application status, please try again");
+            return View(reloadModel.Value);
+        }
+
+        if (model.IsForTenYearLicence is true)
+        {
+            return RedirectToAction(nameof(WmpDocuments), new
+            {
+                applicationId = model.ApplicationId,
+                returnToApplicationSummary = model.ReturnToApplicationSummary,
+                fromDataImport = model.FromDataImport
+            });
+        }
+
+        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agentAuthorityId);
+
+        async Task<Result<TenYearLicenceApplicationViewModel>> ReloadViewModel(TenYearLicenceApplicationViewModel initialModel)
+        {
+            var reloadModel = await tenYearLicenceUseCase
+                .GetTenYearLicenceApplicationViewModel(user, initialModel.ApplicationId, initialModel.ReturnToApplicationSummary, initialModel.FromDataImport, cancellationToken);
+
+            if (reloadModel.IsFailure)
+            {
+                return reloadModel.ConvertFailure<TenYearLicenceApplicationViewModel>();
+            }
+
+            ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = reloadModel.Value.ApplicationSummary.WoodlandOwnerId;
+            ViewBag.ApplicationSummary = reloadModel.Value.ApplicationSummary;
+
+            reloadModel.Value.IsForTenYearLicence = initialModel.IsForTenYearLicence;
+            reloadModel.Value.WoodlandManagementPlanReference = initialModel.WoodlandManagementPlanReference;
+
+            SetTaskBreadcrumbs(reloadModel.Value);
+            return reloadModel.Value;
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> WmpDocuments(
+        Guid applicationId,
+        bool returnToApplicationSummary,
+        bool fromDataImport,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+        }
+
+        var isTenYearLicenceApplication = await tenYearLicenceUseCase.IsTenYearLicenceApplicationAsync(
+            user, applicationId, cancellationToken);
+
+        if (isTenYearLicenceApplication.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        if (!isTenYearLicenceApplication.Value)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+        }
+
+        var viewModel = await tenYearLicenceUseCase
+            .GetWmpDocumentsViewModel(user, applicationId, returnToApplicationSummary, fromDataImport, cancellationToken);
+
+        if (viewModel.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+        ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+        SetTaskBreadcrumbs(viewModel.Value);
+
+        return View(viewModel.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> WmpDocuments(
+        WmpDocumentsViewModel model,
+        [FromServices] TenYearLicenceUseCase tenYearLicenceUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to post this page, and only if the application is still editable
+        if (!user.IsFcUser || !model.AllowEditing)
+        {
+            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+        }
+
+        var viewModel = await tenYearLicenceUseCase
+            .GetWmpDocumentsViewModel(user, model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, cancellationToken);
+
+        if (viewModel.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        var atLeastOneWmpDocument = viewModel.Value.Documents.Any();
+
+        if (!atLeastOneWmpDocument)
+        {
+            ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+            ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+            SetTaskBreadcrumbs(viewModel.Value);
+
+            ModelState.Clear();
+            this.AddErrorMessage("Upload at least one WMP document to continue");
+
+            return View(viewModel.Value);
+        }
+
+        var updateResult = await tenYearLicenceUseCase
+            .CompleteTenYearLicenceStepAsync(model.ApplicationId, user, cancellationToken);
+
+        if (updateResult.IsFailure)
+        {
+            ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.ApplicationSummary.WoodlandOwnerId;
+            ViewBag.ApplicationSummary = viewModel.Value.ApplicationSummary;
+
+            SetTaskBreadcrumbs(viewModel.Value);
+
+            this.AddErrorMessage("Could not complete ten-year licence step, please try again");
+
+            return View(viewModel.Value);
+
+        }
+
+        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+    }
+
+    /// <summary>
+    /// This is an action method to explicitly support the deleting of uploaded WMP documents.
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost]
+    public async Task<IActionResult> RemoveWmpDocument(
+        Guid applicationId,
+        Guid documentIdentifier,
+        bool returnToApplicationSummary,
+        bool fromDataImport,
+        [FromServices] RemoveSupportingDocumentUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        // only FC users should be able to see this page
+        if (!user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+        }
+
+        var removeResult = await useCase.RemoveSupportingDocumentAsync(user, applicationId, documentIdentifier, cancellationToken);
+
+        if (removeResult.IsFailure)
+        {
+            logger.LogError("Failed to remove supporting documentation with error {Error}", removeResult.Error);
+            this.AddErrorMessage("Could not remove supporting document at this time, try again");
+        }
+
+        return RedirectToAction(nameof(WmpDocuments), new { applicationId, returnToApplicationSummary, fromDataImport });
+
+    }
+
+    [HttpGet]
     public async Task<IActionResult> SupportingDocumentation(
         Guid applicationId,
         bool returnToApplicationSummary,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -1220,7 +1489,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, supportingDocumentationSaveModel.ApplicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, supportingDocumentationSaveModel.ApplicationId, cancellationToken);
         if (result.HasNoValue)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
@@ -1240,11 +1509,18 @@ public class FellingLicenceApplicationController : Controller
             return View(model);
         }
 
-        await _createFellingLicenceApplicationUseCase.UpdateSupportingDocumentsStatusAsync(user, supportingDocumentationSaveModel, cancellationToken);
+        await createFellingLicenceApplicationUseCase.UpdateSupportingDocumentsStatusAsync(user, supportingDocumentationSaveModel, cancellationToken);
 
         var application = result.Value;
 
-        return RedirectToAction(nameof(TermsAndConditions), new { applicationId = application.ApplicationId });
+        if (supportingDocumentationSaveModel.ReturnToApplicationSummary)
+        {
+            return RedirectToAction(nameof(ApplicationSummary), new { applicationId = application.ApplicationId });
+        }
+        else
+        {
+            return RedirectToAction(nameof(TermsAndConditions), new { applicationId = application.ApplicationId });
+        }
     }
 
     /// <summary>
@@ -1265,9 +1541,10 @@ public class FellingLicenceApplicationController : Controller
 
         if (removeResult.IsFailure)
         {
-            _logger.LogError("Failed to remove supporting documentation with error {Error}", removeResult.Error);
+            logger.LogError("Failed to remove supporting documentation with error {Error}", removeResult.Error);
             this.AddErrorMessage("Could not remove supporting document at this time, try again");
         }
+
         if(returnToApplicationSummary)
             return RedirectToAction(nameof(SupportingDocumentation), new { applicationId, returnToApplicationSummary });
         else
@@ -1283,9 +1560,30 @@ public class FellingLicenceApplicationController : Controller
         CancellationToken cancellationToken)
     {
         if (!supportingDocumentationFiles.Any())
-            return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId });
+        {
+            this.AddErrorMessage("Select at least one file to upload");
+
+            if (model.Purpose == DocumentPurpose.WmpDocument)
+            {
+                return RedirectToAction(nameof(WmpDocuments),
+                    new
+                    {
+                        applicationId = model.FellingLicenceApplicationId,
+                        model.ReturnToApplicationSummary,
+                        model.FromDataImport
+                    });
+            }
+
+            return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary });
+        }
 
         var user = new ExternalApplicant(User);
+
+        // only FC users should be able to upload WMP documents
+        if (model.Purpose == DocumentPurpose.WmpDocument && !user.IsFcUser)
+        {
+            return GetRedirectPostTenYearLicencePages(model.FellingLicenceApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+        }
 
         var saveDocumentsResult = await useCase.AddDocumentsToApplicationAsync(
             user,
@@ -1295,14 +1593,36 @@ public class FellingLicenceApplicationController : Controller
             cancellationToken);
 
         if (saveDocumentsResult.IsSuccess && ModelState.IsValid)
-            if (model.ReturnToApplicationSummary)
-                return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary });
-            else
-                return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId });
+        {
+            if (model.Purpose == DocumentPurpose.WmpDocument)
+            {
+                return RedirectToAction(nameof(WmpDocuments),
+                    new
+                    {
+                        applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary,
+                        model.FromDataImport
+                    });
+            }
+
+            return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.FellingLicenceApplicationId, model.ReturnToApplicationSummary });
+        }
 
         // Was not successful across the entire set of uploaded documents in FormFileCollection:
+
+        if (model.Purpose == DocumentPurpose.WmpDocument)
+        {
+            this.AddErrorMessage("One or more selected documents could not be uploaded, please try again");
+            return RedirectToAction(nameof(WmpDocuments),
+                new
+                {
+                    applicationId = model.FellingLicenceApplicationId,
+                    model.ReturnToApplicationSummary,
+                    model.FromDataImport
+                });
+        }
+
         var fellingLicenceApplicationModelResult =
-            await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.FellingLicenceApplicationId, cancellationToken);
+            await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.FellingLicenceApplicationId, cancellationToken);
 
         if (fellingLicenceApplicationModelResult.HasNoValue)
         {
@@ -1338,7 +1658,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (result.HasNoValue)
         {
@@ -1364,11 +1684,11 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        ValidateModel(flaTermsAndConditionsViewModel, _flaTermsAndConditionsViewModelValidator);
+        ValidateModel(flaTermsAndConditionsViewModel, flaTermsAndConditionsViewModelValidator);
 
         if (!ModelState.IsValid)
         {
-            var applicationResult = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, flaTermsAndConditionsViewModel.ApplicationId, cancellationToken);
+            var applicationResult = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, flaTermsAndConditionsViewModel.ApplicationId, cancellationToken);
 
             if (applicationResult.HasNoValue)
             {
@@ -1383,7 +1703,7 @@ public class FellingLicenceApplicationController : Controller
             SetTaskBreadcrumbs(flaTermsAndConditionsViewModel);
             return View(flaTermsAndConditionsViewModel);
         }
-        await _createFellingLicenceApplicationUseCase.SetFlaTermsAndConditionsAccepted(user, flaTermsAndConditionsViewModel, cancellationToken);
+        await createFellingLicenceApplicationUseCase.SetFlaTermsAndConditionsAccepted(user, flaTermsAndConditionsViewModel, cancellationToken);
 
         return RedirectToAction(nameof(ApplicationSummary), new { applicationId = flaTermsAndConditionsViewModel.ApplicationId });
     }
@@ -1393,7 +1713,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
         var applicationResult =
-            await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (applicationResult.HasNoValue)
         {
@@ -1416,9 +1736,9 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var fellingLicenceApplicationResult = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var fellingLicenceApplicationResult = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
-        var activityFeed = await _createFellingLicenceApplicationUseCase.GetCaseNotesActivityFeedForApplicationAsync(
+        var activityFeed = await createFellingLicenceApplicationUseCase.GetCaseNotesActivityFeedForApplicationAsync(
             applicationId, user, cancellationToken);
         if (activityFeed.HasNoValue)
         {
@@ -1447,11 +1767,14 @@ public class FellingLicenceApplicationController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ApplicationSummary(Guid applicationId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ApplicationSummary(
+        Guid applicationId,
+        [FromServices] GetAgentAuthorityFormDocumentsUseCase useCase,
+        CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.GetApplicationSummaryViewModel(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.GetApplicationSummaryViewModel(user, applicationId, cancellationToken);
 
         if (result.IsFailure)
         {
@@ -1465,6 +1788,19 @@ public class FellingLicenceApplicationController : Controller
 
         ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = result.Value.Application.WoodlandOwnerId;
 
+        if (result.Value.Agency is not null && result.Value.Agency.AgencyId.HasValue)
+        {
+            var aafDocument = await useCase.GetCurrentAafDocumentAsync(
+                result.Value.Agency.AgencyId.Value,
+                result.Value.Application.WoodlandOwnerId,
+                user,
+                cancellationToken);
+            if (aafDocument.HasValue)
+            {
+                result.Value.Application.AgentAuthorityForm.AafDocument = aafDocument.Value.FileName;
+                result.Value.Application.AgentAuthorityForm.AgentAuthorityId = aafDocument.Value.AgentAuthorityId;
+            }
+        }
         SetApplicationSummaryBreadcrumbs(result.Value);
 
         return View(result.Value);
@@ -1475,7 +1811,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (result.HasNoValue)
         {
@@ -1508,7 +1844,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (result.HasNoValue)
         {
@@ -1535,7 +1871,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         var enabledStatuses = new[]
         {
@@ -1546,13 +1882,13 @@ public class FellingLicenceApplicationController : Controller
 
         if (result.HasNoValue)
         {
-            _logger.LogInformation("Could not get application by its Id {applicationId} for the current user having Id of {userId}", applicationId, user.UserAccountId);
+            logger.LogInformation("Could not get application by its Id {applicationId} for the current user having Id of {userId}", applicationId, user.UserAccountId);
             return RedirectToAction(nameof(ApplicationTaskList), new { applicationId });
         }
 
         if (enabledStatuses.Contains(result.Value.ApplicationSummary.Status) is false)
         {
-            _logger.LogInformation("Application with Id {applicationId} is not in a valid state for submission, current status is {status}", applicationId, result.Value.ApplicationSummary.Status);
+            logger.LogInformation("Application with Id {applicationId} is not in a valid state for submission, current status is {status}", applicationId, result.Value.ApplicationSummary.Status);
             return RedirectToAction(nameof(ApplicationTaskList), new { applicationId });
         }
 
@@ -1589,25 +1925,25 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var getFellingApplicationResult = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(
+        var getFellingApplicationResult = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(
             user, 
             model.ApplicationId, 
             cancellationToken);
 
         if (getFellingApplicationResult.HasNoValue)
         {
-            _logger.LogWarning("Could not get application by it's Id {applicationId} for the current user having Id of {userId}", model.ApplicationId, user.UserAccountId);
+            logger.LogWarning("Could not get application by it's Id {applicationId} for the current user having Id of {userId}", model.ApplicationId, user.UserAccountId);
             return RedirectToAction(nameof(SubmissionFailure), new { applicationId = model.ApplicationId });
         }
 
         var linkToApplication = 
             Url.AbsoluteAction(
-                "Index",
+                nameof(ApplicationTaskList),
                 "FellingLicenceApplication", 
-                new { id = model.ApplicationId })!;
+                new { applicationId = model.ApplicationId })!;
 
         var (_, submissionFailure, isResubmission) = 
-            await _createFellingLicenceApplicationUseCase.SubmitFellingLicenceApplicationAsync(
+            await createFellingLicenceApplicationUseCase.SubmitFellingLicenceApplicationAsync(
                 model.ApplicationId, 
                 user,
                 linkToApplication, 
@@ -1626,7 +1962,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (result.HasNoValue || 
             FellingLicenceStatusConstants.WithdrawalStatuses.Contains(result.Value.ApplicationSummary.Status) is false)
@@ -1657,9 +1993,9 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        string linkToApplication = Url.AbsoluteAction("Index", "FellingLicenceApplication", new { id = withdrawFellingLicenceApplicationModel.ApplicationId })!;
+        string linkToApplication = Url.AbsoluteAction(nameof(ApplicationTaskList), "FellingLicenceApplication", new { applicationId = withdrawFellingLicenceApplicationModel.ApplicationId })!;
 
-        var result = await _createFellingLicenceApplicationUseCase.WithdrawFellingLicenceApplicationAsync(withdrawFellingLicenceApplicationModel.ApplicationId, user, linkToApplication!, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.WithdrawFellingLicenceApplicationAsync(withdrawFellingLicenceApplicationModel.ApplicationId, user, linkToApplication!, cancellationToken);
         if (result.IsFailure)
         {
             this.AddErrorMessage("Something went wrong, try again.");
@@ -1675,7 +2011,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         if (result.HasNoValue || result.Value.ApplicationSummary.Status != FellingLicenceStatus.Withdrawn)
         {
             this.AddErrorMessage("Something went wrong, try again.");
@@ -1703,7 +2039,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (result.HasNoValue || result.Value.ApplicationSummary.Status != FellingLicenceStatus.Draft)
         {
@@ -1734,7 +2070,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.DeleteDraftFellingLicenceApplicationAsync(deleteFellingLicenceApplicationModel.ApplicationId, user, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.DeleteDraftFellingLicenceApplicationAsync(deleteFellingLicenceApplicationModel.ApplicationId, user, cancellationToken);
         if (result.IsFailure)
         {
             this.AddErrorMessage("Something went wrong, try again.");
@@ -1755,7 +2091,7 @@ public class FellingLicenceApplicationController : Controller
     {
         var user = new ExternalApplicant(User);
 
-        var result = await _createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
         if (result.HasValue)
         {
             this.AddErrorMessage("Something went wrong, try again.");
@@ -1782,9 +2118,9 @@ public class FellingLicenceApplicationController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ContinueFellingAndRestocking(Guid applicationId)
+    public async Task<IActionResult> ContinueFellingAndRestocking(Guid applicationId, CancellationToken cancellationToken)
     {
-        return await IterateCompartments(applicationId);
+        return await IterateCompartments(applicationId, cancellationToken);
     }
 
     [HttpGet]
@@ -1908,9 +2244,9 @@ public class FellingLicenceApplicationController : Controller
         }
     }
 
-    private async Task<IActionResult> DecideOnPostFellingDetailRedirect(ProposedFellingDetailModel proposedFellingDetail)
+    private async Task<IActionResult> DecideOnPostFellingDetailRedirect(ProposedFellingDetailModel proposedFellingDetail, CancellationToken cancellationToken)
     {
-        if (_createFellingLicenceApplicationUseCase.FellingOperationRequiresStocking(proposedFellingDetail.OperationType) && !proposedFellingDetail.ReturnToPlayback)
+        if (createFellingLicenceApplicationUseCase.FellingOperationRequiresStocking(proposedFellingDetail.OperationType) && !proposedFellingDetail.ReturnToPlayback)
         {
             return RedirectToAction(nameof(DecisionToRestock), "FellingLicenceApplication", new
             {
@@ -1922,13 +2258,13 @@ public class FellingLicenceApplicationController : Controller
         }
         else
         {
-            return await IterateFellingOperationTypesInCompartment(proposedFellingDetail.ApplicationId, proposedFellingDetail.FellingCompartmentId);
+            return await IterateFellingOperationTypesInCompartment(proposedFellingDetail.ApplicationId, proposedFellingDetail.FellingCompartmentId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateRestockingTypesForRestockingCompartment(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, Guid restockingCompartmentId)
+    private async Task<IActionResult> IterateRestockingTypesForRestockingCompartment(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, Guid restockingCompartmentId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await _createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var compartmentStatus = applicationStepStatus.CompartmentFellingRestockingStatuses.FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
 
@@ -1952,13 +2288,13 @@ public class FellingLicenceApplicationController : Controller
         }
         else
         {
-            return await IterateRestockingCompartmentsForFellingOperationType(applicationId, fellingCompartmentId, proposedFellingDetailsId);
+            return await IterateRestockingCompartmentsForFellingOperationType(applicationId, fellingCompartmentId, proposedFellingDetailsId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateRestockingCompartmentsForFellingOperationType(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId)
+    private async Task<IActionResult> IterateRestockingCompartmentsForFellingOperationType(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await _createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var compartmentStatus = applicationStepStatus.CompartmentFellingRestockingStatuses.FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
 
@@ -1982,7 +2318,7 @@ public class FellingLicenceApplicationController : Controller
         }
         else
         {
-            // are there restockings that need processing?
+            // are there any restockings that need processing?
 
             foreach (var restockingCompartmentStatus in fellingStatus.RestockingCompartmentStatuses)
             {
@@ -1990,17 +2326,22 @@ public class FellingLicenceApplicationController : Controller
 
                 if (completion.HasNoValue() || (completion.HasValue && !completion.Value))
                 {
-                    return await IterateRestockingTypesForRestockingCompartment(applicationId, fellingCompartmentId, proposedFellingDetailsId, restockingCompartmentStatus.CompartmentId);
+                    return await IterateRestockingTypesForRestockingCompartment(
+                        applicationId, 
+                        fellingCompartmentId, 
+                        proposedFellingDetailsId, 
+                        restockingCompartmentStatus.CompartmentId,
+                        cancellationToken);
                 }
             }
 
-            return await IterateFellingOperationTypesInCompartment(applicationId, fellingCompartmentId);
+            return await IterateFellingOperationTypesInCompartment(applicationId, fellingCompartmentId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateFellingOperationTypesInCompartment(Guid applicationId, Guid fellingCompartmentId)
+    private async Task<IActionResult> IterateFellingOperationTypesInCompartment(Guid applicationId, Guid fellingCompartmentId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await _createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var compartmentStatus = applicationStepStatus.CompartmentFellingRestockingStatuses.FirstOrDefault(c => c.CompartmentId == fellingCompartmentId);
 
@@ -2023,17 +2364,17 @@ public class FellingLicenceApplicationController : Controller
 
                 if (completion.HasNoValue() || (completion.HasValue && !completion.Value))
                 {
-                    return await IterateRestockingCompartmentsForFellingOperationType(applicationId, compartmentStatus.CompartmentId, fellingStatus.Id);
+                    return await IterateRestockingCompartmentsForFellingOperationType(applicationId, compartmentStatus.CompartmentId, fellingStatus.Id, cancellationToken);
                 }
             }
 
-            return await IterateCompartments(applicationId);
+            return await IterateCompartments(applicationId, cancellationToken);
         }
     }
 
-    private async Task<IActionResult> IterateCompartments(Guid applicationId)
+    private async Task<IActionResult> IterateCompartments(Guid applicationId, CancellationToken cancellationToken)
     {
-        var applicationStepStatus = await _createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId);
+        var applicationStepStatus = await createFellingLicenceApplicationUseCase.GetApplicationStepStatus(applicationId, cancellationToken);
 
         var unprocessedCompartments = applicationStepStatus.CompartmentFellingRestockingStatuses.Where(c => c.Status.HasNoValue() || (c.Status.HasValue && ! c.Status.Value)).ToList();
 
@@ -2051,7 +2392,7 @@ public class FellingLicenceApplicationController : Controller
 
                 if (completion.HasNoValue() || (completion.HasValue && !completion.Value))
                 {
-                    return await IterateFellingOperationTypesInCompartment(applicationId, compartment.CompartmentId);
+                    return await IterateFellingOperationTypesInCompartment(applicationId, compartment.CompartmentId, cancellationToken);
                 }
             }
 
@@ -2059,4 +2400,38 @@ public class FellingLicenceApplicationController : Controller
         }
     }
 
+    private IActionResult GetRedirectPostTenYearLicencePages(
+        Guid applicationId,
+        bool returnToApplicationSummary,
+        bool fromDataImport,
+        Guid? agentAuthorityId = null)
+    {
+        if (returnToApplicationSummary)
+        {
+            return RedirectToAction(nameof(ApplicationSummary), new { applicationId });
+        }
+
+        if (fromDataImport)
+        {
+            return RedirectToAction(nameof(FellingAndRestockingPlayback), new { applicationId });
+        }
+
+        if (agentAuthorityId is not null)
+        {
+            return RedirectToAction(nameof(AgentAuthorityForm), new { applicationId, agentAuthorityId });
+        }
+
+        return RedirectToAction(nameof(Operations), new { applicationId, returnToApplicationSummary });
+    }
+
+    private async Task<Guid?> GetAgentAuthorityAsync(Guid? woodlandOwnerId,
+        CancellationToken cancellationToken)
+    {
+        if (woodlandOwnerId is null)
+            return null;
+
+        var agency = await createFellingLicenceApplicationUseCase.GetWoodlandOwnerAafAsync(woodlandOwnerId.Value, cancellationToken);
+
+        return agency.HasValue ? agency.Value.Id : null;
+    }
 }

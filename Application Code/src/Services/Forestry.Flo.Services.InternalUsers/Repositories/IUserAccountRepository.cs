@@ -47,8 +47,9 @@ public interface IUserAccountRepository
     /// </summary>
     /// <param name="identityProviderId">The identity provider ID.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="email">An optional email address to match users during transition from ADB2C to One Login.</param>
     /// <returns>Result object with the requested user account or an error reason.</returns>
-    Task<Result<UserAccount, UserDbErrorReason>> GetByIdentityProviderIdAsync(string identityProviderId, CancellationToken cancellationToken);
+    Task<Result<UserAccount, UserDbErrorReason>> GetByIdentityProviderIdAsync(string identityProviderId, CancellationToken cancellationToken, string? email = null);
 
     /// <summary>
     /// Retrieves user accounts by a given full name.

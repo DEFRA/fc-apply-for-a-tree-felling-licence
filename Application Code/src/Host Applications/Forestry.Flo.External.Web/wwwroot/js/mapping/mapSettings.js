@@ -1,40 +1,38 @@
-﻿define(["require", "exports"], function (require, exports) {
-    var mapSettings = /** @class */ (function () {
-        function mapSettings() {
-        }
-        mapSettings.fontsUrl = "/assets/fonts";
-        mapSettings.gridPrecision = 3;
-        mapSettings.tolerance = 0.01;
-        mapSettings.spatialReference = 27700,
-            mapSettings.englandExtent = {
+﻿define([], function () {
+    return {
+        fontsUrl : "/assets/fonts",
+        gridPrecision : 3,
+        tolerance : 0.01,
+        spatialReference : 27700,
+            englandExtent : {
                 xmin: 132406.2749467052,
                 ymin: 3348.8733624143033,
                 xmax: 668550.3805471654,
                 ymax: 599274.2565042875,
-                spatialReference: mapSettings.spatialReference,
-            };
-        mapSettings.requestParamsAPI = {
+                spatialReference: 27700,
+            },
+        requestParamsAPI : {
             mode: 'no-cors',
             cache: 'no-cache',
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json'
             },
-        };
+        },
 
-        mapSettings.LabelText = {
+        LabelText : {
             drawLine: "Click to begin line<br />click again to add new point.<br />Double click to finish",
             drawPoly: "Click to begin shape:<br />Click again to add new point.<br />You can also click and hold to draw freehand.<br />Double click to finish",
             drawPoint: "Click to add a point",
             cutPoly: "Cut a shape out of another shape:<br />Click to begin shape, click again to add new point.<br />You can also click and hold to draw freehand.<br />Double click to finish"
         },
 
-            mapSettings.esriGeoServiceLocatorUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
-        mapSettings.esriApiKey = "AAPK3dfe831d59354a7b97e58425b66f968eGwNWMzPWa6UrLRkrtTnpujN2iCjDkyXJegZabNGlyJ28aXl90McRXCw3qUF1IzLi";
-        mapSettings.defaultBaseMap = "arcgis-topographic";
-        mapSettings.baseMapForUK = "778b49e161db47aba6dd4f5034f9d52b";
+            esriGeoServiceLocatorUrl : "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer",
+        esriApiKey : "AAPK3dfe831d59354a7b97e58425b66f968eGwNWMzPWa6UrLRkrtTnpujN2iCjDkyXJegZabNGlyJ28aXl90McRXCw3qUF1IzLi",
+        defaultBaseMap : "arcgis-topographic",
+        baseMapForUK : "778b49e161db47aba6dd4f5034f9d52b",
 
-        mapSettings.wmsLayer = {
+        wmsLayer : {
             url: "https://www.getmapping.com/GmWMS/1499a302-3ea8-40c8-9480-c16beab54b1f/ApgbBng.wmsx",
             sublayers: [
                 {
@@ -44,16 +42,16 @@
             ],
             format: "image/png",
             version: "1.3.0",
-            spatialReference: { wkid: mapSettings.spatialReference },
+            spatialReference: { wkid: 27700 },
             opacity: 1.0
-        };
+        },
 
-        mapSettings.wmsLayerName = "Aerial Photography";
+        wmsLayerName : "Aerial Photography",
 
 
 
         // //Start polygon
-        mapSettings.invalidPolygonSymbol = {
+        invalidPolygonSymbol : {
             type: "simple-fill",
             style: "diagonal-cross",
             color: [255, 0, 0, 1],
@@ -61,8 +59,26 @@
                 color: [255, 0, 0, 1],
                 width: 3,
             },
-        };
-        mapSettings.activePolygonSymbol = {
+        },
+        tooManyRingsPolygonSymbol : {
+            type: "simple-fill",
+            style: "backward-diagonal",
+            color: [255, 0, 0, 1],
+            outline: {
+                color: [255, 0, 0, 1],
+                width: 3,
+            },
+        },
+        outsideEnglandRingsPolygonSymbol : {
+            type: "simple-fill",
+            style: "cross",
+            color: [255, 0, 0, 1],
+            outline: {
+                color: [255, 0, 0, 1],
+                width: 3,
+            },
+        },
+        activePolygonSymbol : {
             type: "simple-fill",
             style: "solid",
             color: [191, 227, 247, 0.5],
@@ -70,8 +86,8 @@
                 color: [0, 0, 0, 1],
                 width: 1,
             },
-        };
-        mapSettings.otherPolygonSymbol = {
+        },
+        otherPolygonSymbol : {
             type: "simple-fill",
             style: "solid",
             color: [191, 227, 247, 0.25],
@@ -79,8 +95,8 @@
                 color: [0, 0, 0, 0.25],
                 width: 1,
             },
-        };
-        mapSettings.selectedPolygonSymbol = {
+        },
+        selectedPolygonSymbol : {
             type: "simple-fill",
             style: "solid",
             color: [191, 227, 247, 0.5],
@@ -89,104 +105,26 @@
                 color: [0, 0, 0, 1],
                 width: 1,
             },
-        };
-        mapSettings.importShapeSelected = {
+        },
+        importShapeSelected : {
             type: "simple-fill",
             color: [255, 0, 0, 0.5],
             outline: {
                 color: [255, 255, 0],
                 width: 2
             }
-        };
-        mapSettings.importShape = {
+        },
+        importShape : {
             type: "simple-fill",
             color: [0, 0, 255, 0.5],
             outline: {
                 color: [0, 0, 255],
                 width: 1
             }
-        };
+        },
         //end polygon
-        //start: Point
-        mapSettings.invalidPointSymbol = {
-            type: "simple-marker",
-            style: "cross",
-            angle: -130,
-            outline: { width: 0.76 },
-            size: 14,
-            color: [0, 0, 0, 1],
-        };
-        mapSettings.activePointSymbol = {
-            type: "simple-marker",
-            style: "circle",
-            size: 14,
-            color: [0, 255, 127, 0.7],
-            outline: {
-                color: [0, 0, 0, 1],
-                width: 1,
-            },
-        };
-
-        mapSettings.selectedPointSymbol = {
-            type: "simple-marker",
-            style: "circle",
-            size: 14,
-            color: [5, 249, 252, 1],
-            outline: {
-                style: "dash",
-                color: [0, 0, 0, 1],
-                width: 1,
-            },
-        };
-
-        mapSettings.otherPointSymbol = {
-            type: "simple-marker",
-            style: "circle",
-            size: 14,
-            color: [34, 139, 34, 0.7],
-            outline: {
-                color: [0, 0, 0, 1],
-                width: 1,
-                style: "dash"
-            },
-        };
-        // //End: Point
-        // //Start: Line
-        mapSettings.invalidLineSymbol = {
-            type: "simple-line",
-            style: "dash-dot",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [227, 3, 3, 1],
-        };
-        mapSettings.activeLineSymbol = {
-            type: "simple-line",
-            style: "solid",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [0, 0, 0, 1],
-        };
-        mapSettings.otherLineSymbol = {
-            type: "simple-line",
-            style: "solid",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [0, 0, 0, 1],
-        };
-
-        mapSettings.selectedLineSymbol = {
-            type: "simple-line",
-            style: "dash",
-            cap: "butt",
-            join: "round",
-            width: 2,
-            color: [0, 0, 0, 1],
-        };
-        // //End: Line
-        mapSettings.activeTextSymbol = {
+   
+        activeTextSymbol : {
             type: "text",
             backgroundColor: [255, 255, 255, 0],
             borderLineColor: [255, 255, 255, 0],
@@ -207,8 +145,8 @@
             verticalAlignment: "baseline",
             xoffset: 0,
             yoffset: 0
-        };
-        mapSettings.BlueSkyTextSymbol = {
+        },
+        BlueSkyTextSymbol : {
             type: "text",
             color: "rgba(128, 128, 128, 0.3)",
             text: "\u00A9 Bluesky International Limited",
@@ -220,9 +158,9 @@
                 weight: "bold",
             },
             angle: -45
-        };
+        },
 
-        mapSettings.visualVariables = {
+        visualVariables : {
             size: [
                 {
                     type: "size",
@@ -245,18 +183,17 @@
                     ]
                 }
             ]
-        };
+        },
 
-        mapSettings.pointOffset = {
+        pointOffset : {
             xoffset: 15,
             yoffset: 15,
-        };
+        },
 
-        mapSettings.popup = {
+        popup : {
             width: "500",
             height: "400"
-        };
-        return mapSettings;
-    }());
-    return mapSettings;
+        },
+    }
+
 });

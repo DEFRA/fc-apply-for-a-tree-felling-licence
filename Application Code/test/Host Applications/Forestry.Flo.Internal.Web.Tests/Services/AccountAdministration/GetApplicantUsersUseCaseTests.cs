@@ -1,11 +1,9 @@
 ﻿using AutoFixture;
 using AutoFixture.Xunit2;
-using FluentAssertions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.AccountAdministration;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Services;
-using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -45,36 +43,36 @@ public class GetApplicantUsersUseCaseTests
 
         var result = await sut.RetrieveListOfActiveExternalUsersAsync(_accountAdmin, returnUrl, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.ReturnUrl.Should().Be(returnUrl);
-        result.Value.SelectedUserAccountId.Should().BeNull();
-        result.Value.ExternalUserList.Count().Should().Be(users.Count);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(returnUrl, result.Value.ReturnUrl);
+        Assert.Null(result.Value.SelectedUserAccountId);
+        Assert.Equal(users.Count, result.Value.ExternalUserList.Count());
 
         foreach (var user in users)
         {
             // assert model mapped correctly
             var correspondingEntry  = result.Value.ExternalUserList.FirstOrDefault(x => x.ExternalUser.Email == user.Email);
-            correspondingEntry.Should().NotBeNull();
+            Assert.NotNull(correspondingEntry);
 
-            correspondingEntry!.ExternalUser.FullName.Should().Be(user.FullName());
-            correspondingEntry!.ExternalUser.Email.Should().Be(user.Email);
+            Assert.Equal(user.FullName(), correspondingEntry!.ExternalUser.FullName);
+            Assert.Equal(user.Email, correspondingEntry!.ExternalUser.Email);
             if (user.Agency?.IsFcAgency is true)
             {
-                correspondingEntry!.ExternalUser.AccountType.Should().Be(AccountTypeExternal.FcUser);
+                Assert.Equal(AccountTypeExternal.FcUser, correspondingEntry!.ExternalUser.AccountType);
             }
             else
             {
-                correspondingEntry!.ExternalUser.AccountType.Should().Be(user.AccountType);
+                Assert.Equal(user.AccountType, correspondingEntry!.ExternalUser.AccountType);
             }
             
 
             if (user.Agency is not null)
             {
-                correspondingEntry.AgencyModel.ContactEmail.Should().Be(user.Agency.ContactEmail);
-                correspondingEntry.AgencyModel.ContactName.Should().Be(user.Agency.ContactName);
-                correspondingEntry.AgencyModel.Address.Should().Be(user.Agency.Address);
-                correspondingEntry.AgencyModel.AgencyId.Should().Be(user.AgencyId);
-                correspondingEntry.AgencyModel.OrganisationName.Should().Be(user.Agency.OrganisationName);
+                Assert.Equal(user.Agency.ContactEmail, correspondingEntry.AgencyModel.ContactEmail);
+                Assert.Equal(user.Agency.ContactName, correspondingEntry.AgencyModel.ContactName);
+                Assert.Equal(user.Agency.Address, correspondingEntry.AgencyModel.Address);
+                Assert.Equal(user.AgencyId, correspondingEntry.AgencyModel.AgencyId);
+                Assert.Equal(user.Agency.OrganisationName, correspondingEntry.AgencyModel.OrganisationName);
             }
         }
 
@@ -99,11 +97,11 @@ public class GetApplicantUsersUseCaseTests
 
         var result = await sut.RetrieveListOfActiveExternalUsersAsync(_accountAdmin, returnUrl, CancellationToken.None);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value.ReturnUrl.Should().Be(returnUrl);
-        result.Value.SelectedUserAccountId.Should().BeNull();
+        Assert.True(result.IsSuccess);
+        Assert.Equal(returnUrl, result.Value.ReturnUrl);
+        Assert.Null(result.Value.SelectedUserAccountId);
 
-        result.Value.ExternalUserList.Count().Should().Be(0);
+        Assert.Empty(result.Value.ExternalUserList);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveActiveExternalUsersByAccountTypeAsync(It.Is<List<AccountTypeExternal>>(x =>
                 x.Contains(AccountTypeExternal.AgentAdministrator)
@@ -133,7 +131,7 @@ public class GetApplicantUsersUseCaseTests
 
         var result = await sut.RetrieveListOfActiveExternalUsersAsync(CreateInternalUser(accountType), returnUrl, CancellationToken.None);
 
-        result.IsSuccess.Should().Be(accountType is AccountTypeInternal.AccountAdministrator);
+        Assert.Equal(accountType is AccountTypeInternal.AccountAdministrator, result.IsSuccess);
 
         _retrieveUserServiceMock.Verify(v => v.RetrieveActiveExternalUsersByAccountTypeAsync(It.Is<List<AccountTypeExternal>>(x => 
                     x.Contains(AccountTypeExternal.AgentAdministrator)

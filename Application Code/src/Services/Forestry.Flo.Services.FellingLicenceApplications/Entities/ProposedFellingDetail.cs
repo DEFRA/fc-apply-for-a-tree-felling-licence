@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
@@ -37,6 +38,7 @@ public class ProposedFellingDetail
     /// Gets or sets the area to be felled.
     /// </summary>
     [Required]
+    [Column(TypeName = "decimal(18,2)")]
     public double AreaToBeFelled { get; set; }
 
     /// <summary>

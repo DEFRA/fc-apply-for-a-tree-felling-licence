@@ -1,0 +1,70 @@
+deployment:
+  kind: DaemonSet 
+  podAnnotations: 
+    co.elastic.logs/enabled : "true"
+    co.elastic.logs/json.keys_under_root: "true"
+    co.elastic.logs/json.overwrite_keys: "false"
+    co.elastic.logs/json.add_error_key: "true"
+
+  additionalContainers:
+    - name: stream-accesslog
+      image: busybox
+      imagePullPolicy: IfNotPresent
+      args:
+        - /bin/sh
+        - -c
+        - tail -n+1 -F /data/access.log
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+        - mountPath: /data
+          name: data
+
+
+logs:
+  general:
+    level: INFO
+    format: json
+  access:
+    enabled: true
+    bufferingSize: 100
+    format: json
+    fields:
+      defaultmode: keep
+      headers:
+        defaultmode: keep
+env:
+  - name: TZ
+    value: Europe/London
+
+resources:
+    requests:
+      cpu: "100m"
+      memory: "50Mi"
+    limits:
+      cpu: "300m"
+      memory: "150Mi"
+
+pilot:
+  enabled: true
+  token: "0d265f1d-7338-4474-bd8b-268228983f77"
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+    addRoutersLabels: true
+
+service:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: devflo.qxlva.io,testflo.qxlva.io,stageflo.qxlva.io,migrateflo.qxlva.io,liveflo.qxlva.io,internaldevflo.qxlva.io,internaltestflo.qxlva.io,internalmigrateflo.qxlva.io,internalstageflo.qxlva.io,internalliveflo.qxlva.io.
+    external-dns.alpha.kubernetes.io/ttl: "60" 
+
+additionalArguments:
+  - --entryPoints.websecure.forwardedHeaders.insecure=true
+  - --serversTransport.insecureSkipVerify=true
+  - --accesslog.filepath=/data/access.log
+  - --entrypoints.websecure.http.tls.options=default@kubernetescrd # Reference to the TLSOption created in tlsoption.yaml
+
+nodeSelector:
+  "environment": "system"

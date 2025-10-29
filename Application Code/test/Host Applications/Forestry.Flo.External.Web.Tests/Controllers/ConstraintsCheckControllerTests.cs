@@ -1,13 +1,9 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-using AutoFixture;
+﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Models;
-using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
@@ -21,6 +17,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Net;
+using System.Net.Http.Headers;
 using ExternalUserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.External.Web.Tests.Controllers;
@@ -69,10 +67,6 @@ public class ConstraintsCheckControllerTests : IClassFixture<ExternalWebApplicat
         var woodlandOwner = _factory.FixtureInstance.Create<WoodlandOwner>();
         _factory.WoodlandOwnerRepositoryMock.Setup(w => w.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<WoodlandOwner, UserDbErrorReason>(woodlandOwner));
-
-        _factory.FellingLicenceApplicationInternalRepositoryMock.Setup(r => r.ListByIncludedStatus(It.IsAny<bool>(),
-            It.IsAny<Guid>(), It.IsAny<List<FellingLicenceStatus>>(),
-            It.IsAny<CancellationToken>())).ReturnsAsync(new List<FellingLicenceApplication> { application });
 
         _factory.FellingLicenceApplicationRepositoryMock.Setup(r => r.GetAsync(application.Id,
             It.IsAny<CancellationToken>())).ReturnsAsync(application);

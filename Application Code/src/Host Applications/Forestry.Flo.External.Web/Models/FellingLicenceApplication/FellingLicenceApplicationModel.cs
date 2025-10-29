@@ -1,4 +1,7 @@
-﻿using Forestry.Flo.Services.FellingLicenceApplications.Models;
+﻿using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication;
@@ -9,21 +12,34 @@ public class FellingLicenceApplicationModel
 
     public FellingLicenceApplicationModel()
     {
+        _steps.Add(FellingLicenceApplicationSection.AgentAuthorityForm, new AgentAuthorityFormModel());
         _steps.Add(FellingLicenceApplicationSection.SelectedCompartments, new SelectedCompartmentsModel());
         _steps.Add(FellingLicenceApplicationSection.ConstraintCheck, new ConstraintCheckModel());
         _steps.Add(FellingLicenceApplicationSection.OperationDetails, new OperationDetailsModel());
         _steps.Add(FellingLicenceApplicationSection.FellingAndRestockingDetails, new FellingAndRestockingDetails());
         _steps.Add(FellingLicenceApplicationSection.SupportingDocumentation, new SupportingDocumentationModel());
         _steps.Add(FellingLicenceApplicationSection.FlaTermsAndConditionsViewModel, new FlaTermsAndConditionsViewModel());
+        _steps.Add(FellingLicenceApplicationSection.EnvironmentalImpactAssessment, new EnvironmentalImpactAssessmentViewModel());
+        _steps.Add(FellingLicenceApplicationSection.TenYearLicence, new TenYearLicenceApplicationViewModel());
     }
     
-    public bool IsComplete => _steps.Values.All(s => s.Status == ApplicationStepStatus.Completed);
+    public bool IsComplete => _steps.Values
+        .Where(x => x.StepRequiredForApplication)
+        .All(s => s.Status == ApplicationStepStatus.Completed);
     
-    public int StepsCount => _steps.Values.Count;
+    public int StepsCount => _steps.Values.Count(x => x.StepRequiredForApplication);
     
-    public int CompletedStepsCount => _steps.Values.Count(s => s.Status == ApplicationStepStatus.Completed);
+    public int CompletedStepsCount => _steps.Values
+        .Where(x => x.StepRequiredForApplication)
+        .Count(s => s.Status == ApplicationStepStatus.Completed);
     
     public FellingLicenceApplicationSummary ApplicationSummary { get; set; } = null!;
+
+    public AgentAuthorityFormModel AgentAuthorityForm
+    {
+        get => (_steps[FellingLicenceApplicationSection.AgentAuthorityForm] as AgentAuthorityFormModel)!;
+        set => _steps[FellingLicenceApplicationSection.AgentAuthorityForm] = value;
+    }
 
     public SelectedCompartmentsModel SelectedCompartments
     {
@@ -61,6 +77,18 @@ public class FellingLicenceApplicationModel
         set =>_steps[FellingLicenceApplicationSection.SupportingDocumentation] = value;
     }
 
+    public EnvironmentalImpactAssessmentViewModel EnvironmentalImpactAssessment
+    {
+        get => (_steps[FellingLicenceApplicationSection.EnvironmentalImpactAssessment] as EnvironmentalImpactAssessmentViewModel)!;
+        set => _steps[FellingLicenceApplicationSection.EnvironmentalImpactAssessment] = value;
+    }
+
+    public TenYearLicenceApplicationViewModel TenYearLicence
+    {
+        get => (_steps[FellingLicenceApplicationSection.TenYearLicence] as TenYearLicenceApplicationViewModel)!;
+        set => _steps[FellingLicenceApplicationSection.TenYearLicence] = value;
+    }
+
     [HiddenInput]
     public Guid ApplicationId { get; set;}
 
@@ -73,6 +101,11 @@ public class FellingLicenceApplicationModel
     public BreadcrumbsModel? Breadcrumbs { get; set; }
 
     public bool HasCaseNotes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current review model for the application, if applicable.
+    /// </summary>
+    public FellingAndRestockingAmendmentReviewModel? CurrentReviewModel { get; set; }
 
     public bool IsCBWapplication
     {

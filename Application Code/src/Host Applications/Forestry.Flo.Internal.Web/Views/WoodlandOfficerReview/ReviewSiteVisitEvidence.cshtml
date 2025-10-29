@@ -1,0 +1,67 @@
+﻿@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.AddSiteVisitEvidenceModel
+
+@{
+    ViewData["Title"] = "Review site visit summary";
+}
+
+<partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
+    
+    <h1 class="govuk-heading-l">
+        @ViewData["Title"]
+    </h1>
+    <p class="govuk-body">Review the confirmed information from the site visit.</p>
+
+    <h2 class="govuk-heading-m">
+        Uploaded evidence
+    </h2>
+
+    <div>
+        @if (Model.SiteVisitEvidenceMetadata.Length == 0)
+        {
+            <div class="govuk-body">No site visit evidence was uploaded.</div>
+        }
+        @foreach (var metadataModel in Model.SiteVisitEvidenceMetadata)
+        {
+            <div class="govuk-body">
+                <h3 class="govuk-heading-s">
+                    @(string.IsNullOrWhiteSpace(metadataModel.Label)
+                        ? metadataModel.FileName
+                        : metadataModel.Label)
+                </h3>
+                <p>
+                    <a class="govuk-link" asp-controller="SupportingDocuments" asp-action="GetDocument" asp-route-id="@Model.ApplicationId" asp-route-documentIdentifier="@metadataModel.SupportingDocumentId">
+                        @metadataModel.FileName
+                    </a>
+                </p>
+                <p class="govuk-body show-line-breaks">
+                    @metadataModel.Comment
+                </p>
+            </div>
+            <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+        }
+    </div>
+    
+    <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>
+
+    <div>
+        <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
+    </div>
+
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

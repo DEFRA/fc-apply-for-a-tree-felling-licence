@@ -1,0 +1,141 @@
+﻿@{
+    ViewData["Title"] = "Check Environmental Impact Assessment (EIA) details";
+    var user = new InternalUser(User);
+}
+@using Forestry.Flo.Services.Common
+@model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.EiaWithFormsPresentViewModel
+
+<div class="govuk-grid-column-two-thirds">
+    
+    <partial name="Partials/_EiaWarning" />
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+    <partial name="Partials/_PageErrors" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <h2 class="govuk-heading-m">Attached EIA documents submitted by the applicant</h2>
+
+    <table class="govuk-table" data-module="moj-sortable-table" id="documentation-list-table">
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header" aria-sort="none">File name</th>
+            <th scope="col" class="govuk-table__header" aria-sort="descending">Date</th>
+        </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+        @foreach (var document in Model.EiaDocumentModels)
+        {
+            <tr class="govuk-table__row" data-id="@document.Id">
+                <td class="govuk-table__cell wrapped-text">
+                    <a class="hidden-download-supporting-document"
+                       asp-controller="SupportingDocuments"
+                       asp-action="GetDocument"
+                       asp-route-id="@Model.ApplicationId"
+                       asp-route-documentIdentifier="@document.Id">
+                        @document.FileName
+                    </a>
+                </td>
+                <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">@DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <form method="post" asp-action="EiaWithFormsPresent">
+        <input hidden="hidden" aria-hidden="True" asp-for="ApplicationId"/>
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset" id="@nameof(Model.AreTheFormsCorrect)">
+                <legend class="govuk-heading-m">
+                    Confirm the attached EIA form(s) are correct?
+                </legend>
+                <validation asp-for="@Model.AreTheFormsCorrect"></validation>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input id="forms-correct-yes"
+                               condition-disabled="@(!Model.Editable(user))"
+                               type="radio"
+                               class="govuk-radios__input"
+                               asp-for="AreTheFormsCorrect"
+                               data-aria-controls="conditional-forms-correct"
+                               value="@true" />
+                        <label class="govuk-label govuk-radios__label" for="forms-correct-yes">
+                            Yes, the EIA forms are correct
+                        </label>
+                    </div>
+                    
+                    <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-forms-correct">
+
+                        <div class="govuk-form-group">
+                            <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+                                <validation asp-for="@Model.EiaProcessInLineWithCode"></validation>
+                                <div class="govuk-checkboxes__item">
+                                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" asp-for="EiaProcessInLineWithCode" type="checkbox">
+                                    <label class="govuk-label govuk-checkboxes__label" asp-for="EiaProcessInLineWithCode">
+                                        Confirm the EIA form has been processed in line with the G&R EIA code
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="govuk-form-group">
+                            <label class="govuk-label" asp-for="EiaTrackerReferenceNumber">
+                                Please provide the EIA tracker reference number
+                            </label>
+                            <validation asp-for="@Model.EiaTrackerReferenceNumber"></validation>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-input" asp-for="EiaTrackerReferenceNumber" type="text">
+                        </div>
+                    </div>
+
+                    <div class="govuk-radios__item">
+                        <input id="forms-correct-no"
+                               condition-disabled="@(!Model.Editable(user))"
+                               type="radio"
+                               class="govuk-radios__input"
+                               value="@false"
+                               asp-for="AreTheFormsCorrect">
+                        <label class="govuk-label govuk-radios__label" for="forms-correct-no">
+                            No, the EIA forms are not correct
+                        </label>
+                    </div>
+
+                </div>
+            </fieldset>
+        </div>
+
+        <button type="submit"
+                condition="@Model.Editable(user)"
+                id="submit-eia-check"
+                class="govuk-button"
+                data-module="govuk-button">
+            Submit EIA check
+        </button>
+        
+        <div id="send-reminder-container" hidden="hidden">
+            <button type="submit"
+                    condition="@Model.Editable(user)"
+                    id="send-reminder"
+                    class="govuk-button"
+                    data-module="govuk-button">
+                Send EIA form reminder
+            </button>
+
+            <p class="govuk-body" condition="@Model.Editable(user)">
+                A reminder will be sent encouraging the applicant to submit the EIA form.
+                It explains that submitting the form may help progress the application sooner.
+            </p>
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <script src="~/js/eia-forms-present.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

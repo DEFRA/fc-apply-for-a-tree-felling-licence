@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -25,7 +26,7 @@ public interface IUpdateAdminOfficerReviewService
         Guid performingUserId,
         DateTime completedDateTime,
         bool isAgencyApplication,
-        bool requireWOReview,
+        bool isSkippingWoReviewForCbw,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -109,6 +110,22 @@ public interface IUpdateAdminOfficerReviewService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Sets the completion status of the EIA (Environmental Impact Assessment) check.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to complete the check for.</param>
+    /// <param name="isAgencyApplication">A flag indicating whether the application is an agency application.</param>
+    /// <param name="performingUserId">The id of the user completing the check.</param>
+    /// <param name="complete">A flag indicating whether the check is complete.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating whether the EIA check has been marked as the correct status.</returns>
+    Task<Result> SetEiaCheckCompletionAsync(
+        Guid applicationId,
+        bool isAgencyApplication,
+        Guid performingUserId,
+        bool complete,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Updates the check passed and failure reason values for agent authority form checks in an admin officer review entity.
     /// </summary>
     /// <param name="applicationId">The id of the application to complete the check for.</param>
@@ -138,5 +155,17 @@ public interface IUpdateAdminOfficerReviewService
         Guid performingUserId,
         bool isCheckPassed,
         string? failureReason,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds a record to the Environmental Impact Assessment (EIA) request history for a given application.
+    /// </summary>
+    /// <param name="record">The <see cref="EnvironmentalImpactAssessmentRequestHistoryRecord"/> containing details of the EIA request to be added.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="UnitResult{UserDbErrorReason}"/> indicating the result of the operation, with an error reason if unsuccessful.
+    /// </returns>
+    Task<UnitResult<UserDbErrorReason>> AddEnvironmentalImpactAssessmentRequestHistoryAsync(
+        EnvironmentalImpactAssessmentRequestHistoryRecord record,
         CancellationToken cancellationToken);
 }

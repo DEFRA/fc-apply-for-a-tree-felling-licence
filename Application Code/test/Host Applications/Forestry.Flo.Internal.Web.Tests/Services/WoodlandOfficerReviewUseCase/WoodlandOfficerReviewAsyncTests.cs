@@ -2,11 +2,8 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Models;
-using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Models.AdminOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -107,6 +104,8 @@ public class WoodlandOfficerReviewAsyncTests: WoodlandOfficerReviewUseCaseTestsB
         Assert.NotNull(result.Value.FellingLicenceApplicationSummary);
         Assert.Equal(review.WoodlandOfficerReviewTaskListStates, result.Value.WoodlandOfficerReviewTaskListStates);
         Assert.Equal(review.RecommendedLicenceDuration, result.Value.RecommendedLicenceDuration);
+        Assert.Equal(review.RecommendationForDecisionPublicRegister, result.Value.RecommendationForDecisionPublicRegister);
+        Assert.Equal(review.RecommendationForDecisionPublicRegisterReason, result.Value.RecommendationForDecisionPublicRegisterReason);
         Assert.Equal(applicationId, result.Value.WoodlandOfficerReviewCommentsFeed.ApplicationId);
         Assert.Equal(hostingPage, result.Value.WoodlandOfficerReviewCommentsFeed.HostingPage);
         Assert.Equal(CaseNoteType.WoodlandOfficerReviewComment, result.Value.WoodlandOfficerReviewCommentsFeed.NewCaseNoteType);
@@ -133,7 +132,9 @@ public class WoodlandOfficerReviewAsyncTests: WoodlandOfficerReviewUseCaseTestsB
             MockAgentAuthorityService.Object,
             GetConfiguredFcAreas.Object,
             Clock.Object,
+            WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
+            MockBus.Object,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

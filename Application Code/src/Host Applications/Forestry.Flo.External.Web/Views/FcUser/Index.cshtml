@@ -4,9 +4,9 @@
     ViewData["Title"] = "FC user dashboard";
 }
 
-<div class="govuk-grid-column-full">
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-xl">FC user dashboard</h1>
     
@@ -251,8 +251,4 @@
     {
         <p class="govuk-body">None found</p>
     }
-
-    <a class="govuk-link" asp-controller="LegacyDocuments" asp-action="Index">
-        View all legacy documents from FLOv1
-    </a>
 </div>

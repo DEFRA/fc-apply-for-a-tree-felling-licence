@@ -1,9 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 
@@ -87,17 +86,29 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Lists submitted felling licence applications according to user options selection
+    /// Lists submitted felling licence applications according to user options selection, with paging, ordering and optional text search
+    /// across reference, property and assignee names.
     /// </summary>
-    /// <param name="assignedToUserAccountIdOnly"></param>
-    /// <param name="userId">The user identifier.</param>
-    /// <param name="userFellingLicenceSelectionOptions">The user felling licence selection options.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="assignedToUserAccountIdOnly">If true, restrict results to applications currently assigned to <paramref name="userId"/>; otherwise include all.</param>
+    /// <param name="userId">The user identifier used when filtering by current assignment.</param>
+    /// <param name="userFellingLicenceSelectionOptions">The set of felling licence statuses to include.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="pageNumber">The 1-based page number to return.</param>
+    /// <param name="pageSize">The number of items to return per page.</param>
+    /// <param name="orderBy">The field to order by (for example: Reference, PropertyName, SubmittedOn, CurrentStatus, Assignee).</param>
+    /// <param name="sortDirection">The sort direction: "asc" or "desc" (case-insensitive).</param>
+    /// <param name="searchText">Optional free text to search across application reference, property name and current assignee names.</param>
+    /// <returns>A list of applications in the requested page that match the filter, ordering and optional search criteria.</returns>
     Task<IList<FellingLicenceApplication>> ListByIncludedStatus(
         bool assignedToUserAccountIdOnly,
         Guid userId,
         IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        int pageNumber,
+        int pageSize,
+        string orderBy,
+        string sortDirection,
+        string? searchText = null);
 
     /// <summary>
     /// Adds an external access link for an invited external consultee.
@@ -118,16 +129,16 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Returns a list of application external links for a given user,an application id and a purpose.
+    /// Returns a list of application external links for a given application id and purpose.
     /// </summary>
     /// <param name="applicationId">The id of the application</param>
-    /// <param name="name">The consultee name</param>
-    /// <param name="userEmail">The user email</param>
     /// <param name="purpose">The purpose of providing access</param>
     /// <param name="cancellationToken">A cancellation token</param>
     /// <returns>The list of external links</returns>
-    Task<IList<ExternalAccessLink>> GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(Guid applicationId,
-        string name, string userEmail, string purpose, CancellationToken cancellationToken);
+    Task<IList<ExternalAccessLink>> GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(
+        Guid applicationId,
+        ExternalAccessLinkType purpose, 
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the proposed felling and restocking details for the application with the given id.
@@ -146,8 +157,8 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The confirmed felling and restocking details for the application.</returns>
     Task<Result<(List<ConfirmedFellingDetail>, List<ConfirmedRestockingDetail>)>> GetConfirmedFellingAndRestockingDetailsForApplicationAsync(
-            Guid applicationId,
-            CancellationToken cancellationToken);
+        Guid applicationId,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves the woodland officer review entity for the application with the given id.
@@ -280,12 +291,12 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// a specific author email address.
     /// </summary>
     /// <param name="applicationId">The id of the felling licence application to retrieve comments for.</param>
-    /// <param name="emailAddress">An optional email address of the author to retrieve comments for.</param>
+    /// <param name="accessCode">An optional access code of the external access link to retrieve comments for.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A list of existing consultee comments for the given application and author email.</returns>
     Task<IList<ConsulteeComment>> GetConsulteeCommentsAsync(
         Guid applicationId,
-        string? emailAddress,
+        Guid? accessCode,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -433,6 +444,10 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <returns>
     /// A <see cref="Result{T, TError}"/> containing a list of <see cref="SubmittedFlaPropertyCompartment"/> if successful.
     /// </returns>
+    /// <remarks>
+    /// Returns the compartment entity and linked <see cref="SubmittedCompartmentDesignations"/>, but does not include
+    /// felling and restocking details, which should be retrieved separately if required.
+    /// </remarks>
     Task<Result<List<SubmittedFlaPropertyCompartment>>> GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(
         Guid applicationId,
         CancellationToken cancellationToken);
@@ -445,5 +460,162 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <returns>A list of documents linked to the specified application.</returns>
     Task<List<Document>> GetApplicationDocumentsAsync(
         Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes a site visit evidence entity from the repository.
+    /// </summary>
+    /// <param name="evidence">The entity to be removed.</param>
+    void RemoveSiteVisitEvidenceAsync(SiteVisitEvidence evidence);
+
+    /// <summary>
+    /// Retrieves a summary for submitted felling licence applications based on the user's included status selection.
+    /// </summary>
+    /// <param name="assignedToUserAccountIdOnly">Indicates if the results should be filtered to only those assigned to the user's account ID.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="userFellingLicenceSelectionOptions">The user's selected felling licence status options.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Summary containing total, assigned-to-user count, and status distribution.</returns>
+    Task<IncludedApplicationsSummary> TotalIncludedApplicationsAsync(
+        bool assignedToUserAccountIdOnly,
+        Guid userId,
+        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves a summary for submitted felling licence applications based on the user's included status selection and optional search text.
+    /// </summary>
+    /// <param name="assignedToUserAccountIdOnly">Indicates if results should be filtered to only those assigned to the user's account ID.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="userFellingLicenceSelectionOptions">The user's selected felling licence status options.</param>
+    /// <param name="searchText">Optional search text to filter by reference, property name, or current assignee names.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Summary containing total, assigned-to-user count, and status distribution for the filtered set.</returns>
+    Task<IncludedApplicationsSummary> TotalIncludedApplicationsAsync(
+        bool assignedToUserAccountIdOnly,
+        Guid userId,
+        IList<FellingLicenceStatus> userFellingLicenceSelectionOptions,
+        string? searchText,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the Environmental Impact Assessment record for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the felling licence application to update.</param>
+    /// <param name="eiaRecord">The <see cref="EnvironmentalImpactAssessmentRecord"/> containing updated EIA details.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating success or failure of the update operation.
+    /// </returns>
+    Task<UnitResult<UserDbErrorReason>> UpdateEnvironmentalImpactAssessmentAsync(
+        Guid applicationId,
+        EnvironmentalImpactAssessmentRecord eiaRecord,
+        CancellationToken cancellationToken);
+
+
+    /// <summary>
+    /// Updates the Environmental Impact Assessment record for the specified application as an Admin Officer.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the felling licence application to update.</param>
+    /// <param name="eiaRecord">The <see cref="EnvironmentalImpactAssessmentAdminOfficerRecord"/> containing updated EIA details from the Admin Officer.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="UnitResult{UserDbErrorReason}"/> indicating success or failure of the update operation.
+    /// </returns>
+    Task<UnitResult<UserDbErrorReason>> UpdateEnvironmentalImpactAssessmentAsAdminOfficerAsync(
+        Guid applicationId,
+        EnvironmentalImpactAssessmentAdminOfficerRecord eiaRecord,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the Environmental Impact Assessment entity for the application with the given id.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to retrieve the EIA details for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The Environmental Impact Assessment entity for the application.</returns>
+    Task<Result<EnvironmentalImpactAssessment>> GetEnvironmentalImpactAssessmentAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds a new Environmental Impact Assessment request history record to the repository.
+    /// </summary>
+    /// <param name="record">The <see cref="EnvironmentalImpactAssessmentRequestHistoryRecord"/> to add.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="UnitResult{UserDbErrorReason}"/> indicating whether the record was successfully added,
+    /// or a <see cref="UserDbErrorReason"/> if unsuccessful.
+    /// </returns>
+    Task<UnitResult<UserDbErrorReason>> AddEnvironmentalImpactAssessmentRequestHistoryAsync(
+        EnvironmentalImpactAssessmentRequestHistoryRecord record,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets all applications that are currently on the Consultation Public Register (i.e. not removed).
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of <see cref="FellingLicenceApplication"/> entities that are on the Consultation Public Register.</returns>
+    Task<IList<FellingLicenceApplication>> GetApplicationsOnConsultationPublicRegisterPeriodsAsync(
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves all felling and restocking amendment reviews for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve amendment reviews for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing a collection of <see cref="FellingAndRestockingAmendmentReview"/> instances.
+    /// </returns>
+    Task<Result<IEnumerable<FellingAndRestockingAmendmentReview>>> GetFellingAndRestockingAmendmentReviewsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the current (most recent) felling and restocking amendment review for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to retrieve the current amendment review for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="includeComplete">A flag indicating whether to include completed reviews. Defaults to true.</param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> containing the current <see cref="FellingAndRestockingAmendmentReview"/> instance.
+    /// </returns>
+    Task<Result<Maybe<FellingAndRestockingAmendmentReview>>> GetCurrentFellingAndRestockingAmendmentReviewAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken,
+        bool includeComplete = true);
+    Task AddFellingAndRestockingAmendmentReviewAsync(FellingAndRestockingAmendmentReview fellingAndRestockingAmendmentReview, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets the AmendmentReviewCompleted flag for a specific FellingAndRestockingAmendmentReview.
+    /// </summary>
+    /// <param name="amendmentReviewId">The unique identifier of the amendment review to update.</param>
+    /// <param name="reviewCompleted">True to mark the review as completed, false otherwise.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>A <see cref="UnitResult{UserDbErrorReason}"/> indicating success or failure of the update operation.</returns>
+    Task<UnitResult<UserDbErrorReason>> SetAmendmentReviewCompletedAsync(Guid amendmentReviewId, bool reviewCompleted, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets all applications that have an active felling and restocking amendment review where a reminder notification
+    /// should be sent because the current time is within the configured reminder period prior to the response deadline,
+    /// but no reminder notification has yet been issued.
+    /// </summary>
+    /// <param name="currentTime">The current date / time (UTC).</param>
+    /// <param name="reminderPeriod">The period before the response deadline at which a reminder should be sent.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of applications requiring an amendment review reminder notification.</returns>
+    Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentNotificationAsync(
+        DateTime currentTime,
+        TimeSpan reminderPeriod,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets all applications that have an active felling and restocking amendment review where the response deadline has passed
+    /// (i.e. the applicant has not responded in time) and the application is still WithApplicant or ReturnedToApplicant.
+    /// </summary>
+    /// <param name="currentTime">The current date / time (UTC).</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of applications whose amendment response deadlines have passed.</returns>
+    Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentWithdrawalAsync(
+        DateTime currentTime,
         CancellationToken cancellationToken);
 }

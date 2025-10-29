@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.User;
@@ -22,7 +23,7 @@ public class RevertApplicationFromWithdrawnUseCase(
     IAuditService<RevertApplicationFromWithdrawnUseCase> auditService,
     RequestContext requestContext,
     IUpdateFellingLicenceApplication updateFellingLicenceApplicationService,
-    ILogger<RevertApplicationFromWithdrawnUseCase> logger)
+    ILogger<RevertApplicationFromWithdrawnUseCase> logger) : IRevertApplicationFromWithdrawnUseCase
 {
     private readonly IAuditService<RevertApplicationFromWithdrawnUseCase> _auditService = Guard.Against.Null(auditService);
     private readonly RequestContext _requestContext = Guard.Against.Null(requestContext);

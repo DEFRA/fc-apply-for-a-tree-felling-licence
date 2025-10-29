@@ -25,6 +25,12 @@ public enum ActivityFeedItemType
     [Display(Name = "Larch check comment"), ActivityFeedItemType(ActivityFeedItemCategory.CaseNote)]
     LarchCheckComment,
 
+    [Display(Name = "Cricket bat willow check comment"), ActivityFeedItemType(ActivityFeedItemCategory.CaseNote)]
+    CBWCheckComment,
+
+    [Display(Name = "Approver review comment"), ActivityFeedItemType(ActivityFeedItemCategory.CaseNote)]
+    ApproverReviewComment,
+
     // Notifications
 
     [Display(Name = "Assigned user changed"), ActivityFeedItemType(ActivityFeedItemCategory.Notification)]
@@ -84,5 +90,11 @@ public enum ActivityFeedItemType
     InformApplicantOfApplicationReferredToLocalAuthority,
     
     [Display(Name = "Application extended"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
-    InformApplicantOfApplicationExtension
+    InformApplicantOfApplicationExtension,
+
+
+    [Display(Name = "Applicant amendment"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
+    AmendmentApplicantReason,
+    [Display(Name = "Woodland officer amendment"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
+    AmendmentOfficerReason,
 }

@@ -108,6 +108,26 @@ config:
     signedOutCallbackPath:
     # -- The sign-up sign-in policy id of the Azure AD B2C instance for user registration
     signUpSignInPolicyId:
+  govUkOneLoginOptions:
+    # A unique client ID used to identify the application with GOV.UK One Login.
+    clientId:
+    # The callback path where the user will be redirected after authentication.
+    callbackPath:
+    # The environment for GOV.UK One Login (e.g., Integration, Production).
+    environment:
+    # A collection of signing key options used for signing authentication requests.
+    signingKeys:
+      # Each signing key should contain a private key in PEM format.
+      - privateKeyPem:
+    # The name of the correlation cookie used for GOV.UK One Login authentication.
+    correlationCookieName:
+    # The name of the nonce cookie used for GOV.UK One Login authentication.
+    nonceCookieName:
+    # The vectors of trust for GOV.UK One Login authentication.
+    vectorsOfTrust:
+  authenticationOptions:
+    # The identity provider to use for authentication (eg., OneLogin, Azure)
+    provider:
   azureAD:
     # -- The URL of the Azure AD instance
     instance: "https://login.microsoftonline.com/"
@@ -240,6 +260,13 @@ config:
       enabled:
       # -- The tracking id for Microsoft Clarity
       trackingId:
+  eiaOptions:
+      # -- The external URI for EIA guidance
+      eiaApplicationExternalUri:
+      # -- The contact email for EIA queries, included in notifications
+      eiaContactEmail:
+      # -- The contact phone for EIA queries, included in notifications
+      eiaContactPhone:
   GovUkNotifyOptions:
     enabled: false
     ApiKey:
@@ -304,10 +331,10 @@ config:
       # --Inform Applicant of Larch in mixed Zones
       InformApplicantOfReturnedApplicationLarchOnlyMixZone: 
   # -- Allowed Email Domains for Internal Users
-  permittedRegisteredUser:
+  PermittedRegisteredUser:
     enabled: false
     # -- Allowed Email Domains
-    permittedEmailDomainsForRegisteredUser:
+    PermittedEmailDomainsForRegisteredUser:
       - "qxlva.com"
       - "forestrycommission.gov.uk"
       - "harriscomputer.com"
@@ -369,6 +396,8 @@ config:
         NeedsToken: false
         IsPublic: true
         IntersectService:
+          Path: ""
+        AreaService:
           Path: ""
         ProjectService:
           Path: ""

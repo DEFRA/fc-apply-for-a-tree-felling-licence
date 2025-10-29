@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Moq;
+﻿using Moq;
 using Moq.Protected;
 using System.Net;
 using System.Net.Http.Headers;
@@ -17,8 +16,8 @@ public partial class PublicRegisterTests
         var sut = CreateSUT();
         var result = await sut.RemoveCaseFromConsultationRegisterAsync(0, "case", DateTime.Now, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Object ID not correctly set");
+        Assert.True(result.IsFailure);
+        Assert.Equal("Object ID not correctly set", result.Error);
     }
 
     [Fact]
@@ -30,8 +29,8 @@ public partial class PublicRegisterTests
         var sut = CreateSUT();
         var result = await sut.RemoveCaseFromConsultationRegisterAsync(3, "", DateTime.Now, CancellationToken.None);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("No Case Reference given");
+        Assert.True(result.IsFailure);
+        Assert.Equal("No Case Reference given", result.Error);
     }
 
 
@@ -55,8 +54,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Unable to connect to the esri service");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Unable to connect to the esri service", response.Error);
     }
 
     [Fact]
@@ -89,8 +88,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Updated the Boundary, Updating Compartments returned 'Empty message from ESRI'");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Updated the Boundary, Updating Compartments returned 'Empty message from ESRI'", response.Error);
     }
 
     [Fact]
@@ -130,8 +129,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Updated the Boundary, Updating Compartments returned 'No Results'");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Updated the Boundary, Updating Compartments returned 'No Results'", response.Error);
     }
 
     [Fact]
@@ -164,8 +163,8 @@ public partial class PublicRegisterTests
 
         _mockHttpHandler.VerifyAll();
 
-        response.IsFailure.Should().BeTrue();
-        response.Error.Should().Be("Updated the Boundary, Updating Compartments returned 'Unable to connect to the esri service'");
+        Assert.True(response.IsFailure);
+        Assert.Equal("Updated the Boundary, Updating Compartments returned 'Unable to connect to the esri service'", response.Error);
     }
 
 
@@ -195,6 +194,6 @@ public partial class PublicRegisterTests
 
         var response = await sut.RemoveCaseFromConsultationRegisterAsync(3, "case", DateTime.Now, CancellationToken.None);
 
-        response.IsSuccess.Should().BeTrue();
+        Assert.True(response.IsSuccess);
     }
 }

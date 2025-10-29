@@ -16,17 +16,18 @@
     var user = new InternalUser(User);
     var isActiveOnRegister = Model.PublicRegister.ConsultationPublicRegisterExpiryTimestamp.HasValue && 
                              Model.PublicRegister.ConsultationPublicRegisterRemovedTimestamp.HasNoValue();
+    var hasUnreviewedComments = Model.ReceivedPublicRegisterComments.Any(x => !x.Reviewed);
 }
 
-<div class="govuk-grid-column-full">
-    
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
-    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+<partial name="Partials/_PageErrors"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
-    <partial name="Partials/_PageErrors"/>
     
     @if (!Model.PublicRegister.ConsultationPublicRegisterPublicationTimestamp.HasValue)
     {
@@ -92,7 +93,7 @@
                         Select 'Yes' if the application meets the exemption criteria.
                     </div>
                     <div class="govuk-form-group" condition="@Model.Editable(user)">
-                        <label asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays" class="govuk-body govuk-label--s">Period on public register (days)</label>
+                        <label for="pr-period-days" class="govuk-body govuk-label--s">Period on public register (days)</label>
                         <validation asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays"></validation>
 
                         <div class="govuk-input__wrapper">
@@ -103,15 +104,13 @@
                 </fieldset>
                 
                 <br/>
-
-                <fieldset class="govuk-fieldset" id="publish-to-pr">
-                    <div class="govuk-button-group">
-                        <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
-                            Publish to public register
-                        </button>
-                        <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
-                    </div>
-                </fieldset>
+                
+                <div class="govuk-button-group">
+                    <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
+                        Publish to public register
+                    </button>
+                    <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
+                </div>
             </div>
         </form>
 
@@ -163,7 +162,7 @@
                 </div>
                 <div class="govuk-grid-row">
                     <div class="govuk-grid-column-full govuk-button-group">
-                        <button condition="@Model.Editable(user)" type="submit" class="govuk-button">
+                        <button condition="@Model.Editable(user)" condition-disabled="@hasUnreviewedComments" type="submit" class="govuk-button">
                             Remove from public register
                         </button>
                     </div>
@@ -180,15 +179,27 @@
                     @if (Model.ReceivedPublicRegisterComments.Any())
                     {
                         <table class="govuk-table">
+                            <thead class="govuk-table__head">
+                                <tr class="govuk-table__row">
+                                    <th scope="col" class="govuk-table__header">Date submitted</th>
+                                    <th scope="col" class="govuk-table__header">Comment</th>
+                                    <th scope="col" class="govuk-table__header">Status</th>
+									<th scope="col" class="govuk-table__header">Actions</th>
+								</tr>
+                            </thead>
                             <tbody class="govuk-table__body">
 
                             @foreach (var notification in Model.ReceivedPublicRegisterComments.OrderByDescending(x => x.CreatedTimestamp))
                             {
                                 <tr class="govuk-table__row">
-                                    <td class="govuk-table__cell">@notification.Source</td>
-                                    <td class="govuk-table__cell">@notification.Text</td>
-                                    <td class="govuk-table__cell">@notification.CreatedTimestamp.ToString("g")</td>
-                                </tr>
+										<td class="govuk-table__cell">@notification.CreatedTimestamp.ToString("g")</td>
+                                        <td class="govuk-table__cell">@notification.Text</td>
+                                        <td class="govuk-table__cell">@notification.Status</td>
+                                        <td class="govuk-table__cell">
+                                            <a class="govuk-link" asp-action="ReviewComment" condition="@Model.Editable(user)"
+                                               asp-route-id="@Model.ApplicationId" asp-route-commentId="@notification.Id">View</a>
+                                        </td>
+                                    </tr>
                             }
                             </tbody>
                         </table>

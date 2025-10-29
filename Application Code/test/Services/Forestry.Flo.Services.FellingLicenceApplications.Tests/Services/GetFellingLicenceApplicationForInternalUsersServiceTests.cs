@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using FluentAssertions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -16,7 +15,7 @@ using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
 
-public class GetFellingLicenceApplicationForInternalUsersServiceTests
+public partial class GetFellingLicenceApplicationForInternalUsersServiceTests
 {
     private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepository = new();
     private readonly Mock<IClock> _clock = new();
@@ -250,14 +249,15 @@ public class GetFellingLicenceApplicationForInternalUsersServiceTests
 
         // verify all applications have been retrieved
 
-        result.Count.Should().Be(fellingLicenceApplications.Count);
+        Assert.Equal(fellingLicenceApplications.Count, result.Count);
 
         foreach (var application in fellingLicenceApplications)
         {
             var periodEndModel = result.FirstOrDefault(x => x.ApplicationReference == application.ApplicationReference);
-            periodEndModel.Should().NotBeNull();
-            periodEndModel!.PublicRegister.Should().Be(application.PublicRegister);
-            periodEndModel.AssignedUserIds!.Count.Should().Be(application.AssigneeHistories.Count(x => x.Role == AssignedUserRole.FieldManager));
+            Assert.NotNull(periodEndModel);
+            Assert.Equal(application.PublicRegister, periodEndModel!.PublicRegister);
+            Assert.Equal(application.AssigneeHistories.Count(x => x.Role == AssignedUserRole.FieldManager),
+                periodEndModel.AssignedUserIds!.Count);
         }
 
         _fellingLicenceApplicationRepository.Verify(v => v.GetFinalisedApplicationsWithExpiredDecisionPublicRegisterPeriodsAsync(_currentTime,CancellationToken.None), Times.Once);
@@ -283,14 +283,14 @@ public class GetFellingLicenceApplicationForInternalUsersServiceTests
 
         // verify all applications have been retrieved
 
-        result.Count.Should().Be(fellingLicenceApplications.Count);
+        Assert.Equal(fellingLicenceApplications.Count, result.Count);
 
         foreach (var application in fellingLicenceApplications)
         {
             var periodEndModel = result.FirstOrDefault(x => x.ApplicationReference == application.ApplicationReference);
-            periodEndModel.Should().NotBeNull();
-            periodEndModel!.PublicRegister.Should().Be(application.PublicRegister);
-            periodEndModel.AssignedUserIds!.Count.Should().Be(application.AssigneeHistories.Count(x => x.Role == AssignedUserRole.FieldManager));
+            Assert.NotNull(periodEndModel);
+            Assert.Equal(application.PublicRegister, periodEndModel!.PublicRegister);
+            Assert.Equal(application.AssigneeHistories.Count(x => x.Role == AssignedUserRole.FieldManager), periodEndModel.AssignedUserIds!.Count);
         }
 
         _fellingLicenceApplicationRepository.Verify(v => v.GetApplicationsWithExpiredConsultationPublicRegisterPeriodsAsync(_currentTime, CancellationToken.None), Times.Once);
@@ -326,14 +326,14 @@ public class GetFellingLicenceApplicationForInternalUsersServiceTests
 
             // verify all applications have been retrieved
 
-            result.Count.Should().Be(fellingLicenceApplications.Count);
+            Assert.Equal(fellingLicenceApplications.Count, result.Count);
 
             foreach (var application in fellingLicenceApplications)
             {
                 var periodEndModel = result.FirstOrDefault(x => x.ApplicationReference == application.ApplicationReference);
-                periodEndModel.Should().NotBeNull();
-                periodEndModel!.PublicRegister.Should().Be(application.PublicRegister);
-                periodEndModel.AssignedUserIds!.Should().BeEmpty();
+                Assert.NotNull(periodEndModel);
+                Assert.Equal(application.PublicRegister, periodEndModel!.PublicRegister);
+                Assert.Empty(periodEndModel.AssignedUserIds!);
             }
 
             _fellingLicenceApplicationRepository.Verify(v => v.GetFinalisedApplicationsWithExpiredDecisionPublicRegisterPeriodsAsync(_currentTime, CancellationToken.None), Times.Once);
@@ -351,7 +351,7 @@ public class GetFellingLicenceApplicationForInternalUsersServiceTests
 
         var result = await sut.RetrieveFinalisedApplicationsHavingExpiredOnTheDecisionPublicRegisterAsync(CancellationToken.None);
 
-        result.Should().BeEmpty();
+        Assert.Empty(result);
 
         _fellingLicenceApplicationRepository.Verify(v => v.GetFinalisedApplicationsWithExpiredDecisionPublicRegisterPeriodsAsync(_currentTime, CancellationToken.None), Times.Once);
     }
@@ -372,7 +372,7 @@ public class GetFellingLicenceApplicationForInternalUsersServiceTests
 
         // verify all applications have been retrieved
 
-        result.HasValue.Should().BeFalse();
+        Assert.False(result.HasValue);
 
     }
 
@@ -390,15 +390,58 @@ public class GetFellingLicenceApplicationForInternalUsersServiceTests
 
         // verify all applications have been retrieved
 
-        result.HasValue.Should().BeTrue();
+        Assert.True(result.HasValue);
 
-        result.Value.PublicRegister.Should().Be(fellingLicenceApplication.PublicRegister);
-        result.Value.ApplicationReference.Should().Be(fellingLicenceApplication.ApplicationReference);
-        result.Value.PropertyName.Should().Be(fellingLicenceApplication.SubmittedFlaPropertyDetail?.Name);
-        result.Value.AdminHubName.Should().Be(fellingLicenceApplication.AdministrativeRegion);
-        result.Value.AssignedUserIds.Should().BeEquivalentTo(fellingLicenceApplication.AssigneeHistories
-            .Where(x => x.TimestampUnassigned is null).Select(y => y.AssignedUserId).ToList());
+        Assert.Equal(fellingLicenceApplication.PublicRegister, result.Value.PublicRegister);
+        Assert.Equal(fellingLicenceApplication.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(fellingLicenceApplication.SubmittedFlaPropertyDetail?.Name, result.Value.PropertyName);
+        Assert.Equal(fellingLicenceApplication.AdministrativeRegion, result.Value.AdminHubName);
+        Assert.Equivalent(fellingLicenceApplication.AssigneeHistories
+            .Where(x => x.TimestampUnassigned is null).Select(y => y.AssignedUserId).ToList(), result.Value.AssignedUserIds);
+    }
 
+    [Theory, AutoMoqData]
+    public async Task GetSubmittedFlaPropertyCompartmentsByApplicationIdTest(
+        Guid applicationId,
+        List<SubmittedFlaPropertyCompartment> compartments)
+    {
+        var sut = CreateSut();
+        var expectedResult = Result.Success(compartments);
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResult);
+
+        var result = await sut.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedResult.Value, result.Value);
+
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task GetEnvironmentalImpactAssessmentTest(
+        Guid applicationId,
+        EnvironmentalImpactAssessment entity)
+    {
+        var sut = CreateSut();
+        var expectedResult = Result.Success(entity);
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetEnvironmentalImpactAssessmentAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResult);
+
+        var result = await sut.GetEnvironmentalImpactAssessmentAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expectedResult.Value, result.Value);
+
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetEnvironmentalImpactAssessmentAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
     }
 
     private GetFellingLicenceApplicationForInternalUsersService CreateSut()

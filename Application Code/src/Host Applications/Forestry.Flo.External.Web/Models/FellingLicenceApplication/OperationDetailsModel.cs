@@ -62,4 +62,10 @@ public class OperationDetailsModel: ApplicationStepBase, IApplicationWithBreadcr
     /// </summary>
     [MaxLength(400)]
     public string? Measures { get; set; } = null!;
+
+    /// <summary>
+    /// Gets and sets a flag indicating whether this application is for a ten-year licence, in order
+    /// to calculate the back link for this page.
+    /// </summary>
+    public bool? IsForTenYearLicence { get; set; }
 }

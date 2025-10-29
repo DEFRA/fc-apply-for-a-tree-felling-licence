@@ -1,9 +1,11 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.PropertyProfiles;
 using Forestry.Flo.Services.PropertyProfiles.Entities;
@@ -15,11 +17,12 @@ public class ApplicationUseCaseCommon
 {
     private readonly IRetrieveWoodlandOwners _retrieveWoodlandOwnersService;
     private readonly IRetrieveUserAccountsService _retrieveUserAccountsService;
-    protected readonly IGetFellingLicenceApplicationForExternalUsers GetFellingLicenceApplicationServiceForExternalUsers;
     private readonly IGetPropertyProfiles _getPropertyProfilesService;
     private readonly IGetCompartments _getCompartmentsService;
     private readonly IAgentAuthorityService _agentAuthorityService;
     private readonly ILogger<ApplicationUseCaseCommon> _logger;
+
+    protected readonly IGetFellingLicenceApplicationForExternalUsers GetFellingLicenceApplicationServiceForExternalUsers;
 
     public ApplicationUseCaseCommon(
         IRetrieveUserAccountsService retrieveUserAccountsService,
@@ -177,14 +180,21 @@ public class ApplicationUseCaseCommon
             .ConfigureAwait(false);
     }
 
-    protected async Task<WoodlandOwnerWithAgencyRecord> GetWoodlandOwnerNameAndAgencyForApplication(
+    protected async Task<Result<WoodlandOwnerWithAgencyRecord>> GetWoodlandOwnerNameAndAgencyForApplication(
         FellingLicenceApplication application, 
         CancellationToken cancellationToken)
     {
         var getWoodlandOwnerDetailsResult = await GetApplicationWoodlandOwnerNameByIdAsync(application.WoodlandOwnerId, cancellationToken);
+        if (getWoodlandOwnerDetailsResult.IsFailure)
+        {
+            _logger.LogError("Could not retrieve woodland owner name detail for {WoodlandOwnerId}, error was {Error}",
+                application.WoodlandOwnerId, getWoodlandOwnerDetailsResult.Error);
+            return Result.Failure<WoodlandOwnerWithAgencyRecord>(getWoodlandOwnerDetailsResult.Error);
+        }
+
         var getAgencyDetailsResult = await GetApplicationAgencyNameAsync(application.WoodlandOwnerId, cancellationToken);
 
-        var woodlandOwnerName = getWoodlandOwnerDetailsResult.IsSuccess ? getWoodlandOwnerDetailsResult.Value : null;
+        var woodlandOwnerName = getWoodlandOwnerDetailsResult.Value;
         var agencyName = getAgencyDetailsResult.HasValue ? getAgencyDetailsResult.Value : null;
 
         return new WoodlandOwnerWithAgencyRecord(agencyName, woodlandOwnerName);
@@ -197,11 +207,89 @@ public class ApplicationUseCaseCommon
         return _agentAuthorityService.GetAgencyForWoodlandOwnerAsync(woodlandOwnerId, cancellationToken);
     }
 
+    public async Task<Maybe<AgentAuthorityModel>> GetWoodlandOwnerAafAsync(
+        Guid woodlandOwnerId,
+        CancellationToken cancellationToken)
+    {
+        return await _agentAuthorityService.GetAgentAuthorityForWoodlandOwnerAsync(woodlandOwnerId, cancellationToken);
+    }
+
     protected Task<Result<WoodlandOwnerModel>> GetWoodlandOwnerByIdAsync(
         Guid woodlandOwnerId,
         CancellationToken cancellationToken)
     {
         return _retrieveWoodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(woodlandOwnerId, cancellationToken);
+    }
+
+    protected async Task<Result<FellingLicenceApplicationSummary>> GetApplicationSummaryAsync(
+        FellingLicenceApplication application,
+        ExternalApplicant user,
+        CancellationToken cancellationToken)
+    {
+        var userAccess = await GetUserAccessModelAsync(user, cancellationToken);
+
+        if (userAccess.IsFailure)
+        {
+            return Result.Failure<FellingLicenceApplicationSummary>($"Attempt to retrieve summary for application with id: {application.Id} by user with Id of {user.UserAccountId} resulted in access being denied");
+        }
+
+        string? propertyName = null;
+        string? propertyNameOfWood = null;
+
+        if (application.IsInApplicantEditableState() == false)
+        {
+            var submittedProperty = await GetFellingLicenceApplicationServiceForExternalUsers
+                .GetExistingSubmittedFlaPropertyDetailAsync(application.Id, userAccess.Value, cancellationToken);
+
+            if (submittedProperty.IsFailure)
+            {
+                _logger.LogWarning("Unable to get submitted property for application, error : {Error}", submittedProperty.Error);
+                return submittedProperty.ConvertFailure<FellingLicenceApplicationSummary>();
+            }
+
+            if (submittedProperty.Value.HasValue)
+            {
+                propertyName = submittedProperty.Value.Value.Name;
+                propertyNameOfWood = submittedProperty.Value.Value.NameOfWood;
+            }
+        }
+        else
+        {
+            var profile = await GetPropertyProfileByIdAsync(
+                application.LinkedPropertyProfile!.PropertyProfileId,
+                user,
+                cancellationToken);
+
+            if (profile.IsFailure)
+            {
+                _logger.LogWarning("Unable to get property for application, error : {Error}", profile.Error);
+                return profile.ConvertFailure<FellingLicenceApplicationSummary>();
+            }
+
+            propertyName = profile.Value.Name;
+            propertyNameOfWood = profile.Value.NameOfWood;
+        }
+
+        var woodlandOwnerNameAndAgencyDetails =
+            await GetWoodlandOwnerNameAndAgencyForApplication(application, cancellationToken);
+
+        if (woodlandOwnerNameAndAgencyDetails.IsFailure)
+        {
+            _logger.LogWarning("Unable to get woodland owner name and agency for application, error : {Error}", woodlandOwnerNameAndAgencyDetails.Error);
+            return woodlandOwnerNameAndAgencyDetails.ConvertFailure<FellingLicenceApplicationSummary>();
+        }
+
+        return new FellingLicenceApplicationSummary(
+            application.Id,
+            application.ApplicationReference,
+            application.GetCurrentStatus(),
+            propertyName,
+            application.LinkedPropertyProfile?.PropertyProfileId ?? Guid.Empty,
+            propertyNameOfWood,
+            application.WoodlandOwnerId,
+            woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
+            woodlandOwnerNameAndAgencyDetails.Value.AgencyName);
+
     }
 
     private async Task<Result<string>> GetApplicationWoodlandOwnerNameByIdAsync(
@@ -212,7 +300,7 @@ public class ApplicationUseCaseCommon
 
         if (woodlandOwnerResult.IsFailure)
         {
-            _logger.LogError("Could not retrieve woodland owner name detail for {woodlandOwnerId}, error was {error}",
+            _logger.LogError("Could not retrieve woodland owner name detail for {WoodlandOwnerId}, error was {Error}",
                 woodlandOwnerId, woodlandOwnerResult.Error);
            
             return Result.Failure<string>(woodlandOwnerResult.Error);

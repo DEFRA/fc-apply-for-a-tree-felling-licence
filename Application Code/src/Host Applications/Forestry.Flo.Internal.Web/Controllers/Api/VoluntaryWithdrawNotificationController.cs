@@ -2,6 +2,7 @@
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,8 +20,8 @@ public class VoluntaryWithdrawNotificationController : ControllerBase
 
     [Route("VoluntaryWithdrawalNotificationFla")]
     public async Task<IActionResult> SendVoluntaryWithdrawalNotificatons(
-        [FromServices] VoluntaryWithdrawalNotificationUseCase sendNotificationForWithdrawnApplications,
-        [FromServices] AutomaticWithdrawalNotificationUseCase automaticWithdrawalNotificationUseCase,
+        [FromServices] IVoluntaryWithdrawalNotificationUseCase sendNotificationForWithdrawnApplications,
+        [FromServices] IAutomaticWithdrawalNotificationUseCase automaticWithdrawalNotificationUseCase,
         [FromServices] IWithdrawFellingLicenceService _withdrawFellingLicenceService,
         CancellationToken cancellationToken)
     {

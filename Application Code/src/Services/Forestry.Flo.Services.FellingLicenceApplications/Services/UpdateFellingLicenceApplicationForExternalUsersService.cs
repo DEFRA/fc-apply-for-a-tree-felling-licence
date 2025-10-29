@@ -1,6 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
@@ -19,7 +18,6 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
 {
     private readonly IFellingLicenceApplicationExternalRepository _fellingLicenceApplicationRepository;
     private readonly IClock _clock;
-    private readonly IAuditService<UpdateFellingLicenceApplicationForExternalUsersService> _audit;
     private readonly RequestContext _requestContext;
     private readonly FellingLicenceApplicationOptions _fellingLicenceApplicationOptions;
     private readonly ILogger<UpdateFellingLicenceApplicationForExternalUsersService> _logger;
@@ -169,6 +167,14 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
             .DeleteSubmittedFlaPropertyDetailForApplicationAsync(applicationId, cancellationToken)
             .ConfigureAwait(false);
 
+        // clear down woodland officer review task flags for tasks that will need to be redone/checked again due to resubmission
+        if (currentStatus != FellingLicenceStatus.Draft)
+        {
+            await _fellingLicenceApplicationRepository
+                .UpdateExistingWoodlandOfficerReviewFlagsForResubmission(applicationId, now, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         // return response details required by the usecase for notifications
         var result = new SubmitFellingLicenceApplicationResponse(
             newReference,
@@ -301,12 +307,188 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
                 return Result.Failure(dbResult.Error + $" in ConvertProposedFellingAndRestockingToConfirmedAsync, application id {applicationId}");
             }
 
-            _logger.LogDebug("Successfully imported proposed felling and restocking to confirmed for application with id {ApplidationId}", applicationId);
+            _logger.LogDebug("Successfully imported proposed felling and restocking to confirmed for application with id {ApplicationId}", applicationId);
             return Result.Success();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception caught in ConvertProposedFellingAndRestockingToConfirmedAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateTenYearLicenceStatusAsync(
+        Guid applicationId, 
+        UserAccessModel userAccess, 
+        bool isForTenYearLicence,
+        string? woodlandManagementPlanReference,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            // get entity
+            var application = await _fellingLicenceApplicationRepository
+                .GetAsync(applicationId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (application.HasNoValue)
+            {
+                _logger.LogWarning("Could not locate application with id {ApplicationId} in the repository", applicationId);
+                return Result.Failure("Could not update ten-year licence status for the application");
+            }
+
+            // verify user access to the application
+            var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
+            if (userAccess.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
+            {
+                _logger.LogWarning(
+                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update ten-year licence status for the application with id {ApplicationId}",
+                    userAccess.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
+                return Result.Failure("Could not update ten-year licence status for the application");
+            }
+
+            application.Value.IsForTenYearLicence = isForTenYearLicence;
+            application.Value.WoodlandManagementPlanReference = isForTenYearLicence ? woodlandManagementPlanReference : null;
+
+            // update step  status - if isForTenYearLicence is false then we don't need docs so set step status to true,
+            // otherwise if there is no value set to false, if there is a value then only change it (to false) if there are no WMP docs yet
+            var wmpDocumentsCount = application.Value.Documents!.Count(d =>
+                d.Purpose == DocumentPurpose.WmpDocument && d.DeletionTimestamp.HasNoValue());
+            var existingStepStatus = application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus;
+            var newStepStatus = !isForTenYearLicence
+                ? true
+                : existingStepStatus.HasValue && wmpDocumentsCount == 0
+                    ? false
+                    : existingStepStatus;
+            application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus = newStepStatus;
+
+            _fellingLicenceApplicationRepository.Update(application.Value);
+
+            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError(
+                    "Error {Error} encountered in UpdateTenYearLicenceStatusAsync, application id {ApplicationId}",
+                    dbResult.Error, applicationId);
+                return Result.Failure(dbResult.Error + $" in UpdateTenYearLicenceStatusAsync, application id {applicationId}");
+            }
+
+            _logger.LogDebug("Successfully updated ten-year licence status for application with id {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in UpdateTenYearLicenceStatusAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> CompleteTenYearLicenceStepAsync(
+        Guid applicationId, 
+        UserAccessModel userAccess,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            // get entity
+            var application = await _fellingLicenceApplicationRepository
+                .GetAsync(applicationId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (application.HasNoValue)
+            {
+                _logger.LogWarning("Could not locate application with id {ApplicationId} in the repository", applicationId);
+                return Result.Failure("Could not update ten-year licence step status for the application");
+            }
+
+            // verify user access to the application
+            var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
+            if (userAccess.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
+            {
+                _logger.LogWarning(
+                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update ten-year licence status for the application with id {ApplicationId}",
+                    userAccess.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
+                return Result.Failure("Could not update ten-year licence step status for the application");
+            }
+
+            application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus = true;   // true = step complete
+
+            _fellingLicenceApplicationRepository.Update(application.Value);
+
+            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError(
+                    "Error {Error} encountered in CompleteTenYearLicenceStepAsync, application id {ApplicationId}",
+                    dbResult.Error, applicationId);
+                return Result.Failure(dbResult.Error + $" in CompleteTenYearLicenceStepAsync, application id {applicationId}");
+            }
+
+            _logger.LogDebug("Successfully updated ten-year licence step status for application with id {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in CompleteTenYearLicenceStepAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateAafStepAsync(
+        Guid applicationId,
+        UserAccessModel userAccess,
+        bool aafStepStatus,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            // get entity
+            var application = await _fellingLicenceApplicationRepository
+                .GetAsync(applicationId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (application.HasNoValue)
+            {
+                _logger.LogWarning("Could not locate application with id {ApplicationId} in the repository", applicationId);
+                return Result.Failure("Could not update AAF step status for the application");
+            }
+
+            // verify user access to the application
+            var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
+            if (userAccess.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
+            {
+                _logger.LogWarning(
+                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update AAF step status for the application with id {ApplicationId}",
+                    userAccess.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
+                return Result.Failure("Could not update AAF step status for the application");
+            }
+
+            // set step status as requested
+            application.Value.FellingLicenceApplicationStepStatus.AafStepStatus = aafStepStatus;
+
+            _fellingLicenceApplicationRepository.Update(application.Value);
+
+            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError(
+                    "Error {Error} encountered in UpdateAafStepAsync, application id {ApplicationId}",
+                    dbResult.Error, applicationId);
+                return Result.Failure(dbResult.Error + $" in UpdateAafStepAsync, application id {applicationId}");
+            }
+
+            _logger.LogDebug("Successfully updated AAF step status for application with id {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in UpdateAafStepAsync");
             return Result.Failure(ex.Message);
         }
     }
