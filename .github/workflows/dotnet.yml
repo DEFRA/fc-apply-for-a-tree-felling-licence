@@ -104,13 +104,25 @@ jobs:
           dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$internalProjectPath"
         working-directory: Application Code
 
-      - name: Build
-        run: dotnet build --no-restore
+      # Build the two web apps explicitly
+      - name: Build external app
+        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
         working-directory: Application Code
         timeout-minutes: 30
 
-      - name: Test (with coverage for Sonar)
-        run: dotnet test --no-build --collect:"XPlat Code Coverage" --verbosity normal
+      - name: Build internal app
+        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.Internal.Web/Forestry.Flo.Internal.Web.csproj"
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      # Run the two Host Applications test projects explicitly
+      - name: Test external web tests (with coverage)
+        run: dotnet test --no-build --collect:"XPlat Code Coverage" "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test internal web tests (with coverage)
+        run: dotnet test --no-build --collect:"XPlat Code Coverage" "test/Host Applications/Forestry.Flo.Internal.Web.Tests/Forestry.Flo.Internal.Web.Tests.csproj" --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
