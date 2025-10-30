@@ -1,0 +1,184 @@
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # helps Sonar with blame info; harmless when Sonar is off
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: Application Code
+
+      # --- your existing secret injections (kept as-is) ---
+      - name: Inject User Secrets for External Project
+        shell: bash
+        run: |
+          externalProjectPath="src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
+
+          dotnet user-secrets set "ConnectionStrings:DefaultConnection" "just_text_for_secret" --project "$externalProjectPath"
+
+          dotnet user-secrets set "AzureAdB2C:ClientId" "${{ secrets.AZURE_AD_B2C_CLIENT_ID }}" --project "$externalProjectPath"
+          dotnet user-secrets set "AzureAdB2C:ClientSecret" "${{ secrets.AZURE_AD_B2C_CLIENT_SECRET }}" --project "$externalProjectPath"
+
+          dotnet user-secrets set "EsriConfig:Forestry:ApiKey" "${{ secrets.ESRI_FORESTRY_API_KEY }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientID" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_ID }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientSecret" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_SECRET }}" --project "$externalProjectPath"
+
+          dotnet user-secrets set "EsriConfig:Forester:ApiKey" "${{ secrets.ESRI_FORESTER_API_KEY }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
+
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
+
+          dotnet user-secrets set "LandInformationSearch:ClientID" "${{ secrets.LAND_INFO_CLIENT_ID }}" --project "$externalProjectPath"
+          dotnet user-secrets set "LandInformationSearch:ClientSecret" "${{ secrets.LAND_INFO_CLIENT_SECRET }}" --project "$externalProjectPath"
+
+          dotnet user-secrets set "RabbitMqOptions:Username" "guest" --project "$externalProjectPath"
+          dotnet user-secrets set "RabbitMqOptions:Password" "guest" --project "$externalProjectPath"
+
+          dotnet user-secrets set "FileStorage:ConnectionString" "${{ secrets.FILE_STORAGE_CONNECTION }}" --project "$externalProjectPath"
+
+          dotnet user-secrets set "GovUkNotifyOptions:ApiKey" "${{ secrets.GOV_UK_NOTIFY_API_KEY }}" --project "$externalProjectPath"
+
+          dotnet user-secrets set "GovUkOneLoginOptions:ClientId" "${{ secrets.ONE_LOGIN_API_KEY }}" --project "$externalProjectPath"
+          dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$externalProjectPath"
+        working-directory: Application Code
+
+      - name: Inject User Secrets for Internal Project
+        shell: bash
+        run: |
+          internalProjectPath="src/Host Applications/Forestry.Flo.Internal.Web/Forestry.Flo.Internal.Web.csproj"
+
+          dotnet user-secrets set "ConnectionStrings:DefaultConnection" "just_text_for_secret" --project "$internalProjectPath"
+
+          dotnet user-secrets set "AzureAdB2C:ClientId" "${{ secrets.AZURE_AD_B2C_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAdB2C:ClientSecret" "${{ secrets.AZURE_AD_B2C_CLIENT_SECRET }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "AzureAd:TenantId" "${{ secrets.AZURE_AD_TENANT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAd:ClientId" "${{ secrets.AZURE_AD_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "AzureAd:ClientSecret" "${{ secrets.AZURE_AD_CLIENT_SECRET }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "EsriConfig:Forestry:ApiKey" "${{ secrets.ESRI_FORESTRY_API_KEY }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientID" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientSecret" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_SECRET }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "EsriConfig:Forester:ApiKey" "${{ secrets.ESRI_FORESTER_API_KEY }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$internalProjectPath"
+          dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "LandInformationSearch:ClientID" "${{ secrets.LAND_INFO_CLIENT_ID }}" --project "$internalProjectPath"
+          dotnet user-secrets set "LandInformationSearch:ClientSecret" "${{ secrets.LAND_INFO_CLIENT_SECRET }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "RabbitMqOptions:Username" "guest" --project "$internalProjectPath"
+          dotnet user-secrets set "RabbitMqOptions:Password" "guest" --project "$internalProjectPath"
+
+          dotnet user-secrets set "FileStorage:ConnectionString" "${{ secrets.FILE_STORAGE_CONNECTION }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "GovUkNotifyOptions:ApiKey" "${{ secrets.GOV_UK_NOTIFY_API_KEY }}" --project "$internalProjectPath"
+
+          dotnet user-secrets set "GovUkOneLoginOptions:ClientId" "${{ secrets.ONE_LOGIN_API_KEY }}" --project "$internalProjectPath"
+          dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$internalProjectPath"
+        working-directory: Application Code
+
+      # --- Find the solution under "Application Code" (repo-root relative) ---
+      - name: Locate solution
+        id: sln
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOLN=$(git ls-files 'Application Code/*.sln' 'Application Code/**/*.sln' | head -n1 || true)
+          if [ -z "${SOLN:-}" ]; then
+            echo "No .sln found under 'Application Code/'."
+            exit 1
+          fi
+          echo "Using solution: $SOLN"
+          echo "sln=$SOLN" >> $GITHUB_OUTPUT
+
+      # --- Sonar (DEFRA only) ---
+      - name: Setup Java (for SonarScanner)
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dotnet-sonarscanner
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Add dotnet tools to PATH
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: SonarCloud Begin
+        if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+        run: >
+          dotnet sonarscanner begin
+          /k:"${{ vars.SONAR_PROJECT_KEY }}"
+          /o:"${{ vars.SONAR_ORG }}"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.login="${{ secrets.SONAR_TOKEN_ACTIONS }}"
+          /d:sonar.verbose=true
+          /d:sonar.qualitygate.wait=false
+          /d:sonar.cs.cobertura.reportsPaths="**/TestResults/*/coverage.cobertura.xml"
+
+      # --- Build always runs (Sonar Begin, if any, is already in place) ---
+      - name: Build (Debug, Sonar OFF)
+        if: ${{ vars.SONAR_ENABLED != 'true' }}
+        run: dotnet build --no-restore
+        working-directory: Application Code
+
+      # Build (DEFRA / Sonar ON) - build Release
+      - name: Build (Release for Sonar)
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        run: dotnet build "${{ steps.sln.outputs.sln }}" --configuration Release --no-restore
+        
+      # --- Tests: no coverage when Sonar OFF; coverage when Sonar ON ---
+      - name: Test (no coverage, Sonar OFF)
+        if: ${{ vars.SONAR_ENABLED != 'true' }}
+        run: dotnet test --no-build --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      # Tests when Sonar ON: per test project, use XPlat Cobertura
+      - name: Test (per project, Cobertura coverage)
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # find all test projects relative to repo root
+          mapfile -t TESTS < <(git ls-files 'Application Code/**/*.Tests.csproj' | sed 's|^|./|')
+          if [ ${#TESTS[@]} -eq 0 ]; then
+            echo "No test projects found"
+            exit 0
+          fi
+          for proj in "${TESTS[@]}"; do
+            echo "===> Running tests for: $proj"
+            # Solution already built in Release; we can still allow build here to be safe with transitive changes
+            dotnet test "$proj" --configuration Release --collect:"XPlat Code Coverage"
+          done
+
+      - name: SonarCloud End
+        if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_ACTIONS }}
+        run: dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN"
