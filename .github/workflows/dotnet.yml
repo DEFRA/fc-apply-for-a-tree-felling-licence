@@ -5,7 +5,6 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -104,15 +103,88 @@ jobs:
           dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$internalProjectPath"
         working-directory: Application Code
 
-      - name: Build
-        run: dotnet build --no-restore
+      # Build the two web apps and common app explicitly
+      - name: Build external app
+        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
         working-directory: Application Code
         timeout-minutes: 30
 
-      - name: Test (with coverage for Sonar)
-        run: dotnet test --no-build --collect:"XPlat Code Coverage" --verbosity normal
+      - name: Build internal app
+        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.Internal.Web/Forestry.Flo.Internal.Web.csproj"
         working-directory: Application Code
         timeout-minutes: 30
+
+      - name: Build common library
+        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.HostApplicationsCommon/Forestry.Flo.HostApplicationsCommon.csproj"
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      # Run the two Host Applications test projects explicitly
+      - name: Test external web tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test internal web tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Host Applications/Forestry.Flo.Internal.Web.Tests/Forestry.Flo.Internal.Web.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      # Test Services projects
+      - name: Test AdminHubs tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.AdminHubs.Tests/Forestry.Flo.Services.AdminHubs.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test Applicants tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.Applicants.Tests/Forestry.Flo.Services.Applicants.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test Common tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.Common.Tests/Forestry.Flo.Services.Common.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test ConditionsBuilder tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/Forestry.Flo.Services.ConditionsBuilder.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test DataImport tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.DataImport.Tests/Forestry.Flo.Services.DataImport.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test FellingLicenceApplications tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/Forestry.Flo.Services.FellingLicenceApplications.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test FileStorage tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.FileStorage.Tests/Forestry.Flo.Services.FileStorage.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test Gis tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.Gis.Tests/Forestry.Flo.Services.Gis.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test InternalUsers tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.InternalUsers.Tests/Forestry.Flo.Services.InternalUsers.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test Notifications tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.Notifications.Tests/Forestry.Flo.Services.Notifications.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
+
+      - name: Test PropertyProfiles tests (with coverage)
+        run: dotnet test --collect:"XPlat Code Coverage" "test/Services/Forestry.Flo.Services.PropertyProfiles.Tests/Forestry.Flo.Services.PropertyProfiles.Tests.csproj" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30      
 
       # Sonar END — only on push or non-fork PRs
       - name: SonarCloud End
