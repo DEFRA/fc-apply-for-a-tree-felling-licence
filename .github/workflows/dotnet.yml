@@ -148,10 +148,26 @@ jobs:
         working-directory: Application Code
 
       # Build (DEFRA / Sonar ON) - build Release
-      - name: Build (Release for Sonar)
+      - name: Build solution (Release)
         if: ${{ vars.SONAR_ENABLED == 'true' }}
-        run: dotnet build "${{ steps.sln.outputs.sln }}" --configuration Release --no-restore
-        
+        run: dotnet build "${{ steps.sln.outputs.sln }}" -c Release
+
+      # Explicitly build ALL src csproj (ensures Host Applications + every service are compiled)
+      - name: Build all src projects (Release)
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t PROJS < <(git ls-files 'Application Code/src/**/*.csproj' | sed 's|^|./|')
+          if [ ${#PROJS[@]} -eq 0 ]; then
+            echo "No src projects found"
+            exit 1
+          fi
+          for proj in "${PROJS[@]}"; do
+            echo "===> Building $proj"
+            dotnet build "$proj" -c Release
+          done
+              
       # --- Tests: no coverage when Sonar OFF; coverage when Sonar ON ---
       - name: Test (no coverage, Sonar OFF)
         if: ${{ vars.SONAR_ENABLED != 'true' }}
