@@ -5,11 +5,11 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,11 +20,37 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Setup Java (for SonarCloud)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dotnet-sonarscanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Add dotnet tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      # Sonar BEGIN — only on push or non-fork PRs
+      - name: SonarCloud Begin
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
+        working-directory: Application Code
+        run: >
+          dotnet sonarscanner begin
+          /k:"${{ vars.SONAR_PROJECT_KEY }}"
+          /o:"${{ vars.SONAR_ORG }}"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.token="${{ secrets.SONAR_TOKEN_ACTIONS }}"
+          /d:sonar.verbose=true
+          /d:sonar.qualitygate.wait=false
+          /d:sonar.cs.cobertura.reportsPaths="**/TestResults/*/coverage.cobertura.xml"
+
       - name: Restore dependencies
         run: dotnet restore
         working-directory: Application Code
 
-      # --- Secret injections (unchanged) ---
+      # your existing secret injections (unchanged)
       - name: Inject User Secrets for External Project
         shell: bash
         run: |
@@ -78,101 +104,20 @@ jobs:
           dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$internalProjectPath"
         working-directory: Application Code
 
-      # --- Create a synthetic solution that includes ALL csproj under "Application Code" ---
-      - name: Create CI solution (all projects)
-        id: mkci
-        shell: bash
-        run: |
-          set -euo pipefail
-          CI_SOLUTION="ci-all.sln"
-          rm -f "$CI_SOLUTION"
-          dotnet new sln -n ci-all >/dev/null
-          # Space-safe enumeration of projects
-          while IFS= read -r -d '' proj; do
-            echo "Adding: $proj"
-            dotnet sln "$CI_SOLUTION" add "$proj" >/dev/null
-          done < <(find "Application Code" -type f -name '*.csproj' -print0)
-          echo "ci_sln=$CI_SOLUTION" >> "$GITHUB_OUTPUT"
-
-      # --- Sonar (DEFRA only) ---
-      - name: Setup Java (for SonarScanner)
-        if: ${{ vars.SONAR_ENABLED == 'true' }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install dotnet-sonarscanner
-        if: ${{ vars.SONAR_ENABLED == 'true' }}
-        run: dotnet tool install --global dotnet-sonarscanner
-
-      - name: Add dotnet tools to PATH
-        if: ${{ vars.SONAR_ENABLED == 'true' }}
-        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-
-      - name: SonarCloud Begin
-        if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
-        run: >
-          dotnet sonarscanner begin
-          /k:"${{ vars.SONAR_PROJECT_KEY }}"
-          /o:"${{ vars.SONAR_ORG }}"
-          /d:sonar.host.url="https://sonarcloud.io"
-          /d:sonar.token="${{ secrets.SONAR_TOKEN_ACTIONS }}"
-          /d:sonar.verbose=true
-          /d:sonar.qualitygate.wait=false
-          /d:sonar.cs.cobertura.reportsPaths="**/TestResults/*/coverage.cobertura.xml"
-
-      # Build when Sonar OFF (private)
-      - name: Build (Debug, Sonar OFF)
-        if: ${{ vars.SONAR_ENABLED != 'true' }}
+      - name: Build
         run: dotnet build --no-restore
-        working-directory: Application Code
-
-      # Build EVERYTHING when Sonar ON (DEFRA)
-      - name: Build (Release - CI solution)
-        if: ${{ vars.SONAR_ENABLED == 'true' }}
-        run: dotnet build "${{ steps.mkci.outputs.ci_sln }}" -c Release
-
-      # Tests when Sonar OFF (simple)
-      - name: Test (no coverage, Sonar OFF)
-        if: ${{ vars.SONAR_ENABLED != 'true' }}
-        run: dotnet test --no-build --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
-      # Tests when Sonar ON: per test project with XPlat coverage (Cobertura)
-      - name: Test (per project, Cobertura coverage)
-        if: ${{ vars.SONAR_ENABLED == 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t TESTS < <(git ls-files 'Application Code/**/*.Tests.csproj' | sed 's|^|./|')
-          if [ ${#TESTS[@]} -eq 0 ]; then
-            echo "No test projects found"
-            exit 0
-          fi
-          for proj in "${TESTS[@]}"; do
-            echo "===> Running tests for: $proj"
-            dotnet test "$proj" --configuration Release --collect:"XPlat Code Coverage"
-          done
+      - name: Test (with coverage for Sonar)
+        run: dotnet test --no-build --collect:"XPlat Code Coverage" --verbosity normal
+        working-directory: Application Code
+        timeout-minutes: 30
 
-      # Optional: see what Sonar actually included
-      - name: Sonar diagnostics (what projects are included)
-        if: ${{ vars.SONAR_ENABLED == 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          ROOT=".sonarqube/out"
-          echo "=== Sonar ProjectInfo summary ==="
-          find "$ROOT" -maxdepth 2 -type f -name 'ProjectInfo.xml' -print0 \
-            | xargs -0 -I{} sh -c '
-                echo "--- {} ---"
-                grep -E "<(Name|FullPath|IsTest|IsExcluded|TargetFrameworks?)>" "{}" || true
-              ' || true
-          echo "=== End summary ==="
-
+      # Sonar END — only on push or non-fork PRs
       - name: SonarCloud End
-        if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_ACTIONS }}
+        working-directory: Application Code
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
