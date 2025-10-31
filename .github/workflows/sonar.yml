@@ -44,8 +44,7 @@ jobs:
           /d:sonar.verbose=true
           /d:sonar.qualitygate.wait=false
           /d:sonar.cs.cobertura.reportsPaths="**/TestResults/*/coverage.cobertura.xml"
-          "/d:sonar.exclusions=**/bin/**,**/obj/**,**/*Designer.cs,**/*.g.cs,**/Migrations/**"
-
+          
       - name: Restore dependencies
         run: dotnet restore
         working-directory: Application Code
@@ -202,3 +201,14 @@ jobs:
           echo "== coverage.cobertura.xml files =="
           find . -type f -path '*/TestResults/*/coverage.cobertura.xml' -print
           echo "==============================="
+
+      - name: Sonar diagnostics (did it import coverage?)
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
+        working-directory: Application Code
+        shell: bash
+        run: |
+          LOGDIR=".sonarqube/out"
+          echo "=== Scanner coverage import traces ==="
+          grep -RInE "coverage|cobertura|OpenCover|import|reportsPaths" "$LOGDIR" || true
+          echo "=== report-task.txt (CE task id) ==="
+          cat .sonarqube/out/.sonar/report-task.txt || true
