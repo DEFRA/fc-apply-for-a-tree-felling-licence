@@ -123,22 +123,22 @@ jobs:
       # Run the two Host Applications test projects explicitly
       - name: Test external web tests (with coverage)
         run: > 
-          dotnet test "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test internal web tests (with coverage)
         run: >
-          dotnet test "test/Host Applications/Forestry.Flo.Internal.Web.Tests/Forestry.Flo.Internal.Web.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Host Applications/Forestry.Flo.Internal.Web.Tests/Forestry.Flo.Internal.Web.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
@@ -146,121 +146,121 @@ jobs:
       # Test Services projects
       - name: Test AdminHubs tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.AdminHubs.Tests/Forestry.Flo.Services.AdminHubs.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.AdminHubs.Tests/Forestry.Flo.Services.AdminHubs.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test Applicants tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.Applicants.Tests/Forestry.Flo.Services.Applicants.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.Applicants.Tests/Forestry.Flo.Services.Applicants.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test Common tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.Common.Tests/Forestry.Flo.Services.Common.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.Common.Tests/Forestry.Flo.Services.Common.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test ConditionsBuilder tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/Forestry.Flo.Services.ConditionsBuilder.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/Forestry.Flo.Services.ConditionsBuilder.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test DataImport tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.DataImport.Tests/Forestry.Flo.Services.DataImport.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.DataImport.Tests/Forestry.Flo.Services.DataImport.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test FellingLicenceApplications tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/Forestry.Flo.Services.FellingLicenceApplications.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/Forestry.Flo.Services.FellingLicenceApplications.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test FileStorage tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.FileStorage.Tests/Forestry.Flo.Services.FileStorage.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.FileStorage.Tests/Forestry.Flo.Services.FileStorage.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test Gis tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.Gis.Tests/Forestry.Flo.Services.Gis.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.Gis.Tests/Forestry.Flo.Services.Gis.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test InternalUsers tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.InternalUsers.Tests/Forestry.Flo.Services.InternalUsers.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.InternalUsers.Tests/Forestry.Flo.Services.InternalUsers.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test Notifications tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.Notifications.Tests/Forestry.Flo.Services.Notifications.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.Notifications.Tests/Forestry.Flo.Services.Notifications.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test PropertyProfiles tests (with coverage)
         run: >
-          dotnet test "test/Services/Forestry.Flo.Services.PropertyProfiles.Tests/Forestry.Flo.Services.PropertyProfiles.Tests.csproj"
-          /p:CollectCoverage=true
-          /p:CoverletOutput=TestResults/coverage.opencover.xml
-          /p:CoverletOutputFormat=opencover
-          --logger trx;LogFileName=TestResults/test.trx
+          dotnet test "test/Services/Forestry.Flo.Services.PropertyProfiles.Tests/Forestry.Flo.Services.PropertyProfiles.Tests.csproj" \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=TestResults/coverage.opencover.xml \
+          /p:CoverletOutputFormat=opencover \
+          --logger trx;LogFileName=TestResults/test.trx \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
@@ -280,6 +280,9 @@ jobs:
         run: |
           echo "== coverage.opencover.xml files =="
           find . -type f -path '*/TestResults/*/coverage.opencover.xml' -print
+          echo "==============================="
+          echo "== TestResults .trx files =="
+          find . -type f -path '*/TestResults/*.trx' -print || true
           echo "==============================="
 
       - name: Sonar diagnostics (did it import coverage?)
