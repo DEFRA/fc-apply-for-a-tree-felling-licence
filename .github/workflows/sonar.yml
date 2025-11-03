@@ -44,7 +44,7 @@ jobs:
           /d:sonar.token="${{ secrets.SONAR_TOKEN_ACTIONS }}"
           /d:sonar.verbose=true
           /d:sonar.qualitygate.wait=false
-          /d:sonar.cs.opencover.reportsPaths="**/TestResults/*/coverage.opencover.xml"
+          /d:sonar.cs.cobertura.reportsPaths="**/TestResults/*/coverage.cobertura.xml"
           /d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx"
           
       - name: Restore dependencies
@@ -122,24 +122,22 @@ jobs:
 
       # Run the two Host Applications test projects explicitly
       - name: Test external web tests (with coverage)
+        shell: bash
         working-directory: Application Code
         shell: bash
         run: |
           dotnet test "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-            /p:CoverletOutputFormat=opencover \
+            --collect:"XPlat Code Coverage" \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
         timeout-minutes: 30
 
       - name: Test internal web tests (with coverage)
+        shell: bash
         working-directory: Application Code
         run: |
           dotnet test "test/Host Applications/Forestry.Flo.Internal.Web.Tests/Forestry.Flo.Internal.Web.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         
@@ -147,121 +145,110 @@ jobs:
 
       # Test Services projects
       - name: Test AdminHubs tests (with coverage)
+        shell: bash
         working-directory: Application Code
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.AdminHubs.Tests/Forestry.Flo.Services.AdminHubs.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         timeout-minutes: 30
 
       - name: Test Applicants tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.Applicants.Tests/Forestry.Flo.Services.Applicants.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test Common tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.Common.Tests/Forestry.Flo.Services.Common.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test ConditionsBuilder tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/Forestry.Flo.Services.ConditionsBuilder.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test DataImport tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.DataImport.Tests/Forestry.Flo.Services.DataImport.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test FellingLicenceApplications tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/Forestry.Flo.Services.FellingLicenceApplications.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test FileStorage tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.FileStorage.Tests/Forestry.Flo.Services.FileStorage.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test Gis tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.Gis.Tests/Forestry.Flo.Services.Gis.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test InternalUsers tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.InternalUsers.Tests/Forestry.Flo.Services.InternalUsers.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test Notifications tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.Notifications.Tests/Forestry.Flo.Services.Notifications.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
         timeout-minutes: 30
 
       - name: Test PropertyProfiles tests (with coverage)
+        shell: bash
         run: |
           dotnet test "test/Services/Forestry.Flo.Services.PropertyProfiles.Tests/Forestry.Flo.Services.PropertyProfiles.Tests.csproj" \
-          /p:CollectCoverage=true \
-          /p:CoverletOutput="TestResults/coverage.opencover.xml" \
-          /p:CoverletOutputFormat=opencover \
+          --collect:"XPlat Code Coverage" \
           --logger "trx;LogFileName=TestResults/test.trx" \
           --verbosity normal
         working-directory: Application Code
@@ -275,15 +262,15 @@ jobs:
         working-directory: Application Code
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
-      - name: Show coverage files found
+      - name: Show coverage & TRX files found
         if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
         working-directory: Application Code
         shell: bash
         run: |
-          echo "== coverage.opencover.xml files =="
-          find . -type f -path '*/TestResults/*/coverage.opencover.xml' -print
+          echo "== coverage.cobertura.xml files =="
+          find . -type f -path '*/TestResults/*/coverage.cobertura.xml' -print
           echo "==============================="
-          echo "== TestResults .trx files =="
+          echo "== .trx files =="
           find . -type f -path '*/TestResults/*.trx' -print || true
           echo "==============================="
 
