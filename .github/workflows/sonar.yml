@@ -124,7 +124,6 @@ jobs:
       - name: Test external web tests (with coverage)
         shell: bash
         working-directory: Application Code
-        shell: bash
         run: |
           dotnet test "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" \
             --collect:"XPlat Code Coverage" \
