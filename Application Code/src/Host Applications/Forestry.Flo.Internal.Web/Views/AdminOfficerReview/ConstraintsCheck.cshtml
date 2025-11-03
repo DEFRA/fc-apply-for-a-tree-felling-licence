@@ -7,28 +7,29 @@
 @using Forestry.Flo.Internal.Web.Infrastructure
 @model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.ConstraintsCheckModel
 
-@{  
-   var hasAttachedLisReport = Model.FellingLicenceApplicationSummary?.MostRecentFcLisReport.HasValue ?? false;  
-   if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")  
-   {  
-       hasAttachedLisReport = true;
-   }  
+@{
+    var hasAttachedLisReport = Model.FellingLicenceApplicationSummary?.MostRecentFcLisReport.HasValue ?? false;
+    if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+    {
+        hasAttachedLisReport = true;
+    }
 }
 
-<div class="govuk-grid-column-full">
-    
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_UserGuideDisplay"/>
 
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+
+
+<partial name="Partials/_PageErrors"/>
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
-    
-    <partial name="Partials/_PageErrors"/>
-    
+
     <p class="govuk-body">
         Use the constraints check to compare mapped compartments against Land Information Search (LIS) data.
         This generates a report that helps identify anything that might affect the application.
     </p>
-    
+
     <div class="govuk-warning-text">
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
@@ -36,7 +37,7 @@
             You must be signed in to the Forestry Commission VPN to run the constraints check.
         </strong>
     </div>
-    
+
     <h2 class="govuk-heading-m">To run the check:</h2>
     <ol class="govuk-list govuk-list--number">
         <li>Select @(hasAttachedLisReport ? "Run" : "Run or re-run") constraints check. This opens the map browser in a new tab.</li>
@@ -44,11 +45,11 @@
         <li>Select Save to Felling Licence Online.</li>
         <li>Return to this page and refresh.</li>
     </ol>
-    
+
     <div class="govuk-!-padding-bottom-3"></div>
 
     <partial name="Partials/_ConstraintReportDownloadLink" model="@Model.FellingLicenceApplicationSummary"/>
-    
+
     <form id="form-without-lis-report" condition="@(hasAttachedLisReport == false)">
         <div class="govuk-form-group">
             <div class="govuk-button-group">
@@ -63,8 +64,8 @@
     </form>
 
     <form id="form-with-list-report" method="post" condition="@hasAttachedLisReport">
-        
-        <input asp-for="ApplicationId" />
+
+        <input asp-for="ApplicationId"/>
 
         <div class="govuk-form-group">
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
@@ -87,7 +88,7 @@
             </div>
             <p class="govuk-hint">This will replace the current LIS report.</p>
         </div>
-        
+
         <div class="govuk-!-padding-bottom-3"></div>
 
         <div class="govuk-form-group">

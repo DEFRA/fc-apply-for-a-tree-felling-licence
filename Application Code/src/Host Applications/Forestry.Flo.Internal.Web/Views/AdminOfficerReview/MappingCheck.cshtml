@@ -16,20 +16,22 @@
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <partial name="Partials/_PageErrors" />
-
-    <p class="govuk-body">
-        The mapping must be clear and include all compartments in the application. It must only cover the area to be felled or restocked.
-        <br />
-        It cannot be a generic shape on the map, as it needs to specify precisely where the felling and restocking will take place.
-        <br />
-        It cannot include any feature that is too large for the tree canopy to close over if trees were planted around it – a few examples would be:
-    </p>
-    <ul>
-        <li>A small shed could be included as the canopy could close over the top, whereas a large barn would likely be too wide for the canopy to cover.</li>
-        <li>A farm track would be fine, but a 2-carriageway tarmac road would be too wide.</li>
-        <li>A layby for a car to pull off the road would be fine, but a large parking area for several cars or agricultural vehicles would be too big.</li>
-        <li>A small pond would be acceptable, but a large fishing lake would be too big.</li>
-    </ul>
+    
+    <div class="govuk-grid-column-two-thirds width-limit-override">
+        <p class="govuk-body">
+            The mapping must be clear and include all compartments in the application. It must only cover the area to be felled or restocked.
+            <br />
+            It cannot be a generic shape on the map, as it needs to specify precisely where the felling and restocking will take place.
+            <br />
+            It cannot include any feature that is too large for the tree canopy to close over if trees were planted around it – a few examples would be:
+        </p>
+        <ul>
+            <li>A small shed could be included as the canopy could close over the top, whereas a large barn would likely be too wide for the canopy to cover.</li>
+            <li>A farm track would be fine, but a 2-carriageway tarmac road would be too wide.</li>
+            <li>A layby for a car to pull off the road would be fine, but a large parking area for several cars or agricultural vehicles would be too big.</li>
+            <li>A small pond would be acceptable, but a large fishing lake would be too big.</li>
+        </ul>
+    </div>
 
     <input type="hidden" id="runningMode" value="felling" />
     @foreach (var item in Model.FellingAndRestockingDetails)

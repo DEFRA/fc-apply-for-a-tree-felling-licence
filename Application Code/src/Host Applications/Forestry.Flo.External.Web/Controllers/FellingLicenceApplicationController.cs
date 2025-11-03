@@ -2424,7 +2424,8 @@ public partial class FellingLicenceApplicationController(
         return RedirectToAction(nameof(Operations), new { applicationId, returnToApplicationSummary });
     }
 
-    private async Task<Guid?> GetAgentAuthorityAsync(Guid? woodlandOwnerId,
+    private async Task<Guid?> GetAgentAuthorityAsync(
+        Guid? woodlandOwnerId,
         CancellationToken cancellationToken)
     {
         if (woodlandOwnerId is null)

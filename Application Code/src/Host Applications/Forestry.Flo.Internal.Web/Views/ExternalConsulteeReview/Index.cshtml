@@ -5,17 +5,17 @@
 @{
     ViewData["Title"] = "Have your say on a felling application";
 }
-<div class="govuk-grid-column-two-thirds" id="summary-container">
-    
+<div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container">
+
     <partial name="Partials/_PageErrors"/>
 
     <h1 class="govuk-heading-l">@ViewData["Title"] @Model.ApplicationSummary.ApplicationReference</h1>
-    
+
     <h2 class="govuk-heading-m">Review the application</h2>
-    
+
     <div class="govuk-body">
         <p>You've been invited to comment on this application.</p>
-        
+
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
@@ -25,32 +25,34 @@
             <div class="govuk-!-padding-bottom-2"></div>
             <p class="govuk-body">You must submit your comments before this date.</p>
         </div>
-        
+
         <p>Review the application information and supporting documents below and tell us if you have any feedback. You can comment on anything you think is relevant.</p>
 
         <p>Your comments and any documents you upload will be visible to the applicant and other consultees.</p>
     </div>
-    
+
     <h2 class="govuk-heading-m">Application information</h2>
-    
+
     <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_WoodlandDetailsCard" model="@Model.ApplicationSummary"/>
-    
-    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingScheduleCard" model="@Model.ApplicationSummary" />
-    
-    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingOperationsCard" model="@Model.ApplicationSummary" />
-    
-    <input type="hidden" id="runningMode" value="felling" />
+
+    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingScheduleCard" model="@Model.ApplicationSummary"/>
+
+    <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingOperationsCard" model="@Model.ApplicationSummary"/>
+
+    <input type="hidden" id="runningMode" value="felling"/>
     @if (Model.ApplicationSummary?.DetailsList is not null)
     {
         @foreach (var item in Model.ApplicationSummary?.DetailsList!)
         {
-            <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling" />
+            <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling"/>
             @foreach (var restocking in item.RestockingDetail)
             {
-                <input type="hidden" id="@restocking.RestockingCompartmentId" value="@restocking.GISData" data-label="@restocking.RestockingCompartmentName" data-group="compartments_GIS" data-type="restocking" />
+                <input type="hidden" id="@restocking.RestockingCompartmentId" value="@restocking.GISData" data-label="@restocking.RestockingCompartmentName" data-group="compartments_GIS" data-type="restocking"/>
             }
         }
     }
+</div>
+<div class="govuk-grid-column-full">
 
     <div>
         <calcite-shell id="shell" content-behind>
@@ -59,27 +61,31 @@
             </h2>
             <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed>
                 <calcite-action-bar slot="action-bar" expanded>
-                    <calcite-action 
-                        data-action-id="basemaps" 
-                        icon="basemap" 
-                        text="Basemaps" 
+                    <calcite-action
+                        data-action-id="basemaps"
+                        icon="basemap"
+                        text="Basemaps"
                         scale="l"
-                        text-enabled></calcite-action> 
+                        text-enabled>
+                    </calcite-action>
                     <calcite-action id="view"
                                     icon="analysis"
                                     text="View Restocking"
                                     scale="l"
-                                    text-enabled></calcite-action>
+                                    text-enabled>
+                    </calcite-action>
 
                 </calcite-action-bar>
-                <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden >
+                <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden>
                     <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-basemap-button" scale="s"></calcite-action>
                     <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
-                    <div id="basemaps-container"><arcgis-basemap-gallery></arcgis-basemap-gallery></div>
+                    <div id="basemaps-container">
+                        <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                    </div>
                 </calcite-panel>
 
             </calcite-shell-panel>
-            <arcgis-map id="viewDivMain" class="profileMap" >
+            <arcgis-map id="viewDivMain" class="profileMap">
                 <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
                 <arcgis-zoom slot="top-right"></arcgis-zoom>
                 <arcgis-compass slot="top-right"></arcgis-compass>
@@ -87,22 +93,22 @@
 
         </calcite-shell>
     </div>
-    <div class="govuk-!-padding-bottom-3"></div>
-    
-    
-    @foreach(var fellingDetail in Model.ApplicationSummary?.DetailsList ?? [])
+</div>
+<div class="govuk-!-padding-bottom-3"></div>
+<div class="govuk-grid-column-two-thirds width-limit-override">
+
+    @foreach (var fellingDetail in Model.ApplicationSummary?.DetailsList ?? [])
     {
-        <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingOperationCard" model="fellingDetail" />
+        <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_FellingOperationCard" model="fellingDetail"/>
     }
-    
+
     <partial name="Partials/FellingLicenceApplicationSummaryModelPartials/_SupportingDocumentationCard" model="@Model"/>
 
-    <partial name="Partials/_ActivityFeed" model="@Model.ActivityFeed" />
+    <partial name="Partials/_ActivityFeed" model="@Model.ActivityFeed"/>
 
     <partial name="Partials/_AddConsulteeComment" model="@Model.AddConsulteeComment"/>
-    
-</div>
 
+</div>
 
 
 @section Scripts
@@ -123,10 +129,10 @@
 }
 
 @section Css{
-    <link rel="stylesheet" href="~/css/assign-fla-select-user.css" aria-busyasp-append-version="true" />
-    <link rel="stylesheet" href="~/css/application-summary.css" aria-busyasp-append-version="true" />
-    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
-    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")" />
+    <link rel="stylesheet" href="~/css/assign-fla-select-user.css" aria-busyasp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/application-summary.css" aria-busyasp-append-version="true"/>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css"/>
+    <link rel="stylesheet" href="@Url.AbsoluteContent("~/css/map.css")"/>
 
     <style>
             #shell{

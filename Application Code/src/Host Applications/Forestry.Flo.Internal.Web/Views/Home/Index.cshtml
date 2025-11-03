@@ -18,7 +18,7 @@
 
 <not-logged-in>
 
-    <div class="govuk-grid-column-full govuk-body">
+    <div class="govuk-grid-column-two-thirds govuk-body">
         <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
         
         <p class="govuk-body">Use this service to process applications for a tree felling licence.</p>
@@ -38,29 +38,26 @@
 </not-logged-in>
 <logged-in>
     <div class="govuk-grid-column-full govuk-body">
+        
+        <h1 class="govuk-heading-m">Process stage</h1>
 
         <div class="govuk-grid-row">
-
-            <div class="govuk-grid-column-full">
-                <h1 class="govuk-heading-m">Process stage</h1>
-            </div>
-
-        </div>
-
-        <div class="govuk-!-text-align-left govuk-grid-row">
             <div class="govuk-grid-column-full">
                 <div class="govuk-hint">
                     Filter applications by where they are in the process.
                 </div>
+                
+                <div class="application-filters">
+                    @foreach (var fellingLicenceStatus in FellingLicenceApplicationUseCase.PostSubmittedStatuses)
+                    {
+                        <strong fla-status-filter="@fellingLicenceStatus" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 @(fellingLicenceStatus.GetStatusStyleName())">
+                            @fellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)
 
-                @foreach (var fellingLicenceStatus in FellingLicenceApplicationUseCase.PostSubmittedStatuses)
-                {
-                    <strong fla-status-filter="@fellingLicenceStatus" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 @(fellingLicenceStatus.GetStatusStyleName())" id="company-information-status">
-                        @fellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)
+                            (@(Model.FellingLicenceApplicationAssignmentListModel.FellingLicenceStatusCount.FirstOrDefault(x => x.FellingLicenceStatus == fellingLicenceStatus)?.Count ?? 0))
+                        </strong>
+                    }
+                </div>
 
-                        (@(Model.FellingLicenceApplicationAssignmentListModel.FellingLicenceStatusCount.FirstOrDefault(x => x.FellingLicenceStatus == fellingLicenceStatus)?.Count ?? 0))
-                    </strong>
-                }
             </div>
         </div>
 
@@ -68,7 +65,7 @@
             <div class="govuk-grid-column-full" id="filter-section">
                 <div>
                     <p>Filter by</p>
-                    <strong id="fla-assigned-to-user-filter" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 govuk-tag--grey" id="company-information-status">
+                    <strong id="fla-assigned-to-user-filter" class="govuk-tag app-task-list__tag govuk-!-margin-right-2 govuk-!-margin-bottom-2 govuk-tag--grey">
                         My cases (@Model.FellingLicenceApplicationAssignmentListModel.AssignedToUserCount)
                     </strong>
                 </div>
@@ -191,7 +188,7 @@
                             <tr class="govuk-table__row data-row">
 
                                 <td class="govuk-table__cell" style="width: @(12 + offset)%">
-                                    <strong class="govuk-tag app-task-list__tag @(assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetStatusStyleName())" id="company-information-status">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
+                                    <strong class="govuk-tag app-task-list__tag @(assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetStatusStyleName())">@assignedFellingLicenceApplicationModel.FellingLicenceStatus.GetDisplayNameByActorType(ActorType.InternalUser)</strong>
                                 </td>
 
                                 <td class="govuk-table__cell" style="width: @(12 + offset)%">

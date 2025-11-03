@@ -1,5 +1,4 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.Services.Common
 @model Forestry.Flo.External.Web.Models.AgentAuthorityForm.AgentAuthorityFormDocumentModel
 
 @{
@@ -7,7 +6,7 @@
     var applicationId = Context.Request.Query["ApplicationId"];
     var returnToApplicationSummary = Context.Request.Query["returnToApplicationSummary"];
     ViewData.ShowBackLink();
-    var AafStepStatus = ViewData["AafStepStatus"] ?? false;   
+    var aafStepStatus = Model.DoesNotHaveAnyAuthorityForms ? false : ViewData["AafStepStatus"] ?? false;   
 }
 
 <div class="govuk-grid-column-two-thirds">
@@ -24,7 +23,7 @@
             <validation asp-for="DoesNotHaveAnyAuthorityForms"></validation>
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
-                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="@AafStepStatus">
+                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="@aafStepStatus" id="AgentAuthorityFormCorrect">
                     <label class="govuk-label govuk-checkboxes__label" for="AgentAuthorityFormCorrect">
                         Confirm the current agent authority form is correct
                     </label>
@@ -35,6 +34,7 @@
         <div class="govuk-button-group">
             <input aria-hidden="True" type="hidden" asp-for="@applicationId" />
             <input aria-hidden="True" type="hidden" asp-for="@returnToApplicationSummary" />
+            <input type="hidden" asp-for="AgentAuthorityId"/>
 			<button class="govuk-button" type="submit" data-module="govuk-button">
 				Save and continue
 			</button>

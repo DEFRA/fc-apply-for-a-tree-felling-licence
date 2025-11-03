@@ -1,4 +1,4 @@
-﻿using Forestry.Flo.Services.Applicants.Models;
+﻿namespace Forestry.Flo.Services.Applicants.Models;
 
 /// <summary>
 /// Model class representing a request to create a new <see cref="WoodlandOwner"/> within the system.

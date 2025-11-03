@@ -41,8 +41,12 @@ public class AdminHubRepository : IAdminHubRepository
             return UnitResult.Failure(UserDbErrorReason.NotFound); 
         }
 
-        if (_context.AdminHubOfficers.Any(x => x.AdminHub.Id == adminHubId && x.UserAccountId == adminOfficerUserId))
-            return UnitResult.Failure(UserDbErrorReason.NotUnique); 
+        if (await _context.AdminHubOfficers.AnyAsync(
+                x => x.AdminHub.Id == adminHubId && x.UserAccountId == adminOfficerUserId,
+                cancellationToken))
+        {
+            return UnitResult.Failure(UserDbErrorReason.NotUnique);
+        }
         
         var adminHubUser = new AdminHubOfficer(adminHubInDatabase, adminOfficerUserId);
         await _context.AdminHubOfficers.AddAsync(adminHubUser, cancellationToken);

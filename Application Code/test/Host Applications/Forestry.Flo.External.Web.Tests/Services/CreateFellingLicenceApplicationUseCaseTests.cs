@@ -1231,6 +1231,24 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         _withdrawFellingLicenceService.Setup(r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<IList<Guid>>($"Could not withdraw the {nameof(FellingLicenceApplication)}"));
+
+        // Act
+        var result =
+            await _sut.WithdrawFellingLicenceApplicationAsync(application.Id, externalApplicant, "link",
+                CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _withdrawFellingLicenceService.Verify(
+            r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
+            Times.Once);
+        _withdrawFellingLicenceService.Verify(
+            r => r.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None),
+            Times.Never);
+        _auditService.Verify(s =>
+            s.PublishAuditEventAsync(
+                It.Is<AuditEvent>(e => e.EventName == AuditEvents.WithdrawFellingLicenceApplicationFailure),
+                It.IsAny<CancellationToken>()));
     }
 
     // Act

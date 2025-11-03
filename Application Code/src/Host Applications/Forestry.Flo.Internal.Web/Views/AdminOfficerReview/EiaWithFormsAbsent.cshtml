@@ -4,24 +4,23 @@
 }
 @model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.EiaWithFormsAbsentViewModel
 
-<div class="govuk-grid-column-two-thirds">
+<partial name="Partials/_EiaWarning"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_PageErrors"/>
 
-    <partial name="Partials/_EiaWarning" />
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_PageErrors" />
-
+<div class="govuk-grid-column-two-thirds width-limit-override">
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <form method="post" asp-action="EiaWithFormsAbsent">
-        <input hidden="hidden" aria-hidden="True" asp-for="ApplicationId" />
+        <input hidden="hidden" aria-hidden="True" asp-for="ApplicationId"/>
         <div class="govuk-form-group">
             <fieldset class="govuk-fieldset" id="@nameof(Model.HaveTheFormsBeenReceived)">
                 <legend class="govuk-heading-m">
                     Has the EIA form been received from the applicant?
                 </legend>
                 <div class="govuk-hint">
-                    Check whether the applicant has uploaded the Environmental Impact Assessment (EIA) 
+                    Check whether the applicant has uploaded the Environmental Impact Assessment (EIA)
                     form as part of this application OR if an EIA has been received via the EIA service.
                 </div>
                 <validation asp-for="@Model.HaveTheFormsBeenReceived"></validation>
@@ -33,7 +32,7 @@
                                class="govuk-radios__input"
                                asp-for="HaveTheFormsBeenReceived"
                                data-aria-controls="conditional-forms-received"
-                               value="@true" />
+                               value="@true"/>
                         <label class="govuk-label govuk-radios__label" for="forms-received-yes">
                             Yes, the EIA forms have been received
                         </label>
@@ -112,5 +111,5 @@
 
 @section breadcrumbs
 {
-    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
 }

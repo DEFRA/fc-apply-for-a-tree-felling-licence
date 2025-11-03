@@ -1,3 +1,4 @@
+using Ardalis.GuardClauses;
 using FluentValidation;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Models;
@@ -12,20 +13,18 @@ using Newtonsoft.Json;
 namespace Forestry.Flo.External.Web.Controllers
 {
     [Authorize, RequireCompletedRegistration]
-    public class PropertyProfileController : Controller
+    public class PropertyProfileController(
+        IValidator<PropertyProfileModel> validator,
+        AgentAuthorityFormUseCase aafUseCase)
+        : Controller
     {
-        private readonly IValidator<PropertyProfileModel> _validator;
+        private readonly IValidator<PropertyProfileModel> _validator = Guard.Against.Null(validator);
+        private readonly AgentAuthorityFormUseCase _aafUseCase = Guard.Against.Null(aafUseCase);
 
         private const string ChangeTheNameAndTryAgainMessage =
             "The woodland name has been used already, change the name and try again";
         private const string PropertyDoesNotExistMessage =
             "The woodland does not exist, create a new woodland.";
-
-        public PropertyProfileController(IValidator<PropertyProfileModel> validator)
-        {
-            _validator = validator;
-
-        }
 
         // GET: Compartment/Index/1
         public async Task<ActionResult> Index(Guid id,
@@ -134,7 +133,8 @@ namespace Forestry.Flo.External.Web.Controllers
             }
         }
 
-        private async Task<IActionResult> HandleCreateOrAddCompartment(PropertyProfileModel model,
+        private async Task<IActionResult> HandleCreateOrAddCompartment(
+            PropertyProfileModel model,
             bool addCompartment,
             int? compartmentCount,
             ManagePropertyProfileUseCase useCase,
@@ -172,16 +172,20 @@ namespace Forestry.Flo.External.Web.Controllers
 
                             if (createApplicationResult.IsSuccess)
                             {
-                                return RedirectToAction(nameof(FellingLicenceApplicationController.Operations), "FellingLicenceApplication", new { applicationId = createApplicationResult.Value });
+                                return await RedirectBackIntoApplicationFlow(createApplicationResult.Value, user, model.WoodlandOwnerId, model.AgencyId, cancellationToken);
                             }
+
                             return RedirectToAction(nameof(FellingLicenceApplicationController.SelectWoodland), "FellingLicenceApplication", new { woodlandOwnerId = model.WoodlandOwnerId, agencyId = model.AgencyId });
                         }
+
                         return RedirectToAction(nameof(FellingLicenceApplicationController.UpdateSelectWoodland), "FellingLicenceApplication", new { applicationId = model.ApplicationId });
                     }
+
                     if (addCompartment || compartmentCount == 0)
                     {
                         return RedirectToAction(nameof(CompartmentController.CreateDetails), "Compartment", new { propertyProfileId = result.Value.Id, woodlandOwnerId = model.WoodlandOwnerId, agencyId = model.AgencyId });
                     }
+
                     return RedirectAfterPropertySave(model.WoodlandOwnerId, model.AgencyId);
             }
         }
@@ -437,6 +441,32 @@ namespace Forestry.Flo.External.Web.Controllers
                 default:
                     return RedirectToAction(nameof(WoodlandOwnerController.ManagedClientSummary), "WoodlandOwner", new { woodlandOwnerId, agencyId = agencyId.Value });
             }
+        }
+
+        private async Task<IActionResult> RedirectBackIntoApplicationFlow(
+            Guid applicationId,
+            ExternalApplicant user,
+            Guid woodlandOwnerId, 
+            Guid? agencyId,
+            CancellationToken cancellationToken)
+        {
+            if (user.IsFcUser)
+            {
+                return RedirectToAction(nameof(FellingLicenceApplicationController.TenYearLicence), "FellingLicenceApplication", new { applicationId = applicationId });
+            }
+
+            if (agencyId.HasValue)
+            {
+                var authorityId =
+                    await _aafUseCase.TryGetAgentAuthorityIdAsync(agencyId.Value, woodlandOwnerId, cancellationToken);
+
+                if (authorityId.HasValue)
+                {
+                    return RedirectToAction(nameof(FellingLicenceApplicationController.AgentAuthorityForm), "FellingLicenceApplication", new { agentAuthorityId = authorityId.Value, applicationId });
+                }
+            }
+
+            return RedirectToAction(nameof(FellingLicenceApplicationController.Operations), "FellingLicenceApplication", new { applicationId });
         }
     }
 }

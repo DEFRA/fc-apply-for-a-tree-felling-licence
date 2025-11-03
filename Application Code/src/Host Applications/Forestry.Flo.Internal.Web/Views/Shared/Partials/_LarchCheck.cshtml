@@ -1,14 +1,9 @@
 ﻿@{
-	ViewData["Title"] = "Larch application check";
-	var user = new InternalUser(User);
+    ViewData["Title"] = "Larch application check";
+    var user = new InternalUser(User);
 }
-@using Forestry.Flo.Internal.Web.Models.AdminOfficerReview
 @using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.Services.Common
-@using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure.Display
-@using Forestry.Flo.Internal.Web.Infrastructure
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.LarchCheckModel
 <style>
 	.no-border-left {
@@ -23,259 +18,258 @@
 	}
 </style>
 
-<div class="govuk-grid-column-two-thirds">
+<h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
-	<partial name="Partials/_ConfirmationMessageDisplay" />
+<div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title"
+     data-module="govuk-notification-banner">
+    <div class="govuk-notification-banner__header">
+        <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+            Information
+        </h2>
+    </div>
+    <div class="govuk-notification-banner__content">
+        <p class="govuk-body">
+            The system has identified that this application includes the felling of larch species in the Phytophthora ramorum high risk zone 1 and requires checking for infection.
+        </p>
+        <p class="govuk-body">
+            Identified species:
+            <ul>
+                @foreach (var species in Model.AllSpecies)
+                {
+                    <li>@Html.Raw(species.SpeciesName)</li>
+                }
+            </ul>
+        </p>
+        <p class="govuk-body">
+            @if (!string.IsNullOrWhiteSpace(Model.ZonesCombined))
+            {
+                <span>
+                    Identified felling location(s) @Model.ZonesCombined <br/>
+                </span>
+            }
+            @{
+                var submissionDate = Model.FellingLicenceApplicationSummary.DateReceived.Value;
+                if (Model.InMoratorium)
+                {
+                    <text>Identified submission date: @submissionDate.ToString("dd/MM/yyyy") - <b>this falls into the @Model.MoratoriumPeriod Moratorium date range,</b></text>
+                }
 
-	<h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+                if (Model.FellingLicenceApplicationSummary.FinalActionDate.HasValue && Model.FellingLicenceApplicationSummary.FinalActionDate.Value < Model.ExtendedFAD)
+                {
+                    <text><b> the new final action date (FAD) will be: @Model.ExtendedFAD.ToString("dd/MM/yyyy")</b></text>
+                }
+            }
+        </p>
+    </div>
+</div>
 
-	<div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title"
-	data-module="govuk-notification-banner">
-		<div class="govuk-notification-banner__header">
-			<h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
-				Information
-			</h2>
-		</div>
-		<div class="govuk-notification-banner__content">
-			<p class="govuk-body">
-				The system has identified that this application includes the felling of larch species in the Phytophthora ramorum  high risk zone 1 and requires checking for infection.
-			</p>
-			<p class="govuk-body">
-				Identified species:
-				<ul>
-					@foreach (var species in Model.AllSpecies)
-					{
-						<li>@Html.Raw(species.SpeciesName)</li>
-					}
-				</ul>
-			</p>
-			<p class="govuk-body">
-				@if (!string.IsNullOrWhiteSpace(Model.ZonesCombined))
-				{
-				<span>
-					Identified felling location(s) @Model.ZonesCombined <br />
-				</span>
-				}
-				@{
-					var submissionDate = Model.FellingLicenceApplicationSummary.DateReceived.Value;
-					if (Model.InMoratorium)
-					{
-						<text>Identified submission date: @submissionDate.ToString("dd/MM/yyyy") - <b>this falls into the @Model.MoratoriumPeriod Moratorium date range,</b></text>
-					}
-					if (Model.FellingLicenceApplicationSummary.FinalActionDate.HasValue && Model.FellingLicenceApplicationSummary.FinalActionDate.Value < Model.ExtendedFAD)
-					{
-						<text><b> the new final action date (FAD) will be: @Model.ExtendedFAD.ToString("dd/MM/yyyy")</b></text>
-					}
-				}
-			</p>
-		</div>
-	</div>
+<div class="govuk-grid-column-two-thirds width-limit-override">
 
-	<partial name="Partials/_PageErrors" />
+    <form id="admin-officer-review" method="post">
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset" role="group">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
+                    <h3 class="govuk-fieldset__heading">
+                        Confirm tree species to be felled
+                    </h3>
+                    <p class="govuk-body no-margin-bottom">
+                    The system has identified that this application includes the following species:
+                    <ul class="govuk-body no-margin-bottom">
+                        @foreach (var species in Model.AllSpecies)
+                        {
+                            <li>@Html.Raw(species.SpeciesName)</li>
+                        }
+                    </ul>
+                </legend>
 
-	<form id="admin-officer-review" method="post">
-		<div class="govuk-form-group">
-			<fieldset class="govuk-fieldset" role="group">
-				<legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
-					<h3 class="govuk-fieldset__heading">
-						Confirm tree species to be felled
-					</h3>
-					<p class="govuk-body no-margin-bottom">
-						The system has identified that this application includes the following species:
-						<ul class="govuk-body no-margin-bottom">
-							@foreach (var species in Model.AllSpecies)
-							{
-								<li>@Html.Raw(species.SpeciesName)</li>
-							}
-						</ul>
-				</legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <validation asp-for="@Model.ConfirmLarchOnly"></validation>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="larch-only" asp-for="ConfirmLarchOnly" type="radio" value="true"/>
+                        <label class="govuk-label govuk-radios__label" for="larch-only">
+                            Larch only
+                        </label>
+                    </div>
 
-				<div class="govuk-radios" data-module="govuk-radios">
-					<validation asp-for="@Model.ConfirmLarchOnly"></validation>
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="larch-only" asp-for="ConfirmLarchOnly" type="radio" value="true" />
-						<label class="govuk-label govuk-radios__label" for="larch-only">
-							Larch only
-						</label>
-					</div>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="larch-mixed" asp-for="ConfirmLarchOnly" type="radio" value="false"/>
+                        <label class="govuk-label govuk-radios__label" for="larch-mixed">
+                            Larch and other species
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
 
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="larch-mixed" asp-for="ConfirmLarchOnly" type="radio" value="false" />
-						<label class="govuk-label govuk-radios__label" for="larch-mixed">
-							Larch and other species
-						</label>
-					</div>
-				</div>
-			</fieldset>
-		</div>
+        <div class="govuk-form-group">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                <h3 class="govuk-fieldset__heading">
+                    Confirm tree felling location
+                </h3>
+            </legend>
+            <p class="govuk-body">
+                @if (!string.IsNullOrWhiteSpace(Model.ZonesCombined))
+                {
+                    <span>
+                        The system has identified the trees to be felled fall into @Model.ZonesCombined
+                    </span>
+                }
+            </p>
 
-		<div class="govuk-form-group">
-			<legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-				<h3 class="govuk-fieldset__heading">
-					Confirm tree felling location
-				</h3>
-			</legend>
-			<p class="govuk-body">
-				@if (!string.IsNullOrWhiteSpace(Model.ZonesCombined))
-				{
-					<span>
-						The system has identified the trees to be felled fall into @Model.ZonesCombined
-					</span>
-				}
-			</p>
+            <validation asp-for="@Model.Zone1"></validation>
+            <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                <div class="govuk-checkboxes__item">
+                    <input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input" asp-for="Zone1"
+                           id="chkZone1" type="checkbox" data-aria-controls="conditional-@Html.NameFor(x => x.Zone1)">
+                    <label class="govuk-label govuk-checkboxes__label" for="chkZone1">
+                        Zone 1 (High risk)
+                    </label>
+                </div>
 
-			<validation asp-for="@Model.Zone1"></validation>
-			<div class="govuk-checkboxes" data-module="govuk-checkboxes">
-				<div class="govuk-checkboxes__item">
-					<input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input" asp-for="Zone1"
-						   id="chkZone1" type="checkbox" data-aria-controls="conditional-@Html.NameFor(x => x.Zone1)">
-					<label class="govuk-label govuk-checkboxes__label" for="chkZone1">
-						Zone 1 (High risk)
-					</label>
-				</div>
+                <div class="govuk-checkboxes__item">
+                    <input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input" asp-for="Zone2"
+                           id="chkZone2" type="checkbox">
+                    <label class="govuk-label govuk-checkboxes__label" for="chkZone2">
+                        Zone 2 (Medium risk)
+                    </label>
+                </div>
 
-				<div class="govuk-checkboxes__item">
-					<input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input" asp-for="Zone2"
-						   id="chkZone2" type="checkbox">
-					<label class="govuk-label govuk-checkboxes__label" for="chkZone2">
-						Zone 2 (Medium risk)
-					</label>
-				</div>
+                <div class="govuk-checkboxes__item">
+                    <input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input" asp-for="Zone3"
+                           id="chkZone3" type="checkbox">
+                    <label class="govuk-label govuk-checkboxes__label" for="chkZone3">
+                        Zone 3 (Low risk)
+                    </label>
+                </div>
 
-				<div class="govuk-checkboxes__item">
-					<input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input" asp-for="Zone3"
-						   id="chkZone3" type="checkbox">
-					<label class="govuk-label govuk-checkboxes__label" for="chkZone3">
-						Zone 3 (Low risk)
-					</label>
-				</div>
+            </div>
+        </div>
 
-			</div>
-		</div>
-
-		<div class="govuk-form-group">
-			<fieldset class="govuk-fieldset">
-				<legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-					<h3 class="govuk-fieldset__heading">
-						Confirm whether the application's submission date falls within the moratorium period
-					</h3>
-					<div id="return-to-applicant-comment-hint" class="govuk-hint no-margin-bottom">
-						The system has identified submission date: @submissionDate.ToString("dd/MM/yyyy") - 
-                        @{  
-                            var moratoriumText = Model.InMoratorium  
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h3 class="govuk-fieldset__heading">
+                        Confirm whether the application's submission date falls within the moratorium period
+                    </h3>
+                    <div id="return-to-applicant-comment-hint" class="govuk-hint no-margin-bottom">
+                        The system has identified submission date: @submissionDate.ToString("dd/MM/yyyy") -
+                        @{
+                            var moratoriumText = Model.InMoratorium
                                 ? $"this falls into the {Model.MoratoriumPeriod} Moratorium date range"
                                 : $"this falls outside the {Model.MoratoriumPeriod} Moratorium date range";
-                        }  
+                        }
                         <span>@moratoriumText</span>
                     </div>
-				</legend>
-				<div class="govuk-radios" data-module="govuk-radios">
-					<validation asp-for="@Model.ConfirmMoratorium"></validation>
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="moratorium-true" asp-for="ConfirmMoratorium" type="radio" value="true" />
-						<label class="govuk-label govuk-radios__label" for="moratorium-true">
-							@Model.MoratoriumPeriod
-						</label>
-						<div class="govuk-hint govuk-radios__hint">
-							This is within the moratorium date range, the final action date (FAD) will be extended
-						</div>
-					</div>
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="moratorium-false" asp-for="ConfirmMoratorium" type="radio" value="false" />
-						<label class="govuk-label govuk-radios__label" for="moratorium-false">
-							@Model.FlyoverPeriod
-						</label>
-						<div class="govuk-hint govuk-radios__hint">
-							This is not within the moratorium date range, the final action date (FAD) maybe affected
-						</div>
-					</div>
-				</div>
-			</fieldset>
-		</div>
+                </legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <validation asp-for="@Model.ConfirmMoratorium"></validation>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="moratorium-true" asp-for="ConfirmMoratorium" type="radio" value="true"/>
+                        <label class="govuk-label govuk-radios__label" for="moratorium-true">
+                            @Model.MoratoriumPeriod
+                        </label>
+                        <div class="govuk-hint govuk-radios__hint">
+                            This is within the moratorium date range, the final action date (FAD) will be extended
+                        </div>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="moratorium-false" asp-for="ConfirmMoratorium" type="radio" value="false"/>
+                        <label class="govuk-label govuk-radios__label" for="moratorium-false">
+                            @Model.FlyoverPeriod
+                        </label>
+                        <div class="govuk-hint govuk-radios__hint">
+                            This is not within the moratorium date range, the final action date (FAD) maybe affected
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
 
-		<h2 class="govuk-heading-m">Please provide the following details based on the larch application checks</h2>
+        <h2 class="govuk-heading-m">Please provide the following details based on the larch application checks</h2>
 
-		<div class="govuk-form-group govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden no-border-left"
-			 id="conditional-@Html.NameFor(x => x.Zone1)">
-			<fieldset class="govuk-fieldset">
-				<legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
-					<h3 class="govuk-fieldset__heading">
-						Have the relevant compartments for the application been recorded in the tree health inspection
-						log?
-					</h3>
-				</legend>
-				<validation asp-for="@Model.ConfirmInspectionLog"></validation>
-				<div class="govuk-checkboxes" data-module="govuk-checkboxes">
-					<div class="govuk-checkboxes__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input"
-							asp-for="ConfirmInspectionLog" id="ConfirmInspectionLog" type="checkbox">
-						<label class="govuk-label govuk-checkboxes__label" for="ConfirmInspectionLog">
-							I confirm that the relevant compartments for the application have been recorded in the tree
-							health inspection log.
-						</label>
-					</div>
-				</div>
-			</fieldset>
-		</div>
+        <div class="govuk-form-group govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden no-border-left"
+             id="conditional-@Html.NameFor(x => x.Zone1)">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
+                    <h3 class="govuk-fieldset__heading">
+                        Have the relevant compartments for the application been recorded in the tree health inspection
+                        log?
+                    </h3>
+                </legend>
+                <validation asp-for="@Model.ConfirmInspectionLog"></validation>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input"
+                               asp-for="ConfirmInspectionLog" id="ConfirmInspectionLog" type="checkbox">
+                        <label class="govuk-label govuk-checkboxes__label" for="ConfirmInspectionLog">
+                            I confirm that the relevant compartments for the application have been recorded in the tree
+                            health inspection log.
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
 
-		<div class="govuk-form-group">
-			<fieldset class="govuk-fieldset">
-				<legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
-					<h3 class="govuk-fieldset__heading">
-						Recommend split application due to larch and other species and or mixed zones
-					</h3>
-				</legend>
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
+                    <h3 class="govuk-fieldset__heading">
+                        Recommend split application due to larch and other species and or mixed zones
+                    </h3>
+                </legend>
 
-				<validation asp-for="@Model.RecommendSplitApplicationDue"></validation>
-				<div class="govuk-radios" data-module="govuk-radios">
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="MixLarchZone1" asp-for="RecommendSplitApplicationDue" type="radio" value="MixLarchZone1" />
-						<label class="govuk-label govuk-radios__label" for="MixLarchZone1">
-							@RecommendSplitApplicationEnum.MixLarchZone1.GetDescription()
-						</label>
-					</div>
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="LarchOnlyMixZone" asp-for="RecommendSplitApplicationDue" type="radio" value="LarchOnlyMixZone" />
-						<label class="govuk-label govuk-radios__label" for="LarchOnlyMixZone">
-							@RecommendSplitApplicationEnum.LarchOnlyMixZone.GetDescription()
-						</label>
-					</div>
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="MixLarchMixZone" asp-for="RecommendSplitApplicationDue" type="radio" value="MixLarchMixZone" />
-						<label class="govuk-label govuk-radios__label" for="MixLarchMixZone">
-							@RecommendSplitApplicationEnum.MixLarchMixZone.GetDescription()
-						</label>
-					</div>
-					<div class="govuk-radios__item">
-						<input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
-							   id="DontReturnApplication" asp-for="RecommendSplitApplicationDue" type="radio" value="DontReturnApplication" />
-						<label class="govuk-label govuk-radios__label" for="DontReturnApplication">
-							@RecommendSplitApplicationEnum.DontReturnApplication.GetDescription()
-						</label>
-					</div>
-				</div>
-			</fieldset>
-		</div>
+                <validation asp-for="@Model.RecommendSplitApplicationDue"></validation>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="MixLarchZone1" asp-for="RecommendSplitApplicationDue" type="radio" value="MixLarchZone1"/>
+                        <label class="govuk-label govuk-radios__label" for="MixLarchZone1">
+                            @RecommendSplitApplicationEnum.MixLarchZone1.GetDescription()
+                        </label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="LarchOnlyMixZone" asp-for="RecommendSplitApplicationDue" type="radio" value="LarchOnlyMixZone"/>
+                        <label class="govuk-label govuk-radios__label" for="LarchOnlyMixZone">
+                            @RecommendSplitApplicationEnum.LarchOnlyMixZone.GetDescription()
+                        </label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="MixLarchMixZone" asp-for="RecommendSplitApplicationDue" type="radio" value="MixLarchMixZone"/>
+                        <label class="govuk-label govuk-radios__label" for="MixLarchMixZone">
+                            @RecommendSplitApplicationEnum.MixLarchMixZone.GetDescription()
+                        </label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
+                               id="DontReturnApplication" asp-for="RecommendSplitApplicationDue" type="radio" value="DontReturnApplication"/>
+                        <label class="govuk-label govuk-radios__label" for="DontReturnApplication">
+                            @RecommendSplitApplicationEnum.DontReturnApplication.GetDescription()
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
 
-		@Html.EditorFor(m => m.FormLevelCaseNote)
+        @Html.EditorFor(m => m.FormLevelCaseNote)
 
-		<div class="govuk-button-group">
+        <div class="govuk-button-group">
 
-			<button condition="@(!Model.Disabled)" type="submit" class="govuk-button" data-module="govuk-button">
-				Continue
-			</button>
+            <button condition="@(!Model.Disabled)" type="submit" class="govuk-button" data-module="govuk-button">
+                Continue
+            </button>
 
-			<a class="govuk-button govuk-button--secondary" asp-action="Index" asp-route-id="@Model.ApplicationId"
-			   title="Back to review">Back</a>
+            <a class="govuk-button govuk-button--secondary" asp-action="Index" asp-route-id="@Model.ApplicationId"
+               title="Back to review">
+                Back
+            </a>
 
-		</div>
-		<input asp-for="ApplicationId" />
-	</form>
+        </div>
+        <input asp-for="ApplicationId"/>
+    </form>
 </div>
