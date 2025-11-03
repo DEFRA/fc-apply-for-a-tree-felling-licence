@@ -44,9 +44,9 @@ jobs:
           /d:sonar.token="${{ secrets.SONAR_TOKEN_ACTIONS }}"
           /d:sonar.verbose=true
           /d:sonar.qualitygate.wait=false
-          /d:sonar.cs.cobertura.reportsPaths="**/TestResults/*/coverage.opencover.xml"
+          /d:sonar.cs.opencover.reportsPaths="**/TestResults/*/coverage.opencover.xml"
           /d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx"
-          /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.Tests.cs,**/*.Tests/*" \
+          /d:sonar.exclusions="**/bin/**,**/obj/**,**/*.Tests.cs,**/*.Tests/*"
           /d:sonar.test.exclusions="**/test/**"
 
       - name: Restore dependencies
@@ -130,7 +130,7 @@ jobs:
           dotnet test "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -143,7 +143,7 @@ jobs:
           dotnet test "test/Host Applications/Forestry.Flo.Internal.Web.Tests/Forestry.Flo.Internal.Web.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -156,7 +156,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.AdminHubs.Tests/Forestry.Flo.Services.AdminHubs.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -168,7 +168,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.Applicants.Tests/Forestry.Flo.Services.Applicants.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -181,7 +181,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.Common.Tests/Forestry.Flo.Services.Common.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -194,7 +194,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/Forestry.Flo.Services.ConditionsBuilder.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -207,7 +207,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.DataImport.Tests/Forestry.Flo.Services.DataImport.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -220,7 +220,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/Forestry.Flo.Services.FellingLicenceApplications.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -233,7 +233,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.FileStorage.Tests/Forestry.Flo.Services.FileStorage.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -246,7 +246,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.Gis.Tests/Forestry.Flo.Services.Gis.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -259,7 +259,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.InternalUsers.Tests/Forestry.Flo.Services.InternalUsers.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -272,7 +272,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.Notifications.Tests/Forestry.Flo.Services.Notifications.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -285,7 +285,7 @@ jobs:
           dotnet test "test/Services/Forestry.Flo.Services.PropertyProfiles.Tests/Forestry.Flo.Services.PropertyProfiles.Tests.csproj" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
+            /p:CoverletOutput=TestResults/coverage.opencover.xml \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
             --logger "trx;LogFileName=TestResults/test.trx" \
             --verbosity normal
@@ -301,7 +301,6 @@ jobs:
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
       - name: Show coverage & TRX files found
-        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
         working-directory: Application Code
         shell: bash
         run: |
