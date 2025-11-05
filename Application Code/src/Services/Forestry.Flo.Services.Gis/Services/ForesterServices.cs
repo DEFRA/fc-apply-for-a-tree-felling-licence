@@ -390,7 +390,7 @@ public class ForesterServices : BaseServices, IForesterServices
 
     /// <inheritdoc />
     public async Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(
-        InternalCompartmentDetails<BaseShape> compartment, 
+        InternalCompartmentDetails<BaseShape> compartmentDetails, 
         CancellationToken cancellationToken,
         int delay = 30000,
         MapGeneration generationType = MapGeneration.Other,
@@ -401,15 +401,15 @@ public class ForesterServices : BaseServices, IForesterServices
             ["CorrelationId"] = Guid.NewGuid()
         }))
         {
-            _logger.LogInformation("GenerateImage_SingleCompartmentAsync called with compartment: {@Compartment}, delay: {Delay}, generationType: {GenerationType}, title: {Title}", compartment, delay, generationType, title);
+            _logger.LogInformation("GenerateImage_SingleCompartmentAsync called with compartment: {@Compartment}, delay: {Delay}, generationType: {GenerationType}, title: {Title}", compartmentDetails, delay, generationType, title);
 
             Guard.Against.Null(_config.UtilitiesService);
 
-            var extend = compartment.ShapeGeometry.GetExtent();
+            var extend = compartmentDetails.ShapeGeometry.GetExtent();
 
             if (extend.HasNoValue)
             {
-                _logger.LogError("Unable to calculate extent for compartment: {@Compartment}", compartment);
+                _logger.LogError("Unable to calculate extent for compartment: {@Compartment}", compartmentDetails);
                 return Result.Failure<Stream>("Unable to calculate Extend");
             }
 
@@ -461,12 +461,12 @@ public class ForesterServices : BaseServices, IForesterServices
                 LayerType = "ArcGISTiledMapServiceLayer"
             });
 
-            var shapeLayer = GetLayerDefinition(compartment.ShapeGeometry.GeometryType);
+            var shapeLayer = GetLayerDefinition(compartmentDetails.ShapeGeometry.GeometryType);
             var textLayer = GetLayerDefinition("text");
-            map.OperationalLayers.Add(new WebMapOperationalLayerFeatures(shapeLayer, new FeatureSetDetails(compartment.ShapeGeometry.GeometryType,
-                [new FeatureDetails(compartment.ShapeGeometry)])));
+            map.OperationalLayers.Add(new WebMapOperationalLayerFeatures(shapeLayer, new FeatureSetDetails(compartmentDetails.ShapeGeometry.GeometryType,
+                [new FeatureDetails(compartmentDetails.ShapeGeometry)])));
             map.OperationalLayers.Add(new WebMapOperationalLayerFeatures(textLayer, new FeatureSetDetails("esriGeometryPoint",
-                [new FeatureDetails(compartment.ShapeGeometry, compartment.CompartmentLabel)])));
+                [new FeatureDetails(compartmentDetails.ShapeGeometry, compartmentDetails.CompartmentLabel)])));
             ExportParameter parameters = new()
             {
                 LayoutTemplate = _layoutTemplate,
@@ -502,7 +502,7 @@ public class ForesterServices : BaseServices, IForesterServices
                 return outputResx.ConvertFailure<Stream>();
             }
 
-            _logger.LogInformation("Image generation succeeded for compartment: {@Compartment}", compartment);
+            _logger.LogInformation("Image generation succeeded for compartment: {@Compartment}", compartmentDetails);
 
             return await GetEsriGeneratedImageAsync(outputResx.Value, delay, cancellationToken);
         }

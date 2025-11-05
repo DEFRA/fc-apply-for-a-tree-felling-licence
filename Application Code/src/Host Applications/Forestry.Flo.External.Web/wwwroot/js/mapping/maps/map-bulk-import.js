@@ -121,13 +121,15 @@ define(["require",
                                             .then((data) => ({ status: r.status, body: data }));
                                     }
                                 })
-                                    .then((obj) => {
-                                        if (obj.status !== 200) {
-                                            that.ShowMessage("error", "Unable to load shape data");
-                                            return;
-                                        }
-                                        that.processResult(obj.body);
-                                    })
+                                .then((obj) => {
+                                    if (obj.status !== 200) {
+                                        that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                        document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                        that.clearImportWidget();
+                                        return;
+                                    }
+                                    that.processResult(obj.body);
+                                })
                             }
                             return;
                         }
@@ -156,20 +158,22 @@ define(["require",
                                             that.getfileNamePartsArray(filePath)
                                         ),
                                     })
-                                        .then((r) => {
-                                            if (r.status != 200) {
-                                                return r.text().then((data) => ({ status: r.status, body: data }));
-                                            } else {
-                                                return r.json().then((data) => ({ status: r.status, body: data }));
-                                            }
-                                        })
-                                        .then((obj) => {
-                                            if (obj.status !== 200) {
-                                                that.ShowMessage("error", "Unable to load shape data");
-                                                return;
-                                            }
-                                            that.processResult(obj.body);
-                                        });
+                                    .then((r) => {
+                                        if (r.status != 200) {
+                                            return r.text().then((data) => ({ status: r.status, body: data }));
+                                        } else {
+                                            return r.json().then((data) => ({ status: r.status, body: data }));
+                                        }
+                                    })
+                                    .then((obj) => {
+                                        if (obj.status !== 200) {
+                                            that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                            document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                            that.clearImportWidget();
+                                            return;
+                                        }
+                                        that.processResult(obj.body);
+                                    });
                                 } catch (error) {
                                     console.error("Error processing KMZ file:", error);
                                     that.ShowMessage("error", "Failed to process KMZ file.");
@@ -196,13 +200,15 @@ define(["require",
                                             .then((data) => ({ status: r.status, body: data }));
                                     }
                                 })
-                                    .then((obj) => {
-                                        if (obj.status !== 200) {
-                                            that.ShowMessage("error", "Unable to load shape data");
-                                            return;
-                                        }
-                                        that.processResult(obj.body);
-                                    })
+                                .then((obj) => {
+                                    if (obj.status !== 200) {
+                                        that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                        document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                        that.clearImportWidget();
+                                        return;
+                                    }
+                                    that.processResult(obj.body);
+                                })
                             }
                             return;
                         }
@@ -211,20 +217,23 @@ define(["require",
                             method: "POST",
                             body: that.getFormData(that.getfileNamePartsArray(filePath), e.target.files[0]),
                         })
-                            .then((r) => {
-                                if (r.status != 200) {
-                                    return r.text().then((data) => ({ status: r.status, body: data }));
-                                } else {
-                                    return r.json().then((data) => ({ status: r.status, body: data }));
-                                }
-                            })
-                            .then((obj) => {
-                                if (obj.status !== 200) {
-                                    return;
-                                }
+                        .then((r) => {
+                            if (r.status != 200) {
+                                return r.text().then((data) => ({ status: r.status, body: data }));
+                            } else {
+                                return r.json().then((data) => ({ status: r.status, body: data }));
+                            }
+                        })
+                        .then((obj) => {
+                            if (obj.status !== 200) {
+                                that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                that.clearImportWidget();
+                                return;
+                            }
 
-                                that.processResult(obj.body);
-                            });
+                            that.processResult(obj.body);
+                        });
                     });
                 }
 

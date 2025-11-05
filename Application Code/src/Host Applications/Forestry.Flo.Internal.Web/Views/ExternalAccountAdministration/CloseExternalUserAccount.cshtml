@@ -3,14 +3,13 @@
 }
 
 @using Forestry.Flo.Services.Common.Extensions
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.Internal.Web.Models.AccountAdministration.CloseExternalUserModel
 
 @{
     var warningText = "Closed accounts will be unable to manage applications.";
 }
 
-<div class="govuk-grid-column-two-thirds">
+<div class="govuk-grid-column-two-thirds width-limit-override">
 
     <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
 

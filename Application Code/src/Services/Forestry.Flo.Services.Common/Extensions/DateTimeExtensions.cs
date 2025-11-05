@@ -9,14 +9,9 @@ public static class DateTimeExtensions
     /// <returns>{numericDay}{suffix} {month} {year}, Example: 19th June 2022</returns>
     public static string CreateFormattedDate(this DateTime inputValue)
     {
-        DateTime? value = inputValue;
-
-        if (!value.HasValue)
-            return string.Empty;
-
-        var month = value.Value.ToString("MMMM");
-        var year = value.Value.ToString("yyyy");
-        var numericDay = value.Value.Day;
+        var month = inputValue.ToString("MMMM");
+        var year = inputValue.ToString("yyyy");
+        var numericDay = inputValue.Day;
 
         var suffix = numericDay switch
         {

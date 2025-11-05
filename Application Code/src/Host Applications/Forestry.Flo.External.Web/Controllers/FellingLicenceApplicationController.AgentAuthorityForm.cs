@@ -33,7 +33,14 @@ public partial class FellingLicenceApplicationController
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
         }
+        
         ViewData["AafStepStatus"] = fellingLicenceApplicationModelResult.Value.AgentAuthorityForm.StepComplete;
+
+        if (result.Value.DoesNotHaveAnyAuthorityForms)
+        {
+            ModelState.AddModelError(nameof(AgentAuthorityFormDocumentModel.DoesNotHaveAnyAuthorityForms), "You must have a current agent authority form to submit your application");
+        }
+
         return View(result.Value);
     }
 
@@ -41,12 +48,29 @@ public partial class FellingLicenceApplicationController
     public async Task<IActionResult> AgentAuthorityForm(
         [FromForm] Guid applicationId,
         [FromForm] bool aafStepStatus,
-        [FromForm] bool returnToApplicationSummary,
+        [FromForm] bool? returnToApplicationSummary,
         AgentAuthorityFormDocumentModel model,
         [FromServices] GetAgentAuthorityFormDocumentsUseCase useCase,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
+
+        var reloadModel = await useCase.GetAgentAuthorityFormDocumentsAsync(user, model.AgentAuthorityId, cancellationToken);
+
+        if (reloadModel.IsFailure)
+        {
+            this.AddErrorMessage("Something went wrong getting the authority form information, please try again");
+            return RedirectToAction(nameof(Index), "AgentAuthorityForm");
+        }
+
+        if (reloadModel.Value.DoesNotHaveAnyAuthorityForms && aafStepStatus)
+        {
+            ModelState.AddModelError(nameof(AgentAuthorityFormDocumentModel.DoesNotHaveAnyAuthorityForms), "You must have a current agent authority form to submit your application");
+
+            ViewData["AafStepStatus"] = false;
+
+            return View(reloadModel.Value);
+        }
 
         // Attempt to set the AAF step status for the application.
         var completeResult = await useCase.CompleteAafStepAsync(applicationId, user, aafStepStatus, cancellationToken);
@@ -63,10 +87,11 @@ public partial class FellingLicenceApplicationController
             return View(reloadResult.Value);
         }
 
-        if (returnToApplicationSummary)
+        if (returnToApplicationSummary is true)
         {
             return RedirectToAction(nameof(ApplicationSummary), new { applicationId });
         }
-        return RedirectToAction(nameof(SelectCompartments), new { applicationId });
+
+        return RedirectToAction(nameof(Operations), new { applicationId });
     }
 }

@@ -27,6 +27,8 @@ public partial class AccountController : Controller
     private readonly List<BreadCrumb> _breadCrumbsRoot;
     private readonly ILogger<AccountController> _logger;
 
+    private const string InvitationEmailError = "Invitation email could not be sent";
+
     public AccountController(
         ValidationProvider validationProvider,
         ILogger<AccountController> logger)
@@ -411,7 +413,8 @@ public partial class AccountController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ResendInvitationEmail(OrganisationWoodlandOwnerUserModel model,
+    public async Task<IActionResult> ResendInvitationEmail(
+        OrganisationWoodlandOwnerUserModel model,
         [FromServices] InviteWoodlandOwnerToOrganisationUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -422,7 +425,7 @@ public partial class AccountController : Controller
             await useCase.ReInviteWoodlandOwnerToOrganisationAsync(model, user, inviteLink, cancellationToken);
         if (result.IsFailure)
         {
-            this.AddErrorMessage(result.Error);
+            this.AddErrorMessage(InvitationEmailError);
             SetBreadcrumbs(model, "Resend invitation link");
             return View(model);
         }
@@ -431,7 +434,8 @@ public partial class AccountController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> ResendAgentInvitationEmail(AgencyUserModel model,
+    public async Task<IActionResult> ResendAgentInvitationEmail(
+        AgencyUserModel model,
         [FromServices] InviteAgentToOrganisationUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -442,7 +446,7 @@ public partial class AccountController : Controller
             await useCase.ReInviteAgentToOrganisationAsync(model, user, inviteLink, cancellationToken);
         if (result.IsFailure)
         {
-            this.AddErrorMessage(result.Error);
+            this.AddErrorMessage(InvitationEmailError);
             SetBreadcrumbs(model, "Resend invitation link");
             return View(model);
         }
@@ -532,10 +536,11 @@ public partial class AccountController : Controller
 
         var result =
             await useCase.InviteAgentToOrganisationAsync(model, user, inviteLink, cancellationToken);
+        
         switch (result.IsFailure)
         {
             case true when result.Error.ErrorResult is InviteUserErrorResult.OperationFailed or InviteUserErrorResult.UserAlreadyExists:
-                this.AddErrorMessage(result.Error.Message);
+                this.AddErrorMessage(InvitationEmailError);
                 SetBreadcrumbs(model, "Invite Agent To Organisation");
                 return View(model);
             case true when result.Error.ErrorResult == InviteUserErrorResult.UserAlreadyInvited:
@@ -553,7 +558,8 @@ public partial class AccountController : Controller
     // POST account/InviteUserToOrganisation
     [HttpPost]
     [UserIsInRole(roleName = AccountTypeExternal.WoodlandOwnerAdministrator)]
-    public async Task<IActionResult> InviteUserToOrganisation(OrganisationWoodlandOwnerUserModel model,
+    public async Task<IActionResult> InviteUserToOrganisation(
+        OrganisationWoodlandOwnerUserModel model,
         [FromServices] InviteWoodlandOwnerToOrganisationUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -571,7 +577,7 @@ public partial class AccountController : Controller
         switch (result.IsFailure)
         {
             case true when result.Error.ErrorResult is InviteUserErrorResult.OperationFailed or InviteUserErrorResult.UserAlreadyExists:
-                this.AddErrorMessage(result.Error.Message);
+                this.AddErrorMessage(InvitationEmailError);
                 SetBreadcrumbs(model, "Invite Woodland Owner User To Organisation");
                 return View(model);
             case true when result.Error.ErrorResult == InviteUserErrorResult.UserAlreadyInvited:

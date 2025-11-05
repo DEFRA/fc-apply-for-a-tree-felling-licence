@@ -5,13 +5,12 @@
 @using Forestry.Flo.Services.Common
 @model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.EiaWithFormsPresentViewModel
 
-<div class="govuk-grid-column-two-thirds">
-    
-    <partial name="Partials/_EiaWarning" />
-    <partial name="Partials/_ConfirmationMessageDisplay" />
-    <partial name="Partials/_UserGuideDisplay" />
-    <partial name="Partials/_PageErrors" />
+<partial name="Partials/_EiaWarning"/>
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_PageErrors"/>
 
+<div class="govuk-grid-column-two-thirds width-limit-override">
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <h2 class="govuk-heading-m">Attached EIA documents submitted by the applicant</h2>
@@ -58,12 +57,12 @@
                                class="govuk-radios__input"
                                asp-for="AreTheFormsCorrect"
                                data-aria-controls="conditional-forms-correct"
-                               value="@true" />
+                               value="@true"/>
                         <label class="govuk-label govuk-radios__label" for="forms-correct-yes">
                             Yes, the EIA forms are correct
                         </label>
                     </div>
-                    
+
                     <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-forms-correct">
 
                         <div class="govuk-form-group">
@@ -110,7 +109,7 @@
                 data-module="govuk-button">
             Submit EIA check
         </button>
-        
+
         <div id="send-reminder-container" hidden="hidden">
             <button type="submit"
                     condition="@Model.Editable(user)"
@@ -137,5 +136,5 @@
 
 @section breadcrumbs
 {
-    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
 }

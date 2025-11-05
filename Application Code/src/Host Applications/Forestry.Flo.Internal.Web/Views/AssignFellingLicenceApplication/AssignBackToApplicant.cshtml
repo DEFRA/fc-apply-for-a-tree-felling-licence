@@ -35,7 +35,7 @@
 <partial name="Partials/_UserGuideDisplay"/>
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
-<div class="govuk-grid-column-two-thirds">
+<div class="govuk-grid-column-two-thirds width-limit-override">
 
     <h1 condition="Model.ShowListOfUsers" class="govuk-heading-m">Are you sure you wish to assign the application @Model.FellingLicenceApplicationSummary.ApplicationReference back to the applicant?</h1>
     <h1 condition="@(Model.ShowListOfUsers == false)" class="govuk-heading-m">Are you sure you wish to assign the application @Model.FellingLicenceApplicationSummary.ApplicationReference back to @defaultUserName?</h1>

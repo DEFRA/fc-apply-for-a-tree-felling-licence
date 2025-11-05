@@ -2,18 +2,17 @@
 	ViewData["Title"] = "Larch flyover update";
 	var user = new InternalUser(User);
 }
-@using Forestry.Flo.Internal.Web.Models.AdminOfficerReview
 @using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
-@using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure.Display
-@using Forestry.Flo.Internal.Web.Infrastructure
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.LarchFlyoverModel
 
-<partial name="../Shared/Partials/_LarchFlyover.cshtml" model="@Model" />
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_PageErrors" />
 
-<div class="govuk-grid-column-two-thirds">
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
+    <partial name="../Shared/Partials/_LarchFlyover.cshtml" model="@Model" />
+
     @{
         var activityFeed = new ActivityFeedModel
         {

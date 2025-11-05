@@ -8,11 +8,11 @@
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SiteVisitSummaryModel
 
-<partial name="Partials/_ConfirmationMessageDisplay" />
-<partial name="Partials/_UserGuideDisplay" />
-<partial name="Partials/_PageErrors" />
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_PageErrors"/>
 
-<div class="govuk-grid-column-two-thirds">
+<div class="govuk-grid-column-two-thirds width-limit-override">
 
     <h1 class="govuk-heading-l">
         @ViewData["Title"]
@@ -29,20 +29,26 @@
 
     <partial name="Partials/_FellingDetails" model="@Model.FellingAndRestockingDetail"/>
     <p class="govuk-body govuk-!-margin-bottom-5"></p>
+</div>
+
+<div class="govuk-grid-column-full">
 
     <div class="page-break"></div>
     <h2 class="govuk-heading-m">Felling operation map</h2>
-    <img src="data:image/jpeg;base64,@Model.FellingMapBase64" alt="Felling operations map" />
+    <img src="data:image/jpeg;base64,@Model.FellingMapBase64" alt="Felling operations map"/>
     <p class="govuk-body govuk-!-margin-bottom-5"></p>
-    
+
     <div class="page-break"></div>
     <h2 class="govuk-heading-m">Restocking operation map</h2>
     <img src="data:image/jpeg;base64,@Model.RestockingMapBase64" alt="Restocking operations map"/>
     <p class="govuk-body govuk-!-margin-bottom-5"></p>
 
     <div class="page-break"></div>
-    <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>
 
+</div>
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
+    <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>
 </div>
 
 @section Scripts
@@ -53,5 +59,5 @@
 
 @section breadcrumbs
 {
-    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
 }

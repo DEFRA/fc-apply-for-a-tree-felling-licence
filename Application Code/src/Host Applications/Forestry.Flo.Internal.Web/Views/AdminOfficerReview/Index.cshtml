@@ -13,12 +13,11 @@
 <partial name="Partials/_ConfirmationMessageDisplay"/>
 <partial name="Partials/_UserGuideDisplay"/>
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+<partial name="Partials/_PageErrors"/>
 
-<div class="govuk-grid-column-two-thirds">
+<div class="govuk-grid-column-two-thirds width-limit-override">
 
     <h1 class="govuk-heading-m">@ViewData["Title"]</h1>
-
-    <partial name="Partials/_PageErrors"/>
 
     <form id="admin-officer-review" method="post" asp-action="ConfirmAdminOfficerReview">
 
@@ -134,7 +133,7 @@
                     }
                     else
                     {
-                        <div class="govuk-task-list__status" id="constraints-check">
+                        <div class="govuk-task-list__status">
                             <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.EiaStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.EiaStatus.GetDisplayName()</strong>
                         </div>
                     }
@@ -236,7 +235,7 @@
                     }
                     else
                     {
-                        <div class="govuk-task-list__status" id="constraints-check">
+                        <div class="govuk-task-list__status">
                             <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.LarchFlyoverStatus.GetDisplayName()</strong>
                         </div>
                     }
@@ -287,7 +286,7 @@
                     }
                     else
                     {
-                        <div class="govuk-task-list__status" id="constraints-check">
+                        <div class="govuk-task-list__status">
                             <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.CBWStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.CBWStatus.GetDisplayName()</strong>
                         </div>
                     }

@@ -21,91 +21,88 @@
     var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
 }
 
-<div class="govuk-body">
-    <div>
-        <h2 class="govuk-heading-m">@ViewData["Title"]</h2>
-        
-        @if (Model.Documents.Count() < (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments 
-             && Model.IsEditable)
-        {
-            var addSupportingDocumentModel = new AddSupportingDocumentModel
-            { 
-                FellingLicenceApplicationId = Model.Id,
-                DocumentCount = Model.Documents.Count()
-            };
+<div class="width-limit-override">
+    <h2 class="govuk-heading-m">@ViewData["Title"]</h2>
 
-            <partial name="Partials/_AddSupportingDocuments" model="addSupportingDocumentModel"/>
-        }
+    @if (Model.Documents.Count() < (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments
+         && Model.IsEditable)
+    {
+        var addSupportingDocumentModel = new AddSupportingDocumentModel
+        {
+            FellingLicenceApplicationId = Model.Id,
+            DocumentCount = Model.Documents.Count()
+        };
+
+        <partial name="Partials/_AddSupportingDocuments" model="addSupportingDocumentModel"/>
+    }
 
 
-        @if (!Model.Documents.Any())
-        {
-            <p class="govuk-body">
-                No supporting documents have been uploaded.
-            </p>
-        }
-        else
-        {
-            <table class="govuk-table" data-module="moj-sortable-table" id="documentation-list-table">
-                <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
-                    <th scope="col" class="govuk-table__header" aria-sort="none">Type</th>
-                    <th scope="col" class="govuk-table__header" aria-sort="descending">Upload date</th>
-                    <th scope="col" class="govuk-table__header">Actions</th>
+    @if (!Model.Documents.Any())
+    {
+        <p class="govuk-body">
+            No supporting documents have been uploaded.
+        </p>
+    }
+    else
+    {
+        <table class="govuk-table" data-module="moj-sortable-table" id="documentation-list-table">
+            <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
+                <th scope="col" class="govuk-table__header" aria-sort="none">Type</th>
+                <th scope="col" class="govuk-table__header" aria-sort="descending">Upload date</th>
+                <th scope="col" class="govuk-table__header">Actions</th>
+            </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+            @foreach (var document in Model.Documents)
+            {
+                var fileType = FileTypesProvider.FindFileTypeByMimeTypeWithFallback(document.MimeType).KindOfDocument;
+                var userCanDelete = document.AttachedByType is ActorType.InternalUser
+                                    && document.DocumentPurpose is DocumentPurpose.Attachment
+                                    && Model.IsEditable;
+
+                <tr class="govuk-table__row" data-id="@document.Id">
+                    <td class="govuk-table__cell wrapped-text">
+                        <a
+                            class="hidden-download-supporting-document"
+                            asp-controller="SupportingDocuments"
+                            asp-action="GetDocument"
+                            asp-route-id="@Model.Id"
+                            asp-route-documentIdentifier="@document.Id">
+                            @document.FileName
+                        </a>
+                    </td>
+                    <td class="govuk-table__cell" data-sort-value="@document.DocumentPurpose.GetDisplayName()">
+                        @document.DocumentPurpose.GetDisplayName()
+                    </td>
+                    <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">@DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)</td>
+
+                    <td class="govuk-table__cell">
+                        <a
+                            condition="@userCanDelete"
+                            hidden="hidden"
+                            type="button"
+                            class="hidden-remove-supporting-document"
+                            asp-action="RemoveSupportingDocumentation"
+                            asp-controller="SupportingDocuments"
+                            asp-route-id="@Model.Id"
+                            asp-route-documentIdentifier="@document.Id"
+                            title="Delete supporting document">
+                        </a>
+
+                        <input
+                            condition="@userCanDelete"
+                            type="button"
+                            class="govuk-button govuk-button--warning"
+                            data-id="@document.Id"
+                            data-module="govuk-button"
+                            name="visible-remove-supporting-document"
+                            value="Delete"/>
+                    </td>
                 </tr>
-                </thead>
-                <tbody class="govuk-table__body">
-                @foreach (var document in Model.Documents)
-                {
-                    var fileType = FileTypesProvider.FindFileTypeByMimeTypeWithFallback(document.MimeType).KindOfDocument;
-                    var userCanDelete = document.AttachedByType is ActorType.InternalUser
-                                        && document.DocumentPurpose is DocumentPurpose.Attachment
-                                        && Model.IsEditable;
-
-                    <tr class="govuk-table__row" data-id="@document.Id">
-                        <td class="govuk-table__cell wrapped-text">
-                            <a
-                                class="hidden-download-supporting-document"
-                                asp-controller="SupportingDocuments"
-                                asp-action="GetDocument"
-                                asp-route-id="@Model.Id"
-                                asp-route-documentIdentifier="@document.Id">
-                                @document.FileName
-                            </a>
-                        </td>
-                        <td class="govuk-table__cell" data-sort-value="@document.DocumentPurpose.GetDisplayName()">
-                            @document.DocumentPurpose.GetDisplayName()
-                        </td>
-                        <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">@DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)</td>
-
-                        <td class="govuk-table__cell">
-                            <a
-                                condition="@userCanDelete"
-                                hidden="hidden"
-                                type="button"
-                                class="hidden-remove-supporting-document"
-                                asp-action="RemoveSupportingDocumentation"
-                                asp-controller="SupportingDocuments"
-                                asp-route-id="@Model.Id"
-                                asp-route-documentIdentifier="@document.Id"
-                                title="Delete supporting document">
-                            </a>
-
-                            <input 
-                                condition="@userCanDelete" 
-                                type="button" 
-                                class="govuk-button govuk-button--warning" 
-                                data-id="@document.Id" 
-                                data-module="govuk-button" 
-                                name="visible-remove-supporting-document" 
-                                value="Delete"/>
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        }
-    </div>
+            }
+            </tbody>
+        </table>
+    }
 </div>
-

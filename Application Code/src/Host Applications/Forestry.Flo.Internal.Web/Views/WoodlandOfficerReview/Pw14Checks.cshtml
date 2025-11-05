@@ -15,14 +15,14 @@
 <partial name="Partials/_UserGuideDisplay" />
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
-<div class="govuk-grid-column-two-thirds">
+<div class="govuk-grid-column-two-thirds width-limit-override">
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <form method="post">
         <input asp-for="ApplicationId" />
 
-        <div class="govuk-form-group">
+        <div class="govuk-form-group width-limit-override">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
                     <h2 class="govuk-fieldset__heading">

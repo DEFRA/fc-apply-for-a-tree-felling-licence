@@ -2,11 +2,11 @@
 
 namespace Forestry.Flo.Services.InternalUsers.Services
 {
-    public class RolesService
+    public static class RolesService
     {
         public static string RolesStringFromList(IList<Roles> roles)
         {
-            string rolesString = null;
+            string rolesString = string.Empty;
 
             foreach (var role in roles)
             {
@@ -34,7 +34,7 @@ namespace Forestry.Flo.Services.InternalUsers.Services
             return rolesList;
         }
 
-        public static bool RolesStringHasAnyOfRoles(string rolesString, IList<Roles> permissableRoles)
+        public static bool RolesStringHasAnyOfRoles(string rolesString, IList<Roles> permissibleRoles)
         {
             bool hasAnyOfRoles = false;
 
@@ -49,7 +49,7 @@ namespace Forestry.Flo.Services.InternalUsers.Services
                 rolesList.Add(role);
             }
 
-            foreach (var role in permissableRoles)
+            foreach (var role in permissibleRoles)
             {
                 foreach (var userAccountRole in rolesList)
                 {

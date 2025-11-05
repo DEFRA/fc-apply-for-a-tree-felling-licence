@@ -6,26 +6,27 @@
 @using Forestry.Flo.Services.Common
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.EiaScreeningViewModel
 
-<div class="govuk-grid-column-two-thirds">
-    
-    <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
-                Important
-            </h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">
-                This application may need an Environmental Impact Assessment (EIA) decision
-            </p>
-            <p>
-                Use this section to record the outcome of your Environmental Impact Assessment (EIA) screening.
-            </p>
-            <p>
-                Use the information provided, including the application and any submitted EIA forms or related documents, to assess this case.
-            </p>
-        </div>
+
+<div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+    <div class="govuk-notification-banner__header">
+        <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+            Important
+        </h2>
     </div>
+    <div class="govuk-notification-banner__content">
+        <p class="govuk-notification-banner__heading">
+            This application may need an Environmental Impact Assessment (EIA) decision
+        </p>
+        <p>
+            Use this section to record the outcome of your Environmental Impact Assessment (EIA) screening.
+        </p>
+        <p>
+            Use the information provided, including the application and any submitted EIA forms or related documents, to assess this case.
+        </p>
+    </div>
+</div>
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
 
     <partial name="Partials/_ConfirmationMessageDisplay" />
     <partial name="Partials/_UserGuideDisplay" />

@@ -90,8 +90,7 @@ body {
 }
 
 .govuk-width-container {
-    max-width: 95%;
-    width: 95%;
+    max-width: 1280px;
 }
 
 .govuk-grid-column-one-tenth {
@@ -250,6 +249,17 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.width-limit-override *:not(.govuk-date-input__input), .govuk-form-group {
+    max-width: 650px !important;
+}
+
+.application-filters {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 @media print {
