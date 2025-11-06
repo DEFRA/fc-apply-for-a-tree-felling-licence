@@ -19,6 +19,11 @@ output "cloudflare_token" {
   sensitive = true
 }
 
+output "flov2_cloudflare_zone_settings_api" {
+  value     = data.azurerm_key_vault_secret.flov2_cloudflare_zone_settings_api.value
+  sensitive = true
+}
+
 output "traefik_dashboard_users" {
   value     = data.azurerm_key_vault_secret.traefik_dashboard_users.value
   sensitive = true

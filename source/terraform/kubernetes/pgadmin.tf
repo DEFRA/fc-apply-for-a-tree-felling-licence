@@ -22,7 +22,7 @@ resource "helm_release" "pgadmin" {
   ]
 
   depends_on = [
-    helm_release.external-dns
+    #helm_release.external-dns
     #helm_release.kube-prometheus-stack
   ]
 

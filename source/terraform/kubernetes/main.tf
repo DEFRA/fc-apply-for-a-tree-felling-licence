@@ -13,12 +13,16 @@ terraform {
       version = ">= 2.6.0"
     }
     kubectl = {
-      source  = "gavinbunney/kubectl"
-      version = ">= 1.14.0"
+      source  = "alekc/kubectl"
+      version = "~> 2.0"
     }
     azuread = {
       source  = "hashicorp/azuread"
       version = ">= 2.7.0"
+    }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.40"
     }
   }
 
@@ -29,6 +33,10 @@ terraform {
       name = "FLOv2-kubernetes"
     }
   }
+}
+
+provider "cloudflare" {
+  api_token = module.shared.flov2_cloudflare_zone_settings_api
 }
 
 # Configure the Microsoft Azure Provider

@@ -41,7 +41,7 @@ external-web-app:
         - privateKeyPem:
             secret_key: onelogin.private_key
     authenticationOptions:
-      provider: Azure
+      provider: OneLogin
     environment: Migrate
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
@@ -325,7 +325,7 @@ internal-web-app:
         - privateKeyPem:
             secret_key: onelogin.private_key
     authenticationOptions:
-      provider: Azure
+      provider: OneLogin
     azureAD:
       tenantId: 
         secret_key: azuread.tennant_id

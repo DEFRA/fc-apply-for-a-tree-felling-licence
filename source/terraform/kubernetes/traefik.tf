@@ -34,11 +34,11 @@ resource "helm_release" "traefik" {
   ]
 
   depends_on = [
-    helm_release.external-dns
+    #helm_release.external-dns
     #helm_release.kube-prometheus-stack
   ]
-
-  timeout = 600
+  force_update = true
+  timeout = 60
 
 }
 
