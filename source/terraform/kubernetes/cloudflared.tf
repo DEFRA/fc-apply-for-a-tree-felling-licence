@@ -68,3 +68,16 @@ resource "kubernetes_deployment" "cloudflared" {
     }
   }
 }
+
+data "cloudflare_zone" "zone" {
+  name = "tree-felling.forestrycommission.gov.uk"
+}
+
+resource "cloudflare_zone_settings_override" "zone" {
+  zone_id = data.cloudflare_zone.zone.id
+  settings {
+    ssl             = "strict"
+    min_tls_version = "1.2"
+    tls_1_3         = "on"
+  }
+}

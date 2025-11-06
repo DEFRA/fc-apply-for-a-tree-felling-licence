@@ -196,7 +196,7 @@ public class ConditionsUseCaseGetConditionsTests
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
-            InternalReviewStepStatus.NotStarted);
+            false);
 
         _getWoodlandOfficerReviewService
             .Setup(x => x.GetConditionsStatusAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -272,7 +272,7 @@ public class ConditionsUseCaseGetConditionsTests
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
-            InternalReviewStepStatus.NotStarted);
+            false);
 
         _getWoodlandOfficerReviewService
             .Setup(x => x.GetConditionsStatusAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

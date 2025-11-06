@@ -21,7 +21,6 @@ deployment:
         - mountPath: /data
           name: data
 
-
 logs:
   general:
     level: INFO
@@ -60,7 +59,30 @@ service:
     external-dns.alpha.kubernetes.io/hostname: devflo.qxlva.io,testflo.qxlva.io,stageflo.qxlva.io,migrateflo.qxlva.io,liveflo.qxlva.io,internaldevflo.qxlva.io,internaltestflo.qxlva.io,internalmigrateflo.qxlva.io,internalstageflo.qxlva.io,internalliveflo.qxlva.io.
     external-dns.alpha.kubernetes.io/ttl: "60" 
 
+# Only websecure
+ports:
+  web:
+    expose: false           # kill HTTP listener entirely
+  websecure:
+    port: 8443              # container listens here (no privilege needed)
+    expose: true
+    exposedPort: 443        # Service/LB/Tunnel presents 443
+    tls:
+      enabled: true
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
 additionalArguments:
+  - --entrypoints.websecure.address=:8443
+  - --entrypoints.websecure.http.tls=true
+  - --entrypoints.websecure.http.tls.options=default@kubernetescrd
   - --entryPoints.websecure.forwardedHeaders.insecure=true
   - --serversTransport.insecureSkipVerify=true
   - --accesslog.filepath=/data/access.log

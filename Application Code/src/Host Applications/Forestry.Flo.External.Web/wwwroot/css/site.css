@@ -215,3 +215,28 @@ table#application-list-table{
 .flo-timeline_item-casenote:before {
     top: 22px !important;
 }
+
+.govuk-summary-list__actions-list {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 40.0625em) {
+    .govuk-summary-list__actions-list {
+        flex-direction: row;
+    }
+}
+
+.govuk-summary-list__actions-list-item {
+    border-right: none !important;
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+}
+
+@media (min-width: 40.0625em) {
+    .govuk-summary-list__actions-list-item {
+        border-right: 1px solid #b1b4b6;
+        padding-right: 10px;
+        margin-right: 10px;
+    }
+}

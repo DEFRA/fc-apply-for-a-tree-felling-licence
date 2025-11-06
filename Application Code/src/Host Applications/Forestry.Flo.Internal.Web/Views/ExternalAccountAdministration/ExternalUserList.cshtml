@@ -22,8 +22,6 @@
 
     <h1 class="govuk-heading-m">@ViewData["Title"]</h1>
 
-    <partial name="Partials/_PageErrors"/>
-
     <div class="govuk-form-group govuk-body-s">
         Filter:
         @foreach (var accountType in externalAccountTypes.Select(x => x.GetDisplayName()))

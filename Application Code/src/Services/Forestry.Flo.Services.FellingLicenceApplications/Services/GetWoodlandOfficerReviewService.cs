@@ -191,7 +191,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 isLarchApplication ? larchCheckStatus : InternalReviewStepStatus.NotRequired,
                 LarchFlyoverStatus,
                 woodlandOfficerReview.GetEiaScreeningStatus(requiresEia),
-                InternalReviewStepStatus.NotStarted);
+                woodlandOfficerReview.GetValueOrDefault()?.WoodlandOfficerReviewComplete ?? false);
 
             var result = new WoodlandOfficerReviewStatusModel
             {

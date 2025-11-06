@@ -356,7 +356,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         Assert.Equal(InternalReviewStepStatus.NotRequired, result.Value.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus);
         Assert.Equal(InternalReviewStepStatus.NotRequired, result.Value.WoodlandOfficerReviewTaskListStates.LarchFlyoverStatus);
         Assert.Equal(InternalReviewStepStatus.NotStarted, result.Value.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus);
-        Assert.Equal(InternalReviewStepStatus.NotStarted, result.Value.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus);
+        Assert.Equal(InternalReviewStepStatus.CannotStartYet, result.Value.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus);
 
         _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceApplicationRepository.Verify(x => x.GetPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
