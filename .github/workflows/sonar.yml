@@ -43,18 +43,18 @@ jobs:
           /d:sonar.token="${{ secrets.SONAR_TOKEN_ACTIONS }}"
           /d:sonar.verbose=true
           /d:sonar.qualitygate.wait=false
-          /d:sonar.sources="Application Code/src"
-          /d:sonar.tests="Application Code/test"
-          /d:sonar.inclusions="Application Code/**"
-          /d:sonar.cs.opencover.reportsPaths="**/test/**/TestResults/coverage.opencover.xml"
-          /d:sonar.cs.vstest.reportsPaths="**/test/**/TestResults/*.trx"
+          /d:sonar.sources="src"
+          /d:sonar.tests="test"
+          /d:sonar.inclusions="**/*"
+          /d:sonar.cs.opencover.reportsPaths="test/**/TestResults/coverage.opencover.xml"
+          /d:sonar.cs.vstest.reportsPaths="test/**/TestResults/*.trx"
           /d:sonar.test.exclusions="**/bin/**,**/obj/**"
           /d:sonar.coverage.exclusions="**/wwwroot/**,**/lib/**,**/*.min.js,**/jquery*.js,**/shp-write.js,**/tokml.js,**/*bundle*.js,**/*.g.cs,**/Migrations/**,**/obj/**,**/bin/**"
           /d:sonar.exclusions="**/obj/**,**/bin/**,**/*.min.js,**/wwwroot/**,**/lib/**"
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore
         working-directory: Application Code
+        run: dotnet restore "Forestry.Flo.sln"
 
       - name: Inject User Secrets for External Project
         shell: bash
@@ -109,216 +109,22 @@ jobs:
           dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$internalProjectPath"
         working-directory: Application Code
 
-      # Build the two web apps and common app explicitly
-      - name: Build external app
-        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
+      - name: Build
         working-directory: Application Code
+        run: dotnet build "Forestry.Flo.sln" --no-restore
         timeout-minutes: 30
 
-      - name: Build internal app
-        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.Internal.Web/Forestry.Flo.Internal.Web.csproj"
-        working-directory: Application Code
-        timeout-minutes: 30
-
-      - name: Build common library
-        run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.HostApplicationsCommon/Forestry.Flo.HostApplicationsCommon.csproj"
-        working-directory: Application Code
-        timeout-minutes: 30
-
-      # Run the two Host Applications test projects explicitly
-      - name: Test external web tests (with coverage)
-        shell: bash
+      - name: Test (all projects in solution with coverage)
         working-directory: Application Code
         run: |
           set -euo pipefail
-          dotnet test "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" \
-            --configuration Release \
+          dotnet test "Forestry.Flo.sln" --no-build \
             --logger:"trx;LogFileName=test-results.trx" \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=opencover \
             /p:CoverletOutput=./TestResults/coverage \
             /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-
-      - name: Test internal web tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Host Applications/Forestry.Flo.Internal.Web.Tests/Forestry.Flo.Internal.Web.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      # Test Services projects
-      - name: Test AdminHubs tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.AdminHubs.Tests/Forestry.Flo.Services.AdminHubs.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test Applicants tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.Applicants.Tests/Forestry.Flo.Services.Applicants.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test Common tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.Common.Tests/Forestry.Flo.Services.Common.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test ConditionsBuilder tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/Forestry.Flo.Services.ConditionsBuilder.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test DataImport tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.DataImport.Tests/Forestry.Flo.Services.DataImport.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test FellingLicenceApplications tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/Forestry.Flo.Services.FellingLicenceApplications.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test FileStorage tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.FileStorage.Tests/Forestry.Flo.Services.FileStorage.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test Gis tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.Gis.Tests/Forestry.Flo.Services.Gis.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test InternalUsers tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.InternalUsers.Tests/Forestry.Flo.Services.InternalUsers.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test Notifications tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.Notifications.Tests/Forestry.Flo.Services.Notifications.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
-        timeout-minutes: 30
-
-      - name: Test PropertyProfiles tests (with coverage)
-        shell: bash
-        working-directory: Application Code
-        run: |
-          set -euo pipefail
-          dotnet test "test/Services/Forestry.Flo.Services.PropertyProfiles.Tests/Forestry.Flo.Services.PropertyProfiles.Tests.csproj" \
-            --configuration Release \
-            --logger:"trx;LogFileName=test-results.trx" \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=opencover \
-            /p:CoverletOutput=./TestResults/coverage \
-            /p:ExcludeByAttribute=ExcludeFromCodeCoverage \
-            --verbosity normal
+            -v n
         timeout-minutes: 30
       
       # Sonar END — only on push or non-fork PRs
@@ -329,13 +135,12 @@ jobs:
         working-directory: Application Code
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
-      # Diagnostics helpful when coverage doesn't show up
       - name: Show coverage & TRX files found
         shell: bash
         working-directory: Application Code
         run: |
           echo "== coverage.opencover.xml files =="
-          find . -type f -path '*/TestResults/*/coverage.opencover.xml' -print
+          find . -type f \( -path '*/TestResults/coverage.opencover.xml' -o -path '*/TestResults/*/coverage.opencover.xml' \) -print
           echo "==============================="
           echo "== .trx files =="
           find . -type f -path '*/TestResults/*.trx' -print || true
