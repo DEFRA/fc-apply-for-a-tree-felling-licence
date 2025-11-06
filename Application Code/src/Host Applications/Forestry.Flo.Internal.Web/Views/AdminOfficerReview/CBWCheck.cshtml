@@ -3,9 +3,6 @@
 
     var user = new InternalUser(User);
 }
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure.Display
-@using Forestry.Flo.Internal.Web.Infrastructure
 @model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.CBWCheckModel
 
 <div class="govuk-grid-column-full govuk-body">
@@ -14,8 +11,6 @@
     <partial name="Partials/_UserGuideDisplay" />
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
-
-    <partial name="Partials/_PageErrors" />
 
     <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title"
          data-module="govuk-notification-banner">

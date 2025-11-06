@@ -148,6 +148,7 @@
         @await RenderSectionAsync("breadcrumbs", required: false)
 
         <main class="govuk-main-wrapper govuk-main-wrapper--l" id="main-content" role="main">
+            <partial name="Partials/_PageErrors" />
             <div class="govuk-grid-row">
                 @RenderBody()
             </div>

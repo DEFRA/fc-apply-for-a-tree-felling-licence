@@ -3,9 +3,6 @@
 
     var user = new InternalUser(User);
 }
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure.Display
-@using Forestry.Flo.Internal.Web.Infrastructure
 @model Forestry.Flo.Internal.Web.Models.AdminOfficerReview.MappingCheckModel
 
 <div class="govuk-grid-column-full map-check-containter">
@@ -14,8 +11,6 @@
     <partial name="Partials/_UserGuideDisplay" />
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
-
-    <partial name="Partials/_PageErrors" />
     
     <div class="govuk-grid-column-two-thirds width-limit-override">
         <p class="govuk-body">

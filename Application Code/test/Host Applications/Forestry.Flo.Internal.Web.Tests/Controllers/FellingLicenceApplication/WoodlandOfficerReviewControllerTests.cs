@@ -76,69 +76,25 @@ public class WoodlandOfficerReviewControllerTests
     }
 
     [Fact]
-    public async Task ConfirmWoodlandOfficerReview_ReturnsError_WhenAssignedFieldManagerMissing()
+    public async Task FinalChecks_ReturnsError_WhenAssignedFieldManagerMissing()
     {
         var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
         var model = _fixture.Build<WoodlandOfficerReviewModel>()
             .With(x => x.AssignedFieldManager, "")
             .Create();
+        useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(model);
 
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-    }
-
-    [Fact]
-    public async Task ConfirmWoodlandOfficerReview_ReturnsError_WhenRecommendationForDecisionPublicRegisterMissing()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var model = _fixture.Build<WoodlandOfficerReviewModel>()
-            .With(x => x.AssignedFieldManager, "Manager")
-            .With(x => x.RecommendationForDecisionPublicRegister, (bool?)null)
-            .Create();
-
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
+        var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
+        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult(new List<FluentValidation.Results.ValidationResult>()));
+        var result = await _controller.FinalChecks(model, useCase.Object, validator.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
     }
 
     [Fact]
-    public async Task ConfirmWoodlandOfficerReview_ReturnsError_WhenRecommendationReasonMissing()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var model = _fixture.Build<WoodlandOfficerReviewModel>()
-            .With(x => x.AssignedFieldManager, "Manager")
-            .With(x => x.RecommendationForDecisionPublicRegister, true)
-            .With(x => x.RecommendationForDecisionPublicRegisterReason, "")
-            .Create();
-
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-    }
-
-    [Fact]
-    public async Task ConfirmWoodlandOfficerReview_ReturnsError_WhenRecommendedLicenceDurationMissing()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var model = _fixture.Build<WoodlandOfficerReviewModel>()
-            .With(x => x.AssignedFieldManager, "Manager")
-            .With(x => x.RecommendationForDecisionPublicRegister, true)
-            .With(x => x.RecommendationForDecisionPublicRegisterReason, "Reason")
-            .Without(x => x.RecommendedLicenceDuration)
-            .Create();
-
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-    }
-
-    [Fact]
-    public async Task ConfirmWoodlandOfficerReview_ReturnsError_WhenReviewAsyncFails()
+    public async Task FinalChecks_ReturnsError_WhenReviewAsyncFails()
     {
         var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
         var model = _fixture.Build<WoodlandOfficerReviewModel>()
@@ -151,10 +107,90 @@ public class WoodlandOfficerReviewControllerTests
         useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<WoodlandOfficerReviewModel>("fail"));
 
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
+        var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
+        var result = await _controller.FinalChecks(model, useCase.Object, validator.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
+    }
+
+    [Fact]
+    public async Task FinalChecks_ReturnsError_WhenCompleteReviewFails()
+    {
+        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
+        var reviewModel = _fixture.Build<WoodlandOfficerReviewModel>()
+            .With(x => x.WoodlandOfficerReviewTaskListStates,
+                new WoodlandOfficerReviewTaskListStates(
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    true))
+            .Create();
+        var model = _fixture.Build<WoodlandOfficerReviewModel>()
+            .With(x => x.AssignedFieldManager, "Manager")
+            .With(x => x.RecommendationForDecisionPublicRegister, true)
+            .With(x => x.RecommendationForDecisionPublicRegisterReason, "Reason")
+            .With(x => x.RecommendedLicenceDuration, RecommendedLicenceDuration.NineYear)
+            .Create();
+
+        useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(reviewModel));
+        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<bool>("fail"));
+
+        var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
+
+        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult(new List<FluentValidation.Results.ValidationResult>()));
+        var result = await _controller.FinalChecks(model, useCase.Object, validator.Object, CancellationToken.None);
+
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal(nameof(WoodlandOfficerReviewController.FinalChecks), redirect.ActionName);
+    }
+
+    [Fact]
+    public async Task FinalChecks_RedirectsToSummary_WhenSuccess()
+    {
+        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
+        var reviewModel = _fixture.Build<WoodlandOfficerReviewModel>()
+            .With(x => x.WoodlandOfficerReviewTaskListStates, 
+                new WoodlandOfficerReviewTaskListStates(
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed, 
+                    true))
+            .Create();
+        var model = _fixture.Build<WoodlandOfficerReviewModel>()
+            .With(x => x.AssignedFieldManager, "Manager")
+            .With(x => x.RecommendationForDecisionPublicRegister, true)
+            .With(x => x.RecommendationForDecisionPublicRegisterReason, "Reason")
+            .With(x => x.RecommendedLicenceDuration, RecommendedLicenceDuration.NineYear)
+            .Create();
+
+        useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(reviewModel));
+        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
+
+        var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
+        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult(new List<FluentValidation.Results.ValidationResult>()));
+        var result = await _controller.FinalChecks(model, useCase.Object, validator.Object, CancellationToken.None);
+
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("ApplicationSummary", redirect.ActionName);
     }
 
     [Fact]
@@ -174,7 +210,7 @@ public class WoodlandOfficerReviewControllerTests
                     InternalReviewStepStatus.NotStarted,
                     InternalReviewStepStatus.NotStarted,
                     InternalReviewStepStatus.NotStarted,
-                    InternalReviewStepStatus.NotStarted))
+                    false))
             .Create();
         var model = _fixture.Build<WoodlandOfficerReviewModel>()
             .With(x => x.AssignedFieldManager, "Manager")
@@ -186,84 +222,47 @@ public class WoodlandOfficerReviewControllerTests
         useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(reviewModel));
 
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
+        var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
+        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult(new List<FluentValidation.Results.ValidationResult>()));
+        var result = await _controller.FinalChecks(model, useCase.Object, validator.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
     }
 
     [Fact]
-    public async Task ConfirmWoodlandOfficerReview_ReturnsError_WhenCompleteReviewFails()
+    public async Task FinalChecks_ReturnsView_WhenValidationFails()
     {
+        // Arrange
         var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
         var reviewModel = _fixture.Build<WoodlandOfficerReviewModel>()
-            .With(x => x.WoodlandOfficerReviewTaskListStates,
-                new WoodlandOfficerReviewTaskListStates(
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed))
-            .Create();
-        var model = _fixture.Build<WoodlandOfficerReviewModel>()
-            .With(x => x.AssignedFieldManager, "Manager")
-            .With(x => x.RecommendationForDecisionPublicRegister, true)
-            .With(x => x.RecommendationForDecisionPublicRegisterReason, "Reason")
-            .With(x => x.RecommendedLicenceDuration, RecommendedLicenceDuration.NineYear)
+            .With(x => x.ApplicationId, _applicationId)
             .Create();
 
-        useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(reviewModel));
-        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<bool>("fail"));
-
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-    }
-
-    [Fact]
-    public async Task ConfirmWoodlandOfficerReview_RedirectsToSummary_WhenSuccess()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var reviewModel = _fixture.Build<WoodlandOfficerReviewModel>()
-            .With(x => x.WoodlandOfficerReviewTaskListStates, 
-                new WoodlandOfficerReviewTaskListStates(
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed,
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed, 
-                    InternalReviewStepStatus.Completed))
-            .Create();
-        var model = _fixture.Build<WoodlandOfficerReviewModel>()
-            .With(x => x.AssignedFieldManager, "Manager")
-            .With(x => x.RecommendationForDecisionPublicRegister, true)
-            .With(x => x.RecommendationForDecisionPublicRegisterReason, "Reason")
-            .With(x => x.RecommendedLicenceDuration, RecommendedLicenceDuration.NineYear)
+        var reviewResultModel = _fixture.Build<WoodlandOfficerReviewModel>()
+            .With(x => x.FellingLicenceApplicationSummary, _fixture.Create<FellingLicenceApplicationSummaryModel>())
             .Create();
 
-        useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(reviewModel));
-        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
+        useCase.Setup(x => x.WoodlandOfficerReviewAsync(
+                It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(reviewResultModel));
 
-        var result = await _controller.ConfirmWoodlandOfficerReview(model, useCase.Object, CancellationToken.None);
+        var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
+        validator.Setup(x => x.Validate(reviewModel))
+            .Returns(new FluentValidation.Results.ValidationResult(new[] {
+                new FluentValidation.Results.ValidationFailure("RecommendedLicenceDuration", "Required")
+            }));
 
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("ApplicationSummary", redirect.ActionName);
+        // Act
+        var result = await _controller.FinalChecks(reviewModel, useCase.Object, validator.Object, CancellationToken.None);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<WoodlandOfficerReviewModel>(viewResult.Model);
+        Assert.Equal(reviewResultModel.FellingLicenceApplicationSummary, model.FellingLicenceApplicationSummary);
+        Assert.Equal(reviewResultModel.Breadcrumbs, model.Breadcrumbs);
+        Assert.False(_controller.ModelState.IsValid);
+        Assert.Contains("RecommendedLicenceDuration", _controller.ModelState.Keys);
     }
 
     [Fact]
@@ -328,6 +327,73 @@ public class WoodlandOfficerReviewControllerTests
         Assert.IsType<PublicRegisterViewModel>(viewResult.Model);
     }
 
+    [Fact]
+    public async Task FinalChecks_Get_ReturnsView_WhenSuccess()
+    {
+        // Arrange
+        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
+        var woReviewResult = Result.Success(new WoodlandOfficerReviewModel
+        {
+            FellingLicenceApplicationSummary = new FellingLicenceApplicationSummaryModel(),
+            RecommendedLicenceDuration = RecommendedLicenceDuration.NineYear,
+            RecommendationForDecisionPublicRegister = true,
+            RecommendationForDecisionPublicRegisterReason = "Reason"
+        });
+        useCase.Setup(x => x.WoodlandOfficerReviewAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<InternalUser>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woReviewResult);
+
+        var controller = new WoodlandOfficerReviewController(
+            _validatorMock.Object,
+            _eiaUseCaseMock.Object,
+            useCase.Object
+        );
+        controller.PrepareControllerForTest(Guid.NewGuid());
+
+        // Act
+        var result = await controller.FinalChecks(_applicationId, useCase.Object, CancellationToken.None);
+
+        // Assert
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<WoodlandOfficerReviewModel>(viewResult.Model);
+        Assert.Equal(_applicationId, model.ApplicationId);
+        Assert.Equal(woReviewResult.Value.Breadcrumbs, model.Breadcrumbs);
+        Assert.Equal(woReviewResult.Value.FellingLicenceApplicationSummary, model.FellingLicenceApplicationSummary);
+        Assert.Equal(woReviewResult.Value.RecommendedLicenceDuration, model.RecommendedLicenceDuration);
+        Assert.Equal(woReviewResult.Value.RecommendationForDecisionPublicRegister, model.RecommendationForDecisionPublicRegister);
+        Assert.Equal(woReviewResult.Value.RecommendationForDecisionPublicRegisterReason, model.RecommendationForDecisionPublicRegisterReason);
+    }
+
+    [Fact]
+    public async Task FinalChecks_Get_RedirectsToError_WhenFailure()
+    {
+        // Arrange
+        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
+        useCase.Setup(x => x.WoodlandOfficerReviewAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<InternalUser>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<WoodlandOfficerReviewModel>("fail"));
+
+        var controller = new WoodlandOfficerReviewController(
+            _validatorMock.Object,
+            _eiaUseCaseMock.Object,
+            useCase.Object
+        );
+        controller.PrepareControllerForTest(Guid.NewGuid());
+
+        // Act
+        var result = await controller.FinalChecks(_applicationId, useCase.Object, CancellationToken.None);
+
+        // Assert
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Error", redirect.ActionName);
+        Assert.Equal("Home", redirect.ControllerName);
+    }
 
     [Fact]
     public async Task PublicRegister_ReturnsView_WhenExemption()
@@ -2027,7 +2093,7 @@ public class WoodlandOfficerReviewControllerTests
         var result = await _controller.GenerateLicencePreview(_applicationId, generatePdfApplicationUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
+        Assert.Equal(nameof(WoodlandOfficerReviewController.Index), redirect.ActionName);
         Assert.Equal(_applicationId, redirect.RouteValues["id"]);
     }
 
@@ -2042,7 +2108,7 @@ public class WoodlandOfficerReviewControllerTests
         var result = await _controller.GenerateLicencePreview(_applicationId, generatePdfApplicationUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
+        Assert.Equal(nameof(WoodlandOfficerReviewController.Index), redirect.ActionName);
         Assert.Equal(_applicationId, redirect.RouteValues["id"]);
         Assert.Equal("Unable to generate the preview licence document for the application", _controller.TempData[Forestry.Flo.Internal.Web.Infrastructure.ControllerExtensions.ErrorMessageKey]);
     }

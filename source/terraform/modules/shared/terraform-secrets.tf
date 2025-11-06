@@ -31,6 +31,12 @@ data "azurerm_key_vault_secret" "cloudflare_token" {
   key_vault_id = data.azurerm_key_vault.flov2_kv.id
 }
 
+data "azurerm_key_vault_secret" "flov2_cloudflare_zone_settings_api" {
+  provider     = azurerm
+  name         = "flov2-cloudflare-zone-settings-api"
+  key_vault_id = data.azurerm_key_vault.flov2_kv.id
+}
+
 # Traefik
 data "azurerm_key_vault_secret" "traefik_dashboard_users" {
   provider     = azurerm

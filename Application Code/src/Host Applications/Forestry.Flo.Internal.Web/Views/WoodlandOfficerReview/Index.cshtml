@@ -20,8 +20,6 @@
     
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
-    <partial name="Partials/_PageErrors"/>
-    
     <input id="steps-complete" type="hidden" value="@Model.WoodlandOfficerReviewTaskListStates.IsCompletable().ToString()" />
     
     <div>
@@ -348,7 +346,7 @@
                 </li>
             }
             
-            @if (Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus == InternalReviewStepStatus.CannotStartYet) @* TODO code to check for this in back-end *@
+            @if (Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus is InternalReviewStepStatus.CannotStartYet)
             {
                 <li class="govuk-task-list__item">
                     <div class="govuk-task-list__name-and-hint">
@@ -364,111 +362,43 @@
             {
                 <li class="govuk-task-list__item govuk-task-list__item--with-link">
                     <div class="govuk-task-list__name-and-hint">
-                        @* <a class="govuk-link govuk-task-list__link" href="#" aria-describedby="final-checks">
+                        <a class="govuk-link govuk-task-list__link" asp-action="FinalChecks" asp-route-id="@Model.ApplicationId" aria-describedby="final-checks">
                             Final checks
-                        </a> *@
-                        Final checks
-                        <div class="govuk-task-list__hint">
-                            (Not implemented yet)
-                        </div>
+                        </a> 
                     </div>
                     <div class="govuk-task-list__status" id="final-checks">
-                        @if (Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus == InternalReviewStepStatus.Completed)
+                        @if (Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus is InternalReviewStepStatus.Completed)
                         {
                             @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()
                         }
                         else
                         {
-                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()</strong>
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetStatusStyleName()">
+                                @Model.WoodlandOfficerReviewTaskListStates.FinalChecksStepStatus.GetDisplayName()
+                            </strong>
                         }
                     </div>
                 </li>
             }
         </ul>
-        
+
         <div class="govuk-form-group" condition="@(Model.FellingLicenceApplicationSummary.MostRecentFcLisReport.HasValue)">
-            <partial name="Partials/_ConstraintReportDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
+            <partial name="Partials/_ConstraintReportDownloadLink" model="@Model.FellingLicenceApplicationSummary"/>
         </div>
+        
+        <form method="post" asp-action="GenerateLicencePreview" asp-route-applicationId="@Model.ApplicationId">
+            <div class="govuk-form-group" condition="@Model.Editable(user)">
+                <button
+                    data-prevent-double-click="true"
+                    type="submit"
+                    class="govuk-button govuk-button--secondary"
+                    data-module="govuk-button">
+                    Generate preview document
+                </button>
 
-        <form method="post" asp-action="ConfirmWoodlandOfficerReview">
-            <input asp-for="ApplicationId"/>
-            <input type="hidden" asp-for="AssignedFieldManager"/>
-
-            <div class="govuk-form-group">
-                <h2 class="govuk-heading-m">Review actions</h2>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" asp-for="RecommendedLicenceDuration">
-                        <h3 class="govuk-heading-s">
-                            Recommended licence duration
-                        </h3>
-                    </label>
-                    <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
-                </div>
-                
-                
-                <div class="govuk-form-group" condition="@Model.Editable(user)">
-                    <button 
-                        data-prevent-double-click="true" 
-                        type="submit" 
-                        asp-action="GenerateLicencePreview" 
-                        asp-route-applicationId="@Model.FellingLicenceApplicationSummary.Id" 
-                        class="govuk-button govuk-button--secondary" 
-                        data-module="govuk-button">
-                        Generate preview document
-                    </button>
-
-                    <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
-                </div>
-
-                
-                <div class="govuk-form-group">
-                    <fieldset class="govuk-fieldset">
-                        <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
-                            <h3 class="govuk-fieldset__heading">
-                                Publish on the decision public register?
-                            </h3>
-                        </legend>
-                        
-                        <div class="govuk-radios" data-module="govuk-radios">
-                            <div class="govuk-radios__item">
-                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-yes" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
-                                <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes, publish on the decision public register</label>
-                            </div>
-                            <div class="govuk-radios__item">
-                                <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-no" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="false"/>
-                                <label class="govuk-label govuk-radios__label" for="dpr-no">No, do not publish on the decision public register</label>
-                            </div>
-                        </div>
-                        
-                        <br/>
-                        
-                        <h3 class="govuk-label-wrapper">
-                            <label class="govuk-label govuk-label--s" asp-for="RecommendationForDecisionPublicRegisterReason">
-                                Reason for decision
-                            </label>
-                        </h3>
-                        <div id="dpr-recommendation-hint" class="govuk-hint">
-                            Explain why you chose this option
-                        </div>
-                        <textarea class="govuk-textarea" condition-disabled="@(!Model.Editable(user))" rows="5" aria-describedby="dpr-recommendation-hint" asp-for="RecommendationForDecisionPublicRegisterReason"></textarea>
-                    </fieldset>
-                </div>
-
-                <div class="govuk-form-group">
-                    <div condition="@Model.Editable(user)" class="govuk-hint">
-                        When you’ve completed all your checks,
-                        submit your review to move the application to the next stage.
-                    </div>
-                    <div class="govuk-button-group">
-                        <button condition="@Model.Editable(user)" id="submit-review-btn" class="govuk-button" data-module="govuk-button">Submit review</button>
-                        <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary.Id">Return to application summary</a>
-                    </div>
-                </div>
+                <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary"/>
             </div>
         </form>
-        
-        <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
 
         <partial name="Partials/_ActivityFeed" model="@Model.WoodlandOfficerReviewCommentsFeed"/>
 

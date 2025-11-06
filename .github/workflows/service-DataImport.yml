@@ -1,0 +1,21 @@
+name: service-DataImport
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.DataImport/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.DataImport.Tests/**"
+      - ".github/workflows/**"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.DataImport/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.DataImport.Tests/**"
+      - ".github/workflows/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_dotnet-service.yml
+    with:
+      project: src/Services/Forestry.Flo.Services.DataImport/Forestry.Flo.Services.DataImport.csproj
+      test: test/Services/Forestry.Flo.Services.DataImport.Tests/Forestry.Flo.Services.DataImport.Tests.csproj

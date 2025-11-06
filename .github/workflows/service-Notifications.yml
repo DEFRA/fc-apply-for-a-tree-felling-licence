@@ -1,0 +1,21 @@
+name: service-Notifications
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.Notifications/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.Notifications.Tests/**"
+      - ".github/workflows/**"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.Notifications/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.Notifications.Tests/**"
+      - ".github/workflows/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_dotnet-service.yml
+    with:
+      project: src/Services/Forestry.Flo.Services.Notifications/Forestry.Flo.Services.Notifications.csproj
+      test: test/Services/Forestry.Flo.Services.Notifications.Tests/Forestry.Flo.Services.Notifications.Tests.csproj

@@ -6,11 +6,11 @@
 @using Microsoft.AspNetCore.Mvc.TagHelpers
 @model IEnumerable<Forestry.Flo.Internal.Web.Models.UserAccount.UserAccountModel>
 
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+
 <div class="govuk-grid-column-full">
     <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
     
-    <partial name="Partials/_ConfirmationMessageDisplay"/>
-    <partial name="Partials/_PageErrors"/>
 
     <p class="govuk-body">A list of unconfirmed user accounts pending review and confirmation.</p>
     

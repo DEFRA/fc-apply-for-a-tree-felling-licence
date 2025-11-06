@@ -49,69 +49,6 @@ public partial class WoodlandOfficerReviewController(
         return View(model.Value);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> ConfirmWoodlandOfficerReview(
-        WoodlandOfficerReviewModel model,
-        [FromServices] IWoodlandOfficerReviewUseCase useCase,
-        CancellationToken cancellationToken)
-    {
-        var user = new InternalUser(User);
-
-        if (string.IsNullOrWhiteSpace(model.AssignedFieldManager))
-        {
-            this.AddErrorMessage("A Field Manager must be assigned before completing the review");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
-        }
-
-        if (model.RecommendationForDecisionPublicRegister.HasNoValue())
-        {
-            this.AddErrorMessage("A recommendation for whether to publish to the decision public register must be provided");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
-        }
-
-        if (string.IsNullOrWhiteSpace(model.RecommendationForDecisionPublicRegisterReason))
-        {
-            this.AddErrorMessage("A reason for the recommendation for whether to publish to the decision public register must be provided");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
-        }
-
-        if (model.RecommendedLicenceDuration is null or RecommendedLicenceDuration.None)
-        {
-            this.AddErrorMessage("A recommended licence duration must be provided");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
-        }
-
-        //retrieve the review from the system - rather than rely on posted data from view to ascertain completeness.
-        var getWoodlandOfficeReview = await useCase.WoodlandOfficerReviewAsync(model.ApplicationId, user, string.Empty, cancellationToken);
-
-        if (getWoodlandOfficeReview.IsFailure)
-        {
-            this.AddErrorMessage("Unable to retrieve the required woodland officer data for completing the review");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
-        }
-
-        if (getWoodlandOfficeReview.IsSuccess 
-            && getWoodlandOfficeReview.Value.WoodlandOfficerReviewTaskListStates.AllAreComplete() == false)
-        {
-            this.AddErrorMessage("All of the woodland officer review tasks must be completed before completing the review");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
-        }
-        
-        var internalLinkToApplication = Url.Action("ApplicationSummary", "FellingLicenceApplication", new { id = model.ApplicationId }, this.Request.Scheme);
-
-        var result = await useCase.CompleteWoodlandOfficerReviewAsync(
-            model.ApplicationId, model.RecommendedLicenceDuration, model.RecommendationForDecisionPublicRegister, model.RecommendationForDecisionPublicRegisterReason, internalLinkToApplication, user, cancellationToken);
-
-        if (result.IsFailure)
-        {
-            this.AddErrorMessage(result.Error);
-            return RedirectToAction("Index", new { id = model.ApplicationId });
-        }
-
-        this.AddConfirmationMessage("Woodland Officer review submitted");
-        return RedirectToAction("ApplicationSummary", "FellingLicenceApplication", new { id = model.ApplicationId });
-    }
-
     public async Task<IActionResult> AssignFieldManager(
         Guid id,
         [FromServices]IWoodlandOfficerReviewUseCase useCase,
@@ -1006,6 +943,96 @@ public partial class WoodlandOfficerReviewController(
         }
 
         return RedirectToAction(nameof(Index), new { id = applicationId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> FinalChecks(
+        Guid id,
+        [FromServices] IWoodlandOfficerReviewUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+
+        var user = new InternalUser(User);
+        var hostingPage = Url.Action(nameof(FinalChecks), new { id = id })!;
+
+        var woReviewResult = await useCase.WoodlandOfficerReviewAsync(id, user, hostingPage, cancellationToken);
+
+        if (woReviewResult.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        var viewModel = new WoodlandOfficerReviewModel
+        {
+            Breadcrumbs = woReviewResult.Value.Breadcrumbs,
+            FellingLicenceApplicationSummary = woReviewResult.Value.FellingLicenceApplicationSummary,
+            ApplicationId = id,
+            RecommendedLicenceDuration = woReviewResult.Value.RecommendedLicenceDuration,
+            RecommendationForDecisionPublicRegister = woReviewResult.Value.RecommendationForDecisionPublicRegister,
+            RecommendationForDecisionPublicRegisterReason = woReviewResult.Value.RecommendationForDecisionPublicRegisterReason
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> FinalChecks(
+        WoodlandOfficerReviewModel viewModel,
+        [FromServices] IWoodlandOfficerReviewUseCase useCase,
+        [FromServices] IValidator<WoodlandOfficerReviewModel> validator,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var getWoodlandOfficeReview = await useCase.WoodlandOfficerReviewAsync(viewModel.ApplicationId, user, string.Empty, cancellationToken);
+
+        if (getWoodlandOfficeReview.IsFailure)
+        {
+            this.AddErrorMessage("Unable to retrieve the required woodland officer data for completing the review");
+            return RedirectToAction("Index", new { id = viewModel.ApplicationId });
+        }
+
+        ValidateModel(viewModel, validator);
+
+        if (ModelState.IsValid is false)
+        {
+            viewModel.FellingLicenceApplicationSummary = getWoodlandOfficeReview.Value.FellingLicenceApplicationSummary;
+            viewModel.Breadcrumbs = getWoodlandOfficeReview.Value.Breadcrumbs;
+
+            return View(viewModel);
+        }
+
+        if (string.IsNullOrEmpty(getWoodlandOfficeReview.Value.AssignedFieldManager))
+        {
+            this.AddErrorMessage("A field manager must be assigned before completing the woodland officer review");
+            return RedirectToAction("Index", new { id = viewModel.ApplicationId });
+        }
+
+        if (getWoodlandOfficeReview.Value.WoodlandOfficerReviewTaskListStates.AllAreComplete() is false)
+        {
+            this.AddErrorMessage("All of the woodland officer review tasks must be completed before completing the review");
+            return RedirectToAction("Index", new { id = viewModel.ApplicationId });
+        }
+
+        var internalLinkToApplication = Url.Action(nameof(FellingLicenceApplicationController.ApplicationSummary), "FellingLicenceApplication", new { id = viewModel.ApplicationId }, this.Request.Scheme);
+
+        var result = await useCase.CompleteWoodlandOfficerReviewAsync(
+            viewModel.ApplicationId, 
+            viewModel.RecommendedLicenceDuration, 
+            viewModel.RecommendationForDecisionPublicRegister, 
+            viewModel.RecommendationForDecisionPublicRegisterReason!, 
+            internalLinkToApplication!, 
+            user, 
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage(result.Error);
+            return RedirectToAction(nameof(FinalChecks), new { id = viewModel.ApplicationId });
+        }
+
+        this.AddConfirmationMessage("Woodland Officer review submitted");
+        return RedirectToAction(nameof(FellingLicenceApplicationController.ApplicationSummary), "FellingLicenceApplication", new { id = viewModel.ApplicationId });
     }
 
     private async Task<Result<EiaScreeningViewModel>> LoadEiaScreeningViewModel(Guid id, CancellationToken cancellationToken)
