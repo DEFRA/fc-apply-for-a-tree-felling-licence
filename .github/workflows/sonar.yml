@@ -51,7 +51,6 @@ jobs:
           /d:sonar.test.exclusions="**/bin/**,**/obj/**"
           /d:sonar.coverage.exclusions="**/wwwroot/**,**/lib/**,**/*.min.js,**/jquery*.js,**/shp-write.js,**/tokml.js,**/*bundle*.js,**/*.g.cs,**/Migrations/**,**/obj/**,**/bin/**"
           /d:sonar.exclusions="**/obj/**,**/bin/**,**/*.min.js,**/wwwroot/**,**/lib/**"
-          /d:sonar.verbose=true
 
       - name: Restore dependencies
         run: dotnet restore
