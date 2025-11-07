@@ -14,7 +14,7 @@ public record WoodlandOfficerReviewTaskListStates(
     InternalReviewStepStatus LarchApplicationStatus,
     InternalReviewStepStatus LarchFlyoverStatus,
     InternalReviewStepStatus EiaScreeningStatus,
-    InternalReviewStepStatus FinalChecksStepStatus) : ICompletable
+    bool WoodlandOfficerReviewComplete) : ICompletable
 {
     public readonly InternalReviewStepStatus PublicRegisterStepStatus = PublicRegisterStepStatus;
     public readonly InternalReviewStepStatus SiteVisitStepStatus = SiteVisitStepStatus;
@@ -25,7 +25,12 @@ public record WoodlandOfficerReviewTaskListStates(
     public readonly InternalReviewStepStatus CompartmentDesignationsStepStatus = CompartmentDesignationsStepStatus;
     public readonly InternalReviewStepStatus LarchApplicationStatus = LarchApplicationStatus;
     public readonly InternalReviewStepStatus LarchFlyoverStatus = LarchFlyoverStatus;
-    public readonly InternalReviewStepStatus FinalChecksStepStatus = FinalChecksStepStatus;
+    public InternalReviewStepStatus FinalChecksStepStatus =>
+        WoodlandOfficerReviewComplete
+            ? InternalReviewStepStatus.Completed
+            : IsCompletable() 
+                ? InternalReviewStepStatus.NotStarted 
+                : InternalReviewStepStatus.CannotStartYet;
 
     public bool IsCompletable() =>
         PublicRegisterStepStatus is InternalReviewStepStatus.Completed &&

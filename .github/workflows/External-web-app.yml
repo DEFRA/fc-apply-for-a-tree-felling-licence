@@ -1,0 +1,82 @@
+name: External-web-app
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Host Applications/Forestry.Flo.External.Web/**"
+      - "Application Code/test/Host Applications/Forestry.Flo.External.Web.Tests/**"
+      - "Application Code/src/Services/**"
+      - "Application Code/test/Services/**"
+      - ".github/workflows/**"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Host Applications/Forestry.Flo.External.Web/**"
+      - "Application Code/test/Host Applications/Forestry.Flo.External.Web.Tests/**"
+      - "Application Code/src/Services/**"
+      - "Application Code/test/Services/**"
+      - ".github/workflows/**"
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: Application Code
+
+    - name: Inject User Secrets for External Project
+      shell: bash
+      run: |
+        externalProjectPath="src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
+
+        # database
+        dotnet user-secrets set "ConnectionStrings:DefaultConnection" "just_text_for_secret" --project "$externalProjectPath"
+        
+        dotnet user-secrets set "AzureAdB2C:ClientId" "${{ secrets.AZURE_AD_B2C_CLIENT_ID }}" --project "$externalProjectPath"
+        dotnet user-secrets set "AzureAdB2C:ClientSecret" "${{ secrets.AZURE_AD_B2C_CLIENT_SECRET }}" --project "$externalProjectPath"
+        
+        dotnet user-secrets set "EsriConfig:Forestry:ApiKey" "${{ secrets.ESRI_FORESTRY_API_KEY }}" --project "$externalProjectPath"
+        dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientID" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_ID }}" --project "$externalProjectPath"
+        dotnet user-secrets set "EsriConfig:Forestry:GenerateTokenService:ClientSecret" "${{ secrets.ESRI_GENERATE_TOKEN_CLIENT_SECRET }}" --project "$externalProjectPath"
+
+        dotnet user-secrets set "EsriConfig:Forester:ApiKey" "${{ secrets.ESRI_FORESTER_API_KEY }}" --project "$externalProjectPath"
+        dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
+        dotnet user-secrets set "EsriConfig:Forester:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
+
+        dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Username" "${{ secrets.ESRI_FORESTER_USERNAME }}" --project "$externalProjectPath"
+        dotnet user-secrets set "EsriConfig:PublicRegister:GenerateTokenService:Password" "${{ secrets.ESRI_FORESTER_PASSWORD }}" --project "$externalProjectPath"
+
+        dotnet user-secrets set "LandInformationSearch:ClientID" "${{ secrets.LAND_INFO_CLIENT_ID }}" --project "$externalProjectPath"
+        dotnet user-secrets set "LandInformationSearch:ClientSecret" "${{ secrets.LAND_INFO_CLIENT_SECRET }}" --project "$externalProjectPath"
+
+        dotnet user-secrets set "RabbitMqOptions:Username" "guest" --project "$externalProjectPath"
+        dotnet user-secrets set "RabbitMqOptions:Password" "guest" --project "$externalProjectPath"
+
+        dotnet user-secrets set "FileStorage:ConnectionString" "${{ secrets.FILE_STORAGE_CONNECTION }}" --project "$externalProjectPath"
+
+        dotnet user-secrets set "GovUkNotifyOptions:ApiKey" "${{ secrets.GOV_UK_NOTIFY_API_KEY }}" --project "$externalProjectPath"
+
+        dotnet user-secrets set "GovUkOneLoginOptions:ClientId" "${{ secrets.ONE_LOGIN_API_KEY }}" --project "$externalProjectPath"
+        
+        dotnet user-secrets set "GovUkOneLoginOptions:SigningKeys:0:PrivateKeyPem"  "${{ secrets.ONE_LOGIN_PRIVATE_KEY }}" --project "$externalProjectPath"
+      working-directory: Application Code
+      
+    # Build the external web app and run its tests
+    - name: Build external app
+      run: dotnet build --no-restore "src/Host Applications/Forestry.Flo.External.Web/Forestry.Flo.External.Web.csproj"
+      working-directory: Application Code
+      timeout-minutes: 30
+      
+    - name: Test external web tests
+      run: dotnet test "test/Host Applications/Forestry.Flo.External.Web.Tests/Forestry.Flo.External.Web.Tests.csproj" --verbosity normal
+      working-directory: Application Code
+      timeout-minutes: 30

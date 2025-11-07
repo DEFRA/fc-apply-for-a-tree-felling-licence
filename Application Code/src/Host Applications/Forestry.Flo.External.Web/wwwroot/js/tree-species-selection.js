@@ -8,9 +8,6 @@
         return $(this).val();
     }).get();
 
-    $('#felling-add-tree-species-btn').click({formPrefix: "felling"}, addSpecies);
-    $('#restocking-add-tree-species-btn').click({formPrefix: "restocking"}, addSpecies);
-
     $(".felling-remove-tree-species").click({ formPrefix: "felling" }, removeSpecies);
     $(".restocking-remove-tree-species").click({ formPrefix: "restocking" }, removeSpecies);
 
@@ -22,7 +19,10 @@
             accessibleAutocomplete.enhanceSelectElement({
                 selectElement: selectElement1,
                 minLength: 3,
-                name: 'Species selection'
+                name: 'Species selection',
+                onConfirm: (val) => {
+                    addSpecies("felling", val);
+                }
             });
 
             $('#felling-tree-species-select').val('');
@@ -37,7 +37,10 @@
             accessibleAutocomplete.enhanceSelectElement({
                 selectElement: selectElement2,
                 minLength: 3,
-                name: 'Species and percentages selection'
+                name: 'Species and percentages selection',
+                onConfirm: (val) => {
+                    addSpecies("restocking", val);
+                }
             });
             $('#restocking-tree-species-select').val('');
 
@@ -56,16 +59,17 @@
     });
 
 
-    function addSpecies(e) {
-        e.preventDefault(); // Prevent form submission
-        const formPrefix = e.data.formPrefix;
+    function addSpecies(formPrefix, value) {
         hideTreeSpeciesSelectionError(formPrefix);
-        const $selectedSpecies = $(`#${formPrefix}-tree-species-select`);
+
+        if (value == null || value == undefined) {
+            const $selectedSpecies = $(`#${formPrefix}-tree-species-select`);
+            value = $selectedSpecies.val();
+        }
         const $speciesList = $(`#${formPrefix}-tree-species-select`);
 
-        const selectedText = $selectedSpecies.val();
         // Find row of table for the selected and take the value of the 1st cell as the Species Code
-        let $row = $('tr[data-id="' + selectedText + '"]');
+        let $row = $('tr[data-id="' + value + '"]');
         const selectedValue = $row.find('td:first').attr('id');
 
         let selectedSpecies;
@@ -87,18 +91,16 @@
         }
         else if (selectedSpecies.filter(e => e === selectedValue).length > 0) {
             // Tree species already exists in treeSpeciesSelections
-            showTreeSpeciesSelectionError(selectedText + ' has already been selected', formPrefix);
+            return;
         }
         else {
             // Add the selection to the array and redraw
             selectedSpecies.push(selectedValue);
-            appendSpeciesHtml(selectedText, selectedValue, formPrefix, idFieldPrefix, nameFieldPrefix);
+            appendSpeciesHtml(value, selectedValue, formPrefix, idFieldPrefix, nameFieldPrefix);
 
         }
         $speciesList.get(0).selectedIndex = 0;
         $(`#${formPrefix}-tree-species-select`).val('');
-
-        updateTreeSpeciesSelectionButtonText(formPrefix);
     }
     
     function removeSpecies(e) {
@@ -120,8 +122,6 @@
             selectedSpecies.splice(index, 1); // 2nd parameter means remove one item only
         }
         $(this).closest("tr").remove();
-
-        updateTreeSpeciesSelectionButtonText(formPrefix);
     }
     
     function appendSpeciesHtml(selectedText, selectedValue, formPrefix, idFieldPrefix, nameFieldPrefix){
@@ -178,16 +178,6 @@
             .append($("<span/>").addClass("govuk-visually-hidden").attr("aria-hidden", "true").text('Error:'));
 
         $(`#${formPrefix}-tree-species-error`).remove();
-    }
-
-    function updateTreeSpeciesSelectionButtonText(formPrefix) {
-        const $tableRows = $(`#${formPrefix}-species-list-table tr`);
-        const rowCount = $tableRows.length - 1; // Exclude header row
-        if (rowCount > 0) {
-            $(`#${formPrefix}-add-tree-species-btn`).text("Add another species");
-        } else {
-            $(`#${formPrefix}-add-tree-species-btn`).text("Add species");
-        }
     }
 
 });

@@ -1,0 +1,99 @@
+﻿@{
+    ViewData["Title"] = "Final checks";
+    var user = new InternalUser(User);
+}
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.WoodlandOfficerReviewModel
+
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <form method="post">
+        <input asp-for="ApplicationId"/>
+
+        <div class="govuk-form-group">
+
+            <div class="govuk-form-group">
+                <label class="govuk-label" asp-for="RecommendedLicenceDuration">
+                    <h3 class="govuk-heading-s">
+                        Recommended licence duration
+                    </h3>
+                </label>
+                <validation asp-for="RecommendedLicenceDuration"></validation>
+                <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
+            </div>
+
+            <div class="govuk-form-group">
+                <fieldset class="govuk-fieldset">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                        <h3 class="govuk-fieldset__heading">
+                            Publish on the decision public register?
+                        </h3>
+                    </legend>
+                    <validation asp-for="RecommendationForDecisionPublicRegister"></validation>
+                    <div class="govuk-radios" data-module="govuk-radios">
+                        <div class="govuk-radios__item">
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-yes" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
+                            <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes, publish on the decision public register</label>
+                        </div>
+                        <div class="govuk-radios__item">
+                            <input 
+                                condition-disabled="@(!Model.Editable(user))" 
+                                class="govuk-radios__input" 
+                                id="dpr-no" 
+                                asp-for="RecommendationForDecisionPublicRegister" 
+                                type="radio" 
+                                data-aria-controls="conditional-decision-reason"
+                                value="false"/>
+                            <label class="govuk-label govuk-radios__label" for="dpr-no">No, do not publish on the decision public register</label>
+                        </div>
+                        
+                        <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-decision-reason">
+                            <h3 class="govuk-label-wrapper">
+                                <label class="govuk-label govuk-label--s" asp-for="RecommendationForDecisionPublicRegisterReason">
+                                    Reason for decision
+                                </label>
+                            </h3>
+                            <div id="dpr-recommendation-hint" class="govuk-hint">
+                                Explain why you chose this option
+                            </div>
+                            <validation asp-for="RecommendationForDecisionPublicRegisterReason"></validation>
+                            <textarea class="govuk-textarea" condition-disabled="@(!Model.Editable(user))" rows="5" aria-describedby="dpr-recommendation-hint" asp-for="RecommendationForDecisionPublicRegisterReason"></textarea>
+                        </div>
+                    </div>
+
+                    <br/>
+
+                </fieldset>
+            </div>
+
+            <div class="govuk-form-group">
+                <div condition="@Model.Editable(user)" class="govuk-hint">
+                    When you’ve completed all your checks,
+                    submit your review to move the application to the next stage.
+                </div>
+                <div class="govuk-button-group">
+                    <button condition="@Model.Editable(user)" id="submit-review-btn" class="govuk-button" data-module="govuk-button">Submit review</button>
+                    <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.ApplicationId">Return to application summary</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/add-case-note.js" asp-append-version="true"></script>
+    <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
+    <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+}
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

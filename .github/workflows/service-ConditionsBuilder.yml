@@ -1,0 +1,21 @@
+name: service-ConditionsBuilder
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.ConditionsBuilder/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/**"
+      - ".github/workflows/**"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.ConditionsBuilder/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/**"
+      - ".github/workflows/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_dotnet-service.yml
+    with:
+      project: src/Services/Forestry.Flo.Services.ConditionsBuilder/Forestry.Flo.Services.ConditionsBuilder.csproj
+      test: test/Services/Forestry.Flo.Services.ConditionsBuilder.Tests/Forestry.Flo.Services.ConditionsBuilder.Tests.csproj

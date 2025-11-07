@@ -1,0 +1,21 @@
+name: service-InternalUsers
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.InternalUsers/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.InternalUsers.Tests/**"
+      - ".github/workflows/**"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.InternalUsers/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.InternalUsers.Tests/**"
+      - ".github/workflows/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_dotnet-service.yml
+    with:
+      project: src/Services/Forestry.Flo.Services.InternalUsers/Forestry.Flo.Services.InternalUsers.csproj
+      test: test/Services/Forestry.Flo.Services.InternalUsers.Tests/Forestry.Flo.Services.InternalUsers.Tests.csproj

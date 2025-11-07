@@ -1,13 +1,10 @@
-﻿@using NodaTime
-
-@{
+﻿@{
     ViewData["Title"] = "Is a site visit needed?";
     var user = new InternalUser(User);
 }
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SiteVisitViewModel
 
-<partial name="Partials/_PageErrors" />
 <partial name="Partials/_ConfirmationMessageDisplay" />
 <partial name="Partials/_UserGuideDisplay" />
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />

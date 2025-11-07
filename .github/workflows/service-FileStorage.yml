@@ -1,0 +1,21 @@
+name: service-FileStorage
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.FileStorage/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.FileStorage.Tests/**"
+      - ".github/workflows/**"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.FileStorage/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.FileStorage.Tests/**"
+      - ".github/workflows/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_dotnet-service.yml
+    with:
+      project: src/Services/Forestry.Flo.Services.FileStorage/Forestry.Flo.Services.FileStorage.csproj
+      test: test/Services/Forestry.Flo.Services.FileStorage.Tests/Forestry.Flo.Services.FileStorage.Tests.csproj

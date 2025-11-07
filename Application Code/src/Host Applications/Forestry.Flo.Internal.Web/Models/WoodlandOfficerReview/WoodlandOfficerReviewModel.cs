@@ -28,6 +28,11 @@ public class WoodlandOfficerReviewModel : WoodlandOfficerReviewModelBase
     public ActivityFeedModel WoodlandOfficerReviewCommentsFeed { get; set; }
 
     /// <summary>
+    /// Gets and sets the name of the field manager assigned to the application
+    /// </summary>
+    public string? AssignedFieldManager { get; set; }
+
+    /// <summary>
     /// Gets and sets the recommended licence duration selected by the woodland officer.
     /// </summary>
     public RecommendedLicenceDuration? RecommendedLicenceDuration { get; set; }
@@ -43,9 +48,4 @@ public class WoodlandOfficerReviewModel : WoodlandOfficerReviewModelBase
     /// that the application is or is not published to the decision public register.
     /// </summary>
     public string? RecommendationForDecisionPublicRegisterReason { get; set; }
-
-    /// <summary>
-    /// Gets and sets the name of the field manager assigned to the application
-    /// </summary>
-    public string? AssignedFieldManager { get; set; }
 }

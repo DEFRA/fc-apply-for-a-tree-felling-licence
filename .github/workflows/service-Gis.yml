@@ -1,0 +1,21 @@
+name: service-Gis
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.Gis/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.Gis.Tests/**"
+      - ".github/workflows/**"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "Application Code/src/Services/Forestry.Flo.Services.Gis/**"
+      - "Application Code/test/Services/Forestry.Flo.Services.Gis.Tests/**"
+      - ".github/workflows/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_dotnet-service.yml
+    with:
+      project: src/Services/Forestry.Flo.Services.Gis/Forestry.Flo.Services.Gis.csproj
+      test: test/Services/Forestry.Flo.Services.Gis.Tests/Forestry.Flo.Services.Gis.Tests.csproj

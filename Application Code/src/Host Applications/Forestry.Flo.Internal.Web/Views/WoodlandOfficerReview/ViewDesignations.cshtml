@@ -1,5 +1,4 @@
 ﻿@using Forestry.Flo.Services.Common.Extensions
-@using NodaTime
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.DesignationsViewModel
 
 
@@ -14,7 +13,6 @@
     var hasCompletedAllCompartments = totalCompartmentsToReview == numberCompartmentsReviewed;
 }
 
-<partial name="Partials/_PageErrors" />
 <partial name="Partials/_ConfirmationMessageDisplay" />
 <partial name="Partials/_UserGuideDisplay" />
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />

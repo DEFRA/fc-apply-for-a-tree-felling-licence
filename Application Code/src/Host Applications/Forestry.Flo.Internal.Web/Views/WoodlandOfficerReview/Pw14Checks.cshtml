@@ -1,16 +1,12 @@
 ﻿@{
     ViewData["Title"] = "Woodland officer checks";
 }
-
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Forestry.Flo.Internal.Web.Infrastructure
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.Pw14ChecksViewModel
 
 @{
     var user = new InternalUser(User);
 }
 
-<partial name="Partials/_PageErrors" />
 <partial name="Partials/_ConfirmationMessageDisplay" />
 <partial name="Partials/_UserGuideDisplay" />
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />

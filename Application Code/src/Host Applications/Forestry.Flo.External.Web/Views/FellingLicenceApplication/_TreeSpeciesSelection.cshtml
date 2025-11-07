@@ -15,16 +15,6 @@
                 }
             </select>
         </div>
-        <button id="@formPrefix-add-tree-species-btn" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" data-module="govuk-button" aria-describedby="species-hint">
-            @if (@Model.Keys.Count > 0)
-            {
-                @:Add another species
-            }
-            else
-            {
-                @:Add species
-            }
-        </button>
     </div>
 
     <table class="govuk-table govuk-!-padding-bottom-4" id="@formPrefix-species-list-table" style="border-collapse: collapse" name="Selected species" aria-label="Selected species">

@@ -30,16 +30,26 @@ else
                 <th scope="row" class="govuk-table__header" data-order="@woodlandOwner.OrgName">@woodlandOwner.OrgDisplayName</th>
                 
                 <td class="govuk-table__cell margin-right-seperate">
-                    <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-woodlandOwnerId="@woodlandOwner.Id">
-                        View applications<span class="govuk-visually-hidden">&nbsp;for @(woodlandOwner.DisplayName)</span>
-                    </a>
-                    <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManagedClientSummary" asp-route-woodlandOwnerId="@woodlandOwner.Id" asp-route-agencyId="@woodlandOwner.AgencyId">
-                        Manage client<span class="govuk-visually-hidden">&nbsp;@(woodlandOwner.DisplayName)</span>
-                    </a>
-                    <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="SelectWoodland" asp-route-woodlandOwnerId="@woodlandOwner.Id" asp-route-agencyId="@woodlandOwner.AgencyId" asp-route-agencySourcePage="ClientSummary">
-                        Start new licence application<span class="govuk-visually-hidden">&nbsp;for @(woodlandOwner.DisplayName)</span>
-                    </a>
-                </td>
+                        <dd class="govuk-summary-list__actions govuk-!-text-align-left govuk-!-padding-top-0">
+                            <ul class="govuk-summary-list__actions-list">
+                                <li class="govuk-summary-list__actions-list-item">
+                                    <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-woodlandOwnerId="@woodlandOwner.Id">
+                                        View applications<span class="govuk-visually-hidden">&nbsp;for @(woodlandOwner.DisplayName)</span>
+                                    </a>
+                                </li>
+                                <li class="govuk-summary-list__actions-list-item">
+                                    <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManagedClientSummary" asp-route-woodlandOwnerId="@woodlandOwner.Id" asp-route-agencyId="@woodlandOwner.AgencyId">
+                                        Manage client<span class="govuk-visually-hidden">&nbsp;@(woodlandOwner.DisplayName)</span>
+                                    </a>
+                                </li>
+                                <li class="govuk-summary-list__actions-list-item">
+                                    <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="SelectWoodland" asp-route-woodlandOwnerId="@woodlandOwner.Id" asp-route-agencyId="@woodlandOwner.AgencyId" asp-route-agencySourcePage="ClientSummary">
+                                        Start new licence application<span class="govuk-visually-hidden">&nbsp;for @(woodlandOwner.DisplayName)</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </dd>
+                    </td>
             </tr>
         }
         </tbody>
