@@ -10,6 +10,7 @@ namespace Forestry.Flo.External.Web.Controllers;
 public partial class FellingLicenceApplicationController
 {
     [HttpGet]
+    [EditingAllowed]
     public async Task<IActionResult> AgentAuthorityForm(
     Guid agentAuthorityId,
     Guid applicationId,
@@ -35,11 +36,6 @@ public partial class FellingLicenceApplicationController
         }
         
         ViewData["AafStepStatus"] = fellingLicenceApplicationModelResult.Value.AgentAuthorityForm.StepComplete;
-
-        if (result.Value.DoesNotHaveAnyAuthorityForms)
-        {
-            ModelState.AddModelError(nameof(AgentAuthorityFormDocumentModel.DoesNotHaveAnyAuthorityForms), "You must have a current agent authority form to submit your application");
-        }
 
         return View(result.Value);
     }

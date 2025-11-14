@@ -19,32 +19,37 @@
                 </h1>
             </legend>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.Line1">
                 <label asp-for="PersonContactsDetails.ContactAddress.Line1" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="PersonContactsDetails.ContactAddress.Line1"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactAddress.Line1" autocomplete="address-line1"/>
-            </div>
-            <div class="govuk-form-group">
+            </govuk-form-group>
+
+            <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.Line2">
                 <label asp-for="PersonContactsDetails.ContactAddress.Line2" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="PersonContactsDetails.ContactAddress.Line2"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactAddress.Line2" autocomplete="address-line2"/>
-            </div>
-            <div class="govuk-form-group">
+            </govuk-form-group>
+
+            <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.Line3">
                 <label asp-for="PersonContactsDetails.ContactAddress.Line3" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="PersonContactsDetails.ContactAddress.Line3"></validation>
                 <input class="@GdsConstants.GdsInputCssClass govuk-input--width-20" asp-for="PersonContactsDetails.ContactAddress.Line3" autocomplete="address-level2"/>
-            </div>
-            <div class="govuk-form-group">
+            </govuk-form-group>
+
+            <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.PostalCode">
                 <label asp-for="PersonContactsDetails.ContactAddress.PostalCode" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="PersonContactsDetails.ContactAddress.PostalCode"></validation>
                 <input class="@GdsConstants.GdsInputCssClass govuk-input--width-10" asp-for="PersonContactsDetails.ContactAddress.PostalCode" autocomplete="postal-code"/>
-            </div>
-            <div class="govuk-form-group">
+            </govuk-form-group>
+
+            <govuk-form-group asp-for="PersonContactsDetails.ContactTelephoneNumber">
                 <label asp-for="PersonContactsDetails.ContactTelephoneNumber" class="@GdsConstants.GdsLabelCssClass"></label>
                 <div id="telephone-hint" class="govuk-hint">For international numbers include the country code</div>
                 <validation asp-for="PersonContactsDetails.ContactTelephoneNumber"></validation>
                 <input class="@GdsConstants.GdsInputCssClass govuk-input--width-20" asp-for="PersonContactsDetails.ContactTelephoneNumber" autocomplete="tel" aria-describedby="telephone-hint"/>
-            </div>
+            </govuk-form-group>
+
         </fieldset>
 
         <div class="govuk-form-group">

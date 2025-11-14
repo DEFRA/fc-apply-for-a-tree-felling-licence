@@ -1,8 +1,10 @@
 @using Forestry.Flo.Internal.Web.Infrastructure
-    @if (!ViewData.ModelState.IsValid || TempData.ContainsKey(ControllerExtensions.ErrorMessageKey))
-    {
-        <div class="govuk-error-summary" aria-labelledby="error-summary-title" role="alert" data-module="govuk-error-summary">
-            <h2 class="govuk-error-summary__title" id="error-summary-title">
+@using System.Web
+@if (!ViewData.ModelState.IsValid || TempData.ContainsKey(ControllerExtensions.ErrorMessageKey))
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">
                 There is a problem
             </h2>
             <div class="govuk-error-summary__body">
@@ -13,9 +15,8 @@
                         {
                             @foreach (var error in modelStateEntry.Value.Errors)
                             {
-                                // replace "." with "_" to account for nested ids from asp-for
                                 <li>
-                                    <a href="#@modelStateEntry.Key.Replace(".", "_")">@error.ErrorMessage</a>
+                                    <a href="#@modelStateEntry.Key.Replace('.', '_')">@error.ErrorMessage</a>
                                 </li>
                             }
                         }
@@ -28,19 +29,18 @@
                     {
                         <ul class="govuk-list govuk-error-summary__list">
                             <li>
-                                <a href="#@TempData[ControllerExtensions.ErrorFieldNameKey]">@TempData[ControllerExtensions.ErrorMessageKey]</a>
+                                <a href="#@(TempData[ControllerExtensions.ErrorFieldNameKey]?.ToString()?.Replace('.', '_'))">@TempData[ControllerExtensions.ErrorMessageKey]</a>
                             </li>
                         </ul>
                     }
                     else
                     {
                         <p class="govuk-error-message">
-                            <span class="govuk-visually-hidden">Error:</span> @TempData[ControllerExtensions.ErrorMessageKey]
+                            <span class="govuk-visually-hidden">Error:</span> @Html.Raw(HttpUtility.HtmlEncode(TempData[ControllerExtensions.ErrorMessageKey] ?? string.Empty).Replace("\n", "<br/>"))
                         </p>
                     }
                 }
             </div>
         </div>
-    }
-
-
+    </div>
+}

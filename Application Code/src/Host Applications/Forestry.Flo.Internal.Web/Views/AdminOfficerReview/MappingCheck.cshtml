@@ -75,7 +75,7 @@
     <form id="admin-officer-review" method="post">
         <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="CheckPassed">
 
             <fieldset class="govuk-fieldset">
 
@@ -87,7 +87,7 @@
 
                 </legend>
 
-                <validation asp-for="@Model.CheckPassed"></validation>
+                <validation asp-for="CheckPassed"></validation>
 
                 <div class="govuk-radios" data-module="govuk-radios">
 
@@ -115,9 +115,9 @@
 
             </fieldset>
 
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group" id="failure-reason-input">
+        <govuk-form-group asp-for="CheckFailedReason" id="failure-reason-input">
 
             <label class="govuk-label" asp-for="CheckFailedReason">
                 Reason for failure
@@ -127,7 +127,7 @@
 
             <textarea condition-disabled="@(!Model.Editable(user))" class="govuk-textarea" maxlength="400" asp-for="CheckFailedReason" rows="5"></textarea>
 
-        </div>
+        </govuk-form-group>
 
         <div>
 

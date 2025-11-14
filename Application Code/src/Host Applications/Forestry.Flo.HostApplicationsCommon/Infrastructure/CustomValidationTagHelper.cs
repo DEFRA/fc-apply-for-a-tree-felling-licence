@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
-namespace Forestry.Flo.External.Web.Infrastructure;
+namespace Forestry.Flo.HostApplicationsCommon.Infrastructure;
 
 [HtmlTargetElement("validation")]
 public class CustomValidationTagHelper : TagHelper

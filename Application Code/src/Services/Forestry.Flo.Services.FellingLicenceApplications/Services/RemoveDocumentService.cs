@@ -94,13 +94,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             if (documentMaybe.HasNoValue)
             {
                 _logger.LogWarning("Could not find a document with id of [{DocumentIdentifier}] in application with id [{ApplicationId}]", documentIdentifier, applicationId);
-                return await HandleFileRemovalFailureAsync(
-                    userAccountId,
-                    applicationId,
-                    documentIdentifier,
-                    null,
-                    "Document not found",
-                    cancellationToken);
+                // deletes are idempotent, calling delete again for the same id should be successful no-op
+                return Result.Success();
             }
 
             var document = documentMaybe.Value;

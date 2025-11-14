@@ -1,7 +1,5 @@
 ﻿$(function () {
     $(document).ready(function () {
-        $('#submit-import-files-btn').attr('disabled', 'disabled');
-
         $('#data-import-files-label').attr('for', 'data-import-files-input');
 
         var selectedFiles = [];
@@ -9,7 +7,6 @@
         var clearErrors = function () {
             $('#data-import-files-error').addClass('govuk-visually-hidden');
             $('#data-import-files-error').attr('aria-hidden', 'true');
-            $('#submit-import-files-btn').removeAttr('disabled');
             $('#data-import-files').removeClass('govuk-file-upload--error');
             $('#data-import-error-text').html('');
             $('#file-select-group').removeClass('govuk-form-group--error');
@@ -19,12 +16,10 @@
             if (selectedFiles.length === 0) {
                 $('#import-selected-files-list').addClass('govuk-visually-hidden');
                 $('#import-selected-files-list').attr('aria-hidden', 'true');
-                $('#submit-import-files-btn').attr('disabled', 'disabled');
             }
             else {
                 $('#import-selected-files-list').removeClass('govuk-visually-hidden');
                 $('#import-selected-files-list').attr('aria-hidden', 'false');
-                $('#submit-import-files-btn').removeAttr('disabled');
             }
         };
 

@@ -13,11 +13,14 @@
 
 <div class="govuk-grid-column-two-thirds">
 
-<h1 class="govuk-heading-l">
-    Check your answers
-</h1>
+    <h1 class="govuk-heading-l" Condition="Model.Application.FlaTermsAndConditionsViewModel.AllowEditing">
+        Check your answers
+    </h1>
+	<h1 class="govuk-heading-l" Condition="!Model.Application.FlaTermsAndConditionsViewModel.AllowEditing">
+		Application summary
+	</h1>
 
-@if (Model.Agency != null)
+	@if (Model.Agency != null)
 {
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
@@ -180,7 +183,13 @@ else
                                 foreach (var document in wmpDocs)
                                 {
                                     <div>
-                                        @document.FileName
+                                        <a class="hidden-download-supporting-document"
+                                           asp-controller="FellingLicenceApplication"
+                                           asp-action="DownloadSupportingDocument"
+                                           asp-route-applicationId="@Model.Application.ApplicationId"
+                                           asp-route-documentIdentifier="@document.Id">
+                                            @document.FileName
+                                        </a>
                                     </div>
                                     <br/>
                                 }
@@ -194,7 +203,8 @@ else
 
                         </dd>
                         <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action("WmpDocuments", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan documents</span></a>
+                            <a class="govuk-link" href="@Url.Action("WmpDocuments", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                                   Condition="Model.Application.SupportingDocumentation.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan documents</span></a>
                         </dd>
                     </div>
                 }
@@ -279,7 +289,8 @@ else
         <h2 class="govuk-summary-card__title">Felling schedule</h2>
         <ul class="govuk-summary-card__actions">
             <li class="govuk-summary-card__action">
-                <a class="govuk-link" href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">
+                <a class="govuk-link" href="@Url.Action("Operations", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                       Condition="Model.Application.OperationDetails.AllowEditing">
                     Change<span class="govuk-visually-hidden">&nbsp;the felling schedule</span>
                 </a>
             </li>
@@ -330,7 +341,8 @@ else
                     }
                 </dd>
                 <dd class="govuk-summary-list__actions">
-                    <a class="govuk-link" href="@Url.Action(Model.FellingAndRestocking.FellingCompartmentsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    <a class="govuk-link" href="@Url.Action(Model.FellingAndRestocking.FellingCompartmentsChangeLink)"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
                 </dd>
             </div>
         </dl>
@@ -346,7 +358,8 @@ else
                         @compartmentDetails.OperationsString
                     </dd>
                     <dd class="govuk-summary-list__actions">
-                        <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)">Change<span class="govuk-visually-hidden">&nbsp;the felling operations in compartment @compartmentDetails.CompartmentName</span></a>
+                        <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)"
+                               Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling operations in compartment @compartmentDetails.CompartmentName</span></a>
                     </dd>
                 </div>
             </dl>
@@ -386,7 +399,8 @@ else
             <h2 class="govuk-summary-card__title">Constraint check</h2>
             <ul class="govuk-summary-card__actions">
                 <li class="govuk-summary-card__action">
-                    <a class="govuk-link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">
+                    <a class="govuk-link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                       Condition="Model.Application.ConstraintCheck.AllowEditing">
                         Change<span class="govuk-visually-hidden">&nbsp;the constraints check</span>
                     </a>
                 </li>
@@ -438,7 +452,8 @@ else
             <h2 class="govuk-summary-card__title">Supporting documentation</h2>
             <ul class="govuk-summary-card__actions">
                 <li class="govuk-summary-card__action">
-                    <a class="govuk-link" href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">
+                    <a class="govuk-link" href="@Url.Action("SupportingDocumentation", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                       Condition="Model.Application.SupportingDocumentation.AllowEditing">
                         Change<span class="govuk-visually-hidden">&nbsp;the supporting documentation</span>
                     </a>
                 </li>
@@ -452,7 +467,9 @@ else
                     </dt>
                     <dd class="govuk-summary-list__value">
                         @{
-                            var supportingDocs = Model.Application.SupportingDocumentation.Documents.Where(x => x.DocumentPurpose == DocumentPurpose.Attachment).ToList();
+                            var supportingDocs = Model.Application.SupportingDocumentation.Documents
+                                                    .Where(x => x.DocumentPurpose is not (DocumentPurpose.WmpDocument or DocumentPurpose.EiaAttachment))
+                                                    .ToList();
                         }
 
                         @if (supportingDocs.Any())
@@ -460,7 +477,13 @@ else
                             foreach (var document in supportingDocs)
                             {
                                 <div>
-                                    @document.FileName
+                                    <a class="hidden-download-supporting-document"
+                                       asp-controller="FellingLicenceApplication"
+                                       asp-action="DownloadSupportingDocument"
+                                       asp-route-applicationId="@Model.Application.ApplicationId"
+                                       asp-route-documentIdentifier="@document.Id">
+                                        @document.FileName
+                                    </a>
                                 </div>
                                 <br/>
                             }
@@ -477,8 +500,39 @@ else
         </div>
     </div>
 
-    <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link">Return to your application</a>
-    <br>
+
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Declaration and confirmation</h2>
+            <ul class="govuk-summary-card__actions">
+                <li class="govuk-summary-card__action">
+                    <a class="govuk-link" href="@Url.Action("TermsAndConditions", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                       Condition="Model.Application.FlaTermsAndConditionsViewModel.AllowEditing">
+                        Change<span class="govuk-visually-hidden">&nbsp;the declaration and confirmation</span>
+                    </a>
+					<a class="govuk-link" href="@Url.Action("TermsAndConditions", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+					   Condition="!Model.Application.FlaTermsAndConditionsViewModel.AllowEditing">
+						View<span class="govuk-visually-hidden">&nbsp;the declaration and confirmation</span>
+					</a>
+				</li>
+            </ul>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Declaration and confirmation accepted
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Application.FlaTermsAndConditionsViewModel.TermsAndConditionsAccepted is true ? "Yes" : "No")
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link"
+       Condition="Model.Application.FlaTermsAndConditionsViewModel.AllowEditing">Return to your application</a>
     <br>
 
     @{

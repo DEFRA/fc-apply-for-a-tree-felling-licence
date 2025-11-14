@@ -1,6 +1,6 @@
 ﻿@model Forestry.Flo.Services.FellingLicenceApplications.Models.FormLevelCaseNote;
 
-<div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
+<govuk-form-group asp-for="CaseNote" class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
     <div class="govuk-inset-text">
         <label for="@Model.CaseNoteInputElementId">@Model.InsetTextHeading</label>
         <ul>
@@ -27,4 +27,4 @@
             <label class="govuk-label govuk-checkboxes__label" asp-for="VisibleToConsultee">Visible to external consultees</label>
         </div>
     </div>
-</div>
+</govuk-form-group>

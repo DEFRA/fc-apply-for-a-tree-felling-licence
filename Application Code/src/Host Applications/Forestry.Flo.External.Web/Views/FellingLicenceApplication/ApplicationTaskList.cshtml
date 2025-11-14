@@ -40,19 +40,33 @@
 
     <partial name="_ApplicationSummaryNotes" model="@Model.ApplicationSummary" />
 
+	@if (Model.HasCaseNotes)
+	{
+		<div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+			<div class="govuk-notification-banner__content">
+				<p class="govuk-notification-banner__heading">
+					Case notes have been added to this application: <a class="govuk-link" asp-action="ViewCaseNotes" asp-controller="FellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId">View case notes</a>
+				</p>
+			</div>
+		</div>
+	}
+
+	@if (!Model.AllowEditing)
+	{
+		<div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+			<div class="govuk-notification-banner__content">
+				<p class="govuk-notification-banner__heading">
+                    This application has been submitted and is now being reviewed. You'll be notified if any changes are needed.
+                    <br />
+                    <a class="govuk-link" asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId">View application details</a>
+				</p>
+			</div>
+        </div>
+    } else
+    {
+        
     <h2 class="govuk-heading-s govuk-!-margin-bottom-2">Application @(Model.IsComplete ? "complete" : "incomplete")</h2>
     <p class="govuk-body">You have completed @(Model.CompletedStepsCount) of @(Model.StepsCount) tasks.</p>
-
-    @if (Model.HasCaseNotes)
-    {
-        <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
-            <div class="govuk-notification-banner__content">
-                <p class="govuk-notification-banner__heading">
-                    Case notes have been added to this application: <a class="govuk-link" asp-action="ViewCaseNotes" asp-controller="FellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId">View case notes</a>
-                </p>
-            </div>
-        </div>
-    }
 
     <div>
         <ul class="govuk-task-list">
@@ -262,6 +276,8 @@
             </li>
         </ul>
     </div>
+
+    }
 
     <div>
         <div condition="@(Model.CurrentReviewModel is not null)" class="govuk-body">

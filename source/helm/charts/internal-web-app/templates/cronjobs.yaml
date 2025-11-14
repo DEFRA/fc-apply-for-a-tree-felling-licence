@@ -28,11 +28,17 @@ spec:
               command:
                 - bash
                 - -c
-                - >
-                  set -euo pipefail;
-                  curl -sS -k
-                  -H "X-Api-Key: ${API_KEY}"
-                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+                - |
+                  set -euo pipefail
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' starting"
+                  echo "[$(date)] Calling: http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  curl -sSf -k \
+                    -H "X-Api-Key: ${API_KEY}" \
+                    "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
 {{- end }}
 ---
 {{- /* extend-applications */ -}}
@@ -62,11 +68,17 @@ spec:
               command:
                 - bash
                 - -c
-                - >
-                  set -euo pipefail;
-                  curl -sS -k
-                  -H "X-Api-Key: ${API_KEY}"
-                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+                - |
+                  set -euo pipefail
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' starting"
+                  echo "[$(date)] Calling: http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  curl -sSf -k \
+                    -H "X-Api-Key: ${API_KEY}" \
+                    "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
 {{- end }}
 ---
 {{- /* public-register-expiry-notification */ -}}
@@ -96,11 +108,17 @@ spec:
               command:
                 - bash
                 - -c
-                - >
-                  set -euo pipefail;
-                  curl -sS -k
-                  -H "X-Api-Key: ${API_KEY}"
-                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+                - |
+                  set -euo pipefail
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' starting"
+                  echo "[$(date)] Calling: http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  curl -sSf -k \
+                    -H "X-Api-Key: ${API_KEY}" \
+                    "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
 {{- end }}
 ---
 {{- /* remove-applications-from-decision-public-register */ -}}
@@ -130,11 +148,17 @@ spec:
               command:
                 - bash
                 - -c
-                - >
-                  set -euo pipefail;
-                  curl -sS -k
-                  -H "X-Api-Key: ${API_KEY}"
-                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+                - |
+                  set -euo pipefail
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' starting"
+                  echo "[$(date)] Calling: http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  curl -sSf -k \
+                    -H "X-Api-Key: ${API_KEY}" \
+                    "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
 {{- end }}
 ---
 {{- /* public-register-consultation-comments */ -}}
@@ -164,9 +188,15 @@ spec:
               command:
                 - bash
                 - -c
-                - >
-                  set -euo pipefail;
-                  curl -sS -k
-                  -H "X-Api-Key: ${API_KEY}"
-                  "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+                - |
+                  set -euo pipefail
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' starting"
+                  echo "[$(date)] Calling: http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  curl -sSf -k \
+                    -H "X-Api-Key: ${API_KEY}" \
+                    "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
 {{- end }}

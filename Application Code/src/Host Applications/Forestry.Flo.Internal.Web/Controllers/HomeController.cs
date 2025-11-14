@@ -156,6 +156,11 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Contact()
+    {
+        return View();
+    }
+
     public async Task<IActionResult> UserManagement(CancellationToken cancellationToken)
     {
         var internalUser = new InternalUser(User);

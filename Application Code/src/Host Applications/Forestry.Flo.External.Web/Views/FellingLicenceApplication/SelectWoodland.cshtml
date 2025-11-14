@@ -25,7 +25,7 @@
     <form id="application-details-form" method="post">
 
         <input type="hidden" asp-for="ApplicationId"/>
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="PropertyProfileId">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
@@ -48,16 +48,15 @@
 
             </fieldset>
 
-        </div>
-        <div class="govuk-form-group">
-            <div class="govuk-button-group">
-                <button class="govuk-button" type="submit" data-module="govuk-button">
-                    Continue
-                </button>
-                <button class="govuk-button govuk-button--secondary" data-module="govuk-button" form="createProperty">
-                    Create new woodland
-                </button>
-            </div>
+        </govuk-form-group>
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
+                Continue
+            </button>
+            <button class="govuk-button govuk-button--secondary" data-module="govuk-button" form="createProperty">
+                Create new woodland
+            </button>
         </div>
     </form>
 </div>

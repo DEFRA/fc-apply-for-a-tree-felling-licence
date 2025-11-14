@@ -13,52 +13,50 @@
                 </h1>
             </legend>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="OrganisationName">
                 <label asp-for="OrganisationName" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationName"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationName" />
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="OrganisationAddress.Line1">
                 <label asp-for="OrganisationAddress.Line1" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationAddress.Line1"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationAddress.Line1" autocomplete="address-line1" />
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="OrganisationAddress.Line2">
                 <label asp-for="OrganisationAddress.Line2" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationAddress.Line2"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationAddress.Line2" autocomplete="address-line2" />
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="OrganisationAddress.Line3">
                 <label asp-for="OrganisationAddress.Line3" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationAddress.Line3"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationAddress.Line3" autocomplete="address-level2" />
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="OrganisationAddress.Line4">
                 <label asp-for="OrganisationAddress.Line4" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationAddress.Line4"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationAddress.Line4" />
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="OrganisationAddress.PostalCode">
                 <label asp-for="OrganisationAddress.PostalCode" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationAddress.PostalCode"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationAddress.PostalCode" autocomplete="postal-code" />
-            </div>
-
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
-                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                        Continue
-                    </button>
-
-                    <a class="govuk-link" asp-controller="FcUserCreateWoodlandOwner" asp-action="ContactDetails" title="Abandon changes and go to the previous page">Cancel</a>
-                </div>
-            </div>
+            </govuk-form-group>
         </fieldset>
+
+        <div class="govuk-button-group">
+            <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                Continue
+            </button>
+
+            <a class="govuk-link" asp-controller="FcUserCreateWoodlandOwner" asp-action="ContactDetails" title="Abandon changes and go to the previous page">Cancel</a>
+        </div>
     </form>
 </div>
 

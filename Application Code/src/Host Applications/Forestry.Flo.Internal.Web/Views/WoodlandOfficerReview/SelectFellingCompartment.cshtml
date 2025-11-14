@@ -30,7 +30,7 @@
                 </li>
             </ul>
             <div class="govuk-tabs__panel" id="list">
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="SelectedCompartmentId">
                     <input type="hidden" aria-hidden="True" asp-for="@Model.GisData"/>
                     <div class="govuk-form-group">
                         <fieldset class="govuk-fieldset">
@@ -54,7 +54,7 @@
                             </div>
                         </fieldset>
                     </div>
-                </div>
+                </govuk-form-group>
             </div>
             <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="map">
                 <arcgis-map id="viewDiv" aria-label="Map of the selected compartment">

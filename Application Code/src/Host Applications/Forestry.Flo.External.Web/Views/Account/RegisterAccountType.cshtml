@@ -15,7 +15,7 @@
 
     <form method="post">
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="UserTypeModel.AccountType">
             <fieldset class="govuk-fieldset">
 
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
@@ -25,7 +25,7 @@
                 </legend>
 
 
-                <validation asp-for="@Model.UserTypeModel.AccountType"></validation>
+                <validation asp-for="UserTypeModel.AccountType"></validation>
 
                 <div class="govuk-radios" data-module="govuk-radios">
 
@@ -38,9 +38,9 @@
 
                         <div class="govuk-radios__item">
 
-                            <input class="govuk-radios__input" asp-for="@Model.UserTypeModel.AccountType" id="@value" type="radio" value="@value" condition-disabled="@Model.PageIsDisabled" aria-describedby="hint-@value">
+                            <input class="govuk-radios__input" asp-for="UserTypeModel.AccountType" id="@value" type="radio" value="@value" condition-disabled="@Model.PageIsDisabled" aria-describedby="hint-@value">
 
-                            <label class="govuk-label govuk-radios__label" asp-for="@Model.UserTypeModel.AccountType" for="@value">
+                            <label class="govuk-label govuk-radios__label" asp-for="UserTypeModel.AccountType" for="@value">
                                 @value.GetDisplayName()
                             </label>
 
@@ -54,7 +54,7 @@
                 </div>
 
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-form-group">
 

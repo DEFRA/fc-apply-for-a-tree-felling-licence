@@ -84,12 +84,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
 
-            _auditService.Verify(s =>
-                s.PublishAuditEventAsync(It.Is<AuditEvent>(
-                        e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent),
-                    It.IsAny<CancellationToken>()), Times.Once);
+            _auditService.VerifyNoOtherCalls();
 
-            Assert.True(result.IsFailure);
+            Assert.True(result.IsSuccess);
         }
 
 
@@ -218,12 +215,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
 
-            _auditService.Verify(s =>
-                s.PublishAuditEventAsync(It.Is<AuditEvent>(
-                        e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent),
-                    It.IsAny<CancellationToken>()), Times.Once);
+            _auditService.VerifyNoOtherCalls();
 
-            Assert.True(result.IsFailure);
+            Assert.True(result.IsSuccess);
         }
 
         [Theory, AutoMoqData]
@@ -267,12 +261,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
-            _auditService.Verify(s =>
-                s.PublishAuditEventAsync(It.Is<AuditEvent>(
-                        e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent),
-                It.IsAny<CancellationToken>()), Times.Once);
+            _auditService.VerifyNoOtherCalls();
 
-            Assert.True(result.IsFailure);
+            Assert.True(result.IsSuccess);
         }
 
         [Theory, AutoMoqData]

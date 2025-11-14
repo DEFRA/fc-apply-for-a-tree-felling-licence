@@ -353,8 +353,31 @@ public partial class AccountController : Controller
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-        var termsAcceptance = await useCase.UpdateUserAcceptsTermsAndConditionsAsync(user, model.AcceptsTermsAndConditions,
-            cancellationToken);
+
+        ModelState.Clear();
+        if (!model.AcceptsTermsAndConditions.AcceptsTermsAndConditions)
+        {
+            ModelState.AddModelError(
+                "AcceptsTermsAndConditions.AcceptsTermsAndConditions",
+                "You must accept the terms and conditions to proceed.");
+        }
+        if (!model.AcceptsTermsAndConditions.AcceptsPrivacyPolicy)
+        {
+            ModelState.AddModelError(
+                "AcceptsTermsAndConditions.AcceptsPrivacyPolicy",
+                "You must accept the privacy policy to proceed.");
+        }
+        if (!ModelState.IsValid)
+        {
+            var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
+            var reloadModel = GetUserAccountModel(existingAccount, "Terms and conditions");
+            reloadModel.AcceptsTermsAndConditions = model.AcceptsTermsAndConditions;
+            SetBreadcrumbs(reloadModel, "Terms and conditions");
+            return View(reloadModel);
+        }
+
+        var termsAcceptance = await useCase.UpdateUserAcceptsTermsAndConditionsAsync(
+            user, model.AcceptsTermsAndConditions, cancellationToken);
 
         if (termsAcceptance.IsSuccess)
         {

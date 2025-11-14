@@ -21,26 +21,32 @@
             
             <p class="govuk-body">Confirm you accept the terms and conditions and privacy policy before you continue.</p>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="AcceptsTermsAndConditions.AcceptsTermsAndConditions">
+                <validation asp-for="AcceptsTermsAndConditions.AcceptsTermsAndConditions"></validation>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
-                        <input id="accept-terms-and-conditions" class="govuk-checkboxes__input" asp-for="AcceptsTermsAndConditions.AcceptsTermsAndConditions" type="checkbox">
-                        <label for="accept-terms-and-conditions" class="govuk-label govuk-checkboxes__label" asp-for="AcceptsTermsAndConditions">
+                        <input class="govuk-checkboxes__input" asp-for="AcceptsTermsAndConditions.AcceptsTermsAndConditions" type="checkbox">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="AcceptsTermsAndConditions.AcceptsTermsAndConditions">
                             <a target="TermsAndConditions" class="govuk-link" rel="noreferrer noopener" aria-label="Open the terms and conditions" href="/Home/TermsAndConditions">
                                 Confirm you accept the terms and conditions (opens in a new tab)
                             </a>
                         </label>
                     </div>
+                </div>
+            </govuk-form-group>
+            <govuk-form-group asp-for="AcceptsTermsAndConditions.AcceptsPrivacyPolicy">
+                <validation asp-for="AcceptsTermsAndConditions.AcceptsPrivacyPolicy"></validation>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
-                        <input id="accept-privacy-policy" class="govuk-checkboxes__input" asp-for="AcceptsTermsAndConditions.AcceptsPrivacyPolicy" type="checkbox">
-                        <label for="accept-privacy-policy" class="govuk-label govuk-checkboxes__label" asp-for="AcceptsTermsAndConditions.AcceptsPrivacyPolicy">
+                        <input class="govuk-checkboxes__input" asp-for="AcceptsTermsAndConditions.AcceptsPrivacyPolicy" type="checkbox">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="AcceptsTermsAndConditions.AcceptsPrivacyPolicy">
                             <a target="Privacy" class="govuk-link" rel="noreferrer noopener" aria-label="Open the Privacy Policy" href="/Home/Privacy">
                                 Confirm you have read and understood the privacy policy (opens in a new tab)
                             </a>
                         </label>
                     </div>
                 </div>
-            </div>
+            </govuk-form-group>
             
         </fieldset>
 

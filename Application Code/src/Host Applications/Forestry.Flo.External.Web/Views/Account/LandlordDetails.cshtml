@@ -18,7 +18,7 @@
                 </h1>
             </legend>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="FirstName">
 
                 <label asp-for="FirstName" class="@GdsConstants.GdsLabelCssClass"></label>
 
@@ -26,9 +26,9 @@
 
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="FirstName"/>
 
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="LastName">
 
                 <label asp-for="LastName" class="@GdsConstants.GdsLabelCssClass"></label>
 
@@ -36,7 +36,7 @@
 
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="LastName"/>
 
-            </div>
+            </govuk-form-group>
 
             <div class="govuk-form-group">
 

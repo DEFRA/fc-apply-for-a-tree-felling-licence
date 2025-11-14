@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-dev-flo-postgresql-0
+  namespace: dev-flo
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: dev-flo
+    app.kubernetes.io/component: primary
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: default

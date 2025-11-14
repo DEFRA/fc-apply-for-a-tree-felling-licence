@@ -34,7 +34,7 @@
         
             <input asp-for="ApplicationId"/>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister">
                 <fieldset class="govuk-fieldset" aria-describedby="exempt-hint">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         <h2 class="govuk-fieldset__heading">
@@ -44,19 +44,20 @@
                     <div id="exempt-hint" class="govuk-hint">
                         Select 'Yes' if the application meets the exemption criteria.
                     </div>
+                    <validation asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
                             <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="exempt-yes" name="exempt" type="radio" value="@true" data-aria-controls="conditional-reason" />
                             <label class="govuk-label govuk-radios__label" for="exempt-yes">Yes</label>
                         </div>
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-reason">
-                            <div class="govuk-form-group">
+                            <govuk-form-group asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason">
                                 <label class="govuk-hint" for="exemption-reason">
                                     Give reason for exemption
                                 </label>
                                 <validation asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason"></validation>
                                 <textarea condition-disabled="@(!Model.Editable(user))" id="exemption-reason" class="govuk-textarea" rows="4" asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason"></textarea>
-                            </div>
+                            </govuk-form-group>
                         </div>
                         <div class="govuk-radios__item">
                             <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="exempt-no" name="exempt" type="radio" value="@false" />
@@ -64,24 +65,22 @@
                         </div>
                     </div>
                     <input id="exempt-backing-field" type="hidden" asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister"/>
-                    
-                    <br/>
-
-                    <div class="govuk-button-group" id="save-exemption-form">
-                        <button condition="@Model.Editable(user)" id="save-exemption-btn" class="govuk-button" data-module="govuk-button" type="submit">Save exemption</button>
-                        <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
-                    </div>
                 </fieldset>
-                
-            </div>
 
+            </govuk-form-group>
+            <br/>
+
+            <div class="govuk-button-group" id="save-exemption-form">
+                <button condition="@Model.Editable(user)" id="save-exemption-btn" class="govuk-button" data-module="govuk-button" type="submit">Save exemption</button>
+                <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
+            </div>
         </form>
 
         <form method="post" asp-action="PublishToConsultationPublicRegister" id="publish-form">
 
             <input asp-for="ApplicationId"/>
-            
-            <div class="govuk-form-group">
+
+            <govuk-form-group asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays">
                 <fieldset class="govuk-fieldset" aria-described-by="publish-hint">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         <h2 class="govuk-fieldset__heading">
@@ -101,15 +100,15 @@
                         </div>
                     </div>
                 </fieldset>
+            </govuk-form-group>
+
+            <br/>
                 
-                <br/>
-                
-                <div class="govuk-button-group">
-                    <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
-                        Publish to public register
-                    </button>
-                    <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
-                </div>
+            <div class="govuk-button-group">
+                <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
+                    Publish to public register
+                </button>
+                <a class="govuk-link" asp-action="Index" asp-route-id="@Model.ApplicationId">Back to woodland officer review</a>
             </div>
         </form>
 

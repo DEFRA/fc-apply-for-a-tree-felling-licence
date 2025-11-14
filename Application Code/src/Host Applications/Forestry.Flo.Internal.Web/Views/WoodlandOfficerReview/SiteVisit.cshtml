@@ -15,7 +15,8 @@
 
         <input asp-for="ApplicationId"/>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="SiteVisitNeeded">
+
             <fieldset class="govuk-fieldset" aria-describedby="site-visit-needed-hint">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
@@ -25,50 +26,56 @@
                 <div id="site-visit-needed-hint" class="govuk-hint">
                     Select 'Yes' if a site visit is needed before making a decision
                 </div>
+                <validation asp-for="SiteVisitNeeded"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-needed-yes" asp-for="SiteVisitNeeded" value="true" type="radio" />
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-needed-yes" asp-for="SiteVisitNeeded" value="true" type="radio"/>
                         <label class="govuk-label govuk-radios__label" for="site-visit-needed-yes">Yes</label>
                     </div>
                 </div>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-needed-no" asp-for="SiteVisitNeeded" value="false" type="radio" />
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-needed-no" asp-for="SiteVisitNeeded" value="false" type="radio"/>
                         <label class="govuk-label govuk-radios__label" for="site-visit-needed-no">No</label>
                     </div>
                 </div>
             </fieldset>
-            <br/>
+        </govuk-form-group>
+        <br/>
 
+        <govuk-form-group asp-for="SiteVisitNotNeededReason">
             <fieldset condition="@Model.Editable(user)" class="govuk-fieldset govuk-visually-hidden" aria-hidden="True" id="not-needed-reason">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                     <h2 class="govuk-fieldset__heading">
                         Why is a site visit not needed?
                     </h2>
                 </legend>
+                <validation asp-for="SiteVisitNotNeededReason"></validation>
                 @Html.EditorFor(m => m.SiteVisitNotNeededReason)
                 <br/>
             </fieldset>
-            
-            <div class="govuk-visually-hidden" aria-hidden="true" id="preparation-notes">
-                <fieldset class="govuk-fieldset">
-                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                        <h2 class="govuk-fieldset__heading">
-                            Prepare for site visit
-                        </h2>
-                    </legend>
-                    <p class="govuk-body">
-                        Before you carry out the site visit, make sure you've reviewed all the documents and agreed access arrangements.
-                    </p>
-                    <p class="govuk-body">
-                        You can record preparation notes and print or download an application summary if needed.
-                    </p>
-                    <p class="govuk-body">
-                        <a class="govuk-link" target="_blank" asp-action="SiteVisitSummary" asp-route-id="@Model.ApplicationId">Print or download an application summary to take to the site visit</a>
-                    </p>
-                    <br/>
-                </fieldset>
+        </govuk-form-group>
 
+        <div class="govuk-visually-hidden" aria-hidden="true" id="preparation-notes">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">
+                        Prepare for site visit
+                    </h2>
+                </legend>
+                <p class="govuk-body">
+                    Before you carry out the site visit, make sure you've reviewed all the documents and agreed access arrangements.
+                </p>
+                <p class="govuk-body">
+                    You can record preparation notes and print or download an application summary if needed.
+                </p>
+                <p class="govuk-body">
+                    <a class="govuk-link" target="_blank" asp-action="SiteVisitSummary" asp-route-id="@Model.ApplicationId">Print or download an application summary to take to the site visit</a>
+                </p>
+                <br/>
+            </fieldset>
+            
+            <govuk-form-group asp-for="SiteVisitArrangementsMade">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         <h2 class="govuk-fieldset__heading">
@@ -78,38 +85,40 @@
                     <div id="site-visit-arrangments-hint" class="govuk-hint">
                         For example, agreeing a date, confirming parking or access arrangements.
                     </div>
+                    <validation asp-for="SiteVisitArrangementsMade"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-arrangements-yes" asp-for="SiteVisitArrangementsMade" value="true" type="radio" />
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-arrangements-yes" asp-for="SiteVisitArrangementsMade" value="true" type="radio"/>
                             <label class="govuk-label govuk-radios__label" for="site-visit-arrangements-yes">Yes</label>
                         </div>
                     </div>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-arrangements-no" asp-for="SiteVisitArrangementsMade" value="false" type="radio" />
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-arrangements-no" asp-for="SiteVisitArrangementsMade" value="false" type="radio"/>
                             <label class="govuk-label govuk-radios__label" for="site-visit-arrangements-no">No</label>
                         </div>
                     </div>
                     <br/>
                 </fieldset>
-                
+            </govuk-form-group>
+            
+            <govuk-form-group asp-for="SiteVisitArrangementNotes">
                 <fieldset condition="@Model.Editable(user)" class="govuk-fieldset govuk-visually-hidden" aria-hidden="True" id="arrangement-notes">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         <h2 class="govuk-fieldset__heading">
                             Site visit arrangement notes
                         </h2>
                     </legend>
+                    <validation asp-for="SiteVisitArrangementNotes"></validation>
                     @Html.EditorFor(m => m.SiteVisitArrangementNotes)
                     <br/>
                 </fieldset>
-            </div>
+            </govuk-form-group>
+        </div>
 
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
-                    <button id="submit-button" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit" disabled="disabled">Continue</button>
-                    <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
-                </div>
-            </div>
+        <div class="govuk-button-group">
+            <button id="submit-button" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit" disabled="disabled">Continue</button>
+            <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
         </div>
 
     </form>

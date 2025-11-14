@@ -21,7 +21,7 @@
 
     <form method="post" asp-controller="AgentAuthorityFormDocuments" 
         asp-action="RemoveCurrentAgentAuthorityForm" id="documentListForm">
-            <input type="hidden" name="agentAuthorityFormId"/>
+        <input type="hidden" name="agentAuthorityFormId" value="@Model.CurrentAuthorityForm.Id" />
             @Html.HiddenFor(m => m.AgentAuthorityId)
             <table class="govuk-table" id="agent-authorities-list-table">
                 <thead class="govuk-table__head">
@@ -34,7 +34,7 @@
                 <tbody class="govuk-table__body">
                 <tr data-id="@Model.CurrentAuthorityForm!.Id" class="govuk-table__row">
                     <td class="govuk-table__cell" data-sort-value="@Model.CurrentAuthorityForm.ValidFromDate"> @DateTimeDisplay.GetDateDisplayString(@Model.CurrentAuthorityForm.ValidFromDate)
-                    <td class="govuk-table__cell">
+                    <td class="govuk-table__cell word-break">
                         @Model.CurrentAuthorityForm.AafDocumentFileNamesList
                     </td>
                     <td class="govuk-table__cell wrapped-text">
@@ -69,7 +69,7 @@
                     <tr data-id="@form.Id" class="govuk-table__row">
                         <td class="govuk-table__cell" data-sort-value="@form.ValidFromDate"> @DateTimeDisplay.GetDateDisplayString(@form.ValidFromDate)
                         <td class="govuk-table__cell" data-sort-value="@form.ValidToDate"> @DateTimeDisplay.GetDateDisplayString(@form.ValidToDate)
-                        <td class="govuk-table__cell">
+                    <td class="govuk-table__cell word-break">
                             @form.AafDocumentFileNamesList
                         </td>
                         <td class="govuk-table__cell wrapped-text">

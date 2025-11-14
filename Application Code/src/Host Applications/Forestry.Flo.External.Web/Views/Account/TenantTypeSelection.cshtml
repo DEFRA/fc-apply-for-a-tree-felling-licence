@@ -11,7 +11,8 @@
 
     <form method="post">
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="TenantType">
+
             <fieldset class="govuk-fieldset">
 
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
@@ -19,13 +20,13 @@
                         @ViewData["Title"]
                     </h1>
                 </legend>
-                    
+
                 <div class="govuk-hint">
                     Description of Crown Land
                 </div>
 
-                
-                <validation asp-for="@Model.TenantType"></validation>
+
+                <validation asp-for="TenantType"></validation>
 
                 <div class="govuk-radios" data-module="govuk-radios">
 
@@ -41,7 +42,7 @@
 
                     <div class="govuk-radios__item">
 
-                        @Html.RadioButtonFor(x => x.TenantType, TenantType.NonCrownLand,  new { @class = "govuk-radios__input", @id = "non-crown-land-trust" })
+                        @Html.RadioButtonFor(x => x.TenantType, TenantType.NonCrownLand, new { @class = "govuk-radios__input", @id = "non-crown-land-trust" })
 
                         <label class="govuk-label govuk-radios__label" for="non-crown-land-trust">
                             No
@@ -52,7 +53,7 @@
                 </div>
 
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-form-group">
 

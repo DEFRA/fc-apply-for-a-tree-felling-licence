@@ -12,20 +12,6 @@
 @inject IUrlHelper UrlHelper
 
 @{
-    const string className = "govuk-form-group--error";
-
-    string AppendFormErrorClass(string fieldName)
-    {
-        var modelState = ViewContext.ViewData.ModelState;
-
-        if (modelState.TryGetValue(fieldName, out var field))
-        {
-            return field.ValidationState is not ModelValidationState.Valid ? className : "";
-        }
-
-        return "";
-    }
-
     var defaultUserName = Model.ExternalApplicantId.HasValue
         ? Model.ExternalApplicants?.Single(x => x.UserAccountId == Model.ExternalApplicantId.Value).FullName
         : null;
@@ -45,7 +31,7 @@
         <input asp-for="FellingLicenceApplicationId" />
         <input asp-for="ReturnUrl"/>
 
-        <div condition="Model.ShowListOfUsers" class="govuk-form-group">
+        <govuk-form-group asp-for="ExternalApplicantId" condition="Model.ShowListOfUsers">
             <div class="govuk-radios" data-module="govuk-radios">
                 <validation asp-for="ExternalApplicantId"></validation>
                 @foreach (var externalApplicant in @Model.ExternalApplicants!)
@@ -56,10 +42,11 @@
                     </div>
                 }
             </div>
-        </div>
+        </govuk-form-group>
+
         <input condition="@(Model.ShowListOfUsers == false)" type="hidden" asp-for="ExternalApplicantId"/>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="ReturnToApplicantComment">
             <div id="return-to-applicant-comment-hint" class="govuk-hint">
                 <label asp-for="ReturnToApplicantComment">
                     Please add a comment to explain why this application is being returned.
@@ -67,17 +54,17 @@
             </div>
             <validation asp-for="ReturnToApplicantComment"></validation>
             <textarea class="govuk-textarea" asp-for="ReturnToApplicantComment" rows="5" aria-describedby="return-to-applicant-comment-hint"></textarea>
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group @AppendFormErrorClass(nameof(Model.SectionsToReview))">
-            <fieldset class="govuk-fieldset" aria-describedby="waste-hint">
+        <govuk-form-group asp-for="SectionsToReview">
+            <fieldset class="govuk-fieldset" aria-describedby="sections-hint">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-heading-m">
                         Which sections require amendment?
                     </h1>
                 </legend>
                 <validation asp-for="SectionsToReview"></validation>
-                <div id="waste-hint" class="govuk-hint">
+                <div id="sections-hint" class="govuk-hint">
                     Select all that apply.
                 </div>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
@@ -132,17 +119,17 @@
                     }
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
         
-        <div class="govuk-form-group @AppendFormErrorClass(nameof(Model.CompartmentIdentifiersToReview))" id="compartment-selection">
-            <fieldset class="govuk-fieldset" aria-describedby="waste-hint">
+        <govuk-form-group asp-for="CompartmentIdentifiersToReview" id="compartment-selection">
+            <fieldset class="govuk-fieldset" aria-describedby="compartments-hint">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-heading-m">
                         Which compartments' felling and restocking details require amendment?
                     </h1>
                 </legend>
                 <validation asp-for="CompartmentIdentifiersToReview"></validation>
-                <div id="waste-hint" class="govuk-hint">
+                <div id="compartments-hint" class="govuk-hint">
                     Select all that apply.
                 </div>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
@@ -157,7 +144,7 @@
                     }
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-form-group govuk-!-margin-top-6">
             <div class="govuk-button-group">

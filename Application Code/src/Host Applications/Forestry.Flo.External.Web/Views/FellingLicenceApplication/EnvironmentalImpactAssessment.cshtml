@@ -1,4 +1,5 @@
-﻿@using Forestry.Flo.Services.Common
+﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Forestry.Flo.Services.FileStorage.Configuration
@@ -7,6 +8,12 @@
 @inject IOptions<UserFileUploadOptions> Settings
 @{
     ViewData["Title"] = "Environmental Impact Assessment";
+
+    ViewData.ManuallySetBackLink(Url.Action(Model.ReturnToApplicationSummary ? "ApplicationSummary" : "ApplicationTaskList", "FellingLicenceApplication", new
+    {
+        applicationId = Model.ApplicationId
+    }));
+    ViewData.ShowBackLink();
 
     var allowedTypes = (Settings?.Value ?? new UserFileUploadOptions()).AllowedFileTypes
         .Where(x => x.FileUploadReasons.Contains(FileUploadReason.EiaDocument));
@@ -34,12 +41,12 @@
 
         <form method="post" class="eia-form" enctype="multipart/form-data">
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="HasApplicationBeenCompleted">
                 <fieldset class="govuk-fieldset" id="@nameof(Model.HasApplicationBeenCompleted)">
                     <legend class="govuk-heading-m">
                         Have you completed Environmental Impact Assessment application?
                     </legend>
-                    <validation asp-for="@Model.HasApplicationBeenCompleted"></validation>
+                    <validation asp-for="HasApplicationBeenCompleted"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
                             <input id="eia-app-completed-yes"
@@ -74,12 +81,12 @@
 
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="upload-form-container">
+            <govuk-form-group asp-for="HasApplicationBeenSent" id="upload-form-container">
                 <fieldset class="govuk-fieldset" id="@nameof(Model.HasApplicationBeenSent)">
                     <legend class="govuk-heading-m">
-                        Have you sent it to us?
+                        <noscript>If you have completed one - </noscript>Have you sent it to us?
                     </legend>
                     <validation asp-for="@Model.HasApplicationBeenSent"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
@@ -109,14 +116,14 @@
                         </div>
 
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-eia-sent">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group" id="file-select-group">
                                 <input type="hidden">
                                 <input id="allowed-extensions" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@string.Join(", ", allowedExtensions)"/>
                                 <input id="allowed-max-size" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxFileSize"/>
                                 <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)"/>
                                 <input id="allowed-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxNumberDocs"/>
                                 <input id="current-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@Model.EiaDocuments.Count()"/>
-                                <div class="govuk-form-group">
+                                <div class="govuk-form-group" id="file-select-group">
                                     <label for="eia-file-upload" class="govuk-label">Upload all relevant EIA documents</label>
                                     <div class="govuk-hint">
                                         You can select one or more files to upload.
@@ -135,8 +142,7 @@
                                             name="store-supporting-documents"
                                             value="Upload"
                                             asp-action="AttachEiaDocument"
-                                            asp-route-applicationId="@Model.ApplicationSummary!.Id"
-                                            disabled="disabled">
+                                            asp-route-applicationId="@Model.ApplicationSummary!.Id">
                                         Upload
                                     </button>
                                 </div>
@@ -144,7 +150,7 @@
                         </div>
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
             <div div class="govuk-form-group">
                 <h2 class="govuk-heading-m">Files you’ve uploaded</h2>

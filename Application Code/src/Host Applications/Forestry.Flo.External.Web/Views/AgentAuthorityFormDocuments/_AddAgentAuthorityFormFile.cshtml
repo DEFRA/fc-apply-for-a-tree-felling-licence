@@ -12,6 +12,8 @@
     var allowedExtensions = allowedTypes.SelectMany(x => x.Extensions).Select(x => x.ToLower()).ToArray();
     var maxFileSize = (Settings?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
     var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
+    var applicationId = Context.Request.Query["applicationId"].ToString();
+    var returnToApplicationSummary = Context.Request.Query["returnToApplicationSummary"].ToString();
 }
 
 <p class="govuk-body">You can only upload documents in one of the following formats:</p>
@@ -32,8 +34,14 @@
     <input id="allowed-max-size" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxFileSize" />
     <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)" />
     <input id="allowed-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxNumberDocs" />
- 
-    <div class="govuk-form-group" id="file-select-group">
+
+	<noscript>
+		<input name="NoJsFlag" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="true" />
+        <input name="applicationId" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@applicationId" />
+        <input name="returnToApplicationSummary" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="returnToApplicationSummary" />
+    </noscript>
+
+	<div class="govuk-form-group" id="file-select-group">
         <label for="agent-authority-document-files" class="govuk-label">Select file(s)</label>
         <p id="agent-authority-document-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
             <span class="govuk-visually-hidden">Error:</span><span id="file-upload-error-text"></span>
@@ -57,8 +65,7 @@
             type="submit" class="govuk-button" data-module="govuk-button"
             data-prevent-double-click="true"
             name="submit-agent-authority-document-forms-files-button"
-            value="Upload"
-            disabled="disabled">
+            value="Upload">
         Submit selected documents to complete agent authority
     </button>
 

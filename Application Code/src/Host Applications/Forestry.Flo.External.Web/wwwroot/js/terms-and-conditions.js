@@ -2,12 +2,12 @@
 
     $(document).ready(setButtonState);
 
-    $('#accept-privacy-policy').on('change', setButtonState);
-    $('#accept-terms-and-conditions').on('change', setButtonState);
+    $('#AcceptsTermsAndConditions_AcceptsTermsAndConditions').on('change', setButtonState);
+    $('#AcceptsTermsAndConditions_AcceptsPrivacyPolicy').on('change', setButtonState);
 
     function setButtonState() {
-        const acceptedPrivacy = $('#accept-privacy-policy').prop("checked") === true;
-        const acceptedTAndCs = $('#accept-terms-and-conditions').prop("checked") === true;
+        const acceptedPrivacy = $('#AcceptsTermsAndConditions_AcceptsPrivacyPolicy').prop("checked") === true;
+        const acceptedTAndCs = $('#AcceptsTermsAndConditions_AcceptsTermsAndConditions').prop("checked") === true;
 
         if (acceptedPrivacy && acceptedTAndCs) {
             $('#accept-terms-btn').removeAttr('disabled');

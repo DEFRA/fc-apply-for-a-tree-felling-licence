@@ -41,6 +41,9 @@
 
 
     function setAvatarsActivity() {
+        $(".activity-avatar-button").removeAttr("hidden");
+        $(".activity-avatar-button").removeAttr("aria-hidden");
+
         var avatars = document.querySelectorAll(".activity-avatar");
         for (var avatar of avatars) {
             var forename = avatar.getAttribute("data-forename");

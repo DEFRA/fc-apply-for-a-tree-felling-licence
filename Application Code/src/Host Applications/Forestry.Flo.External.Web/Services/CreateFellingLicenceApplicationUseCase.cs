@@ -1294,10 +1294,7 @@ public class CreateFellingLicenceApplicationUseCase(
     {
         ArgumentNullException.ThrowIfNull(eiaOptions.Value);
 
-
-
         var application = await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
-
         if (application.IsFailure)
         {
             return Maybe<FellingLicenceApplicationModel>.None;
@@ -1494,7 +1491,7 @@ public class CreateFellingLicenceApplicationUseCase(
         }
 
         applicationModel.FellingAndRestockingDetails.StepComplete = fellingAndRestockingDetailsStepComplete;
-
+        applicationModel.AllowEditing = applicationModel.SelectedCompartments.AllowEditing;
         return applicationModel;
     }
 

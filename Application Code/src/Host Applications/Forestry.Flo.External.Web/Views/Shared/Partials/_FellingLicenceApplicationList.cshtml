@@ -1,6 +1,6 @@
 ﻿@model IReadOnlyCollection<Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingLicenceApplicationSummary>
 
-<table class="govuk-table" data-module="moj-sortable-table" id="application-list-table">
+<table class="govuk-table word-break" data-module="moj-sortable-table" id="application-list-table">
 
     <thead class="govuk-table__head">
 
@@ -24,7 +24,7 @@
     {
         <tr data-id="@application.Id" class="govuk-table__row data-row">
 
-            <td scope="row" class="govuk-table__cell" data-order="@application.ApplicationReference">@application.ApplicationReference</td>
+                <td scope="row" class="govuk-table__cell" data-order="@application.ApplicationReference">@application.ApplicationReference</td>
 
             <td scope="row" class="govuk-table__cell" data-order="@application.Status">
 
@@ -40,7 +40,7 @@
 
                     View<span class="govuk-visually-hidden"> @application.ApplicationReference</span>
 
-                </a> &nbsp;
+                </a>
 
             </td>
 

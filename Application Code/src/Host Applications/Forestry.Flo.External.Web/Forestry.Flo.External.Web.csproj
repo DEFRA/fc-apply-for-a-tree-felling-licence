@@ -47,6 +47,7 @@
     <ProjectReference Include="..\Forestry.Flo.HostApplicationsCommon\Forestry.Flo.HostApplicationsCommon.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Infrastructure\Filters\" />
     <Folder Include="Models\DataImport\" />
     <Folder Include="Views\Shared\Components\" />
     <Folder Include="wwwroot\assets\resources\" />

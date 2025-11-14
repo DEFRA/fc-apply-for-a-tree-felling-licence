@@ -10,9 +10,9 @@ resource "kubernetes_namespace" "traefik" {
 }
 
 resource "kubectl_manifest" "traefik-crt" {
-  yaml_body = file("values/traefik/traefik-web-crt.yaml")
+  yaml_body         = file("values/traefik/traefik-web-crt.yaml")
   server_side_apply = true
-  
+
   depends_on = [
     kubernetes_namespace.traefik,
     helm_release.cert-manager
@@ -37,8 +37,8 @@ resource "helm_release" "traefik" {
     #helm_release.external-dns
     #helm_release.kube-prometheus-stack
   ]
-  force_update = true
-  timeout = 60
+  #force_update = true
+  timeout      = 60
 
 }
 

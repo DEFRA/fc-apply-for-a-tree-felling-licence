@@ -22,12 +22,12 @@ public class AgentAuthorityFormDocumentModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets and sets the name of the woodland owner or organisation
     /// </summary>
-    public string? WoodlandOwnerOrOrganisationName { get;set; }
+    public string? WoodlandOwnerOrOrganisationName { get; set; }
 
     /// <summary>
     /// Gets and sets the Woodland Owner Id
     /// </summary>
-    public Guid? WoodlandOwnerId { get;set; }
+    public Guid? WoodlandOwnerId { get; set; }
 
     /// <summary>
     /// Gets and sets the current agent authority form, if one exists.
@@ -37,7 +37,7 @@ public class AgentAuthorityFormDocumentModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets and sets the historic agent authority forms.
     /// </summary>
-    public List<AgentAuthorityFormDocumentItemModel> HistoricAuthorityForms {get; set; } = new();
+    public List<AgentAuthorityFormDocumentItemModel> HistoricAuthorityForms { get; set; } = new();
 
     /// <summary>
     /// Gets a value indicating whether there is a current authority form.
@@ -47,7 +47,7 @@ public class AgentAuthorityFormDocumentModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets a value indicating whether there are no authority forms.
     /// </summary>
-    public bool DoesNotHaveAnyAuthorityForms => CurrentAuthorityForm is null && HistoricAuthorityForms.NotAny();
+    public bool DoesNotHaveAnyAuthorityForms => CurrentAuthorityForm is null && HistoricAuthorityForms.Where(x => x.ValidFromDate > DateTime.Today).NotAny();
 
     /// <summary>
     /// Gets a value indicating whether there are any authority forms.

@@ -73,24 +73,6 @@ public class AccountAdministrationController : Controller
         return View("ExternalUserList", model);
     }
 
-    [HttpPost]
-    public IActionResult AmendUserAccount(
-        ExternalUserListModel model,
-        CancellationToken cancellationToken)
-    {
-        if (!ModelState.IsValid)
-        {
-            return ExternalUserList(model.ExternalUserList!, model.ReturnUrl);
-        }
-
-        return RedirectToAction(
-            nameof(AmendExternalUserAccount),
-            new
-            {
-                userId = model.SelectedUserAccountId
-            });
-    }
-
     [HttpGet]
     public async Task<IActionResult> AmendExternalUserAccount(
         Guid userId,
@@ -106,9 +88,12 @@ public class AccountAdministrationController : Controller
 
         var (_, isFailure, userAccountModel) = await useCase.RetrieveExternalUserAccountAsync(userId, cancellationToken);
 
-        var action = externalUser.AccountType is AccountTypeExternal.WoodlandOwnerAdministrator
-            ? "WoodlandOwnerList"
-            : "AgentAccountList";
+        var isAgent =
+            userAccountModel.AccountType is AccountTypeExternal.Agent or AccountTypeExternal.AgentAdministrator;
+
+        var action = isAgent
+            ? "AgentAccountList"
+            : "WoodlandOwnerList";
 
         if (isFailure)
         {
@@ -124,6 +109,7 @@ public class AccountAdministrationController : Controller
 
         userAccountModel.Breadcrumbs!.Breadcrumbs.Add(new BreadCrumb(ExternalListTitle, "AccountAdministration", action, null));
 
+        TempData[ViewDataExtensions.BackLinkUrlKey] = Url.Action(action);
         return View(userAccountModel);
     }
 
@@ -135,7 +121,7 @@ public class AccountAdministrationController : Controller
     {
         ApplySectionValidationModelErrors(model, nameof(AmendExternalUserAccountModel));
 
-        var action = model.AccountType is (AccountTypeExternal.WoodlandOwnerAdministrator or AccountTypeExternal.WoodlandOwner)
+        var action = model.AccountType is AccountTypeExternal.WoodlandOwnerAdministrator or AccountTypeExternal.WoodlandOwner
             ? "WoodlandOwnerList"
             : "AgentAccountList";
 
@@ -183,7 +169,7 @@ public class AccountAdministrationController : Controller
             externalUser.AccountType is AccountTypeExternal.WoodlandOwnerAdministrator 
             && userType is AccountTypeExternal.WoodlandOwner or AccountTypeExternal.WoodlandOwnerAdministrator;
 
-        return woodlandOwnerAuthority || agentAuthority;
+        return woodlandOwnerAuthority || agentAuthority || externalUser.IsFcUser;
     }
 
     private void ApplySectionValidationModelErrors(AmendExternalUserAccountModel model, string modelPart)
