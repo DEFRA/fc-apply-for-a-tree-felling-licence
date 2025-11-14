@@ -175,43 +175,27 @@
 
         </div>
         
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="TermsAndConditionsAccepted">
             <validation asp-for="TermsAndConditionsAccepted"></validation>
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
-                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="TermsAndConditionsAccepted">
+					<input class="govuk-checkboxes__input" type="checkbox" asp-for="TermsAndConditionsAccepted" condition-disabled="@Model.AllowEditing == false">
                     <label class="govuk-label govuk-checkboxes__label" for="TermsAndConditionsAccepted">
                         I confirm I have read and understand the statements above
                     </label>
                 </div>
             </div>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-button-group">
-            <button class="govuk-button" type="submit" data-module="govuk-button">
+            <button class="govuk-button" type="submit" data-module="govuk-button" condition-disabled="@Model.AllowEditing == false">
                 Accept and continue
             </button>
-            <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="@(Model.ReturnToApplicationSummary == true ? "ApplicationSummary" : "ApplicationTaskList")" asp-route-applicationId="@Model.ApplicationId" title="Abandon changes and go to the home page">Cancel</a>
         </div>
     </div>
 </form>
 
 @section Scripts
 {
-    <script src="~/js/supporting-documentation.js" asp-append-version="true"></script>
     <script src="~/js/declaration-and-confirmation.js" asp-append-version="true"></script>
-
-    @if (!Model.AllowEditing)
-    {
-        <script src="/js/disable-form-elements.js"></script>
-
-        <script>
-
-            $(function() {
-
-                disableFormElements('#terms-and-conditions-form');
-            });
-
-        </script>
-    }
 }

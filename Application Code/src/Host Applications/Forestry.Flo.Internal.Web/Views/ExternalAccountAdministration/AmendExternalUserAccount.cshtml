@@ -21,69 +21,69 @@
             </strong>
         </div>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="PersonName.FirstName">
             <label asp-for="PersonName.FirstName" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonName.FirstName"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonName.FirstName"/>
-        </div>
-        <div class="govuk-form-group">
+        </govuk-form-group>
+        <govuk-form-group asp-for="PersonName.LastName">
             <label asp-for="PersonName.LastName" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonName.LastName"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonName.LastName"/>
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.Line1">
             <label asp-for="PersonContactsDetails.ContactAddress.Line1" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonContactsDetails.ContactAddress.Line1"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactAddress.Line1" autocomplete="address-line1"/>
-        </div>
-        <div class="govuk-form-group">
+        </govuk-form-group>
+        <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.Line2">
             <label asp-for="PersonContactsDetails.ContactAddress.Line2" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonContactsDetails.ContactAddress.Line2"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactAddress.Line2" autocomplete="address-line2"/>
-        </div>
-        <div class="govuk-form-group">
+        </govuk-form-group>
+        <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.Line3">
             <label asp-for="PersonContactsDetails.ContactAddress.Line3" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonContactsDetails.ContactAddress.Line3"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactAddress.Line3" autocomplete="address-level2"/>
-        </div>
-        <div class="govuk-form-group">
+        </govuk-form-group>
+        <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.Line4">
             <label asp-for="PersonContactsDetails.ContactAddress.Line4" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonContactsDetails.ContactAddress.Line4"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactAddress.Line4"/>
-        </div>
-        <div class="govuk-form-group">
+        </govuk-form-group>
+        <govuk-form-group asp-for="PersonContactsDetails.ContactAddress.PostalCode">
             <label asp-for="PersonContactsDetails.ContactAddress.PostalCode" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonContactsDetails.ContactAddress.PostalCode"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactAddress.PostalCode" autocomplete="postal-code"/>
-        </div>
-        <div class="govuk-form-group">
+        </govuk-form-group>
+        
+        <govuk-form-group asp-for="PersonContactsDetails.ContactTelephoneNumber">
             <label asp-for="PersonContactsDetails.ContactTelephoneNumber" class="@GdsConstants.GdsLabelCssClass"></label>
             <validation asp-for="PersonContactsDetails.ContactTelephoneNumber"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactTelephoneNumber"/>
-        </div>
-        <div class="govuk-form-group">
+        </govuk-form-group>
+        <govuk-form-group asp-for="PersonContactsDetails.ContactMobileNumber">
             <label asp-for="PersonContactsDetails.ContactMobileNumber" class="@GdsConstants.GdsLabelCssClass"></label>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonContactsDetails.ContactMobileNumber"/>
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="PersonContactsDetails.PreferredContactMethod">
             <label class="govuk-label" asp-for="PersonContactsDetails.PreferredContactMethod"></label>
             <validation asp-for="PersonContactsDetails.PreferredContactMethod"></validation>
             <select class="govuk-select" asp-for="PersonContactsDetails.PreferredContactMethod" asp-items="Html.GetEnumSelectList<PreferredContactMethod>()">
                 <option value="">- Please select -</option>
             </select>
-        </div>
-        <div class="govuk-form-group">
-            <div class="govuk-button-group">
+        </govuk-form-group>
 
-                <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                    Continue
-                </button>
+        <div class="govuk-button-group">
 
-                <a class="govuk-link" asp-controller="Home" asp-action="Index" title="Abandon changes and go to the home page">Cancel</a>
+            <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                Continue
+            </button>
 
-            </div>
+            <a class="govuk-link" asp-controller="Home" asp-action="Index" title="Abandon changes and go to the home page">Cancel</a>
+
         </div>
     </form>
 </div>

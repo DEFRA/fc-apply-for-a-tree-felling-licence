@@ -19,7 +19,7 @@
     </a>
 
     <form asp-action="AgentAuthorityForm" asp-route-id="@Model.AgentAuthorityId">
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="DoesNotHaveAnyAuthorityForms">
             <validation asp-for="DoesNotHaveAnyAuthorityForms"></validation>
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
@@ -29,7 +29,7 @@
                     </label>
                 </div>
             </div>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-button-group">
             <input aria-hidden="True" type="hidden" asp-for="@applicationId" />

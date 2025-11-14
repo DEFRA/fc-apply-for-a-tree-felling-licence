@@ -102,6 +102,8 @@ public class FellingLicenceApplicationModel
 
     public bool HasCaseNotes { get; set; }
 
+    public bool AllowEditing { get; set; }
+
     /// <summary>
     /// Gets or sets the current review model for the application, if applicable.
     /// </summary>

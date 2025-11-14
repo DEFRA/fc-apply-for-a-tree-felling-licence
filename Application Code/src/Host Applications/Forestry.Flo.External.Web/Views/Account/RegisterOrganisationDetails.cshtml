@@ -19,11 +19,11 @@
 
             <input class="govuk-visually-hidden" aria-hidden="true" asp-for="IsOrganisation"/>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="OrganisationName">
                 <label asp-for="OrganisationName" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="OrganisationName"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="OrganisationName" autocomplete="organization"/>
-            </div>
+            </govuk-form-group>
 
             <div class="govuk-form-group">
                 <div class="govuk-button-group">

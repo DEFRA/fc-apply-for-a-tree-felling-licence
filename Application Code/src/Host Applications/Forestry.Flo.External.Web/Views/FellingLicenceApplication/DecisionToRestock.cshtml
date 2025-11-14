@@ -32,7 +32,7 @@
         
         <partial name="_ApplicationEditWarning.cshtml" model="@Model" />
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="IsRestockSelected">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
@@ -56,23 +56,25 @@
                     </div>
 
                     <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => !x.IsRestockSelected)">
-                        <div class="govuk-form-group">
+                        <govuk-form-group asp-for="Reason">
                             <label asp-for="Reason" class="@GdsConstants.GdsLabelCssClass">
                                 Please tell us why you don't want to restock
                             </label>
                             <validation asp-for="@Model.Reason"></validation>
                             <input class="@GdsConstants.GdsInputCssClass" asp-for="Reason" tabindex="0" />
-                        </div>
+                        </govuk-form-group>
                     </div>
 
 
                 </div>
             </fieldset>
+        </govuk-form-group>
+        
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">
+                Save and continue
+            </button>
         </div>
-
-        <button type="submit" class="govuk-button" data-module="govuk-button">
-            Save and continue
-        </button>
     </form>
 
 </div>

@@ -18,6 +18,11 @@ body {
 }
 */
 
+/* Hide elements that require JavaScript by default */
+.js-hidden {
+    display: none !important;
+}
+
 .flo-navigation{
     display: flex;
     justify-content: space-between;
@@ -218,25 +223,30 @@ table#application-list-table{
 
 .govuk-summary-list__actions-list {
     display: flex;
-    flex-direction: column;
-}
-
-@media (min-width: 40.0625em) {
-    .govuk-summary-list__actions-list {
-        flex-direction: row;
-    }
+    flex-direction: column !important; /* Always stack vertically */
 }
 
 .govuk-summary-list__actions-list-item {
     border-right: none !important;
     padding-right: 0 !important;
     margin-right: 0 !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    border: 0 !important
 }
 
-@media (min-width: 40.0625em) {
-    .govuk-summary-list__actions-list-item {
-        border-right: 1px solid #b1b4b6;
-        padding-right: 10px;
-        margin-right: 10px;
-    }
+/* Optional spacing between stacked items */
+.govuk-summary-list__actions-list-item + .govuk-summary-list__actions-list-item {
+    margin-top:10px;
+}
+
+.word-break {
+    word-break: break-word;
+}
+
+/* Make the Actions column only as wide as its content */
+#application-list-table-actions-header,
+#application-list-table tbody td:last-child {
+    white-space: nowrap;
+    width: 15%; /* shrink-to-fit with table-layout: fixed */
 }

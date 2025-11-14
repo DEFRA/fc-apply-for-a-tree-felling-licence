@@ -50,6 +50,10 @@ external-web-app:
     authenticationOptions:
       provider: OneLogin
     environment: Test
+    dataProtection:
+      persistence:
+        enabled: true
+        existingClaim: test-flo-external-web-app-dataprotectionkeys
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
       defaultFromAddress: test@qxlva.com
@@ -332,6 +336,10 @@ internal-web-app:
       clientSecret: 
         secret_key: azureb2c.client_secret
     environment: Test
+    dataProtection:
+      persistence:
+        enabled: true
+        existingClaim: test-flo-internal-web-app-dataprotectionkeys
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
       defaultFromAddress: test@qxlva.com
@@ -347,6 +355,10 @@ internal-web-app:
       baseUrl: "https://testflo.ps.conneqt.cloud/"
     woodlandOfficerReview:
       useDevPublicRegister: false
+    apiSecurityOptions:
+      authenticationHeaderKey: "X-Api-Key"
+      authenticationHeaderValue:
+        secret_key: cronJobs.apiKey
     cronJobs:
       apiKey:
         secret_key: cronJobs.apiKey
@@ -641,35 +653,45 @@ pdf-generation-service:
 
 postgresql:
   primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: default
+      accessModes: [ReadWriteOnce]
+      existingClaim: data-test-flo-postgresql-0
+    volumePermissions:
+      enabled: true
     initdb:
       scripts:
         my_init_script.sh: |
           #!/usr/bin/env bash
-          echo "whoami";
-          whoami;
-          ls -la /docker-entrypoint-initdb.d/dbscripts
-          # Check if the init scripts have already been populated, should only be this script in directory.
-          if(( $(ls -1 /docker-entrypoint-initdb.d/dbscripts | wc -l) == 0 ))
-          then
-          echo "Attempting to download initdb scripts";
-          echo "Make dir";
-          mkdir /docker-entrypoint-initdb.d/dbscripts/temp;
-          echo "curl data";
-  
-          curl --header "Authorization: Bearer ${TEAMCITY_TOKEN}" -L -k -o /docker-entrypoint-initdb.d/dbscripts/temp/dbschema.tar $DB_SCHEMA;
-          curl --header "Authorization: Bearer ${TEAMCITY_TOKEN}" -L -k -o /docker-entrypoint-initdb.d/dbscripts/temp/seed.tar $SEED;
-          echo "untar";
-  
-          tar -xvf /docker-entrypoint-initdb.d/dbscripts/temp/dbschema.tar -C /docker-entrypoint-initdb.d/dbscripts;
-          tar -xvf /docker-entrypoint-initdb.d/dbscripts/temp/seed.tar -C /docker-entrypoint-initdb.d/dbscripts;
-  
-          echo "remove temp";
-          rm -r /docker-entrypoint-initdb.d/dbscripts/temp;
-          echo "Completed download of initdb scripts";
-          shutdown -r now;
-          else
-          echo "initdb scripts already collected";
+          set -euo pipefail
+
+          echo "whoami"; whoami
+          echo "PGDATA is: ${PGDATA:-/bitnami/postgresql/data}"
+
+          # If Postgres has already been initialized, skip seeding.
+          if [[ -s "${PGDATA:-/bitnami/postgresql/data}/PG_VERSION" ]]; then
+            echo "Database already initialized; skipping seed."
+            exit 0
           fi
+
+          # Fresh cluster: pull schema + seed and unpack for initdb to run
+          mkdir -p /docker-entrypoint-initdb.d/dbscripts/temp
+
+          echo "Downloading artifacts..."
+          curl -fSL -H "Authorization: Bearer ${TEAMCITY_TOKEN}" -k \
+            -o /docker-entrypoint-initdb.d/dbscripts/temp/dbschema.tar "$DB_SCHEMA"
+          curl -fSL -H "Authorization: Bearer ${TEAMCITY_TOKEN}" -k \
+            -o /docker-entrypoint-initdb.d/dbscripts/temp/seed.tar "$SEED"
+
+          echo "Unpacking..."
+          tar -xvf /docker-entrypoint-initdb.d/dbscripts/temp/dbschema.tar -C /docker-entrypoint-initdb.d/dbscripts
+          tar -xvf /docker-entrypoint-initdb.d/dbscripts/temp/seed.tar -C /docker-entrypoint-initdb.d/dbscripts
+
+          rm -rf /docker-entrypoint-initdb.d/dbscripts/temp
+          echo "Init scripts staged. They will be applied by initdb on first boot."
+          exit 0
     extraEnvVars:
       - name: DB_SCHEMA
         value: "https://quicksilva.teamcity.com/app/rest/builds/buildType:(id:ForestServicesFLOv2_Release_CreateFloRelease),branch:(default:any)/artifacts/content/dbschema*.tar"

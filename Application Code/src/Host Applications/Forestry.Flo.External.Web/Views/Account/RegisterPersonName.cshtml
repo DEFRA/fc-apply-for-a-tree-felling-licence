@@ -21,16 +21,18 @@
                 </h1>
             </legend>
         
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="PersonName.FirstName">
                 <label asp-for="PersonName.FirstName" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="PersonName.FirstName"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonName.FirstName" autocomplete="given-name"/>
-            </div>
-            <div class="govuk-form-group">
+            </govuk-form-group>
+
+            <govuk-form-group asp-for="PersonName.LastName">
                 <label asp-for="PersonName.LastName" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="PersonName.LastName"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="PersonName.LastName" autocomplete="family-name"/>
-            </div>
+            </govuk-form-group>
+
             <div class="govuk-form-group">
                 <div class="govuk-button-group">
 

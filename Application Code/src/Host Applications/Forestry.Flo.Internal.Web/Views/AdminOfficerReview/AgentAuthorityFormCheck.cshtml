@@ -24,11 +24,11 @@
     <form id="admin-officer-review" method="post">
         <input asp-for="ApplicationId" />
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="CheckPassed">
 
             <div class="govuk-radios" data-module="govuk-radios">
 
-                <validation asp-for="@Model.CheckPassed"></validation>
+                <validation asp-for="CheckPassed"></validation>
 
                 <div class="govuk-radios__item">
                     
@@ -52,9 +52,9 @@
 
             </div>
         
-        </div>
+        </govuk-form-group>
         
-        <div class="govuk-form-group" id="failure-reason-input">
+        <govuk-form-group asp-for="CheckFailedReason" id="failure-reason-input">
 
             <label class="govuk-label" asp-for="CheckFailedReason">
                 Reason for failure
@@ -64,7 +64,7 @@
 
             <textarea condition-disabled="@(!Model.Editable(user))" class="govuk-textarea" maxlength="400" asp-for="CheckFailedReason" rows="5" aria-describedby="measures-hint"></textarea>
 
-        </div>
+        </govuk-form-group>
         
         <div>
             <button condition="@Model.Editable(user)" type="submit" class="govuk-button" data-module="govuk-button">

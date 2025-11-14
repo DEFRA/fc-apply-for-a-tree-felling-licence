@@ -20,19 +20,19 @@
             <input id="selected-document-@i" type="hidden" asp-for="SelectedDocumentIds[i]" />
         }
         
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="ConsulteeName">
             <label class="govuk-label" asp-for="ConsulteeName"></label>
             <validation asp-for="ConsulteeName"></validation>
             <input class="govuk-input govuk-input--width-20" type="text" asp-for="ConsulteeName">
-        </div>
+        </govuk-form-group>
         
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="Email">
             <label class="govuk-label" asp-for="Email"></label>
             <validation asp-for="Email"></validation>
             <input class="govuk-input govuk-input--width-20" type="text" asp-for="Email">
-        </div>
+        </govuk-form-group>
         
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="Purpose">
             <label class="govuk-label" asp-for="Purpose"></label>
             <validation asp-for="Purpose"></validation>
             <div class="govuk-radios" data-module="govuk-radios">
@@ -49,16 +49,16 @@
                     </div>
                 }
             </div>
-        </div>
+        </govuk-form-group>
         
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="AreaOfFocus">
             <label class="govuk-label" asp-for="AreaOfFocus"></label>
             <validation asp-for="AreaOfFocus"></validation>
             <div id="focus-hint" class="govuk-hint">
                 Explain what you want the consultee to focus on
             </div>
             <textarea class="govuk-textarea" rows="4" aria-describedby="focus-hint" asp-for="AreaOfFocus"></textarea>
-        </div>
+        </govuk-form-group>
         
         <div class="govuk-form-group">
             <h2 class="govuk-heading-m">Documents for the consultee</h2>
@@ -94,7 +94,7 @@
             }
         </div>
         
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="ExemptFromConsultationPublicRegister">
             <label class="govuk-label" asp-for="ExemptFromConsultationPublicRegister"></label>
             <validation asp-for="ExemptFromConsultationPublicRegister"></validation>
             <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
@@ -111,7 +111,7 @@
                     </label>
                 </div>
             </div>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-form-group">
             <div class="govuk-button-group">

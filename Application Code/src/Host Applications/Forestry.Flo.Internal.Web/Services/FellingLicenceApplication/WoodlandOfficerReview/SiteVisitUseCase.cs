@@ -329,20 +329,33 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
             return fellingImage.ConvertFailure<SiteVisitSummaryModel>();
         }
 
-        var restockingImage = await GetImageForFellingAndRestockingCompartments(
-            applicationId,
-            summaryInfo.Value.DetailsList.SelectMany(x => x.RestockingDetail).DistinctBy(x => x.RestockingCompartmentId)
-                .Select(r => new InternalCompartmentDetails<BaseShape>
-                {
-                    CompartmentLabel = r.RestockingCompartmentName,
-                    CompartmentNumber = r.RestockingCompartmentName,
-                    ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(r.GISData!)!
-                }).ToList(),
-            cancellationToken);
-
-        if (restockingImage.IsFailure)
+        string? restockingImage = null;
+        var restockingCompartments = summaryInfo.Value.DetailsList.SelectMany(x => x.RestockingDetail)
+            .DistinctBy(x => x.RestockingCompartmentId)
+            .Select(r => new InternalCompartmentDetails<BaseShape>
+            {
+                CompartmentLabel = r.RestockingCompartmentName,
+                CompartmentNumber = r.RestockingCompartmentName,
+                ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(r.GISData!)!
+            }).ToList();
+        if (restockingCompartments.Any())
         {
-            return restockingImage.ConvertFailure<SiteVisitSummaryModel>();
+            var restockingImageResult = await GetImageForFellingAndRestockingCompartments(
+                applicationId,
+                summaryInfo.Value.DetailsList.SelectMany(x => x.RestockingDetail).DistinctBy(x => x.RestockingCompartmentId)
+                    .Select(r => new InternalCompartmentDetails<BaseShape>
+                    {
+                        CompartmentLabel = r.RestockingCompartmentName,
+                        CompartmentNumber = r.RestockingCompartmentName,
+                        ShapeGeometry = JsonConvert.DeserializeObject<Polygon>(r.GISData!)!
+                    }).ToList(),
+                cancellationToken);
+
+            if (restockingImageResult.IsFailure)
+            {
+                return restockingImageResult.ConvertFailure<SiteVisitSummaryModel>();
+            }
+            restockingImage = restockingImageResult.Value;
         }
 
         var result = new SiteVisitSummaryModel
@@ -366,7 +379,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
                 DetailsList = summaryInfo.Value.DetailsList
             },
             FellingMapBase64 = fellingImage.Value,
-            RestockingMapBase64 = restockingImage.Value,
+            RestockingMapBase64 = restockingImage,
             ApplicationOwner = new ApplicationOwnerModel
             {
                 WoodlandOwner = ModelMapping.ToWoodlandOwnerModel(woodlandOwner.Value),

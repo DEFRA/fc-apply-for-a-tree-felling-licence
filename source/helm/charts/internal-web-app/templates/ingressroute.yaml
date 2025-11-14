@@ -29,7 +29,7 @@ spec:
     - kind: Rule
       match: Host(`{{ .Values.ingressRoute.app.hostname }}`)
       middlewares:
-       - name: internal-csp-header
+       - name: internal-security-headers
       services:
       - name: {{ include "internal-web-app.fullname" . }}
         port: http

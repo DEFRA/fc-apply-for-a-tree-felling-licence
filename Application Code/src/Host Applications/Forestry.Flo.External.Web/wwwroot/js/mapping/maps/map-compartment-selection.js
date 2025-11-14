@@ -278,7 +278,11 @@ define(["require",
                         }
 
                         const safeId = this.sanitizeForSelector(item.Id);
-                        const el = HTMLHelper.getElements('input[name="SelectedCompartmentIds"][value="' + safeId + '"]');
+                        let el = HTMLHelper.getElements('input[name="SelectedCompartmentIds"][value="' + safeId + '"]');
+
+                        if (el.length === 0) {
+                            el = HTMLHelper.getElements('input[name="FellingAndRestocking.GIS"]');
+                        }
 
                         if (el.length < 1) {
                             return;

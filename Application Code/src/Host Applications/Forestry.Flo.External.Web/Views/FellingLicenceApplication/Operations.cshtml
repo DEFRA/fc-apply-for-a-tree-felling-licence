@@ -33,13 +33,13 @@
         <input aria-hidden="True" type="hidden" asp-for="IsForTenYearLicence" />
         <input aria-hidden="True" type="hidden" asp-for="DisplayDateReceived" />
 
-        <div class="govuk-fieldset">
+        <div class="govuk-body">
             
             <div condition="@Model.DisplayDateReceived">
 
                 <h2 class="govuk-heading-m">When was the application received?</h2>
                 
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="DateReceived">
                     <fieldset class="govuk-fieldset" role="group" aria-describedby="date-received-hint" id="@nameof(Model.DateReceived)">
                         <legend class="govuk-fieldset__legend">
                             <h3 class="govuk-fieldset__heading">
@@ -56,21 +56,22 @@
                         <validation asp-for="DateReceived.Year"></validation>
                         @Html.EditorFor(m => m.DateReceived)
                     </fieldset>
-                </div>
+                </govuk-form-group>
             </div>
             
             <div condition="@Model.DisplayDateReceived">
                 
                 <h2 class="govuk-heading-m">How was the application received?</h2>
                 
-                <fieldset class="govuk-fieldset" role="group">
-                    <legend class="govuk-fieldset__legend">
-                        <h3 class="govuk-fieldset__heading">Application Source</h3>
-                    </legend>
-                    <validation asp-for="ApplicationSource"></validation>
-                    <select name="Application source" aria-label="Select application source" class="govuk-select" asp-for="ApplicationSource" asp-items="Html.GetEnumSelectList<FellingLicenceApplicationSource>()"></select>
-                </fieldset>
-
+                <govuk-form-group asp-for="ApplicationSource">
+                    <fieldset class="govuk-fieldset" role="group">
+                        <legend class="govuk-fieldset__legend">
+                            <h3 class="govuk-fieldset__heading">Application Source</h3>
+                        </legend>
+                        <validation asp-for="ApplicationSource"></validation>
+                        <select name="Application source" aria-label="Select application source" class="govuk-select" asp-for="ApplicationSource" asp-items="Html.GetEnumSelectList<FellingLicenceApplicationSource>()"></select>
+                    </fieldset>
+                </govuk-form-group>
             </div>
             <br/>
 
@@ -88,7 +89,7 @@
                 </div>
             </div>
             
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="ProposedFellingStart">
                 <fieldset class="govuk-fieldset" role="group" aria-describedby="felling-start-hint" id="@nameof(Model.ProposedFellingStart)">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         <h2 class="govuk-fieldset__heading govuk-heading-m">Proposed start date</h2>
@@ -103,9 +104,9 @@
                     <validation asp-for="ProposedFellingStart.Year"></validation>
                     @Html.EditorFor(m => m.ProposedFellingStart)
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="ProposedFellingEnd">
                 <fieldset class="govuk-fieldset" role="group" aria-describedby="felling-end-hint" id="@nameof(Model.ProposedFellingEnd)">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         <h2 class="govuk-fieldset__heading govuk-heading-m">Proposed completion date</h2>
@@ -120,14 +121,12 @@
                     <validation asp-for="ProposedFellingEnd.Year"></validation>
                     @Html.EditorFor(m => m.ProposedFellingEnd)
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
-                    <button class="govuk-button" type="submit" data-module="govuk-button">
-                        Continue
-                    </button>
-                </div>
+            <div class="govuk-button-group">
+                <button class="govuk-button" type="submit" data-module="govuk-button">
+                    Continue
+                </button>
             </div>
         </div>
     </form>

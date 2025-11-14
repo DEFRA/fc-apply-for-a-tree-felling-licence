@@ -66,7 +66,7 @@
 <div class="govuk-grid-column-two-thirds width-limit-override">
 
     <form id="admin-officer-review" method="post">
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="ConfirmLarchOnly">
             <fieldset class="govuk-fieldset" role="group">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
                     <h3 class="govuk-fieldset__heading">
@@ -83,7 +83,7 @@
                 </legend>
 
                 <div class="govuk-radios" data-module="govuk-radios">
-                    <validation asp-for="@Model.ConfirmLarchOnly"></validation>
+                    <validation asp-for="ConfirmLarchOnly"></validation>
                     <div class="govuk-radios__item">
                         <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
                                id="larch-only" asp-for="ConfirmLarchOnly" type="radio" value="true"/>
@@ -101,9 +101,9 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="Zone1">
             <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                 <h3 class="govuk-fieldset__heading">
                     Confirm tree felling location
@@ -118,7 +118,7 @@
                 }
             </p>
 
-            <validation asp-for="@Model.Zone1"></validation>
+            <validation asp-for="Zone1"></validation>
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
                     <input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input" asp-for="Zone1"
@@ -145,9 +145,9 @@
                 </div>
 
             </div>
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="ConfirmMoratorium">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                     <h3 class="govuk-fieldset__heading">
@@ -164,7 +164,7 @@
                     </div>
                 </legend>
                 <div class="govuk-radios" data-module="govuk-radios">
-                    <validation asp-for="@Model.ConfirmMoratorium"></validation>
+                    <validation asp-for="ConfirmMoratorium"></validation>
                     <div class="govuk-radios__item">
                         <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
                                id="moratorium-true" asp-for="ConfirmMoratorium" type="radio" value="true"/>
@@ -187,11 +187,11 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         <h2 class="govuk-heading-m">Please provide the following details based on the larch application checks</h2>
 
-        <div class="govuk-form-group govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden no-border-left"
+        <govuk-form-group asp-for="ConfirmInspectionLog" class="govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden no-border-left"
              id="conditional-@Html.NameFor(x => x.Zone1)">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
@@ -200,7 +200,7 @@
                         log?
                     </h3>
                 </legend>
-                <validation asp-for="@Model.ConfirmInspectionLog"></validation>
+                <validation asp-for="ConfirmInspectionLog"></validation>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
                         <input condition-disabled="@Model.Disabled" class="govuk-checkboxes__input"
@@ -212,9 +212,9 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="RecommendSplitApplicationDue">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
                     <h3 class="govuk-fieldset__heading">
@@ -222,7 +222,7 @@
                     </h3>
                 </legend>
 
-                <validation asp-for="@Model.RecommendSplitApplicationDue"></validation>
+                <validation asp-for="RecommendSplitApplicationDue"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
                         <input condition-disabled="@Model.Disabled" class="govuk-radios__input check-radios"
@@ -254,7 +254,7 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         @Html.EditorFor(m => m.FormLevelCaseNote)
 

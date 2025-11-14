@@ -3,7 +3,6 @@
 @using Forestry.Flo.External.Web.Infrastructure.Display
 @using Forestry.Flo.Services.Common.Analytics
 @using Forestry.Flo.Services.Common.User
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @inject SiteSiteAnalyticsService SiteSiteAnalyticsService
 
 <!DOCTYPE html>
@@ -15,6 +14,22 @@
     var isAgent = user.AccountType is AccountTypeExternal.Agent or AccountTypeExternal.AgentAdministrator or AccountTypeExternal.FcUser;
     var agencyId = user.AgencyId;
     var homeLabel = isAgent ? "Clients" : "Applications";
+
+    string GetNavStyle(string[] controllers, string[]? actions = null)
+    {
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString()?.ToLower();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString()?.ToLower();
+
+        if (controllers.Select(x => x.ToLower()).Contains(currentController))
+        {
+            if (actions == null || actions.Length == 0 || actions.Select(x => x.ToLower()).Contains(currentAction))
+            {
+                return "govuk-service-navigation__item govuk-service-navigation__item--active";
+            }
+        }
+
+        return "govuk-service-navigation__item";
+    }
 }
 <head>
     <meta charset="utf-8" />
@@ -97,14 +112,14 @@
                             Menu
                         </button>
                         <ul class="govuk-service-navigation__list" id="navigation">
-                            <li condition="user.HasCompletedAccountRegistration" class="govuk-service-navigation__item" id="site-nav-home">
+                            <li condition="user.HasCompletedAccountRegistration" class="@GetNavStyle(["home", "woodlandowner", "agentauthorityform", "agentauthorityformdocuments", "fellinglicenceapplication", "dataimport"])" id="site-nav-home">
                                 <a class="govuk-service-navigation__link" href="/home" role="menuitem">
                                     @homeLabel
                                 </a>
                             </li>
                             @if (!isAgent)
                             {
-                                <li condition="user.HasCompletedAccountRegistration" class="govuk-service-navigation__item" id="site-nav-properties">
+                                <li condition="user.HasCompletedAccountRegistration" class="@GetNavStyle(["propertyprofile", "compartment"])" id="site-nav-properties">
                                     <a class="govuk-service-navigation__link"
                                        role="menuitem"
                                        asp-controller="PropertyProfile"
@@ -114,7 +129,7 @@
                                     </a>
                                 </li>
                             }
-							<li condition="user.HasCompletedAccountRegistration" class="govuk-service-navigation__item" id="site-nav-profile">
+                            <li condition="user.HasCompletedAccountRegistration" class="@GetNavStyle(["account", "accountadministration", "linkedusers"])" id="site-nav-profile">
                                 <a class="govuk-service-navigation__link" asp-controller="Account" asp-action="RegisterAccountType" role="menuitem">
                                     Your profile
                                 </a>
