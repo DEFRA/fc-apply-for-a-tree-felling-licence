@@ -11,6 +11,7 @@ using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Tests.Common;
 using Microsoft.AspNetCore.Http;
@@ -68,17 +69,20 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
     }
 
     [Theory, AutoData]
-    public async Task RetrievesDetailsModel_ForOrganisations(WoodlandOwnerModel owner)
+    public async Task RetrievesDetailsModel_ForOrganisations(WoodlandOwnerModel owner, UserAccessModel userAccess)
     {
         owner.IsOrganisation = true;
 
         var sut = CreateSut();
 
+        _mockAccountsService.Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _mockRetrieveWoodlandOwnerService.Setup(s =>
-                s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(owner);
 
-        var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, CancellationToken.None);
+        var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, _externalApplicant, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
@@ -105,11 +109,11 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         Assert.Equal(owner.OrganisationName, result.Value.OrganisationName);
 
-        _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, CancellationToken.None), Times.Once);
+        _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, userAccess, CancellationToken.None), Times.Once);
     }
 
     [Theory, AutoData]
-    public async Task RetrievesDetailsModel_ForIndividuals(WoodlandOwnerModel owner)
+    public async Task RetrievesDetailsModel_ForIndividuals(WoodlandOwnerModel owner, UserAccessModel userAccess)
     {
         owner.IsOrganisation = false;
         owner.OrganisationAddress = null;
@@ -117,11 +121,14 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
 
         var sut = CreateSut();
 
+        _mockAccountsService.Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _mockRetrieveWoodlandOwnerService.Setup(s =>
-                s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),It.IsAny<CancellationToken>()))
             .ReturnsAsync(owner);
 
-        var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, CancellationToken.None);
+        var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, _externalApplicant, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
@@ -143,23 +150,26 @@ public class ManageWoodlandOwnerDetailsUseCaseTests
         Assert.Null(result.Value.OrganisationAddress);
         Assert.Null(result.Value.OrganisationName);
 
-        _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, CancellationToken.None), Times.Once);
+        _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, userAccess, CancellationToken.None), Times.Once);
     }
 
     [Theory, AutoData]
-    public async Task ReturnsFailure_WhenWoodlandOwnerNotRetrieved(WoodlandOwnerModel owner)
+    public async Task ReturnsFailure_WhenWoodlandOwnerNotRetrieved(WoodlandOwnerModel owner, UserAccessModel userAccess)
     {
         var sut = CreateSut();
 
+        _mockAccountsService.Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _mockRetrieveWoodlandOwnerService.Setup(s =>
-                s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<WoodlandOwnerModel>(Error));
 
-        var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, CancellationToken.None);
+        var result = await sut.GetWoodlandOwnerModelAsync(owner.Id.Value, _externalApplicant, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, CancellationToken.None), Times.Once);
+        _mockRetrieveWoodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(owner.Id.Value, userAccess, CancellationToken.None), Times.Once);
     }
 
     [Theory, AutoData]

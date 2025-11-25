@@ -217,7 +217,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(licenceApplications);
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         var userAccessModel = new UserAccessModel
@@ -427,7 +427,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
                 new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _fellingLicenceApplicationRepository
@@ -1736,7 +1736,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(new List<FellingLicenceApplication>() { licenceApplication });
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         var userAccessModel = new UserAccessModel
@@ -2112,7 +2112,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(new List<FellingLicenceApplication>() { licenceApplication });
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         var userAccessModel = new UserAccessModel
@@ -2440,7 +2440,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(Result.Success(propertyProfile));
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _compartmentRepository
@@ -2555,7 +2555,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(Result.Success(propertyProfile));
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _compartmentRepository

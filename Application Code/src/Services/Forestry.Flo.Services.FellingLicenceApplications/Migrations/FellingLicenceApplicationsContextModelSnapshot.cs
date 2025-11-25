@@ -279,6 +279,46 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.ToTable("AdminOfficerReview", "FellingLicenceApplications");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.ApprovedInError", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasDefaultValueSql("uuid_generate_v4()");
+
+                    b.Property<string>("CaseNote")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FellingLicenceApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LastUpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastUpdatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PreviousReference")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("ReasonExpiryDate")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ReasonOther")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ReasonSupplementaryPoints")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FellingLicenceApplicationId")
+                        .IsUnique();
+
+                    b.ToTable("ApprovedInError", "FellingLicenceApplications");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.ApproverReview", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1852,6 +1892,17 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Navigation("FellingLicenceApplication");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.ApprovedInError", b =>
+                {
+                    b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", "FellingLicenceApplication")
+                        .WithOne("ApprovedInError")
+                        .HasForeignKey("Forestry.Flo.Services.FellingLicenceApplications.Entities.ApprovedInError", "FellingLicenceApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FellingLicenceApplication");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.ApproverReview", b =>
                 {
                     b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", "FellingLicenceApplication")
@@ -2196,6 +2247,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", b =>
                 {
                     b.Navigation("AdminOfficerReview");
+
+                    b.Navigation("ApprovedInError");
 
                     b.Navigation("ApproverReview");
 

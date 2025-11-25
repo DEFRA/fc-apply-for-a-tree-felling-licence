@@ -133,6 +133,11 @@ public class FellingLicenceApplicationSummaryModel
     public HashSet<WoodlandOfficerReviewSubStatus> WoodlandOfficerReviewSubStatuses { get; set; } = [];
 
     /// <summary>
+    /// Gets and sets a value indicating whether the felling licence application is for a ten-year licence.
+    /// </summary>
+    public bool IsForTenYearLicence { get; set; }
+
+    /// <summary>
     /// Gets if there are any larch species in the proposed felling details for the application.
     /// </summary>
     public bool AreAnyLarchSpecies => (DetailsList

@@ -42,15 +42,20 @@
                     <validation asp-for="WoodlandOwnerUserRole"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                     
-                        @foreach (WoodlandOwnerUserRole value in Enum.GetValues(typeof(WoodlandOwnerUserRole)))
-                        {
-                            <div class="govuk-radios__item">
-                                <input class="govuk-radios__input" asp-for="WoodlandOwnerUserRole" type="radio" value="@value" id="role-@value.ToString()">
-                                <label class="govuk-label govuk-radios__label" for="role-@value.ToString()">
-                                    @value.GetDescription()
-                                </label>
-                            </div>
-                        }
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="WoodlandOwnerUserRole" type="radio" value="@WoodlandOwnerUserRole.WoodlandOwnerUser">
+                            <label class="govuk-label govuk-radios__label" asp-for="WoodlandOwnerUserRole">
+                                @WoodlandOwnerUserRole.WoodlandOwnerUser.GetDescription()
+                            </label>
+                        </div>
+                        
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="WoodlandOwnerUserRole" type="radio" value="@WoodlandOwnerUserRole.WoodlandOwnerAdministrator" id="role-admin">
+                            <label class="govuk-label govuk-radios__label" for="role-admin">
+                                @WoodlandOwnerUserRole.WoodlandOwnerAdministrator.GetDescription()
+                            </label>
+                        </div>
+
                     </div>
                 </fieldset>
             </govuk-form-group>

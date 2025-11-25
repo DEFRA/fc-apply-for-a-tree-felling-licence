@@ -47,24 +47,23 @@
                     <validation asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="exempt-yes" name="exempt" type="radio" value="@true" data-aria-controls="conditional-reason" />
-                            <label class="govuk-label govuk-radios__label" for="exempt-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" type="radio" value="@true" data-aria-controls="conditional-reason" asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister" />
+                            <label class="govuk-label govuk-radios__label" asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister">Yes</label>
                         </div>
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-reason">
                             <govuk-form-group asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason">
-                                <label class="govuk-hint" for="exemption-reason">
+                                <label class="govuk-hint" asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason">
                                     Give reason for exemption
                                 </label>
                                 <validation asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason"></validation>
-                                <textarea condition-disabled="@(!Model.Editable(user))" id="exemption-reason" class="govuk-textarea" rows="4" asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason"></textarea>
+                                <textarea condition-disabled="@(!Model.Editable(user))" class="govuk-textarea" rows="4" asp-for="PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason"></textarea>
                             </govuk-form-group>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="exempt-no" name="exempt" type="radio" value="@false" />
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="exempt-no" asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister" type="radio" value="@false" />
                             <label class="govuk-label govuk-radios__label" for="exempt-no">No</label>
                         </div>
                     </div>
-                    <input id="exempt-backing-field" type="hidden" asp-for="PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister"/>
                 </fieldset>
 
             </govuk-form-group>
@@ -87,17 +86,11 @@
                             How long should it stay on the consultation public register?
                         </h2>
                     </legend>
-                    <div id="publish-hint" class="govuk-hint">
-                        Select 'Yes' if the application meets the exemption criteria.
-                    </div>
-                    <div class="govuk-form-group" condition="@Model.Editable(user)">
-                        <label for="pr-period-days" class="govuk-body govuk-label--s">Period on public register (days)</label>
-                        <validation asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays"></validation>
-
-                        <div class="govuk-input__wrapper">
-                            <input condition-disabled="@(!Model.Editable(user))" id="pr-period-days" class="govuk-input govuk-input--width-5" asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays" type="text" inputmode="numeric" step="1" value="@(Model.PublicRegister?.ConsultationPublicRegisterPeriodDays ?? Settings.Value.PublicRegisterPeriod.Days)" />
-                            <div class="govuk-input__suffix" aria-hidden="true">days</div>
-                        </div>
+                    <label asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays" class="govuk-body govuk-label--s">Period on public register (days)</label>
+                    <validation asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays"></validation>
+                    <div class="govuk-input__wrapper">
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-input govuk-input--width-5" asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays" type="text" inputmode="numeric" step="1" value="@(Model.PublicRegister?.ConsultationPublicRegisterPeriodDays ?? Settings.Value.PublicRegisterPeriod.Days)" />
+                        <div class="govuk-input__suffix" aria-hidden="true">days</div>
                     </div>
                 </fieldset>
             </govuk-form-group>

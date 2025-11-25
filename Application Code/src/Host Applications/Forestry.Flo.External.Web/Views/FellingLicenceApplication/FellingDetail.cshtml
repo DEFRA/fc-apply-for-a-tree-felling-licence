@@ -98,8 +98,8 @@
                         <validation asp-for="IsTreeMarkingUsed"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-tree-marking-yes" type="radio" class="govuk-radios__input" asp-for="IsTreeMarkingUsed" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsTreeMarkingUsed)">
-                                <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-yes" asp-for="IsTreeMarkingUsed">
+                                <input type="radio" class="govuk-radios__input" asp-for="IsTreeMarkingUsed" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsTreeMarkingUsed)">
+                                <label class="govuk-label govuk-radios__label" asp-for="IsTreeMarkingUsed">
                                     Yes, I will use tree marking
                                 </label>
                             </div>
@@ -171,8 +171,8 @@
                         <validation asp-for="IsPartOfTreePreservationOrder"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-tpo-yes" type="radio" class="govuk-radios__input" asp-for="IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsPartOfTreePreservationOrder)">
-                                <label for="felling-detail-tpo-yes" class="govuk-label govuk-radios__label" asp-for="IsPartOfTreePreservationOrder">
+                                <input type="radio" class="govuk-radios__input" asp-for="IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsPartOfTreePreservationOrder)">
+                                <label class="govuk-label govuk-radios__label" asp-for="IsPartOfTreePreservationOrder">
                                     Yes
                                 </label>
                             </div>
@@ -206,8 +206,8 @@
                         <validation asp-for="IsWithinConservationArea"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-conservation-area-yes" type="radio" class="govuk-radios__input" asp-for="IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWithinConservationArea)">
-                                <label class="govuk-label govuk-radios__label" for="felling-detail-conservation-area-yes" asp-for="IsWithinConservationArea">
+                                <input type="radio" class="govuk-radios__input" asp-for="IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWithinConservationArea)">
+                                <label class="govuk-label govuk-radios__label" asp-for="IsWithinConservationArea">
                                     Yes
                                 </label>
                             </div>

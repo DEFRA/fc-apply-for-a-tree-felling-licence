@@ -1,26 +1,16 @@
 ﻿$(function () {
 
     $(document).ready(function() {
-        var currentExempt = $('#exempt-backing-field').val() === 'True';
-
-        if (currentExempt === true) {
-            $('#exempt-yes').attr('checked', 'checked');
-            $('#conditional-reason').removeClass('govuk-radios__conditional--hidden');
-        }
-        if (currentExempt === false) {
-            $('#exempt-no').attr('checked', 'checked');
-        }
-
         setExemptOnOff();
     });
 
-    $('#exempt-yes').change(setExemptOnOff);
+    $('#PublicRegister_WoodlandOfficerSetAsExemptFromConsultationPublicRegister').change(setExemptOnOff);
     $('#exempt-no').change(setExemptOnOff);
 
 
     function setExemptOnOff() {
 
-        var exemptTrue = $('#exempt-yes').is(':checked') === true;
+        var exemptTrue = $('#PublicRegister_WoodlandOfficerSetAsExemptFromConsultationPublicRegister').is(':checked') === true;
         var exemptFalse = $('#exempt-no').is(':checked') === true;
 
         $('#save-exemption-form').addClass('govuk-visually-hidden');
@@ -33,8 +23,6 @@
         $('#back-link-no-forms').attr('aria-hidden', 'false');
 
         if (exemptTrue) {
-            $('#exempt-backing-field').val(true);
-
             $('#save-exemption-form').removeClass('govuk-visually-hidden');
             $('#save-exemption-form').attr('aria-hidden', 'false');
 

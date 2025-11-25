@@ -1,8 +1,6 @@
 ﻿$(function () {
     $(document).ready(function () {
         $('#submit-supporting-document-button').attr('disabled', 'disabled');
-
-        $('.govuk-error-summary a[href="#StepComplete"]').attr('href', '#radio-complete-yes');
     });
 
     $('#supporting-documentation-files').change(function (e) {

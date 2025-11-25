@@ -92,7 +92,7 @@ public class AutomaticWithdrawalNotificationUseCaseTests
             .ReturnsAsync(applicant);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
 
         _notificationsMock
@@ -183,7 +183,7 @@ public class AutomaticWithdrawalNotificationUseCaseTests
             .ReturnsAsync(applicant);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
 
         _withdrawFellingLicenceService.Setup(x =>

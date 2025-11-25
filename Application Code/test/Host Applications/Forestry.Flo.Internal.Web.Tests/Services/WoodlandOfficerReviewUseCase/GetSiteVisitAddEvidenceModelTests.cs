@@ -118,7 +118,7 @@ public class GetSiteVisitAddEvidenceModelTests : WoodlandOfficerReviewUseCaseTes
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository
@@ -181,7 +181,7 @@ public class GetSiteVisitAddEvidenceModelTests : WoodlandOfficerReviewUseCaseTes
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository

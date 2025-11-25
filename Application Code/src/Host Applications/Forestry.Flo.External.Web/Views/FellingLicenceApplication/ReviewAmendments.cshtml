@@ -192,13 +192,12 @@
                 <validation asp-for="ApplicantAgreed"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input id="applicant-agrees-yes"
-                               condition-disabled="@(!Model.IsEditable)"
+                        <input condition-disabled="@(!Model.IsEditable)"
                                type="radio"
                                class="govuk-radios__input"
                                asp-for="ApplicantAgreed"
                                value="@true" />
-                        <label class="govuk-label govuk-radios__label" for="applicant-agrees-yes">
+                        <label class="govuk-label govuk-radios__label" asp-for="ApplicantAgreed">
                             Yes, I agree to the amendments
                         </label>
                     </div>

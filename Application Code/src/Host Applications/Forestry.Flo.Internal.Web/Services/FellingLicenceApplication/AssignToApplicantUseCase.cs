@@ -144,7 +144,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         }
 
         var sectionDict = Enum.GetValues<FellingLicenceApplicationSection>()
-            .Where(x => x is not FellingLicenceApplicationSection.FlaTermsAndConditionsViewModel)
+            .Where(x => x is not FellingLicenceApplicationSection.FlaTermsAndConditionsViewModel 
+                && x is not FellingLicenceApplicationSection.TenYearLicence)
             .ToDictionary(section => section, _ => false);
 
         var compartmentDict = fellingLicenceApplication.Value.DetailsList

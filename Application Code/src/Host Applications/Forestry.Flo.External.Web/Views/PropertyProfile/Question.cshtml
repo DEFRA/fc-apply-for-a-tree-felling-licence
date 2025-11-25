@@ -19,15 +19,15 @@
                 <validation asp-for="ImportShapes"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" asp-for="ImportShapes" id="true" type="radio" value="true">
-                        <label class="govuk-label govuk-radios__label" asp-for="ImportShapes" for="true">
+                        <input class="govuk-radios__input" asp-for="ImportShapes" type="radio" value="true">
+                        <label class="govuk-label govuk-radios__label" asp-for="ImportShapes">
                             Yes, I want to import shapefiles
                         </label>
                     </div>
 
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" asp-for="ImportShapes" id="false" type="radio" value="false">
-                        <label class="govuk-label govuk-radios__label" asp-for="ImportShapes" for="false">
+                        <input class="govuk-radios__input" asp-for="ImportShapes" id="import-false" type="radio" value="false">
+                        <label class="govuk-label govuk-radios__label" asp-for="ImportShapes" for="import-false">
                             No, I do not want to import shapefiles
                         </label>
                     </div>

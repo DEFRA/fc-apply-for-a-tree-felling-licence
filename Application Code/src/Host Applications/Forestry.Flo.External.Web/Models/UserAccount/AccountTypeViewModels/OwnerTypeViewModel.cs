@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace Forestry.Flo.External.Web.Models.UserAccount.AccountTypeViewModels;
 
@@ -10,6 +11,6 @@ public class OwnerTypeViewModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets and Sets the organisation status of a woodland owner user.
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "Select an owner typee")]
     public OrganisationStatus? OrganisationStatus { get; set; }
 }

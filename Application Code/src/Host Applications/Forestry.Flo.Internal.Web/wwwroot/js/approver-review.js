@@ -49,7 +49,7 @@
     }
 
     function updateDisableConditionalReason() {
-        var isApproved = $("#status-approve").is(':checked');
+        var isApproved = $("#ApproverReview_RequestedStatus").is(':checked');
         const conditionalReasonFieldset = $("#conditional-reason");
 
         if (isApproved) {
@@ -66,15 +66,15 @@
         var noChecked = $no.prop('checked');
 
         if (yesChecked) {
-            showOrHideElement($('#conditional-decision-yes'), true);
+            showOrHideElement($('#Decision'), true);
             showOrHideElement($('#conditional-decision-no'), false);
             showOrHideElement($('#conditional-decision-empty'), false);
         } else if (noChecked) {
-            showOrHideElement($('#conditional-decision-yes'), false);
+            showOrHideElement($('#Decision'), false);
             showOrHideElement($('#conditional-decision-no'), true);
             showOrHideElement($('#conditional-decision-empty'), false);
         } else {
-            showOrHideElement($('#conditional-decision-yes'), false);
+            showOrHideElement($('#Decision'), false);
             showOrHideElement($('#conditional-decision-no'), false);
             showOrHideElement($('#conditional-decision-empty'), true);
         }

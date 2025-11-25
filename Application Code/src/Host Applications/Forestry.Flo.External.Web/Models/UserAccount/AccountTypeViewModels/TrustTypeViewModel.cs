@@ -10,6 +10,6 @@ public class TrustTypeViewModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets and Sets the organisation status of a trust user.
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "Select which type of trust you are")]
     public OrganisationStatus? OrganisationStatus { get; set; }
 }

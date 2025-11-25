@@ -10,6 +10,6 @@ public class TenantIndividualOrOrganisationViewModel : PageWithBreadcrumbsViewMo
     /// <summary>
     /// Gets and Sets the organisation status of a trust user.
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "Select a type of tenant")]
     public OrganisationStatus? OrganisationStatus { get; set; }
 }

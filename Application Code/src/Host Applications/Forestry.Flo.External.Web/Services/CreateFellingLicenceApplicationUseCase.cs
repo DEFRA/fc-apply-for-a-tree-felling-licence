@@ -162,11 +162,23 @@ public class CreateFellingLicenceApplicationUseCase(
                 $"Unable to access data for woodland owner with id {woodlandOwnerId}");
         }
 
-        if (applications.Value.Any())
+        // filter out applications with latest status ApprovedInError
+        var filteredApplications = applications.Value
+            .Where(a =>
+            {
+                var latest = a.StatusHistories
+                    .OrderByDescending(s => s.Created)
+                    .FirstOrDefault();
+                return latest == null ||
+                       latest.Status != FellingLicenceStatus.ApprovedInError;
+            })
+            .ToList();
+
+        if (filteredApplications.Any())
         {
             var getPropertyProfilesResult = await GetPropertyProfilesByIdAsync(
                 new ListPropertyProfilesQuery(woodlandOwnerId,
-                    applications.Value.Where(a => a.LinkedPropertyProfile != null)
+                    filteredApplications.Where(a => a.LinkedPropertyProfile != null)
                         .Select(a => a.LinkedPropertyProfile!.PropertyProfileId).ToArray()),
                 user,
                 cancellationToken);
@@ -186,7 +198,7 @@ public class CreateFellingLicenceApplicationUseCase(
                 var propertyProfilesDictionary = getPropertyProfilesResult.Value.ToDictionary(p => p.Id, p => p);
 
                 var woodlandOwnerNameAndAgencyDetails =
-                    await GetWoodlandOwnerNameAndAgencyForApplication(applications.Value.First(), cancellationToken);
+                    await GetWoodlandOwnerNameAndAgencyForApplication(applications.Value.First(), userAccessModel.Value, cancellationToken);
                 if (woodlandOwnerNameAndAgencyDetails.IsFailure)
                 {
                     _logger.LogWarning("Unable to retrieve woodland owner name and agency details for user having id of {UserId}, " +
@@ -196,7 +208,7 @@ public class CreateFellingLicenceApplicationUseCase(
                         $"Unable to access woodland owner name and agency details for user with userId of {user.UserAccountId} and woodland owner id supplied of {woodlandOwnerId}");
                 }
 
-                var result = applications.Value.Select(a =>
+                var result = filteredApplications.Select(a =>
                 {
                     var match = propertyProfilesDictionary.TryGetValue(a.LinkedPropertyProfile!.PropertyProfileId,
                         out var profile);
@@ -1873,6 +1885,13 @@ public class CreateFellingLicenceApplicationUseCase(
         Guid compartmentId,
         CancellationToken cancellationToken)
     {
+        var userAccessModel = await GetUserAccessModelAsync(user, cancellationToken).ConfigureAwait(false);
+        if (userAccessModel.IsFailure)
+        {
+            _logger.LogWarning("Unable to retrieve user access for user with id {UserId}", user.UserAccountId);
+            return Maybe<FellingAndRestockingDetailViewModel>.None;
+        }
+
         var compartmentDetails = await GetCompartmentDetails(compartmentId, user, cancellationToken);
 
         if (compartmentDetails is null)
@@ -1937,7 +1956,7 @@ public class CreateFellingLicenceApplicationUseCase(
         }
 
         var woodlandOwnerNameAndAgencyDetails =
-            await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, cancellationToken);
+            await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, userAccessModel.Value, cancellationToken);
         if (woodlandOwnerNameAndAgencyDetails.IsFailure)
         {
             _logger.LogWarning("Unable to get woodland owner details for application, error : {Error}",
@@ -3561,6 +3580,13 @@ public class CreateFellingLicenceApplicationUseCase(
         Guid applicationId,
         CancellationToken cancellationToken)
     {
+        var userAccessModel = await GetUserAccessModelAsync(user, cancellationToken).ConfigureAwait(false);
+        if (userAccessModel.IsFailure)
+        {
+            _logger.LogWarning("Unable to retrieve user access for user with id {UserId}", user.UserAccountId);
+            return userAccessModel.ConvertFailure<FellingLicenceApplicationSummaryViewModel>();
+        }
+
         var application = await RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (application.HasNoValue)
@@ -3584,6 +3610,7 @@ public class CreateFellingLicenceApplicationUseCase(
 
         var woodlandOwner = await GetWoodlandOwnerByIdAsync(
             application.Value.WoodlandOwnerId,
+            userAccessModel.Value,
             cancellationToken).ConfigureAwait(false);
 
         if (woodlandOwner.IsFailure)

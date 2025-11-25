@@ -133,6 +133,7 @@ public class CompleteEiaScreeningTests : WoodlandOfficerReviewUseCaseTestsBase<W
             WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
             MockBus.Object,
+            FellingLicenceApplicationOptions,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

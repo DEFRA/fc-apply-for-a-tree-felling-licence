@@ -50,14 +50,13 @@
                 <validation asp-for="AreTheFormsCorrect"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input id="forms-correct-yes"
-                               condition-disabled="@(!Model.Editable(user))"
+                        <input condition-disabled="@(!Model.Editable(user))"
                                type="radio"
                                class="govuk-radios__input"
                                asp-for="AreTheFormsCorrect"
                                data-aria-controls="conditional-forms-correct"
                                value="@true"/>
-                        <label class="govuk-label govuk-radios__label" for="forms-correct-yes">
+                        <label class="govuk-label govuk-radios__label" asp-for="AreTheFormsCorrect">
                             Yes, the EIA forms are correct
                         </label>
                     </div>

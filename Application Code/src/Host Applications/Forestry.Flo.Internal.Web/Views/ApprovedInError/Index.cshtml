@@ -1,0 +1,95 @@
+﻿@using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+
+@model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ApprovedInErrorViewModel
+@{
+    ViewData["Title"] = " Approved licence marked in error";
+    var user = new InternalUser(User);
+}
+
+<div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container">
+	<h1 class="govuk-heading-xl">
+		Application @Model.FellingLicenceApplicationSummary!.ApplicationReference
+	</h1>
+	<partial name="Partials/_ConfirmationMessageDisplay" />
+	<partial name="Partials/_UserGuideDisplay" />
+	<partial name="Partials/_PageErrors" />
+	<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    <form asp-action="ConfirmApprovedInError" method="post">
+
+        @Html.AntiForgeryToken()
+        
+        <input type="hidden" asp-for="ApplicationId"/>
+		<input type="hidden" asp-for="PreviousReference" />
+
+        <p class="govuk-body">
+            This licence has been marked as ‘Approved in error’. A duplicate licence will
+            be created for correction
+        </p>
+        <p class="govuk-body">
+            The applicant will only be notified once the corrected licence has been re
+            approved.
+        </p>
+        <div class="govuk-form-group">
+			<fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">
+                        Select the reason for marking this licence
+                        as approved in error
+                    </h2>
+                </legend>
+				<div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <validation asp-for="ReasonExpiryDate"></validation>
+                    <div class="govuk-checkboxes__item">
+						<input class="govuk-checkboxes__input" type="checkbox" asp-for="ReasonExpiryDate" />
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ReasonExpiryDate">Expiry date</label>
+                    </div>
+                    <validation asp-for="ReasonSupplementaryPoints"></validation>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="ReasonSupplementaryPoints"/>
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ReasonSupplementaryPoints">Supplementary points for conditions</label>
+                    </div>
+                    <p class="govuk-body">
+                        or
+                    </p>
+
+					<validation asp-for="ReasonOther"></validation>
+					<div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="ReasonOther" data-aria-controls="conditional-@Html.NameFor(x => x.ReasonOther)" />
+						<label class="govuk-label govuk-checkboxes__label" asp-for="ReasonOther">Other</label>
+					</div>
+                    <div class="govuk-form-group govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden"
+                         id="conditional-@Html.NameFor(x => x.ReasonOther)">
+						<div class="govuk-inset-text">
+							<label for="@Model.CaseNote">For issues not covered above (you must describe the error in the text box).</label>
+							<validation asp-for="CaseNote"></validation>
+							<textarea class="govuk-textarea govuk-js-character-count" rows="4"
+                                      asp-for="CaseNote"></textarea>
+						</div>
+					</div>
+				</div>
+            </fieldset>
+
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+                <button data-prevent-double-click="true" type="submit" asp-action="ConfirmApprovedInError" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" class="govuk-button" data-module="govuk-button">
+                    Confirm and continue
+                </button>
+                <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary!.Id" title="Abandon changes and go to the previous page">Cancel</a>
+            </div>
+        </div>
+
+	</form>
+
+</div>
+
+@section breadcrumbs
+{
+	<partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

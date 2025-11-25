@@ -376,7 +376,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fellingLicenceApplication));
 
         _mockWoodlandOwnerService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<WoodlandOwnerModel>("error"));
 
         var result = await sut.GetApplicationSummaryForConsulteeReviewAsync(applicationId, externalInviteLink, accessCode, CancellationToken.None);
@@ -388,7 +388,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockFellingLicenceApplicationInternalRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _mockFellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
-        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockWoodlandOwnerService.VerifyNoOtherCalls();
 
         _mockExternalUserAccountService.VerifyNoOtherCalls();
@@ -412,7 +412,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fellingLicenceApplication));
 
         _mockWoodlandOwnerService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwnerModel));
 
         _mockExternalUserAccountService.Setup(x =>
@@ -431,7 +431,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockFellingLicenceApplicationInternalRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _mockFellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
-        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockWoodlandOwnerService.VerifyNoOtherCalls();
 
         var firstAssignee = fellingLicenceApplication.AssigneeHistories.First();
@@ -481,7 +481,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fellingLicenceApplication));
 
         _mockWoodlandOwnerService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwnerModel));
 
         _mockExternalUserAccountService.Setup(x =>
@@ -528,7 +528,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockFellingLicenceApplicationInternalRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _mockFellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
-        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockWoodlandOwnerService.VerifyNoOtherCalls();
 
         foreach (var assigneeHistory in fellingLicenceApplication.AssigneeHistories)
@@ -601,7 +601,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fellingLicenceApplication));
 
         _mockWoodlandOwnerService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwnerModel));
 
         _mockExternalUserAccountService.Setup(x =>
@@ -650,7 +650,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockFellingLicenceApplicationInternalRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _mockFellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
-        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        _mockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fellingLicenceApplication.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockWoodlandOwnerService.VerifyNoOtherCalls();
 
         foreach (var assigneeHistory in fellingLicenceApplication.AssigneeHistories)

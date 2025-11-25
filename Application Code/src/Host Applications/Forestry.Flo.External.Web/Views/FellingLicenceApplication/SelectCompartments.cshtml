@@ -38,9 +38,7 @@
 <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary"/>
 
 
-<form asp-action="CreateFromApplication" asp-controller="Compartment"
-      method="post"
-      id="createCompartment">
+<form asp-action="CreateFromApplication" asp-controller="Compartment" method="post" id="createCompartment">
     <input aria-hidden="True" type="hidden" asp-for="ApplicationId"/>
     <input aria-hidden="True" type="hidden" asp-for="PropertyProfileId"/>
     <input aria-hidden="True" type="hidden" asp-for="IsForRestockingCompartmentSelection"/>
@@ -106,7 +104,7 @@
                 </li>
             </ul>
             <div class="govuk-tabs__panel" id="list">
-                <div class="govuk-form-group">
+                <div class="govuk-form-group @(ViewData.ModelState.IsValid == false ? "govuk-form-group--error" : "")">
                     @if (!propertyHasCompartments)
                     {
                         <button condition="allowedToAddCompartment" class="govuk-button govuk-button--secondary" data-module="govuk-button" form="createCompartment">
@@ -123,6 +121,16 @@
                         }
 
                         <input type="hidden" aria-hidden="True" asp-for="@Model.GIS"/>
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <p class="govuk-error-message">
+                                <span class="govuk-visually-hidden">Error:</span>
+                                @foreach (var error in ViewData.ModelState.SelectMany(x => x.Value.Errors))
+                                {
+                                    @error.ErrorMessage <br />
+                                }
+                            </p>
+                        }
                         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                             @foreach (var compartment in ViewBag.Compartments)
                             {

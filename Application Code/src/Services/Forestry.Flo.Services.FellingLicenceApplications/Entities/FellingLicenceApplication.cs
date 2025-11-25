@@ -209,4 +209,6 @@ public class FellingLicenceApplication
     /// Gets and sets the woodland management plan reference.
     /// </summary>
     public string? WoodlandManagementPlanReference { get; set; }
+
+    public ApprovedInError? ApprovedInError { get; set; }
 }

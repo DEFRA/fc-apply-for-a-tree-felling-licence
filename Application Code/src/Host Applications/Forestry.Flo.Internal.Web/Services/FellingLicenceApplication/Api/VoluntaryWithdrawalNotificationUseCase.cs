@@ -5,6 +5,7 @@ using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Notifications.Entities;
@@ -131,7 +132,7 @@ public class VoluntaryWithdrawalNotificationUseCase : IVoluntaryWithdrawalNotifi
             cancellationToken);
 
         var (woodlandOwnerSuccess, _, woodlandOwner) =
-            await _woodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken);
+            await _woodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
 
         if (createdByUserFailure)
         {

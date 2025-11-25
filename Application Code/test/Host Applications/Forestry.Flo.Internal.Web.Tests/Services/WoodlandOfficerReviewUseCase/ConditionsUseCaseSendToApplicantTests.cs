@@ -8,6 +8,7 @@ using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
@@ -174,7 +175,7 @@ public class ConditionsUseCaseSendToApplicantTests
             .ReturnsAsync(Result.Success(account));
 
         _woodlandOwnersService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<WoodlandOwnerModel>(error.ToString()));
 
         var result = await sut.SendConditionsToApplicantAsync(applicationId, user, CancellationToken.None);
@@ -187,7 +188,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _externalApplicantService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationDetails.ApplicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
         _externalApplicantService.VerifyNoOtherCalls();
 
-        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<CancellationToken>()));
+        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()));
         _woodlandOwnersService.VerifyNoOtherCalls();
 
         _conditionsService.VerifyNoOtherCalls();
@@ -237,7 +238,7 @@ public class ConditionsUseCaseSendToApplicantTests
             .ReturnsAsync(Result.Success(account));
 
         _woodlandOwnersService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         _conditionsService
@@ -262,7 +263,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _externalApplicantService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationDetails.ApplicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
         _externalApplicantService.VerifyNoOtherCalls();
 
-        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<CancellationToken>()));
+        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()));
         _woodlandOwnersService.VerifyNoOtherCalls();
 
         _conditionsService.Verify(x => x.RetrieveExistingConditionsAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
@@ -328,7 +329,7 @@ public class ConditionsUseCaseSendToApplicantTests
             .ReturnsAsync(Result.Success(account));
 
         _woodlandOwnersService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         _conditionsService
@@ -357,7 +358,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _externalApplicantService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationDetails.ApplicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
         _externalApplicantService.VerifyNoOtherCalls();
 
-        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<CancellationToken>()));
+        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()));
         _woodlandOwnersService.VerifyNoOtherCalls();
 
         _conditionsService.Verify(x => x.RetrieveExistingConditionsAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
@@ -422,7 +423,7 @@ public class ConditionsUseCaseSendToApplicantTests
             .ReturnsAsync(Result.Success(account));
 
         _woodlandOwnersService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         _conditionsService
@@ -451,7 +452,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _externalApplicantService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationDetails.ApplicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
         _externalApplicantService.VerifyNoOtherCalls();
 
-        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<CancellationToken>()));
+        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()));
         _woodlandOwnersService.VerifyNoOtherCalls();
 
         _conditionsService.Verify(x => x.RetrieveExistingConditionsAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
@@ -516,7 +517,7 @@ public class ConditionsUseCaseSendToApplicantTests
             .ReturnsAsync(Result.Success(account));
 
         _woodlandOwnersService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         _conditionsService
@@ -545,7 +546,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _externalApplicantService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationDetails.ApplicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
         _externalApplicantService.VerifyNoOtherCalls();
 
-        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<CancellationToken>()));
+        _woodlandOwnersService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(applicationDetails.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()));
         _woodlandOwnersService.VerifyNoOtherCalls();
 
         _conditionsService.Verify(x => x.RetrieveExistingConditionsAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);

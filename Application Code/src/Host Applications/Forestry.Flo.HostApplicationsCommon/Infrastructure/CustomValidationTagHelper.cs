@@ -45,7 +45,6 @@ public class CustomValidationTagHelper : TagHelper
         var innerSpan = CreateTagHelperOutput("span");
 
         innerSpan.Attributes.SetAttribute("class", "govuk-visually-hidden");
-        innerSpan.Attributes.SetAttribute("aria-hidden", "true");
         innerSpan.Content.SetContent("Error:");
 
         validationOutput.PreContent.AppendHtml(innerSpan);

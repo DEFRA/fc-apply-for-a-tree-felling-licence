@@ -1,15 +1,15 @@
 ﻿$(function() {
-    const $neededYesRadio = $("#site-visit-needed-yes");
+    const $neededYesRadio = $("#SiteVisitNeeded");
     const $neededNoRadio = $("#site-visit-needed-no");
 
-    const $arrangmentsYesRadio = $("#site-visit-arrangements-yes");
+    const $arrangmentsYesRadio = $("#SiteVisitArrangementsMade");
     const $arrangmentsNoRadio = $("#site-visit-arrangements-no");
 
     const $submitButton = $("#submit-button");
     const $notNeededReason = $("textarea").first();
 
     function handleNeededChangeYes(checked) {
-        var readonly = $("#site-visit-needed-yes").attr("disabled") === "disabled";
+        var readonly = $("#SiteVisitNeeded").attr("disabled") === "disabled";
 
         if (checked === true) {
             $("#not-needed-reason").addClass("govuk-visually-hidden");
@@ -36,7 +36,7 @@
     }
 
     function handleNeededChangeNo(checked) {
-        var readonly = $("#site-visit-needed-yes").attr("disabled") === "disabled";
+        var readonly = $("#SiteVisitNeeded").attr("disabled") === "disabled";
 
         if (checked === true) {
             if (!readonly) {
@@ -47,7 +47,7 @@
             $("#preparation-notes").addClass("govuk-visually-hidden");
             $("#preparation-notes").attr("aria-hidden", "true");
 
-            $('#site-visit-arrangements-yes').prop('checked', false);
+            $('#SiteVisitArrangementsMade').prop('checked', false);
             $('#site-visit-arrangements-no').prop('checked', false);
 
             $('#preparation-notes textarea').val(''); // Clear the prep notes text area

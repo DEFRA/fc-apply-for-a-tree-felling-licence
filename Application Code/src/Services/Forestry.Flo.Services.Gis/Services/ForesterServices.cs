@@ -390,6 +390,7 @@ public class ForesterServices : BaseServices, IForesterServices
 
     /// <inheritdoc />
     public async Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(
+        string applicationReference,
         InternalCompartmentDetails<BaseShape> compartmentDetails, 
         CancellationToken cancellationToken,
         int delay = 30000,
@@ -418,7 +419,13 @@ public class ForesterServices : BaseServices, IForesterServices
 
             WebMap_LayoutOptions templateLayoutOptions = new()
             {
-                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright
+                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright,
+                CustomTextElements = new Dictionary<string, string>
+                {
+                    {
+                        "fellingReference", applicationReference
+                    }
+                }
             };
 
             if (generationType != MapGeneration.Other)
@@ -510,6 +517,7 @@ public class ForesterServices : BaseServices, IForesterServices
 
     /// <inheritdoc />
     public async Task<Result<Stream>> GenerateImage_MultipleCompartmentsAsync(
+        string applicationReference,
         List<InternalCompartmentDetails<BaseShape>> compartments, 
         CancellationToken cancellationToken,
         int delay = 30000,
@@ -527,7 +535,13 @@ public class ForesterServices : BaseServices, IForesterServices
 
             WebMap_LayoutOptions templateLayoutOptions = new()
             {
-                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright
+                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright,
+                CustomTextElements = new Dictionary<string, string>
+                {
+                    {
+                        "fellingReference", applicationReference
+                    }
+                }
             };
 
             if (generationType != MapGeneration.Other)

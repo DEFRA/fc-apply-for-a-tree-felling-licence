@@ -79,7 +79,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository
@@ -158,7 +158,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository
@@ -178,7 +178,9 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             .ReturnsAsync(Maybe.From(agency));
 
         _foresterServices.Setup(x =>
-                x.GenerateImage_MultipleCompartmentsAsync(It.IsAny<List<InternalCompartmentDetails<BaseShape>>>(), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
+                x.GenerateImage_MultipleCompartmentsAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<List<InternalCompartmentDetails<BaseShape>>>(), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
             .ReturnsAsync(Result.Failure<Stream>("error"));
 
         var result = await sut.GetSiteVisitSummaryAsync(applicationId, hostingPage, CancellationToken.None);
@@ -193,8 +195,8 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             It.IsAny<CancellationToken>()), Times.Once);
         ActivityFeedItemProvider.VerifyNoOtherCalls();
 
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         WoodlandOwnerService.VerifyNoOtherCalls();
 
         MockAgentAuthorityService.Verify(x => x.GetAgencyForWoodlandOwnerAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
@@ -204,6 +206,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
         var fellingCpt = fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments[0];
 
         _foresterServices.Verify(x => x.GenerateImage_MultipleCompartmentsAsync(
+            fla.ApplicationReference,
             It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber && JsonConvert.SerializeObject(s.Single().ShapeGeometry) == serializedPolygon), 
             It.IsAny<CancellationToken>(), 3000, MapGeneration.Other, ""), Times.Once);
 
@@ -258,7 +261,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository
@@ -281,11 +284,14 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
         var restockingCpt = fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments[1];
 
         _foresterServices.Setup(x =>
-                x.GenerateImage_MultipleCompartmentsAsync(It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
+                x.GenerateImage_MultipleCompartmentsAsync(
+                    It.IsAny<string>(),
+                    It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
+
             .ReturnsAsync(Result.Success<Stream>(fellingImageBytes));
 
         _foresterServices.Setup(x =>
-                x.GenerateImage_MultipleCompartmentsAsync(It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == restockingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
+                x.GenerateImage_MultipleCompartmentsAsync(It.IsAny<string>(), It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == restockingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
             .ReturnsAsync(Result.Failure<Stream>("error"));
 
         var result = await sut.GetSiteVisitSummaryAsync(applicationId, hostingPage, CancellationToken.None);
@@ -300,8 +306,8 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             It.IsAny<CancellationToken>()), Times.Once);
         ActivityFeedItemProvider.VerifyNoOtherCalls();
 
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         WoodlandOwnerService.VerifyNoOtherCalls();
 
         MockAgentAuthorityService.Verify(x => x.GetAgencyForWoodlandOwnerAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
@@ -309,9 +315,11 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
         MockAgentAuthorityService.VerifyNoOtherCalls();
 
         _foresterServices.Verify(x => x.GenerateImage_MultipleCompartmentsAsync(
+            fla.ApplicationReference,
             It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber && JsonConvert.SerializeObject(s.Single().ShapeGeometry) == serializedPolygon),
             It.IsAny<CancellationToken>(), 3000, MapGeneration.Other, ""), Times.Once);
         _foresterServices.Verify(x => x.GenerateImage_MultipleCompartmentsAsync(
+            fla.ApplicationReference,
             It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == restockingCpt.CompartmentNumber && JsonConvert.SerializeObject(s.Single().ShapeGeometry) == serializedPolygon),
             It.IsAny<CancellationToken>(), 3000, MapGeneration.Other, ""), Times.Once);
 
@@ -367,7 +375,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository
@@ -390,11 +398,11 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
         var restockingCpt = fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments[1];
 
         _foresterServices.Setup(x =>
-                x.GenerateImage_MultipleCompartmentsAsync(It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
+                x.GenerateImage_MultipleCompartmentsAsync(It.IsAny<string>(), It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
             .ReturnsAsync(Result.Success<Stream>(fellingImageBytes));
 
         _foresterServices.Setup(x =>
-                x.GenerateImage_MultipleCompartmentsAsync(It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == restockingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
+                x.GenerateImage_MultipleCompartmentsAsync(It.IsAny<string>(), It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == restockingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
             .ReturnsAsync(Result.Success<Stream>(restockingImageBytes));
 
         var result = await sut.GetSiteVisitSummaryAsync(applicationId, hostingPage, CancellationToken.None);
@@ -427,8 +435,8 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             It.IsAny<CancellationToken>()), Times.Once);
         ActivityFeedItemProvider.VerifyNoOtherCalls();
 
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         WoodlandOwnerService.VerifyNoOtherCalls();
 
         MockAgentAuthorityService.Verify(x => x.GetAgencyForWoodlandOwnerAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
@@ -436,9 +444,11 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
         MockAgentAuthorityService.VerifyNoOtherCalls();
 
         _foresterServices.Verify(x => x.GenerateImage_MultipleCompartmentsAsync(
+            fla.ApplicationReference,
             It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber && JsonConvert.SerializeObject(s.Single().ShapeGeometry) == serializedPolygon),
             It.IsAny<CancellationToken>(), 3000, MapGeneration.Other, ""), Times.Once);
         _foresterServices.Verify(x => x.GenerateImage_MultipleCompartmentsAsync(
+            fla.ApplicationReference,
             It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == restockingCpt.CompartmentNumber && JsonConvert.SerializeObject(s.Single().ShapeGeometry) == serializedPolygon),
             It.IsAny<CancellationToken>(), 3000, MapGeneration.Other, ""), Times.Once);
 
@@ -488,7 +498,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository
@@ -510,7 +520,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
         var fellingCpt = fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments[0];
 
         _foresterServices.Setup(x =>
-                x.GenerateImage_MultipleCompartmentsAsync(It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
+                x.GenerateImage_MultipleCompartmentsAsync(It.IsAny<string>(), It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber), It.IsAny<CancellationToken>(), It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
             .ReturnsAsync(Result.Success<Stream>(fellingImageBytes));
 
         var result = await sut.GetSiteVisitSummaryAsync(applicationId, hostingPage, CancellationToken.None);
@@ -543,8 +553,8 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             It.IsAny<CancellationToken>()), Times.Once);
         ActivityFeedItemProvider.VerifyNoOtherCalls();
 
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
-        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
+        WoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id.Value, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         WoodlandOwnerService.VerifyNoOtherCalls();
 
         MockAgentAuthorityService.Verify(x => x.GetAgencyForWoodlandOwnerAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
@@ -552,6 +562,7 @@ public class GetSiteVisitSummaryAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
         MockAgentAuthorityService.VerifyNoOtherCalls();
 
         _foresterServices.Verify(x => x.GenerateImage_MultipleCompartmentsAsync(
+            fla.ApplicationReference,
             It.Is<List<InternalCompartmentDetails<BaseShape>>>(s => s.Single().CompartmentLabel == fellingCpt.CompartmentNumber && JsonConvert.SerializeObject(s.Single().ShapeGeometry) == serializedPolygon),
             It.IsAny<CancellationToken>(), 3000, MapGeneration.Other, ""), Times.Once);
 

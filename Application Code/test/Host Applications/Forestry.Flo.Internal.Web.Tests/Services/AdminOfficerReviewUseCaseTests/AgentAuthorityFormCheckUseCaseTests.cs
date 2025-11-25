@@ -23,6 +23,7 @@ using Moq;
 using NodaTime;
 using NodaTime.Testing;
 using System.Text.Json;
+using Forestry.Flo.Services.Common.Models;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AdminOfficerReviewUseCaseTests;
@@ -118,7 +119,7 @@ public class AgentAuthorityFormCheckUseCaseTests
         };
 
         _retrieveWoodlandOwnersMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
         _agentAuthorityInternalServiceMock.Setup(s =>
                 s.GetAgentAuthorityFormAsync(It.IsAny<GetAgentAuthorityFormRequest>(), It.IsAny<CancellationToken>()))
@@ -210,7 +211,7 @@ public class AgentAuthorityFormCheckUseCaseTests
 
         _agentAuthorityServiceMock.Verify(x => x.GetAgencyForWoodlandOwnerAsync(_fellingLicenceApplication.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _retrieveWoodlandOwnersMock.Verify(
-            v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, CancellationToken.None),
+            v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None),
             Times.Exactly(2));
         _agentAuthorityInternalServiceMock.Verify(v => v.GetAgentAuthorityFormAsync(
                 It.Is<GetAgentAuthorityFormRequest>(x => 
@@ -244,7 +245,7 @@ public class AgentAuthorityFormCheckUseCaseTests
         _fellingLicenceApplication = await CreateAndSaveAdminOfficerReviewApplicationAsync(FellingLicenceStatus.AdminOfficerReview);
 
         _retrieveWoodlandOwnersMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<WoodlandOwnerModel>("error"));
 
         var result = await _sut.GetAgentAuthorityFormCheckModelAsync(_fellingLicenceApplication.Id, CancellationToken.None);
@@ -252,7 +253,7 @@ public class AgentAuthorityFormCheckUseCaseTests
         Assert.True(result.IsFailure);
 
         _retrieveWoodlandOwnersMock.Verify(
-            v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, CancellationToken.None),
+            v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None),
             Times.Once);
         _agentAuthorityInternalServiceMock.VerifyNoOtherCalls();
     }
@@ -272,7 +273,7 @@ public class AgentAuthorityFormCheckUseCaseTests
         Assert.True(result.IsFailure);
         
         _retrieveWoodlandOwnersMock.Verify(
-            v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, CancellationToken.None),
+            v => v.RetrieveWoodlandOwnerByIdAsync(_fellingLicenceApplication.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None),
             Times.Once);
         _agentAuthorityInternalServiceMock.Verify(v => v.GetAgentAuthorityFormAsync(
                 It.Is<GetAgentAuthorityFormRequest>(x => 

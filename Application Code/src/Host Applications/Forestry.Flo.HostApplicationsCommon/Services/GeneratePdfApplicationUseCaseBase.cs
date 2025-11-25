@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using System.Globalization;
+using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.HostApplicationsCommon.Services;
 
@@ -103,7 +104,9 @@ public abstract class GeneratePdfApplicationUseCaseBase
             return Result.Failure<PDFGeneratorRequest>(userAccount.Error);
         }
 
-        var woodlandOwner = await _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken);
+        var userAccess = UserAccessModel.SystemUserAccessModel;
+
+        var woodlandOwner = await _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, userAccess, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             _logger.LogError("Unable to retrieve woodland owner of id {WoodlandOwnerId}, error: {Error}", application.WoodlandOwnerId, woodlandOwner.Error);
@@ -299,11 +302,11 @@ public abstract class GeneratePdfApplicationUseCaseBase
         // Part 3 - Supplementary point, *** this will need an update to match https://quicksilva.atlassian.net/browse/FLOV2-919
         string supplementPoints;
 
-        if (licenseDuration == RecommendedLicenceDuration.TenYear)
+        if (application.IsForTenYearLicence is true)
         {
-            var managementPlanText = propertyProfile.Value.WoodlandManagementPlanReference == null ? string.Empty : "Management Plan referenced ";
             supplementPoints =
-                $"This license is issued in summary relating to the {managementPlanText}{propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} and associated {propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} Final Plan of Ops and {propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} Final Maps. Full details of the felling and restocking conditions agreed under this licence can be found in the above mentioned Plan of Operations and maps that must be attached to this licence at all times.";
+                $"This licence is issued in summary relating to the Management Plan referenced {application.WoodlandManagementPlanReference ?? ""} " +
+                "and associated Plan of Operations and final maps. These must be attached to the licence at all times.";
         }
         else
         {
@@ -327,7 +330,8 @@ public abstract class GeneratePdfApplicationUseCaseBase
                     }).ToList();
 
 
-            var generatedMainFellingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(fellingCompartmentMap, cancellationToken, 3000);
+            var generatedMainFellingMap = await _iForesterServices
+                .GenerateImage_MultipleCompartmentsAsync(application.ApplicationReference, fellingCompartmentMap, cancellationToken, 3000);
             if (generatedMainFellingMap.IsFailure)
             {
                 _logger.LogError("Unable to retrieve Generated Map of application with id {ApplicationId}, error: {Error}", application.WoodlandOwnerId, generatedMainFellingMap.Error);
@@ -359,7 +363,8 @@ public abstract class GeneratePdfApplicationUseCaseBase
                         SubCompartmentNo = compartment.SubCompartmentName!
                     }).ToList();
 
-            var generatedMainRestockingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(restockingCompartmentsMaps, cancellationToken, 3000);
+            var generatedMainRestockingMap = await _iForesterServices
+                .GenerateImage_MultipleCompartmentsAsync(application.ApplicationReference, restockingCompartmentsMaps, cancellationToken, 3000);
             if (generatedMainRestockingMap.IsFailure)
             {
                 _logger.LogError("Unable to retrieve Generated Map of application with id {ApplicationId}, error: {error}", application.Id, generatedMainRestockingMap.Error);

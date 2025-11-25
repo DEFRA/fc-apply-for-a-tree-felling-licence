@@ -37,6 +37,7 @@ using InternalUserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAcc
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using RestockingSpecies = Forestry.Flo.Services.FellingLicenceApplications.Entities.RestockingSpecies;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
+using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services
 {
@@ -909,7 +910,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                 .ReturnsAsync(applicant);
 
             _woodlandOwnerServiceMock
-                .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(woodlandOwner);
 
             _internalAccountServiceMock
@@ -934,6 +935,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             _foresterAccessMock
                 .Setup(r => r.GenerateImage_MultipleCompartmentsAsync(
+                    It.IsAny<string>(),
                     It.IsAny<List<InternalCompartmentDetails<BaseShape>>>(), It.IsAny<CancellationToken>(),
                     It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
                 .ReturnsAsync(generatedMaps);

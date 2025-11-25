@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using Forestry.Flo.Services.Common.Models;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AdminOfficerReviewUseCaseTests;
@@ -93,7 +94,7 @@ public class MappingCheckUseCaseTests
         };
 
         _retrieveWoodlandOwnersMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _retrieveUserAccountsServiceMock.Setup(s =>

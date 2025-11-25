@@ -14,35 +14,52 @@
     <form method="post">
         <input type="hidden" asp-for="ApplicationId"/>
         <input type="hidden" asp-for="PublicRegisterAlreadyCompleted" />
-        
+
         @for (int i = 0; i < Model.SelectedDocumentIds.Count; i++)
         {
             <input id="selected-document-@i" type="hidden" asp-for="SelectedDocumentIds[i]" />
         }
-        
+
         <govuk-form-group asp-for="ConsulteeName">
             <label class="govuk-label" asp-for="ConsulteeName"></label>
             <validation asp-for="ConsulteeName"></validation>
             <input class="govuk-input govuk-input--width-20" type="text" asp-for="ConsulteeName">
         </govuk-form-group>
-        
+
         <govuk-form-group asp-for="Email">
             <label class="govuk-label" asp-for="Email"></label>
             <validation asp-for="Email"></validation>
             <input class="govuk-input govuk-input--width-20" type="text" asp-for="Email">
         </govuk-form-group>
-        
+
         <govuk-form-group asp-for="Purpose">
             <label class="govuk-label" asp-for="Purpose"></label>
             <validation asp-for="Purpose"></validation>
             <div class="govuk-radios" data-module="govuk-radios">
+                @{
+                    var firstOutput = true;
+                }
+
                 @foreach (ExternalConsulteeInvitePurpose value in Enum.GetValues(typeof(ExternalConsulteeInvitePurpose)))
                 {
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" asp-for="Purpose" type="radio" value="@value" aria-describedby="@value-hint" id="purpose-@value.ToString()">
-                        <label class="govuk-label govuk-radios__label" for="purpose-@value.ToString()">
-                            @value.GetDisplayName()
-                        </label>
+
+                        @if (firstOutput)
+                        {
+                            firstOutput = false;
+
+                            <input class="govuk-radios__input" asp-for="Purpose" type="radio" value="@value" aria-describedby="@value-hint">
+                            <label class="govuk-label govuk-radios__label" asp-for="Purpose">
+                                @value.GetDisplayName()
+                            </label>
+                        }
+                        else
+                        {
+                            <input class="govuk-radios__input" asp-for="Purpose" type="radio" value="@value" aria-describedby="@value-hint" id="purpose-@value.ToString()">
+                            <label class="govuk-label govuk-radios__label" for="purpose-@value.ToString()">
+                                @value.GetDisplayName()
+                            </label>
+                        }
                         <div id="@value-hint" class="govuk-hint govuk-radios__hint">
                             @value.GetDescription()
                         </div>
@@ -99,8 +116,8 @@
             <validation asp-for="ExemptFromConsultationPublicRegister"></validation>
             <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                 <div class="govuk-radios__item">
-                    <input class="govuk-radios__input" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="true" id="exempt-yes">
-                    <label class="govuk-label govuk-radios__label" for="exempt-yes">
+                    <input class="govuk-radios__input" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="true">
+                    <label class="govuk-label govuk-radios__label" asp-for="ExemptFromConsultationPublicRegister">
                         Yes
                     </label>
                 </div>

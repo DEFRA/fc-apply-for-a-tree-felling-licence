@@ -28,28 +28,54 @@
                 <validation asp-for="UserTypeModel.AccountType"></validation>
 
                 <div class="govuk-radios" data-module="govuk-radios">
+                    
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="UserTypeModel.AccountType" type="radio" value="@AccountType.Agent" condition-disabled="@Model.PageIsDisabled" aria-describedby="hint-agent">
 
-                    @foreach (AccountType value in Enum.GetValues(typeof(AccountType)))
-                    {
-                        @if (value == AccountType.FcUser)
-                        {
-                            continue;
-                        }
+                        <label class="govuk-label govuk-radios__label" asp-for="UserTypeModel.AccountType">
+                            @AccountType.Agent.GetDisplayName()
+                        </label>
 
-                        <div class="govuk-radios__item">
-
-                            <input class="govuk-radios__input" asp-for="UserTypeModel.AccountType" id="@value" type="radio" value="@value" condition-disabled="@Model.PageIsDisabled" aria-describedby="hint-@value">
-
-                            <label class="govuk-label govuk-radios__label" asp-for="UserTypeModel.AccountType" for="@value">
-                                @value.GetDisplayName()
-                            </label>
-
-                            <div class="govuk-hint govuk-radios__hint" id="hint-@value">
-                                @value.GetDescription()
-                            </div>
-
+                        <div class="govuk-hint govuk-radios__hint" id="hint-agent">
+                            @AccountType.Agent.GetDescription()
                         </div>
-                    }
+                    </div>
+                    
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="UserTypeModel.AccountType" type="radio" value="@AccountType.WoodlandOwner" condition-disabled="@Model.PageIsDisabled" aria-describedby="hint-owner" id="accounttype-owner">
+
+                        <label class="govuk-label govuk-radios__label" for="accounttype-owner">
+                            @AccountType.WoodlandOwner.GetDisplayName()
+                        </label>
+
+                        <div class="govuk-hint govuk-radios__hint" id="hint-owner">
+                            @AccountType.WoodlandOwner.GetDescription()
+                        </div>
+                    </div>
+                    
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="UserTypeModel.AccountType" type="radio" value="@AccountType.Tenant" condition-disabled="@Model.PageIsDisabled" aria-describedby="hint-tenant" id="accounttype-tenant">
+
+                        <label class="govuk-label govuk-radios__label" for="accounttype-tenant">
+                            @AccountType.Tenant.GetDisplayName()
+                        </label>
+
+                        <div class="govuk-hint govuk-radios__hint" id="hint-tenant">
+                            @AccountType.Tenant.GetDescription()
+                        </div>
+                    </div>
+                    
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="UserTypeModel.AccountType" type="radio" value="@AccountType.Trust" condition-disabled="@Model.PageIsDisabled" aria-describedby="hint-trust" id="accounttype-trust">
+
+                        <label class="govuk-label govuk-radios__label" for="accounttype-trust">
+                            @AccountType.Trust.GetDisplayName()
+                        </label>
+
+                        <div class="govuk-hint govuk-radios__hint" id="hint-trust">
+                            @AccountType.Trust.GetDescription()
+                        </div>
+                    </div>
 
                 </div>
 

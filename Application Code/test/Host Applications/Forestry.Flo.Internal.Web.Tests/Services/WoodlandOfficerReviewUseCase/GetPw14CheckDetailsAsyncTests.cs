@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Tests.Common;
@@ -86,7 +87,7 @@ public class GetPw14CheckDetailsAsyncTests : WoodlandOfficerReviewUseCaseTestsBa
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
         WoodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         ExternalUserAccountRepository

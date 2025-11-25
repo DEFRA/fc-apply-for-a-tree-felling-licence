@@ -208,6 +208,12 @@
                                     <a class="govuk-link" asp-action="ApplicationSummary" asp-controller="FellingLicenceApplication" asp-route-id="@assignedFellingLicenceApplicationModel.FellingLicenceApplicationId">
                                         @assignedFellingLicenceApplicationModel.Reference
                                     </a>
+                                    @if (!string.IsNullOrWhiteSpace(assignedFellingLicenceApplicationModel.PreviousReference))
+                                    {
+                                        <span>
+                                            (previously @assignedFellingLicenceApplicationModel.PreviousReference)
+                                        </span>
+                                    }
                                 </td>
 
                                 <td class="govuk-table__cell" style="width: @(14 + offset)%;">

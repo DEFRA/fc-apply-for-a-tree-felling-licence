@@ -442,10 +442,23 @@ public class WoodlandOfficerReviewControllerTests
             }
         };
 
+        var existingModel =
+            _fixture.Build<PublicRegisterViewModel>()
+                .With(x => x.PublicRegister)
+                .Create();
+        useCase.Setup(x => x.GetPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingModel);
+
         var result = await _controller.SaveExemption(model, useCase.Object, CancellationToken.None);
 
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("PublicRegister", redirect.ActionName);
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal("PublicRegister", view.ViewName);
+
+        Assert.False(view.ViewData.ModelState.IsValid);
+        Assert.Contains("PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason", view.ViewData.ModelState.Keys);
+
+        useCase.Verify(x => x.GetPublicRegisterDetailsAsync(_applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        useCase.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -499,13 +512,31 @@ public class WoodlandOfficerReviewControllerTests
         var model = new PublicRegisterViewModel
         {
             ApplicationId = _applicationId,
-            PublicRegister = new() { ConsultationPublicRegisterPeriodDays = null }
+            PublicRegister = new()
+            {
+                ConsultationPublicRegisterPeriodDays = null,
+                WoodlandOfficerSetAsExemptFromConsultationPublicRegister = false,
+                WoodlandOfficerConsultationPublicRegisterExemptionReason = null
+            }
         };
+
+        var existingModel =
+            _fixture.Build<PublicRegisterViewModel>()
+                .With(x => x.PublicRegister)
+                .Create();
+        useCase.Setup(x => x.GetPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingModel);
 
         var result = await _controller.PublishToConsultationPublicRegister(model, useCase.Object, CancellationToken.None);
 
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("PublicRegister", redirect.ActionName);
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal("PublicRegister", view.ViewName);
+
+        Assert.False(view.ViewData.ModelState.IsValid);
+        Assert.Contains("PublicRegister.ConsultationPublicRegisterPeriodDays", view.ViewData.ModelState.Keys);
+
+        useCase.Verify(x => x.GetPublicRegisterDetailsAsync(_applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        useCase.VerifyNoOtherCalls();
     }
 
     [Fact]

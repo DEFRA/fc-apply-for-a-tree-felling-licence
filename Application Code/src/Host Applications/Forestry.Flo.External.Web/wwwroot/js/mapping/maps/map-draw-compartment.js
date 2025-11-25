@@ -881,7 +881,7 @@ define([
                         if (that.isCutting) {
                             const list = that._drawingLayer.graphics.items.filter(i => i.geometry.type === 'polygon');
                             var result = geometryEngine.difference(list[0].geometry, evt.graphic.geometry);
-                            if (that._validateShapeUseCase.Execute(that.createWorkingComparment(result).shape, []) !== CheckingResult.Passed) {
+                            if (that._validateShapeUseCase.Execute(that.createWorkingComparment(result).shape, [], that.simplifyOperator) !== CheckingResult.Passed) {
                                 that.deleteGraphics(that._drawingLayer.graphics);
                                 that._drawingLayer.add(list[0]);
                                 that.ShowMessage("error", "Cutting will result in an invalid shape and had been canceled");

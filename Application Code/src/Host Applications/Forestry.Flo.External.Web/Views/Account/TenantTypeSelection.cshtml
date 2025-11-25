@@ -32,9 +32,9 @@
 
                     <div class="govuk-radios__item">
 
-                        @Html.RadioButtonFor(x => x.TenantType, TenantType.CrownLand, new { @class = "govuk-radios__input", @id = "crown-land-trust" })
+                        @Html.RadioButtonFor(x => x.TenantType, TenantType.CrownLand, new { @class = "govuk-radios__input" })
 
-                        <label class="govuk-label govuk-radios__label" for="crown-land-trust">
+                        <label class="govuk-label govuk-radios__label" asp-for="TenantType">
                             Yes
                         </label>
 
@@ -42,9 +42,9 @@
 
                     <div class="govuk-radios__item">
 
-                        @Html.RadioButtonFor(x => x.TenantType, TenantType.NonCrownLand, new { @class = "govuk-radios__input", @id = "non-crown-land-trust" })
+                        @Html.RadioButtonFor(x => x.TenantType, TenantType.NonCrownLand, new { @class = "govuk-radios__input", @id = "non-crown-land-tenant" })
 
-                        <label class="govuk-label govuk-radios__label" for="non-crown-land-trust">
+                        <label class="govuk-label govuk-radios__label" for="non-crown-land-tenant">
                             No
                         </label>
 

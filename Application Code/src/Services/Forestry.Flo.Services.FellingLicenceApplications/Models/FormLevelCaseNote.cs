@@ -33,5 +33,5 @@ public record FormLevelCaseNote
     /// <remarks>
     /// If you have multiple case note inputs on a single page, ensure each has a unique ID to prevent conflicts.
     /// </remarks>
-    public string CaseNoteInputElementId { get; init; } = "add-case-note-text";
+    public string CaseNoteInputElementId { get; init; } = "Text";
 }

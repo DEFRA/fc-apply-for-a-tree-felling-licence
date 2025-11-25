@@ -93,9 +93,9 @@
 
                     <div class="govuk-radios__item">
 
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-passed" asp-for="CheckPassed" type="radio" value="true" />
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" asp-for="CheckPassed" type="radio" value="true" />
 
-                        <label class="govuk-label govuk-radios__label" for="check-passed">
+                        <label class="govuk-label govuk-radios__label" asp-for="CheckPassed">
                             Yes, the mapping is correct
                         </label>
 

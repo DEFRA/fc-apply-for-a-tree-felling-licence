@@ -100,6 +100,7 @@ public class CompleteConfirmedFellingAndRestockingTests : WoodlandOfficerReviewU
             WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
             MockBus.Object,
+            FellingLicenceApplicationOptions,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

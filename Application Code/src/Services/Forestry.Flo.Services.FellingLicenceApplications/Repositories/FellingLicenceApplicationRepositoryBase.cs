@@ -179,4 +179,24 @@ public class FellingLicenceApplicationRepositoryBase : IFellingLicenceApplicatio
 
     /// <inheritdoc />
     public DbConnection GetDbConnection() => Context.Database.GetDbConnection();
+
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> UpdateDocumentVisibleToApplicantAsync(
+        Guid applicationId,
+        Guid documentId, 
+        bool visibleToApplicant,
+        CancellationToken cancellationToken)
+    {
+        var document = await Context.Documents
+           .SingleOrDefaultAsync(x => x.Id == documentId && x.FellingLicenceApplicationId == applicationId, cancellationToken)
+          .ConfigureAwait(false);
+
+        if (document is null)
+        {
+            return UserDbErrorReason.NotFound;
+        }
+
+        document.VisibleToApplicant = visibleToApplicant;
+        return await Context.SaveEntitiesAsync(cancellationToken);
+    }
 }

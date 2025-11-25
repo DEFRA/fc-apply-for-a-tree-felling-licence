@@ -41,7 +41,7 @@ public class ContactDetailsFormModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets and Sets a flag indicating whether the applicant is an organisation.
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "Select if the client is an organisation")]
     public bool? IsOrganisation { get; set; } = false;
 
     /// <summary>

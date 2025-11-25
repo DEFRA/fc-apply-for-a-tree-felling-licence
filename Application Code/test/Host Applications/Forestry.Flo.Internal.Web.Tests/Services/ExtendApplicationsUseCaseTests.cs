@@ -21,6 +21,7 @@ using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccount
 using UserAccountModel = Forestry.Flo.Services.InternalUsers.Models.UserAccountModel;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
+using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 
@@ -95,7 +96,7 @@ public class ExtendApplicationsUseCaseTests
             .ReturnsAsync(applicant);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
 
         _notificationsMock

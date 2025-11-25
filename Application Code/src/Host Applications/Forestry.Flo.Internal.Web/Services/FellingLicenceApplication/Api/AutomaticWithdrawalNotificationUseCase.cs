@@ -262,7 +262,7 @@ public class AutomaticWithdrawalNotificationUseCase(
                 cancellationToken);
 
         var (woodlandOwnerSuccess, _, woodlandOwner) =
-            await _woodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken);
+            await _woodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
 
         if (createdByUserFailure)
         {

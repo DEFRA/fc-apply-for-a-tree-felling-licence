@@ -1,21 +1,20 @@
 ﻿using CSharpFunctionalExtensions;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Extensions;
-using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
-using Forestry.Flo.Internal.Web.Models;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Forestry.Flo.Internal.Web.Services.Interfaces;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
@@ -113,9 +112,19 @@ public partial class WoodlandOfficerReviewController(
         if (model.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister 
             && string.IsNullOrWhiteSpace(model.PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason))
         {
-            this.AddErrorMessage("A reason must be provided when the application is exempt from the public register", nameof(model.PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason));
+            ModelState.Clear();
+            ModelState.AddModelError("PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason", "A reason must be provided when the application is exempt from the public register");
+            var reloadModel = await useCase.GetPublicRegisterDetailsAsync(model.ApplicationId, cancellationToken);
+            if (reloadModel.IsFailure)
+            {
+                return RedirectToAction("Error", "Home");
+            }
+            reloadModel.Value.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister
+                = model.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister;
+            reloadModel.Value.PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason
+                = model.PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason;
 
-            return RedirectToAction("PublicRegister", new { id = model.ApplicationId, withExemption = true });
+            return View(nameof(PublicRegister), reloadModel.Value);
         }
 
         var user = new InternalUser(User);
@@ -145,8 +154,22 @@ public partial class WoodlandOfficerReviewController(
     {
         if (model.PublicRegister?.ConsultationPublicRegisterPeriodDays.HasNoValue() ?? true)
         {
-            this.AddErrorMessage("The period for the application to be on the public register must be provided", nameof(model.PublicRegister.ConsultationPublicRegisterPeriodDays));
-            return RedirectToAction("PublicRegister", new { id = model.ApplicationId });
+            ModelState.Clear();
+            ModelState.AddModelError("PublicRegister.ConsultationPublicRegisterPeriodDays", "The period for the application to be on the public register must be provided");
+
+            var reloadModel = await useCase.GetPublicRegisterDetailsAsync(model.ApplicationId, cancellationToken);
+            if (reloadModel.IsFailure)
+            {
+                return RedirectToAction("Error", "Home");
+            }
+            reloadModel.Value.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister
+                = model.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister;
+            reloadModel.Value.PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason
+                = model.PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason;
+            reloadModel.Value.PublicRegister.ConsultationPublicRegisterPeriodDays
+                = model.PublicRegister.ConsultationPublicRegisterPeriodDays;
+
+            return View(nameof(PublicRegister), reloadModel.Value);
         }
 
         var user = new InternalUser(User);
