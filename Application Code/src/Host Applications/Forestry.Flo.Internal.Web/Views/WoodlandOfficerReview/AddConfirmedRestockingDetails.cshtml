@@ -74,46 +74,47 @@
 
         <div class="govuk-grid-column-one-half">
             <div class="govuk-body">
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingProposal">
                     <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingProposal">
                         Restocking operation type
                     </label>
+                    <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingProposal"></validation>
                     <select class="govuk-select"
                             asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingProposal"
                             asp-items=allowedRestocking>
                     </select>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group" id="@nameof(rd.RestockingCompartmentId)">
+                <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingCompartmentId" class="govuk-form-group" id="@nameof(rd.RestockingCompartmentId)">
                     <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingCompartmentId">
                         Alternative compartment to restock
                     </label>
+                    <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingCompartmentId"></validation>
                     <select class="govuk-select"
                             asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingCompartmentId"
-                            asp-items=selectListItems
-                            id="ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_RestockingCompartmentId">
+                            asp-items=selectListItems>
                     </select>
-                </div>
-                <input type="hidden" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingCompartmentNumber" id="ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_RestockingCompartmentNumber" />
+                </govuk-form-group>
 
-                <div class="govuk-form-group" id="@nameof(rd.RestockArea)">
+                <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockArea" id="@nameof(rd.RestockArea)">
                     <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockArea">
                         Estimated area to be restocked
                     </label>
-					<div id="area-to-be-felled-hint" class="govuk-hint">
+                    <div id="area-to-be-restocked-hint" class="govuk-hint">
                         The property profile has <span id="compartment-gross-size"></span> Ha as the gross size for this compartment.
-					</div>
-					<validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockArea"></validation>
+                    </div>
+                    <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockArea"></validation>
                     <div class="govuk-input__wrapper">
                         <input class="govuk-input govuk-input--width-5"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockArea"
                                type="number" step="0.01"
-                               aria-describedby="area-to-be-felled-hint"
+                               aria-describedby="area-to-be-restocked-hint"
                                value="@(rd.RestockArea)">
                         <div class="govuk-input__suffix" aria-hidden="true">ha</div>
                     </div>
-                </div>
-                <div class="govuk-form-group" id="@nameof(rd.PercentOpenSpace)">
+                </govuk-form-group>
+
+                <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace" id="@nameof(rd.PercentOpenSpace)">
                     <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace">
                         Estimated percentage of the area that will be restocked
                     </label>
@@ -122,13 +123,12 @@
                         <input class="govuk-input govuk-input--width-5 input-readonly" disabled="disabled" aria-readonly="true"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace"
                                type="number" step="0.01"
-                               aria-describedby="area-to-be-felled-hint"
                                value="@(initialTotalHectares > 0 ? Math.Round((rd.RestockArea ?? 0) / initialTotalHectares * 100, 2) : string.Empty)">
                         <div class="govuk-input__suffix" aria-hidden="true">%</div>
                     </div>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group" id="restocking-density-group">
+                <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingDensity" id="restocking-density-group">
                     <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingDensity">
                         Estimate of the restocking density
                     </label>
@@ -136,13 +136,12 @@
                     <div class="govuk-input__wrapper">
                         <input class="govuk-input govuk-input--width-5"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingDensity"
-                               type="number"
-                               aria-describedby="stems-per-ha">
+                               type="number">
                         <div class="govuk-input__suffix" aria-hidden="true">Stems per Ha</div>
                     </div>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group" id="number-of-trees-group">
+                <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.NumberOfTrees" id="number-of-trees-group">
                     <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.NumberOfTrees">
                         Estimated number of trees to be restocked
                     </label>
@@ -150,11 +149,10 @@
                     <div class="govuk-input__wrapper">
                         <input class="govuk-input govuk-input--width-10"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.NumberOfTrees"
-                               type="number"
-                               aria-describedby="stems-per-ha">
+                               type="number">
                         <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
                     </div>
-                </div>
+                </govuk-form-group>
 
                 @{
                     var viewData = new ViewDataDictionary(ViewData)
@@ -167,7 +165,7 @@
                     };
                 }
 
-                <div id="restocking-tree-species-selection-form-group" class="govuk-form-group">
+                <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies" id="restocking-tree-species-selection-form-group">
                     <input type="hidden" aria-hidden="true" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies" />
                     <label class="govuk-heading-m" for="restocking-tree-species-select">
                         What species of trees will be restocked?
@@ -177,18 +175,16 @@
                     </div>
                     <validation id="restocking-tree-species-error" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies"></validation>
                     <partial name="Partials/_TreeSpeciesSelection" model="@Model.Species" view-data="viewData" />
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group">
-                    <div class="govuk-button-group">
+                <div class="govuk-button-group">
 
-                        <button type="submit" class="govuk-button" data-module="govuk-button">
-                            Save
-                        </button>
+                    <button type="submit" class="govuk-button" data-module="govuk-button">
+                        Save
+                    </button>
 
-                        <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and return to the summary">Cancel</a>
+                    <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and return to the summary">Cancel</a>
 
-                    </div>
                 </div>
 
             </div>

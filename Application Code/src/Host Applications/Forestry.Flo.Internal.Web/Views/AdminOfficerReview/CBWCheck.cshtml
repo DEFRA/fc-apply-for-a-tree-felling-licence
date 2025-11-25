@@ -35,7 +35,7 @@
     <form id="admin-officer-review" method="post">
         <input asp-for="ApplicationId" />
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="CheckPassed">
             <fieldset class="govuk-fieldset" role="group">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
                     <h3 class="govuk-fieldset__heading">
@@ -46,10 +46,10 @@
                 </legend>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios" data-module="govuk-radios">
-                        <validation asp-for="@Model.CheckPassed"></validation>
+                        <validation asp-for="CheckPassed"></validation>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-passed" asp-for="CheckPassed" type="radio" value="true" />
-                            <label class="govuk-label govuk-radios__label" for="check-passed">
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" asp-for="CheckPassed" type="radio" value="true" />
+                            <label class="govuk-label govuk-radios__label" asp-for="CheckPassed">
                                 Yes
                             </label>
                             <div class="govuk-hint govuk-radios__hint">
@@ -68,7 +68,7 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         @Html.EditorFor(m => m.FormLevelCaseNote)
 

@@ -69,12 +69,16 @@ resource "kubernetes_deployment" "cloudflared" {
   }
 }
 
-data "cloudflare_zone" "zone" {
+data "cloudflare_zone" "zone-devTest" {
+  name = "ps.conneqt.cloud"
+}
+
+data "cloudflare_zone" "zone-production" {
   name = "tree-felling.forestrycommission.gov.uk"
 }
 
 resource "cloudflare_zone_settings_override" "zone" {
-  zone_id = data.cloudflare_zone.zone.id
+  zone_id = data.cloudflare_zone.zone-production.id
   settings {
     ssl             = "strict"
     min_tls_version = "1.2"

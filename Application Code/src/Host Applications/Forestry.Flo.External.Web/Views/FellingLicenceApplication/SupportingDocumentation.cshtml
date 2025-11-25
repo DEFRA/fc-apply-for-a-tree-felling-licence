@@ -80,48 +80,43 @@
         }
         else
         {
-            <form method="post" asp-action="RemoveSupportingDocumentation" id="documentListForm">
-                <input asp-for="@Model.ApplicationId">
-                <input type="hidden" asp-for="@Model.ReturnToApplicationSummary">
-                <input type="hidden" name="documentIdentifier"/>
-                <table class="govuk-table" data-module="moj-sortable-table" id="documentation-list-table">
-                    <thead class="govuk-table__head">
-                        <tr class="govuk-table__row">
-                            <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
-                            <th scope="col" class="govuk-table__header" aria-sort="none">Category</th>
-                            <th scope="col" class="govuk-table__header" aria-sort="descending">Upload Date</th>
-                            <th scope="col" class="govuk-table__header">Actions</th>
+            <table class="govuk-table" data-module="moj-sortable-table" id="documentation-list-table">
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Category</th>
+                        <th scope="col" class="govuk-table__header" aria-sort="descending">Upload Date</th>
+                        <th scope="col" class="govuk-table__header">Actions</th>
+                    </tr>
+                </thead>
+                <tbody data-module="moj-sortable-table" class="govuk-table__body">
+                    @foreach (var document in sortedDocuments)
+                    {
+                        var userCanDelete = document.AttachedByType is ActorType.ExternalApplicant && document.DocumentPurpose is DocumentPurpose.Attachment;
+
+                        <tr class="govuk-table__row" data-id="@document.Id">
+                            <td class="govuk-table__cell wrapped-text">
+                                <a
+                                    class="hidden-download-supporting-document"
+                                    asp-controller="FellingLicenceApplication"
+                                    asp-action="DownloadSupportingDocument"
+                                    asp-route-applicationId="@Model.ApplicationId"
+                                    asp-route-documentIdentifier="@document.Id">
+                                    @document.FileName
+                                </a>
+                            </td>
+                            
+                            <td class="govuk-table__cell" data-sort-value="@document.DocumentPurpose.GetDisplayName()">@document.DocumentPurpose.GetDisplayName()</td>
+
+                            <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">@DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)</td>
+
+                            <td class="govuk-table__cell">
+                                <a condition="@userCanDelete" class="govuk-link" asp-action="RemoveSupportingDocumentation" asp-route-documentIdentifier="@document.Id" asp-route-applicationId="@Model.ApplicationId" asp-route-returnToApplicationSummary="@Model.ReturnToApplicationSummary" data-module="govuk-button">Remove</a>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody data-module="moj-sortable-table" class="govuk-table__body">
-                        @foreach (var document in sortedDocuments)
-                        {
-                            var userCanDelete = document.AttachedByType is ActorType.ExternalApplicant && document.DocumentPurpose is DocumentPurpose.Attachment;
-
-                            <tr class="govuk-table__row" data-id="@document.Id">
-                                <td class="govuk-table__cell wrapped-text">
-                                    <a
-                                        class="hidden-download-supporting-document"
-                                        asp-controller="FellingLicenceApplication"
-                                        asp-action="DownloadSupportingDocument"
-                                        asp-route-applicationId="@Model.ApplicationId"
-                                        asp-route-documentIdentifier="@document.Id">
-                                        @document.FileName
-                                    </a>
-                                </td>
-                                
-                                <td class="govuk-table__cell" data-sort-value="@document.DocumentPurpose.GetDisplayName()">@document.DocumentPurpose.GetDisplayName()</td>
-
-                                <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">@DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)</td>
-
-                                <td class="govuk-table__cell">
-                                    <input condition="@userCanDelete" type="submit" class="govuk-button govuk-button--warning" data-id="@document.Id" data-module="govuk-button" name="delete-supporting-document" value="Remove" />
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </form>
+                    }
+                </tbody>
+            </table>
         }
     </div>
     <div>
@@ -129,7 +124,7 @@
             <input type="hidden" asp-for="ReturnToApplicationSummary" />
             @Html.HiddenFor(x => x.ApplicationId)
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="StepComplete">
                 <fieldset class="govuk-fieldset govuk-!-margin-top-4 govuk-!-margin-bottom-4">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         Have you uploaded all the supporting documents associated with this application?
@@ -137,29 +132,27 @@
                     <validation asp-for="StepComplete"></validation>
                     <div class="govuk-radios govuk-!-margin-top-2" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            @Html.RadioButtonFor(x => x.StepComplete,true,new { @class = "govuk-radios__input",  @id="radio-complete-yes"  })
-                            <label class="govuk-label govuk-radios__label" for="radio-complete-yes">
+                            @Html.RadioButtonFor(x => x.StepComplete, true, new { @class = "govuk-radios__input" })
+                            <label class="govuk-label govuk-radios__label" asp-for="StepComplete">
                                 Yes, I have uploaded everything I need to submit this application
                             </label>
                         </div>
                     </div>
                     <div class="govuk-radios govuk-!-margin-top-2" data-module="govuk-radios">
                         <div class="govuk-radios__item ">
-                            @Html.RadioButtonFor(x => x.StepComplete,false,new { @class = "govuk-radios__input",  @id="radio-complete-no" })
+                            @Html.RadioButtonFor(x => x.StepComplete, false, new { @class = "govuk-radios__input",  @id="radio-complete-no" })
                             <label class="govuk-label govuk-radios__label" for="radio-complete-no">
                                 No, I still need to upload some documents
                             </label>
                         </div>
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
-                    <button class="govuk-button" type="submit" data-module="govuk-button">
-                        Continue
-                    </button>
-                </div>
+            <div class="govuk-button-group">
+                <button class="govuk-button" type="submit" data-module="govuk-button">
+                    Continue
+                </button>
             </div>
         </form>
     </div>

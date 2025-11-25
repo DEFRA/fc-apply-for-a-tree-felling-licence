@@ -3,8 +3,6 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.FileStorage.Configuration;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Forestry.Flo.Services.Gis.Models.Internal.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -39,7 +37,7 @@ namespace Forestry.Flo.External.Web.Controllers.Api
             var supportedFileTypes = mapping.GetSupportedFileTypes();
             if (supportedFileTypes.HasValue)
             {
-                return Ok(new { supportedFileTypes= supportedFileTypes.Value, maxSize = (new UserFileUploadOptions()).MaxFileSizeBytes});
+                return Ok(new { supportedFileTypes= supportedFileTypes.Value, maxSize = (new UserFileUploadOptions()).ServerMaxUploadSizeBytes});
             }
 
             return BadRequest("Unable to load file types");

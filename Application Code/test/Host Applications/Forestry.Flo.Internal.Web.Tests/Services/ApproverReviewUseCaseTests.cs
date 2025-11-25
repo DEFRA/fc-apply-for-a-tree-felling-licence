@@ -6,6 +6,7 @@ using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
@@ -106,7 +107,7 @@ public class ApproverReviewUseCaseTests
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         _woodlandOwnerService
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), cancellationToken))
             .ReturnsAsync(Result.Failure<WoodlandOwnerModel>("Error"));
 
         // Act

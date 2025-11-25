@@ -109,13 +109,19 @@
                 <tr class="govuk-table__row">
                     <th scope="row" class="govuk-table__header">@property.Name</th>
                     <td class="govuk-table__cell">@property.NoOfCompartments</td>
-                    <td class="govuk-table__cell margin-right-seperate">
-                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="Edit" asp-route-id="@property.PropertyId" asp-route-woodlandOwnerId="@Model.ManageWoodlandOwnerDetails.Id" asp-route-agencyId="@Model.AgencyId">
-                            Manage
-                        </a>
-                        <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="SelectWoodland" asp-route-woodlandOwnerId="@Model.ManageWoodlandOwnerDetails.Id" asp-route-agencyId="@Model.AgencyId" asp-route-propertyId="@property.PropertyId" asp-route-agencySourcePage="ClientProperty">
-                            Start new licence application
-                        </a>
+                    <td class="govuk-table__cell">
+                        <ul class="govuk-summary-list__actions-list">
+                            <li class="govuk-summary-list__actions-list-item">
+                                <a class="govuk-link" asp-controller="PropertyProfile" asp-action="Edit" asp-route-id="@property.PropertyId" asp-route-woodlandOwnerId="@Model.ManageWoodlandOwnerDetails.Id" asp-route-agencyId="@Model.AgencyId">
+                                    Manage
+                                </a>
+                            </li>
+                            <li class="govuk-summary-list__actions-list-item">
+                                <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="SelectWoodland" asp-route-woodlandOwnerId="@Model.ManageWoodlandOwnerDetails.Id" asp-route-agencyId="@Model.AgencyId" asp-route-propertyId="@property.PropertyId" asp-route-agencySourcePage="ClientProperty">
+                                    Start new licence application
+                                </a>
+                            </li>
+                        </ul>
                     </td>
                 </tr>
             }

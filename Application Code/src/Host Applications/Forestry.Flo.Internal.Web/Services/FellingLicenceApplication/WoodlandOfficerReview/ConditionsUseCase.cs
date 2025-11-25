@@ -9,6 +9,7 @@ using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -279,7 +280,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
             return Result.Failure(applicant.Error.ToString());
         }
 
-        var woodlandOwner = await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(getDetails.Value.WoodlandOwnerId, cancellationToken);
+        var woodlandOwner = await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(getDetails.Value.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             _logger.LogError("Could not retrieve woodland owner details to send the conditions for application with id {ApplicationId} to the applicant", applicationId);

@@ -1,17 +1,6 @@
 ﻿$(function () {
-         
-    document.getElementsByName('delete-supporting-document').forEach(e => {
-        e.addEventListener('click', function (e) {
-            $('input[name=documentIdentifier]').val(e.target.dataset.id);
-        });
-    })
-});
-
-$(function () {
     $(document).ready(function () {
         $('#submit-supporting-document-button').attr('disabled', 'disabled');
-
-        $('.govuk-error-summary a[href="#StepComplete"]').attr('href', '#radio-complete-yes');
     });
 
     $('#supporting-documentation-files').change(function (e) {

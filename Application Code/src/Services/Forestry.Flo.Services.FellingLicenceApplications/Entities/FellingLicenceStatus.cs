@@ -38,6 +38,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         AdminOfficerReview,
 
         [DisplayNames("LA referral", "In consultation")]
-        ReferredToLocalAuthority
+        ReferredToLocalAuthority,
+
+        [DisplayNames("Approved (error)", "Approved (error)")]
+        ApprovedInError,
     }
 }

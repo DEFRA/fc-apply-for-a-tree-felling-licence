@@ -5,6 +5,7 @@ using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Services;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -68,7 +69,7 @@ public abstract class FellingLicenceApplicationUseCaseBase
         Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication fla,
         CancellationToken cancellationToken)
     {
-        var woodlandOwner = await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, cancellationToken);
+        var woodlandOwner = await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             return Result.Failure<FellingLicenceApplicationSummaryModel>(
@@ -118,7 +119,8 @@ public abstract class FellingLicenceApplicationUseCaseBase
             AreaCode = fla.AreaCode,
             AdministrativeRegion = fla.AdministrativeRegion,
             CreatedById = fla.CreatedById,
-            WoodlandOfficerReviewSubStatuses = WoodlandOfficerReviewSubStatusService.GetCurrentSubStatuses(fla)
+            WoodlandOfficerReviewSubStatuses = WoodlandOfficerReviewSubStatusService.GetCurrentSubStatuses(fla),
+            IsForTenYearLicence = fla.IsForTenYearLicence is true
         };
         return Result.Success(applicationSummary);
     }

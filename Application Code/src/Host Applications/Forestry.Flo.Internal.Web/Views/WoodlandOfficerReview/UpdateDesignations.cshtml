@@ -8,12 +8,6 @@
     var saveButtonText = Model.NextCompartmentId.HasValue
         ? "Save and continue to next compartment"
         : "Save and return to designations";
-
-    var divClass = "govuk-form-group";
-    if (ViewData.ModelState.ContainsKey("CompartmentDesignations"))
-    {
-        divClass += " govuk-form-group--error";
-    }
 }
 
 <partial name="Partials/_ConfirmationMessageDisplay" />
@@ -33,7 +27,7 @@
         <input asp-for="NextCompartmentId" />
         <input type="hidden" asp-for="CompartmentDesignations.CompartmentName"/>
 
-        <div class="@divClass" id="CompartmentDesignations">
+        <govuk-form-group asp-for="CompartmentDesignations" id="CompartmentDesignations">
             <fieldset class="govuk-fieldset" aria-describedby="designations-hint">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                     <h2 class="govuk-fieldset__heading">
@@ -103,16 +97,14 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
         
         <div class="govuk-hint">
             Saving this compartment will make it @(Model.CompartmentDesignations.Id.HasValue ? Model.CompartmentsReviewed : Model.CompartmentsReviewed + 1) of @Model.TotalCompartments reviewed
         </div>
-        <div class="govuk-form-group">
-            <div class="govuk-button-group">
-                <button id="submit-button" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">@saveButtonText</button>
-                <a asp-action="ViewDesignations" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to designations</a>
-            </div>
+        <div class="govuk-button-group">
+            <button id="submit-button" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">@saveButtonText</button>
+            <a asp-action="ViewDesignations" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to designations</a>
         </div>
     </form>
 

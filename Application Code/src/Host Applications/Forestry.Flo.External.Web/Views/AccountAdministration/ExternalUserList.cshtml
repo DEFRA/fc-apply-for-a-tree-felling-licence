@@ -3,6 +3,8 @@
     Layout = "_Layout";
     ViewData.ManuallySetBackLink(Model.ReturnUrl);
     ViewData.ShowBackLink();
+
+    var currentUser = new ExternalApplicant(User);
 }
 
 @using Forestry.Flo.External.Web.Infrastructure
@@ -25,10 +27,11 @@
             <th scope="col" class="govuk-table__header">Name</th>
             <th scope="col" class="govuk-table__header">Email</th>
             <th scope="col" class="govuk-table__header">Account Type</th>
+            <th scope="col" class="govuk-table__header">Actions</th>
         </tr>
         </thead>
         <tbody class="govuk-table__body">
-        @foreach (var user in Model.ExternalUserList)
+        @foreach (var user in Model.ExternalUserList ?? [])
         {
             var username = $"{user.FirstName} {user.LastName}";
 
@@ -36,33 +39,12 @@
                 <td class="govuk-table__cell" data-order="@username">@username</td>
                 <td class="govuk-table__cell" data-order="@user.Email">@user.Email</td>
                 <td class="govuk-table__cell" data-order="@user.AccountType.GetDisplayName()">@user.AccountType.GetDisplayName()</td>
+                <td class="govuk-table__cell"><a condition="@(user.UserAccountId != currentUser.UserAccountId.Value)" class="govuk-link" asp-action="AmendExternalUserAccount" asp-route-userId="@user.UserAccountId">Amend<span class="govuk-visually-hidden">&nbsp;@user.FirstName @user.LastName</span></a></td>
             </tr>
         }
         </tbody>
     </table>
 
-</div>
-
-<div class="govuk-grid-column-two-thirds">
-    <form method="post">
-        <div class="govuk-form-group govuk-visually-hidden">
-            <input asp-for="@Model.ReturnUrl"/>
-            <input id="selected-user-id" asp-for="@Model.SelectedUserAccountId">
-        </div>
-
-        <div class="govuk-form-group">
-            <div class="govuk-button-group">
-
-                <button asp-action="AmendUserAccount" id="amend-submit" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                    Amend
-                </button>
-                @* close account logic not developed yet *@
-                <button condition="@false" id="close-submit" data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">
-                    Close
-                </button>
-            </div>
-        </div>
-    </form>
 </div>
 
 @section Scripts

@@ -11,7 +11,7 @@
 
     <form method="post">
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="OrganisationStatus">
 
             <fieldset class="govuk-fieldset">
 
@@ -21,12 +21,12 @@
                     </h1>
                 </legend>
 
-                <validation asp-for="@Model.OrganisationStatus"></validation>
+                <validation asp-for="OrganisationStatus"></validation>
                 
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input", @id = "individual-agent" })
-                        <label class="govuk-label govuk-radios__label" for="individual-agent">
+                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input" })
+                        <label class="govuk-label govuk-radios__label" asp-for="OrganisationStatus">
                             Individual
                         </label>
                         <div class="govuk-hint govuk-radios__hint">
@@ -46,20 +46,15 @@
                 </div>
             </fieldset>
 
+        </govuk-form-group>
+
+        <div class="govuk-button-group">
+
+            <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                @(new ExternalApplicant(User).HasCompletedAccountRegistration == false ? "Continue" : "Save changes")
+            </button>
+
         </div>
-
-            <div class="govuk-form-group">
-
-                <div class="govuk-button-group">
-
-                    <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                        @(new ExternalApplicant(User).HasCompletedAccountRegistration == false ? "Continue" : "Save changes")
-                    </button>
-
-                </div>
-
-            </div>
-
 
     </form>
 

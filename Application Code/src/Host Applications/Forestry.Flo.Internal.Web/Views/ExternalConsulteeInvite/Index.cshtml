@@ -28,25 +28,26 @@
             <input type="hidden" asp-for="ApplicationNeedsConsultations"/>
         }
         
-        <div class="govuk-body govuk-!-padding-bottom-5">
+        <govuk-form-group asp-for="ApplicationNeedsConsultations" class="govuk-!-padding-bottom-5">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend-m">
                     <h2 class="govuk-fieldset__heading">Does this application need consultation?</h2>
                 </legend>
+                <validation asp-for="ApplicationNeedsConsultations"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@disableRadios" class="govuk-radios__input" id="consultation-needed-yes" asp-for="ApplicationNeedsConsultations" value="true" type="radio" />
-                        <label class="govuk-label govuk-radios__label" for="consultation-needed-yes">Yes</label>
+                        <input condition-disabled="@disableRadios" class="govuk-radios__input" asp-for="ApplicationNeedsConsultations" value="true" type="radio"/>
+                        <label class="govuk-label govuk-radios__label" asp-for="ApplicationNeedsConsultations">Yes</label>
                     </div>
                 </div>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@disableRadios" class="govuk-radios__input" id="consultation-needed-no" asp-for="ApplicationNeedsConsultations" value="false" type="radio" />
+                        <input condition-disabled="@disableRadios" class="govuk-radios__input" id="consultation-needed-no" asp-for="ApplicationNeedsConsultations" value="false" type="radio"/>
                         <label class="govuk-label govuk-radios__label" for="consultation-needed-no">No</label>
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         @if (latestExpiry.HasValue && latestExpiry.Value > Model.CurrentDateTimeUtc)
         {

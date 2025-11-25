@@ -42,20 +42,20 @@
                     Tell us anything you'd like us to consider. Do not include personal or sensitive information.
                 </div>
 
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="AuthorName">
                     <label class="govuk-label" asp-for="AuthorName"></label>
                     <validation asp-for="AuthorName"/>
                     <input class="govuk-input" asp-for="AuthorName"/>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="Comment">
                     <label class="govuk-label" asp-for="Comment"></label>
                     <validation asp-for="Comment"/>
                     <textarea id="Comment" class="govuk-textarea govuk-js-character-count" rows="4" asp-for="Comment"></textarea>
                     <div class="govuk-hint govuk-character-count__message">
                         You can enter up to @DataValueConstants.ConsulteeCommentMaxLength characters
                     </div>
-                </div>
+                </govuk-form-group>
 
                 <div class="govuk-form-group" id="file-select-group">
                     <label for="supporting-documentation-files" class="govuk-label">Upload a file</label>

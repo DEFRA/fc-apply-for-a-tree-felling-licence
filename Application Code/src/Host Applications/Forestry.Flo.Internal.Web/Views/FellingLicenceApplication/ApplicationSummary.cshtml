@@ -95,8 +95,15 @@
 
     <partial name="Partials/_FellingLicenceApplicationInfoTabs" model="@Model"/>
 
-
 </div>
+
+<require-user-account-type required-account-type="AccountAdministrator">
+    <a condition="@(Model.FellingLicenceApplicationSummary.Status == FellingLicenceStatus.Approved)" class="govuk-button govuk-button--warning" 
+        data-module="govuk-button" asp-controller="ApprovedInError" asp-action="Index" asp-route-id="@Model.Id">
+        Mark as approved in error
+    </a>
+</require-user-account-type>
+
 <div class="modal" id="modal">
     <div class="modal-bg modal-exit"></div>
     <div class="modal-container">

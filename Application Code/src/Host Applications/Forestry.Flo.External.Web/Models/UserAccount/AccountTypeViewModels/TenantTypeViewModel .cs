@@ -10,6 +10,6 @@ public class TenantTypeViewModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets and Sets the type of tenant.
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "Select if you are a tenant on crown land")]
     public TenantType? TenantType { get; set; }
 }

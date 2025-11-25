@@ -6,7 +6,7 @@
 }
 <div class="govuk-grid-column-two-thirds">
     <form method="post">
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="ImportShapes">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
@@ -16,24 +16,24 @@
 
                 <input type="hidden" asp-for="AgencyId"/>
 
-                <validation asp-for="@Model.ImportShapes"></validation>
+                <validation asp-for="ImportShapes"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" asp-for="@Model.ImportShapes" id="true" type="radio" value="true">
-                        <label class="govuk-label govuk-radios__label" asp-for="@Model.ImportShapes" for="true">
+                        <input class="govuk-radios__input" asp-for="ImportShapes" type="radio" value="true">
+                        <label class="govuk-label govuk-radios__label" asp-for="ImportShapes">
                             Yes, I want to import shapefiles
                         </label>
                     </div>
 
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" asp-for="@Model.ImportShapes" id="false" type="radio" value="false">
-                        <label class="govuk-label govuk-radios__label" asp-for="@Model.ImportShapes" for="false">
+                        <input class="govuk-radios__input" asp-for="ImportShapes" id="import-false" type="radio" value="false">
+                        <label class="govuk-label govuk-radios__label" asp-for="ImportShapes" for="import-false">
                             No, I do not want to import shapefiles
                         </label>
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
         <div class="govuk-form-group">
             <div class="govuk-button-group">
                 <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">

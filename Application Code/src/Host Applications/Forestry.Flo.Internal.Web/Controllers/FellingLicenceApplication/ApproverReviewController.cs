@@ -62,13 +62,20 @@ public class ApproverReviewController : Controller
                 new(model.Value.FellingLicenceApplicationSummary!.ApplicationReference, "FellingLicenceApplication", "ApplicationSummary", id.ToString())
             }
         };
-        
-        // Restore decision from TempData if available
-        if (TempData.TryGetValue("Decision", out var decisionObj) && bool.TryParse(decisionObj?.ToString(), out var decision))
+
+        if (model.Value.FellingLicenceApplicationSummary.Status == FellingLicenceStatus.Approved)
         {
-            _logger.LogDebug("Retrieving decision from TempData, value: {Decision}", decision);
-            model.Value.Decision = decision;
-            TempData.Keep("Decision");
+            model.Value.Decision = true;
+        }
+        else
+        {
+            // Restore decision from TempData if available
+            if (TempData.TryGetValue("Decision", out var decisionObj) && bool.TryParse(decisionObj?.ToString(), out var decision))
+            {
+                _logger.LogDebug("Retrieving decision from TempData, value: {Decision}", decision);
+                model.Value.Decision = decision;
+                TempData.Keep("Decision");
+            }
         }
 
         return View(model.Value);

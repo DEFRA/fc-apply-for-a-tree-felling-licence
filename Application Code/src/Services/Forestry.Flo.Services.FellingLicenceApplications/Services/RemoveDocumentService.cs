@@ -94,13 +94,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             if (documentMaybe.HasNoValue)
             {
                 _logger.LogWarning("Could not find a document with id of [{DocumentIdentifier}] in application with id [{ApplicationId}]", documentIdentifier, applicationId);
-                return await HandleFileRemovalFailureAsync(
-                    userAccountId,
-                    applicationId,
-                    documentIdentifier,
-                    null,
-                    "Document not found",
-                    cancellationToken);
+                // deletes are idempotent, calling delete again for the same id should be successful no-op
+                return Result.Success();
             }
 
             var document = documentMaybe.Value;
@@ -237,6 +232,61 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
             return Result.Success();
         }
 
+        /// <summary>
+        /// Hides a document from the applicant's view without removing it.
+        /// </summary>
+        /// <param name="applicationId">The ID of the application containing the document.</param>
+        /// <param name="documentId">The ID of the document to hide.</param>
+        /// <param name="userAccountId">The ID of the user performing the action.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A Result indicating success or failure.</returns>
+        public async Task<Result> HideDocumentFromApplicantAsync(
+            Guid applicationId,
+            Guid documentId,
+            Guid userAccountId,
+            CancellationToken cancellationToken)
+        {
+            var documentMaybe = await _fellingLicenceApplicationRepository.GetDocumentByIdAsync(applicationId, documentId, cancellationToken);
+
+            if (documentMaybe.HasNoValue)
+            {
+                _logger.LogWarning("Could not find a document with id of [{DocumentIdentifier}] in application with id [{ApplicationId}]", documentId, applicationId);
+                return Result.Failure("Document not found");
+            }
+
+            var document = documentMaybe.Value;
+
+            var result = await _fellingLicenceApplicationRepository.UpdateDocumentVisibleToApplicantAsync(
+                applicationId,
+                documentId,
+                false,
+                cancellationToken);
+
+            if (result.IsFailure)
+            {
+                _logger.LogWarning(
+                    "Unable to update document visibility for document [{Id}], received error [{Error}].",
+                    documentId, result.Error);
+
+                return Result.Failure("Could not update document visibility");
+            }
+
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.HideFellingLicenceDocumentEvent,
+                applicationId,
+                userAccountId,
+                _requestContext,
+                new
+                {
+                    documentId = document.Id,
+                    document.Purpose,
+                    document.FileName,
+                    document.Location
+                }
+            ), cancellationToken);
+
+            return Result.Success();
+        }
 
         private async Task HandleFileRemovedSuccessfullyAsync(
             Guid? userAccountId,

@@ -84,12 +84,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
 
-            _auditService.Verify(s =>
-                s.PublishAuditEventAsync(It.Is<AuditEvent>(
-                        e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent),
-                    It.IsAny<CancellationToken>()), Times.Once);
+            _auditService.VerifyNoOtherCalls();
 
-            Assert.True(result.IsFailure);
+            Assert.True(result.IsSuccess);
         }
 
 
@@ -218,12 +215,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
 
-            _auditService.Verify(s =>
-                s.PublishAuditEventAsync(It.Is<AuditEvent>(
-                        e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent),
-                    It.IsAny<CancellationToken>()), Times.Once);
+            _auditService.VerifyNoOtherCalls();
 
-            Assert.True(result.IsFailure);
+            Assert.True(result.IsSuccess);
         }
 
         [Theory, AutoMoqData]
@@ -267,12 +261,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             _fellingLicenceApplicationInternalRepository.VerifyNoOtherCalls();
 
-            _auditService.Verify(s =>
-                s.PublishAuditEventAsync(It.Is<AuditEvent>(
-                        e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent),
-                It.IsAny<CancellationToken>()), Times.Once);
+            _auditService.VerifyNoOtherCalls();
 
-            Assert.True(result.IsFailure);
+            Assert.True(result.IsSuccess);
         }
 
         [Theory, AutoMoqData]
@@ -732,5 +723,186 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 _clock.Object,
                 new NullLogger<RemoveDocumentService>());
         }
+
+        #region HideDocumentFromApplicantAsync Tests
+
+        [Theory, AutoMoqData]
+        public async Task HideDocumentFromApplicantAsync_WhenDocumentNotFound_ReturnsFailure(
+            Guid applicationId,
+         Guid documentId,
+            Guid userAccountId)
+        {
+       //arrange
+        var sut = CreateSut();
+
+   _fellingLicenceApplicationRepository
+            .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+   .ReturnsAsync(Maybe<Document>.None);
+
+     //act
+            var result = await sut.HideDocumentFromApplicantAsync(
+      applicationId,
+       documentId,
+                userAccountId,
+    CancellationToken.None);
+
+        //assert
+   Assert.True(result.IsFailure);
+            Assert.Equal("Document not found", result.Error);
+
+   _fellingLicenceApplicationRepository
+    .Verify(r => r.GetDocumentByIdAsync(applicationId, documentId, CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository
+     .Verify(r => r.UpdateDocumentVisibleToApplicantAsync(
+         It.IsAny<Guid>(), 
+         It.IsAny<Guid>(), 
+        It.IsAny<bool>(), 
+           It.IsAny<CancellationToken>()), Times.Never);
+
+  _auditService.Verify(s =>
+      s.PublishAuditEventAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Theory, AutoMoqData]
+   public async Task HideDocumentFromApplicantAsync_WhenUpdateFails_ReturnsFailure(Document document)
+      {
+     //arrange
+            var sut = CreateSut();
+     var userAccountId = Guid.NewGuid();
+
+            _fellingLicenceApplicationRepository
+      .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(document);
+
+       _fellingLicenceApplicationRepository
+   .Setup(r => r.UpdateDocumentVisibleToApplicantAsync(
+        It.IsAny<Guid>(),
+         It.IsAny<Guid>(),
+         It.IsAny<bool>(),
+          It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Failure<UserDbErrorReason>(UserDbErrorReason.General));
+
+            //act
+    var result = await sut.HideDocumentFromApplicantAsync(
+ document.FellingLicenceApplicationId,
+    document.Id,
+              userAccountId,
+ CancellationToken.None);
+
+     //assert
+ Assert.True(result.IsFailure);
+            Assert.Equal("Could not update document visibility", result.Error);
+
+  _fellingLicenceApplicationRepository
+      .Verify(r => r.GetDocumentByIdAsync(
+     document.FellingLicenceApplicationId, 
+          document.Id, 
+              CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository
+           .Verify(r => r.UpdateDocumentVisibleToApplicantAsync(
+      document.FellingLicenceApplicationId,
+           document.Id,
+     false,
+   CancellationToken.None), Times.Once);
+
+       _auditService.Verify(s =>
+ s.PublishAuditEventAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+     }
+
+        [Theory, AutoMoqData]
+        public async Task HideDocumentFromApplicantAsync_WhenSuccessful_UpdatesVisibilityAndPublishesAuditEvent(Document document)
+        {
+  //arrange
+            var sut = CreateSut();
+        var userAccountId = Guid.NewGuid();
+
+    _fellingLicenceApplicationRepository
+      .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+      .ReturnsAsync(document);
+
+            _fellingLicenceApplicationRepository
+       .Setup(r => r.UpdateDocumentVisibleToApplicantAsync(
+         It.IsAny<Guid>(),
+         It.IsAny<Guid>(),
+     It.IsAny<bool>(),
+  It.IsAny<CancellationToken>()))
+             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+     //act
+    var result = await sut.HideDocumentFromApplicantAsync(
+        document.FellingLicenceApplicationId,
+         document.Id,
+                userAccountId,
+                CancellationToken.None);
+
+    //assert
+            Assert.True(result.IsSuccess);
+
+     _fellingLicenceApplicationRepository
+   .Verify(r => r.GetDocumentByIdAsync(
+    document.FellingLicenceApplicationId,
+    document.Id,
+              CancellationToken.None), Times.Once);
+            _fellingLicenceApplicationRepository
+         .Verify(r => r.UpdateDocumentVisibleToApplicantAsync(
+          document.FellingLicenceApplicationId,
+      document.Id,
+   false,
+             CancellationToken.None), Times.Once);
+
+  _auditService.Verify(s =>
+     s.PublishAuditEventAsync(
+         It.Is<AuditEvent>(e =>
+             e.EventName == AuditEvents.HideFellingLicenceDocumentEvent &&
+           e.UserId == userAccountId &&
+      JsonSerializer.Serialize(e.AuditData, _options) ==
+          JsonSerializer.Serialize(new
+         {
+        documentId = document.Id,
+            document.Purpose,
+        document.FileName,
+    document.Location
+      }, _options)),
+        CancellationToken.None), Times.Once);
+   }
+
+        [Theory, AutoMoqData]
+ public async Task HideDocumentFromApplicantAsync_VerifiesCorrectParametersPassedToRepository(Document document)
+        {
+            //arrange
+     var sut = CreateSut();
+        var userAccountId = Guid.NewGuid();
+     var applicationId = document.FellingLicenceApplicationId;
+    var documentId = document.Id;
+
+   _fellingLicenceApplicationRepository
+          .Setup(r => r.GetDocumentByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        .ReturnsAsync(document);
+
+ _fellingLicenceApplicationRepository
+         .Setup(r => r.UpdateDocumentVisibleToApplicantAsync(
+        It.IsAny<Guid>(),
+      It.IsAny<Guid>(),
+        It.IsAny<bool>(),
+    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+  //act
+          await sut.HideDocumentFromApplicantAsync(
+             applicationId,
+    documentId,
+  userAccountId,
+      CancellationToken.None);
+
+  //assert
+ _fellingLicenceApplicationRepository
+             .Verify(r => r.UpdateDocumentVisibleToApplicantAsync(
+  applicationId,
+  documentId,
+      false, // Verify it's setting to false to hide from applicant
+          CancellationToken.None), Times.Once);
+        }
+
+        #endregion
     }
 }

@@ -392,6 +392,12 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         string? adminHubName,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Adds or updates the approver review for the specified application.
+    /// </summary>
+    /// <param name="approverReview">The approver review entity to add or update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="UnitResult{TError}"/> indicating success or failure.</returns>
     Task<UnitResult<UserDbErrorReason>> AddOrUpdateApproverReviewAsync(ApproverReview approverReview, CancellationToken cancellationToken);
 
     /// <summary>
@@ -618,4 +624,24 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentWithdrawalAsync(
         DateTime currentTime,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the Approved In Error record for the specified application, if present.
+    /// </summary>
+    /// <param name="applicationId">The application identifier.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Maybe{T}"/> containing the <see cref="ApprovedInError"/> record when found; otherwise None.
+    /// </returns>
+    Task<Maybe<ApprovedInError>> GetApprovedInErrorAsync(Guid applicationId, CancellationToken cancellationToken);
+ 
+    /// <summary>
+    /// Adds a new Approved In Error record or updates the existing one for the specified application.
+    /// </summary>
+    /// <param name="approvedInError">The entity to add or update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="UnitResult{UserDbErrorReason}"/> indicating success or failure.
+    /// </returns>
+    Task<UnitResult<UserDbErrorReason>> AddOrUpdateApprovedInErrorAsync(ApprovedInError approvedInError, CancellationToken cancellationToken);
 }

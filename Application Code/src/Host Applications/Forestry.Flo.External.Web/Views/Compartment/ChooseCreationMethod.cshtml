@@ -31,7 +31,7 @@
         <input type="hidden" asp-for="AgencyId" />
 
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="CreationMethod">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
@@ -64,7 +64,7 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-button-group">
             <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">

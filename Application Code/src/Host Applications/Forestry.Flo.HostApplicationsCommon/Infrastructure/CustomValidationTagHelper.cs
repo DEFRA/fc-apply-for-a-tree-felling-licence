@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
-namespace Forestry.Flo.External.Web.Infrastructure;
+namespace Forestry.Flo.HostApplicationsCommon.Infrastructure;
 
 [HtmlTargetElement("validation")]
 public class CustomValidationTagHelper : TagHelper
@@ -45,7 +45,6 @@ public class CustomValidationTagHelper : TagHelper
         var innerSpan = CreateTagHelperOutput("span");
 
         innerSpan.Attributes.SetAttribute("class", "govuk-visually-hidden");
-        innerSpan.Attributes.SetAttribute("aria-hidden", "true");
         innerSpan.Content.SetContent("Error:");
 
         validationOutput.PreContent.AppendHtml(innerSpan);

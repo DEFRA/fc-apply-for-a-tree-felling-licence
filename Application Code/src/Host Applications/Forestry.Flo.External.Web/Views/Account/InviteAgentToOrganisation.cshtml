@@ -20,39 +20,45 @@
                 </h1>
             </legend>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="Name">
                 <label asp-for="Name" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="Name"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="Name"/>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="Email">
                 <label asp-for="Email" class="@GdsConstants.GdsLabelCssClass"></label>
                 <validation asp-for="Email"></validation>
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="Email"/>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="AgencyUserRole">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                         <h2 class="govuk-fieldset__heading">
                             What role is this user being invited to have?
                         </h2>
                     </legend>
-                    <validation asp-for="@Model.AgencyUserRole"></validation>
+                    <validation asp-for="AgencyUserRole"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
-                        @foreach (AgencyUserRole value in Enum.GetValues(typeof(AgencyUserRole)))
-                        {
-                            <div class="govuk-radios__item">
-                                <input class="govuk-radios__input" asp-for="@Model.AgencyUserRole" type="radio" value="@value" id="role-@value.ToString()">
-                                <label class="govuk-label govuk-radios__label" for="role-@value.ToString()">
-                                    @value.GetDescription()
-                                </label>
-                            </div>
-                        }
+
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="AgencyUserRole" type="radio" value="@AgencyUserRole.AgencyUser">
+                            <label class="govuk-label govuk-radios__label" asp-for="AgencyUserRole">
+                                @AgencyUserRole.AgencyUser.GetDescription()
+                            </label>
+                        </div>
+                        
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="AgencyUserRole" type="radio" value="@AgencyUserRole.AgencyAdministrator" id="role-admin">
+                            <label class="govuk-label govuk-radios__label" for="role-admin">
+                                @AgencyUserRole.AgencyAdministrator.GetDescription()
+                            </label>
+                        </div>
+
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
             <div class="govuk-form-group">
                 <div class="govuk-button-group">

@@ -29,7 +29,7 @@
             @Html.HiddenFor(x => x.IsForTenYearLicence)
         }
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="IsForTenYearLicence">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
@@ -42,19 +42,19 @@
                 <validation asp-for="IsForTenYearLicence"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.AllowEditing)" class="govuk-radios__input" type="radio" value="true" asp-for="IsForTenYearLicence" id="is-ten-years-yes" data-aria-controls="conditional-wmp">
-                        <label class="govuk-label govuk-radios__label" for="is-ten-years-yes">
+                        <input condition-disabled="@(!Model.AllowEditing)" class="govuk-radios__input" type="radio" value="true" asp-for="IsForTenYearLicence" data-aria-controls="conditional-wmp">
+                        <label class="govuk-label govuk-radios__label" asp-for="IsForTenYearLicence">
                             Yes
                         </label>
                     </div>
                     <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-wmp">
-                        <div class="govuk-form-group">
+                        <govuk-form-group asp-for="WoodlandManagementPlanReference">
                             <label class="govuk-label" asp-for="WoodlandManagementPlanReference">
                                 Enter the woodland management plan reference
                             </label>
                             <validation asp-for="WoodlandManagementPlanReference"></validation>
                             <input condition-disabled="@(!Model.AllowEditing)" class="govuk-input" asp-for="WoodlandManagementPlanReference">
-                        </div>
+                        </govuk-form-group>
                     </div>
                     <div class="govuk-radios__item">
                         <input condition-disabled="@(!Model.AllowEditing)" class="govuk-radios__input" type="radio" value="false" asp-for="IsForTenYearLicence" id="is-ten-years-no">
@@ -64,14 +64,12 @@
                     </div>
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
-        <div class="govuk-form-group">
-            <div class="govuk-button-group">
-                <button class="govuk-button" type="submit" data-module="govuk-button">
-                    Continue
-                </button>
-            </div>
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
+                Continue
+            </button>
         </div>
     </form>
 </div>

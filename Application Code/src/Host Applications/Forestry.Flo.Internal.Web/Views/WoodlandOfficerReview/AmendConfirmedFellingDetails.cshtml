@@ -40,7 +40,7 @@
         <h1 class="govuk-heading-l">@ViewBag.Title</h1>
 
         <div class="govuk-body">
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.OperationType">
                 <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.OperationType">
                     Felling operation type
                 </label>
@@ -50,11 +50,12 @@
                 <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.OperationType"></validation>
                 <select class="govuk-select"
                         asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.OperationType"
-                        asp-items="Html.GetEnumSelectList<FellingOperationType>()">
+                        asp-items="Html.GetEnumSelectList<FellingOperationType>()"
+                        aria-describedby="felling-type-hint">
                 </select>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="@nameof(fd.AreaToBeFelled)">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.AreaToBeFelled" id="@nameof(fd.AreaToBeFelled)">
                 <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.AreaToBeFelled">
                     Estimated area to be felled
                 </label>
@@ -68,14 +69,12 @@
                            asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.AreaToBeFelled"
                            type="number" step="0.01"
                            aria-describedby="area-to-be-felled-hint"
-                           value="@(fd.AreaToBeFelled == 0
-                                                                                                                                                      ? string.Empty
-                                                                                                                                                      : fd.AreaToBeFelled)">
+                           value="@(fd.AreaToBeFelled == 0 ? string.Empty : fd.AreaToBeFelled)">
                     <div class="govuk-input__suffix" aria-hidden="true">ha</div>
                 </div>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="@nameof(fd.NumberOfTrees)">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NumberOfTrees" id="@nameof(fd.NumberOfTrees)">
                 <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NumberOfTrees">
                     Estimated number of trees to be felled
                 </label>
@@ -91,9 +90,9 @@
                            aria-describedby="no-of-trees-hint">
                     <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
                 </div>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="@nameof(fd.TreeMarking)">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed" id="@nameof(fd.TreeMarking)">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-heading-m" id="@Html.IdFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed)">
                         Will you use tree marking?
@@ -104,28 +103,28 @@
                     <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input id="felling-detail-tree-marking-yes"
-                                   type="radio" class="govuk-radios__input"
+                            <input type="radio" class="govuk-radios__input"
                                    asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed"
                                    value="@true"
-                                   data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed)">
-                            <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-yes" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed">
+                                   data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed)"
+                                   aria-describedby="tree-marking-used-hint">
+                            <label class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed">
                                 Yes, I will use tree marking
                             </label>
                         </div>
 
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed)">
-                            <div class="govuk-form-group">
+                            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreeMarking">
                                 <label asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreeMarking" class="@GdsConstants.GdsLabelCssClass">
                                     Tree marking detail. The applicant proposed @fd.OldValue(nameof(fd.TreeMarking), fd.TreeMarking)
                                 </label>
                                 <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreeMarking"></validation>
                                 <input type="text" class="@GdsConstants.GdsInputCssClass" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreeMarking" />
-                            </div>
+                            </govuk-form-group>
                         </div>
 
                         <div class="govuk-radios__item">
-                            <input id="felling-detail-tree-marking-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed" value="@false">
+                            <input id="felling-detail-tree-marking-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed" value="@false" aria-describedby="tree-marking-used-hint">
                             <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-no" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed">
                                 No
                             </label>
@@ -133,7 +132,7 @@
 
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
             @{
                 var viewData = new ViewDataDictionary(ViewData)
@@ -159,7 +158,7 @@
                 : proposedSpeciesText;
             }
 
-            <div id="felling-tree-species-selection-form-group" class="govuk-form-group">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingSpecies" id="felling-tree-species-selection-form-group">
                 <input type="hidden" aria-hidden="true" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingSpecies" />
                 <label class="govuk-heading-m" for="felling-tree-species-select">
                     What species of trees will be felled?
@@ -172,9 +171,9 @@
                 </div>
                 <validation id="felling-tree-species-error" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConfirmedFellingSpecies"></validation>
                 <partial name="Partials/_TreeSpeciesSelection" model="@Model.Species" view-data="viewData" />
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="felling-detail-estimated-total-felling-volume">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume" id="felling-detail-estimated-total-felling-volume">
                 <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume">
                     Estimated number total felling volume
                 </label>
@@ -187,9 +186,9 @@
                     <input class="govuk-input govuk-input--width-10" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume" type="number" autocomplete="estimated-total-felling-volume" aria-describedby="estimated-total-felling-volume-hint">
                     <div class="govuk-input__suffix" aria-hidden="true">m<sup>3</sup></div>
                 </div>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="@nameof(fd.IsPartOfTreePreservationOrder)">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" id="@nameof(fd.IsPartOfTreePreservationOrder)">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-heading-m" id="@Html.IdFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder)">
                         Is there a Tree Preservation Order (TPO) for any of the trees to be felled?
@@ -200,24 +199,24 @@
                     <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input id="felling-detail-tpo-yes" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder)">
-                            <label for="felling-detail-tpo-yes" class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder">
+                            <input type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder)" aria-describedby="tpo-hint">
+                            <label class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder">
                                 Yes
                             </label>
                         </div>
 
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder)">
-                            <div class="govuk-form-group">
+                            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreePreservationOrderReference">
                                 <label asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreePreservationOrderReference" class="@GdsConstants.GdsLabelCssClass">
                                     TPO number. @previousAnswerTpo
                                 </label>
                                 <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreePreservationOrderReference"></validation>
                                 <input class="@GdsConstants.GdsInputCssClass" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.TreePreservationOrderReference" />
-                            </div>
+                            </govuk-form-group>
                         </div>
 
                         <div class="govuk-radios__item">
-                            <input id="felling-detail-tpo-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" value="@false">
+                            <input id="felling-detail-tpo-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" value="@false" aria-describedby="tpo-hint">
                             <label class="govuk-label govuk-radios__label" for="felling-detail-tpo-no" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder">
                                 No
                             </label>
@@ -225,9 +224,9 @@
 
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="@nameof(fd.IsWithinConservationArea)">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea" id="@nameof(fd.IsWithinConservationArea)">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-heading-m" id="@Html.IdFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea)">
                         Is the property in a conservation area?
@@ -238,33 +237,33 @@
                     <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input id="felling-detail-conservation-area-yes" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea)">
-                            <label class="govuk-label govuk-radios__label" for="felling-detail-conservation-area-yes" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea">
+                            <input type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea)" aria-describedby="ca-hint">
+                            <label class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea">
                                 Yes
                             </label>
                         </div>
 
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea)">
-                            <div class="govuk-form-group">
+                            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConservationAreaReference">
                                 <label asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConservationAreaReference" class="@GdsConstants.GdsLabelCssClass">
                                     Conservation area reference. @previousAnswerCa
                                 </label>
                                 <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConservationAreaReference"></validation>
                                 <input class="@GdsConstants.GdsInputCssClass" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.ConservationAreaReference" />
-                            </div>
+                            </govuk-form-group>
                         </div>
 
                         <div class="govuk-radios__item">
-                            <input id="felling-detail-conservation-area-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea" value="@false">
+                            <input id="felling-detail-conservation-area-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea" value="@false" aria-describedby="ca-hint">
                             <label class="govuk-label govuk-radios__label" for="felling-detail-conservation-area-no" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea">
                                 No
                             </label>
                         </div>
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group" id="@nameof(fd.IsRestocking)">
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking" id="@nameof(fd.IsRestocking)">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-heading-m" id="@Html.IdFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking)">
                         Do you want to restock?
@@ -277,42 +276,40 @@
                     <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input id="restock-yes" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking" value="@true">
-                            <label class="govuk-label govuk-radios__label" for="restock-yes" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking">
+                            <input type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking" value="@true" aria-describedby="restock-hint">
+                            <label class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking">
                                 Yes
                             </label>
                         </div>
 
                         <div class="govuk-radios__item">
-                            <input id="restock-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking" value="@false" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking)">
+                            <input id="restock-no" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking" value="@false" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking)" aria-describedby="restock-hint">
                             <label class="govuk-label govuk-radios__label" for="restock-no" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking">
                                 No
                             </label>
                         </div>
 
                         <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking)">
-                            <div class="govuk-form-group">
+                            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NoRestockingReason">
                                 <label asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NoRestockingReason" class="@GdsConstants.GdsLabelCssClass">
                                     Why do you not you want to restock? @previousAnswerRestock
                                 </label>
                                 <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NoRestockingReason"></validation>
                                 <input class="@GdsConstants.GdsInputCssClass" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NoRestockingReason" />
-                            </div>
+                            </govuk-form-group>
                         </div>
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
 
-            <div class="govuk-form-group">
-                <div class="govuk-button-group">
+            <div class="govuk-button-group">
 
-                    <button type="submit" class="govuk-button" data-module="govuk-button">
-                        Save
-                    </button>
+                <button type="submit" class="govuk-button" data-module="govuk-button">
+                    Save
+                </button>
 
-                    <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and go to the summary">Cancel</a>
+                <a class="govuk-link" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId" title="Abandon changes and go to the summary">Cancel</a>
 
-                </div>
             </div>
         </div>
     </form>

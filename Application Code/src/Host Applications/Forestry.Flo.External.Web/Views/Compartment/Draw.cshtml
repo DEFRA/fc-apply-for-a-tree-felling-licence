@@ -32,12 +32,45 @@
     <div class="govuk-grid-column-two-thirds">
         <h1 class="govuk-heading-m">@action a compartment for @Model.CompartmentModelOfInterest.PropertyProfileName </h1>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="CompartmentModelOfInterest.CompartmentNumber">
             <h2 class="govuk-label-wrapper">
                 <label asp-for="CompartmentModelOfInterest.CompartmentNumber" class="@GdsConstants.GdsLabelCssClass">Compartment name</label>
             </h2>
             <validation asp-for="CompartmentModelOfInterest.CompartmentNumber"></validation>
             <input class="@GdsConstants.GdsInputCssClass" asp-for="CompartmentModelOfInterest.CompartmentNumber"/>
+        </govuk-form-group>
+        
+        <noscript>
+            <div class="govuk-inset-text">
+                <h3 class="govuk-heading-s">
+                    Javascript is required to draw a compartment map
+                </h3>
+                <p class="govuk-body">
+                    If you are unable to use Javascript, you can still complete your application.
+                    Enter a compartment name and click 'Save without map' below. You can then contact us to help draw your compartment later.
+                </p>
+                <p class="govuk-body long-link">
+                    Call the Forestry Commission helpline on 0300 067 4321 (Monday to Friday, 9am to 5pm) or email
+                    <a class="govuk-link" href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a>.
+                </p>
+                <p class="govuk-body">
+                    A member of the team will help you draw your compartment map in order to submit your application.
+                </p>
+            </div>
+        </noscript>
+        <div class="govuk-inset-text" id="with-script-guidance" hidden="true" aria-hidden="true">
+            <h3 class="govuk-heading-s">If you cannot use the map</h3>
+            <p class="govuk-body">
+                If you have problems with the drawing tools, or cannot use the map with a keyboard or screen reader, you can still complete your application.
+                Enter a compartment name and click 'Save without map' below. You can then contact us to help draw your compartment later.
+            </p>
+            <p class="govuk-body long-link">
+                Call the Forestry Commission helpline on 0300 067 4321 (Monday to Friday, 9am to 5pm) or email
+                <a class="govuk-link" href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a>.
+            </p>
+            <p class="govuk-body">
+                A member of the team will help you draw your compartment map in order to submit your application.
+            </p>
         </div>
 
     </div>
@@ -199,11 +232,15 @@
     <script>
 
 
-        require(["/js/mapping/maps/map-draw-compartment.js?v=" + Date.now()], function (ProfileMap) {
+        require(["/js/mapping/maps/map-draw-compartment.js?v=" + Date.now()],
+            function(ProfileMap) {
 
-            var mapObj = new ProfileMap("viewDivDraw");
+                var mapObj = new ProfileMap("viewDivDraw");
 
-        })
+            });
+
+        $("#with-script-guidance").removeAttr('hidden');
+        $("#with-script-guidance").removeAttr('aria-hidden');
 
     </script>
 }

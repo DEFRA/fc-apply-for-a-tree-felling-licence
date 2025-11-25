@@ -10,6 +10,6 @@ public class AgentTypeViewModel : PageWithBreadcrumbsViewModel
     /// <summary>
     /// Gets and Sets the organisation status of the agent.
     /// </summary>
-    [Required]
+    [Required(ErrorMessage = "Select an agent type")]
     public OrganisationStatus? OrganisationStatus { get; set; }
 }

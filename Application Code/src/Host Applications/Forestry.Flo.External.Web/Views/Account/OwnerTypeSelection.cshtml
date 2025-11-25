@@ -11,7 +11,7 @@
 
     <form method="post">
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="OrganisationStatus">
 
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
@@ -26,9 +26,9 @@
 
                     <div class="govuk-radios__item">
 
-                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input", @id = "individual-owner" })
+                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input" })
 
-                        <label class="govuk-label govuk-radios__label" for="individual-owner">
+                        <label class="govuk-label govuk-radios__label" for="OrganisationStatus">
                             Individual
                         </label>
 
@@ -47,7 +47,7 @@
                 </div>
 
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-form-group">
 

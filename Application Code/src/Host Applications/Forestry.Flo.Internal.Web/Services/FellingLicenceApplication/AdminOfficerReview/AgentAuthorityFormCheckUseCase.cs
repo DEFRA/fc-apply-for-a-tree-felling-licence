@@ -6,6 +6,7 @@ using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -69,7 +70,7 @@ public class AgentAuthorityFormCheckUseCase : AdminOfficerReviewUseCaseBase, IAg
 
         // TODO we could potentially optimise here as we are retrieving the WO and Agency again in ExtractApplicationSummary below
         var (_, woodlandOwnerRetrievalFailure, woodlandOwner) = await WoodlandOwnerService
-            .RetrieveWoodlandOwnerByIdAsync(fellingLicence.WoodlandOwnerId, cancellationToken)
+            .RetrieveWoodlandOwnerByIdAsync(fellingLicence.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken)
             .ConfigureAwait(false);
 
         if (woodlandOwnerRetrievalFailure)

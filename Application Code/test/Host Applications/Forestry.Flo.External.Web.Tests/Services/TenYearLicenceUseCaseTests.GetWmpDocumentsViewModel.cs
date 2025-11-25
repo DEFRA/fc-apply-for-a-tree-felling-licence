@@ -204,7 +204,7 @@ public partial class TenYearLicenceUseCaseTests
             .ReturnsAsync(Result.Success(propertyProfile));
 
         _retrieveWoodlandOwnersMock
-            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         _retrieveAgentAuthorityMock
@@ -264,7 +264,7 @@ public partial class TenYearLicenceUseCaseTests
         _retrieveUserAccountsMock.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Exactly(3));
         _retrieveUserAccountsMock.VerifyNoOtherCalls();
 
-        _retrieveWoodlandOwnersMock.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        _retrieveWoodlandOwnersMock.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         _retrieveWoodlandOwnersMock.VerifyNoOtherCalls();
 
         _retrieveFellingLicenceApplicationMock.Verify(x => x.GetApplicationByIdAsync(applicationId, userAccess, It.IsAny<CancellationToken>()), Times.Once);

@@ -19,17 +19,17 @@
     </a>
 
     <form asp-action="AgentAuthorityForm" asp-route-id="@Model.AgentAuthorityId">
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="DoesNotHaveAnyAuthorityForms">
             <validation asp-for="DoesNotHaveAnyAuthorityForms"></validation>
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
-                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="@aafStepStatus" id="AgentAuthorityFormCorrect">
-                    <label class="govuk-label govuk-checkboxes__label" for="AgentAuthorityFormCorrect">
+                    <input class="govuk-checkboxes__input" type="checkbox" asp-for="@aafStepStatus" id="@nameof(Model.DoesNotHaveAnyAuthorityForms)">
+                    <label class="govuk-label govuk-checkboxes__label" for="@nameof(Model.DoesNotHaveAnyAuthorityForms)">
                         Confirm the current agent authority form is correct
                     </label>
                 </div>
             </div>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-button-group">
             <input aria-hidden="True" type="hidden" asp-for="@applicationId" />

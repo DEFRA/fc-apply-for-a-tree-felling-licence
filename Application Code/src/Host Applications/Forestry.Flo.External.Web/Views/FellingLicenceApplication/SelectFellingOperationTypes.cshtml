@@ -61,70 +61,77 @@
 
     <div class="govuk-grid-column-two-thirds">
 
-        <br/>
+        <govuk-form-group asp-for="OperationTypes">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                    <h2 class="govuk-fieldset__heading">
+                        Select the operations you'd like to perform for this compartment.
+                    </h2>
+                </legend>
+            
+                <validation asp-for="OperationTypes"></validation>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
 
-        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsClearFellingSelected" id="OperationTypes" aria-describedby="clear-felling-hint">
+                        <label class="govuk-label govuk-checkboxes__label" for="OperationTypes">
+                            <b>@FellingOperationType.ClearFelling.GetDisplayName()</b>
+                        </label>
+                        <div class="govuk-hint govuk-checkboxes__hint" id="clear-felling-hint">
+                            @FellingOperationType.ClearFelling.GetDescription()
+                        </div>
+                    </div>
 
-            <p class="govuk-body">Select the operations you'd like to perform for this compartment.</p>
-            <br/>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsFellingOfCoppiceSelected" aria-describedby="coppice-hint">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsFellingOfCoppiceSelected">
+                            <b>@FellingOperationType.FellingOfCoppice.GetDisplayName()</b>
+                        </label>
+                        <div class="govuk-hint govuk-checkboxes__hint" id="coppice-hint">
+                            @FellingOperationType.FellingOfCoppice.GetDescription()
+                        </div>
+                    </div>
 
-            <div class="govuk-checkboxes__item">
-                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsClearFellingSelected">
-                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsClearFellingSelected">
-                    <b>@FellingOperationType.ClearFelling.GetDisplayName()</b>
-                </label>
-                <div class="govuk-hint govuk-checkboxes__hint">
-                    @FellingOperationType.ClearFelling.GetDescription()
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsFellingIndividualTreesSelected" aria-describedby="individual-hint">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsFellingIndividualTreesSelected">
+                            <b>@FellingOperationType.FellingIndividualTrees.GetDisplayName()</b>
+                        </label>
+                        <div class="govuk-hint govuk-checkboxes__hint" id="individual-hint">
+                            @FellingOperationType.FellingIndividualTrees.GetDescription()
+                        </div>
+                    </div>
+
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsRegenerationFellingSelected" aria-describedby="regen-hint">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsRegenerationFellingSelected">
+                            <b>@FellingOperationType.RegenerationFelling.GetDisplayName()</b>
+                        </label>
+                        <div class="govuk-hint govuk-checkboxes__hint" id="regen-hint">
+                            @FellingOperationType.RegenerationFelling.GetDescription()
+                        </div>
+                    </div>
+
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsThinningSelected" aria-describedby="thinning-hint">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsThinningSelected">
+                            <b>@FellingOperationType.Thinning.GetDisplayName()</b>
+                        </label>
+                        <div class="govuk-hint govuk-checkboxes__hint" id="thinning-hint">
+                            @FellingOperationType.Thinning.GetDescription()
+                        </div>
+                    </div>
+
                 </div>
-            </div>
-
-            <div class="govuk-checkboxes__item">
-                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsFellingOfCoppiceSelected">
-                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsFellingOfCoppiceSelected">
-                    <b>@FellingOperationType.FellingOfCoppice.GetDisplayName()</b>
-                </label>
-                <div class="govuk-hint govuk-checkboxes__hint">
-                    @FellingOperationType.FellingOfCoppice.GetDescription()
-                </div>
-            </div>
-
-            <div class="govuk-checkboxes__item">
-                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsFellingIndividualTreesSelected">
-                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsFellingIndividualTreesSelected">
-                    <b>@FellingOperationType.FellingIndividualTrees.GetDisplayName()</b>
-                </label>
-                <div class="govuk-hint govuk-checkboxes__hint">
-                    @FellingOperationType.FellingIndividualTrees.GetDescription()
-                </div>
-            </div>
-
-            <div class="govuk-checkboxes__item">
-                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsRegenerationFellingSelected">
-                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsRegenerationFellingSelected">
-                    <b>@FellingOperationType.RegenerationFelling.GetDisplayName()</b>
-                </label>
-                <div class="govuk-hint govuk-checkboxes__hint">
-                    @FellingOperationType.RegenerationFelling.GetDescription()
-                </div>
-            </div>
-
-            <div class="govuk-checkboxes__item">
-                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsThinningSelected">
-                <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsThinningSelected">
-                    <b>@FellingOperationType.Thinning.GetDisplayName()</b>
-                </label>
-                <div class="govuk-hint govuk-checkboxes__hint">
-                    @FellingOperationType.Thinning.GetDescription()
-                </div>
-            </div>
-
-        </div>
-        <br/>
+            </fieldset>
+        </govuk-form-group>
+        
         <div class="govuk-button-group">
             <button class="govuk-button" type="submit" data-module="govuk-button">
                 Continue
             </button>
         </div>
+
     </div>
 </form>
 

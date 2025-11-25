@@ -4,6 +4,7 @@ using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
 using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 using Forestry.Flo.Tests.Common;
@@ -62,7 +63,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         _woodlandOwnerService
-            .Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         _mockAgentAuthorityService
@@ -86,7 +87,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
             .Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _internalUserContextFlaRepository.VerifyNoOtherCalls();
 
-        _woodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once());
+        _woodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once());
         _woodlandOwnerService.VerifyNoOtherCalls();
 
         _mockAgentAuthorityService.Verify(x => x.GetAgencyForWoodlandOwnerAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
@@ -136,7 +137,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         _woodlandOwnerService
-            .Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         _mockAgentAuthorityService
@@ -169,7 +170,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
             .Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _internalUserContextFlaRepository.VerifyNoOtherCalls();
 
-        _woodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once());
+        _woodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once());
         _woodlandOwnerService.VerifyNoOtherCalls();
 
         _mockAgentAuthorityService.Verify(x => x.GetAgencyForWoodlandOwnerAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);

@@ -229,6 +229,7 @@ public partial class FellingLicenceApplicationController(
     /// <param name="cancellationToken">A cancellation token.</param>
     /// Id of the compartment that is to be added to the application.
     /// <returns></returns>
+    [EditingAllowed]
     public async Task<IActionResult> SelectNewCompartment(Guid applicationId, Guid newCompartmentId, Guid? proposedFellingDetailsId, Guid? fellingCompartmentId, bool isForRestockingCompartmentSelection, FellingOperationType? fellingOperationType, string? fellingCompartmentName,  CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -273,6 +274,7 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpGet]
+    [EditingAllowed]
     public async Task<IActionResult> SelectCompartments(Guid applicationId, bool returnToApplicationSummary, bool isForRestockingCompartmentSelection, FellingOperationType fellingOperationType, string? fellingCompartmentName, Guid? fellingCompartmentId, Guid? proposedFellingDetailsId, bool? returnToPlayback, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -394,7 +396,6 @@ public partial class FellingLicenceApplicationController(
             }
 
             var mode = compartmentsModel.IsForRestockingCompartmentSelection ? "restock" : "fell";
-            this.AddErrorMessage($"Select at least one compartment to {mode} in");
 
             ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.Application.WoodlandOwnerId;
 
@@ -411,6 +412,9 @@ public partial class FellingLicenceApplicationController(
             }
 
             ViewBag.Compartments = compartmentsToShow;
+
+            ModelState.AddModelError($"SelectedCompartmentIds_{compartmentsToShow.FirstOrDefault()?.Id}", $"Select at least one compartment to {mode} in");
+
             ViewBag.ApplicationSummary = viewModel.Value.Application.ApplicationSummary;
             SetTaskBreadcrumbs(compartmentsModel);
             return View(compartmentsModel);
@@ -486,6 +490,7 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpGet]
+    [EditingAllowed]
     public async Task<IActionResult> SelectFellingOperationTypes(Guid applicationId, Guid fellingCompartmentId, bool? returnToPlayback, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -582,6 +587,7 @@ public partial class FellingLicenceApplicationController(
 
 
     [HttpGet]
+    [EditingAllowed]
     public async Task<IActionResult> ConstraintsCheck(Guid applicationId, bool returnToApplicationSummary, string? tab,
         CancellationToken cancellationToken)
     {
@@ -667,6 +673,7 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpGet]
+    [EditingAllowed]
     public async Task<IActionResult> Operations(Guid applicationId, bool returnToApplicationSummary, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -727,6 +734,7 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpGet]
+    [EditingAllowed]
     public async Task<IActionResult> FellingDetail(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, bool? returnToPlayback, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -857,6 +865,18 @@ public partial class FellingLicenceApplicationController(
     public async Task<IActionResult> DecisionToRestock(Guid applicationId, Guid fellingCompartmentId, Guid proposedFellingDetailsId, FellingOperationType fellingOperationType, bool? returnToPlayback, CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
+
+        // check we should be here for this felling operation type
+        if (!createFellingLicenceApplicationUseCase.FellingOperationRequiresStocking(fellingOperationType))
+        {
+            if (returnToPlayback is true)
+            {
+                return RedirectToAction(nameof(FellingAndRestockingPlayback), new { applicationId });
+            }
+
+            return await IterateFellingOperationTypesInCompartment(applicationId, fellingCompartmentId, cancellationToken);
+        }
+
         var result = await createFellingLicenceApplicationUseCase.GetSelectCompartmentViewModel(applicationId, user, cancellationToken);
         if (result.HasNoValue)
         {
@@ -1451,6 +1471,7 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpGet]
+    [EditingAllowed]
     public async Task<IActionResult> SupportingDocumentation(
         Guid applicationId,
         bool returnToApplicationSummary,
@@ -1527,7 +1548,6 @@ public partial class FellingLicenceApplicationController(
     /// This is an action method to explicitly support the deleting of uploaded supporting documents.
     /// </summary>
     /// <returns></returns>
-    [HttpPost]
     public async Task<IActionResult> RemoveSupportingDocumentation(
         Guid applicationId,
         Guid documentIdentifier,
@@ -1544,6 +1564,8 @@ public partial class FellingLicenceApplicationController(
             logger.LogError("Failed to remove supporting documentation with error {Error}", removeResult.Error);
             this.AddErrorMessage("Could not remove supporting document at this time, try again");
         }
+
+        this.AddConfirmationMessage("Supporting document removed");
 
         if(returnToApplicationSummary)
             return RedirectToAction(nameof(SupportingDocumentation), new { applicationId, returnToApplicationSummary });
@@ -1594,6 +1616,8 @@ public partial class FellingLicenceApplicationController(
 
         if (saveDocumentsResult.IsSuccess && ModelState.IsValid)
         {
+            this.AddConfirmationMessage($"{model.Purpose.GetDisplayNameByActorType(ActorType.ExternalApplicant)}{(supportingDocumentationFiles.Count > 1 ? "s" : string.Empty)} successfully uploaded");
+
             if (model.Purpose == DocumentPurpose.WmpDocument)
             {
                 return RedirectToAction(nameof(WmpDocuments),
@@ -1608,10 +1632,10 @@ public partial class FellingLicenceApplicationController(
         }
 
         // Was not successful across the entire set of uploaded documents in FormFileCollection:
+        this.AddErrorMessage("One or more selected documents could not be uploaded, try again");
 
         if (model.Purpose == DocumentPurpose.WmpDocument)
         {
-            this.AddErrorMessage("One or more selected documents could not be uploaded, please try again");
             return RedirectToAction(nameof(WmpDocuments),
                 new
                 {

@@ -64,17 +64,17 @@
 
         <input asp-for="ApplicationId"/>
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="IsComplete">
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
-                    <validation asp-for="@Model.IsComplete"></validation>
-                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" asp-for="IsComplete" id="is-complete" type="checkbox">
-                    <label class="govuk-label govuk-checkboxes__label" for="is-complete">
+                    <validation asp-for="IsComplete"></validation>
+                    <input condition-disabled="@(!Model.Editable(user))" class="govuk-checkboxes__input" asp-for="IsComplete" type="checkbox">
+                    <label class="govuk-label govuk-checkboxes__label" asp-for="IsComplete">
                         I've reviewed the constraints report and confirm it reflects the current application
                     </label>
                 </div>
             </div>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-form-group" condition="@Model.Editable(user)">
             <div style="display: flex;">

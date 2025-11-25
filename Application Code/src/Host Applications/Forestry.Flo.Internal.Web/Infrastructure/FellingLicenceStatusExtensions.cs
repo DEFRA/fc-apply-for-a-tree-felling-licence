@@ -35,6 +35,7 @@ public static class FellingLicenceStatusExtensions
             FellingLicenceStatus.Refused => "govuk-tag--red",
             FellingLicenceStatus.Withdrawn => "govuk-tag--orange",
             FellingLicenceStatus.ReferredToLocalAuthority => "govuk-tag--mid-grey",
+            FellingLicenceStatus.ApprovedInError => "govuk-tag--red",
             _ => "govuk-tag--grey"
         };
     }

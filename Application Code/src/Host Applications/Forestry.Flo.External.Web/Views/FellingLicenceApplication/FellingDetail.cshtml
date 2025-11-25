@@ -55,7 +55,7 @@
                     </p>
                 </div>
 
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="AreaToBeFelled">
 					<label class="govuk-heading-m" asp-for="AreaToBeFelled" id="@nameof(Model.AreaToBeFelled)Label">
                         Estimated area to be felled
                     </label>
@@ -73,9 +73,9 @@
                         <input class="govuk-input govuk-input--width-5" asp-for="AreaToBeFelled" type="number" step="0.01" aria-describedby="area-to-be-felled-hint" value="@(Model.AreaToBeFelled == 0 ? "" : Model.AreaToBeFelled)">
                         <div class="govuk-input__suffix" aria-hidden="true">ha</div>
                     </div>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="NumberOfTrees">
 					<label class="govuk-heading-m" asp-for="NumberOfTrees" id="@nameof(Model.NumberOfTrees)Label">
                         Estimated number of trees to be felled
                     </label>
@@ -88,9 +88,9 @@
                         <input class="govuk-input govuk-input--width-10" asp-for="NumberOfTrees" type="number" aria-describedby="no-of-trees-hint">
                         <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
                     </div>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group" id="@nameof(Model.IsTreeMarkingUsed)Label">
+                <govuk-form-group asp-for="IsTreeMarkingUsed" id="@nameof(Model.IsTreeMarkingUsed)Label">
                     <fieldset class="govuk-fieldset">
                         <legend class="govuk-heading-m">
                             Will you use tree marking?
@@ -98,20 +98,20 @@
                         <validation asp-for="IsTreeMarkingUsed"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-tree-marking-yes" type="radio" class="govuk-radios__input" asp-for="IsTreeMarkingUsed" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsTreeMarkingUsed)">
-                                <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-yes" asp-for="IsTreeMarkingUsed">
+                                <input type="radio" class="govuk-radios__input" asp-for="IsTreeMarkingUsed" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsTreeMarkingUsed)">
+                                <label class="govuk-label govuk-radios__label" asp-for="IsTreeMarkingUsed">
                                     Yes, I will use tree marking
                                 </label>
                             </div>
 
                             <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.IsTreeMarkingUsed)">
-                                <div class="govuk-form-group">
+                                <govuk-form-group asp-for="TreeMarking">
                                     <label asp-for="TreeMarking" class="@GdsConstants.GdsLabelCssClass">
                                         Explain how you will use tree marking. For example 'Red crosses to show the boundary of the area to be felled'.
                                     </label>
-                                    <validation asp-for="@Model.TreeMarking"></validation>
+                                    <validation asp-for="TreeMarking"></validation>
                                     <input type="text" class="@GdsConstants.GdsInputCssClass" asp-for="TreeMarking" tabindex="0" />
-                                </div>
+                                </govuk-form-group>
                             </div>
 
                             <div class="govuk-radios__item">
@@ -123,7 +123,7 @@
 
                         </div>
                     </fieldset>
-                </div>
+                </govuk-form-group>
 
                 @{
                     var viewData = new ViewDataDictionary(ViewData)
@@ -136,7 +136,7 @@
                     };
                 }
                 
-                <div id="felling-tree-species-group" class="govuk-form-group">
+                <govuk-form-group asp-for="Species" id="felling-tree-species-group">
                     <input type="hidden" aria-hidden="true" asp-for="Species" />
 					<label class="govuk-heading-m" for="felling-tree-species-select" id="felling-tree-species-selectLabel">
                         What species of trees will be felled?
@@ -146,9 +146,9 @@
                     </div>
                     <validation id="felling-tree-species-error" asp-for="Species"></validation>
                     <partial name="_TreeSpeciesSelection" model="@Model.Species" view-data="viewData" />
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="EstimatedTotalFellingVolume">
                     <label class="govuk-heading-m" asp-for="EstimatedTotalFellingVolume" id="@nameof(Model.EstimatedTotalFellingVolume)Label">
                         Estimated total felling volume
                     </label>
@@ -161,9 +161,9 @@
                         <input class="govuk-input govuk-input--width-10" asp-for="EstimatedTotalFellingVolume" type="number" aria-describedby="estimated-total-felling-volume-hint">
                         <div class="govuk-input__suffix" aria-hidden="true">m<sup>3</sup></div>
                     </div>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group" id="@nameof(Model.IsPartOfTreePreservationOrder)Label">
+                <govuk-form-group asp-for="IsPartOfTreePreservationOrder" id="@nameof(Model.IsPartOfTreePreservationOrder)Label">
                     <fieldset class="govuk-fieldset">
                         <legend class="govuk-heading-m">
                             Is there a Tree Preservation Order (TPO) for any of the trees to be felled?
@@ -171,20 +171,20 @@
                         <validation asp-for="IsPartOfTreePreservationOrder"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-tpo-yes" type="radio" class="govuk-radios__input" asp-for="IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsPartOfTreePreservationOrder)">
-                                <label for="felling-detail-tpo-yes" class="govuk-label govuk-radios__label" asp-for="IsPartOfTreePreservationOrder">
+                                <input type="radio" class="govuk-radios__input" asp-for="IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsPartOfTreePreservationOrder)">
+                                <label class="govuk-label govuk-radios__label" asp-for="IsPartOfTreePreservationOrder">
                                     Yes
                                 </label>
                             </div>
 
                             <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.IsPartOfTreePreservationOrder)">
-                                <div class="govuk-form-group">
+                                <govuk-form-group asp-for="TreePreservationOrderReference">
                                     <label asp-for="TreePreservationOrderReference" class="@GdsConstants.GdsLabelCssClass">
                                         TPO number
                                     </label>
-                                    <validation asp-for="@Model.TreePreservationOrderReference"></validation>
+                                    <validation asp-for="TreePreservationOrderReference"></validation>
                                     <input class="@GdsConstants.GdsInputCssClass" asp-for="TreePreservationOrderReference" tabindex="0" />
-                                </div>
+                                </govuk-form-group>
                             </div>
 
                             <div class="govuk-radios__item">
@@ -196,9 +196,9 @@
 
                         </div>
                     </fieldset>
-                </div>
+                </govuk-form-group>
 
-                <div class="govuk-form-group" id="@nameof(Model.IsWithinConservationArea)Label">
+                <govuk-form-group asp-for="IsWithinConservationArea" id="@nameof(Model.IsWithinConservationArea)Label">
                     <fieldset class="govuk-fieldset">
                         <legend class="govuk-heading-m">
                             Is the property in a conservation area?
@@ -206,20 +206,20 @@
                         <validation asp-for="IsWithinConservationArea"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-conservation-area-yes" type="radio" class="govuk-radios__input" asp-for="IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWithinConservationArea)">
-                                <label class="govuk-label govuk-radios__label" for="felling-detail-conservation-area-yes" asp-for="IsWithinConservationArea">
+                                <input type="radio" class="govuk-radios__input" asp-for="IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWithinConservationArea)">
+                                <label class="govuk-label govuk-radios__label" asp-for="IsWithinConservationArea">
                                     Yes
                                 </label>
                             </div>
 
                             <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.IsWithinConservationArea)">
-                                <div class="govuk-form-group">
+                                <govuk-form-group asp-for="ConservationAreaReference">
                                     <label asp-for="ConservationAreaReference" class="@GdsConstants.GdsLabelCssClass">
                                         Conservation area reference
                                     </label>
-                                    <validation asp-for="@Model.ConservationAreaReference"></validation>
+                                    <validation asp-for="ConservationAreaReference"></validation>
                                     <input class="@GdsConstants.GdsInputCssClass" asp-for="ConservationAreaReference" tabindex="0" />
-                                </div>
+                                </govuk-form-group>
                             </div>
 
                             <div class="govuk-radios__item">
@@ -230,7 +230,7 @@
                             </div>
                         </div>
                     </fieldset>
-                </div>
+                </govuk-form-group>
 
             </fieldset>
 

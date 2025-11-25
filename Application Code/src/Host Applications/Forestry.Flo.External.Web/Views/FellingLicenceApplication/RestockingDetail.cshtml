@@ -51,7 +51,7 @@
 
                 <p class="govuk-body">Add more information about the <b>@Model.RestockingProposal.GetDisplayName()</b> you have planned for <b>@Model.CompartmentName</b>.</p>
 
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="Area">
 					<label class="govuk-heading-m" asp-for="Area" id="@nameof(Model.Area)Label">
                         Estimated area to be restocked
                     </label>
@@ -67,10 +67,10 @@
                     </div>
                     <validation asp-for="Area"></validation>
                     <div class="govuk-input__wrapper">
-                        <input class="govuk-input govuk-input--width-5" asp-for="@Model.Area" type="number" step="0.01" aria-describedby="area-hint">
+                        <input class="govuk-input govuk-input--width-5" asp-for="Area" type="number" step="0.01" aria-describedby="area-hint">
                         <div class="govuk-input__suffix" aria-hidden="true">ha</div>
                     </div>
-                </div>
+                </govuk-form-group>
 
                 <div class="govuk-form-group">
                     <label class="govuk-heading-m" for="Percentage-Of-Restock-Area" id="@nameof(Model.PercentageOfRestockArea)Label">
@@ -85,7 +85,7 @@
                     </div>
                 </div>
 
-                <div condition="@(Model.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround && Model.RestockingProposal != TypeOfProposal.RestockWithIndividualTrees && Model.RestockingProposal != TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)" class="govuk-form-group">
+                <govuk-form-group asp-for="RestockingDensity" condition="@(Model.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround && Model.RestockingProposal != TypeOfProposal.RestockWithIndividualTrees && Model.RestockingProposal != TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)">
 					<label class="govuk-heading-m" asp-for="@Model.RestockingDensity" id="@nameof(Model.RestockingDensity)Label">
                         Estimate of the restocking density
                     </label>
@@ -97,9 +97,9 @@
                         <input class="govuk-input govuk-input govuk-input--width-10" asp-for="RestockingDensity" type="number" value="@(Model.RestockingDensity == 0 ? "" : Model.RestockingDensity)">
                         <div class="govuk-input__suffix" aria-hidden="true">Stems per Ha</div>
                     </div>
-                </div>
+                </govuk-form-group>
 
-                <div condition="@(Model.RestockingProposal == TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees || Model.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees)" class="govuk-form-group">
+                <govuk-form-group asp-for="NumberOfTrees" condition="@(Model.RestockingProposal == TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees || Model.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees)">
 					<label class="govuk-heading-m" asp-for="NumberOfTrees" id="@nameof(Model.NumberOfTrees)Label">
                         Estimated number of trees to be restocked
                     </label>
@@ -113,7 +113,7 @@
                         <input class="govuk-input govuk-input--width-10" asp-for="NumberOfTrees" type="number" aria-describedby="no-of-trees-hint">
                         <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
                     </div>
-                </div>
+                </govuk-form-group>
 			</fieldset>
             @{
                 var viewData = new ViewDataDictionary(ViewData)
@@ -128,7 +128,7 @@
 
             <input type="hidden" aria-hidden="true" asp-for="Species" condition="@(Model.RestockingProposal == TypeOfProposal.CreateDesignedOpenGround)" />
 
-            <div id="restocking-tree-species-group" class="govuk-form-group" condition="@(Model.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)">
+            <govuk-form-group asp-for="Species" id="restocking-tree-species-group" condition="@(Model.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)">
                 <input type="hidden" aria-hidden="true" asp-for="Species"/>
 				<label class="govuk-heading-m" for="restocking-tree-species-select" id="restocking-tree-species-selectLabel">
                     What species of trees will be restocked?
@@ -138,7 +138,7 @@
                 </div>
                 <validation id="restocking-tree-species-error" asp-for="Species"></validation>
                 <partial name="_TreeSpeciesSelection" model="@Model.Species" view-data="viewData" />
-            </div>
+            </govuk-form-group>
 
             <button type="submit" class="govuk-button" data-module="govuk-button">
                 Save and continue
