@@ -147,6 +147,7 @@ public class AgentAuthorityFormDocumentsController : Controller
         [FromServices] AddAgentAuthorityFormDocumentFilesUseCase useCase,
         [FromForm] Guid? applicationId,
         [FromForm] bool returnToApplicationSummary,
+        [FromForm] bool noJsFlag,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -157,10 +158,22 @@ public class AgentAuthorityFormDocumentsController : Controller
             agentAuthorityDocumentFiles,
             cancellationToken);
 
-
         if (addFilesResult.IsFailure)
         {
-            return new BadRequestResult();
+            if (noJsFlag)
+            {
+                    this.AddErrorMessage(addFilesResult.Error);
+
+                    if (Request.Headers.Referer.Count > 0)
+                    {
+                        return Redirect(Request.Headers.Referer);
+                    }
+                    return RedirectToAction(nameof(Index), "AgentAuthorityFormDocuments", new { agentAuthorityId, applicationId });
+            }
+            else
+            {
+                    return new BadRequestResult();
+            }
         }
 
         var returnUrl = Url.Action
@@ -180,11 +193,19 @@ public class AgentAuthorityFormDocumentsController : Controller
                 ControllerContext.HttpContext.Request.Scheme
             );
         }
-        return new CreatedResult
-        (
-            returnUrl!,
-            null
-        );
+
+        if (noJsFlag)
+        {
+            return Redirect(returnUrl!);
+        }
+        else
+        {
+            return new CreatedResult
+            (
+                returnUrl!,
+                null
+            );
+        }
     }
 
     private BreadcrumbsModel AddFormBreadcrumbs => new()

@@ -11,7 +11,7 @@
         <fieldset class="govuk-fieldset">
             <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                 <h1 class="govuk-fieldset__heading">
-                    ViewData["Title"]
+                    @ViewData["Title"]
                 </h1>
             </legend>
             
@@ -28,7 +28,7 @@
             <input type="hidden" asp-for="FellingCompartmentName" />
 
             <p class="govuk-body govuk-hint">Use a name or number that clearly identifies this compartment.</p>
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="CompartmentNumber">
                 <label asp-for="CompartmentNumber" class="@GdsConstants.GdsLabelCssClass">Compartment</label>
                 <validation asp-for="CompartmentNumber"></validation>
                 <details class="govuk-details" data-module="govuk-details" style="margin-bottom: 3px;">
@@ -44,7 +44,7 @@
                 </details>
 
                 <input class="@GdsConstants.GdsInputCssClass" asp-for="CompartmentNumber" />
-            </div>
+            </govuk-form-group>
             
             <input type="hidden" asp-for="GISData" />
             <input type="hidden" asp-for="TotalHectares" />

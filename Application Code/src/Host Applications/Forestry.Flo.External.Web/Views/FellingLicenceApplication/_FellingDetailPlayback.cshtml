@@ -1,4 +1,5 @@
 ﻿@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingDetailPlaybackViewModel
 
 @{
@@ -100,7 +101,7 @@
                 <dd class="govuk-summary-list__value">
                     @willRestock
                 </dd>
-                <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+                <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing && Model.FellingDetail.OperationType.AllowedRestockingForFellingType(false).IsNullOrEmpty() == false">
                     <a class="govuk-link" href="@Url.Action(Model.WillYouRestockChangeLink)">Change<span class="govuk-visually-hidden"> do you want to restock for the @Model.FellingDetail.OperationType.GetDisplayName() in compartment @Model.FellingCompartmentName</span></a>
                 </dd>
             </div>

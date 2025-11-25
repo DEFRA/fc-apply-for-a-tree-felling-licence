@@ -264,6 +264,22 @@ spec:
               value: {{ .Values.config.notifications.smtp.password }}
               {{- end }}
             {{- end }}
+            # ------------------- API Security start -------------------
+            {{- if .Values.config.apiSecurityOptions.authenticationHeaderKey }}
+            - name: ApiSecurityOptions__AuthenticationHeaderKey
+              value: {{ .Values.config.apiSecurityOptions.authenticationHeaderKey | quote }}
+            {{- end }}
+            {{- if .Values.config.apiSecurityOptions.authenticationHeaderValue }}
+            - name: ApiSecurityOptions__AuthenticationHeaderValue
+            {{- if .Values.config.apiSecurityOptions.authenticationHeaderValue.secret_key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.secret_key_ref_name }}
+                  key: {{ .Values.config.apiSecurityOptions.authenticationHeaderValue.secret_key }}
+            {{- else }}
+              value: {{ .Values.config.apiSecurityOptions.authenticationHeaderValue | quote }}
+            {{- end }}
+            {{- end }}
             # ------------------- ASP.Net Core start -------------------
             {{- if .Values.config.environment }}
             - name: ASPNETCORE_ENVIRONMENT

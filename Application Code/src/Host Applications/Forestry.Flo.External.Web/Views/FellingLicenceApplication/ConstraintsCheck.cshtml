@@ -49,7 +49,7 @@
     <form id="constraint-check-form" method="post" asp-action="ConstraintsCheck">
         <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
         <input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary" />
-        <div>
+        <govuk-form-group asp-for="NotRunningExternalLisReport">
             <div class="govuk-checkboxes govuk-!-margin-top-4 govuk-!-margin-bottom-4" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
                     @Html.CheckBox(Html.NameFor(x => x.NotRunningExternalLisReport), Model.NotRunningExternalLisReport ?? false, attributes)
@@ -61,7 +61,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </govuk-form-group>
         <div class="govuk-button-group">
             <button class="govuk-button" type="submit" data-module="govuk-button">
                 Continue

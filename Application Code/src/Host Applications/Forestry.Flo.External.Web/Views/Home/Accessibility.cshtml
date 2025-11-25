@@ -7,6 +7,12 @@
 <div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
+    
+    <ul class="govuk-list">
+        <li>Published 12/11/2025</li>
+        <li>Last updated 12/11/2025</li>
+        <li>Next review due 31/12/2025</li>
+    </ul>
 
     <p class="govuk-body">This accessibility statement applies to the 'Apply for  a felling licence' service.</p>
 
@@ -24,42 +30,63 @@
     <h2 class="govuk-heading-l">How accessible this website is</h2>
     <p class="govuk-body">We know some parts of this website are not fully accessible. This means that:</p>
     <ul class="govuk-list govuk-list--bullet">
-        <li>some radio buttons that reveal extra content are not fully supported by screen readers</li>
+        <li>some radio buttons that reveal extra content use unsupported ARIA attributes, which may interfere with assistive technologies and are not fully supported by screen readers</li>
         <li>maps and map controls cannot be used properly with a keyboard or with Dragon NaturallySpeaking voice software</li>
         <li>some links and dropdowns are not accessible to keyboard-only users or people using screen readers such as VoiceOver and TalkBack</li>
         <li>file upload buttons on some pages cannot be activated using Dragon NaturallySpeaking voice software</li>
-        <li>some placeholder text cannot be deleted using assistive technology on mobile devices</li>
+        <li>some placeholder text cannot be deleted using assistive technology</li>
         <li>keyboard focus does not always move in a logical order when new content appears</li>
+        <li>some interactive elements do not display a visible focus indicator</li>
+        <li>at 400% zoom, some content is cut off and not available when the page reflows</li>
+        <li>some text and components do not have enough contrast to be easily seen by users with low vision</li>
+        <li>some maps do not provide meaningful information for screen reader users</li>
     </ul>
     <p class="govuk-body">These issues mean the website does not fully meet WCAG 2.2 accessibility standards. You can find more detail about each issue in the Known issues with this website section below.</p>
     
     <h2 class="govuk-heading-l">Known issues with this website</h2>
     <p class="govuk-body">We are aware of the following accessibility issues within the service:</p>
     
-    <h3 class="govuk-heading-m">Radio buttons do not include the correct ARIA role</h3>
+    <h3 class="govuk-heading-m">Radio buttons use unsupported ARIA attributes without the correct ARIA role</h3>
     <p class="govuk-body">On pages like ‘Create a Property’ and ‘Felling Details’, radio buttons are used to reveal additional content. These use the aria-expanded attribute but do not include a required ARIA role such as menuitemradio.</p>
-    <p class="govuk-body">This means the content may not be interpreted correctly by assistive technologies. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
+    <p class="govuk-body">This means the content may not be interpreted correctly by assistive technologies. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html">WCAG 2.2 success criterion 4.1.2: Name, Role, Value</a>.</p>
     <p class="govuk-body">We have followed the <a class="govuk-link" href="https://design-system.service.gov.uk/components/radios/#conditionally-revealing-radios">GOV.UK Design System guidance for radios with conditionally revealing content</a>, but recognise that this approach may result in invalid HTML.</p>
     <p class="govuk-body">We are monitoring guidance and exploring alternatives.</p>
 
-    <h3 class="govuk-heading-m">Maps cannot be used with a keyboard or speech recognition software</h3>
-    <p class="govuk-body">On the ‘Create a compartment’ page, users cannot interact with the map using a keyboard. Users of Dragon NaturallySpeaking also cannot draw areas on the map using voice commands.</p>
-    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a> and <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/name-role-value.html">WCAG 2.2 success criterion 4.1.2: Name, Role, Value</a>.</p>
-    <p class="govuk-body">This issue relates to third-party map content and cannot currently be fixed. We will monitor for improvements. A workaround is available on request.</p>
+    <h3 class="govuk-heading-m">Maps cannot be used with a keyboard</h3>
+    <p class="govuk-body">On the ‘Create a compartment’ page, users cannot interact with the map using a keyboard.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a> and <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
+
+    <h3 class="govuk-heading-m">Maps do not have an equivalent text alternative</h3>
+    <p class="govuk-body">On the ‘Create a compartment’, ‘Select or Create a Felling Compartment’ and ‘Check Felling Answers’ pages, the map does not provide an informative text alternative. Screen reader users may encounter empty tab stops or hear announcements such as "Map tab panel", which are not informative.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/non-text-content.html">WCAG 2.2 success criterion 1.1.1: Non-text content</a>.</p>
+    
+    <h3 class="govuk-heading-m">Missing focus indicators</h3>
+    <p class="govuk-body">On the ‘Create a compartment’ page, some elements such as "Basemap selection" do not display a visible focus indicator. This makes it difficult for keyboard users to see their location on the page.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html">WCAG 2.2 success criterion 2.4.7: Focus Visible</a>.</p>
+
+    <h3 class="govuk-heading-m">Reflow at 400% zoom</h3>
+    <p class="govuk-body">On the ‘Create a compartment’ page, the text within the search bar is cut off when zoomed to 400% at 1280px width.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/reflow.html">WCAG 2.2 success criterion 1.4.10: Reflow</a>.</p>
 
     <h3 class="govuk-heading-m">Some links and dropdowns are not accessible by keyboard</h3>
     <p class="govuk-body">On pages such as ‘Create a property’ and ‘Select felling options’, some links cannot be accessed without a mouse.</p>
     <p class="govuk-body">This may prevent keyboard-only users from accessing essential content. This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
     
-    <h3 class="govuk-heading-m">Dropdowns and placeholder text may not work correctly with assistive technologies</h3>
-    <p class="govuk-body">On the ‘Felling details’ page, users navigating with VoiceOver or TalkBack cannot select species from the dropdown.</p>
-    <p class="govuk-body">Placeholder text in the ‘Estimated total felling volume’ input cannot be fully deleted using a mobile keyboard.</p>
-    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html">WCAG 2.2 success criterion 2.1.1: Keyboard</a>.</p>
-    
     <h3 class="govuk-heading-m">File upload buttons may not work with Dragon NaturallySpeaking</h3>
     <p class="govuk-body">On pages such as ‘Add agent authority form files’ and ‘Supporting documentation’, users of Dragon NaturallySpeaking may not be able to activate file upload buttons using voice commands.</p>
-    <p class="govuk-body">This is believed to be a known issue with Dragon and does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html">WCAG 2.1 success criterion 4.1.2: Name, Role, Value</a>.</p>
+    <p class="govuk-body">This is believed to be a known issue with Dragon and does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG21/Understanding/name-role-value.html">WCAG 2.2 success criterion 4.1.2: Name, Role, Value</a>.</p>
     
+    <h3 class="govuk-heading-m">Contrast issues</h3>
+    <h4 class="govuk-heading-s">Text contrast</h4>
+    <p class="govuk-body">Some text within map interfaces (such as street names, "Collapse" button labels, and map option labels) does not meet the required contrast ratio of 4.5:1 or 3:1 depending on size and weight.</p>
+    <p class="govuk-body">This may make it difficult for users with visual impairments to read key information on the page.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html">WCAG 2.2 success criterion 1.4.3: Contrast (Minimum)</a>.</p>
+
+    <h4 class="govuk-heading-s">Graphical object contrast</h4>
+    <p class="govuk-body">Some interactive elements in the map, such as zoom controls, the full screen button and the search bar, do not have enough contrast against the background.</p>
+    <p class="govuk-body">This can make them hard to see for users with low vision.</p>
+    <p class="govuk-body">This does not meet <a class="govuk-link" href="https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html">WCAG 2.2 success criterion 1.4.11: Non-text Contrast</a>.</p>
+
     <p class="govuk-body">We will update this accessibility statement as we make progress on resolving these issues.</p>
 
     <h2 class="govuk-heading-l">Feedback and contact information</h2>
@@ -72,7 +99,7 @@
 
     <h3 class="govuk-heading-m">Telephone</h3>
     <p class="govuk-body">
-        Phone: 0300 067 5155 <br />
+        Phone: 0300 067 4420 <br />
         Textphone: 020 234 4567 <br />
         Monday to Friday, 9am to 5pm (except public holidays) <br />
         <br />
@@ -81,12 +108,13 @@
 
     <h3 class="govuk-heading-m">Address</h3>
     <p class="govuk-body">
-        49 to 53 Cherry Street <br />
-        London <br />
-        AB1 2DC <br />
+        Forestry Commission <br />
+        620 Bristol Business Park <br />
+        Bristol <br />
+        BS16 1EJ <br />
 	</p>
 
-	<p class="govuk-body">We'll consider your request and get back to you in <span style="color: #CC0000">5 working days.</span></p>
+	<p class="govuk-body">We'll consider your request and get back to you in 5 working days.</p>
 
     <h2 class="govuk-heading-l">Reporting accessibility problems with this website</h2>
     <p class="govuk-body long-link">

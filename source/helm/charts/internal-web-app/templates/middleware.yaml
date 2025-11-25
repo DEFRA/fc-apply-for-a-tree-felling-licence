@@ -1,7 +1,7 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: internal-csp-header
+  name: internal-security-headers
   namespace: {{ .Release.Namespace }}
   annotations:
     {{- with .Values.ingressRoute.app.annotations }}
@@ -14,11 +14,24 @@ metadata:
     {{- end }}
 spec:
   headers:
-    contentSecurityPolicy: >
+    frameDeny: true
+    contentTypeNosniff: true
+    browserXssFilter: true
+    referrerPolicy: "no-referrer"
+    contentSecurityPolicy: >-
       default-src 'self';
-      script-src 'self' https://{{ .Values.ingressRoute.app.hostname }} https://*.datatables.net https://*.usersnap.com https://*.jsdelivr.net https://www.googletagmanager.com https://*.clarity.ms 'unsafe-inline' 'unsafe-eval';
-      style-src 'self' https://{{ .Values.ingressRoute.app.hostname }} https://*.datatables.net https://fonts.googleapis.com 'unsafe-inline';
-      font-src https://{{ .Values.ingressRoute.app.hostname }} https://fonts.gstatic.com;
+      object-src 'none';
+      script-src 'self' https://{{ .Values.ingressRoute.app.hostname }} https://*.datatables.net https://*.usersnap.com https://*.jsdelivr.net https://www.googletagmanager.com https://*.clarity.ms https://js.arcgis.com 'unsafe-inline' 'unsafe-eval';
+      script-src-elem 'self' https://{{ .Values.ingressRoute.app.hostname }} https://*.datatables.net https://*.usersnap.com https://*.jsdelivr.net https://www.googletagmanager.com https://*.clarity.ms https://js.arcgis.com 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' https://{{ .Values.ingressRoute.app.hostname }} https://*.datatables.net https://fonts.googleapis.com https://js.arcgis.com 'unsafe-inline';
+      style-src-elem 'self' https://fonts.googleapis.com https://js.arcgis.com 'unsafe-inline';
+      font-src 'self' https://{{ .Values.ingressRoute.app.hostname }} https://fonts.gstatic.com https://js.arcgis.com data:;
       worker-src blob: https://{{ .Values.ingressRoute.app.hostname }};
-      connect-src https://*.qxlva.io https://*.ps.conneqt.cloud https://*.tree-felling.forestrycommission.gov.uk/ https://*.arcgis.com https://*.arcgisonline.com https://*.usersnap.com https://*.google-analytics.com https://*.clarity.ms;
-      img-src 'self' https://*.qxlva.io https://*.ps.conneqt.cloud https://*.tree-felling.forestrycommission.gov.uk https://*.arcgis.com https://*.arcgisonline.com https://*.clarity.ms data:;
+      connect-src https://*.qxlva.io https://*.ps.conneqt.cloud https://*.tree-felling.forestrycommission.gov.uk https://*.arcgis.com https://*.arcgisonline.com https://*.usersnap.com https://*.google-analytics.com https://*.clarity.ms https://js.arcgis.com https://cdn.jsdelivr.net;
+      img-src 'self' https://*.qxlva.io https://*.ps.conneqt.cloud https://*.tree-felling.forestrycommission.gov.uk https://*.arcgis.com https://*.arcgisonline.com https://*.clarity.ms https://js.arcgis.com data: blob:;
+    customResponseHeaders:
+      Permissions-Policy: "accelerometer=(), camera=(), microphone=(), geolocation=(), fullscreen=(self)"
+      Cross-Origin-Opener-Policy: "same-origin"
+      Cross-Origin-Embedder-Policy: "unsafe-none"
+      Cross-Origin-Resource-Policy: "same-origin"
+      Cache-Control: "no-store, no-cache"

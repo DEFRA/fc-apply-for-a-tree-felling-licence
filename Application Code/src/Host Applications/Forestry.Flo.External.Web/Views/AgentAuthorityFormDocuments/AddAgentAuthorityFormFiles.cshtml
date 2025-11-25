@@ -29,6 +29,8 @@
 {
     <script>
         $(document).ready(function () {
+            $('#submit-agent-authority-document-forms-files-button').prop('disabled', true);
+
             var selectedFiles = [],
                 maxSizeDescription = $('#allowed-max-size-description').val(),
                 fileExtensions = $('#allowed-extensions').val(),

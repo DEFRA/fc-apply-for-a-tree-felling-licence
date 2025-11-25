@@ -43,6 +43,10 @@ external-web-app:
     authenticationOptions:
       provider: OneLogin
     environment: Live
+    dataProtection:
+      persistence:
+        enabled: true
+        existingClaim: live-flo-external-web-app-dataprotectionkeys
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
       defaultFromAddress: service.flo-v2@forestrycommission.gov.uk
@@ -334,6 +338,10 @@ internal-web-app:
       clientSecret: 
         secret_key: azureb2c.client_secret
     environment: Live
+    dataProtection:
+      persistence:
+        enabled: true
+        existingClaim: live-flo-internal-web-app-dataprotectionkeys
     dataProtectionKeysDirectory: /app/dataprotectionkeys
     notifications:
       defaultFromAddress: service.flo-v2@forestrycommission.gov.uk
@@ -355,6 +363,10 @@ internal-web-app:
       baseUrl: "https://private-beta.tree-felling.forestrycommission.gov.uk/"
     woodlandOfficerReview:
       useDevPublicRegister: false
+    apiSecurityOptions:
+      authenticationHeaderKey: "X-Api-Key"
+      authenticationHeaderValue:
+        secret_key: cronJobs.apiKey
     cronJobs:
       apiKey:
         secret_key: cronJobs.apiKey

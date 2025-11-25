@@ -13,6 +13,7 @@ namespace Forestry.Flo.External.Web.Controllers;
 
 public partial class FellingLicenceApplicationController
 {
+    [EditingAllowed]
     public async Task<IActionResult> EnvironmentalImpactAssessment(
         Guid applicationId,
         [FromServices] EnvironmentalImpactAssessmentUseCase useCase,
@@ -49,6 +50,13 @@ public partial class FellingLicenceApplicationController
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
+
+        if (model.HasApplicationBeenCompleted is false)
+        {
+            // if the user has not completed an EIA then they don't need to answer if it's been sent
+            // can't use validation for this, as with the controls being radio buttons there's no way for the user to unselect an answer
+            model.HasApplicationBeenSent = null;
+        }
 
         ValidateModel(model, validator);
 
@@ -96,6 +104,7 @@ public partial class FellingLicenceApplicationController
     {
         if (eiaFiles.NotAny())
         {
+            this.AddErrorMessage("Select at least one file to upload");
             return RedirectToEiaPage();
         }
 
@@ -113,6 +122,8 @@ public partial class FellingLicenceApplicationController
             this.AddConfirmationMessage("Successfully uploaded EIA documents");
             return RedirectToEiaPage();
         }
+
+        this.AddErrorMessage("One or more selected documents could not be uploaded, try again");
 
         var fellingLicenceApplicationModelResult =
             await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
@@ -143,9 +154,10 @@ public partial class FellingLicenceApplicationController
         if (removeResult.IsFailure)
         {
             logger.LogError("Failed to remove eia document with error {Error}", removeResult.Error);
-            this.AddErrorMessage("Could not remove eia document at this time, try again");
+            this.AddErrorMessage("Could not remove EIA document at this time, try again");
         }
 
+        this.AddConfirmationMessage("EIA document successfully removed");
         return RedirectToAction(nameof(EnvironmentalImpactAssessment), new { applicationId });
     }
 }

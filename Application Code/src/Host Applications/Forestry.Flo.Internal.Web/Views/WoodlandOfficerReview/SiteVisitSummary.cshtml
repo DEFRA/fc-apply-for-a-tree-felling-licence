@@ -39,8 +39,15 @@
 
     <div class="page-break"></div>
     <h2 class="govuk-heading-m">Restocking operation map</h2>
-    <img src="data:image/jpeg;base64,@Model.RestockingMapBase64" alt="Restocking operations map"/>
-    <p class="govuk-body govuk-!-margin-bottom-5"></p>
+    @if (string.IsNullOrWhiteSpace(Model.RestockingMapBase64) is false)
+    {
+        <img src="data:image/jpeg;base64,@Model.RestockingMapBase64" alt="Restocking operations map"/>
+        <p class="govuk-body govuk-!-margin-bottom-5"></p>
+    }
+    else
+    {
+        <p class="govuk-body">No restocking operations in the application.</p>
+    }
 
     <div class="page-break"></div>
 

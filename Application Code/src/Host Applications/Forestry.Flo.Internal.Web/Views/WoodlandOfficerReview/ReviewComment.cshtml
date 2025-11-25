@@ -72,7 +72,7 @@
         }
         else
         {
-            <div class="govuk-form-group">
+            <govuk-form-group asp-for="Comment.Response">
                 <fieldset class="govuk-fieldset" aria-describedby="exempt-hint">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                         <h2 class="govuk-fieldset__heading">
@@ -86,15 +86,31 @@
                         <validation asp-for="Comment.Response"></validation>
                         <textarea class="govuk-textarea" rows="4" asp-for="Comment.Response"></textarea>
                     </div>
+                </fieldset>
+            </govuk-form-group>
 
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" asp-for="Comment.Reviewed" type="checkbox">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="Comment.Reviewed">
-                            Mark as reviewed
-                        </label>
+            <govuk-form-group asp-for="Comment.Reviewed">
+                <fieldset class="govuk-fieldset">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                        <h2 class="govuk-fieldset__heading">
+                            Mark this comment as reviewed
+                        </h2>
+                    </legend>
+                    <div id="contact-hint" class="govuk-hint">
+                        Check this box once you have reviewed the public register comment
+                    </div>
+                    <validation asp-for="Comment.Reviewed"></validation>
+                    <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="Comment.Reviewed" type="checkbox">
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="Comment.Reviewed">
+                                I have reviewed the comment
+                            </label>
+                        </div>
                     </div>
                 </fieldset>
-            </div>
+            </govuk-form-group>
+
             <div class="govuk-button-group" id="back-link-no-forms">
                 <button id="save-response-btn" class="govuk-button" data-module="govuk-button" type="submit">Save response</button>
             </div>

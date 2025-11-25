@@ -178,7 +178,7 @@
         <input hidden="hidden" aria-hidden="True" asp-for="ResponseReceivedDate" />
         <input hidden="hidden" aria-hidden="True" asp-for="ReviewDeadline" />
 
-        <div class="govuk-form-group">
+        <govuk-form-group asp-for="ApplicantAgreed">
 			<div class="govuk-heading-m">
 				Amendment reasons
 			</div>
@@ -189,7 +189,7 @@
                 <legend class="govuk-heading-m">
                     Do you agree to the proposed amendments made by the Woodland Officer?
                 </legend>
-                <validation asp-for="@Model.ApplicantAgreed"></validation>
+                <validation asp-for="ApplicantAgreed"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
                         <input id="applicant-agrees-yes"
@@ -218,22 +218,22 @@
 
                     <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-applicant-agrees">
 
-                        <div class="govuk-form-group">
+                        <govuk-form-group asp-for="ApplicantDisagreementReason">
                             <label class="govuk-hint" asp-for="ApplicantDisagreementReason">
                                 Tell us why you do not agree with the amendments. Include any details you'd like the Woodland Officer to consider before continuing with your application.
                             </label>
-                            <validation asp-for="@Model.ApplicantDisagreementReason"></validation>
+                            <validation asp-for="ApplicantDisagreementReason"></validation>
                             <textarea condition-disabled="@(!Model.IsEditable)" class="govuk-textarea" asp-for="ApplicantDisagreementReason" rows="5" maxlength="@DataValueConstants.ApplicantDisagreementReasonLength"></textarea>
                             <div class="govuk-hint">
                                 You can enter up to 2000 characters
                             </div>
-                        </div>
+                        </govuk-form-group>
 
                     </div>
 
                 </div>
             </fieldset>
-        </div>
+        </govuk-form-group>
 
         <div class="govuk-button-group">
             <a class="govuk-link" asp-action="ApplicationTaskList" asp-route-applicationId="@Model.ApplicationId" title="Click here to return to your application">

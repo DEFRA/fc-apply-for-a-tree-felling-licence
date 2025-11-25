@@ -1,0 +1,76 @@
+﻿@using Forestry.Flo.Internal.Web.Infrastructure.Display
+@using Forestry.Flo.Internal.Web.Infrastructure
+@{
+    ViewData["Title"] = "Get help using the Felling Licence service (FLOv2)";
+    ViewData.ShowBackLink(BackLinkType.Close);
+}
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <p class="govuk-body">This is a new internal service, and we're still adding features. Your feedback helps us improve how it works for you and for applicants.</p>
+    <p class="govuk-body">If you experience problems using the service, or need help supporting applicants, there are several ways to get assistance.</p>
+
+    <h2 class="govuk-heading-m">If you need help signing in</h2>
+    
+    <p class="govuk-body">This service uses GOV.UK One Login for internal access.</p>
+    <p class="govuk-body">If you need help creating or signing in to your GOV.UK One Login account, go to the official GOV.UK support page: </p>
+    <p class="govuk-body long-link">
+        <a class="govuk-link" target="_blank" rel="noreferrer noopener" href="https://www.sign-in.service.gov.uk/support">Get help with GOV.UK One Login (opens in a new tab)</a>
+    </p>
+    <p class="govuk-body">That page explains how to:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>create or recover a GOV.UK One Login account</li>
+        <li>reset your password</li>
+        <li>update your sign-in details</li>
+        <li>get help if you cannot access your account</li>
+    </ul>
+    <p class="govuk-body">If the issue continues after following that guidance, contact <b>IT Service Desk (FE IT)</b>  for internal access or permission issues. </p>
+
+    <h2 class="govuk-heading-m">If you need help using the service</h2>
+    <p class="govuk-body">Contact the support team if you:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>experience a technical problem within FLOv2 (for example, mapping tools, uploads, or workflow errors)</li>
+        <li>need to report missing or duplicate cases</li>
+        <li>wish to log feedback or improvement suggestions</li>
+    </ul>
+    <p class="govuk-body">The support team can:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>investigate and resolve system issues</li>
+        <li>provide advice on data entry or validation</li>
+        <li>liaise with developers and service managers for fixes</li>
+    </ul>
+    
+    <h2 class="govuk-heading-m">Guidance on processing, approval or consultation steps</h2>
+    <p class="govuk-body long-link">
+        If you need help understanding processing stages, approval pathways, or consultation requirements, refer to the
+        <a class="govuk-link" target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/felling-licences-guidance-and-resources/gr-code-felling-licences-2/">Felling licences: guidance and resources (opens in a new tab)</a>.
+    </p>
+    
+    <p class="govuk-body">This page contains the authoritative guidance for:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>G&R codes for felling licences as an Operations Admin Officer, Woodland Officer and Approving Officer</li>
+        <li>processing inventory & plan of operations and felling licence online data through  PW14 </li>
+        <li>further guidance on consultation public register, returning applications to applicants and extension letter and all standard Admin Hub letter templates</li>
+    </ul>
+    <p class="govuk-body"><b>Note:</b> The G&R codes guidance is the primary reference for workflow decisions and should be used alongside FLOv2.</p>
+    
+    <h2 class="govuk-heading-m">Internal contact routes</h2>
+    
+    <h3 class="govuk-heading-s">Email</h3>
+    <p class="govuk-body long-link"><a class="govuk-link" href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a></p>
+    
+    <p class="govuk-body">Include:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>licence reference or case ID (if known)</li>
+        <li>a clear description of the issue</li>
+        <li>screenshots or supporting attachments if relevant</li>
+    </ul>
+    
+    <h3 class="govuk-heading-s">Urgent technical issues</h3>
+    <p class="govuk-body">If the service is unavailable or prevents you from meeting statutory deadlines, raise an incident via <b>FE IT Service Desk </b> and mark it as <i>Tree Felling Licence – Priority</i>.</p>
+    
+    <h2 class="govuk-heading-m">Accessibility and inclusion</h2>
+    <p class="govuk-body">If you notice any accessibility issues in the service, or if an applicant reports problems using assistive technology, tell the support team so the issue can be logged and reviewed.</p>
+</div>

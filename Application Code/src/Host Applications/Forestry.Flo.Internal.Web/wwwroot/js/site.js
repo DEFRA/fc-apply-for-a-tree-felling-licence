@@ -49,4 +49,28 @@ $(function () {
         $('.input-validation-error').addClass('govuk-input--error');
         $('select.input-validation-error').addClass('govuk-select--error');
     });
+
+    var controllerName = window.location.pathname.split("/")[1];
+
+    $('#site-nav-home').removeClass('govuk-service-navigation__item--active');
+    $('#site-nav-property-profiles').removeClass('govuk-service-navigation__item--active');
+
+    switch (controllerName.toLowerCase()) {
+        case "propertyprofile":
+            $('#site-nav-property-profiles').addClass('govuk-service-navigation__item--active');
+            break;
+        case "home":
+            $('#site-nav-home').addClass('govuk-service-navigation__item--active');
+            break;
+        default:
+            break;
+    }
+
+    // Show the hide cookie button when JavaScript is available
+    $('#hideCookieButton').parent('.js-hidden').removeClass('js-hidden');
+
+    // Handle click event for hiding the cookie banner
+    $('#hideCookieButton').on('click', function () {
+        $('.govuk-cookie-banner').hide();
+    });
 });

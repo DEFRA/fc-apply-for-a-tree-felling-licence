@@ -1,14 +1,10 @@
 ﻿$(function () {
-    $(document).ready(function () {
-        $('#upload-eia-document-button').attr('disabled', 'disabled');
-    });
 
     $('#eia-file-upload-input').change(function (e) {
 
         $('#eia-file-upload-input-error').addClass('govuk-visually-hidden');
         $('#eia-file-upload-input-error').attr('aria-hidden', 'true');
         $('#eia-file-upload-input-error').html('');
-        $('#upload-eia-document-button').removeAttr('disabled');
         $('#eia-file-upload-input').removeClass('govuk-file-upload--error');
         $('#file-select-group').removeClass('govuk-form-group--error');
 
@@ -27,7 +23,6 @@
         const errors = [];
 
         if (fileCount === 0) {
-            $('#upload-eia-document-button').attr('disabled', 'disabled');
             return;
         }
         var stringLabelText = '';
@@ -57,7 +52,6 @@
                     .append(errorText)
             );
 
-            $('#upload-eia-document-button').attr('disabled', 'disabled');
             $('#eia-file-upload-input').addClass('govuk-file-upload--error');
             $('#file-select-group').addClass('govuk-form-group--error');
         }
