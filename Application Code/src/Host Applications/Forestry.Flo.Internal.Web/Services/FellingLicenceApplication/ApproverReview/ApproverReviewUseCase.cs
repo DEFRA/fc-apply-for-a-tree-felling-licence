@@ -108,7 +108,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
         }
 
         var woodlandOwner =
-            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.Value.WoodlandOwnerId, cancellationToken);
+            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.Value.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             _logger.LogError("Application woodland owner not found, application id: {ApplicationId}, woodland owner id: {WoodlandOwnerId}, error: {Error}",

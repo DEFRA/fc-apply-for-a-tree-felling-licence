@@ -183,6 +183,8 @@ public static class AuditEvents
     public const string ApplicationApproved = "Application Approved";
     public const string ApplicationRefused = "Application Refused";
     public const string ApplicationReferredToLocalAuthority = "Application Referred To Local Authority";
+    public const string ConfirmApprovedInError = "Confirm Approved In Error";
+    public const string ConfirmApprovedInErrorFailure = "Confirm Approved In Error Failure";
 
     public const string ApplicationExtensionNotification = "Application Extension Notification";
     public const string ApplicationVoluntaryWithdrawalNotification = "Application Volutary Withdrawal Notification";
@@ -249,6 +251,9 @@ public static class AuditEvents
     public const string TenYearLicenceStepUpdatedFailure = "Ten Year Licence Step Updated Failure";
     public const string TenYearLicenceStepCompleted = "Ten Year Licence Step Completed Success";
     public const string TenYearLicenceStepCompletedFailure = "Ten Year Licence Step Completed Failure";
+
+    public const string HideFellingLicenceDocumentEvent = "Hide Felling Licence Document";
+    public const string HideFellingLicenceDocumentFailureEvent = "Hide Felling Licence Document Failure";
 
 
     /// <summary>
@@ -471,6 +476,12 @@ public static class AuditEvents
             TenYearLicenceStepUpdatedFailure => SourceEntityType.FellingLicenceApplication,
             TenYearLicenceStepCompleted => SourceEntityType.FellingLicenceApplication,
             TenYearLicenceStepCompletedFailure => SourceEntityType.FellingLicenceApplication,
+
+            HideFellingLicenceDocumentEvent => SourceEntityType.FellingLicenceApplication,
+            HideFellingLicenceDocumentFailureEvent => SourceEntityType.FellingLicenceApplication,
+
+            ConfirmApprovedInError => SourceEntityType.FellingLicenceApplication,
+            ConfirmApprovedInErrorFailure => SourceEntityType.FellingLicenceApplication,
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

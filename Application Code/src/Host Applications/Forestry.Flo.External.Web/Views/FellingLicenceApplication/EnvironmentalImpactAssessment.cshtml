@@ -49,12 +49,11 @@
                     <validation asp-for="HasApplicationBeenCompleted"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input id="eia-app-completed-yes"
-                                   asp-for="HasApplicationBeenCompleted"
+                            <input asp-for="HasApplicationBeenCompleted"
                                    type="radio"
                                    class="govuk-radios__input"
                                    value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="eia-app-completed-yes">
+                            <label class="govuk-label govuk-radios__label" asp-for="HasApplicationBeenCompleted">
                                 Yes
                             </label>
                         </div>
@@ -92,12 +91,11 @@
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
                             <input
-                                id="eia-sent-yes"
                                 type="radio"
                                 class="govuk-radios__input"
                                 asp-for="HasApplicationBeenSent"
                                 value="@true"/>
-                            <label class="govuk-label govuk-radios__label" for="eia-sent-yes">
+                            <label class="govuk-label govuk-radios__label" asp-for="HasApplicationBeenSent">
                                 Yes
                             </label>
                         </div>
@@ -123,7 +121,7 @@
                                 <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)"/>
                                 <input id="allowed-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxNumberDocs"/>
                                 <input id="current-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@Model.EiaDocuments.Count()"/>
-                                <div class="govuk-form-group" id="file-select-group">
+                                <div class="govuk-form-group" id="file-select-group-2">
                                     <label for="eia-file-upload" class="govuk-label">Upload all relevant EIA documents</label>
                                     <div class="govuk-hint">
                                         You can select one or more files to upload.

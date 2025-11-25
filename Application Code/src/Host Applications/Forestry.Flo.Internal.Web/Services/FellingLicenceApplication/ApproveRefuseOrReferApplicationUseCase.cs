@@ -7,6 +7,7 @@ using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -338,7 +339,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
             _externalAccountService.RetrieveUserAccountByIdAsync(application.CreatedById, cancellationToken);
 
         var (woodlandOwnerSuccess, _, woodlandOwner) = await
-            _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken);
+            _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
 
         if (applicantFailure)
         {

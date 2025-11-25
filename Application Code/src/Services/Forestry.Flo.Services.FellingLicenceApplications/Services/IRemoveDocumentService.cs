@@ -42,4 +42,18 @@ public interface IRemoveDocumentService
         Guid applicationId,
         Guid documentId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Hides a document from the applicant's view without removing it.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application containing the document.</param>
+    /// <param name="documentId">The ID of the document to hide.</param>
+    /// <param name="userAccountId">The ID of the user performing the action.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A Result indicating success or failure.</returns>
+    Task<Result> HideDocumentFromApplicantAsync(
+        Guid applicationId,
+        Guid documentId,
+        Guid userAccountId,
+        CancellationToken cancellationToken);
 }

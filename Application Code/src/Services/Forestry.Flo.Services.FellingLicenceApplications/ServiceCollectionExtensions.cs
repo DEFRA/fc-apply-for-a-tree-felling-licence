@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ConstraintCheckerService>();
         services.AddScoped<IGetWoodlandOfficerReviewService, GetWoodlandOfficerReviewService>();
         services.AddScoped<IApproverReviewService, ApproverReviewService>();
+        services.AddScoped<IApprovedInErrorService, ApprovedInErrorService>();
         services.AddScoped<IExternalConsulteeReviewService, ExternalConsulteeReviewService>();
         services.AddScoped<IUpdateConfirmedFellingAndRestockingDetailsService, UpdateConfirmedFellingAndRestockingDetailsService>();
         services.Configure<WoodlandOfficerReviewOptions>(configuration.GetSection("WoodlandOfficerReview"));

@@ -407,6 +407,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICBWCheckUseCase, CBWCheckUseCase>();
         services.AddScoped<IConstraintsCheckUseCase, ConstraintsCheckUseCase>();
         services.AddScoped<IApproverReviewUseCase, ApproverReviewUseCase>();
+        services.AddScoped<IApprovedInErrorUseCase, ApprovedInErrorUseCase>();
         services.AddScoped<IRevertApplicationFromWithdrawnUseCase, RevertApplicationFromWithdrawnUseCase>();
         services.AddScoped<IEnvironmentalImpactAssessmentAdminOfficerUseCase, EnvironmentalImpactAssessmentAdminOfficerUseCase>();
         services.AddScoped<ILateAmendmentResponseWithdrawalUseCase, LateAmendmentResponseWithdrawalUseCase>();

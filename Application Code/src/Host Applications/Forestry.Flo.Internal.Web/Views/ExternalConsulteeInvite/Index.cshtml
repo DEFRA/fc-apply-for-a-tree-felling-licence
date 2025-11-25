@@ -36,8 +36,8 @@
                 <validation asp-for="ApplicationNeedsConsultations"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@disableRadios" class="govuk-radios__input" id="consultation-needed-yes" asp-for="ApplicationNeedsConsultations" value="true" type="radio"/>
-                        <label class="govuk-label govuk-radios__label" for="consultation-needed-yes">Yes</label>
+                        <input condition-disabled="@disableRadios" class="govuk-radios__input" asp-for="ApplicationNeedsConsultations" value="true" type="radio"/>
+                        <label class="govuk-label govuk-radios__label" asp-for="ApplicationNeedsConsultations">Yes</label>
                     </div>
                 </div>
                 <div class="govuk-radios" data-module="govuk-radios">

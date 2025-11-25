@@ -1,7 +1,5 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Common.Infrastructure;
-using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -31,7 +29,6 @@ public interface IApproverReviewService
     Task<Result> SaveApproverReviewAsync(Guid applicationId, ApproverReviewModel model, Guid userId, CancellationToken cancellationToken);
 
     Task<Result> DeleteApproverReviewAsync(Guid applicationId, CancellationToken cancellationToken);
-
 }
 
 public class ApproverReviewService : IApproverReviewService
@@ -40,12 +37,6 @@ public class ApproverReviewService : IApproverReviewService
     private readonly IClock _clock;
     private readonly ILogger<ApproverReviewService> _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ApproverReviewService"/> class.
-    /// </summary>
-    /// <param name="internalFlaRepository">The internal repository for felling licence applications.</param>
-    /// <param name="clock">The clock instance for getting the current time.</param>
-    /// <param name="logger">The logger instance.</param>
     public ApproverReviewService(
         IFellingLicenceApplicationInternalRepository internalFlaRepository,
         IClock clock,

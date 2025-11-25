@@ -12,15 +12,16 @@ public class IForesterAccessTestPipe(EsriConfig config, IHttpClientFactory httpC
     ILogger<ForesterServices> logger) : ForesterServices(config, httpClientFactory, logger)
 
 {
-    public async Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(InternalCompartmentDetails<BaseShape> compartment, CancellationToken cancellationToken, int delay, MapGeneration generationType, string title)
+    public async Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(string applicationReference, InternalCompartmentDetails<BaseShape> compartment, CancellationToken cancellationToken, int delay, MapGeneration generationType, string title)
     {
-        return await base.GenerateImage_SingleCompartmentAsync(compartment, cancellationToken, delay, generationType, title);
+        return await base.GenerateImage_SingleCompartmentAsync(applicationReference, compartment, cancellationToken, delay, generationType, title);
     }
 
     public async Task<Result<Stream>> GenerateImage_MultipleCompartmentsAsync(
+        string applicationReference,
         List<InternalCompartmentDetails<BaseShape>> compartments, CancellationToken cancellationToken, int delay, MapGeneration generationType, string title)
     {
-        return await base.GenerateImage_MultipleCompartmentsAsync(compartments, cancellationToken, delay, generationType, title);
+        return await base.GenerateImage_MultipleCompartmentsAsync(applicationReference, compartments, cancellationToken, delay, generationType, title);
     }
 }
 

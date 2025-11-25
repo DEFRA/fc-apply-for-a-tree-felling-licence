@@ -102,7 +102,7 @@ public class LarchCheckUseCaseTests
         };
 
         _retrieveWoodlandOwnersMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _retrieveUserAccountsServiceMock.Setup(s =>

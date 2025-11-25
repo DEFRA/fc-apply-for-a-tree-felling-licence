@@ -303,7 +303,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
         }
 
         var woodlandOwner =
-            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(summaryInfo.Value.WoodlandOwnerId!.Value, cancellationToken);
+            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(summaryInfo.Value.WoodlandOwnerId!.Value, UserAccessModel.SystemUserAccessModel, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             _logger.LogError("Application woodland owner not found, application id: {ApplicationId}, woodland owner id: {WoodlandOwnerId}, error: {Error}",
@@ -316,6 +316,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
 
         var fellingImage = await GetImageForFellingAndRestockingCompartments(
             applicationId,
+            summaryInfo.Value.ApplicationReference,
             summaryInfo.Value.DetailsList.DistinctBy(x => x.CompartmentId).Select(f => new InternalCompartmentDetails<BaseShape>
                 {
                     CompartmentLabel = f.CompartmentName,
@@ -342,6 +343,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
         {
             var restockingImageResult = await GetImageForFellingAndRestockingCompartments(
                 applicationId,
+                summaryInfo.Value.ApplicationReference,
                 summaryInfo.Value.DetailsList.SelectMany(x => x.RestockingDetail).DistinctBy(x => x.RestockingCompartmentId)
                     .Select(r => new InternalCompartmentDetails<BaseShape>
                     {
@@ -671,10 +673,12 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
 
     private async Task<Result<string>> GetImageForFellingAndRestockingCompartments(
         Guid applicationId,
+        string applicationReference,
         List<InternalCompartmentDetails<BaseShape>> shapes, 
         CancellationToken cancellationToken)
     {
-        var generatedMainFellingMap = await _foresterServices.GenerateImage_MultipleCompartmentsAsync(shapes, cancellationToken, 3000);
+        var generatedMainFellingMap = await _foresterServices
+            .GenerateImage_MultipleCompartmentsAsync(applicationReference, shapes, cancellationToken, 3000);
         if (generatedMainFellingMap.IsFailure)
         {
             _logger.LogError("Unable to retrieve generated map image of application with id {ApplicationId}, error: {Error}", applicationId, generatedMainFellingMap.Error);

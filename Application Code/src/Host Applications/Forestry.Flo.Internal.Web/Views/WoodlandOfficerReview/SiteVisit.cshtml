@@ -17,7 +17,7 @@
 
         <govuk-form-group asp-for="SiteVisitNeeded">
 
-            <fieldset class="govuk-fieldset" aria-describedby="site-visit-needed-hint">
+            <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
                         @ViewData["Title"]
@@ -29,13 +29,13 @@
                 <validation asp-for="SiteVisitNeeded"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-needed-yes" asp-for="SiteVisitNeeded" value="true" type="radio"/>
-                        <label class="govuk-label govuk-radios__label" for="site-visit-needed-yes">Yes</label>
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="SiteVisitNeeded" value="true" type="radio" aria-describedby="site-visit-needed-hint"/>
+                        <label class="govuk-label govuk-radios__label" asp-for="SiteVisitNeeded">Yes</label>
                     </div>
                 </div>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-needed-no" asp-for="SiteVisitNeeded" value="false" type="radio"/>
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-needed-no" asp-for="SiteVisitNeeded" value="false" type="radio" aria-describedby="site-visit-needed-hint" />
                         <label class="govuk-label govuk-radios__label" for="site-visit-needed-no">No</label>
                     </div>
                 </div>
@@ -88,13 +88,13 @@
                     <validation asp-for="SiteVisitArrangementsMade"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-arrangements-yes" asp-for="SiteVisitArrangementsMade" value="true" type="radio"/>
-                            <label class="govuk-label govuk-radios__label" for="site-visit-arrangements-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="SiteVisitArrangementsMade" value="true" type="radio" aria-describedby="site-visit-arrangments-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="SiteVisitArrangementsMade">Yes</label>
                         </div>
                     </div>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-arrangements-no" asp-for="SiteVisitArrangementsMade" value="false" type="radio"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="site-visit-arrangements-no" asp-for="SiteVisitArrangementsMade" value="false" type="radio" aria-describedby="site-visit-arrangments-hint" />
                             <label class="govuk-label govuk-radios__label" for="site-visit-arrangements-no">No</label>
                         </div>
                     </div>

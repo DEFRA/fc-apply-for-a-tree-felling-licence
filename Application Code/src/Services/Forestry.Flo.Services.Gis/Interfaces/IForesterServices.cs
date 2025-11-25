@@ -49,6 +49,7 @@ public interface IForesterServices
     /// <summary>
     /// Generates an image based on the compartment data given.
     /// </summary>
+    /// <param name="applicationReference">The application reference</param>
     /// <param name="compartmentDetails">The Shape to draw on a map.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <param name="delay">Optional setting for the delay to leave between calls.</param>
@@ -56,6 +57,7 @@ public interface IForesterServices
     /// <param name="title">Optional setting for helping to set the title.</param>
     /// <returns>A stream of bytes representing the generated image.</returns>
     Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(
+        string applicationReference,
         InternalCompartmentDetails<BaseShape> compartmentDetails, 
         CancellationToken cancellationToken, 
         int delay = 30000, 
@@ -66,6 +68,7 @@ public interface IForesterServices
     /// <summary>
     /// Generates an image based on the compartment data given.
     /// </summary>
+    /// <param name="applicationReference">The application reference</param>
     /// <param name="compartments">A list of compartments shapes to draw on a map.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <param name="delay">Optional setting for the delay to leave between calls.</param>
@@ -73,6 +76,7 @@ public interface IForesterServices
     /// <param name="title">Optional setting for helping to set the title.</param>
     /// <returns>A stream of bytes representing the generated image.</returns>
     Task<Result<Stream>> GenerateImage_MultipleCompartmentsAsync(
+        string applicationReference,
         List<InternalCompartmentDetails<BaseShape>> compartments,
         CancellationToken cancellationToken, 
         int delay = 30000, 

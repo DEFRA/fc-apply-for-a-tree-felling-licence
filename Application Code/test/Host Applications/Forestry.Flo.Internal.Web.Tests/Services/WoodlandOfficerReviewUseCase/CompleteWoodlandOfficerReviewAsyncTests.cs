@@ -559,6 +559,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
             MockBus.Object,
+            FellingLicenceApplicationOptions,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

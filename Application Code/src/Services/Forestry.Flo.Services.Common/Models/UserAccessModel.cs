@@ -37,4 +37,12 @@ public class UserAccessModel
     /// <returns>True if the user is allowed to access data for the woodland owner, otherwise false.</returns>
     public bool CanManageWoodlandOwner(Guid woodlandOwnerId) => IsFcUser
                                                                 || (WoodlandOwnerIds is not null && WoodlandOwnerIds.Contains(woodlandOwnerId));
+
+    /// <summary>
+    /// Creates a system user access model with full access.
+    /// </summary>
+    public static UserAccessModel SystemUserAccessModel => new UserAccessModel
+    {
+        IsFcUser = true
+    };
 }

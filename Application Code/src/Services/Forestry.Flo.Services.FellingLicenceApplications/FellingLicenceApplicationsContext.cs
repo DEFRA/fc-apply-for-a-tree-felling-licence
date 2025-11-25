@@ -85,6 +85,8 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
 
     public DbSet<EnvironmentalImpactAssessment> EnvironmentalImpactAssessments { get; set; } = null!;
 
+    public DbSet<ApprovedInError> ApprovedInErrors { get; set; } = null!;
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
@@ -136,6 +138,7 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<ConfirmedRestockingDetail>().ToTable("ConfirmedRestockingDetail");
         modelBuilder.Entity<ConfirmedRestockingSpecies>().ToTable("ConfirmedRestockingSpecies");
         modelBuilder.Entity<SiteVisitEvidence>().ToTable("SiteVisitEvidence");
+        modelBuilder.Entity<ApprovedInError>().ToTable("ApprovedInError");
 
         modelBuilder.Entity<WoodlandOwner>().ToTable("WoodlandOwner","Applicants", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<UserAccount>().ToTable("UserAccount","Applicants", t => t.ExcludeFromMigrations());
@@ -566,6 +569,24 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                 e.HasOne(p => p.FellingLicenceApplication).WithOne(x => x.ApproverReview)
                     .HasForeignKey<ApproverReview>(p => p.FellingLicenceApplicationId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        // NEW: Configure1 -1 mapping and FK from ApprovedInError -> FellingLicenceApplication
+        modelBuilder
+            .Entity<ApprovedInError>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
+        modelBuilder
+            .Entity<ApprovedInError>(e =>
+            {
+                e.HasOne(p => p.FellingLicenceApplication)
+                    .WithOne(p => p.ApprovedInError)
+                    .HasForeignKey<ApprovedInError>(p => p.FellingLicenceApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => x.FellingLicenceApplicationId).IsUnique();
             });
 
         modelBuilder

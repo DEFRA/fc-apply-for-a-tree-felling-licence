@@ -15,6 +15,7 @@
 
     <form method="post">
         <input asp-for="ApplicationId"/>
+        <input type="hidden" asp-for="FellingLicenceApplicationSummary.IsForTenYearLicence"/>
 
         <govuk-form-group asp-for="RecommendedLicenceDuration">
             <label class="govuk-label" asp-for="RecommendedLicenceDuration">
@@ -25,6 +26,17 @@
             <validation asp-for="RecommendedLicenceDuration"></validation>
             <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
         </govuk-form-group>
+        
+        @if (Model.FellingLicenceApplicationSummary?.IsForTenYearLicence ?? false)
+        {
+            <div id="ten-year-warning" class="govuk-warning-text">
+                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                <strong class="govuk-warning-text__text">
+                    <span class="govuk-visually-hidden">Warning</span>
+                    This application was set up as a ten-year felling licence application related to a WMP. Are you sure you want to change the duration of the licence?
+                </strong>
+            </div>
+        }
 
         <govuk-form-group asp-for="RecommendationForDecisionPublicRegister">
             <fieldset class="govuk-fieldset">
@@ -36,8 +48,8 @@
                 <validation asp-for="RecommendationForDecisionPublicRegister"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-yes" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
-                        <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes, publish on the decision public register</label>
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
+                        <label class="govuk-label govuk-radios__label" asp-for="RecommendationForDecisionPublicRegister">Yes, publish on the decision public register</label>
                     </div>
                     <div class="govuk-radios__item">
                         <input 
@@ -88,6 +100,7 @@
     <script src="~/js/add-case-note.js" asp-append-version="true"></script>
     <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
     <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+    <script src="~/js/final-checks.js" asp-append-version="true"></script>
 }
 
 @section breadcrumbs

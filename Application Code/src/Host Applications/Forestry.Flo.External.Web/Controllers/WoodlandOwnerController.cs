@@ -47,7 +47,7 @@ public class WoodlandOwnerController : Controller
 
         var model = new ManagedClientSummaryModel();
 
-        var (_, isFailure, woodlandOwnermodel) = await useCase.GetWoodlandOwnerModelAsync(woodlandOwnerId, cancellationToken);
+        var (_, isFailure, woodlandOwnermodel) = await useCase.GetWoodlandOwnerModelAsync(woodlandOwnerId, user, cancellationToken);
 
         if (isFailure)
         {
@@ -151,7 +151,7 @@ public class WoodlandOwnerController : Controller
         }
 
 
-        var (_, isFailure, model) = await useCase.GetWoodlandOwnerModelAsync(id, cancellationToken);
+        var (_, isFailure, model) = await useCase.GetWoodlandOwnerModelAsync(id, user, cancellationToken);
 
         if (isFailure)
         {
