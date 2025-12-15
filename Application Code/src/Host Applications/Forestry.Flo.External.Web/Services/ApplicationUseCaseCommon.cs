@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.External.Web.Models.PropertyProfile;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common.Models;
@@ -182,9 +183,10 @@ public class ApplicationUseCaseCommon
 
     protected async Task<Result<WoodlandOwnerWithAgencyRecord>> GetWoodlandOwnerNameAndAgencyForApplication(
         FellingLicenceApplication application, 
+        UserAccessModel userAccessModel,
         CancellationToken cancellationToken)
     {
-        var getWoodlandOwnerDetailsResult = await GetApplicationWoodlandOwnerNameByIdAsync(application.WoodlandOwnerId, cancellationToken);
+        var getWoodlandOwnerDetailsResult = await GetApplicationWoodlandOwnerNameByIdAsync(application.WoodlandOwnerId, userAccessModel, cancellationToken);
         if (getWoodlandOwnerDetailsResult.IsFailure)
         {
             _logger.LogError("Could not retrieve woodland owner name detail for {WoodlandOwnerId}, error was {Error}",
@@ -216,9 +218,10 @@ public class ApplicationUseCaseCommon
 
     protected Task<Result<WoodlandOwnerModel>> GetWoodlandOwnerByIdAsync(
         Guid woodlandOwnerId,
+        UserAccessModel userAccess,
         CancellationToken cancellationToken)
     {
-        return _retrieveWoodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(woodlandOwnerId, cancellationToken);
+        return _retrieveWoodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(woodlandOwnerId, userAccess, cancellationToken);
     }
 
     protected async Task<Result<FellingLicenceApplicationSummary>> GetApplicationSummaryAsync(
@@ -271,7 +274,7 @@ public class ApplicationUseCaseCommon
         }
 
         var woodlandOwnerNameAndAgencyDetails =
-            await GetWoodlandOwnerNameAndAgencyForApplication(application, cancellationToken);
+            await GetWoodlandOwnerNameAndAgencyForApplication(application, userAccess.Value, cancellationToken);
 
         if (woodlandOwnerNameAndAgencyDetails.IsFailure)
         {
@@ -294,9 +297,10 @@ public class ApplicationUseCaseCommon
 
     private async Task<Result<string>> GetApplicationWoodlandOwnerNameByIdAsync(
         Guid woodlandOwnerId,
+        UserAccessModel userAccessModel,
         CancellationToken cancellationToken)
     {
-        var woodlandOwnerResult = await _retrieveWoodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(woodlandOwnerId, cancellationToken);
+        var woodlandOwnerResult = await _retrieveWoodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(woodlandOwnerId, userAccessModel, cancellationToken);
 
         if (woodlandOwnerResult.IsFailure)
         {

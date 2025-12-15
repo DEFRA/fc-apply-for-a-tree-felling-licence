@@ -142,50 +142,86 @@
                 </div>
             </li>
 
-                @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted || Model.FellingAndRestockingDetails.DetailsList.Count < 1)
-                {
-                    <li class="govuk-task-list__item">
-                        <div class="govuk-task-list__name-and-hint">
-                            Felling and restocking details
-                            @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted)
-                            {
-                                <div class="govuk-task-list__hint">
-                                    (Select compartments must be In Progress or Completed)
-                                </div>
-                            }
-                            else if (Model.FellingAndRestockingDetails.DetailsList.Count < 1)
-                            {
-                                <div class="govuk-task-list__hint">
-                                    (At least one compartment must be selected)
-                                </div>
-                            }
-                            </div>
-                        <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet" id="felling-and-restocking-details-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</div>
-                    </li>
-                }
-                else
-                {
-                    <li class="govuk-task-list__item govuk-task-list__item--with-link">
-                        <div class="govuk-task-list__name-and-hint">
-                            <a class="govuk-link govuk-task-list__link" href="@Url.Action("ContinueFellingAndRestocking", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="felling-and-restocking-details-status">
-                                Felling and restocking details
-                            </a>
+            @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted || Model.FellingAndRestockingDetails.DetailsList.Count < 1)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Felling and restocking details
+                        @if (Model.SelectedCompartments.Status == ApplicationStepStatus.NotStarted)
+                        {
                             <div class="govuk-task-list__hint">
-                                (@Model.FellingAndRestockingDetails.CompletedCount / @Model.FellingAndRestockingDetails.DetailsList.Count completed)
+                                (Select compartments must be In Progress or Completed)
                             </div>
+                        }
+                        else if (Model.FellingAndRestockingDetails.DetailsList.Count < 1)
+                        {
+                            <div class="govuk-task-list__hint">
+                                (At least one compartment must be selected)
+                            </div>
+                        }
                         </div>
-                        <div class="govuk-task-list__status" id="felling-and-restocking-details-status">
-                            @if (Model.FellingAndRestockingDetails.Status == ApplicationStepStatus.Completed)
-                            {
-                                @Model.FellingAndRestockingDetails.Status.GetDescription()
-                            }
-                            else
-                            {
-                                <strong class="govuk-tag @GetStatusStyleName(Model.FellingAndRestockingDetails.Status)">@(Model.FellingAndRestockingDetails.Status.GetDescription())</strong>
-                            }
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet" id="felling-and-restocking-details-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("ContinueFellingAndRestocking", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="felling-and-restocking-details-status">
+                            Felling and restocking details
+                        </a>
+                        <div class="govuk-task-list__hint">
+                            (@Model.FellingAndRestockingDetails.CompletedCount / @Model.FellingAndRestockingDetails.DetailsList.Count completed)
                         </div>
-                    </li>
-                }
+                    </div>
+                    <div class="govuk-task-list__status" id="felling-and-restocking-details-status">
+                        @if (Model.FellingAndRestockingDetails.Status == ApplicationStepStatus.Completed)
+                        {
+                            @Model.FellingAndRestockingDetails.Status.GetDescription()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @GetStatusStyleName(Model.FellingAndRestockingDetails.Status)">@(Model.FellingAndRestockingDetails.Status.GetDescription())</strong>
+                        }
+                    </div>
+                </li>
+            }
+
+            @if (Model.SelectedCompartments.Status != ApplicationStepStatus.Completed && Model.PawsAndIawp.StepRequiredForApplication)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Plantation ancient woodlands and infilled ancient wood pastures
+                        <div class="govuk-task-list__hint">
+                            (Select compartments must be Completed)
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet" id="paws-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</div>
+                </li>
+            }
+            else if (Model.PawsAndIawp.StepRequiredForApplication)
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("PawsCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="paws-status">
+                            Plantation ancient woodlands and infilled ancient wood pastures
+                        </a>
+                        <div class="govuk-task-list__hint" condition="@Model.PawsAndIawp.PawsCompartmentsCount.HasValue">
+                            (@Model.PawsAndIawp.PawsCompartmentsCompleteCount / @Model.PawsAndIawp.PawsCompartmentsCount completed)
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status" id="paws-status">
+                        @if (Model.PawsAndIawp.Status == ApplicationStepStatus.Completed)
+                        {
+                            @Model.PawsAndIawp.Status.GetDescription()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @GetStatusStyleName(Model.PawsAndIawp.Status)">@(Model.PawsAndIawp.Status.GetDescription())</strong>
+                        }
+                    </div>
+                </li>
+            }
 
             <li class="govuk-task-list__item govuk-task-list__item--with-link" condition="@Model.EnvironmentalImpactAssessment.StepRequiredForApplication">
                 <div class="govuk-task-list__name-and-hint">

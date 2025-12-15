@@ -1,5 +1,5 @@
-﻿using Forestry.Flo.External.Web.Models.PropertyProfile;
-using Forestry.Flo.Services.Applicants.Models;
+﻿using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 
@@ -17,4 +17,6 @@ public class FellingLicenceApplicationSummaryViewModel
     public Flo.Services.PropertyProfiles.Entities.PropertyProfile PropertyProfile { get; set; }
 
     public FellingAndRestockingPlaybackViewModel FellingAndRestocking { get; set; }
+
+    public List<PawsCompartmentDesignationsModel> PawsCompartmentDesignations { get; set; }
 }

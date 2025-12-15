@@ -62,6 +62,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         CancellationToken cancellationToken) => await Context.FellingLicenceApplications
         .Include(a => a.StatusHistories)
         .Include(a => a.LinkedPropertyProfile)
+        .Include(a => a.ApprovedInError)
         .Where(a => a.WoodlandOwnerId == woodlandOwnerId)
         .ToListAsync(cancellationToken);
 
@@ -79,9 +80,13 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .ThenInclude(p => p!.ProposedFellingDetails)!
             .ThenInclude(f => f.ProposedRestockingDetails)!
             .ThenInclude(r => r.RestockingSpecies)
+            .Include(x => x.LinkedPropertyProfile)
+            .ThenInclude(x => x.ProposedCompartmentDesignations)
             .Include(p => p.FellingLicenceApplicationStepStatus)
             .Include(x => x.PublicRegister)
             .Include(x => x.EnvironmentalImpactAssessment)
+            .Include(x => x.SubmittedFlaPropertyDetail)
+            .ThenInclude(x => x.SubmittedFlaPropertyCompartments)
             .Where(a => a.Id == applicationId)
             .FirstOrDefaultAsync(cancellationToken);
         return application is null ? Maybe<FellingLicenceApplication>.None : Maybe<FellingLicenceApplication>.From(application);

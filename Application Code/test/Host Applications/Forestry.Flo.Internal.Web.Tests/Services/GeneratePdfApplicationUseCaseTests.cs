@@ -37,6 +37,7 @@ using InternalUserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAcc
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using RestockingSpecies = Forestry.Flo.Services.FellingLicenceApplications.Entities.RestockingSpecies;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
+using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services
 {
@@ -872,10 +873,116 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                     Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(
                         new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
 
-            // Act
+
             var result =
                 await sut.GeneratePdfApplicationAsync(_internalUser.UserAccountId!.Value, fla.Id,
                     CancellationToken.None);
+
+            // assert
+
+            Assert.True(result.IsSuccess);
+
+            // verify
+
+            _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
+                    fla.Id,
+                    It.IsAny<PDFGeneratorRequest>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            _fellingLicenceApplicationRepositoryMock.Verify(v => v.GetAsync(
+                    fla.Id,
+                    CancellationToken.None)
+                , Times.AtLeastOnce);
+
+            _addDocumentsServiceMock.Verify(x => x.AddDocumentsAsInternalUserAsync(
+                It.Is<AddDocumentsRequest>(r => r.UserAccountId == _internalUser.UserAccountId
+                                                && r.ActorType == ActorType.InternalUser
+                                                && r.FellingApplicationId == fla.Id
+                                                && r.DocumentPurpose == DocumentPurpose.ApplicationDocument
+                                                && !r.VisibleToApplicant
+                                                && !r.VisibleToConsultee),
+                It.IsAny<CancellationToken>()), Times.Once());
+
+            _generatePdfApplicationAuditServiceMock.Verify(v =>
+                v.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.GeneratingPdfFellingLicence
+                                                                && JsonSerializer.Serialize(e.AuditData, _options) ==
+                                                                JsonSerializer.Serialize(new
+                                                                {
+                                                                    ApplicationId = fla.Id,
+                                                                    IsFinal = false
+                                                                }, _options)),
+                    CancellationToken.None
+                ));
+
+            _mockGetFcAreas.Verify();
+        }
+
+        [Theory, AutoMoqData]
+        public async Task ShouldIncludeSupplementaryPointsFromWoodlandOfficerReview_WhenNotApprovedInError(
+            FellingLicenceApplication fla,
+            ExternalAccountModel applicant,
+            WoodlandOwnerModel woodlandOwner,
+            InternalUserAccount approverAccount,
+            PropertyProfile propertyProfile,
+            WoodlandOfficerReviewStatusModel woodlandOfficerReviewStatus,
+            ConditionsStatusModel conditionsStatus,
+            ConditionsResponse restockingConditionsRetrieved,
+            Stream generatedMaps,
+            byte[] pdfGenerated,
+            Polygon gisData,
+            ApproverReviewModel approverReview,
+            string expectedSupplementaryPoints)
+        {
+            // Arrange
+            var sut = CreateSut();
+
+            // Set up the felling licence application with supplementary points on WO review
+            fla.WoodlandOfficerReview.SupplementaryPoints = expectedSupplementaryPoints;
+            fla.ApprovedInError = null; // No approved in error
+            fla.IsForTenYearLicence = false; // Ensure we don't use the ten-year licence code path
+
+            foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
+            {
+                compartment.Id = Guid.NewGuid();
+                compartment.CompartmentId = Guid.NewGuid();
+                compartment.GISData = JsonConvert.SerializeObject(gisData);
+                foreach (var felling in compartment.ConfirmedFellingDetails)
+                {
+                    felling.SubmittedFlaPropertyCompartmentId = compartment.Id;
+                    felling.SubmittedFlaPropertyCompartment = compartment;
+                }
+            }
+
+            fla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+            fla.StatusHistories = new List<StatusHistory>
+            {
+                new()
+                {
+                    Created = DateTime.UtcNow.AddDays(-1),
+                    FellingLicenceApplication = fla,
+                    Status = FellingLicenceStatus.SentForApproval
+                }
+            };
+
+            woodlandOfficerReviewStatus.SupplementaryPoints = expectedSupplementaryPoints;
+
+            SetUpReturns(fla, applicant, woodlandOwner, approverAccount, propertyProfile, woodlandOfficerReviewStatus,
+                conditionsStatus, restockingConditionsRetrieved, generatedMaps, approverReview);
+
+            _createApplicationSnapshotDocumentServiceMock
+                .Setup(r => r.CreateApplicationSnapshotAsync(fla.Id, It.IsAny<PDFGeneratorRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(pdfGenerated);
+
+            _addDocumentsServiceMock.Setup(r =>
+                    r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(
+                        new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
+
+            // Act
+            var result = await sut.GeneratePdfApplicationAsync(_internalUser.UserAccountId!.Value, fla.Id,
+                CancellationToken.None);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -883,8 +990,249 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
                 fla.Id,
                 It.Is<PDFGeneratorRequest>(req =>
-                    req.data.approvedFellingDetails.Count > 0 &&
-                    req.data.restockingConditions.Any(c => c.Contains("To be confirmed"))
+                    req.data.restockingAdvisoryDetails == expectedSupplementaryPoints
+                ),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task ShouldIncludeSupplementaryPointsFromApprovedInError_WhenApprovedInErrorExists(
+            FellingLicenceApplication fla,
+            ExternalAccountModel applicant,
+            WoodlandOwnerModel woodlandOwner,
+            InternalUserAccount approverAccount,
+            PropertyProfile propertyProfile,
+            WoodlandOfficerReviewStatusModel woodlandOfficerReviewStatus,
+            ConditionsStatusModel conditionsStatus,
+            ConditionsResponse restockingConditionsRetrieved,
+            Stream generatedMaps,
+            byte[] pdfGenerated,
+            Polygon gisData,
+            ApproverReviewModel approverReview,
+            string woSupplementaryPoints,
+            string approvedInErrorSupplementaryPoints)
+        {
+            // Arrange
+            var sut = CreateSut();
+
+            // Set up the felling licence application with supplementary points on both WO review and approved in error
+            fla.WoodlandOfficerReview.SupplementaryPoints = woSupplementaryPoints;
+            fla.ApprovedInError = new ApprovedInError
+            {
+                FellingLicenceApplicationId = fla.Id,
+                SupplementaryPointsText = approvedInErrorSupplementaryPoints,
+                ReasonSupplementaryPoints = true
+            };
+            fla.IsForTenYearLicence = false; // Ensure we don't use the ten-year licence code path
+
+            foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
+            {
+                compartment.Id = Guid.NewGuid();
+                compartment.CompartmentId = Guid.NewGuid();
+                compartment.GISData = JsonConvert.SerializeObject(gisData);
+                foreach (var felling in compartment.ConfirmedFellingDetails)
+                {
+                    felling.SubmittedFlaPropertyCompartmentId = compartment.Id;
+                    felling.SubmittedFlaPropertyCompartment = compartment;
+                }
+            }
+
+            fla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+            fla.StatusHistories = new List<StatusHistory>
+            {
+                new()
+                {
+                    Created = DateTime.UtcNow.AddDays(-1),
+                    FellingLicenceApplication = fla,
+                    Status = FellingLicenceStatus.SentForApproval
+                }
+            };
+
+            woodlandOfficerReviewStatus.SupplementaryPoints = woSupplementaryPoints;
+
+            SetUpReturns(fla, applicant, woodlandOwner, approverAccount, propertyProfile, woodlandOfficerReviewStatus,
+                conditionsStatus, restockingConditionsRetrieved, generatedMaps, approverReview);
+
+            _createApplicationSnapshotDocumentServiceMock
+                .Setup(r => r.CreateApplicationSnapshotAsync(fla.Id, It.IsAny<PDFGeneratorRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(pdfGenerated);
+
+            _addDocumentsServiceMock.Setup(r =>
+                    r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(
+                        new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
+
+            // Act
+            var result = await sut.GeneratePdfApplicationAsync(_internalUser.UserAccountId!.Value, fla.Id,
+                CancellationToken.None);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            // Verify that ApprovedInError.SupplementaryPointsText takes precedence over WoodlandOfficerReview.SupplementaryPoints
+            _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
+                fla.Id,
+                It.Is<PDFGeneratorRequest>(req =>
+                    req.data.restockingAdvisoryDetails == approvedInErrorSupplementaryPoints
+                ),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task ShouldUseEmptySupplementaryPoints_WhenNoSupplementaryPointsProvided(
+            FellingLicenceApplication fla,
+            ExternalAccountModel applicant,
+            WoodlandOwnerModel woodlandOwner,
+            InternalUserAccount approverAccount,
+            PropertyProfile propertyProfile,
+            WoodlandOfficerReviewStatusModel woodlandOfficerReviewStatus,
+            ConditionsStatusModel conditionsStatus,
+            ConditionsResponse restockingConditionsRetrieved,
+            Stream generatedMaps,
+            byte[] pdfGenerated,
+            Polygon gisData,
+            ApproverReviewModel approverReview)
+        {
+            // Arrange
+            var sut = CreateSut();
+
+            // Set supplementary points to null on both entities
+            fla.WoodlandOfficerReview.SupplementaryPoints = string.Empty;
+            woodlandOfficerReviewStatus.SupplementaryPoints = string.Empty;
+
+            fla.ApprovedInError = null;
+            fla.IsForTenYearLicence = false; // Ensure we don't use the ten-year licence code path
+
+            foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
+            {
+                compartment.Id = Guid.NewGuid();
+                compartment.CompartmentId = Guid.NewGuid();
+                compartment.GISData = JsonConvert.SerializeObject(gisData);
+                foreach (var felling in compartment.ConfirmedFellingDetails)
+                {
+                    felling.SubmittedFlaPropertyCompartmentId = compartment.Id;
+                    felling.SubmittedFlaPropertyCompartment = compartment;
+                }
+            }
+
+            fla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+            fla.StatusHistories = new List<StatusHistory>
+            {
+                new()
+                {
+                    Created = DateTime.UtcNow.AddDays(-1),
+                    FellingLicenceApplication = fla,
+                    Status = FellingLicenceStatus.SentForApproval
+                }
+            };
+
+            SetUpReturns(fla, applicant, woodlandOwner, approverAccount, propertyProfile, woodlandOfficerReviewStatus,
+                conditionsStatus, restockingConditionsRetrieved, generatedMaps, approverReview);
+
+            _createApplicationSnapshotDocumentServiceMock
+                .Setup(r => r.CreateApplicationSnapshotAsync(fla.Id, It.IsAny<PDFGeneratorRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(pdfGenerated);
+
+            _addDocumentsServiceMock.Setup(r =>
+                    r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(
+                        new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
+
+            // Act
+            var result = await sut.GeneratePdfApplicationAsync(_internalUser.UserAccountId!.Value, fla.Id,
+                CancellationToken.None);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            // Verify that an empty string is used when no supplementary points are provided
+            // (the updated logic no longer uses "To be confirmed\n" as default)
+            _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
+                fla.Id,
+                It.Is<PDFGeneratorRequest>(req =>
+                    req.data.restockingAdvisoryDetails == string.Empty
+                ),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task ShouldUseDefaultSupplementaryPoints_WhenSupplementaryPointsNotStoredYet(
+           FellingLicenceApplication fla,
+           ExternalAccountModel applicant,
+           WoodlandOwnerModel woodlandOwner,
+           InternalUserAccount approverAccount,
+           PropertyProfile propertyProfile,
+           WoodlandOfficerReviewStatusModel woodlandOfficerReviewStatus,
+           ConditionsStatusModel conditionsStatus,
+           ConditionsResponse restockingConditionsRetrieved,
+           Stream generatedMaps,
+           byte[] pdfGenerated,
+           Polygon gisData,
+           ApproverReviewModel approverReview)
+        {
+            // Arrange
+            var sut = CreateSut();
+
+            // Set supplementary points to null on both entities
+            fla.WoodlandOfficerReview.SupplementaryPoints = null;
+            woodlandOfficerReviewStatus.SupplementaryPoints = null;
+            
+            fla.ApprovedInError = null;
+            fla.IsForTenYearLicence = false; // Ensure we don't use the ten-year licence code path
+
+            foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
+            {
+                compartment.Id = Guid.NewGuid();
+                compartment.CompartmentId = Guid.NewGuid();
+                compartment.GISData = JsonConvert.SerializeObject(gisData);
+                foreach (var felling in compartment.ConfirmedFellingDetails)
+                {
+                    felling.SubmittedFlaPropertyCompartmentId = compartment.Id;
+                    felling.SubmittedFlaPropertyCompartment = compartment;
+                }
+            }
+
+            fla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+            fla.StatusHistories = new List<StatusHistory>
+            {
+                new()
+                {
+                    Created = DateTime.UtcNow.AddDays(-1),
+                    FellingLicenceApplication = fla,
+                    Status = FellingLicenceStatus.SentForApproval
+                }
+            };
+
+            SetUpReturns(fla, applicant, woodlandOwner, approverAccount, propertyProfile, woodlandOfficerReviewStatus,
+                conditionsStatus, restockingConditionsRetrieved, generatedMaps, approverReview);
+
+            _createApplicationSnapshotDocumentServiceMock
+                .Setup(r => r.CreateApplicationSnapshotAsync(fla.Id, It.IsAny<PDFGeneratorRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(pdfGenerated);
+
+            _addDocumentsServiceMock.Setup(r =>
+                    r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(
+                    Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(
+                        new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
+
+            // Act
+            var result = await sut.GeneratePdfApplicationAsync(_internalUser.UserAccountId!.Value, fla.Id,
+                CancellationToken.None);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            // Verify that "To be confirmed" as default provided when no supplementary points are stored yet
+            _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
+                fla.Id,
+                It.Is<PDFGeneratorRequest>(req =>
+                    req.data.restockingAdvisoryDetails == "To be confirmed"
                 ),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -909,7 +1257,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
                 .ReturnsAsync(applicant);
 
             _woodlandOwnerServiceMock
-                .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(woodlandOwner);
 
             _internalAccountServiceMock
@@ -934,6 +1282,9 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             _foresterAccessMock
                 .Setup(r => r.GenerateImage_MultipleCompartmentsAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string?>(),
+                    It.IsAny<string?>(),
                     It.IsAny<List<InternalCompartmentDetails<BaseShape>>>(), It.IsAny<CancellationToken>(),
                     It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
                 .ReturnsAsync(generatedMaps);

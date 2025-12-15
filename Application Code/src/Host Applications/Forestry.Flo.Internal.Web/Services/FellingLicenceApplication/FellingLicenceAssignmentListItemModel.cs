@@ -27,5 +27,7 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication
         /// A collection of woodland officer review sub-statuses that can be used to filter the list of applications.
         /// </summary>
         public IEnumerable<WoodlandOfficerReviewSubStatus> SubStatuses { get; set; } = [];
+
+        public string? PreviousReference { get; set; }
     }
 }

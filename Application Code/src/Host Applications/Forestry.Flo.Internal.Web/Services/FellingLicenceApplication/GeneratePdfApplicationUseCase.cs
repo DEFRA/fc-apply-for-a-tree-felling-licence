@@ -125,7 +125,7 @@ public class GeneratePdfApplicationUseCase : GeneratePdfApplicationUseCaseBase, 
                 AuditEvents.GeneratingPdfFellingLicenceFailure, null, internalUserId, _requestContext,
                 new { applicationId, isFinal = isFinal, Error = result.Error }), cancellationToken);
 
-            _logger.LogError("Could not retrieve application with id {ApplicationId}", applicationId);
+            _logger.LogError("Could not generate a new document with id {ApplicationId}", applicationId);
             return Result.Failure<Document>("Could not generate a new document.");
         }
 

@@ -41,15 +41,21 @@
                     </legend>
                     <validation asp-for="AgencyUserRole"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
-                        @foreach (AgencyUserRole value in Enum.GetValues(typeof(AgencyUserRole)))
-                        {
-                            <div class="govuk-radios__item">
-                                <input class="govuk-radios__input" asp-for="AgencyUserRole" type="radio" value="@value" id="role-@value.ToString()">
-                                <label class="govuk-label govuk-radios__label" for="role-@value.ToString()">
-                                    @value.GetDescription()
-                                </label>
-                            </div>
-                        }
+
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="AgencyUserRole" type="radio" value="@AgencyUserRole.AgencyUser">
+                            <label class="govuk-label govuk-radios__label" asp-for="AgencyUserRole">
+                                @AgencyUserRole.AgencyUser.GetDescription()
+                            </label>
+                        </div>
+                        
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" asp-for="AgencyUserRole" type="radio" value="@AgencyUserRole.AgencyAdministrator" id="role-admin">
+                            <label class="govuk-label govuk-radios__label" for="role-admin">
+                                @AgencyUserRole.AgencyAdministrator.GetDescription()
+                            </label>
+                        </div>
+
                     </div>
                 </fieldset>
             </govuk-form-group>

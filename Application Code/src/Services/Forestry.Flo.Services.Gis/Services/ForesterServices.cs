@@ -312,8 +312,7 @@ public class ForesterServices : BaseServices, IForesterServices
             return Result.Failure<List<AncientWoodland>>(result.Error);
         }
 
-        return !result.Value.Results.Any() ? Result.Failure<List<AncientWoodland>>("No Results found")
-            : Result.Success(result.Value.Results.Select(x => x.Record).ToList());
+        return Result.Success(result.Value.Results.Select(x => x.Record).ToList());
     }
 
     /// <inheritdoc />
@@ -339,8 +338,7 @@ public class ForesterServices : BaseServices, IForesterServices
             return Result.Failure<List<AncientWoodland>>(result.Error);
         }
 
-        return !result.Value.Results.Any() ? Result.Failure<List<AncientWoodland>>("No Results found")
-            : Result.Success(result.Value.Results.Select(x => x.Record).ToList());
+        return Result.Success(result.Value.Results.Select(x => x.Record).ToList());
     }
 
     ///<inheritdoc />
@@ -390,6 +388,9 @@ public class ForesterServices : BaseServices, IForesterServices
 
     /// <inheritdoc />
     public async Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(
+        string applicationReference,
+        string? osGridReference,
+        string? nearestTown,
         InternalCompartmentDetails<BaseShape> compartmentDetails, 
         CancellationToken cancellationToken,
         int delay = 30000,
@@ -418,7 +419,22 @@ public class ForesterServices : BaseServices, IForesterServices
 
             WebMap_LayoutOptions templateLayoutOptions = new()
             {
-                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright
+                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright,
+                CustomTextElements = new List<Dictionary<string, string>>
+                {
+                    new()
+                    {
+                        { "fellingReference", applicationReference }
+                    },
+                    new()
+                    {
+                        { "ClosestTown", nearestTown ?? string.Empty }
+                    },
+                    new()
+                    {
+                        { "GRIDREF", osGridReference ?? string.Empty }
+                    }
+                }
             };
 
             if (generationType != MapGeneration.Other)
@@ -510,6 +526,9 @@ public class ForesterServices : BaseServices, IForesterServices
 
     /// <inheritdoc />
     public async Task<Result<Stream>> GenerateImage_MultipleCompartmentsAsync(
+        string applicationReference,
+        string? osGridReference,
+        string? nearestTown,
         List<InternalCompartmentDetails<BaseShape>> compartments, 
         CancellationToken cancellationToken,
         int delay = 30000,
@@ -527,7 +546,22 @@ public class ForesterServices : BaseServices, IForesterServices
 
             WebMap_LayoutOptions templateLayoutOptions = new()
             {
-                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright
+                Copyright_Text = _config.UtilitiesService.ExportService.TextOverrides.Copyright,
+                CustomTextElements = new List<Dictionary<string, string>>
+                {
+                    new()
+                    {
+                        { "fellingReference", applicationReference }
+                    },
+                    new()
+                    {
+                        { "ClosestTown", nearestTown ?? string.Empty }
+                    },
+                    new()
+                    {
+                        { "GRIDREF", osGridReference ?? string.Empty }
+                    }
+                }
             };
 
             if (generationType != MapGeneration.Other)

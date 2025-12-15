@@ -78,6 +78,13 @@
                         : string.Empty)
                 </td>
             </tr>
+            @if (Model.IsForTenYearLicence)
+            {
+                <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header">WMP Reference</th>
+                    <td class="govuk-table__cell" colspan="2">@Model.WoodlandManagementPlanReference</td>
+                </tr>
+            }
             <tr class="govuk-table__row">
                 <th scope="row" class="govuk-table__header">Property</th>
                 <td class="govuk-table__cell" colspan="2">@Model.PropertyName @(Model.NameOfWood != null ? " - " + Model.NameOfWood : "")</td>

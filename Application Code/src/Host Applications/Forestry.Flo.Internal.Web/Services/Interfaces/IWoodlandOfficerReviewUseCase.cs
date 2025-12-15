@@ -44,6 +44,7 @@ public interface IWoodlandOfficerReviewUseCase
         bool? recommendationForDecisionPublicRegister,
         string recommendationForPublicRegisterReason,
         string internalLinkToApplication,
+        string? supplementaryPoints,
         InternalUser user,
         CancellationToken cancellationToken);
 

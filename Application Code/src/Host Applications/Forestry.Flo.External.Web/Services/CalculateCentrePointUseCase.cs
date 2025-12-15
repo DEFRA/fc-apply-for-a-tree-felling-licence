@@ -4,6 +4,7 @@ using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.MassTransit.Messages;
 using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.PropertyProfiles.Repositories;
 using Microsoft.Extensions.Options;
@@ -80,8 +81,7 @@ public class CalculateCentrePointUseCase
         
         // Get property profile via linked property profile table
 
-        var selectedCompartmentIds = application.LinkedPropertyProfile?.ProposedFellingDetails?
-                .Select(d => d.PropertyProfileCompartmentId).ToList();
+        var selectedCompartmentIds = application.GetAllCompartmentIdsInApplication();
 
         var linkedPropertyProfile = application.LinkedPropertyProfile;
 
@@ -91,7 +91,7 @@ public class CalculateCentrePointUseCase
 
         // Ensure no GISData is missing
         var relevantPropertyProfileCompartments = propertyProfileCompartments.Where(p => selectedCompartmentIds.Contains(p.Id));
-        if (relevantPropertyProfileCompartments.Count() == 0 || relevantPropertyProfileCompartments.Any(x=>x.GISData == null))
+        if (!relevantPropertyProfileCompartments.Any() || relevantPropertyProfileCompartments.Any(x=>x.GISData == null))
         {
             errorMessage = $"Unable to retrieve selected property compartments for application with identifier {message.ApplicationId} as some GISData is missing.";
             await PublishCentrePointFailures(message, errorMessage, cancellationToken);

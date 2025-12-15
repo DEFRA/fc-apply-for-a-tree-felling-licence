@@ -1,6 +1,10 @@
-﻿using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
+﻿using AutoFixture.Xunit2;
+using Forestry.Flo.Services.Gis.Models.Esri.Configuration;
+using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
+using Forestry.Flo.Services.Gis.Models.Esri.Responses.Query;
 using Moq;
 using Moq.Protected;
+using Newtonsoft.Json;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -29,15 +33,16 @@ namespace Forestry.Flo.Services.Gis.Tests.Services
         }
 
 
-        [Fact]
-        public async Task GetAncientWoodlandsRevisedAsync_QueryServerSuccess()
+        [Theory, AutoData]
+        public async Task GetAncientWoodlandsRevisedAsync_QueryServerSuccess(BaseQueryResponse<AncientWoodland> queryResponse)
         {
-
+            var serialisedResponse = JsonConvert.SerializeObject(queryResponse);
             var returnMessage = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.OK,
-                Content = new StringContent("{\"objectIdFieldName\": \"FID\",\"uniqueIdField\": {\"admin_hub\": \"FID\",\"isSystemMaintained\": true},\"globalIdFieldName\": \"\",\"geometryType\": \"esriGeometryPolygon\",\"spatialReference\": {\"wkid\": 27700,\"latestWkid\": 27700},\"fields\": [    {\"admin_hub\": \"FID\",\"type\": \"esriFieldTypeOID\",\"alias\": \"FID\",\"sqlType\": \"sqlTypeOther\",\"domain\": null,\"defaultValue\": null    },    {\"name\": \"AREA_NAME\",\"type\": \"esriFieldTypeString\",\"alias\": \"AREA_NAME\",\"sqlType\": \"sqlTypeOther\",\"length\": 70,\"domain\": null,\"defaultValue\": null    }],\"features\": [    {\"attributes\": {\"objectid\": 1,\"area_code\": \"cs\"}}]}")
+                Content = new StringContent(serialisedResponse)
             };
+
             returnMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
             _mockHttpHandler.Reset();
@@ -57,6 +62,41 @@ namespace Forestry.Flo.Services.Gis.Tests.Services
 
             Assert.True(response.IsSuccess);
             Assert.NotEmpty(response.Value);
+
+            var expectedResults = queryResponse.Results.Select(x => x.Record).ToList();
+            Assert.Equivalent(expectedResults, response.Value);
+        }
+
+        [Theory, AutoData]
+        public async Task GetAncientWoodlandsRevisedAsync_QueryServerSuccess_ZeroResults(BaseQueryResponse<AncientWoodland> queryResponse)
+        {
+            queryResponse.Results = [];
+            var serialisedResponse = JsonConvert.SerializeObject(queryResponse);
+            var returnMessage = new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(serialisedResponse)
+            };
+
+            returnMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            _mockHttpHandler.Reset();
+
+            _mockHttpHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/GetToken")),
+                    ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage);
+            _mockHttpHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.AGOL.com/AWR/query")),
+                    ItExpr.IsAny<CancellationToken>()).ReturnsAsync(returnMessage);
+
+            _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient(_mockHttpHandler.Object));
+
+            var classUnderTest = CreateSUT();
+
+            var response = await classUnderTest.GetAncientWoodlandsRevisedAsync(_nullIsland, CancellationToken.None);
+
+            Assert.True(response.IsSuccess);
+            Assert.Empty(response.Value);
         }
     }
 }

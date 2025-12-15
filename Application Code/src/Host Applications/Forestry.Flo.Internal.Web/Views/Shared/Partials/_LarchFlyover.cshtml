@@ -1,6 +1,5 @@
 ﻿@{
     ViewData["Title"] = "Larch flyover update";
-    const string flyoverDateId = "flyover-date";
 }
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.LarchFlyoverModel
 <style>
@@ -23,7 +22,7 @@
 
     <govuk-form-group asp-for="FlyoverDate">
         <fieldset class="govuk-fieldset" role="group">
-            <legend class="govuk-label--m" for="@flyoverDateId">Flight date</legend>
+            <legend class="govuk-label--m" for="FlyoverDate">Flight date</legend>
             <div class="govuk-hint">
                 For example, 24 6 2022
             </div>
@@ -31,16 +30,16 @@
             <validation asp-for="FlyoverDate.Month"></validation>
             <validation asp-for="FlyoverDate.Year"></validation>
             <validation asp-for="FlyoverDate"></validation>
-            @Html.EditorFor(m => m.FlyoverDate, new { htmlAttributes = new { id = flyoverDateId } })
+            @Html.EditorFor(m => m.FlyoverDate)
         </fieldset>
     </govuk-form-group>
 
     <govuk-form-group asp-for="FlightObservations">
-        <label class="govuk-label--m" for="flight-observations">
+        <label class="govuk-label--m" asp-for="FlightObservations">
             Flight observations
         </label>
         <validation asp-for="FlightObservations"></validation>
-        <input class="govuk-input" id="flight-observations" asp-for="FlightObservations" type="text">
+        <input class="govuk-input" asp-for="FlightObservations" type="text">
     </govuk-form-group>
 
     @Html.EditorFor(m => m.FormLevelCaseNote)

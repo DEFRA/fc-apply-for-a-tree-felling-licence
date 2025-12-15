@@ -76,3 +76,4 @@ Application Code/src/Host Applications/Forestry.Flo.External.Web/log.txt
 *.tfplan
 *.tfstate.backup
 .terraform.lock.hcl
+/Application Code/TestResults/09965413-70db-4a3f-ab3d-8c3efe603d07/vassi_GLASSBOX_2025-11-19.06_05_32.coverage

@@ -42,8 +42,8 @@
                 <validation asp-for="IsForTenYearLicence"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.AllowEditing)" class="govuk-radios__input" type="radio" value="true" asp-for="IsForTenYearLicence" id="is-ten-years-yes" data-aria-controls="conditional-wmp">
-                        <label class="govuk-label govuk-radios__label" for="is-ten-years-yes">
+                        <input condition-disabled="@(!Model.AllowEditing)" class="govuk-radios__input" type="radio" value="true" asp-for="IsForTenYearLicence" data-aria-controls="conditional-wmp">
+                        <label class="govuk-label govuk-radios__label" asp-for="IsForTenYearLicence">
                             Yes
                         </label>
                     </div>

@@ -85,6 +85,8 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
 
     public DbSet<EnvironmentalImpactAssessment> EnvironmentalImpactAssessments { get; set; } = null!;
 
+    public DbSet<ApprovedInError> ApprovedInErrors { get; set; } = null!;
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
@@ -136,6 +138,7 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<ConfirmedRestockingDetail>().ToTable("ConfirmedRestockingDetail");
         modelBuilder.Entity<ConfirmedRestockingSpecies>().ToTable("ConfirmedRestockingSpecies");
         modelBuilder.Entity<SiteVisitEvidence>().ToTable("SiteVisitEvidence");
+        modelBuilder.Entity<ApprovedInError>().ToTable("ApprovedInError");
 
         modelBuilder.Entity<WoodlandOwner>().ToTable("WoodlandOwner","Applicants", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<UserAccount>().ToTable("UserAccount","Applicants", t => t.ExcludeFromMigrations());
@@ -148,6 +151,7 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<EnvironmentalImpactAssessmentRequestHistory>().ToTable("EnvironmentalImpactAssessmentRequestHistory");
         modelBuilder.Entity<SubmittedCompartmentDesignations>().ToTable("SubmittedCompartmentDesignations");
         modelBuilder.Entity<FellingAndRestockingAmendmentReview>().ToTable("FellingAndRestockingAmendmentReview");
+        modelBuilder.Entity<ProposedCompartmentDesignations>().ToTable("ProposedCompartmentDesignations");
 
         modelBuilder.HasDefaultSchema(SchemaName);
 
@@ -421,6 +425,28 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .HasPrecision(5, 2);
 
         modelBuilder
+            .Entity<ProposedCompartmentDesignations>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
+        modelBuilder
+            .Entity<ProposedCompartmentDesignations>(e =>
+            {
+                e.HasOne(p => p.LinkedPropertyProfile)
+                    .WithMany(p => p.ProposedCompartmentDesignations)
+                    .HasForeignKey(p => p.LinkedPropertyProfileId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                e.Property(p => p.ProportionAfterFelling)
+                    .HasConversion<string>();
+                e.Property(p => p.ProportionBeforeFelling)
+                    .HasConversion<string>();
+                e.Property(x => x.CrossesPawsZones)
+                    .HasJsonConversion();
+            });
+
+        modelBuilder
             .Entity<FellingSpecies>(e =>
             {
                 e.HasOne(p => p.ProposedFellingDetail)
@@ -568,6 +594,24 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+        // NEW: Configure1 -1 mapping and FK from ApprovedInError -> FellingLicenceApplication
+        modelBuilder
+            .Entity<ApprovedInError>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid")
+            .HasDefaultValueSql("uuid_generate_v4()")
+            .IsRequired();
+
+        modelBuilder
+            .Entity<ApprovedInError>(e =>
+            {
+                e.HasOne(p => p.FellingLicenceApplication)
+                    .WithOne(p => p.ApprovedInError)
+                    .HasForeignKey<ApprovedInError>(p => p.FellingLicenceApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => x.FellingLicenceApplicationId).IsUnique();
+            });
+
         modelBuilder
             .Entity<PublicRegister>()
             .Property(x => x.Id)
@@ -681,6 +725,11 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .Property(e => e.CompartmentFellingRestockingStatuses)
             .HasJsonConversion();
 
+        modelBuilder
+            .Entity<FellingLicenceApplicationStepStatus>()
+            .Property(e => e.CompartmentDesignationsStatuses)
+            .HasJsonConversion();
+
         // Configure 1 - 1 mapping and foreign key from FellingLicenceApplicationStepStatus -> FellingLicenceApplication
 
         modelBuilder
@@ -764,6 +813,11 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
                     .WithOne(x => x.SubmittedCompartmentDesignations)
                     .HasForeignKey<SubmittedCompartmentDesignations>(p => p.SubmittedFlaPropertyCompartmentId)
                     .OnDelete(DeleteBehavior.Cascade);
+                e.Property(p => p.ProportionBeforeFelling)
+                    .HasConversion<string>();
+                e.Property(p => p.ProportionAfterFelling)
+                    .HasConversion<string>();
+
             });
 
         modelBuilder.Entity<FellingAndRestockingAmendmentReview>()

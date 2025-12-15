@@ -67,6 +67,11 @@ public class FellingLicenceApplication
     public Guid? ApproverId { get; set; }
 
     /// <summary>
+    /// Gets or sets the Licence Expiry Date.
+    /// </summary>
+    public DateTime? LicenceExpiryDate { get; set; }
+
+    /// <summary>
     /// Gets or sets the woodland owner identifier.
     /// </summary>
     [Required]
@@ -209,4 +214,6 @@ public class FellingLicenceApplication
     /// Gets and sets the woodland management plan reference.
     /// </summary>
     public string? WoodlandManagementPlanReference { get; set; }
+
+    public ApprovedInError? ApprovedInError { get; set; }
 }

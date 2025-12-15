@@ -76,8 +76,8 @@
             <validation asp-for="HasWoodlandManagementPlan"></validation>
             <div class="govuk-radios" data-module="govuk-radios" id="@nameof(Model.HasWoodlandManagementPlan)">
                 <div class="govuk-radios__item">
-                    <input id="has-woodland-management-plan-yes" type="radio" class="govuk-radios__input" asp-for="HasWoodlandManagementPlan" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.HasWoodlandManagementPlan)">
-                    <label class="govuk-label govuk-radios__label" for="has-woodland-management-plan-yes">
+                    <input type="radio" class="govuk-radios__input" asp-for="HasWoodlandManagementPlan" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.HasWoodlandManagementPlan)">
+                    <label class="govuk-label govuk-radios__label" asp-for="HasWoodlandManagementPlan">
                         Yes, there is a woodland management plan for this property.
                     </label>
                 </div>
@@ -122,8 +122,8 @@
             <validation asp-for="IsWoodlandCertificationScheme"></validation>
             <div class="govuk-radios" data-module="govuk-radios" id="@nameof(Model.IsWoodlandCertificationScheme)">
                 <div class="govuk-radios__item">
-                    <input id="is-woodland-certification-scheme-yes" type="radio" class="govuk-radios__input" asp-for="IsWoodlandCertificationScheme" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWoodlandCertificationScheme)">
-                    <label class="govuk-label govuk-radios__label" for="is-woodland-certification-scheme-yes">
+                    <input type="radio" class="govuk-radios__input" asp-for="IsWoodlandCertificationScheme" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.IsWoodlandCertificationScheme)">
+                    <label class="govuk-label govuk-radios__label" asp-for="IsWoodlandCertificationScheme">
                         Yes, this is covered by a woodland certification scheme.
                     </label>
                 </div>

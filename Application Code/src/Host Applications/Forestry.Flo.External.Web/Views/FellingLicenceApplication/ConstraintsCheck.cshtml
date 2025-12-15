@@ -16,7 +16,7 @@
     IDictionary<string, object> attributes = new Dictionary<string, object>
     {
         { "class", "govuk-checkboxes__input" }, 
-        { "id", "not-running-lis" }, 
+        { "id", nameof(Model.NotRunningExternalLisReport) },
         { "aria-describedby", "not-running-lis-hint" }
     };
 }
@@ -53,7 +53,7 @@
             <div class="govuk-checkboxes govuk-!-margin-top-4 govuk-!-margin-bottom-4" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
                     @Html.CheckBox(Html.NameFor(x => x.NotRunningExternalLisReport), Model.NotRunningExternalLisReport ?? false, attributes)
-                    <label class="govuk-label govuk-checkboxes__label" for="not-running-lis">
+                    <label class="govuk-label govuk-checkboxes__label" for="@nameof(Model.NotRunningExternalLisReport)">
                         I do not wish to run the Land Information Search
                     </label>
                     <div id="not-running-lis-hint" class="govuk-hint govuk-checkboxes__hint">

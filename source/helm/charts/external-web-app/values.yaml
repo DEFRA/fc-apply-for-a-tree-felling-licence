@@ -291,6 +291,10 @@ config:
       - "qxlva.com"
       - "forestrycommission.gov.uk"
       - "harriscomputer.com"
+  Designations:
+    enabled: false
+    # -- Zone names for PAWS zones
+    PawsZoneNames: []
   logging:
     LogLevel:
       # -- Default logging level for the application.

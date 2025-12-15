@@ -48,4 +48,11 @@ public class WoodlandOfficerReviewModel : WoodlandOfficerReviewModelBase
     /// that the application is or is not published to the decision public register.
     /// </summary>
     public string? RecommendationForDecisionPublicRegisterReason { get; set; }
+
+    /// <summary>
+    /// Gets and sets any supplementary points provided by the Woodland Officer during the review process.
+    /// These points may include additional comments, observations, or considerations relevant to the application
+    /// that are not covered by other fields in the review.
+    /// </summary>
+    public string? SupplementaryPoints { get; set; }
 }

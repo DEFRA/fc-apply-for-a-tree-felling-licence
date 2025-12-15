@@ -68,6 +68,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateLarchCheckTests
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
         var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+        fla.WoodlandOfficerReview.LarchCheckComplete = false;
 
         // Change status to Draft to fail state check
         fla.StatusHistories.Clear();
@@ -101,6 +102,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateLarchCheckTests
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
         var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+        fla.WoodlandOfficerReview.LarchCheckComplete = false;
 
         // Remove WO assignment
         fla.AssigneeHistories.Clear();

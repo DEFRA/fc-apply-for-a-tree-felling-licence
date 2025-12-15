@@ -33,6 +33,7 @@ using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccount
 using InternalUserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
+using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.External.Web.Tests.Services
 {
@@ -456,6 +457,95 @@ namespace Forestry.Flo.External.Web.Tests.Services
         }
 
         [Theory, AutoMoqData]
+        public async Task ShouldIncludeTenYearLicenceSupplementaryPoints(
+           FellingLicenceApplication fla,
+           ExternalAccountModel applicant,
+           WoodlandOwnerModel woodlandOwner,
+           InternalUserAccount approverAccount,
+           PropertyProfile propertyProfile,
+           WoodlandOfficerReviewStatusModel woodlandOfficerReviewStatus,
+           ConditionsStatusModel conditionsStatus,
+           ConditionsResponse restockingConditionsRetrieved,
+           Stream generatedMaps,
+           byte[] pdfGenerated,
+           Polygon gisData1,
+           Polygon gisData2,
+           ApproverReviewModel approverReview)
+        {
+            // setup
+            var sut = CreateSut();
+
+            fla.IsForTenYearLicence = true;
+
+            var compartment1 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
+            var compartment2 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Skip(1).First();
+
+            foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
+            {
+                compartment.Id = Guid.NewGuid();
+                foreach (var felling in compartment.ConfirmedFellingDetails)
+                {
+                    felling.SubmittedFlaPropertyCompartmentId = compartment.Id;
+                    felling.SubmittedFlaPropertyCompartment = compartment;
+                }
+            }
+
+            compartment1.GISData = JsonConvert.SerializeObject(gisData1);
+            compartment2.GISData = JsonConvert.SerializeObject(gisData2);
+
+            foreach (var felling in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.SelectMany(x => x.ConfirmedFellingDetails))
+            {
+                felling.SubmittedFlaPropertyCompartmentId = compartment1.Id;
+
+                foreach (var restocking in felling.ConfirmedRestockingDetails)
+                {
+                    restocking.ConfirmedFellingDetail = felling;
+                    restocking.SubmittedFlaPropertyCompartmentId = compartment2.Id;
+                }
+            }
+
+            var currentDate = DateTime.UtcNow.Date;
+            fla.StatusHistories = new List<StatusHistory>
+            {
+                new()
+                {
+                    Created = currentDate.AddDays(-3),
+                    FellingLicenceApplication = fla,
+                    Status = FellingLicenceStatus.SentForApproval
+                }
+            };
+            fla.WoodlandOfficerReview.ConfirmedFellingAndRestockingComplete = true;
+
+            SetUpReturns(fla, applicant, woodlandOwner, approverAccount, propertyProfile, woodlandOfficerReviewStatus, conditionsStatus, restockingConditionsRetrieved, generatedMaps);
+
+            _createApplicationSnapshotDocumentServiceMock
+                .Setup(r => r.CreateApplicationSnapshotAsync(fla.Id, It.IsAny<PDFGeneratorRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(pdfGenerated);
+
+            _addDocumentsServiceMock.Setup(r => r.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success<AddDocumentsSuccessResult, AddDocumentsFailureResult>(new AddDocumentsSuccessResult([Guid.NewGuid()], new List<string>())));
+
+            var result = await sut.GeneratePreviewDocumentAsync(_externalUser.UserAccountId!.Value, fla.Id, CancellationToken.None);
+
+            // assert
+
+            Assert.True(result.IsSuccess);
+
+            // verify
+
+            var expectedText = $"This licence is issued in summary relating to the Management Plan referenced {fla.WoodlandManagementPlanReference ?? ""} " +
+                               "and associated Plan of Operations and final maps. These must be attached to the licence at all times.";
+
+            _createApplicationSnapshotDocumentServiceMock.Verify(v => v.CreateApplicationSnapshotAsync(
+                fla.Id,
+                It.Is<PDFGeneratorRequest>(x =>
+                    x.data.restockingAdvisoryDetails.Contains(expectedText)),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Theory, AutoMoqData]
         public async Task ShouldAddPDFApplication_WhenFellingAndRestockingDetailsApproved(
             FellingLicenceApplication fla,
             ExternalAccountModel applicant,
@@ -703,7 +793,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
                 .ReturnsAsync(applicant);
 
             _woodlandOwnerServiceMock
-                .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(woodlandOwner);
 
             _internalAccountServiceMock
@@ -727,7 +817,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
                 .ReturnsAsync(restockingConditionsRetrieved);
 
             _foresterAccessMock
-                .Setup(r => r.GenerateImage_MultipleCompartmentsAsync(It.IsAny<List<InternalCompartmentDetails<BaseShape>>>(), It.IsAny<CancellationToken>(),
+                .Setup(r => r.GenerateImage_MultipleCompartmentsAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<List<InternalCompartmentDetails<BaseShape>>>(), It.IsAny<CancellationToken>(),
                     It.IsAny<int>(), It.IsAny<MapGeneration>(), It.IsAny<string>()))
                 .ReturnsAsync(generatedMaps);
         }

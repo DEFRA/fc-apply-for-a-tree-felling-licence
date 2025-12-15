@@ -14,9 +14,13 @@ public class MappingCheckModelValidator : AbstractValidator<MappingCheckModel>
     /// </summary>
     public MappingCheckModelValidator()
     {
+        RuleFor(x => x.CheckPassed)
+            .Must(x => x.HasValue)
+            .WithMessage("Select whether the mapping is correct");
+
         RuleFor(x => x.CheckFailedReason)
             .NotEmpty()
             .When(x => x.CheckPassed == false)
-            .WithMessage("Reason for failure must be provided");
+            .WithMessage("A reason for the mapping being incorrect must be provided");
     }
 }

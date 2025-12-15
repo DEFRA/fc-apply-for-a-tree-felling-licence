@@ -114,6 +114,12 @@ public class ManagePropertyProfileUseCase
             .RetrieveUserAccessAsync(user.UserAccountId!.Value, cancellationToken)
             .ConfigureAwait(false);
 
+        if (userAccessModel.IsFailure)
+        {
+            _logger.LogError("Could not retrieve user access");
+            return Maybe<IEnumerable<PropertyProfileModel>>.None;
+        }
+
         var propertyProfiles =
             await _getPropertyProfilesService
             .ListByWoodlandOwnerAsync(woodlandOwnerId, userAccessModel.Value, cancellationToken)

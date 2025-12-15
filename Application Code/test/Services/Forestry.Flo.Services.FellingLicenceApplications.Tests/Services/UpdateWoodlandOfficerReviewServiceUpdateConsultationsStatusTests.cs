@@ -102,6 +102,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateConsultationsStatusTests
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
         var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+        fla.WoodlandOfficerReview!.ApplicationNeedsConsultations = null;
 
         // Add an existing consultee link
         fla.ExternalAccessLinks.Add(new ExternalAccessLink

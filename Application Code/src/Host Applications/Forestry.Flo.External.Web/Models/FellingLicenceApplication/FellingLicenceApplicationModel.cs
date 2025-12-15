@@ -1,4 +1,5 @@
 ﻿using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.PawsDesignations;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
@@ -21,6 +22,7 @@ public class FellingLicenceApplicationModel
         _steps.Add(FellingLicenceApplicationSection.FlaTermsAndConditionsViewModel, new FlaTermsAndConditionsViewModel());
         _steps.Add(FellingLicenceApplicationSection.EnvironmentalImpactAssessment, new EnvironmentalImpactAssessmentViewModel());
         _steps.Add(FellingLicenceApplicationSection.TenYearLicence, new TenYearLicenceApplicationViewModel());
+        _steps.Add(FellingLicenceApplicationSection.PawsAndIawp, new PawsDesignationsViewModel());
     }
     
     public bool IsComplete => _steps.Values
@@ -87,6 +89,12 @@ public class FellingLicenceApplicationModel
     {
         get => (_steps[FellingLicenceApplicationSection.TenYearLicence] as TenYearLicenceApplicationViewModel)!;
         set => _steps[FellingLicenceApplicationSection.TenYearLicence] = value;
+    }
+
+    public PawsDesignationsViewModel PawsAndIawp
+    {
+        get => (_steps[FellingLicenceApplicationSection.PawsAndIawp] as PawsDesignationsViewModel)!;
+        set => _steps[FellingLicenceApplicationSection.PawsAndIawp] = value;
     }
 
     [HiddenInput]

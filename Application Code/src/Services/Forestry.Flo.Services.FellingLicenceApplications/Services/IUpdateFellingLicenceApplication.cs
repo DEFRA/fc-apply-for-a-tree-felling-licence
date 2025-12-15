@@ -119,15 +119,17 @@ public interface IUpdateFellingLicenceApplication
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Attempts to set the approver id of the application with the given id.
+    /// Attempts to set the approver id and licence expiry date of the application with the given id.
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
     /// <param name="approverId">The id of the approver to set on the application, or null to remove any existing one.</param>
+    /// <param name="licenceExpiryDate">The licence expiry date to set on the application, or null if not applicable.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result indicating whether the update was successful.</returns>
-    Task<Result> SetApplicationApproverAsync(
+    Task<Result> SetApplicationApproverAndExpiryDateAsync(
         Guid applicationId,
         Guid? approverId,
+        DateTime? licenceExpiryDate,
         CancellationToken cancellationToken);
 
     /// <summary>

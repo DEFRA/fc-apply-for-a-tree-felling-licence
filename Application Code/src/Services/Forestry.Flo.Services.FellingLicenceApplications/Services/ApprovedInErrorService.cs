@@ -1,0 +1,460 @@
+using Ardalis.GuardClauses;
+using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
+using Forestry.Flo.Services.Gis.Interfaces;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using NodaTime;
+
+namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
+
+/// <summary>
+/// Defines the contract for managing Approved In Error records for felling licence applications.
+/// </summary>
+public interface IApprovedInErrorService
+{
+    /// <summary>
+    /// Retrieves the Approved In Error record for a specific application.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the application.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Maybe{T}"/> containing the <see cref="ApprovedInErrorModel"/> if found; otherwise, <see cref="Maybe{T}.None"/>.
+    /// </returns>
+    Task<Maybe<ApprovedInErrorModel>> GetApprovedInErrorAsync(Guid applicationId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Marks a felling licence application as Approved In Error and performs all necessary operations
+    /// including validation, document hiding, reference regeneration (if applicable), and persistence.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the application to mark as approved in error.</param>
+    /// <param name="model">The model containing the reasons and details for marking the application as approved in error.</param>
+    /// <param name="userId">The unique identifier of the user performing the operation.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating success or failure of the operation.
+    /// </returns>
+    Task<Result> SetToApprovedInErrorAsync(Guid applicationId, ApprovedInErrorModel model, Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates an existing Approved In Error record without performing validation or status changes.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the application to update.</param>
+    /// <param name="model">The model containing the updated approved in error details.</param>
+    /// <param name="userId">The unique identifier of the user performing the operation.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating success or failure of the operation.
+    /// </returns>
+    Task<Result> UpdateApprovedInErrorAsync(Guid applicationId, ApprovedInErrorModel model, Guid userId, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Service responsible for managing the Approved In Error process for felling licence applications.
+/// This service handles the business logic for marking applications as approved in error, including
+/// validation, document management, reference regeneration, and data persistence.
+/// </summary>
+public class ApprovedInErrorService : IApprovedInErrorService
+{
+    private readonly IFellingLicenceApplicationInternalRepository _internalFlaRepository;
+    private readonly IFellingLicenceApplicationReferenceRepository? _flaReferenceRepository;
+    private readonly IApplicationReferenceHelper? _applicationReferenceHelper;
+    private readonly IClock _clock;
+    private readonly ILogger<ApprovedInErrorService> _logger;
+    private readonly IPublicRegister _publicRegister;
+    private readonly IUpdateFellingLicenceApplication _updateFellingLicenceApplicationService;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ApprovedInErrorService"/> class without reference regeneration capabilities.
+    /// </summary>
+    /// <param name="internalFlaRepository">The repository for felling licence application data access.</param>
+    /// <param name="clock">The clock service for obtaining the current timestamp.</param>
+    /// <param name="logger">The logger for diagnostic and error logging.</param>
+    /// <param name="publicRegister">The service for managing public register operations.</param>
+    /// <param name="updateFellingLicenceApplicationService">The service for updating felling licence applications.</param>
+    /// <remarks>
+    /// Use this constructor when reference regeneration is not required. The service will skip reference
+    /// regeneration even if <see cref="ApprovedInErrorModel.ReasonOther"/> is false.
+    /// </remarks>
+    public ApprovedInErrorService(
+    IFellingLicenceApplicationInternalRepository internalFlaRepository,
+    IClock clock,
+    ILogger<ApprovedInErrorService> logger,
+    IPublicRegister publicRegister,
+    IUpdateFellingLicenceApplication updateFellingLicenceApplicationService)
+    {
+        _internalFlaRepository = Guard.Against.Null(internalFlaRepository);
+        _clock = Guard.Against.Null(clock);
+        _logger = Guard.Against.Null(logger);
+        _publicRegister = Guard.Against.Null(publicRegister);
+        _updateFellingLicenceApplicationService = Guard.Against.Null(updateFellingLicenceApplicationService);
+        _flaReferenceRepository = null;
+        _applicationReferenceHelper = null;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ApprovedInErrorService"/> class with full reference regeneration capabilities.
+    /// </summary>
+    /// <param name="internalFlaRepository">The repository for felling licence application data access.</param>
+    /// <param name="clock">The clock service for obtaining the current timestamp.</param>
+    /// <param name="logger">The logger for diagnostic and error logging.</param>
+    /// <param name="publicRegister">The service for managing public register operations.</param>
+    /// <param name="updateFellingLicenceApplicationService">The service for updating felling licence applications.</param>
+    /// <param name="flaReferenceRepository">The repository for managing application reference sequences.</param>
+    /// <param name="applicationReferenceHelper">The helper for generating and updating application references.</param>
+    /// <remarks>
+    /// Use this constructor when reference regeneration is required. The service will regenerate the application
+    /// reference number when <see cref="ApprovedInErrorModel.ReasonOther"/> is false, preserving the original prefix.
+    /// </remarks>
+    public ApprovedInErrorService(
+    IFellingLicenceApplicationInternalRepository internalFlaRepository,
+    IClock clock,
+    ILogger<ApprovedInErrorService> logger,
+    IPublicRegister publicRegister,
+    IUpdateFellingLicenceApplication updateFellingLicenceApplicationService,
+    IFellingLicenceApplicationReferenceRepository flaReferenceRepository,
+    IApplicationReferenceHelper applicationReferenceHelper)
+    {
+        _internalFlaRepository = Guard.Against.Null(internalFlaRepository);
+        _clock = Guard.Against.Null(clock);
+        _logger = Guard.Against.Null(logger);
+        _publicRegister = Guard.Against.Null(publicRegister);
+        _updateFellingLicenceApplicationService = Guard.Against.Null(updateFellingLicenceApplicationService);
+        _flaReferenceRepository = Guard.Against.Null(flaReferenceRepository);
+        _applicationReferenceHelper = Guard.Against.Null(applicationReferenceHelper);
+    }
+
+    /// <inheritdoc />
+    public async Task<Maybe<ApprovedInErrorModel>> GetApprovedInErrorAsync(Guid applicationId, CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Attempting to retrieve ApprovedInError for application with id {ApplicationId}", applicationId);
+        var maybeEntity = await _internalFlaRepository.GetApprovedInErrorAsync(applicationId, cancellationToken);
+        if (maybeEntity.HasNoValue)
+        {
+            return Maybe<ApprovedInErrorModel>.None;
+        }
+        return Maybe.From(maybeEntity.Value.ToModel());
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> SetToApprovedInErrorAsync(Guid applicationId, ApprovedInErrorModel model, Guid userId, CancellationToken cancellationToken)
+    {
+        Guard.Against.Null(model);
+        _logger.LogDebug("Attempting to save ApprovedInError for application with id {ApplicationId}", applicationId);
+        
+        try
+        {
+            // Step 1: Retrieve and validate the application
+            var application = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
+            if (!application.HasValue)
+            {
+                _logger.LogError("Felling licence application not found, application id: {ApplicationId}", applicationId);
+                return Result.Failure($"Felling licence application not found, application id: {applicationId}");
+            }
+
+            // Step 2: Validate current status - must be Approved
+            var currentStatus = application.Value.StatusHistories.OrderByDescending(s => s.Created).FirstOrDefault()?.Status;
+            if (currentStatus != FellingLicenceStatus.Approved)
+            {
+                _logger.LogError("Application {ApplicationId} cannot be marked as approved in error as it is not in the approved state. Current state: {Status}", applicationId, currentStatus);
+                return Result.Failure("Application cannot be marked as approved in error as it is not in the approved state.");
+            }
+
+            // Step 3: Hide the most recent application document from the applicant (if one exists)
+            var mostRecentApplicationDocument = GetMostRecentDocumentOfType(application.Value.Documents, DocumentPurpose.ApplicationDocument);
+            if (mostRecentApplicationDocument.HasValue)
+            {
+                var UpdateDocumentVisibleResult = await _internalFlaRepository.UpdateDocumentVisibleToApplicantAsync(
+                    applicationId,
+                    mostRecentApplicationDocument.Value.Id,
+                    false,
+                    cancellationToken);
+                if (UpdateDocumentVisibleResult.IsFailure)
+                {
+                    _logger.LogWarning(
+                        "Unable to update document visibility for document [{Id}], received error [{Error}].",
+                        mostRecentApplicationDocument.Value.Id, UpdateDocumentVisibleResult.Error);
+
+                    return Result.Failure("Could not update document visibility");
+                }
+            }
+
+            // Step 4: Update or create ApprovedInError entity
+            var existing = await _internalFlaRepository.GetApprovedInErrorAsync(applicationId, cancellationToken);
+            var entity = existing.HasValue ? existing.Value : new ApprovedInError { FellingLicenceApplicationId = applicationId };
+
+            // Ensure consistent application id and update entity
+            model.MapToEntity(entity);
+            entity.LastUpdatedById = userId;
+            entity.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+
+            var upsertResult = await _internalFlaRepository.AddOrUpdateApprovedInErrorAsync(entity, cancellationToken);
+            if (upsertResult.IsFailure)
+            {
+                _logger.LogError("Could not save ApprovedInError for application {ApplicationId}, error: {Error}", applicationId, upsertResult.Error);
+                return Result.Failure(upsertResult.Error.ToString());
+            }
+
+            // Step 5: Regenerate reference if needed (when ReasonOther is false)
+            if (model.ReasonOther == false)
+            {
+                var regenResult = await RegenerateReferenceAsync(applicationId, null, cancellationToken);
+                if (regenResult.IsFailure)
+                {
+                    _logger.LogError("Failed to regenerate reference for application {ApplicationId}: {Error}", applicationId, regenResult.Error);
+                    return Result.Failure(regenResult.Error);
+                }
+            }
+
+            // Step 6: Add status history entry for ApprovedInError
+            await _internalFlaRepository.AddStatusHistory(
+                userId,
+                applicationId,
+                FellingLicenceStatus.ApprovedInError,
+                cancellationToken);
+
+            // Step 7: Persist all changes in a single transaction
+            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (saveResult.IsFailure)
+            {
+                _logger.LogWarning("Could not save changes for application with id {ApplicationId}, error: {Error}", applicationId, saveResult.Error);
+                return Result.Failure(saveResult.Error.ToString());
+            }
+
+            // Step 8: Remove from decision public register if necessary
+            await RemoveApplicationFromDecisionRegisterAsync(application.Value, cancellationToken);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in SetToApprovedInError");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateApprovedInErrorAsync(Guid applicationId, ApprovedInErrorModel model, Guid userId, CancellationToken cancellationToken)
+    {
+        Guard.Against.Null(model);
+        _logger.LogDebug("Attempting to update ApprovedInError for application with id {ApplicationId}", applicationId);
+        
+        try
+        {
+            // Retrieve existing record or create new
+            var existing = await _internalFlaRepository.GetApprovedInErrorAsync(applicationId, cancellationToken);
+            var entity = existing.HasValue ? existing.Value : new ApprovedInError { FellingLicenceApplicationId = applicationId };
+
+            entity.LicenceExpiryDate = model.LicenceExpiryDate;
+            entity.ReasonExpiryDateText = model.ReasonExpiryDateText;
+            entity.SupplementaryPointsText = model.SupplementaryPointsText;
+            entity.ApproverId = model.ApproverId;
+            entity.LastUpdatedById = userId;
+            entity.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+
+            // Update the record
+            var upsertResult = await _internalFlaRepository.AddOrUpdateApprovedInErrorAsync(entity, cancellationToken);
+            if (upsertResult.IsFailure)
+            {
+                _logger.LogError("Could not update ApprovedInError for application {ApplicationId}, error: {Error}", applicationId, upsertResult.Error);
+                return Result.Failure(upsertResult.Error.ToString());
+            }
+
+            // Persist changes
+            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (saveResult.IsFailure)
+            {
+                _logger.LogWarning("Could not save changes for application with id {ApplicationId}, error: {Error}", applicationId, saveResult.Error);
+                return Result.Failure(saveResult.Error.ToString());
+            }
+
+            _logger.LogDebug("Successfully updated ApprovedInError for application {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in UpdateApprovedInErrorAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Removes a felling licence application from the Decision Public Register if it exists there.
+    /// This method handles the removal from both the external GIS system and updates the local database record.
+    /// </summary>
+    /// <param name="application">The felling licence application entity.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// This method performs the following operations:
+    /// 1. Checks if the application has a PublicRegister entry
+    /// 2. Validates that the application was published to the decision register and hasn't already been removed
+    /// 3. If it has an EsriId, attempts to remove it from the external Decision Public Register
+    /// 4. If removal is successful, updates the local database with the removal timestamp
+    /// 5. Logs appropriate messages for success, failure, and edge cases
+    /// 
+    /// Note: Failures in this operation do not throw exceptions but are logged for diagnostic purposes.
+    /// </remarks>
+    private async Task RemoveApplicationFromDecisionRegisterAsync(
+        FellingLicenceApplication application,
+        CancellationToken cancellationToken)
+    {
+        var timestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
+        
+        if (application.PublicRegister == null)
+        {
+            _logger.LogDebug("The application {ApplicationId} does not have a Public Register entry in the local system", application.Id);
+            return;
+        }
+
+        // Check if the application was published to the decision register
+        if (!application.PublicRegister.DecisionPublicRegisterPublicationTimestamp.HasValue)
+        {
+            _logger.LogDebug("The application {ApplicationId} was not published to the Decision Public Register, skipping removal", application.Id);
+            return;
+        }
+
+        // Check if the application has already been removed from the decision register
+        if (application.PublicRegister.DecisionPublicRegisterRemovedTimestamp.HasValue)
+        {
+            _logger.LogDebug("The application {ApplicationId} has already been removed from the Decision Public Register on {RemovedTimestamp}, skipping removal", 
+                application.Id, application.PublicRegister.DecisionPublicRegisterRemovedTimestamp.Value);
+            return;
+        }
+
+        if (!application.PublicRegister.EsriId.HasValue)
+        {
+            _logger.LogWarning("The application having Id {Id}, although having a Public Register entry in the local system does not have an Esri Id, " +
+                             "so a removal cannot be performed", application.PublicRegister.FellingLicenceApplicationId);
+            return;
+        }
+
+        var gisResult = await _publicRegister.RemoveCaseFromDecisionRegisterAsync(
+            application.PublicRegister.EsriId.Value,
+            application.ApplicationReference!,
+            cancellationToken);
+
+        if (gisResult.IsSuccess)
+        {
+            _logger.LogDebug("Successfully removed the Felling Application with reference {CaseReference} " +
+                           "from the actual Decision Public Register", application.ApplicationReference);
+
+            var updateFlaResult = await _updateFellingLicenceApplicationService.SetRemovalDateOnDecisionPublicRegisterEntryAsync(
+                application.Id,
+                timestamp,
+                cancellationToken);
+
+            if (updateFlaResult.IsSuccess)
+            {
+                _logger.LogDebug("Successfully added decision public register removal date to the Felling Application " +
+                               "with reference {CaseReference}", application.ApplicationReference);
+            }
+            else
+            {
+                _logger.LogError("Unable to add the decision public register removal date to the Felling Application " +
+                               "with reference {CaseReference} Error was {Error}",
+                    application.ApplicationReference,
+                    updateFlaResult.Error);
+            }
+        }
+        else
+        {
+            _logger.LogError("Unable to remove the Felling Application with reference {CaseReference} " +
+                           "from the Decision Public Register, Error was {Error}",
+                application.ApplicationReference,
+                gisResult.Error);
+        }
+    }
+
+    /// <summary>
+    /// Gets the most recent document of the specified purpose type.
+    /// </summary>
+    /// <param name="documents">The collection of documents to search.</param>
+    /// <param name="purpose">The purpose type to filter by.</param>
+    /// <returns>The most recent <see cref="Document"/> of the specified purpose, or None if not found.</returns>
+    private static Maybe<Document> GetMostRecentDocumentOfType(IList<Document>? documents, DocumentPurpose purpose)
+    {
+        if (documents == null) return Maybe<Document>.None;
+
+        var lisDocument = documents.OrderByDescending(x => x.CreatedTimestamp)
+            .FirstOrDefault(x => x.Purpose == purpose);
+
+        if (lisDocument == null) return Maybe<Document>.None;
+
+        return Maybe<Document>.From(lisDocument);
+    }
+
+    /// <summary>
+    /// Regenerates the application reference number while preserving the original prefix.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the application.</param>
+    /// <param name="startingOffset">An optional offset to add to the reference counter.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating success or failure of the reference regeneration.
+    /// </returns>
+    private async Task<Result> RegenerateReferenceAsync(
+    Guid applicationId,
+    int? startingOffset,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Check if reference regeneration dependencies are configured
+            if (_flaReferenceRepository is null || _applicationReferenceHelper is null)
+            {
+                _logger.LogWarning("Reference regeneration dependencies not configured. Skipping regeneration for application {ApplicationId}", applicationId);
+                return Result.Success();
+            }
+
+            // Retrieve the application
+            var maybeApp = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
+            if (maybeApp.HasNoValue)
+            {
+                return Result.Failure("Application not found");
+            }
+
+            var application = maybeApp.Value;
+            
+            // Get the next reference ID for the application's year
+            var referenceId = await _flaReferenceRepository.GetNextApplicationReferenceIdValueAsync(application.CreatedTimestamp.Year, cancellationToken);
+
+            // Extract the prefix and postfix from the current application reference (e.g., "ABC" and "XYZ" from "ABC/2024/12345/XYZ")
+            string? prefix = null;
+            string? postfix = null;
+            if (!string.IsNullOrWhiteSpace(application.ApplicationReference))
+            {
+                var trimmed = application.ApplicationReference.Trim();
+                var slashIndex = trimmed.IndexOf('/');
+                prefix = slashIndex > 0 ? trimmed[..slashIndex] : trimmed;
+                
+                var lastSlashIndex = trimmed.LastIndexOf('/');
+                if (lastSlashIndex > slashIndex && lastSlashIndex < trimmed.Length - 1)
+                {
+                    postfix = trimmed[(lastSlashIndex + 1)..];
+                }
+            }
+
+            // Generate a new reference with the extracted prefix and postfix
+            var newReference = _applicationReferenceHelper.GenerateReferenceNumber(application, referenceId, postfix, startingOffset);
+            if (!string.IsNullOrWhiteSpace(prefix))
+            {
+                newReference = _applicationReferenceHelper.UpdateReferenceNumber(newReference, prefix);
+            }
+            application.ApplicationReference = newReference;
+
+            // Mark the application as updated (will be persisted when SaveEntitiesAsync is called)
+            _internalFlaRepository.Update(application);
+
+            _logger.LogDebug("Prepared regenerated application reference for {ApplicationId} to {Reference}", applicationId, newReference);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error regenerating application reference for {ApplicationId}", applicationId);
+            return Result.Failure(ex.Message);
+        }
+    }
+}

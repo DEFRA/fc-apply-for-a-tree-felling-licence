@@ -26,6 +26,7 @@ using Forestry.Flo.Services.InternalUsers;
 using MassTransit;
 using Forestry.Flo.External.Web.Services.AgentAuthority;
 using Forestry.Flo.External.Web.Services.FcUser;
+using Forestry.Flo.External.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common.Analytics;
 using Forestry.Flo.Services.ConditionsBuilder;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
@@ -363,6 +364,7 @@ public static class ServiceCollectionExtensions
         {
             x.AddConsumer<GeneratePdfPreviewConsumer>();
             x.AddConsumer<CentrePointCalculationConsumer>();
+            x.AddConsumer<PawsRequirementCheckConsumer>();
             x.AddConsumer<InternalFcUserAccountApprovedEventConsumer>();
             x.AddConsumer<AssignWoodlandOfficerConsumer>();
             x.AddConsumer<GetLarchRiskZonesConsumer>();
@@ -377,6 +379,7 @@ public static class ServiceCollectionExtensions
 
                 ReceiveEndpoint<GeneratePdfPreviewConsumer>("GeneratePdfPreview", cfg, context, options);
                 ReceiveEndpoint<CentrePointCalculationConsumer>("CentrePointCalculation", cfg, context, options);
+                ReceiveEndpoint<PawsRequirementCheckConsumer>("PawsRequirementCheck", cfg, context, options);
                 ReceiveEndpoint<InternalFcUserAccountApprovedEventConsumer>("InternalFcUserAccountApprovedEvent", cfg, context, options);
                 ReceiveEndpoint<AssignWoodlandOfficerConsumer>("AssignWoodlandOfficer", cfg, context, options);
                 ReceiveEndpoint<GetLarchRiskZonesConsumer>("GetLarchRiskZones", cfg, context, options);
@@ -480,6 +483,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AmendExternalUserUseCase>();
         services.AddScoped<ValidateShapeUseCase>();
         services.AddScoped<CalculateCentrePointUseCase>();
+        services.AddScoped<ICheckForPawsRequirementUseCase, CheckForPawsRequirementUseCase>();
+        services.AddScoped<ICollectPawsDataUseCase, CollectPawsDataUseCase>();
         services.AddScoped<CreateExternalUserProfileForInternalFcUserUseCase>();
         services.AddScoped<GetDataForFcUserHomepageUseCase>();
         services.AddScoped<FcUserCreateAgencyUseCase>();

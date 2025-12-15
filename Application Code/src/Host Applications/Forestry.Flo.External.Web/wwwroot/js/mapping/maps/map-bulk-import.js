@@ -81,19 +81,19 @@ define(["require",
                         }
 
                         if (e.target.files[0].size > that.maxFileSize) {
-                            that.ShowMessage("error", "The file you atemptting to upload is to big");
+                            that.ShowMessage("error", "The file you are attempting to upload is too large.");
                             return;
                         }
 
                         const filePath = e.target.value;
                         if (typeof filePath === "undefined" || filePath.length === 0) {
-                            that.ShowMessage("error", "Unable to find file");
+                            that.ShowMessage("error", "Unable to find file.");
                             return;
                         }
 
                         const fileExt = filePath.slice(filePath.lastIndexOf('.'));
                         if (!this.supportedFileTypes.includes(fileExt)) {
-                            that.ShowMessage("error", "File type is not supported");
+                            that.ShowMessage("error", "File type is not supported.");
                             return;
                         }
                         if (fileExt.toLocaleLowerCase() === ".kml") {

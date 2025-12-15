@@ -8,6 +8,21 @@ public class MappingCheckModelValidatorTests
 {
     private readonly MappingCheckModelValidator _sut = new();
 
+    [Fact]
+    public async Task Should_Have_Error_When_CheckPassed_Is_Null()
+    {
+        // Arrange
+        var model = new MappingCheckModel
+        {
+            CheckPassed = null
+        };
+        // Act
+        var result = await _sut.TestValidateAsync(model);
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.CheckPassed)
+            .WithErrorMessage("Select whether the mapping is correct");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("  ")]
@@ -26,7 +41,7 @@ public class MappingCheckModelValidatorTests
 
         // Assert
         result.ShouldHaveValidationErrorFor(x => x.CheckFailedReason)
-            .WithErrorMessage("Reason for failure must be provided");
+            .WithErrorMessage("A reason for the mapping being incorrect must be provided");
     }
 
     [Fact]

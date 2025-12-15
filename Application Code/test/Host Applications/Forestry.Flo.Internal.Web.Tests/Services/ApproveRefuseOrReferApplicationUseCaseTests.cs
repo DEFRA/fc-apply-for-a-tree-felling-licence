@@ -23,6 +23,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using Forestry.Flo.Services.Common.Models;
 using Newtonsoft.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -117,7 +118,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -163,7 +164,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _clockMock.Verify(x=>x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant && y.Role != AssignedUserRole.Author && y.TimestampUnassigned == null)
                     .Select(y => y.AssignedUserId).Contains(x))),
@@ -251,7 +252,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -286,7 +287,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         Assert.Empty(result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant && y.Role != AssignedUserRole.Author && y.TimestampUnassigned == null)
                     .Select(y => y.AssignedUserId).Contains(x))),
@@ -373,7 +374,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -395,7 +396,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
             application.PublicRegister!.EsriId!.Value,
             application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),   
+            FellingLicenceStatus.Approved.ToString(),
             now,
             It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
 
@@ -419,7 +420,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -482,7 +483,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Failure("error"));
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -532,7 +533,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -552,7 +553,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 && 
                                                 a.Any(x => x.Address == woodlandOwnerModel.ContactEmail && x.Name == woodlandOwnerModel.ContactName)
                                                 && fcStaff.All(fc => a.Any(app => app.Address == fc.Email))),
-            null, null, 
+            null, null,
             CancellationToken.None), Times.Once);
 
         _auditMock.Verify(v =>
@@ -595,7 +596,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -643,7 +644,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -705,7 +706,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -759,7 +760,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -826,7 +827,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Failure("error"));
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -866,7 +867,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -887,7 +888,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 
                                                 && a.Any(x => x.Address == woodlandOwnerModel.ContactEmail && x.Name == woodlandOwnerModel.ContactName)
                                                 && fcStaff.All(fc => a.Any(app => app.Address == fc.Email))),
-            null, null, 
+            null, null,
             CancellationToken.None), Times.Once);
 
         _auditMock.Verify(v =>
@@ -931,7 +932,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -969,7 +970,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -1030,7 +1031,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Failure("error"));
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -1080,7 +1081,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -1142,7 +1143,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -1179,7 +1180,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             Times.Never);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -1241,7 +1242,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -1279,7 +1280,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
         
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -1352,7 +1353,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Failure("err"));
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -1392,7 +1393,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -1464,7 +1465,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -1493,7 +1494,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         Assert.Empty(result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
@@ -1572,7 +1573,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(Result.Success);
 
         _woodlandOwnerServiceMock
-            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _internalAccountServiceMock
@@ -1608,7 +1609,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         Assert.Empty(result.SubProcessFailures);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, CancellationToken.None), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant && y.Role != AssignedUserRole.Author && y.TimestampUnassigned == null)
                     .Select(y => y.AssignedUserId).Contains(x))),
@@ -1793,24 +1794,6 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _woodlandOwnerServiceMock.VerifyNoOtherCalls();
         _internalAccountServiceMock.VerifyNoOtherCalls();
         _updateFLAMock.VerifyNoOtherCalls();
-    }
-
-    [Theory, AutoMoqData]
-    public async Task CanUpdateApproverIdOnApplication(
-        Guid applicationId,
-        Guid? approverId)
-    {
-        var sut = CreateSut();
-
-        _updateFLAMock.Setup(x =>
-                x.SetApplicationApproverAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
-
-        var result = await sut.UpdateApproverIdAsync(applicationId, approverId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-
-        _updateFLAMock.Verify(x => x.SetApplicationApproverAsync(applicationId, approverId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private FellingLicenceApplication PopulateStatusAndAssigneeHistory(FellingLicenceApplication application)

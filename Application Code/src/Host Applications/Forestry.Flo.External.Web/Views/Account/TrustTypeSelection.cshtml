@@ -27,9 +27,9 @@
 
                     <div class="govuk-radios__item">
 
-                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input", @id = "individual-trust" })
+                        @Html.RadioButtonFor(x => x.OrganisationStatus, OrganisationStatus.Individual, new { @class = "govuk-radios__input" })
 
-                        <label class="govuk-label govuk-radios__label" for="individual-trust">
+                        <label class="govuk-label govuk-radios__label" asp-for="OrganisationStatus">
                             Individual trustee
                         </label>
 

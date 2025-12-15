@@ -33,7 +33,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<CompleteWoodlandOfficerReviewNotificationsModel>(error));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
@@ -42,12 +42,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             recommendationForDecisionPublicRegister,
             recommendationForDecisionPublicRegisterReason,
             internalLinkToApplication,
+            null,
             user,
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, null, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         NotificationService.VerifyNoOtherCalls();
         ExternalUserAccountRepository.VerifyNoOtherCalls();
@@ -84,7 +85,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(notificationsModel));
         ExternalUserAccountRepository
             .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -96,12 +97,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             recommendationForDecisionPublicRegister,
             recommendationForDecisionPublicRegisterReason,
             internalLinkToApplication,
+            null,
             user,
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, null, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         NotificationService.VerifyNoOtherCalls();
         ExternalUserAccountRepository.Verify(x => x.RetrieveUserAccountEntityByIdAsync(notificationsModel.ApplicantId, It.IsAny<CancellationToken>()), Times.Once);
@@ -160,7 +162,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(notificationsModel));
         ExternalUserAccountRepository
             .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -175,12 +177,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             recommendationForDecisionPublicRegister,
             recommendationForDecisionPublicRegisterReason,
             internalLinkToApplication,
+            null,
             user,
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, null, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         NotificationService.VerifyNoOtherCalls();
         ExternalUserAccountRepository.Verify(x => x.RetrieveUserAccountEntityByIdAsync(notificationsModel.ApplicantId, It.IsAny<CancellationToken>()), Times.Once);
@@ -241,7 +244,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(notificationsModel));
         ExternalUserAccountRepository
             .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -259,12 +262,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             recommendationForDecisionPublicRegister,
             recommendationForDecisionPublicRegisterReason,
             internalLinkToApplication,
+            null,
             user,
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, null, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         NotificationService.VerifyNoOtherCalls();
         ExternalUserAccountRepository.Verify(x => x.RetrieveUserAccountEntityByIdAsync(notificationsModel.ApplicantId, It.IsAny<CancellationToken>()), Times.Once);
@@ -328,7 +332,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(notificationsModel));
         ExternalUserAccountRepository
             .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -352,12 +356,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             recommendationForDecisionPublicRegister,
             recommendationForDecisionPublicRegisterReason,
             internalLinkToApplication,
+            null,
             user,
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, null, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         NotificationService.Verify(x => x.SendNotificationAsync(
             It.Is<InformAssignedUserOfApplicationStatusTransitionDataModel>(
@@ -435,7 +440,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(notificationsModel));
         ExternalUserAccountRepository
             .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -459,12 +464,13 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             recommendationForDecisionPublicRegister,
             recommendationForDecisionPublicRegisterReason,
             internalLinkToApplication,
+            null,
             user,
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.CompleteWoodlandOfficerReviewAsync(applicationId, user.UserAccountId!.Value, recommendedLicenceDuration, recommendationForDecisionPublicRegister, recommendationForDecisionPublicRegisterReason, null, Now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         NotificationService.Verify(x => x.SendNotificationAsync(
             It.Is<InformAssignedUserOfApplicationStatusTransitionDataModel>(
@@ -559,6 +565,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
             WoodlandOfficerReviewSubStatusService.Object,
             RequestContext,
             MockBus.Object,
+            FellingLicenceApplicationOptions,
             new NullLogger<Web.Services.FellingLicenceApplication.WoodlandOfficerReview.WoodlandOfficerReviewUseCase>());
     }
 }

@@ -83,6 +83,12 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         public List<CompartmentFellingRestockingStatus> CompartmentFellingRestockingStatuses { get; set; }
 
         /// <summary>
+        /// Gets and sets the per-compartment designations completion statuses used to determine the
+        /// overall designations data entry progression for the application.
+        /// </summary>
+        public List<CompartmentDesignationStatus> CompartmentDesignationsStatuses { get; } = [];
+
+        /// <summary>
         /// Gets or sets the navigation property to the related felling licence application.
         /// </summary>
         public FellingLicenceApplication FellingLicenceApplication { get; set; }

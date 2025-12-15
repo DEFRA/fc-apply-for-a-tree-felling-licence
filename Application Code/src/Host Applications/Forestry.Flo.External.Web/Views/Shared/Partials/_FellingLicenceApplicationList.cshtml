@@ -24,7 +24,15 @@
     {
         <tr data-id="@application.Id" class="govuk-table__row data-row">
 
-                <td scope="row" class="govuk-table__cell" data-order="@application.ApplicationReference">@application.ApplicationReference</td>
+            <td scope="row" class="govuk-table__cell" data-order="@application.ApplicationReference">
+                @application.ApplicationReference
+                @if (!string.IsNullOrWhiteSpace(application.PreviousReference))
+                {
+                    <span>
+                        (previously @application.PreviousReference)
+                    </span>
+                }
+            </td>
 
             <td scope="row" class="govuk-table__cell" data-order="@application.Status">
 

@@ -8,6 +8,23 @@ public class AgentAuthorityFormCheckModelValidatorTests
 {
     private readonly AgentAuthorityFormCheckModelValidator _sut = new();
 
+    [Fact]
+    public async Task ShouldHaveErrorWhenNoCheckPassedIsGiven()
+    {
+        // Arrange
+        var model = new AgentAuthorityFormCheckModel
+        {
+            CheckPassed = null
+        };
+
+        // Act
+        var result = _sut.TestValidate(model);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.CheckPassed)
+            .WithErrorMessage("Select whether the provided AAF is valid");
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("  ")]
@@ -26,7 +43,7 @@ public class AgentAuthorityFormCheckModelValidatorTests
 
         // Assert
         result.ShouldHaveValidationErrorFor(x => x.CheckFailedReason)
-              .WithErrorMessage("Reason for failure must be provided");
+              .WithErrorMessage("A reason for the AAF being invalid must be provided");
     }
 
     [Fact]

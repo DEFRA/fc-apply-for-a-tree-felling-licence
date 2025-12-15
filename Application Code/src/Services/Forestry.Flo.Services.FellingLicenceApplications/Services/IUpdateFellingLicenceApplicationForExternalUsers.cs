@@ -76,6 +76,18 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Converts the proposed compartment designations for the application with the given id to submitted designations.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userAccessModel">A <see cref="UserAccessModel"/> representing the user performing the process.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating whether the call was successful.</returns>
+    Task<Result> ConvertProposedCompartmentDesignationsToSubmittedAsync(
+        Guid applicationId,
+        UserAccessModel userAccessModel,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Updates the ten-year licence status for a specified application.
     /// </summary>
     /// <param name="applicationId">The ID of the application to update.</param>
@@ -115,5 +127,19 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
         Guid applicationId,
         UserAccessModel userAccess,
         bool aafStepStatus,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the PAWS designations data for a compartment in the specified application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to update</param>
+    /// <param name="userAccess">The auth for the user performing the update.</param>
+    /// <param name="pawsDesignationsData">A model of the PAWS designations data to store.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns></returns>
+    Task<Result> UpdateApplicationPawsDesignationsDataAsync(
+        Guid applicationId,
+        UserAccessModel userAccess,
+        PawsCompartmentDesignationsModel pawsDesignationsData,
         CancellationToken cancellationToken);
 }

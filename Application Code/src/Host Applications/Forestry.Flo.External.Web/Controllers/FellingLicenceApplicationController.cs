@@ -396,7 +396,6 @@ public partial class FellingLicenceApplicationController(
             }
 
             var mode = compartmentsModel.IsForRestockingCompartmentSelection ? "restock" : "fell";
-            this.AddErrorMessage($"Select at least one compartment to {mode} in");
 
             ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = viewModel.Value.Application.WoodlandOwnerId;
 
@@ -413,6 +412,9 @@ public partial class FellingLicenceApplicationController(
             }
 
             ViewBag.Compartments = compartmentsToShow;
+
+            ModelState.AddModelError($"SelectedCompartmentIds_{compartmentsToShow.FirstOrDefault()?.Id}", $"Select at least one compartment to {mode} in");
+
             ViewBag.ApplicationSummary = viewModel.Value.Application.ApplicationSummary;
             SetTaskBreadcrumbs(compartmentsModel);
             return View(compartmentsModel);
@@ -462,6 +464,17 @@ public partial class FellingLicenceApplicationController(
 
             await busControl.Publish(
                 new CentrePointCalculationMessage(
+                    viewModel.Value.Application.WoodlandOwnerId,
+                    user.UserAccountId!.Value,
+                    compartmentsModel.ApplicationId,
+                    user.IsFcUser,
+                    string.IsNullOrEmpty(user.AgencyId) ? null : Guid.Parse(user.AgencyId)),
+                cancellationToken);
+
+            // enqueue the asynchronous calculation of the PAWS intersections for the selected compartments
+
+            await busControl.Publish(
+                new PawsRequirementCheckMessage(
                     viewModel.Value.Application.WoodlandOwnerId,
                     user.UserAccountId!.Value,
                     compartmentsModel.ApplicationId,

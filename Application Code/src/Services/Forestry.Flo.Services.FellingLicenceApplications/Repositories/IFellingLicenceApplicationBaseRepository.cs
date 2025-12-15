@@ -130,5 +130,19 @@ public interface IFellingLicenceApplicationBaseRepository
     /// <returns>A <see cref="Task{IDbContextTransaction}"/> representing the transaction.</returns>
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Updates the VisibleToApplicant flag on a document.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application the document belongs to.</param>
+    /// <param name="documentId">The ID of the document to update.</param>
+    /// <param name="visibleToApplicant">The new value for VisibleToApplicant.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A Result indicating success or failure with NotFound if the document is not found.</returns>
+    Task<UnitResult<UserDbErrorReason>> UpdateDocumentVisibleToApplicantAsync(
+        Guid applicationId,
+        Guid documentId,
+        bool visibleToApplicant,
+        CancellationToken cancellationToken);
+
     DbConnection GetDbConnection();
 }

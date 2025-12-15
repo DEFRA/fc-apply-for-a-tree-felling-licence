@@ -26,12 +26,13 @@
             @if (Model.SelectedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
             {
                 <h2 class="govuk-heading-m">Admin Hub</h2>
-                <div class="govuk-form-group">
+                <govuk-form-group asp-for="SelectedFcAreaCostCode">
 
                     <label class="govuk-label" for="@nameof(Model.SelectedFcAreaCostCode)">Change the area this application is currently assigned to</label>
                     <div id="subject-hint" class="govuk-hint">
                         This will also update the Application Reference
                     </div>
+                    <validation asp-for="SelectedFcAreaCostCode"></validation>
                     <select class="govuk-select" id="@nameof(Model.SelectedFcAreaCostCode)" name="@nameof(Model.SelectedFcAreaCostCode)">
                         @if (Model.FellingLicenceApplicationSummary.AreaCode is null)
                         {
@@ -45,7 +46,7 @@
                             </option>
                         }
                     </select>
-                </div>
+                </govuk-form-group>
             }
 
             <h2 class="govuk-heading-m">Which user would you like to assign application @Model.FellingLicenceApplicationSummary.ApplicationReference to?</h2>

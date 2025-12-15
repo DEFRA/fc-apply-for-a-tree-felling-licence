@@ -19,4 +19,6 @@ public record ApplicationStepStatusRecord
     public bool? SupportingDocumentationComplete { get; init; } = null;
 
     public bool? EnvironmentalImpactAssessmentComplete { get; init; } = null;
+
+    public bool? PawsCheckComplete { get; init; } = null;
 }

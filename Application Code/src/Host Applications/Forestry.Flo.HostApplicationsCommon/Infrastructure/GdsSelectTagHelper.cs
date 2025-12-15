@@ -14,7 +14,7 @@ public class GdsSelectTagHelper(IHtmlGenerator generator) : SelectTagHelper(gene
 
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
-        // Let the base class generate the standard <input> markup
+        // Let the base class generate the standard <select> markup
         await base.ProcessAsync(context, output);
 
         // Now check for validation errors
@@ -22,5 +22,8 @@ public class GdsSelectTagHelper(IHtmlGenerator generator) : SelectTagHelper(gene
         var modelState = ViewContext.ViewData.ModelState;
 
         GdsErrorTagHelper.ProcessOutput(modelName, modelState, "govuk-select--error", output);
+
+        //reinitialize the PostContent so only the standard framework SelectTagHelper applies options
+        output.PostContent.Reinitialize();
     }
 }

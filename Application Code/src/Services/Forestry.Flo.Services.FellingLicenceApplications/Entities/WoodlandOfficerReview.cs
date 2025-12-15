@@ -211,4 +211,9 @@ public class WoodlandOfficerReview
     /// Gets and sets the felling and restocking amendment reviews associated with this WO review.
     /// </summary>
     public IList<FellingAndRestockingAmendmentReview> FellingAndRestockingAmendmentReviews { get; set; } = new List<FellingAndRestockingAmendmentReview>();
+
+    /// <summary>
+    /// Gets and sets any supplementary points or comments provided by the Woodland Officer during the review.
+    /// </summary>
+    public string? SupplementaryPoints { get; set; }
 }

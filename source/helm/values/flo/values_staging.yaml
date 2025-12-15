@@ -145,6 +145,12 @@ external-web-app:
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
         - "forestresearch.gov.uk"
+        - "zoonou.com"
+    Designations:
+      enabled: true
+      PawsZoneNames:
+        - "ARW"
+        - "IAWPP"
     logging:
       LogLevel:
         Default: "Information"
@@ -234,6 +240,14 @@ external-web-app:
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true
             Fields: [ "name"]
+          - Name: "Ancient_Woodland"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/75"
+            NeedsToken: true
+            Fields: [ "name", "status" ]
+          - Name: "Ancient_Woodlands_Revised"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1001"
+            NeedsToken: true
+            Fields: [ "name", "status" ]
         GeometryService:
           Path: "https://utility.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer/"
           NeedsToken: false
@@ -488,6 +502,7 @@ internal-web-app:
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
         - "forestresearch.gov.uk"
+        - "zoonou.com"
     logging:
       LogLevel:
         Default: "Information"
@@ -577,6 +592,14 @@ internal-web-app:
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true
             Fields: [ "name"]
+          - Name: "Ancient_Woodland"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/75"
+            NeedsToken: true
+            Fields: [ "name", "status" ]
+          - Name: "Ancient_Woodlands_Revised"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1001"
+            NeedsToken: true
+            Fields: [ "name", "status" ]
         UtilitiesService:
           Path: "rest/services/Secure_FSE_GP/FLOv2_PrintService/GPServer"
           NeedsToken: true

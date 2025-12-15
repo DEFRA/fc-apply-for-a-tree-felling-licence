@@ -9,7 +9,7 @@
     <input asp-for="ReturnUrl"/>
     
     <govuk-form-group asp-for="Text" class="govuk-character-count" data-module="govuk-character-count" data-maxlength="65535">
-        <label class="govuk-label govuk-label--s" for="add-case-note-text">
+        <label class="govuk-label govuk-label--s" asp-for="Text">
             New @Model.CaseNoteType.GetDisplayName()?.ToLower()
         </label>
         <div class="govuk-inset-text">
@@ -27,7 +27,7 @@
             </ul>
         </div>
         <validation asp-for="Text"></validation>
-        <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="Text" id="add-case-note-text"></textarea>
+        <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="Text"></textarea>
         <div class="govuk-checkboxes govuk-checkboxes--small">
             <div class="govuk-checkboxes__item">
                 <input class="govuk-checkboxes__input" type="checkbox" asp-for="VisibleToApplicant"/>

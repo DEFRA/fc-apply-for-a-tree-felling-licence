@@ -1,4 +1,6 @@
-﻿namespace Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+﻿using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+
+namespace Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 
 /// <summary>
 /// Model class representing the designations for a submitted compartment on an FLA.
@@ -9,6 +11,11 @@ public class SubmittedCompartmentDesignationsModel
     /// Gets and sets the ID of the underlying entity for this designations model.
     /// </summary>
     public Guid? Id { get; set; }
+
+    /// <summary>
+    /// Gets and sets the property profile compartment id that these designations belong to.
+    /// </summary>
+    public Guid CompartmentId { get; set; }
 
     /// <summary>
     /// Gets and sets the ID of the submitted compartment that these designations belong to.
@@ -61,15 +68,32 @@ public class SubmittedCompartmentDesignationsModel
     public bool None { get; set; }
 
     /// <summary>
-    /// Gets and sets a value indicating whether the designations have been completed.
+    /// Gets and sets a value indicating that the compartment crosses a PAWS zone.
     /// </summary>
-    public bool HasCompletedDesignations => Id.HasValue;
+    public bool Paws { get; set; }
+
+    /// <summary>
+    /// Gets and sets the <see cref="NativeTreeSpeciesProportion"/> for the compartment before the
+    /// felling operation is carried out.
+    /// </summary>
+    public NativeTreeSpeciesProportion? ProportionBeforeFelling { get; set; }
+
+    /// <summary>
+    /// Gets and sets the <see cref="NativeTreeSpeciesProportion"/> for the compartment after the
+    /// felling operation is carried out.
+    /// </summary>
+    public NativeTreeSpeciesProportion? ProportionAfterFelling { get; set; }
+
+    /// <summary>
+    /// Gets and sets a value indicating whether the compartment designations have been reviewed.
+    /// </summary>
+    public bool HasBeenReviewed { get; set; }
 
     public string GetDesignationSummary()
     {
-        if (!HasCompletedDesignations)
+        if (!HasBeenReviewed)
         {
-            return "None (unreviewed)";
+            return Paws ? "PAWS (unreviewed)" : "None (unreviewed)";
         }
 
         var designations = new List<string>();
@@ -78,6 +102,7 @@ public class SubmittedCompartmentDesignationsModel
         if (Spa) designations.Add("SPA");
         if (Ramsar) designations.Add("RAMSAR");
         if (Sbi) designations.Add("SBI");
+        if (Paws) designations.Add("PAWS");
         if (Other) designations.Add("Other");
         if (None) designations.Add("None (reviewed)");
 

@@ -122,7 +122,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
                 r.RetrieveConfirmedFellingAndRestockingDetailModelAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(confirmedFrDetailModelList);
 
-        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
 
         _externalUserAccountService.Setup(r => r.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -218,7 +218,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
 
         _updateConfirmedFellAndRestockService.Verify(v => v.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fla.Id, CancellationToken.None), Times.Once);
         _fellingLicenceRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id!.Value, CancellationToken.None));
+        _woodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id!.Value, It.IsAny<UserAccessModel>(), CancellationToken.None));
         _externalUserAccountService.Verify(v => v.RetrieveUserAccountEntityByIdAsync(userAccount.Id, CancellationToken.None));
         _activityFeedItemProvider.Verify(v =>
             v.RetrieveAllRelevantActivityFeedItemsAsync(
@@ -250,7 +250,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
                 r.RetrieveConfirmedFellingAndRestockingDetailModelAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(confirmedFrDetailModelList);
 
-        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
 
         _externalUserAccountService.Setup(r => r.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -293,7 +293,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
 
         _updateConfirmedFellAndRestockService.Verify(v => v.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fla.Id, CancellationToken.None), Times.Once);
         _fellingLicenceRepository.Verify(v => v.GetAsync(fla.Id, CancellationToken.None), Times.Once);
-        _woodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id!.Value, CancellationToken.None));
+        _woodlandOwnerService.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(woodlandOwner.Id!.Value, It.IsAny<UserAccessModel>(), CancellationToken.None));
         _externalUserAccountService.Verify(v => v.RetrieveUserAccountEntityByIdAsync(userAccount.Id, CancellationToken.None));
     }
 
@@ -761,9 +761,13 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
         Guid applicationId,
         List<SubmittedFlaPropertyCompartment> compartments,
         WoodlandOwnerModel woodlandOwner,
+        FellingLicenceApplication fla,
         UserAccount userAccount)
     {
         // Arrange
+        fla.AssigneeHistories = [];
+        fla.LinkedPropertyProfile.ProposedFellingDetails = [];
+
         var sut = CreateSut();
         var selectableCompartments = compartments
             .Select(x => new SelectableCompartment(x.CompartmentId, x.CompartmentNumber))
@@ -774,10 +778,10 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             .ReturnsAsync(Result.Success(compartments));
 
         _fellingLicenceRepository
-            .Setup(r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new FellingLicenceApplication());
+            .Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fla);
 
-        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
 
         _externalUserAccountService.Setup(r => r.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -799,9 +803,16 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
     }
 
     [Theory, AutoMoqData]
-    public async Task GetSelectableFellingCompartmentsAsync_ReturnsFailure_WhenServiceFails(Guid applicationId, WoodlandOwnerModel woodlandOwner, UserAccount userAccount)
+    public async Task GetSelectableFellingCompartmentsAsync_ReturnsFailure_WhenServiceFails(
+        Guid applicationId, 
+        FellingLicenceApplication fla,
+        WoodlandOwnerModel woodlandOwner, 
+        UserAccount userAccount)
     {
         // Arrange
+        fla.AssigneeHistories = [];
+        fla.LinkedPropertyProfile.ProposedFellingDetails = [];
+
         var sut = CreateSut();
         var error = "Some error";
         _getFellingLicenceApplicationForInternalUsers
@@ -809,10 +820,10 @@ public class ConfirmedFellingAndRestockingDetailsUseCaseTests
             .ReturnsAsync(Result.Failure<List<SubmittedFlaPropertyCompartment>>(error));
 
         _fellingLicenceRepository
-            .Setup(r => r.GetAsync(applicationId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new FellingLicenceApplication());
+            .Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fla);
 
-        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
 
         _externalUserAccountService.Setup(r => r.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

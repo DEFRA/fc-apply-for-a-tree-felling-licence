@@ -231,6 +231,18 @@ public class UpdateWoodlandOfficerReviewUpdateCompartmentDesignationsTests : Upd
             Assert.Null(compartments[0].SubmittedCompartmentDesignations.OtherDesignationDetails);
         }
         Assert.Equal(designations.None, compartments[0].SubmittedCompartmentDesignations.None);
+        Assert.Equal(designations.Paws, compartments[0].SubmittedCompartmentDesignations.Paws);
+        if (designations.Paws)
+        {
+            Assert.Equal(designations.ProportionBeforeFelling, compartments[0].SubmittedCompartmentDesignations.ProportionBeforeFelling);
+            Assert.Equal(designations.ProportionAfterFelling, compartments[0].SubmittedCompartmentDesignations.ProportionAfterFelling);
+        }
+        else
+        {
+            Assert.Null(compartments[0].SubmittedCompartmentDesignations.ProportionBeforeFelling);
+            Assert.Null(compartments[0].SubmittedCompartmentDesignations.ProportionAfterFelling);
+        }
+        Assert.True(compartments[0].SubmittedCompartmentDesignations.HasBeenReviewed);
 
     }
 
@@ -290,6 +302,18 @@ public class UpdateWoodlandOfficerReviewUpdateCompartmentDesignationsTests : Upd
             Assert.Null(compartments[0].SubmittedCompartmentDesignations.OtherDesignationDetails);
         }
         Assert.Equal(designations.None, compartments[0].SubmittedCompartmentDesignations.None);
+
+        if (designations.Paws)
+        {
+            Assert.Equal(designations.ProportionBeforeFelling, compartments[0].SubmittedCompartmentDesignations.ProportionBeforeFelling);
+            Assert.Equal(designations.ProportionAfterFelling, compartments[0].SubmittedCompartmentDesignations.ProportionAfterFelling);
+        }
+        else
+        {
+            Assert.Null(compartments[0].SubmittedCompartmentDesignations.ProportionBeforeFelling);
+            Assert.Null(compartments[0].SubmittedCompartmentDesignations.ProportionAfterFelling);
+        }
+        Assert.True(compartments[0].SubmittedCompartmentDesignations.HasBeenReviewed);
 
     }
 }

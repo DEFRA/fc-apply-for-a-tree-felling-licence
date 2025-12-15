@@ -8,7 +8,7 @@
 
     var totalCompartmentsToReview = Model.CompartmentDesignations.CompartmentDesignations.Count();
     var numberCompartmentsReviewed = Model.CompartmentDesignations.CompartmentDesignations
-        .Count(x => x.HasCompletedDesignations);
+        .Count(x => x.HasBeenReviewed);
 
     var hasCompletedAllCompartments = totalCompartmentsToReview == numberCompartmentsReviewed;
 }

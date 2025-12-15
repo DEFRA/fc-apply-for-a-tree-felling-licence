@@ -154,6 +154,10 @@ public class DesignationsUseCase : FellingLicenceApplicationUseCaseBase, IDesign
             return Result.Failure<UpdateDesignationsViewModel>("Failed to find designations for the specified compartment id");
         }
 
+        var applicantProposedDesignations = designationsModel
+            .ProposedCompartmentDesignations
+            .SingleOrDefault(x => x.PropertyProfileCompartmentId == compartmentDesignations.CompartmentId);
+
         // order the designations by compartment name in order to identify the next compartment
         var orderedList = designationsModel.CompartmentDesignations
             .OrderByNameNumericOrAlpha()
@@ -168,9 +172,10 @@ public class DesignationsUseCase : FellingLicenceApplicationUseCaseBase, IDesign
             ApplicationId = applicationId,
             FellingLicenceApplicationSummary = summaryModel,
             CompartmentDesignations = compartmentDesignations,
+            ProposedCompartmentDesignations = applicantProposedDesignations,
             NextCompartmentId = nextCompartmentId,
             TotalCompartments = designationsModel.CompartmentDesignations.Count,
-            CompartmentsReviewed = designationsModel.CompartmentDesignations.Count(cd => cd.HasCompletedDesignations)
+            CompartmentsReviewed = designationsModel.CompartmentDesignations.Count(cd => cd.HasBeenReviewed)
         };
 
         SetBreadcrumbs(result, $"Designations - {compartmentDesignations.CompartmentName}");

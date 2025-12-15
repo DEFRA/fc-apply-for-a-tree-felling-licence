@@ -395,7 +395,7 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
         var currentStatus = statuses.MaxBy(x => x.Created)?.Status;
 
         if (currentStatus is not FellingLicenceStatus.Approved and not FellingLicenceStatus.Refused 
-            and not FellingLicenceStatus.ReferredToLocalAuthority){
+            and not FellingLicenceStatus.ReferredToLocalAuthority and not FellingLicenceStatus.ApprovedInError){
             _logger.LogWarning("The application having {Id} does not have one of the correct statuses required to have it set to expired, " +
                                "the current status is {CurrentStatus}", applicationId, currentStatus);
 
@@ -514,17 +514,21 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
             : Result.Failure(saveResult.Error.GetDescription());
     }
 
-    public async Task<Result> SetApplicationApproverAsync(Guid applicationId, Guid? approverId, CancellationToken cancellationToken)
+    public async Task<Result> SetApplicationApproverAndExpiryDateAsync(
+        Guid applicationId, 
+        Guid? approverId, 
+        DateTime? licenceExpiryDate,
+        CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Received request to set application approver for application with id {ApplicationId}", applicationId);
+        _logger.LogDebug("Received request to set application approver and licence expiry date for application with id {ApplicationId}", applicationId);
 
         var updateResult = await _fellingLicenceApplicationInternalRepository
-            .SetApplicationApproverAsync(applicationId, approverId, cancellationToken);
+            .SetApplicationApproverAndExpiryDateAsync(applicationId, approverId, licenceExpiryDate, cancellationToken);
 
         if (updateResult.IsFailure)
         {
-            _logger.LogError("Could not set application approver for application with id {ApplicationId}, error was {Error}", applicationId, updateResult.Error);
-            return Result.Failure("Could not update application approver id");
+            _logger.LogError("Could not set application approver and licence expiry date for application with id {ApplicationId}, error was {Error}", applicationId, updateResult.Error);
+            return Result.Failure("Could not update application approver id and licence expiry date");
         }
 
         await _fellingLicenceApplicationInternalRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);

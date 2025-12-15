@@ -3,7 +3,9 @@ using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Tests.Common;
+using LinqKit;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AssignToApplicantTests;
 
@@ -92,7 +94,6 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
         TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
 
-        fla.SubmittedFlaPropertyDetail = null;
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
 
         externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
@@ -139,7 +140,6 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
         TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
 
-        fla.SubmittedFlaPropertyDetail = null;
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = Guid.NewGuid();
 
@@ -184,7 +184,6 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
         TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
 
-        fla.SubmittedFlaPropertyDetail = null;
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = Guid.NewGuid();
 
@@ -229,7 +228,6 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
         TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
 
-        fla.SubmittedFlaPropertyDetail = null;
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = Guid.NewGuid();
 
@@ -273,7 +271,6 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
         TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
 
-        fla.SubmittedFlaPropertyDetail = null;
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = externalApplicantAccount.Id;
         externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
@@ -289,6 +286,98 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
                 Assert.Equal(fla.CreatedById, result.Value.ExternalApplicantId);
                 Assert.Equal(externalApplicantAccountModels.Count, result.Value.ExternalApplicants.Count);
                 externalApplicantAccountModels.ForEach(m => Assert.True(result.Value.ExternalApplicants.Contains(m)));
+
+                return result;
+            },
+            fla,
+            woodlandOwner,
+            externalApplicantAccount,
+            internalUserAccount,
+            externalAssigneeHistory,
+            internalAssigneeHistory,
+            false,
+            externalApplicantAccountModels);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnSuccessWithPawsOption_WhenApplicationHasPaws(
+        FellingLicenceApplication fla,
+        WoodlandOwnerModel woodlandOwner,
+        UserAccount externalApplicantAccount,
+        Flo.Services.InternalUsers.Entities.UserAccount.UserAccount internalUserAccount,
+        AssigneeHistory externalAssigneeHistory,
+        AssigneeHistory internalAssigneeHistory,
+        List<UserAccountModel> externalApplicantAccountModels,
+        string returnUrl)
+    {
+        var sut = CreateSut();
+
+        TestUtils.SetProtectedProperty(fla, nameof(fla.Id), Guid.NewGuid());
+        TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
+        TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
+
+        fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments
+            .ForEach(x => x.SubmittedCompartmentDesignations.Paws = true);
+
+        fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
+        fla.CreatedById = externalApplicantAccount.Id;
+        externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
+
+        await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
+            async () =>
+            {
+                var result = await sut.GetValidExternalApplicantsForAssignmentAsync(TestUser, fla.Id, returnUrl,
+                    CancellationToken.None);
+
+                Assert.NotNull(result.Value);
+                Assert.Contains(result.Value.SectionsToReview.Keys,
+                    x => x == FellingLicenceApplicationSection.PawsAndIawp);
+
+                return result;
+            },
+            fla,
+            woodlandOwner,
+            externalApplicantAccount,
+            internalUserAccount,
+            externalAssigneeHistory,
+            internalAssigneeHistory,
+            false,
+            externalApplicantAccountModels);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnSuccessWithoutPawsOption_WhenApplicationHasNoPaws(
+        FellingLicenceApplication fla,
+        WoodlandOwnerModel woodlandOwner,
+        UserAccount externalApplicantAccount,
+        Flo.Services.InternalUsers.Entities.UserAccount.UserAccount internalUserAccount,
+        AssigneeHistory externalAssigneeHistory,
+        AssigneeHistory internalAssigneeHistory,
+        List<UserAccountModel> externalApplicantAccountModels,
+        string returnUrl)
+    {
+        var sut = CreateSut();
+
+        TestUtils.SetProtectedProperty(fla, nameof(fla.Id), Guid.NewGuid());
+        TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
+        TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
+
+        fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments
+            .ForEach(x => x.SubmittedCompartmentDesignations.Paws = false);
+
+        fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
+        fla.CreatedById = externalApplicantAccount.Id;
+        externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
+
+        await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
+            async () =>
+            {
+                var result = await sut.GetValidExternalApplicantsForAssignmentAsync(TestUser, fla.Id, returnUrl,
+                    CancellationToken.None);
+
+                Assert.NotNull(result.Value);
+                Assert.DoesNotContain(result.Value.SectionsToReview.Keys,
+                    x => x == FellingLicenceApplicationSection.PawsAndIawp);
 
                 return result;
             },

@@ -66,8 +66,7 @@
                     <div class="govuk-input__wrapper">
                         <input class="govuk-input govuk-input--width-10"
                                asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.NumberOfTrees"
-                               type="number"
-                               aria-describedby="no-of-trees-hint">
+                               type="number">
                         <div class="govuk-input__suffix" aria-hidden="true">Trees</div>
                     </div>
                 </govuk-form-group>
@@ -80,12 +79,11 @@
                         <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-tree-marking-yes"
-                                       type="radio" class="govuk-radios__input"
+                                <input type="radio" class="govuk-radios__input"
                                        asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed"
                                        value="@true"
                                        data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed)">
-                                <label class="govuk-label govuk-radios__label" for="felling-detail-tree-marking-yes" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed">
+                                <label class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsTreeMarkingUsed">
                                     Yes, I will use tree marking
                                 </label>
                             </div>
@@ -140,7 +138,7 @@
                     </label>
                     <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume"></validation>
                     <div class="govuk-input__wrapper">
-                        <input class="govuk-input govuk-input--width-10" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume" type="number" aria-describedby="estimated-total-felling-volume-hint">
+                        <input class="govuk-input govuk-input--width-10" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.EstimatedTotalFellingVolume" type="number">
                         <div class="govuk-input__suffix" aria-hidden="true">m<sup>3</sup></div>
                     </div>
                 </govuk-form-group>
@@ -153,8 +151,8 @@
                         <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder"></validation>
                         <div class="govuk-radios" data-module="govuk-radios" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-tpo-yes" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder)">
-                                <label for="felling-detail-tpo-yes" class="govuk-label govuk-radios__label">
+                                <input type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder)">
+                                <label asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsPartOfTreePreservationOrder" class="govuk-label govuk-radios__label">
                                     Yes
                                 </label>
                             </div>
@@ -188,8 +186,8 @@
                         <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="felling-detail-conservation-area-yes" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea)">
-                                <label class="govuk-label govuk-radios__label" for="felling-detail-conservation-area-yes" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea">
+                                <input type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea" value="@true" data-aria-controls="conditional-@Html.NameFor(x => x.ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea)">
+                                <label class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsWithinConservationArea">
                                     Yes
                                 </label>
                             </div>
@@ -222,8 +220,8 @@
                         <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking"></validation>
                         <div class="govuk-radios" data-module="govuk-radios">
                             <div class="govuk-radios__item">
-                                <input id="restock-yes" type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking" value="@true">
-                                <label class="govuk-label govuk-radios__label" for="restock-yes" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking">
+                                <input type="radio" class="govuk-radios__input" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking" value="@true">
+                                <label class="govuk-label govuk-radios__label" asp-for="ConfirmedFellingRestockingDetails.ConfirmedFellingDetails.IsRestocking">
                                     Yes
                                 </label>
                             </div>

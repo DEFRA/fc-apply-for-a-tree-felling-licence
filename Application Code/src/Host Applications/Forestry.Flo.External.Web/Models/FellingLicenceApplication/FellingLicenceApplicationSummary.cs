@@ -11,4 +11,5 @@ public record FellingLicenceApplicationSummary(
     string? NameOfWood,
     Guid? WoodlandOwnerId,
     string? WoodlandOwnerName, 
-    string? AgencyName);
+    string? AgencyName,
+    string? PreviousReference = null);

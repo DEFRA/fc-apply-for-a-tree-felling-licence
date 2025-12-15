@@ -37,5 +37,8 @@ public enum NotificationType
     EiaReminderToSendDocuments,
     ApplicantReviewedAmendments,
     AmendmentsSentToApplicant,
-    ReminderForApplicantToRespondToAmendments
+    ReminderForApplicantToRespondToAmendments,
+    InformFcStaffOfApplicationApprovedInError,
+    InformApplicantOfAIENewLicenceRequired,
+    InformApplicantOfAIENewLicenceApproved,
 }
