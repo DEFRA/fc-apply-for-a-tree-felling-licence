@@ -1,4 +1,5 @@
 ﻿using Ardalis.GuardClauses;
+using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -21,19 +22,26 @@ public class CaseNoteController : Controller
     {
         var user = Guard.Against.Null(new InternalUser(User));
 
-        var caseNoteRecord = new AddCaseNoteRecord(
-            FellingLicenceApplicationId: model.FellingLicenceApplicationId,
-            Type: model.CaseNoteType,
-            Text: model.Text,
-            VisibleToApplicant: model.VisibleToApplicant,
-            VisibleToConsultee: model.VisibleToConsultee
+        if (!string.IsNullOrWhiteSpace(model.Text))
+        {
+            var caseNoteRecord = new AddCaseNoteRecord(
+                FellingLicenceApplicationId: model.FellingLicenceApplicationId,
+                Type: model.CaseNoteType,
+                Text: model.Text,
+                VisibleToApplicant: model.VisibleToApplicant,
+                VisibleToConsultee: model.VisibleToConsultee
             );
 
-        var result = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
+            var result = await amendCaseNotes.AddCaseNoteAsync(caseNoteRecord, user.UserAccountId.Value, cancellationToken);
 
-        if (result.IsFailure)
+            if (result.IsFailure)
+            {
+                return RedirectToAction("Error", "Home");
+            }
+        }
+        else
         {
-            return RedirectToAction("Error", "Home");
+            this.AddErrorMessage("Enter some text to save a case note", nameof(model.Text));
         }
 
         if (urlHelper.IsLocalUrl(model.ReturnUrl))

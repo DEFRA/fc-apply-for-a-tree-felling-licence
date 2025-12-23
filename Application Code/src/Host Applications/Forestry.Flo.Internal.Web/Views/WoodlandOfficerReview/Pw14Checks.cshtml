@@ -27,17 +27,17 @@
                             Has the Land Information Search (LIS) been reviewed for constraints?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="lis-hint">
                         Check for any constraints affecting the planned works using the G&R Code – List of Constraints.
                     </div>
                     <validation asp-for="Pw14Checks.LandInformationSearchChecked"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="lis-yes" asp-for="Pw14Checks.LandInformationSearchChecked" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="lis-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.LandInformationSearchChecked" type="radio" value="true" aria-describedby="lis-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.LandInformationSearchChecked">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="lis-no" asp-for="Pw14Checks.LandInformationSearchChecked" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="lis-no" asp-for="Pw14Checks.LandInformationSearchChecked" type="radio" value="false" aria-describedby="lis-hint" />
                             <label class="govuk-label govuk-radios__label" for="lis-no">No</label>
                         </div>
                     </div>
@@ -52,17 +52,17 @@
                             Are any trees protected by a Tree Preservation Order (TPO) or within a Conservation Area?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="tpo-ca-hint">
                         Check if any trees on the site are protected by a TPO or fall within a Conservation Area.
                     </div>
                     <validation asp-for="Pw14Checks.TpoOrCaDeclared"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="tpo-yes" asp-for="Pw14Checks.TpoOrCaDeclared" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="tpo-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.TpoOrCaDeclared" type="radio" value="true" aria-describedby="tpo-ca-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.TpoOrCaDeclared">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="tpo-no" asp-for="Pw14Checks.TpoOrCaDeclared" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="tpo-no" asp-for="Pw14Checks.TpoOrCaDeclared" type="radio" value="false" aria-describedby="tpo-ca-hint" />
                             <label class="govuk-label govuk-radios__label" for="tpo-no">No</label>
                         </div>
                     </div>
@@ -76,17 +76,17 @@
                             Has the local authority been consulted or advice sought, if needed?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="la-hint">
                         Confirm the local authority has been consulted or advice has been requested, if needed.
                     </div>
                     <validation asp-for="Pw14Checks.LocalAuthorityConsulted"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="authority-consulted-yes" asp-for="Pw14Checks.LocalAuthorityConsulted" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="authority-consulted-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.LocalAuthorityConsulted" type="radio" value="true" aria-describedby="la-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.LocalAuthorityConsulted">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="authority-consulted-no" asp-for="Pw14Checks.LocalAuthorityConsulted" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="authority-consulted-no" asp-for="Pw14Checks.LocalAuthorityConsulted" type="radio" value="false" aria-describedby="la-hint" />
                             <label class="govuk-label govuk-radios__label" for="authority-consulted-no">No</label>
                         </div>
                     </div>
@@ -100,7 +100,7 @@
                             Do the proposals follow the UK Forestry Standard (UKFS)?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="ukfs-compliant-hint">
                         Check the proposals against the UK Forestry Standard (UKFS) and related guidelines.
                         If the proposals do not meet UKFS, the application must be refused;
                         unless there is a clear and justified reason for an exception.
@@ -108,11 +108,11 @@
                     <validation asp-for="Pw14Checks.AreProposalsUkfsCompliant"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="ukfs-yes" asp-for="Pw14Checks.AreProposalsUkfsCompliant" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="ukfs-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.AreProposalsUkfsCompliant" type="radio" value="true" aria-describedby="ukfs-compliant-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.AreProposalsUkfsCompliant">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="ukfs-no" asp-for="Pw14Checks.AreProposalsUkfsCompliant" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="ukfs-no" asp-for="Pw14Checks.AreProposalsUkfsCompliant" type="radio" value="false" aria-describedby="ukfs-compliant-hint" />
                             <label class="govuk-label govuk-radios__label" for="ukfs-no">No</label>
                         </div>
                     </div>
@@ -126,17 +126,17 @@
                             Is the application complete and valid?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="valid-hint">
                         Confirm all required information has been provided and meets the criteria.
                     </div>
                     <validation asp-for="Pw14Checks.IsApplicationValid"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="valid-yes" asp-for="Pw14Checks.IsApplicationValid" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="valid-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.IsApplicationValid" type="radio" value="true" aria-describedby="valid-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.IsApplicationValid">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="valid-no" asp-for="Pw14Checks.IsApplicationValid" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="valid-no" asp-for="Pw14Checks.IsApplicationValid" type="radio" value="false" aria-describedby="valid-hint" />
                             <label class="govuk-label govuk-radios__label" for="valid-no">No</label>
                         </div>
                     </div>
@@ -150,15 +150,15 @@
                             Does anyone processing this application need to declare an interest?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="interest-declared-hint">
                         Select ‘Yes’ if anyone processing the application has a personal or financial interest.
                         If so, send the application to the FS Compliance Team.
                     </div>
                     <validation asp-for="Pw14Checks.InterestDeclared"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="interest-declared-yes" asp-for="Pw14Checks.InterestDeclared" type="radio" value="true" data-aria-controls="interest-declared" />
-                            <label class="govuk-label govuk-radios__label" for="interest-declared-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.InterestDeclared" type="radio" value="true" data-aria-controls="interest-declared"  aria-describedby="interest-declared-hint"/>
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.InterestDeclared">Yes</label>
                         </div>
                         <div class="govuk-radios__conditional" id="interest-declared">
                             <govuk-form-group asp-for="Pw14Checks.InterestDeclarationCompleted">
@@ -168,17 +168,17 @@
                                             Has the declaration of interest form been filled in and sent to the FS Compliance Team?
                                         </h2>
                                     </legend>
-                                    <div class="govuk-hint">
+                                    <div class="govuk-hint" id="interest-compliance-hint">
                                         Confirm that the form has been signed and sent to the FS Compliance Team.
                                     </div>
                                     <validation asp-for="Pw14Checks.InterestDeclarationCompleted"></validation>
                                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="interest-compliance-yes" asp-for="Pw14Checks.InterestDeclarationCompleted" type="radio" value="true" />
-                                            <label class="govuk-label govuk-radios__label" for="interest-compliance-yes">Yes</label>
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.InterestDeclarationCompleted" type="radio" value="true" aria-describedby="interest-compliance-hint"/>
+                                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.InterestDeclarationCompleted">Yes</label>
                                         </div>
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="interest-compliance-no" asp-for="Pw14Checks.InterestDeclarationCompleted" type="radio" value="false" />
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="interest-compliance-no" asp-for="Pw14Checks.InterestDeclarationCompleted" type="radio" value="false" aria-describedby="interest-compliance-hint" />
                                             <label class="govuk-label govuk-radios__label" for="interest-compliance-no">No</label>
                                         </div>
                                     </div>
@@ -192,17 +192,17 @@
                                             Have the FS Compliance Team’s recommendations been put in place?
                                         </h2>
                                     </legend>
-                                    <div class="govuk-hint">
+                                    <div class="govuk-hint" id="compliance-rec-hint">
                                         Measures may include reassigning the application to avoid a conflict of interest.
                                     </div>
                                     <validation asp-for="Pw14Checks.ComplianceRecommendationsEnacted"></validation>
                                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="recommendation-enacted-yes" asp-for="Pw14Checks.ComplianceRecommendationsEnacted" type="radio" value="true" />
-                                            <label class="govuk-label govuk-radios__label" for="recommendation-enacted-yes">Yes</label>
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.ComplianceRecommendationsEnacted" type="radio" value="true" aria-describedby="compliance-rec-hint" />
+                                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.ComplianceRecommendationsEnacted">Yes</label>
                                         </div>
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="recommendation-enacted-no" asp-for="Pw14Checks.ComplianceRecommendationsEnacted" type="radio" value="false" />
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="recommendation-enacted-no" asp-for="Pw14Checks.ComplianceRecommendationsEnacted" type="radio" value="false" aria-describedby="compliance-rec-hint" />
                                             <label class="govuk-label govuk-radios__label" for="recommendation-enacted-no">No</label>
                                         </div>
                                     </div>
@@ -210,7 +210,7 @@
                             </govuk-form-group>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="interest-declared-no" asp-for="Pw14Checks.InterestDeclared" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="interest-declared-no" asp-for="Pw14Checks.InterestDeclared" type="radio" value="false" aria-describedby="interest-declared-hint"/>
                             <label class="govuk-label govuk-radios__label" for="interest-declared-no">No</label>
                         </div>
                     </div>
@@ -224,17 +224,17 @@
                             Have the maps been checked and confirmed as accurate?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="maps-hint">
                         Check that the mapping clearly shows the areas to be felled, is free from errors, and matches the application details.
                     </div>
                     <validation asp-for="Pw14Checks.MapAccuracyConfirmed"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="mapping-checked-yes" asp-for="Pw14Checks.MapAccuracyConfirmed" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="mapping-checked-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.MapAccuracyConfirmed" type="radio" value="true" aria-describedby="maps-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.MapAccuracyConfirmed">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="mapping-checked-no" asp-for="Pw14Checks.MapAccuracyConfirmed" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="mapping-checked-no" asp-for="Pw14Checks.MapAccuracyConfirmed" type="radio" value="false" aria-describedby="maps-hint" />
                             <label class="govuk-label govuk-radios__label" for="mapping-checked-no">No</label>
                         </div>
                     </div>
@@ -248,7 +248,7 @@
                             Has the need for an EPS licence been considered and discussed with the applicant?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="eps-hint">
                         Check if the felling is on or near a European site.
                         Consider whether a European Protected Species (EPS) licence may be needed and record any discussion with the applicant. Refer to the
                         <a class="govuk-link" target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
@@ -258,11 +258,11 @@
                     <validation asp-for="Pw14Checks.EpsLicenceConsidered"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="eps-yes" asp-for="Pw14Checks.EpsLicenceConsidered" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="eps-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.EpsLicenceConsidered" type="radio" value="true" aria-describedby="eps-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.EpsLicenceConsidered">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="eps-no" asp-for="Pw14Checks.EpsLicenceConsidered" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="eps-no" asp-for="Pw14Checks.EpsLicenceConsidered" type="radio" value="false" aria-describedby="eps-hint "/>
                             <label class="govuk-label govuk-radios__label" for="eps-no">No</label>
                         </div>
                     </div>
@@ -276,7 +276,7 @@
                             Is a Stage 1 Habitat Regulations Assessment needed?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="stage1-hint">
                         Check if the felling is near a designated site and whether an assessment is needed. Refer to the
                         <a class="govuk-link" target="_blank" rel="noreferrer noopener" href="https://roots.govintra.net/task/gr-code-conservation-of-species-and-habitats-habitats-regulations/">
                             Conservation of Species and Habitats (Habitats Regulations) G&R code
@@ -285,11 +285,11 @@
                     <validation asp-for="Pw14Checks.Stage1HabitatRegulationsAssessmentRequired"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="habitat-yes" asp-for="Pw14Checks.Stage1HabitatRegulationsAssessmentRequired" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="habitat-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.Stage1HabitatRegulationsAssessmentRequired" type="radio" value="true" aria-describedby="stage1-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.Stage1HabitatRegulationsAssessmentRequired">Yes</label>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="habitat-no" asp-for="Pw14Checks.Stage1HabitatRegulationsAssessmentRequired" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="habitat-no" asp-for="Pw14Checks.Stage1HabitatRegulationsAssessmentRequired" type="radio" value="false" aria-describedby="stage1-hint" />
                             <label class="govuk-label govuk-radios__label" for="habitat-no">No</label>
                         </div>
                     </div>
@@ -303,14 +303,14 @@
                             Does the felling need an Environmental Impact Assessment (EIA)?
                         </h2>
                     </legend>
-                    <div class="govuk-hint">
+                    <div class="govuk-hint" id="eia-threshold-hint">
                         Assess whether the project falls under Environmental Impact Assessment (EIA) thresholds or criteria.
                     </div>
                     <validation asp-for="Pw14Checks.EiaThresholdExceeded"></validation>
                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="thresh-yes" asp-for="Pw14Checks.EiaThresholdExceeded" type="radio" value="true" data-aria-controls="threshold-exceeded"/>
-                            <label class="govuk-label govuk-radios__label" for="thresh-yes">Yes</label>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.EiaThresholdExceeded" type="radio" value="true" data-aria-controls="threshold-exceeded" aria-describedby="eia-threshold-hint" />
+                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.EiaThresholdExceeded">Yes</label>
                         </div>
                         <div class="govuk-radios__conditional">
                             <govuk-form-group asp-for="Pw14Checks.EiaTrackerCompleted">
@@ -320,16 +320,16 @@
                                             Has the EIA tracker been filled in?
                                         </h2>
                                     </legend>
-                                    <div class="govuk-hint">
+                                    <div class="govuk-hint" id="eia-tracker-hint">
                                         Confirm that the tracker has been filled in if an EIA is required.
                                     </div>
                                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="track-yes" asp-for="Pw14Checks.EiaTrackerCompleted" type="radio" value="true" />
-                                            <label class="govuk-label govuk-radios__label" for="track-yes">Yes</label>
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.EiaTrackerCompleted" type="radio" value="true" aria-describedby="eia-tracker-hint" />
+                                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.EiaTrackerCompleted">Yes</label>
                                         </div>
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="track-no" asp-for="Pw14Checks.EiaTrackerCompleted" type="radio" value="false" />
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="track-no" asp-for="Pw14Checks.EiaTrackerCompleted" type="radio" value="false" aria-describedby="eia-tracker-hint" />
                                             <label class="govuk-label govuk-radios__label" for="track-no">No</label>
                                         </div>
                                     </div>
@@ -343,17 +343,17 @@
                                             Have the EIA tracker and any required checklist been completed?
                                         </h2>
                                     </legend>
-                                    <div class="govuk-hint">
+                                    <div class="govuk-hint" id="eia-check-hint">
                                         Complete all parts of the tracker and any checklist that applies, if an EIA is required.
                                     </div>
                                     <validation asp-for="Pw14Checks.EiaChecklistDone"></validation>
                                     <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="check-yes" asp-for="Pw14Checks.EiaChecklistDone" type="radio" value="true" />
-                                            <label class="govuk-label govuk-radios__label" for="check-yes">Yes</label>
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Pw14Checks.EiaChecklistDone" type="radio" value="true" aria-describedby="eia-check-hint" />
+                                            <label class="govuk-label govuk-radios__label" asp-for="Pw14Checks.EiaChecklistDone">Yes</label>
                                         </div>
                                         <div class="govuk-radios__item">
-                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="check-no" asp-for="Pw14Checks.EiaChecklistDone" type="radio" value="false" />
+                                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="check-no" asp-for="Pw14Checks.EiaChecklistDone" type="radio" value="false" aria-describedby="eia-check-hint" />
                                             <label class="govuk-label govuk-radios__label" for="check-no">No</label>
                                         </div>
                                     </div>
@@ -361,7 +361,7 @@
                             </govuk-form-group>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="thresh-no" asp-for="Pw14Checks.EiaThresholdExceeded" type="radio" value="false"/>
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="thresh-no" asp-for="Pw14Checks.EiaThresholdExceeded" type="radio" value="false" aria-describedby="eia-threshold-hint" />
                             <label class="govuk-label govuk-radios__label" for="thresh-no">No</label>
                         </div>
                     </div>

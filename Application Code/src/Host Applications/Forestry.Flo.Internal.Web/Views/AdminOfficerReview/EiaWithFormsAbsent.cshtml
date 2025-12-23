@@ -25,14 +25,13 @@
                 <validation asp-for="HaveTheFormsBeenReceived"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input id="forms-received-yes"
-                               condition-disabled="@(!Model.Editable(user))"
+                        <input condition-disabled="@(!Model.Editable(user))"
                                type="radio"
                                class="govuk-radios__input"
                                asp-for="HaveTheFormsBeenReceived"
                                data-aria-controls="conditional-forms-received"
                                value="@true"/>
-                        <label class="govuk-label govuk-radios__label" for="forms-received-yes">
+                        <label class="govuk-label govuk-radios__label" asp-for="HaveTheFormsBeenReceived">
                             Yes, the EIA forms have been received
                         </label>
                     </div>

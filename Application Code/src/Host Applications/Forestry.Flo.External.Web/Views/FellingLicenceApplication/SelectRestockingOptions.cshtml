@@ -77,117 +77,167 @@
     <br/>
 
     <div class="govuk-grid-column-two-thirds">
-        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-            @if (Model.RestockAlternativeArea)
-            {
-                if (Model.IsIndividualTreesInAlternativeAreaAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsIndividualTreesInAlternativeAreaSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsIndividualTreesInAlternativeAreaSelected">
-                            <b>@TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees.GetDescription()
-                        </div>
-                    </div>
-                }
+        
+        <govuk-form-group asp-for="RestockingOptions">
+        
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                    <h2 class="govuk-fieldset__heading">
+                        What restocking options do you plan to use?
+                    </h2>
+                </legend>
+                
+                <validation asp-for="RestockingOptions"></validation>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    @{
+                        var firstOptionOutput = false;
+                    }
 
-                if (Model.IsPlantingInAlternativeAreaAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsPlantingInAlternativeAreaSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsPlantingInAlternativeAreaSelected">
-                            <b>@TypeOfProposal.PlantAnAlternativeArea.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.PlantAnAlternativeArea.GetDescription()
-                        </div>
-                    </div>
-                }
 
-                if (Model.IsNaturalColonisationAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsNaturalColonisationSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsNaturalColonisationSelected">
-                            <b>@TypeOfProposal.NaturalColonisation.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.NaturalColonisation.GetDescription()
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                if (Model.IsCoppiceRegrowthAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsCoppiceRegrowthSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsCoppiceRegrowthSelected">
-                            <b>@TypeOfProposal.RestockWithCoppiceRegrowth.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.RestockWithCoppiceRegrowth.GetDescription()
-                        </div>
-                    </div>
-                }
+                    @if (Model.RestockAlternativeArea)
+                    {
+                        if (Model.IsIndividualTreesInAlternativeAreaAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsIndividualTreesInAlternativeAreaSelected" aria-describedby="alt-individual-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsIndividualTreesInAlternativeAreaSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsIndividualTreesInAlternativeAreaSelected))">
+                                    <b>@TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="alt-individual-hint">
+                                    @TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees.GetDescription()
+                                </div>
 
-                if (Model.IsCreateOpenSpaceAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsCreateOpenSpaceSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsCreateOpenSpaceSelected">
-                            <b>@TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.CreateDesignedOpenGround.GetDescription()
-                        </div>
-                    </div>
-                }
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
 
-                if (Model.IsIndividualTreesAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsIndividualTreesSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsIndividualTreesSelected">
-                            <b>@TypeOfProposal.RestockWithIndividualTrees.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.RestockWithIndividualTrees.GetDescription()
-                        </div>
-                    </div>
-                }
+                        if (Model.IsPlantingInAlternativeAreaAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsPlantingInAlternativeAreaSelected" aria-describedby="alt-plant-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsPlantingInAlternativeAreaSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsPlantingInAlternativeAreaSelected))">
+                                    <b>@TypeOfProposal.PlantAnAlternativeArea.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="alt-plant-hint">
+                                    @TypeOfProposal.PlantAnAlternativeArea.GetDescription()
+                                </div>
 
-                if (Model.IsNaturalRegenerationAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsNaturalRegenerationSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsNaturalRegenerationSelected">
-                            <b>@TypeOfProposal.RestockByNaturalRegeneration.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.RestockByNaturalRegeneration.GetDescription()
-                        </div>
-                    </div>
-                }
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
 
-                if (Model.IsReplantFelledAreaAllowed)
-                {
-                    <div class="govuk-checkboxes__item">
-                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsReplantFelledAreaSelected">
-                        <label class="govuk-label govuk-checkboxes__label" asp-for="@Model.IsReplantFelledAreaSelected">
-                            <b>@TypeOfProposal.ReplantTheFelledArea.GetDisplayName()</b>
-                        </label>
-                        <div class="govuk-hint govuk-checkboxes__hint">
-                            @TypeOfProposal.ReplantTheFelledArea.GetDescription()
-                        </div>
-                    </div>
-                }
-            }
+                        if (Model.IsNaturalColonisationAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsNaturalColonisationSelected" aria-describedby="colon-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsNaturalColonisationSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsNaturalColonisationSelected))">
+                                    <b>@TypeOfProposal.NaturalColonisation.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="colon-hint">
+                                    @TypeOfProposal.NaturalColonisation.GetDescription()
+                                </div>
 
-        </div>
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        if (Model.IsCoppiceRegrowthAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsCoppiceRegrowthSelected" aria-describedby="coppice-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCoppiceRegrowthSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCoppiceRegrowthSelected))">
+                                    <b>@TypeOfProposal.RestockWithCoppiceRegrowth.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="coppice-hint">
+                                    @TypeOfProposal.RestockWithCoppiceRegrowth.GetDescription()
+                                </div>
+
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
+
+                        if (Model.IsCreateOpenSpaceAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsCreateOpenSpaceSelected" aria-describedby="open-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCreateOpenSpaceSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCreateOpenSpaceSelected))">
+                                    <b>@TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="open-hint">
+                                    @TypeOfProposal.CreateDesignedOpenGround.GetDescription()
+                                </div>
+
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
+
+                        if (Model.IsIndividualTreesAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsIndividualTreesSelected" aria-describedby="individual-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsIndividualTreesSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsIndividualTreesSelected))">
+                                    <b>@TypeOfProposal.RestockWithIndividualTrees.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="individual-hint">
+                                    @TypeOfProposal.RestockWithIndividualTrees.GetDescription()
+                                </div>
+
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
+
+                        if (Model.IsNaturalRegenerationAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsNaturalRegenerationSelected" aria-describedby="regen-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsNaturalRegenerationSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsNaturalRegenerationSelected))">
+                                    <b>@TypeOfProposal.RestockByNaturalRegeneration.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="regen-hint">
+                                    @TypeOfProposal.RestockByNaturalRegeneration.GetDescription()
+                                </div>
+
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
+
+                        if (Model.IsReplantFelledAreaAllowed)
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsReplantFelledAreaSelected" aria-describedby="replant-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsReplantFelledAreaSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsReplantFelledAreaSelected))">
+                                    <b>@TypeOfProposal.ReplantTheFelledArea.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="replant-hint">
+                                    @TypeOfProposal.ReplantTheFelledArea.GetDescription()
+                                </div>
+
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
+                    }
+
+                </div>
+            </fieldset>
+        </govuk-form-group>
         <br/>
         <div class="govuk-button-group">
             <button class="govuk-button" type="submit" data-module="govuk-button">

@@ -31,7 +31,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.None);
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -65,7 +65,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -116,7 +116,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -160,7 +160,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -213,7 +213,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<WoodlandOfficerReview>.None);
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -282,7 +282,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.None);
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -358,7 +358,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -435,7 +435,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -511,7 +511,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -588,7 +588,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -665,7 +665,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -745,7 +745,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -826,7 +826,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(Maybe<PublicRegister>.From(publicRegister));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -912,7 +912,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.General));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -999,7 +999,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
@@ -1105,7 +1105,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
@@ -1197,7 +1197,7 @@ public class UpdateWoodlandOfficerReviewCompleteWoodlandOfficerReviewTests : Upd
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
-            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, completedDateTime, CancellationToken.None);
+            applicationId, performingUserId, recommendedLicenceDuration, recommendationForPublicRegister, recommendationForPublicRegisterReason, null, completedDateTime, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 

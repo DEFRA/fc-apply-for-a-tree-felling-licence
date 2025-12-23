@@ -21,4 +21,12 @@ public interface IGeneratePdfApplicationUseCase
         Guid internalUserId,
         Guid applicationId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Calculates the licence expiry date for the given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to calculate the expiry date for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Returns the calculated expiry date, or null if it cannot be determined.</returns>
+    Task<DateTime?> CalculateLicenceExpiryDateAsync(Guid applicationId, CancellationToken cancellationToken);
 }

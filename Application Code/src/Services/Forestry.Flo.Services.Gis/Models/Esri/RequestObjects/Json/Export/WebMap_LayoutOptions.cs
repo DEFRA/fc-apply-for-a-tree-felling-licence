@@ -14,7 +14,7 @@ public class WebMap_LayoutOptions
     public string? Copyright_Text { get; set; }
 
     [JsonProperty("customTextElements", NullValueHandling = NullValueHandling.Ignore)]
-    public  Dictionary<string, string>? CustomTextElements { get; set; }
+    public  List<Dictionary<string, string>>? CustomTextElements { get; set; }
 
     [JsonProperty("scaleBarOptions", NullValueHandling = NullValueHandling.Ignore)]
     public ScalebarOptions? ScaleBar_Options { get; set; }

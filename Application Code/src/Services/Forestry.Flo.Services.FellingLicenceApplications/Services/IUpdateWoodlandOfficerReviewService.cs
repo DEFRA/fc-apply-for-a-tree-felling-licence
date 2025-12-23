@@ -130,6 +130,7 @@ public interface IUpdateWoodlandOfficerReviewService
         RecommendedLicenceDuration? recommendedLicenceDuration,
         bool? recommendationForDecisionPublicRegister,
         string recommendationForDecisionPublicRegisterReason,
+        string? supplementaryPoints,
         DateTime completedDateTime,
         CancellationToken cancellationToken);
 

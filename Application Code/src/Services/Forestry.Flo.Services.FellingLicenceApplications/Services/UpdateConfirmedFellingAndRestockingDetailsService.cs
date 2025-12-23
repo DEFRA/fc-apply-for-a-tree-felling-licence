@@ -1015,6 +1015,71 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
         }
     }
 
+    /// <inheritdoc/>
+    public bool HasMissingProposedFellingOrRestockingLink(FellingAndRestockingDetailModel compartment)
+    {
+        // Proposed Restocking IDs in compartment
+        var proposedRestockIds = (compartment.ProposedFellingDetailModels ?? [])
+            .SelectMany(p => p.ProposedRestockingDetails ?? Enumerable.Empty<ProposedRestockingDetailModel>())
+            .Select(pr => pr.Id)
+            .ToHashSet();
+
+        // Proposed Felling IDs in compartment
+        var proposedFellIds = (compartment.ProposedFellingDetailModels ?? [])
+            .Select(p => p.Id)
+            .ToHashSet();
+
+        // Check confirmed restocking links exist in proposed restocking list
+        foreach (var confirmedFell in compartment.ConfirmedFellingDetailModels ?? [])
+        {
+            foreach (var confirmedRestock in confirmedFell.ConfirmedRestockingDetailModels ?? [])
+            {
+                var proposedId = confirmedRestock.ProposedRestockingDetailsId;
+                if (!proposedId.HasValue || !proposedRestockIds.Contains(proposedId.Value))
+                {
+                    return true;
+                }
+            }
+        }
+
+        // Check confirmed felling links exist in proposed felling list
+        var anyMissingProposedFell = (compartment.ConfirmedFellingDetailModels ?? [])
+            .Select(cf => cf.ProposedFellingDetailsId)
+            .Any(id => !id.HasValue || !proposedFellIds.Contains(id.Value));
+
+        return anyMissingProposedFell;
+    }
+
+    /// <inheritdoc/>
+    public bool HasUnmatchedProposedFellingOrRestocking(FellingAndRestockingDetailModel compartment)
+    {
+        // Proposed Felling without matching Confirmed
+        var proposedFellIds = (compartment.ProposedFellingDetailModels ?? [])
+            .Select(p => p.Id)
+            .ToHashSet();
+        var confirmedLinkedFellIds = (compartment.ConfirmedFellingDetailModels ?? [])
+            .Select(cf => cf.ProposedFellingDetailsId)
+            .Where(id => id.HasValue && id.Value != Guid.Empty)
+            .Select(id => id!.Value)
+            .ToHashSet();
+        var hasUnmatchedProposedFell = proposedFellIds.Any(id => !confirmedLinkedFellIds.Contains(id));
+
+        // Proposed Restocking without matching Confirmed
+        var proposedRestockIds = (compartment.ProposedFellingDetailModels ?? [])
+            .SelectMany(p => p.ProposedRestockingDetails ?? Enumerable.Empty<ProposedRestockingDetailModel>())
+            .Select(pr => pr.Id)
+            .ToHashSet();
+        var confirmedLinkedRestockIds = (compartment.ConfirmedFellingDetailModels ?? [])
+            .SelectMany(cf => cf.ConfirmedRestockingDetailModels ?? [])
+            .Select(cr => cr.ProposedRestockingDetailsId)
+            .Where(id => id.HasValue && id.Value != Guid.Empty)
+            .Select(id => id!.Value)
+            .ToHashSet();
+        var hasUnmatchedProposedRestock = proposedRestockIds.Any(id => !confirmedLinkedRestockIds.Contains(id));
+
+        return hasUnmatchedProposedFell || hasUnmatchedProposedRestock;
+    }
+
     private async Task<Result> RevertConfirmedFellingDetailEntityAsync(
         FellingLicenceApplication fla,
         Guid confirmedFellingDetailsId,

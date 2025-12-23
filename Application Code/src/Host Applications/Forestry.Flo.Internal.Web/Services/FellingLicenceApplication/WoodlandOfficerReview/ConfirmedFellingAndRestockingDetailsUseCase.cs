@@ -124,8 +124,11 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
 
         // Determine if there are any amendments vs proposed (either felling or restocking)
         var amendmentsMade = retrievalResult.ConfirmedFellingAndRestockingDetailModels.Any(c =>
-            c.ConfirmedFellingDetailModels.Any(f => f.AmendedProperties is { Count: > 0 }) ||
-            c.ConfirmedFellingDetailModels.Any(f => f.ConfirmedRestockingDetailModels.Any(r => r.AmendedProperties is { Count: > 0 })));
+            c.ConfirmedFellingDetailModels.Any(f => f.AmendedProperties.Any())
+            || c.ConfirmedFellingDetailModels.SelectMany(f => f.ConfirmedRestockingDetailModels).Any(r => r.AmendedProperties.Any())
+            || _updateConfirmedFellingAndRestockingDetailsService.HasMissingProposedFellingOrRestockingLink(c)
+            || _updateConfirmedFellingAndRestockingDetailsService.HasUnmatchedProposedFellingOrRestocking(c)
+        );
 
         // Check if there is a current amendment review (i.e., amendments have already been sent)
         var currentReviewResult = await FellingLicenceRepository.GetCurrentFellingAndRestockingAmendmentReviewAsync(

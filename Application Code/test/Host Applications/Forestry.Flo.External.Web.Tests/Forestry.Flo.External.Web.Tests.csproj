@@ -57,6 +57,12 @@
 		<Compile Update="Services\TenYearLicenceUseCaseTests.IsTenYearLicenceApplication.cs">
 			<DependentUpon>TenYearLicenceUseCaseTests.cs</DependentUpon>
 		</Compile>
+		<Compile Update="Services\CollectPawsDataUseCaseTests.UpdatePawsDesignationsForCompartment.cs">
+			<DependentUpon>CollectPawsDataUseCaseTests.cs</DependentUpon>
+		</Compile>
+		<Compile Update="Services\CollectPawsDataUseCaseTests.GetNextCompartmentDesignationsId.cs">
+			<DependentUpon>CollectPawsDataUseCaseTests.cs</DependentUpon>
+		</Compile>
 	</ItemGroup>
 	
 </Project>

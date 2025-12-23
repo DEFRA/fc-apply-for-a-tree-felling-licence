@@ -7,6 +7,18 @@
 @{
     ViewData["Title"] = "Approver review";
     var user = new InternalUser(User);
+
+    var checkboxes = new List<string>
+    {
+        $"ApproverReview_{nameof(Model.ApproverReview.CheckedApplication)}",
+        $"ApproverReview_{nameof(Model.ApproverReview.CheckedDocumentation)}",
+        $"ApproverReview_{nameof(Model.ApproverReview.CheckedCaseNotes)}",
+        $"ApproverReview_{nameof(Model.ApproverReview.CheckedWOReview)}"
+    };
+
+    var checkboxGroupError = ViewData.ModelState.Any(x => checkboxes.Any(z => z == x.Key && x.Value.Errors.Any()))
+        ? "govuk-form-group--error"
+        : string.Empty;
 }
 
 <partial name="Partials/_ConfirmationMessageDisplay" />
@@ -15,7 +27,27 @@
 
 
 <div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container">
-	<h1 class="govuk-heading-xl">
+    @if (Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.ApprovedInError))
+    {
+        <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+                    Important
+                </h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">
+                    This application was marked as Approved in error.
+                </p>
+                <p class="govuk-body">
+                    Licence expiry date may have been amended.
+                    <a class="govuk-link" asp-controller="ApprovedInError" asp-action="ReApproveInError"
+                       asp-route-id="@Model.ApproverReview.ApplicationId">View approved in error amendments.</a>
+                </p>
+            </div>
+        </div>
+    }
+    <h1 class="govuk-heading-xl">
 		Application @Model.FellingLicenceApplicationSummary!.ApplicationReference
 	</h1>
 
@@ -28,55 +60,46 @@
         <input type="hidden" asp-for="RecommendedLicenceDuration" />
         <input type="hidden" asp-for="IsWOReviewed" />
 
-		<div class="govuk-form-group">
-			<fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
+        <div class="govuk-form-group @checkboxGroupError">
+            <fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
                     <h2 class="govuk-fieldset__heading"> Confirm you have reviewed the application details</h2>
                 </legend>
+                <validation asp-for="ApproverReview.CheckedApplication"></validation>
+                <validation asp-for="ApproverReview.CheckedDocumentation"></validation>
+                <validation asp-for="ApproverReview.CheckedCaseNotes"></validation>
+                <validation condition="@Model.IsWOReviewed" asp-for="ApproverReview.CheckedWOReview"></validation>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                    <govuk-form-group asp-for="ApproverReview.CheckedApplication">
-                        <validation asp-for="ApproverReview.CheckedApplication"></validation>
-                        <div class="govuk-checkboxes__item">
-                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedApplication"/>
-                            <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedApplication">I have reviewed the felling licence application</label>
-                        </div>
-                    </govuk-form-group>
-                    
-                    <govuk-form-group asp-for="ApproverReview.CheckedDocumentation">
-                        <validation asp-for="ApproverReview.CheckedDocumentation"></validation>
-                        <div class="govuk-checkboxes__item">
-                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedDocumentation"/>
-                            <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedDocumentation">I have reviewed the supporting documentation</label>
-                        </div>
-                    </govuk-form-group>
-                    
-                    <govuk-form-group asp-for="ApproverReview.CheckedCaseNotes">
-                        <validation asp-for="ApproverReview.CheckedCaseNotes"></validation>
-                        <div class="govuk-checkboxes__item">
-                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedCaseNotes"/>
-                            <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedCaseNotes">I have reviewed the case notes</label>
-                        </div>
-                    </govuk-form-group>
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedApplication"/>
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedApplication">I have reviewed the felling licence application</label>
+                    </div>
+
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedDocumentation"/>
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedDocumentation">I have reviewed the supporting documentation</label>
+                    </div>
+
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedCaseNotes"/>
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedCaseNotes">I have reviewed the case notes</label>
+                    </div>
 
                     @if (Model.IsWOReviewed)
                     {
-                        <govuk-form-group asp-for="ApproverReview.CheckedWOReview">
-                            <validation asp-for="ApproverReview.CheckedWOReview"></validation>
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedWOReview"/>
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedWOReview">
-                                    I have reviewed the Woodland Officer review and recommendations
-                                </label>
-                            </div>
-                        </govuk-form-group>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" type="checkbox" asp-for="ApproverReview.CheckedWOReview"/>
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="ApproverReview.CheckedWOReview">
+                                I have reviewed the Woodland Officer review and recommendations
+                            </label>
+                        </div>
                     }
                 </div>
             </fieldset>
-
         </div>
 
-        <govuk-form-group asp-for="Decision" condition-disabled="Model.IsReadonly">
-            <fieldset class="govuk-fieldset">
+        <govuk-form-group asp-for="Decision">
+			<fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
                     <h1 class="govuk-fieldset__heading">
                         Is this application ready for a decision?
@@ -85,13 +108,13 @@
                 <validation asp-for="Decision"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" id="decision-yes" name="Decision" type="radio" value="true" data-aria-controls="conditional-decision-yes" asp-for="Decision" />
+                        <input class="govuk-radios__input" id="decision-yes" type="radio" value="true" data-aria-controls="conditional-decision-yes" asp-for="Decision" />
                         <label class="govuk-label govuk-radios__label" for="decision-yes">
                             Yes
                         </label>
                     </div>
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" id="decision-no" name="Decision" type="radio" value="false" data-aria-controls="conditional-decision-no" asp-for="Decision" />
+                        <input class="govuk-radios__input" id="decision-no" type="radio" value="false" data-aria-controls="conditional-decision-no" asp-for="Decision" />
                         <label class="govuk-label govuk-radios__label" for="decision-no">
                             No (it needs to be returned to an AO or WO for further work)
                         </label>
@@ -135,8 +158,8 @@
 
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input id="status-approve" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Approved" asp-for="ApproverReview.RequestedStatus" />
-                            <label class="govuk-label govuk-radios__label" for="status-approve">Approve</label>
+                            <input class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Approved" asp-for="ApproverReview.RequestedStatus" />
+                            <label class="govuk-label govuk-radios__label" asp-for="ApproverReview.RequestedStatus">Approve</label>
                             <div class="govuk-hint govuk-radios__hint">
                                 You approve the woodland officer review and confirm that a licence
                                 can be issued.
@@ -221,8 +244,8 @@
                     <validation asp-for="ApproverReview.PublicRegisterPublish"></validation>
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input class="govuk-radios__input" id="dpr-yes" asp-for="ApproverReview.PublicRegisterPublish" type="radio" value="true"/>
-                            <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes publish to the Decision Public Register</label>
+                            <input class="govuk-radios__input" asp-for="ApproverReview.PublicRegisterPublish" type="radio" value="true"/>
+                            <label class="govuk-label govuk-radios__label" asp-for="ApproverReview.PublicRegisterPublish">Yes publish to the Decision Public Register</label>
                         </div>
                         <div class="govuk-radios__item">
                             <input class="govuk-radios__input" id="dpr-no" asp-for="ApproverReview.PublicRegisterPublish" type="radio" value="false" data-aria-controls="conditional-exempt"/>

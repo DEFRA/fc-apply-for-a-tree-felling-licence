@@ -10,11 +10,31 @@
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
 <div class="govuk-grid-column-two-thirds width-limit-override">
-
+    @if (Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.ApprovedInError))
+    {
+        <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+                    Important
+                </h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">
+                    This application was marked as Approved in error.
+                </p>
+                <p class="govuk-body">
+                    Supplementary points may have been amended. 
+                    <a class="govuk-link" asp-controller="ApprovedInError" asp-action="ReApproveInError"
+                       asp-route-id="@Model.ApplicationId">View approved in error amendments.</a>
+                </p>
+            </div>
+        </div>
+    }
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
     <form method="post">
         <input asp-for="ApplicationId"/>
+        <input id="is-for-ten-year" type="hidden" value="@(Model.FellingLicenceApplicationSummary.IsForTenYearLicence.ToString())"/>
 
         <govuk-form-group asp-for="RecommendedLicenceDuration">
             <label class="govuk-label" asp-for="RecommendedLicenceDuration">
@@ -26,6 +46,17 @@
             <select condition-disabled="@(!Model.Editable(user))" class="govuk-select" asp-for="RecommendedLicenceDuration" asp-items="@Html.GetEnumSelectList<RecommendedLicenceDuration>()"></select>
         </govuk-form-group>
 
+        @if (Model.FellingLicenceApplicationSummary?.IsForTenYearLicence ?? false)
+        {
+            <div id="ten-year-warning" class="govuk-warning-text">
+                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                <strong class="govuk-warning-text__text">
+                    <span class="govuk-visually-hidden">Warning</span>
+                    This application was set up as a ten-year felling licence application related to a WMP. Are you sure you want to change the duration of the licence?
+                </strong>
+            </div>
+        }
+
         <govuk-form-group asp-for="RecommendationForDecisionPublicRegister">
             <fieldset class="govuk-fieldset">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
@@ -36,8 +67,8 @@
                 <validation asp-for="RecommendationForDecisionPublicRegister"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="dpr-yes" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
-                        <label class="govuk-label govuk-radios__label" for="dpr-yes">Yes, publish on the decision public register</label>
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="RecommendationForDecisionPublicRegister" type="radio" value="true"/>
+                        <label class="govuk-label govuk-radios__label" asp-for="RecommendationForDecisionPublicRegister">Yes, publish on the decision public register</label>
                     </div>
                     <div class="govuk-radios__item">
                         <input 
@@ -67,6 +98,24 @@
                     </div>
                 </div>
                 <br/>
+                <govuk-form-group>
+                    <h2 class="govuk-heading-m">
+                            Supplementary points
+                    </h2>
+                    <h3 class="govuk-heading-s">
+                        <label class="govuk-label govuk-label--s" asp-for="SupplementaryPoints">
+                            Additional information
+                        </label>
+                    </h3>
+                    <div id="dpr-recommendation-hint" class="govuk-hint">
+                        Use this section to include any non-enforceable, factual information that helps explain context relevant to the felling activity.
+                        This section is optional.
+                    </div>
+                    <validation asp-for="SupplementaryPoints"></validation>
+                    <textarea class="govuk-textarea" condition-disabled="@(!Model.Editable(user))" rows="5" aria-describedby="dpr-recommendation-hint" asp-for="SupplementaryPoints"></textarea>
+                </govuk-form-group>
+
+
             </fieldset>
         </govuk-form-group>
 
@@ -88,6 +137,7 @@
     <script src="~/js/add-case-note.js" asp-append-version="true"></script>
     <script src="~/js/display-user-icon.js" asp-append-version="true"></script>
     <script src="~/js/filter-activity-feed.js" asp-append-version="true"></script>
+    <script src="~/js/final-checks.js" asp-append-version="true"></script>
 }
 
 @section breadcrumbs

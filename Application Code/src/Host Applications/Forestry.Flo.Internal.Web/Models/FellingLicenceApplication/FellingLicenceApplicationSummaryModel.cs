@@ -128,9 +128,29 @@ public class FellingLicenceApplicationSummaryModel
     public string? AdministrativeRegion { get; set; }
 
     /// <summary>
+    /// Gets and Sets the OS Grid reference.
+    /// </summary>
+    public string? OsGridReference { get; set; }
+
+    /// <summary>
     /// Gets and sets the sub-statuses associated with the felling licence application during the Woodland Officer Review stage.
     /// </summary>
     public HashSet<WoodlandOfficerReviewSubStatus> WoodlandOfficerReviewSubStatuses { get; set; } = [];
+
+    /// <summary>
+    /// Gets and sets a value indicating whether the felling licence application is for a ten-year licence.
+    /// </summary>
+    public bool IsForTenYearLicence { get; set; }
+
+    /// <summary>
+    /// Gets and sets the woodland management plan reference.
+    /// </summary>
+    public string? WoodlandManagementPlanReference { get; set; }
+
+    /// <summary>
+    /// Gets and sets a value indicating whether any of the compartments in the application cross PAWS zones.
+    /// </summary>
+    public bool HasPaws { get; set; }
 
     /// <summary>
     /// Gets if there are any larch species in the proposed felling details for the application.

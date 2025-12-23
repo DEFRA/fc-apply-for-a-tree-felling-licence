@@ -158,44 +158,6 @@ public class UpdateFellingLicenceApplicationServiceTests
     }
 
     [Theory, AutoMoqData]
-    public async Task CanSetApplicationApprover(
-        Guid? approverId)
-    {
-        var application = FixtureInstance.Create<FellingLicenceApplication>();
-
-        _fellingLicenceApplicationsContext.Add(application);
-        await _fellingLicenceApplicationsContext.SaveChangesAsync();
-
-        var result = await _sut.SetApplicationApproverAsync(application.Id, approverId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-
-        var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
-
-        Assert.True(updatedApp.HasValue);
-        Assert.Equal(approverId, updatedApp.Value.ApproverId);
-    }
-
-    [Fact]
-    public async Task CanResetApplicationApprover()
-    {
-        var application = FixtureInstance.Create<FellingLicenceApplication>();
-        application.ApproverId = Guid.NewGuid();
-
-        _fellingLicenceApplicationsContext.Add(application);
-        await _fellingLicenceApplicationsContext.SaveChangesAsync();
-
-        var result = await _sut.SetApplicationApproverAsync(application.Id, null, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-
-        var updatedApp = await _internalFlaRepository.GetAsync(application.Id, CancellationToken.None);
-
-        Assert.True(updatedApp.HasValue);
-        Assert.Null(updatedApp.Value.ApproverId);
-    }
-
-    [Theory, AutoMoqData]
     public async Task UpdateEnvironmentalImpactAssessmentAsync_ReturnsFailure_WhenRepositoryFails(
         FellingLicenceApplication application,
         EnvironmentalImpactAssessmentRecord eiaRecord)

@@ -318,6 +318,94 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
     }
 
     /// <inheritdoc />
+    public async Task<Result> ConvertProposedCompartmentDesignationsToSubmittedAsync(
+        Guid applicationId,
+        UserAccessModel userAccessModel,
+        CancellationToken cancellationToken)
+    {
+        // get entity
+        var application = await _fellingLicenceApplicationRepository
+            .GetAsync(applicationId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (application.HasNoValue)
+        {
+            _logger.LogWarning("Could not locate application with id {ApplicationId} in the repository", applicationId);
+            return Result.Failure("Could not convert proposed designations to submitted designations for the application");
+        }
+
+        if (application.Value.SubmittedFlaPropertyDetail == null)
+        {
+            _logger.LogWarning("Application with id {ApplicationId} has no submitted FLA property detail to convert designations into", applicationId);
+            return Result.Failure("Could not convert proposed designations to submitted designations for the application");
+        }
+
+        // verify user access to the application
+        var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
+        if (userAccessModel.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
+        {
+            _logger.LogWarning(
+                "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot convert the compartment designation details for the application with id {ApplicationId}",
+                userAccessModel.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
+            return Result.Failure("Could not convert proposed designations to submitted designations for the application");
+        }
+
+        var designations = application.Value.LinkedPropertyProfile?.ProposedCompartmentDesignations ?? [];
+
+        // add designations to each submitted compartment
+        foreach (var submittedCompartment in application.Value.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments ?? [])
+        {
+            var designation = designations
+                .FirstOrDefault(x => x.PropertyProfileCompartmentId == submittedCompartment.CompartmentId);
+
+            if (designation == null)
+            {
+                _logger.LogWarning(
+                    "No proposed compartment designations found for compartment id {CompartmentId} on application {ApplicationId}",
+                    submittedCompartment.CompartmentId,
+                    applicationId);
+
+                continue;
+            }
+
+            var submittedDesignation = new SubmittedCompartmentDesignations
+            {
+                ProposedCompartmentDesignationsId = designation?.Id,
+                Paws = designation?.CrossesPawsZones.Any() ?? false,
+                ProportionBeforeFelling = designation.ProportionBeforeFelling,
+                ProportionAfterFelling = designation.ProportionAfterFelling,
+                SubmittedFlaPropertyCompartment = submittedCompartment,
+                SubmittedFlaPropertyCompartmentId = submittedCompartment.Id
+            };
+
+            submittedCompartment.SubmittedCompartmentDesignations = submittedDesignation;
+        }
+
+        //_fellingLicenceApplicationRepository.Update(application.Value);
+
+        try
+        {
+            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError(
+                    "Error {Error} encountered in ConvertProposedCompartmentDesignationsToSubmittedAsync, application id {ApplicationId}",
+                    dbResult.Error, applicationId);
+                return Result.Failure(dbResult.Error + $" in ConvertProposedCompartmentDesignationsToSubmittedAsync, application id {applicationId}");
+            }
+
+            _logger.LogDebug("Successfully converted proposed compartment designations to submitted for application with id {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in ConvertProposedCompartmentDesignationsToSubmittedAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Result> UpdateTenYearLicenceStatusAsync(
         Guid applicationId, 
         UserAccessModel userAccess, 
@@ -491,6 +579,93 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
             _logger.LogError(ex, "Exception caught in UpdateAafStepAsync");
             return Result.Failure(ex.Message);
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> UpdateApplicationPawsDesignationsDataAsync(
+        Guid applicationId, 
+        UserAccessModel userAccess,
+        PawsCompartmentDesignationsModel pawsDesignationsData, 
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug(
+                "Updating application {ApplicationId} PAWS designations data for compartment id {CompartmentId}",
+                applicationId,
+                pawsDesignationsData.PropertyProfileCompartmentId);
+
+            // get entity
+            var application = await _fellingLicenceApplicationRepository
+                .GetAsync(applicationId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (application.HasNoValue)
+            {
+                _logger.LogError("Could not locate application with id {ApplicationId} in the repository", applicationId);
+                return Result.Failure("Could not update PAWS designations data for the application");
+            }
+
+            // verify user access to the application
+            var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
+            if (userAccess.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
+            {
+                _logger.LogError(
+                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update ten-year licence status for the application with id {ApplicationId}",
+                    userAccess.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
+                return Result.Failure("Could not update PAWS designations data for the application");
+            }
+
+            var pawsDesignations = application.Value.LinkedPropertyProfile
+                .ProposedCompartmentDesignations
+                .SingleOrDefault(x => x.Id == pawsDesignationsData.Id);
+
+            if (pawsDesignations == null)
+            {
+                _logger.LogError(
+                    "Could not locate compartment designations entity with id {DesignationsId} on application with id {ApplicationId}",
+                    pawsDesignationsData.Id,
+                    applicationId);
+                return Result.Failure("Could not update PAWS designations data for the application");
+            }
+
+            pawsDesignations.ProportionBeforeFelling = pawsDesignationsData.ProportionBeforeFelling;
+            pawsDesignations.ProportionAfterFelling = pawsDesignationsData.ProportionAfterFelling;
+            pawsDesignations.IsRestoringCompartment = pawsDesignationsData.IsRestoringCompartment;
+            pawsDesignations.RestorationDetails = pawsDesignationsData.IsRestoringCompartment is true
+                ? pawsDesignationsData.RestorationDetails
+                : null;
+
+            var compartmentDesignationsStatus = application.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses
+                .SingleOrDefault(x => x.CompartmentId == pawsDesignationsData.PropertyProfileCompartmentId);
+            if (compartmentDesignationsStatus == null)
+            {
+                _logger.LogError("No compartment designations status found for the given compartment id");
+                return Result.Failure("Could not update PAWS designations data for the application");
+            }
+
+            compartmentDesignationsStatus.Status = true;
+
+            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError(
+                    "Error {Error} encountered in UpdateApplicationPawsDesignationsDataAsync, application id {ApplicationId}",
+                    dbResult.Error, applicationId);
+                return Result.Failure(dbResult.Error + $" in UpdateApplicationPawsDesignationsDataAsync, application id {applicationId}");
+            }
+
+            _logger.LogDebug("Successfully updated PAWS designations data for application with id {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in UpdateApplicationPawsDesignationsDataAsync");
+            return Result.Failure(ex.Message);
+        }
+        
+
     }
 
     private Result ConvertProposedFellingDetailsToConfirmedAsync(FellingLicenceApplication fla)

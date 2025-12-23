@@ -61,6 +61,11 @@ public class FellingLicenceApplicationRepositoryBase : IFellingLicenceApplicatio
         entity.SelectCompartmentsStatus = applicationStepStatuses.SelectedCompartmentsComplete ?? entity.SelectCompartmentsStatus;
         entity.EnvironmentalImpactAssessmentStatus = applicationStepStatuses.EnvironmentalImpactAssessmentComplete ?? entity.EnvironmentalImpactAssessmentStatus;
 
+        if (applicationStepStatuses.PawsCheckComplete is false)
+        {
+            entity.CompartmentDesignationsStatuses.ForEach(x => x.Status = false);
+        }
+
         // only update the statuses for matched compartments
 
         foreach (var compartment in applicationStepStatuses.FellingAndRestockingDetailsComplete)
@@ -179,4 +184,24 @@ public class FellingLicenceApplicationRepositoryBase : IFellingLicenceApplicatio
 
     /// <inheritdoc />
     public DbConnection GetDbConnection() => Context.Database.GetDbConnection();
+
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> UpdateDocumentVisibleToApplicantAsync(
+        Guid applicationId,
+        Guid documentId, 
+        bool visibleToApplicant,
+        CancellationToken cancellationToken)
+    {
+        var document = await Context.Documents
+           .SingleOrDefaultAsync(x => x.Id == documentId && x.FellingLicenceApplicationId == applicationId, cancellationToken)
+          .ConfigureAwait(false);
+
+        if (document is null)
+        {
+            return UserDbErrorReason.NotFound;
+        }
+
+        document.VisibleToApplicant = visibleToApplicant;
+        return await Context.SaveEntitiesAsync(cancellationToken);
+    }
 }

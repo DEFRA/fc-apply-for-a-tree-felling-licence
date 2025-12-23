@@ -1,50 +1,77 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure.Display
-@using Microsoft.AspNetCore.Http.Features
+@using Forestry.Flo.Services.Common.Analytics
+@inject SiteSiteAnalyticsService SiteAnalyticsService
 
 @{
-	var status = TempData["CookieConsentStatus"] as string;
-	var consentCookie = Context.Request.Cookies[".AspNet.Consent"];
-	string currentUrl = Context.Request.Path + Context.Request.QueryString;
+    var status = TempData["CookieConsentStatus"] as string;
+    var consentCookie = Context.Request.Cookies[".AspNet.Consent"];
+    string currentUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
 @if (status == "accepted")
 {
-	<div class="govuk-cookie-banner" data-nosnippet role="region" aria-label="Cookies on Apply for a tree felling licence">
-		<div class="govuk-cookie-banner__message govuk-width-container" role="alert">
-			<div class="govuk-grid-row">
-				<div class="govuk-grid-column-two-thirds">
-					<div class="govuk-cookie-banner__content">
-						<p class="govuk-body">You have accepted analytics cookies. You can <a class="govuk-link" href="@Url.AbsoluteAction("Cookies", "Home")">change your cookie settings</a> at any time.</p>
-					</div>
-					<div class="govuk-button-group js-hidden">
-						<button id="hideCookieButton" class="govuk-button" data-module="govuk-button">
-							Hide cookie message
-						</button>
-					</div>
+    <div class="govuk-cookie-banner" data-nosnippet role="region" aria-label="Cookies on Apply for a tree felling licence">
+        <div class="govuk-cookie-banner__message govuk-width-container" role="alert">
+            <div class="govuk-grid-row">
+                <div class="govuk-grid-column-two-thirds">
+                    <div class="govuk-cookie-banner__content">
+                        <p class="govuk-body">You have accepted analytics cookies. You can <a class="govuk-link" href="@Url.AbsoluteAction("Cookies", "Home")">change your cookie settings</a> at any time.</p>
+                    </div>
+                    <div class="govuk-button-group js-hidden">
+                        <button id="hideCookieButton" class="govuk-button" data-module="govuk-button">
+                            Hide cookie message
+                        </button>
+                    </div>
 
-				</div>
-			</div>
-		</div>
-	</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Microsoft Clarity Consent API -->
+    @if (SiteAnalyticsService.IsMicrosoftClarityEnabled())
+    {
+        <script>
+            window.clarity = window.clarity || function(){ (window.clarity.q = window.clarity.q || []).push(arguments) };
+            window.clarity('consentv2',
+            {
+                ad_Storage: "granted",
+                analytics_Storage: "granted"
+            });
+        </script>
+    }
 }
 else if (status == "rejected")
 {
-	<div class="govuk-cookie-banner" data-nosnippet role="region" aria-label="Cookies on Apply for a tree felling licence">
-		<div class="govuk-cookie-banner__message govuk-width-container" role="alert">
-			<div class="govuk-grid-row">
-				<div class="govuk-grid-column-two-thirds">
-					<div class="govuk-cookie-banner__content">
-						<p class="govuk-body">You've rejected analytics cookies. You can <a class="govuk-link" href="@Url.AbsoluteAction("Cookies", "Home")">change your cookie settings</a> at any time.</p>
-					</div>
-					<div class="govuk-button-group js-hidden">
-						<button id="hideCookieButton" class="govuk-button" data-module="govuk-button">
-							Hide cookie message
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+    <div class="govuk-cookie-banner" data-nosnippet role="region" aria-label="Cookies on Apply for a tree felling licence">
+        <div class="govuk-cookie-banner__message govuk-width-container" role="alert">
+            <div class="govuk-grid-row">
+                <div class="govuk-grid-column-two-thirds">
+                    <div class="govuk-cookie-banner__content">
+                        <p class="govuk-body">You've rejected analytics cookies. You can <a class="govuk-link" href="@Url.AbsoluteAction("Cookies", "Home")">change your cookie settings</a> at any time.</p>
+                    </div>
+                    <div class="govuk-button-group js-hidden">
+                        <button id="hideCookieButton" class="govuk-button" data-module="govuk-button">
+                            Hide cookie message
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Microsoft Clarity Consent API -->
+    @if (SiteAnalyticsService.IsMicrosoftClarityEnabled())
+    {
+        <script>
+            window.clarity = window.clarity || function(){ (window.clarity.q = window.clarity.q || []).push(arguments) };
+            window.clarity('consentv2',
+            {
+                ad_Storage: "denied",
+                analytics_Storage: "denied"
+            });
+        </script>
+    }
 }
 else if (consentCookie is null)
 {

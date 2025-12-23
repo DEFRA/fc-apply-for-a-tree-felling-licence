@@ -436,6 +436,7 @@ public class UpdateWoodlandOfficerReviewService(
         RecommendedLicenceDuration? recommendedLicenceDuration,
         bool? recommendationForDecisionPublicRegister,
         string recommendationForDecisionPublicRegisterReason,
+        string? supplementaryPoints,
         DateTime completedDateTime,
         CancellationToken cancellationToken)
     {
@@ -504,6 +505,7 @@ public class UpdateWoodlandOfficerReviewService(
             woodlandOfficerReview.Value.RecommendedLicenceDuration = recommendedLicenceDuration;
             woodlandOfficerReview.Value.RecommendationForDecisionPublicRegister = recommendationForDecisionPublicRegister;
             woodlandOfficerReview.Value.RecommendationForDecisionPublicRegisterReason = recommendationForDecisionPublicRegisterReason;
+            woodlandOfficerReview.Value.SupplementaryPoints = supplementaryPoints ?? string.Empty;  // Store as empty string if null so we can tell the difference between not provided yet and provided as empty
             woodlandOfficerReview.Value.LastUpdatedById = performingUserId;
             woodlandOfficerReview.Value.LastUpdatedDate = completedDateTime;
 
@@ -1056,6 +1058,13 @@ public class UpdateWoodlandOfficerReviewService(
             designationsEntity.Other = designations.Other;
             designationsEntity.OtherDesignationDetails = designations.Other ? designations.OtherDesignationDetails : null;
             designationsEntity.None = designations.None;
+            designationsEntity.Paws = designations.Paws;
+            designationsEntity.ProportionBeforeFelling =
+                designations.Paws ? designations.ProportionBeforeFelling : null;
+            designationsEntity.ProportionAfterFelling =
+                designations.Paws ? designations.ProportionAfterFelling : null;
+            designationsEntity.HasBeenReviewed = true;
+
 
             compartment.SubmittedCompartmentDesignations = designationsEntity;
 

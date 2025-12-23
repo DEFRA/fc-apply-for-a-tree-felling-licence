@@ -49,6 +49,9 @@ public interface IForesterServices
     /// <summary>
     /// Generates an image based on the compartment data given.
     /// </summary>
+    /// <param name="applicationReference">The application reference</param>
+    /// <param name="osGridReference">Optional OS grid reference value to pass to the image generation.</param>
+    /// <param name="nearestTown">Optional nearest town value to pass to the image generation.</param>
     /// <param name="compartmentDetails">The Shape to draw on a map.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <param name="delay">Optional setting for the delay to leave between calls.</param>
@@ -56,6 +59,9 @@ public interface IForesterServices
     /// <param name="title">Optional setting for helping to set the title.</param>
     /// <returns>A stream of bytes representing the generated image.</returns>
     Task<Result<Stream>> GenerateImage_SingleCompartmentAsync(
+        string applicationReference,
+        string? osGridReference,
+        string? nearestTown,
         InternalCompartmentDetails<BaseShape> compartmentDetails, 
         CancellationToken cancellationToken, 
         int delay = 30000, 
@@ -66,6 +72,9 @@ public interface IForesterServices
     /// <summary>
     /// Generates an image based on the compartment data given.
     /// </summary>
+    /// <param name="applicationReference">The application reference</param>
+    /// <param name="osGridReference">Optional OS grid reference value to pass to the image generation.</param>
+    /// <param name="nearestTown">Optional nearest town value to pass to the image generation.</param>
     /// <param name="compartments">A list of compartments shapes to draw on a map.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <param name="delay">Optional setting for the delay to leave between calls.</param>
@@ -73,6 +82,9 @@ public interface IForesterServices
     /// <param name="title">Optional setting for helping to set the title.</param>
     /// <returns>A stream of bytes representing the generated image.</returns>
     Task<Result<Stream>> GenerateImage_MultipleCompartmentsAsync(
+        string applicationReference,
+        string? osGridReference,
+        string? nearestTown,
         List<InternalCompartmentDetails<BaseShape>> compartments,
         CancellationToken cancellationToken, 
         int delay = 30000, 
@@ -97,6 +109,10 @@ public interface IForesterServices
     /// A <see cref="Task"/> representing the asynchronous operation. The task result contains a <see cref="Result{T}"/> 
     /// with a list of <see cref="AncientWoodland"/> objects if the operation is successful, or an error message if it fails.
     /// </returns>
+    /// <remarks>
+    /// This method queries a specific layer ("Ancient_Woodland") for ancient woodland data.
+    /// If the layer details are unavailable, the method returns a failure result.
+    /// </remarks>
     Task<Result<List<AncientWoodland>>> GetAncientWoodlandAsync(BaseShape shape, CancellationToken cancellationToken);
 
     /// <summary>
@@ -109,7 +125,7 @@ public interface IForesterServices
     /// </returns>
     /// <remarks>
     /// This method queries a specific layer ("Ancient_Woodlands_Revised") for ancient woodland data.
-    /// If the layer details are unavailable or no results are found, the method returns a failure result.
+    /// If the layer details are unavailable, the method returns a failure result.
     /// </remarks>
     Task<Result<List<AncientWoodland>>> GetAncientWoodlandsRevisedAsync(BaseShape shape, CancellationToken cancellationToken);
 

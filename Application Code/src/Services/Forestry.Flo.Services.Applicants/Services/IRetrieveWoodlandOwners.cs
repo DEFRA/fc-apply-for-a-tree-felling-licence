@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.Services.Applicants.Services
 {
@@ -12,10 +13,12 @@ namespace Forestry.Flo.Services.Applicants.Services
         /// Retrieves a <see cref="WoodlandOwnerModel"/> by ID.
         /// </summary>
         /// <param name="id">The woodland owner ID.</param>
+        /// <param name="userAccessModel">A <see cref="UserAccessModel"/> representing the accessing user's permissions.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>A populated <see cref="WoodlandOwnerModel"/>.</returns>
         Task<Result<WoodlandOwnerModel>> RetrieveWoodlandOwnerByIdAsync(
             Guid id,
+            UserAccessModel userAccessModel,
             CancellationToken cancellationToken);
 
         /// <summary>

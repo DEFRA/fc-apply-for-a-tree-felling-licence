@@ -18,7 +18,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     /// </summary>
     /// <param name="context">A database context.</param>
     public InternalUserContextFlaRepository(
-        FellingLicenceApplicationsContext context) 
+        FellingLicenceApplicationsContext context)
         : base(context)
     {
     }
@@ -53,6 +53,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
                 .ThenInclude(p => p!.ProposedFellingDetails)!
                 .ThenInclude(f => f.ProposedRestockingDetails)!
                 .ThenInclude(r => r.RestockingSpecies)
+            .Include(a => a.LinkedPropertyProfile)
+                .ThenInclude(i => i!.ProposedCompartmentDesignations)
             .Include(a => a.AdminOfficerReview)
             .Include(a => a.PublicRegister)
             .Include(a => a.LarchCheckDetails)
@@ -126,12 +128,12 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
     /// <inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> RemoveAssignedRolesFromApplicationAsync(
-        Guid applicationId, 
+        Guid applicationId,
         AssignedUserRole[] roles,
         DateTime timestamp,
         CancellationToken cancellationToken)
     {
-        var assignees = Context.AssigneeHistories.Where(x => 
+        var assignees = Context.AssigneeHistories.Where(x =>
             x.FellingLicenceApplicationId == applicationId
             && x.TimestampUnassigned == null
             && roles.Contains(x.Role));
@@ -147,7 +149,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     /// <inheritdoc />
     public async Task<IList<AssigneeHistory>> GetAssigneeHistoryForApplicationAsync(
         Guid applicationId,
-        CancellationToken cancellationToken) 
+        CancellationToken cancellationToken)
         => await Context
             .AssigneeHistories
             .Where(x => x.FellingLicenceApplicationId == applicationId)
@@ -185,6 +187,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .ThenInclude(x => x!.FellingAndRestockingAmendmentReviews)
             .Include(x => x.PublicRegister)
             .Include(x => x.ExternalAccessLinks)
+            .Include(x => x.ApprovedInError)
             .Where(app =>
                 userFellingLicenceSelectionOptions.Contains(
                     app.StatusHistories
@@ -279,14 +282,14 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         Context.Entry(existingLink).CurrentValues.SetValues(accessLink);
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
-    
+
     /// <inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> AddExternalAccessLinkAsync(ExternalAccessLink accessLink, CancellationToken cancellationToken)
     {
         Context.ExternalAccessLinks.Add(accessLink);
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
-    
+
     /// <inheritdoc />
     public async Task<IList<ExternalAccessLink>> GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(
         Guid applicationId,
@@ -307,8 +310,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
                 .ThenInclude(f => f.FellingSpecies)
             .Include(s => s.LinkedPropertyProfile)
                 .ThenInclude(c => c!.ProposedFellingDetails)!
-                    .ThenInclude(f => f.ProposedRestockingDetails)!
-                    .ThenInclude(r => r.RestockingSpecies)
+                .ThenInclude(f => f.ProposedRestockingDetails)!
+                .ThenInclude(r => r.RestockingSpecies)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (fla == null)
@@ -371,7 +374,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     {
         var result = await Context.WoodlandOfficerReviews
            .Include(x => x.FellingLicenceApplication)
-           .ThenInclude(x => x.LarchCheckDetails)  
+           .ThenInclude(x => x.LarchCheckDetails)
            .Include(x => x.SiteVisitEvidences)
            .Include(x => x.FellingAndRestockingAmendmentReviews)
            .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken);
@@ -391,7 +394,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     /// <inheritdoc />
     public async Task<Maybe<AdminOfficerReview>> GetAdminOfficerReviewAsync(Guid applicationId, CancellationToken cancellationToken)
     {
-        var result = 
+        var result =
             await Context.AdminOfficerReviews
                 .Include(x => x.FellingLicenceApplication)
                 .ThenInclude(a => a.LarchCheckDetails)
@@ -451,7 +454,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
     /// <inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> ExpireDecisionPublicRegisterEntryAsync(
-        Guid applicationId, 
+        Guid applicationId,
         DateTime removedDateTime,
         CancellationToken cancellationToken)
     {
@@ -518,7 +521,11 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
-    public async Task<UnitResult<UserDbErrorReason>> SetApplicationApproverAsync(Guid applicationId, Guid? approverId, CancellationToken cancellationToken)
+    public async Task<UnitResult<UserDbErrorReason>> SetApplicationApproverAndExpiryDateAsync(
+        Guid applicationId, 
+        Guid? approverId, 
+        DateTime? licenceExpiryDate,
+        CancellationToken cancellationToken)
     {
         var application = await Context.FellingLicenceApplications
             .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
@@ -527,8 +534,15 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         {
             return UnitResult.Failure(UserDbErrorReason.NotFound);
         }
+        if (approverId.HasValue)
+        {
+            application.ApproverId = approverId;
+        }
 
-        application.ApproverId = approverId;
+        if (licenceExpiryDate.HasValue)
+        {
+            application.LicenceExpiryDate = licenceExpiryDate;
+        }
 
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
@@ -552,18 +566,18 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         }
         return await Context.SaveEntitiesAsync(cancellationToken);
     }
-    
+
     /// <inheritdoc />
     public async Task AddCaseNoteAsync(CaseNote caseNote, CancellationToken cancellationToken)
     {
         await Context.CaseNote.AddAsync(caseNote, cancellationToken);
     }
-    
+
     /// <inheritdoc />
     public async Task<Maybe<ExternalAccessLink>> GetValidExternalAccessLinkAsync(
-        Guid applicationId, 
-        Guid accessCode, 
-        string emailAddress, 
+        Guid applicationId,
+        Guid accessCode,
+        string emailAddress,
         DateTime now,
         CancellationToken cancellationToken)
     {
@@ -573,15 +587,15 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
                  && x.ContactEmail == emailAddress
                  && x.ExpiresTimeStamp > now, cancellationToken);
 
-        return link != null 
-            ? Maybe<ExternalAccessLink>.From(link) 
+        return link != null
+            ? Maybe<ExternalAccessLink>.From(link)
             : Maybe<ExternalAccessLink>.None;
     }
 
     /// <inheritdoc />
     public async Task<IList<ConsulteeComment>> GetConsulteeCommentsAsync(
-        Guid applicationId, 
-        Guid? accessCode, 
+        Guid applicationId,
+        Guid? accessCode,
         CancellationToken cancellationToken)
     {
         var commentsForApplication = await Context.ConsulteeComments
@@ -713,7 +727,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Include(s => s.StatusHistories)
             .Include(s => s.LinkedPropertyProfile)
             .Include(s => s.PublicRegister)
-            
+
             .Include(s => s.SubmittedFlaPropertyDetail)
                 .ThenInclude(p => p!.SubmittedFlaPropertyCompartments)!
                     .ThenInclude(c => c.ConfirmedFellingDetails)
@@ -744,7 +758,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
     /// <inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> UpdateAreaCodeAsync(
-        Guid applicationId, 
+        Guid applicationId,
         string newAreaCode,
         string? adminHubName,
         CancellationToken cancellationToken)
@@ -800,9 +814,9 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     public void RemoveSiteVisitEvidenceAsync(SiteVisitEvidence evidence)
     {
         Context.SiteVisitEvidences.Remove(evidence);
-	}
+    }
 
-	/// <inheritdoc />
+    /// <inheritdoc />
     public async Task<IncludedApplicationsSummary> TotalIncludedApplicationsAsync(
         bool assignedToUserAccountIdOnly,
         Guid userId,
@@ -921,7 +935,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     public async Task<UnitResult<UserDbErrorReason>> UpdateEnvironmentalImpactAssessmentAsync(
-        Guid applicationId, 
+        Guid applicationId,
         EnvironmentalImpactAssessmentRecord eiaRecord,
         CancellationToken cancellationToken)
     {
@@ -1087,8 +1101,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         {
             var woReview = await GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
 
-            return woReview.HasNoValue 
-                ? [] 
+            return woReview.HasNoValue
+                ? []
                 : woReview.Value.FellingAndRestockingAmendmentReviews.ToList();
         }
         catch (Exception ex)
@@ -1190,4 +1204,40 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         return result;
     }
 
+    /// <inheritdoc />
+    public async Task<Maybe<ApprovedInError>> GetApprovedInErrorAsync(Guid applicationId, CancellationToken cancellationToken)
+    {
+        var entity = await Context.Set<ApprovedInError>()
+        .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken);
+        return entity is null ? Maybe<ApprovedInError>.None : Maybe.From(entity);
+    }
+
+    /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> AddOrUpdateApprovedInErrorAsync(ApprovedInError approvedInError, CancellationToken cancellationToken)
+    {
+        var existing = await Context.Set<ApprovedInError>()
+        .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == approvedInError.FellingLicenceApplicationId, cancellationToken);
+        if (existing is null)
+        {
+            await Context.Set<ApprovedInError>().AddAsync(approvedInError, cancellationToken);
+        }
+        else
+        {
+            Context.Entry(existing).CurrentValues.SetValues(approvedInError);
+        }
+        return UnitResult.Success<UserDbErrorReason>();
+    }
+
+    /// <inheritdoc />
+    public async Task<List<ProposedCompartmentDesignations>> GetProposedCompartmentDesignationsForApplicationAsync(Guid applicationId, CancellationToken cancellationToken)
+    {
+        var results = await Context.FellingLicenceApplications
+            .Include(x => x.LinkedPropertyProfile)
+            .ThenInclude(x => x.ProposedCompartmentDesignations)
+            .Where(x => x.Id == applicationId)
+            .SelectMany(x => x.LinkedPropertyProfile.ProposedCompartmentDesignations)
+            .ToListAsync(cancellationToken);
+
+        return results;
+    }
 }

@@ -205,19 +205,38 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
     {
         //arrange
         var i = 0;
+        const string previousReferenceForApprovedInError = "FLO/2023/001";
         licenceApplications.ForEach(a =>
         {
             var profile = propertyProfiles[i++];
             profile.SetId(Guid.NewGuid());
             a.LinkedPropertyProfile!.PropertyProfileId = profile.Id;
             a.WoodlandOwnerId = _woodlandOwner.Id;
+
+            // Set up the first application with ApprovedInError entity
+            if (i == 1)
+            {
+                a.ApprovedInError = new ApprovedInError
+                {
+                    Id = Guid.NewGuid(),
+                    FellingLicenceApplicationId = a.Id,
+                    PreviousReference = previousReferenceForApprovedInError,
+                    LastUpdatedDate = DateTime.UtcNow,
+                    LastUpdatedById = Guid.NewGuid()
+                };
+            }
+            else
+            {
+                // Ensure other applications don't have ApprovedInError
+                a.ApprovedInError = null;
+            }
         });
         _fellingLicenceApplicationRepository
             .Setup(r => r.ListAsync(It.Is<Guid>(v => v == _woodlandOwner.Id), It.IsAny<CancellationToken>()))
             .ReturnsAsync(licenceApplications);
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         var userAccessModel = new UserAccessModel
@@ -250,6 +269,12 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         Assert.Equal(licenceApplications.First().StatusHistories.OrderByDescending(s => s.Created).First().Status,
                 result.Value.First().Status);
         Assert.Equal(propertyProfiles[0].Name, result.Value.First().PropertyName);
+
+        // Assert PreviousReference for the first application (with ApprovedInError)
+        Assert.Equal(previousReferenceForApprovedInError, result.Value.First().PreviousReference);
+
+        // Assert PreviousReference is null for other applications (without ApprovedInError)
+        Assert.All(result.Value.Skip(1), app => Assert.Null(app.PreviousReference));
     }
 
     [Theory, AutoMoqData]
@@ -427,7 +452,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
                 new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _fellingLicenceApplicationRepository
@@ -1736,7 +1761,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(new List<FellingLicenceApplication>() { licenceApplication });
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         var userAccessModel = new UserAccessModel
@@ -2112,7 +2137,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(new List<FellingLicenceApplication>() { licenceApplication });
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         var userAccessModel = new UserAccessModel
@@ -2440,7 +2465,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(Result.Success(propertyProfile));
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _compartmentRepository
@@ -2456,7 +2481,8 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         Assert.True(result.Value.IsComplete);
     }
 
-    [Theory, AutoMoqData] public async Task RetrieveFellingLicenceApplication_ShouldSetIsCompleteFalse_WhenEiaIsRequired(
+    [Theory, AutoMoqData] 
+    public async Task RetrieveFellingLicenceApplication_ShouldSetIsCompleteFalse_WhenEiaIsRequired(
         FellingLicenceApplication application,
         PropertyProfile propertyProfile,
         Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
@@ -2555,7 +2581,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(Result.Success(propertyProfile));
 
         _mockRetreiveWoodlandOwnersService.Setup(x =>
-                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
 
         _compartmentRepository
@@ -2569,5 +2595,523 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         // Assert
         Assert.True(result.HasValue);
         Assert.False(result.Value.IsComplete);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RetrieveFellingLicenceApplication_ShouldSetPawsStepNotRequiredWhenNoPawsStepStatuses(
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
+        IList<ActivityFeedItemModel> activityFeedItems)
+    {
+        // Arrange
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+        application.WoodlandOwnerId = _woodlandOwner.Id;
+        application.Documents = new List<Document>();
+
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory { Status = FellingLicenceStatus.WoodlandOfficerReview, Created = DateTime.UtcNow }
+        };
+
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails!.Take(1).ToList();
+
+        application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails!.Take(1).ToList();
+
+        application.FellingLicenceApplicationStepStatus = new FellingLicenceApplicationStepStatus
+        {
+            CompartmentFellingRestockingStatuses = [],
+            SelectCompartmentsStatus = true,
+            OperationsStatus = true,
+            SupportingDocumentationStatus = true,
+            TermsAndConditionsStatus = true,
+            ConstraintCheckStatus = true,
+            EnvironmentalImpactAssessmentStatus = null,
+        };
+
+        for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)
+        {
+            var felling = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
+            felling.FellingSpecies = new List<FellingSpecies>();
+            felling.OperationType = FellingOperationType.FellingIndividualTrees;
+            felling.IsRestocking = true;
+            felling.NoRestockingReason = null;
+
+            var stepStatus = new CompartmentFellingRestockingStatus
+            {
+                CompartmentId = felling.PropertyProfileCompartmentId,
+                Status = true,
+                FellingStatuses =
+                [
+                    new FellingStatus
+                    {
+                        Id = felling.Id,
+                        Status = true,
+                        RestockingCompartmentStatuses = [ new RestockingCompartmentStatus
+                            {
+                                CompartmentId = felling.PropertyProfileCompartmentId,
+                                Status = true,
+                                RestockingStatuses = []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            foreach (var proposedRestockingDetail in application.LinkedPropertyProfile!.ProposedFellingDetails[i]
+                         .ProposedRestockingDetails)
+            {
+                proposedRestockingDetail.PropertyProfileCompartmentId = application.LinkedPropertyProfile!
+                    .ProposedFellingDetails[i].PropertyProfileCompartmentId;
+                proposedRestockingDetail.RestockingSpecies = new List<RestockingSpecies>();
+                proposedRestockingDetail.RestockingProposal = TypeOfProposal.DoNotIntendToRestock;
+
+                stepStatus.FellingStatuses.First().RestockingCompartmentStatuses.First().RestockingStatuses.Add(new RestockingStatus
+                {
+                    Id = proposedRestockingDetail.Id,
+                    Status = true,
+                });
+            }
+            application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Add(stepStatus);
+        }
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _activityFeedService
+            .Setup(x => x.RetrieveAllRelevantActivityFeedItemsAsync(
+                It.IsAny<ActivityFeedItemProviderModel>(),
+                It.IsAny<ActorType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(activityFeedItems));
+
+        _getPropertyProfilesService.Setup(r => r.GetPropertyByIdAsync(
+                propertyProfile.Id,
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _mockRetreiveWoodlandOwnersService.Setup(x =>
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _compartmentRepository
+            .Setup(r => r.ListAsync(propertyProfile.Id, Guid.NewGuid(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
+                new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
+
+        // Act
+        var result = await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasValue);
+        Assert.False(result.Value.PawsAndIawp.StepRequiredForApplication);
+        Assert.Null(result.Value.PawsAndIawp.StepComplete);
+        Assert.Equal(0, result.Value.PawsAndIawp.PawsCompartmentsCount);
+        Assert.Equal(0, result.Value.PawsAndIawp.PawsCompartmentsCompleteCount);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RetrieveFellingLicenceApplication_ShouldSetPawsStepRequiredNotStartedWhenAllIncompletePawsStepStatuses(
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
+        IList<ActivityFeedItemModel> activityFeedItems)
+    {
+        // Arrange
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+        application.WoodlandOwnerId = _woodlandOwner.Id;
+        application.Documents = new List<Document>();
+
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory { Status = FellingLicenceStatus.WoodlandOfficerReview, Created = DateTime.UtcNow }
+        };
+
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails!.Take(1).ToList();
+
+        application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails!.Take(1).ToList();
+
+        application.FellingLicenceApplicationStepStatus = new FellingLicenceApplicationStepStatus
+        {
+            CompartmentFellingRestockingStatuses = [],
+            SelectCompartmentsStatus = true,
+            OperationsStatus = true,
+            SupportingDocumentationStatus = true,
+            TermsAndConditionsStatus = true,
+            ConstraintCheckStatus = true,
+            EnvironmentalImpactAssessmentStatus = null,
+        };
+
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Clear();
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Add(
+            new CompartmentDesignationStatus
+            {
+                CompartmentId = Guid.NewGuid(),
+                Status = null
+            });
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Add(
+            new CompartmentDesignationStatus
+            {
+                CompartmentId = Guid.NewGuid(),
+                Status = null
+            });
+
+        for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)
+        {
+            var felling = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
+            felling.FellingSpecies = new List<FellingSpecies>();
+            felling.OperationType = FellingOperationType.FellingIndividualTrees;
+            felling.IsRestocking = true;
+            felling.NoRestockingReason = null;
+
+            var stepStatus = new CompartmentFellingRestockingStatus
+            {
+                CompartmentId = felling.PropertyProfileCompartmentId,
+                Status = true,
+                FellingStatuses =
+                [
+                    new FellingStatus
+                    {
+                        Id = felling.Id,
+                        Status = true,
+                        RestockingCompartmentStatuses = [ new RestockingCompartmentStatus
+                            {
+                                CompartmentId = felling.PropertyProfileCompartmentId,
+                                Status = true,
+                                RestockingStatuses = []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            foreach (var proposedRestockingDetail in application.LinkedPropertyProfile!.ProposedFellingDetails[i]
+                         .ProposedRestockingDetails)
+            {
+                proposedRestockingDetail.PropertyProfileCompartmentId = application.LinkedPropertyProfile!
+                    .ProposedFellingDetails[i].PropertyProfileCompartmentId;
+                proposedRestockingDetail.RestockingSpecies = new List<RestockingSpecies>();
+                proposedRestockingDetail.RestockingProposal = TypeOfProposal.DoNotIntendToRestock;
+
+                stepStatus.FellingStatuses.First().RestockingCompartmentStatuses.First().RestockingStatuses.Add(new RestockingStatus
+                {
+                    Id = proposedRestockingDetail.Id,
+                    Status = true,
+                });
+            }
+            application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Add(stepStatus);
+        }
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _activityFeedService
+            .Setup(x => x.RetrieveAllRelevantActivityFeedItemsAsync(
+                It.IsAny<ActivityFeedItemProviderModel>(),
+                It.IsAny<ActorType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(activityFeedItems));
+
+        _getPropertyProfilesService.Setup(r => r.GetPropertyByIdAsync(
+                propertyProfile.Id,
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _mockRetreiveWoodlandOwnersService.Setup(x =>
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _compartmentRepository
+            .Setup(r => r.ListAsync(propertyProfile.Id, Guid.NewGuid(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
+                new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
+
+        // Act
+        var result = await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasValue);
+        Assert.True(result.Value.PawsAndIawp.StepRequiredForApplication);
+        Assert.Null(result.Value.PawsAndIawp.StepComplete);
+        Assert.Equal(2, result.Value.PawsAndIawp.PawsCompartmentsCount);
+        Assert.Equal(0, result.Value.PawsAndIawp.PawsCompartmentsCompleteCount);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RetrieveFellingLicenceApplication_ShouldSetPawsStepRequiredInProgressWhenSomeIncompletePawsStepStatuses(
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
+        IList<ActivityFeedItemModel> activityFeedItems)
+    {
+        // Arrange
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+        application.WoodlandOwnerId = _woodlandOwner.Id;
+        application.Documents = new List<Document>();
+
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory { Status = FellingLicenceStatus.WoodlandOfficerReview, Created = DateTime.UtcNow }
+        };
+
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails!.Take(1).ToList();
+
+        application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails!.Take(1).ToList();
+
+        application.FellingLicenceApplicationStepStatus = new FellingLicenceApplicationStepStatus
+        {
+            CompartmentFellingRestockingStatuses = [],
+            SelectCompartmentsStatus = true,
+            OperationsStatus = true,
+            SupportingDocumentationStatus = true,
+            TermsAndConditionsStatus = true,
+            ConstraintCheckStatus = true,
+            EnvironmentalImpactAssessmentStatus = null,
+        };
+
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Clear();
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Add(
+            new CompartmentDesignationStatus
+            {
+                CompartmentId = Guid.NewGuid(),
+                Status = true
+            });
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Add(
+            new CompartmentDesignationStatus
+            {
+                CompartmentId = Guid.NewGuid(),
+                Status = null
+            });
+
+        for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)
+        {
+            var felling = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
+            felling.FellingSpecies = new List<FellingSpecies>();
+            felling.OperationType = FellingOperationType.FellingIndividualTrees;
+            felling.IsRestocking = true;
+            felling.NoRestockingReason = null;
+
+            var stepStatus = new CompartmentFellingRestockingStatus
+            {
+                CompartmentId = felling.PropertyProfileCompartmentId,
+                Status = true,
+                FellingStatuses =
+                [
+                    new FellingStatus
+                    {
+                        Id = felling.Id,
+                        Status = true,
+                        RestockingCompartmentStatuses = [ new RestockingCompartmentStatus
+                            {
+                                CompartmentId = felling.PropertyProfileCompartmentId,
+                                Status = true,
+                                RestockingStatuses = []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            foreach (var proposedRestockingDetail in application.LinkedPropertyProfile!.ProposedFellingDetails[i]
+                         .ProposedRestockingDetails)
+            {
+                proposedRestockingDetail.PropertyProfileCompartmentId = application.LinkedPropertyProfile!
+                    .ProposedFellingDetails[i].PropertyProfileCompartmentId;
+                proposedRestockingDetail.RestockingSpecies = new List<RestockingSpecies>();
+                proposedRestockingDetail.RestockingProposal = TypeOfProposal.DoNotIntendToRestock;
+
+                stepStatus.FellingStatuses.First().RestockingCompartmentStatuses.First().RestockingStatuses.Add(new RestockingStatus
+                {
+                    Id = proposedRestockingDetail.Id,
+                    Status = true,
+                });
+            }
+            application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Add(stepStatus);
+        }
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _activityFeedService
+            .Setup(x => x.RetrieveAllRelevantActivityFeedItemsAsync(
+                It.IsAny<ActivityFeedItemProviderModel>(),
+                It.IsAny<ActorType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(activityFeedItems));
+
+        _getPropertyProfilesService.Setup(r => r.GetPropertyByIdAsync(
+                propertyProfile.Id,
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _mockRetreiveWoodlandOwnersService.Setup(x =>
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _compartmentRepository
+            .Setup(r => r.ListAsync(propertyProfile.Id, Guid.NewGuid(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
+                new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
+
+        // Act
+        var result = await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasValue);
+        Assert.True(result.Value.PawsAndIawp.StepRequiredForApplication);
+        Assert.False(result.Value.PawsAndIawp.StepComplete);
+        Assert.Equal(2, result.Value.PawsAndIawp.PawsCompartmentsCount);
+        Assert.Equal(1, result.Value.PawsAndIawp.PawsCompartmentsCompleteCount);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RetrieveFellingLicenceApplication_ShouldSetPawsStepRequiredCompleteWhenAllCompletePawsStepStatuses(
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
+        IList<ActivityFeedItemModel> activityFeedItems)
+    {
+        // Arrange
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+        application.WoodlandOwnerId = _woodlandOwner.Id;
+        application.Documents = new List<Document>();
+
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory { Status = FellingLicenceStatus.WoodlandOfficerReview, Created = DateTime.UtcNow }
+        };
+
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails!.Take(1).ToList();
+
+        application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails!.Take(1).ToList();
+
+        application.FellingLicenceApplicationStepStatus = new FellingLicenceApplicationStepStatus
+        {
+            CompartmentFellingRestockingStatuses = [],
+            SelectCompartmentsStatus = true,
+            OperationsStatus = true,
+            SupportingDocumentationStatus = true,
+            TermsAndConditionsStatus = true,
+            ConstraintCheckStatus = true,
+            EnvironmentalImpactAssessmentStatus = null,
+        };
+
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Clear();
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Add(
+            new CompartmentDesignationStatus
+            {
+                CompartmentId = Guid.NewGuid(),
+                Status = true
+            });
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Add(
+            new CompartmentDesignationStatus
+            {
+                CompartmentId = Guid.NewGuid(),
+                Status = true
+            });
+
+        for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)
+        {
+            var felling = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
+            felling.FellingSpecies = new List<FellingSpecies>();
+            felling.OperationType = FellingOperationType.FellingIndividualTrees;
+            felling.IsRestocking = true;
+            felling.NoRestockingReason = null;
+
+            var stepStatus = new CompartmentFellingRestockingStatus
+            {
+                CompartmentId = felling.PropertyProfileCompartmentId,
+                Status = true,
+                FellingStatuses =
+                [
+                    new FellingStatus
+                    {
+                        Id = felling.Id,
+                        Status = true,
+                        RestockingCompartmentStatuses = [ new RestockingCompartmentStatus
+                            {
+                                CompartmentId = felling.PropertyProfileCompartmentId,
+                                Status = true,
+                                RestockingStatuses = []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            foreach (var proposedRestockingDetail in application.LinkedPropertyProfile!.ProposedFellingDetails[i]
+                         .ProposedRestockingDetails)
+            {
+                proposedRestockingDetail.PropertyProfileCompartmentId = application.LinkedPropertyProfile!
+                    .ProposedFellingDetails[i].PropertyProfileCompartmentId;
+                proposedRestockingDetail.RestockingSpecies = new List<RestockingSpecies>();
+                proposedRestockingDetail.RestockingProposal = TypeOfProposal.DoNotIntendToRestock;
+
+                stepStatus.FellingStatuses.First().RestockingCompartmentStatuses.First().RestockingStatuses.Add(new RestockingStatus
+                {
+                    Id = proposedRestockingDetail.Id,
+                    Status = true,
+                });
+            }
+            application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Add(stepStatus);
+        }
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _activityFeedService
+            .Setup(x => x.RetrieveAllRelevantActivityFeedItemsAsync(
+                It.IsAny<ActivityFeedItemProviderModel>(),
+                It.IsAny<ActorType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(activityFeedItems));
+
+        _getPropertyProfilesService.Setup(r => r.GetPropertyByIdAsync(
+                propertyProfile.Id,
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _mockRetreiveWoodlandOwnersService.Setup(x =>
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _compartmentRepository
+            .Setup(r => r.ListAsync(propertyProfile.Id, Guid.NewGuid(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
+                new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
+
+        // Act
+        var result = await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasValue);
+        Assert.True(result.Value.PawsAndIawp.StepRequiredForApplication);
+        Assert.True(result.Value.PawsAndIawp.StepComplete);
+        Assert.Equal(2, result.Value.PawsAndIawp.PawsCompartmentsCount);
+        Assert.Equal(2, result.Value.PawsAndIawp.PawsCompartmentsCompleteCount);
     }
 }

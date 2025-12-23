@@ -34,4 +34,9 @@ public class WoodlandOfficerReviewStatusModel
     /// that the application is or is not published to the decision public register.
     /// </summary>
     public string? RecommendationForDecisionPublicRegisterReason { get; set; }
+
+    /// <summary>
+    /// Gets and sets any supplementary points provided by the Woodland Officer during the review process.
+    /// </summary>
+    public string? SupplementaryPoints { get; set; }
 }

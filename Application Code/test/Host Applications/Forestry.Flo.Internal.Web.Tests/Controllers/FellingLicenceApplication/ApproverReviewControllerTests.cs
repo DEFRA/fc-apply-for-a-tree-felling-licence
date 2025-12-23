@@ -588,8 +588,6 @@ public class ApproverReviewControllerTests
         Assert.IsType<ViewResult>(result);
     }
 
-    // ... rest of the file ...
-
     [Fact]
     public async Task RefuseApplication_CallsChangeApplicationStatus()
     {
@@ -617,7 +615,9 @@ public class ApproverReviewControllerTests
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
-        approvalRefusalUseCase.Setup(x => x.UpdateApproverIdAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+        pdfUseCase.Setup(x => x.CalculateLicenceExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateTime.UtcNow);
+        approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
         pdfUseCase.Setup(x => x.GeneratePdfApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(doc);
@@ -672,9 +672,11 @@ public class ApproverReviewControllerTests
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
+        pdfUseCase.Setup(x => x.CalculateLicenceExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateTime.UtcNow);
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<FellingLicenceStatus>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateSuccess([]));
-        approvalRefusalUseCase.Setup(x => x.UpdateApproverIdAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+        approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure("fail"));
 
         var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
@@ -695,7 +697,7 @@ public class ApproverReviewControllerTests
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
-        approvalRefusalUseCase.Setup(x => x.UpdateApproverIdAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+        approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<FellingLicenceStatus>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateSuccess([]));
@@ -732,7 +734,9 @@ public class ApproverReviewControllerTests
 
         removeDocUseCase.Setup(x => x.RemoveFellingLicenceDocument(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
-        approvalRefusalUseCase.Setup(x => x.UpdateApproverIdAsync(It.IsAny<Guid>(), null, It.IsAny<CancellationToken>()))
+        pdfUseCase.Setup(x => x.CalculateLicenceExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateTime.UtcNow);
+        approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), null, It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
@@ -765,7 +769,9 @@ public class ApproverReviewControllerTests
         removeDocUseCase.Setup(x => x.RemoveFellingLicenceDocument(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        approvalRefusalUseCase.Setup(x => x.UpdateApproverIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        pdfUseCase.Setup(x => x.CalculateLicenceExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DateTime.UtcNow);
+        approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure("fail"));
 
         var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);

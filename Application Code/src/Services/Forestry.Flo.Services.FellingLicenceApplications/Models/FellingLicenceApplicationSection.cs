@@ -22,5 +22,7 @@ public enum FellingLicenceApplicationSection
     [Description("Environmental Impact Assessment")]
     EnvironmentalImpactAssessment,
     [Description("10 Year Licence")]
-    TenYearLicence
+    TenYearLicence,
+    [Description("Plantation Ancient Woodlands and Infilled Ancient Wood Pastures")]
+    PawsAndIawp
 }

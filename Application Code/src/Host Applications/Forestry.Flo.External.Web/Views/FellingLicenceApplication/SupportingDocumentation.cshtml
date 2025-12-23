@@ -132,15 +132,15 @@
                     <validation asp-for="StepComplete"></validation>
                     <div class="govuk-radios govuk-!-margin-top-2" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            @Html.RadioButtonFor(x => x.StepComplete,true,new { @class = "govuk-radios__input",  @id="radio-complete-yes"  })
-                            <label class="govuk-label govuk-radios__label" for="radio-complete-yes">
+                            @Html.RadioButtonFor(x => x.StepComplete, true, new { @class = "govuk-radios__input" })
+                            <label class="govuk-label govuk-radios__label" asp-for="StepComplete">
                                 Yes, I have uploaded everything I need to submit this application
                             </label>
                         </div>
                     </div>
                     <div class="govuk-radios govuk-!-margin-top-2" data-module="govuk-radios">
                         <div class="govuk-radios__item ">
-                            @Html.RadioButtonFor(x => x.StepComplete,false,new { @class = "govuk-radios__input",  @id="radio-complete-no" })
+                            @Html.RadioButtonFor(x => x.StepComplete, false, new { @class = "govuk-radios__input",  @id="radio-complete-no" })
                             <label class="govuk-label govuk-radios__label" for="radio-complete-no">
                                 No, I still need to upload some documents
                             </label>

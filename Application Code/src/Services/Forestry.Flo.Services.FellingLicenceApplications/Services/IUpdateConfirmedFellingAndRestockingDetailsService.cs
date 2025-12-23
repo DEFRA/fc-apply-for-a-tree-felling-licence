@@ -128,4 +128,18 @@ public interface IUpdateConfirmedFellingAndRestockingDetailsService
     /// A <see cref="Maybe{SubmittedFlaPropertyDetail}"/> containing the existing submitted FLA property detail if found; otherwise, an empty value.
     /// </returns>
     Task<Maybe<SubmittedFlaPropertyDetail>> GetExistingSubmittedFlaPropertyDetailAsync(Guid applicationId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Checks if any confirmed felling or restocking detail has a proposed ID link that doesn't exist in the compartment's proposed details.
+    /// </summary>
+    /// <param name="compartment">The compartment to check.</param>
+    /// <returns>True if any confirmed detail links to a missing proposed detail; otherwise, false.</returns>
+    bool HasMissingProposedFellingOrRestockingLink(FellingAndRestockingDetailModel compartment);
+
+    /// <summary>
+    /// Checks if any proposed felling or restocking detail doesn't have a matching confirmed detail.
+    /// </summary>
+    /// <param name="compartment">The compartment to check.</param>
+    /// <returns>True if any proposed detail lacks a matching confirmed detail; otherwise, false.</returns>
+    bool HasUnmatchedProposedFellingOrRestocking(FellingAndRestockingDetailModel compartment);
 }

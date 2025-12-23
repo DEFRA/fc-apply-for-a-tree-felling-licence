@@ -6,6 +6,7 @@ using Forestry.Flo.External.Web.Models.AgentAuthorityForm;
 using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.PawsDesignations;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
@@ -23,6 +24,7 @@ using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
@@ -40,6 +42,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
+using System;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 using FellingLicenceApplicationStepStatus =
     Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplicationStepStatus;
@@ -162,11 +165,23 @@ public class CreateFellingLicenceApplicationUseCase(
                 $"Unable to access data for woodland owner with id {woodlandOwnerId}");
         }
 
-        if (applications.Value.Any())
+        // filter out applications with latest status ApprovedInError
+        var filteredApplications = applications.Value
+            .Where(a =>
+            {
+                var latest = a.StatusHistories
+                    .OrderByDescending(s => s.Created)
+                    .FirstOrDefault();
+                return latest == null ||
+                       latest.Status != FellingLicenceStatus.ApprovedInError;
+            })
+            .ToList();
+
+        if (filteredApplications.Any())
         {
             var getPropertyProfilesResult = await GetPropertyProfilesByIdAsync(
                 new ListPropertyProfilesQuery(woodlandOwnerId,
-                    applications.Value.Where(a => a.LinkedPropertyProfile != null)
+                    filteredApplications.Where(a => a.LinkedPropertyProfile != null)
                         .Select(a => a.LinkedPropertyProfile!.PropertyProfileId).ToArray()),
                 user,
                 cancellationToken);
@@ -186,7 +201,7 @@ public class CreateFellingLicenceApplicationUseCase(
                 var propertyProfilesDictionary = getPropertyProfilesResult.Value.ToDictionary(p => p.Id, p => p);
 
                 var woodlandOwnerNameAndAgencyDetails =
-                    await GetWoodlandOwnerNameAndAgencyForApplication(applications.Value.First(), cancellationToken);
+                    await GetWoodlandOwnerNameAndAgencyForApplication(applications.Value.First(), userAccessModel.Value, cancellationToken);
                 if (woodlandOwnerNameAndAgencyDetails.IsFailure)
                 {
                     _logger.LogWarning("Unable to retrieve woodland owner name and agency details for user having id of {UserId}, " +
@@ -196,7 +211,7 @@ public class CreateFellingLicenceApplicationUseCase(
                         $"Unable to access woodland owner name and agency details for user with userId of {user.UserAccountId} and woodland owner id supplied of {woodlandOwnerId}");
                 }
 
-                var result = applications.Value.Select(a =>
+                var result = filteredApplications.Select(a =>
                 {
                     var match = propertyProfilesDictionary.TryGetValue(a.LinkedPropertyProfile!.PropertyProfileId,
                         out var profile);
@@ -212,7 +227,8 @@ public class CreateFellingLicenceApplicationUseCase(
                             : null,
                         a.WoodlandOwnerId,
                         woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
-                        woodlandOwnerNameAndAgencyDetails.Value.AgencyName);
+                        woodlandOwnerNameAndAgencyDetails.Value.AgencyName,
+                        a.ApprovedInError?.PreviousReference);
                 });
 
                 return Result.Success(result);
@@ -1449,6 +1465,16 @@ public class CreateFellingLicenceApplicationUseCase(
                 StepComplete = application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus,
                 StepRequiredForApplication = user.IsFcUser
             },
+            PawsAndIawp = new PawsDesignationsViewModel
+            {
+                ApplicationId = applicationId,
+                ApplicationReference = application.Value.ApplicationReference,
+                FellingLicenceStatus = application.Value.GetCurrentStatus(),
+                StepRequiredForApplication = application.Value.DoesApplicationRequirePawsDataInput(),
+                PawsCompartmentsCount = application.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Count,
+                PawsCompartmentsCompleteCount = application.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses
+                    .Count(x => x.Status is true)
+            },
             CurrentReviewModel = currentReview.Value.TryGetValue(out var current)
                 ? current
                 : null
@@ -1464,13 +1490,39 @@ public class CreateFellingLicenceApplicationUseCase(
             applicationModel.SupportingDocumentation.StepComplete = false;
         }
 
+        // Calculate an overall status for PAWS designations
+
+        bool? pawsDesignationsStepComplete = null;
+
+        if (applicationModel.PawsAndIawp.StepRequiredForApplication)
+        {
+            if (application.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.TrueForAll(x => x.Status is null))
+            {
+                // NOT STARTED
+                pawsDesignationsStepComplete = null;
+            }
+            else if (application.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.TrueForAll(
+                         x => x.Status is true))
+            {
+                // COMPLETE
+                pawsDesignationsStepComplete = true;
+            }
+            else
+            {
+                // IN PROGRESS
+                pawsDesignationsStepComplete = false;
+            }
+        }
+
+        applicationModel.PawsAndIawp.StepComplete = pawsDesignationsStepComplete;
 
         // Calculate an overall status for combined felling and restocking details
 
         bool? fellingAndRestockingDetailsStepComplete;
 
-        if (application.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.TrueForAll(x =>
-                x.OverallCompletion() is null))
+        if (application.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses
+            .TrueForAll(x => x.OverallCompletion() is null)
+            && fellingLicenceStatus == FellingLicenceStatus.Draft)
         {
             // NOT STARTED
 
@@ -1589,6 +1641,7 @@ public class CreateFellingLicenceApplicationUseCase(
         var controllerName = "FellingLicenceApplication";
 
         var requiresEia = application.ShouldApplicationRequireEia();
+        var requiresPaws = application.DoesApplicationRequirePawsDataInput();
 
         var fellingAndRestockingPlaybackViewModel = new FellingAndRestockingPlaybackViewModel()
         {
@@ -1605,9 +1658,11 @@ public class CreateFellingLicenceApplicationUseCase(
             FellingLicenceStatus = application.GetCurrentStatus(),
             SaveAndContinueContext = new UrlActionContext
             {
-                Action = requiresEia
-                    ? nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment) 
-                    : nameof(FellingLicenceApplicationController.ConstraintsCheck),
+                Action = requiresPaws
+                    ? nameof(FellingLicenceApplicationController.PawsCheck)
+                    : requiresEia
+                        ? nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment) 
+                        : nameof(FellingLicenceApplicationController.ConstraintsCheck),
                 Controller = controllerName,
                 Values = new Dictionary<string, string>
                 {
@@ -1873,6 +1928,13 @@ public class CreateFellingLicenceApplicationUseCase(
         Guid compartmentId,
         CancellationToken cancellationToken)
     {
+        var userAccessModel = await GetUserAccessModelAsync(user, cancellationToken).ConfigureAwait(false);
+        if (userAccessModel.IsFailure)
+        {
+            _logger.LogWarning("Unable to retrieve user access for user with id {UserId}", user.UserAccountId);
+            return Maybe<FellingAndRestockingDetailViewModel>.None;
+        }
+
         var compartmentDetails = await GetCompartmentDetails(compartmentId, user, cancellationToken);
 
         if (compartmentDetails is null)
@@ -1937,7 +1999,7 @@ public class CreateFellingLicenceApplicationUseCase(
         }
 
         var woodlandOwnerNameAndAgencyDetails =
-            await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, cancellationToken);
+            await GetWoodlandOwnerNameAndAgencyForApplication(application.Value, userAccessModel.Value, cancellationToken);
         if (woodlandOwnerNameAndAgencyDetails.IsFailure)
         {
             _logger.LogWarning("Unable to get woodland owner details for application, error : {Error}",
@@ -2953,6 +3015,28 @@ public class CreateFellingLicenceApplicationUseCase(
                 return Result.Failure("Could not update Felling Licence Application confirmed felling and restocking details");
             }
 
+            var convertDesignations = await _updateFellingLicenceApplicationService
+                .ConvertProposedCompartmentDesignationsToSubmittedAsync(applicationId, userAccess.Value, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (convertDesignations.IsFailure)
+            {
+                await _auditService.PublishAuditEventAsync(new AuditEvent(
+                        AuditEvents.UpdateFellingLicenceApplicationFailure,
+                        applicationId,
+                        user.UserAccountId,
+                        _requestContext,
+                        new
+                        {
+                            Section = "Submit FLA (Compartment designations)",
+                            Error = convertDesignations.Error
+                        }),
+                    cancellationToken);
+
+                await PublishFailures(applicationId, user, cancellationToken, isResubmission, convertDesignations.Error);
+                return Result.Failure("Could not update Felling Licence Application compartment designations");
+            }
+
             var reference = updateResult.Value.ApplicationReference;
 
             var adminHubFooter = string.IsNullOrWhiteSpace(updateResult.Value.AdminHubName)
@@ -3561,6 +3645,13 @@ public class CreateFellingLicenceApplicationUseCase(
         Guid applicationId,
         CancellationToken cancellationToken)
     {
+        var userAccessModel = await GetUserAccessModelAsync(user, cancellationToken).ConfigureAwait(false);
+        if (userAccessModel.IsFailure)
+        {
+            _logger.LogWarning("Unable to retrieve user access for user with id {UserId}", user.UserAccountId);
+            return userAccessModel.ConvertFailure<FellingLicenceApplicationSummaryViewModel>();
+        }
+
         var application = await RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
 
         if (application.HasNoValue)
@@ -3584,6 +3675,7 @@ public class CreateFellingLicenceApplicationUseCase(
 
         var woodlandOwner = await GetWoodlandOwnerByIdAsync(
             application.Value.WoodlandOwnerId,
+            userAccessModel.Value,
             cancellationToken).ConfigureAwait(false);
 
         if (woodlandOwner.IsFailure)
@@ -3624,10 +3716,26 @@ public class CreateFellingLicenceApplicationUseCase(
             application.Value.ApplicationSummary.WoodlandOwnerId!.Value,
             cancellationToken).ConfigureAwait(false);
 
+        var pawsDesignationsModels = await GetPawsCompartmentDesignationModelsForApplication(
+            applicationId,
+            user,
+            property.Value,
+            cancellationToken).ConfigureAwait(false);
+
+        if (pawsDesignationsModels.IsFailure)
+        {
+            _logger.LogError(
+                "Failed to retrieve PAWS designations for application with id {ApplicationId}",
+                applicationId);
+            return Result.Failure<FellingLicenceApplicationSummaryViewModel>(
+                "Could not retrieve PAWS designations for application");
+        }
+
         result.WoodlandOwner = woodlandOwner.Value;
         result.PropertyProfile = property.Value;
         result.Agency = agency.HasValue ? agency.Value : null;
         result.FellingAndRestocking = fellingAndRestocking.Value;
+        result.PawsCompartmentDesignations = pawsDesignationsModels.Value;
 
         return Result.Success(result);
     }
@@ -3800,5 +3908,38 @@ public class CreateFellingLicenceApplicationUseCase(
             await _updateFellingLicenceApplicationService.UpdateSubmittedFlaPropertyCompartmentZonesAsync(compartmentId,
                 zone1, zone2, zone3, cancellationToken);
         }
+    }
+
+    private async Task<Result<List<PawsCompartmentDesignationsModel>>> GetPawsCompartmentDesignationModelsForApplication(
+        Guid applicationId,
+        ExternalApplicant user,
+        PropertyProfile propertyProfile,
+        CancellationToken cancellationToken)
+    {
+        var applicationResult = await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
+
+        if (applicationResult.IsFailure)
+        {
+            return applicationResult.ConvertFailure<List<PawsCompartmentDesignationsModel>>();
+        }
+
+        var application = applicationResult.Value;
+
+        var pawsStepStatuses = application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses;
+        var pawsDesignationEntities = application.LinkedPropertyProfile.ProposedCompartmentDesignations
+            .Where(x => pawsStepStatuses.Any(p => p.CompartmentId == x.PropertyProfileCompartmentId))
+            .ToList();
+
+        var results = pawsDesignationEntities.Select(x => new PawsCompartmentDesignationsModel
+        {
+            Id = x.Id,
+            CrossesPawsZones = x.CrossesPawsZones,
+            PropertyProfileCompartmentId = x.PropertyProfileCompartmentId,
+            PropertyProfileCompartmentName = propertyProfile.Compartments.SingleOrDefault(p => p.Id == x.PropertyProfileCompartmentId)?.CompartmentNumber ?? "Unknown compartment",
+            ProportionBeforeFelling = x.ProportionBeforeFelling,
+            ProportionAfterFelling = x.ProportionAfterFelling
+        }).ToList();
+
+        return Result.Success(results);
     }
 }

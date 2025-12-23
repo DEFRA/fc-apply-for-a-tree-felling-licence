@@ -1,0 +1,132 @@
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.PawsDesignations.PawsDesignationsViewModel
+
+@{
+    ViewData["Title"] = $"{Model.CompartmentDesignation.PropertyProfileCompartmentName} has been identified as being within an ancient woodland";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new
+        {
+            applicationId = Model.ApplicationId
+        }));
+    }
+    ViewData.ShowBackLink();
+}
+
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+
+<partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+
+<div class="govuk-grid-column-two-thirds">
+    
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    
+    <p class="govuk-body">
+        <b>Plantation Ancient Woodlands & Infilled Ancient Wood Pasture (PAWS)</b> refers to ancient woodland areas that have
+        been replanted with non-native species or infilled. These sites are important for biodiversity and may be suitable for
+        restoration.
+    </p>
+
+    <form method="post">
+
+        @Html.HiddenFor(x => x.ApplicationId)
+        @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+        @Html.HiddenFor(x => x.FellingLicenceStatus)
+        
+        @Html.HiddenFor(x => x.CompartmentDesignation.Id)
+        @Html.HiddenFor(x => x.CompartmentDesignation.PropertyProfileCompartmentId)
+        @Html.HiddenFor(x => x.CompartmentDesignation.PropertyProfileCompartmentName)
+        @Html.HiddenFor(x => x.CompartmentDesignation.CrossesPawsZones)
+
+        <govuk-form-group asp-for="CompartmentDesignation.ProportionBeforeFelling">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">
+                        What proportion of native tree species make up this compartment
+                    </h2>
+                </legend>
+                <validation asp-for="CompartmentDesignation.ProportionBeforeFelling"></validation>
+                <select
+                    class="govuk-select"
+                    asp-for="CompartmentDesignation.ProportionBeforeFelling"
+                    asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()">
+                    <option value="">Select an option</option>
+                </select>
+            </fieldset>
+        </govuk-form-group>
+        
+        <govuk-form-group asp-for="CompartmentDesignation.ProportionAfterFelling">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">
+                        What proportion of native tree species will be left in the
+                        compartment based on the proposed felling
+                    </h2>
+                </legend>
+                <validation asp-for="CompartmentDesignation.ProportionAfterFelling"></validation>
+                <select
+                    class="govuk-select"
+                    asp-for="CompartmentDesignation.ProportionAfterFelling"
+                    asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()">
+                    <option value="">Select an option</option>
+                </select>
+            </fieldset>
+        </govuk-form-group>
+        
+        <govuk-form-group asp-for="CompartmentDesignation.IsRestoringCompartment">
+            <fieldset class="govuk-fieldset" aria-describedby="is-restoring-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">
+                        Are you restoring this compartment?
+                    </h2>
+                </legend>
+                <div id="is-restoring-hint" class="govuk-hint">
+                    You may be restoring this compartment for biodiversity reasons e.g.
+                    increasing native species, improving habitat, long-term management
+                    intentions
+                </div>
+                <validation asp-for="CompartmentDesignation.IsRestoringCompartment"></validation>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input type="radio" class="govuk-radios__input" asp-for="CompartmentDesignation.IsRestoringCompartment" value="@true" data-aria-controls="restoration-conditional" />
+                        <label class="govuk-label govuk-radios__label" asp-for="CompartmentDesignation.IsRestoringCompartment">
+                            Yes
+                        </label>
+                    </div>
+                    
+                    <div class="govuk-radios__conditional" id="restoration-conditional">
+                        <govuk-form-group asp-for="CompartmentDesignation.RestorationDetails">
+                            <label class="govuk-label" asp-for="CompartmentDesignation.RestorationDetails">
+                                Why is this compartment being restored?
+                            </label>
+                            <div class="govuk-hint">
+                                Provide a short explanation of the restoration goals
+                            </div>
+                            <validation asp-for="CompartmentDesignation.RestorationDetails"></validation>
+                            <textarea class="govuk-textarea"
+                                      asp-for="CompartmentDesignation.RestorationDetails"
+                                      rows="3"
+                                      maxlength="500"></textarea>
+                        </govuk-form-group>
+                    </div>
+                    
+                    <div class="govuk-radios__item">
+                        <input type="radio" class="govuk-radios__input" id="is-restoring-no" asp-for="CompartmentDesignation.IsRestoringCompartment"  value="@false"/>
+                        <label class="govuk-label govuk-radios__label" for="is-restoring-no">
+                            No
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </govuk-form-group>
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
+                Continue
+            </button>
+        </div>
+    </form>
+</div>

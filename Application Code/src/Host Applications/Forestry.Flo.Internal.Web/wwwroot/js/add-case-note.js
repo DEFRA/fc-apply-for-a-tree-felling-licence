@@ -2,11 +2,11 @@
 
     $(document).ready(setButtonState);
 
-    $('#add-case-note-text').on('change keyup paste selectionchange', setButtonState);
+    $('#Text').on('change keyup paste selectionchange', setButtonState);
 
     function setButtonState() {
 
-        var text = $('#add-case-note-text').val();
+        var text = $('#Text').val();
 
         if (text == null || text.trim() === '') {
             $('#save-case-note-btn').attr('disabled', 'disabled');

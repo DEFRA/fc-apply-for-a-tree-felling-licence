@@ -9,6 +9,7 @@ using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -166,7 +167,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         MockFlaRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
-        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<WoodlandOwnerModel>(UserDbErrorReason.NotFound.ToString()));
 
         var result = await runTest();
@@ -174,7 +175,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         Assert.True(result.IsFailure);
 
         MockFlaRepository.Verify(x => x.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
-        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         MockRetrieveUserAccountsService.VerifyNoOtherCalls();
         assertInternalUserAccountService?.Invoke();
         MockInternalUserAccountService.VerifyNoOtherCalls();
@@ -197,7 +198,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         MockFlaRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
-        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         MockRetrieveUserAccountsService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.Is<Guid>(u => u == fla.CreatedById), It.IsAny<CancellationToken>()))
@@ -211,7 +212,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         Assert.True(result.IsFailure);
 
         MockFlaRepository.Verify(x => x.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
-        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         assertInternalUserAccountService?.Invoke();
         MockInternalUserAccountService.VerifyNoOtherCalls();
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y => y.EventName == AuditEvents.AssignFellingLicenceApplicationToApplicantFailure), It.IsAny<CancellationToken>()), Times.Once);
@@ -233,7 +234,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         MockFlaRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
-        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         MockRetrieveUserAccountsService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.Is<Guid>(u => u == fla.CreatedById), It.IsAny<CancellationToken>()))
@@ -247,7 +248,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         Assert.True(result.IsFailure);
 
         MockFlaRepository.Verify(x => x.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
-        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         MockInternalUserAccountService.Verify(x => x.GetUserAccountAsync(assigneeHistory.AssignedUserId, It.IsAny<CancellationToken>()), Times.Once);
         assertInternalUserAccountService?.Invoke();
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y => y.EventName == AuditEvents.AssignFellingLicenceApplicationToApplicantFailure), It.IsAny<CancellationToken>()), Times.Once);
@@ -275,7 +276,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         MockFlaRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
-        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         MockRetrieveUserAccountsService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -308,7 +309,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         Assert.NotNull(result.Value.FellingLicenceApplicationSummary);
 
         MockFlaRepository.Verify(x => x.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
-        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         MockInternalUserAccountService.Verify(x => x.GetUserAccountAsync(internalAssigneeHistory.AssignedUserId, It.IsAny<CancellationToken>()), Times.Once);
         MockAuditService.VerifyNoOtherCalls();
 
@@ -323,6 +324,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
             ? woodlandOwner.OrganisationName!
             : woodlandOwner.ContactName!;
         Assert.Equal(expectedWoodlandOwnerName, result.Value.FellingLicenceApplicationSummary.WoodlandOwnerName);
+        Assert.Equal(fla.WoodlandManagementPlanReference, result.Value.FellingLicenceApplicationSummary.WoodlandManagementPlanReference);
 
         Assert.Equal(2, result.Value.FellingLicenceApplicationSummary.AssigneeHistories.Count);
 
@@ -378,7 +380,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         MockFlaRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
 
-        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerService.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
 
         MockRetrieveUserAccountsService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -410,7 +412,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
         Assert.True(result.IsFailure);
 
         MockFlaRepository.Verify(x => x.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
-        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<CancellationToken>()), Times.Once);
+        MockWoodlandOwnerService.Verify(x => x.RetrieveWoodlandOwnerByIdAsync(fla.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y => y.EventName == AuditEvents.AssignFellingLicenceApplicationToApplicantFailure), It.IsAny<CancellationToken>()), Times.Once);
 
         if (!authorIsFcAgent)

@@ -41,9 +41,18 @@
                             </legend>
                             <validation asp-for="SelectedCompartmentId"></validation>
                             <div class="govuk-radios" data-module="govuk-radios">
+                                
+                                @{
+                                    var firstOutput = true;
+                                }
+
                                 @foreach (var compartment in Model.SelectableCompartments)
                                 {
-                                    var id = $"compartment-radio-item-{compartment.Id}";
+                                    var id = firstOutput
+                                        ? "SelectedCompartmentId"
+                                        : $"compartment-radio-item-{compartment.Id}";
+                                    firstOutput = false;
+
                                     <div class="govuk-radios__item">
                                         @Html.RadioButtonFor(x => x.SelectedCompartmentId, compartment.Id, new { @class = "govuk-radios__input", @id = @id })
                                         <label class="govuk-label govuk-radios__label" for="@id">

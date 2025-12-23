@@ -392,6 +392,12 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         string? adminHubName,
         CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Adds or updates the approver review for the specified application.
+    /// </summary>
+    /// <param name="approverReview">The approver review entity to add or update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="UnitResult{TError}"/> indicating success or failure.</returns>
     Task<UnitResult<UserDbErrorReason>> AddOrUpdateApproverReviewAsync(ApproverReview approverReview, CancellationToken cancellationToken);
 
     /// <summary>
@@ -425,15 +431,17 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     Task<UnitResult<UserDbErrorReason>> DeleteApproverReviewAsync(Guid applicationId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Attempts to set the approver id of the application with the given id.
+    /// Attempts to set the approver id and licence expiry date of the application with the given id.
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
     /// <param name="approverId">The id of the approver to set on the application, or null to remove any existing one.</param>
+    /// <param name="licenceExpiryDate">The licence expiry date to set on the application, or null if not applicable.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result indicating whether the update was successful.</returns>
-    Task<UnitResult<UserDbErrorReason>> SetApplicationApproverAsync(
+    Task<UnitResult<UserDbErrorReason>> SetApplicationApproverAndExpiryDateAsync(
         Guid applicationId,
         Guid? approverId,
+        DateTime? licenceExpiryDate,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -617,5 +625,36 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <returns>A list of applications whose amendment response deadlines have passed.</returns>
     Task<IList<FellingLicenceApplication>> GetApplicationsForLateAmendmentWithdrawalAsync(
         DateTime currentTime,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the Approved In Error record for the specified application, if present.
+    /// </summary>
+    /// <param name="applicationId">The application identifier.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Maybe{T}"/> containing the <see cref="ApprovedInError"/> record when found; otherwise None.
+    /// </returns>
+    Task<Maybe<ApprovedInError>> GetApprovedInErrorAsync(Guid applicationId, CancellationToken cancellationToken);
+ 
+    /// <summary>
+    /// Adds a new Approved In Error record or updates the existing one for the specified application.
+    /// </summary>
+    /// <param name="approvedInError">The entity to add or update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="UnitResult{UserDbErrorReason}"/> indicating success or failure.
+    /// </returns>
+    Task<UnitResult<UserDbErrorReason>> AddOrUpdateApprovedInErrorAsync(ApprovedInError approvedInError, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Gets a list of the proposed compartment designations for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to retrieve proposed compartment
+    /// designations for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A list of <see cref="ProposedCompartmentDesignations"/> entities.</returns>
+    Task<List<ProposedCompartmentDesignations>> GetProposedCompartmentDesignationsForApplicationAsync(
+        Guid applicationId,
         CancellationToken cancellationToken);
 }

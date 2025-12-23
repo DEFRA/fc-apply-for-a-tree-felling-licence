@@ -11,6 +11,7 @@ using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -21,6 +22,7 @@ using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
 using MassTransit;
+using Microsoft.Extensions.Options;
 using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
@@ -41,6 +43,7 @@ public class WoodlandOfficerReviewUseCase(
     IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
     RequestContext requestContext,
     IBus busControl,
+    IOptions<FellingLicenceApplicationOptions> fellingLicenceApplicationOptions,
     ILogger<WoodlandOfficerReviewUseCase> logger)
     : FellingLicenceApplicationUseCaseBase(internalUserAccountService,
         externalUserAccountService,
@@ -57,6 +60,7 @@ public class WoodlandOfficerReviewUseCase(
     private readonly ISendNotifications _emailService = Guard.Against.Null(emailService);
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
     private readonly IActivityFeedItemProvider _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
+    private readonly FellingLicenceApplicationOptions _fellingLicenceApplicationOptions = Guard.Against.Null(fellingLicenceApplicationOptions?.Value);
 
     /// <inheritdoc />
     public async Task<Result<WoodlandOfficerReviewModel>> WoodlandOfficerReviewAsync(
@@ -102,6 +106,21 @@ public class WoodlandOfficerReviewUseCase(
             return activityFeedItems.ConvertFailure<WoodlandOfficerReviewModel>();
         }
 
+        var recommendedDuration = woodlandOfficerReviewStatus.Value.RecommendedLicenceDuration;
+        if (recommendedDuration == null)
+        {
+            var defaultRecommendedLicenceDuration = Enum.IsDefined(typeof(RecommendedLicenceDuration), _fellingLicenceApplicationOptions.DefaultLicenseDuration)
+                ? (RecommendedLicenceDuration)_fellingLicenceApplicationOptions.DefaultLicenseDuration
+                : RecommendedLicenceDuration.None; // or another fallback if None is not appropriate
+
+            if (application.Value.IsForTenYearLicence)
+            {
+                defaultRecommendedLicenceDuration = RecommendedLicenceDuration.TenYear;
+            }
+
+            recommendedDuration = defaultRecommendedLicenceDuration;
+        }
+
         var result = new WoodlandOfficerReviewModel
         {
             ApplicationId = applicationId,
@@ -119,9 +138,10 @@ public class WoodlandOfficerReviewUseCase(
                 ShowFilters = false
             },
             WoodlandOfficerReviewTaskListStates = woodlandOfficerReviewStatus.Value.WoodlandOfficerReviewTaskListStates,
-            RecommendedLicenceDuration = woodlandOfficerReviewStatus.Value.RecommendedLicenceDuration,
+            RecommendedLicenceDuration = recommendedDuration,
             RecommendationForDecisionPublicRegister = woodlandOfficerReviewStatus.Value.RecommendationForDecisionPublicRegister,
-            RecommendationForDecisionPublicRegisterReason = woodlandOfficerReviewStatus.Value.RecommendationForDecisionPublicRegisterReason
+            RecommendationForDecisionPublicRegisterReason = woodlandOfficerReviewStatus.Value.RecommendationForDecisionPublicRegisterReason,
+            SupplementaryPoints = woodlandOfficerReviewStatus.Value.SupplementaryPoints
         };
         result.WoodlandOfficerReviewCommentsFeed.ShowAddCaseNote = result.Editable(user);
 
@@ -137,6 +157,7 @@ public class WoodlandOfficerReviewUseCase(
         bool? recommendationForDecisionPublicRegister,
         string recommendationForPublicRegisterReason,
         string internalLinkToApplication,
+        string? supplementaryPoints,
         InternalUser user, 
         CancellationToken cancellationToken)
     {
@@ -152,6 +173,7 @@ public class WoodlandOfficerReviewUseCase(
             recommendedLicenceDuration,
             recommendationForDecisionPublicRegister,
             recommendationForPublicRegisterReason,
+            supplementaryPoints,
             now,
             cancellationToken);
 

@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using System.Globalization;
+using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.HostApplicationsCommon.Services;
 
@@ -103,17 +104,19 @@ public abstract class GeneratePdfApplicationUseCaseBase
             return Result.Failure<PDFGeneratorRequest>(userAccount.Error);
         }
 
-        var woodlandOwner = await _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, cancellationToken);
+        var userAccess = UserAccessModel.SystemUserAccessModel;
+
+        var woodlandOwner = await _woodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, userAccess, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             _logger.LogError("Unable to retrieve woodland owner of id {WoodlandOwnerId}, error: {Error}", application.WoodlandOwnerId, woodlandOwner.Error);
             return Result.Failure<PDFGeneratorRequest>(woodlandOwner.Error);
         }
-
-        var approverAccount = await _internalAccountService.GetUserAccountAsync(application.ApproverId ?? Guid.Empty, cancellationToken);
+        var approverId = application.ApprovedInError?.ApproverId ?? application.ApproverId ?? Guid.Empty;
+        var approverAccount = await _internalAccountService.GetUserAccountAsync(approverId, cancellationToken);
         if (application.ApproverId.HasValue && approverAccount.HasNoValue)
         {
-            _logger.LogError("Unable to retrieve approver user account of id {ApproverId}", application.ApproverId);
+            _logger.LogError("Unable to retrieve approver user account of id {ApproverId}", approverId);
         }
 
         var propertyProfile = await _propertyProfileRepository.GetAsync(application.LinkedPropertyProfile!.PropertyProfileId, application.WoodlandOwnerId, cancellationToken);
@@ -152,31 +155,33 @@ public abstract class GeneratePdfApplicationUseCaseBase
         };
         var ownerAddressFormatted = string.Join("\n", ownerAddress.Where(x => !string.IsNullOrEmpty(x)));
 
-        // Expiry Date
-
+        // licenseDuration/Expiry Date, & supplementary points from WO review or AIE corrections
+        string? overallSupplementaryPoints = null;
+        RecommendedLicenceDuration? recommendedLicenceDuration = null;
         RecommendedLicenceDuration? licenseDuration = null;
-        var approverReview = await _approverReviewService.GetApproverReviewAsync(application.Id, cancellationToken);
-        if (approverReview.HasNoValue)
-        {
-            _logger.LogWarning("Could not retrieve confirmed licence duration on Approver Review for application with id {ApplicationId}", application.Id);
-            var woodlandOfficerReview = await _getWoodlandOfficerReviewService.GetWoodlandOfficerReviewStatusAsync(
-                application.Id, cancellationToken);
+        var woodlandOfficerReview = await _getWoodlandOfficerReviewService.GetWoodlandOfficerReviewStatusAsync(
+            application.Id, cancellationToken);
 
-            if (woodlandOfficerReview.IsFailure)
-            {
-                _logger.LogError("Could not retrieve recommended licence duration on WO Review for application with id {ApplicationId}, error {Error}", application.Id, woodlandOfficerReview.Error);
-            }
-            else
-            {
-                licenseDuration = woodlandOfficerReview.Value.RecommendedLicenceDuration;
-            }
+        if (woodlandOfficerReview.IsFailure)
+        {
+            _logger.LogError("Could not retrieve recommended licence duration on WO Review for application with id {ApplicationId}, error {Error}", application.Id, woodlandOfficerReview.Error);
         }
         else
         {
-            licenseDuration = approverReview.Value.ApprovedLicenceDuration;
+            recommendedLicenceDuration = woodlandOfficerReview.Value.RecommendedLicenceDuration;
+            overallSupplementaryPoints = application.ApprovedInError?.SupplementaryPointsText ?? woodlandOfficerReview.Value.SupplementaryPoints;
         }
+        
+        var approverReview = await _approverReviewService.GetApproverReviewAsync(application.Id, cancellationToken);
+        
+        licenseDuration = approverReview.HasNoValue ? recommendedLicenceDuration : approverReview.Value.ApprovedLicenceDuration;
 
-        var expiryDate = licenseDuration.GetExpiryDateForRecommendedDuration(_clock);
+        // Use the licence expiry date from the application entity, or calculate from the duration if not present
+        // Priority order: ApprovedInError.LicenceExpiryDate > Application.LicenceExpiryDate > Calculated from duration
+        var licenceExpiryDate = 
+            application.ApprovedInError?.LicenceExpiryDate 
+            ?? application.LicenceExpiryDate 
+            ?? GetExpiryDateForDuration(licenseDuration, _clock);
 
         // Part 1 - Description of the trees to be felled
         // Part 2 - restocking Conditions & Set list of restocking and felling compartments for maps
@@ -297,20 +302,23 @@ public abstract class GeneratePdfApplicationUseCaseBase
         }
 
         // Part 3 - Supplementary point, *** this will need an update to match https://quicksilva.atlassian.net/browse/FLOV2-919
-        string supplementPoints;
+        var supplementPoints = application.IsForTenYearLicence is true
+            ? $"This licence is issued in summary relating to the Management Plan referenced {application.WoodlandManagementPlanReference ?? ""} " +
+              "and associated Plan of Operations and final maps. These must be attached to the licence at all times."
+            : string.Empty;
 
-        if (licenseDuration == RecommendedLicenceDuration.TenYear)
+        if (!string.IsNullOrWhiteSpace(overallSupplementaryPoints))
         {
-            var managementPlanText = propertyProfile.Value.WoodlandManagementPlanReference == null ? string.Empty : "Management Plan referenced ";
-            supplementPoints =
-                $"This license is issued in summary relating to the {managementPlanText}{propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} and associated {propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} Final Plan of Ops and {propertyProfile.Value.WoodlandManagementPlanReference ?? ""} {propertyProfile.Value.Name} Final Maps. Full details of the felling and restocking conditions agreed under this licence can be found in the above mentioned Plan of Operations and maps that must be attached to this licence at all times.";
+            supplementPoints += string.IsNullOrEmpty(supplementPoints) ? overallSupplementaryPoints : $"\n\n{overallSupplementaryPoints}";
         }
-        else
+
+        // if there's still no supplementPoints, and we didn't get anything (not even empty string) from either WO review or AIE, then set to "To be confirmed"
+        if (string.IsNullOrWhiteSpace(supplementPoints) && overallSupplementaryPoints == null)
         {
-            supplementPoints = "To be confirmed\n";
+            supplementPoints = "To be confirmed";
         }
+
         // Part 4 - Felling maps ******
-
         _logger.LogDebug("Generating Felling maps for application with id {ApplicationId}", application.Id);
 
         var operationsMaps = new List<string>();
@@ -327,7 +335,8 @@ public abstract class GeneratePdfApplicationUseCaseBase
                     }).ToList();
 
 
-            var generatedMainFellingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(fellingCompartmentMap, cancellationToken, 3000);
+            var generatedMainFellingMap = await _iForesterServices
+                .GenerateImage_MultipleCompartmentsAsync(application.ApplicationReference, application.OSGridReference, propertyProfile.Value.NearestTown, fellingCompartmentMap, cancellationToken, 3000);
             if (generatedMainFellingMap.IsFailure)
             {
                 _logger.LogError("Unable to retrieve Generated Map of application with id {ApplicationId}, error: {Error}", application.WoodlandOwnerId, generatedMainFellingMap.Error);
@@ -359,7 +368,8 @@ public abstract class GeneratePdfApplicationUseCaseBase
                         SubCompartmentNo = compartment.SubCompartmentName!
                     }).ToList();
 
-            var generatedMainRestockingMap = await _iForesterServices.GenerateImage_MultipleCompartmentsAsync(restockingCompartmentsMaps, cancellationToken, 3000);
+            var generatedMainRestockingMap = await _iForesterServices
+                .GenerateImage_MultipleCompartmentsAsync(application.ApplicationReference, application.OSGridReference, propertyProfile.Value.NearestTown, restockingCompartmentsMaps, cancellationToken, 3000);
             if (generatedMainRestockingMap.IsFailure)
             {
                 _logger.LogError("Unable to retrieve Generated Map of application with id {ApplicationId}, error: {error}", application.Id, generatedMainRestockingMap.Error);
@@ -391,7 +401,7 @@ public abstract class GeneratePdfApplicationUseCaseBase
                 woodName = propertyProfile.Value.Name,
                 ownerNameWithTitle = woodlandOwner.Value.ContactName,
                 ownerAddress = ownerAddressFormatted,
-                expiryDate = expiryDate,
+                expiryDate = licenceExpiryDate?.CreateFormattedDate() ?? "To be confirmed",
                 approverName = approverName,
                 propertyName = propertyProfile.Value.Name,
                 localAuthority = propertyProfile.Value.NearestTown,
@@ -405,5 +415,54 @@ public abstract class GeneratePdfApplicationUseCaseBase
 
         result.MakeSafeForPdfService();
         return result;
+    }
+
+    /// <summary>
+    /// Calculates the licence expiry date for the given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to calculate the expiry date for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>Returns the calculated expiry date, or null if it cannot be determined.</returns>
+    public async Task<DateTime?> CalculateLicenceExpiryDateAsync(Guid applicationId, CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Calculating licence expiry date for application with id {ApplicationId}", applicationId);
+        
+        RecommendedLicenceDuration? licenseDuration = null;
+        var approverReview = await _approverReviewService.GetApproverReviewAsync(applicationId, cancellationToken);
+        
+        if (approverReview.HasNoValue)
+        {
+            _logger.LogWarning("Could not retrieve confirmed licence duration on Approver Review for application with id {ApplicationId}", applicationId);
+            var woodlandOfficerReview = await _getWoodlandOfficerReviewService.GetWoodlandOfficerReviewStatusAsync(
+                applicationId, cancellationToken);
+
+            if (woodlandOfficerReview.IsFailure)
+            {
+                _logger.LogError("Could not retrieve recommended licence duration on WO Review for application with id {ApplicationId}, error {Error}", applicationId, woodlandOfficerReview.Error);
+            }
+            else
+            {
+                licenseDuration = woodlandOfficerReview.Value.RecommendedLicenceDuration;
+            }
+        }
+        else
+        {
+            licenseDuration = approverReview.Value.ApprovedLicenceDuration;
+        }
+
+        var expiryDate = GetExpiryDateForDuration(licenseDuration, _clock);
+        return expiryDate;
+    }
+
+    private DateTime? GetExpiryDateForDuration(RecommendedLicenceDuration? duration, IClock clock)
+    {
+        if (duration is null or RecommendedLicenceDuration.None)
+        {
+            return null;
+        }
+
+        var now = clock.GetCurrentInstant().ToDateTimeUtc();
+
+        return now.AddYears((int)duration);
     }
 }

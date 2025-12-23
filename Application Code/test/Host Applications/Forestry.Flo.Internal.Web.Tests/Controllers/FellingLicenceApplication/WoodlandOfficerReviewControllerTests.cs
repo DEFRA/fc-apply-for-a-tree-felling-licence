@@ -142,7 +142,7 @@ public class WoodlandOfficerReviewControllerTests
 
         useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(reviewModel));
-        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<bool>("fail"));
 
         var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
@@ -182,7 +182,7 @@ public class WoodlandOfficerReviewControllerTests
 
         useCase.Setup(x => x.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(reviewModel));
-        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        useCase.Setup(x => x.CompleteWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<RecommendedLicenceDuration>(), It.IsAny<bool?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
 
         var validator = new Mock<IValidator<WoodlandOfficerReviewModel>>();
@@ -442,10 +442,23 @@ public class WoodlandOfficerReviewControllerTests
             }
         };
 
+        var existingModel =
+            _fixture.Build<PublicRegisterViewModel>()
+                .With(x => x.PublicRegister)
+                .Create();
+        useCase.Setup(x => x.GetPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingModel);
+
         var result = await _controller.SaveExemption(model, useCase.Object, CancellationToken.None);
 
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("PublicRegister", redirect.ActionName);
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal("PublicRegister", view.ViewName);
+
+        Assert.False(view.ViewData.ModelState.IsValid);
+        Assert.Contains("PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason", view.ViewData.ModelState.Keys);
+
+        useCase.Verify(x => x.GetPublicRegisterDetailsAsync(_applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        useCase.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -499,13 +512,31 @@ public class WoodlandOfficerReviewControllerTests
         var model = new PublicRegisterViewModel
         {
             ApplicationId = _applicationId,
-            PublicRegister = new() { ConsultationPublicRegisterPeriodDays = null }
+            PublicRegister = new()
+            {
+                ConsultationPublicRegisterPeriodDays = null,
+                WoodlandOfficerSetAsExemptFromConsultationPublicRegister = false,
+                WoodlandOfficerConsultationPublicRegisterExemptionReason = null
+            }
         };
+
+        var existingModel =
+            _fixture.Build<PublicRegisterViewModel>()
+                .With(x => x.PublicRegister)
+                .Create();
+        useCase.Setup(x => x.GetPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingModel);
 
         var result = await _controller.PublishToConsultationPublicRegister(model, useCase.Object, CancellationToken.None);
 
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("PublicRegister", redirect.ActionName);
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal("PublicRegister", view.ViewName);
+
+        Assert.False(view.ViewData.ModelState.IsValid);
+        Assert.Contains("PublicRegister.ConsultationPublicRegisterPeriodDays", view.ViewData.ModelState.Keys);
+
+        useCase.Verify(x => x.GetPublicRegisterDetailsAsync(_applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        useCase.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -1883,6 +1914,7 @@ public class WoodlandOfficerReviewControllerTests
         model.CompartmentDesignations.CompartmentDesignations.Add(
             _fixture.Build<SubmittedCompartmentDesignationsModel>()
                 .Without(x => x.Id)
+                .With(x => x.HasBeenReviewed, false)
                 .Create());
 
         useCase.Setup(s => s.GetApplicationDesignationsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -1915,8 +1947,17 @@ public class WoodlandOfficerReviewControllerTests
     public async Task ViewDesignations_Post_RedirectsToViewDesignations_WhenSuccess()
     {
         var useCase = new Mock<IDesignationsUseCase>();
-        var model = _fixture.Create<DesignationsViewModel>();
-
+        var compartmentDesignations = _fixture
+            .Build<SubmittedCompartmentDesignationsModel>()
+            .With(x => x.HasBeenReviewed, true)
+            .CreateMany();
+        var containedModel = _fixture
+            .Build<ApplicationSubmittedCompartmentDesignations>()
+            .With(x => x.CompartmentDesignations, compartmentDesignations.ToList())
+            .Create();
+        var model = _fixture.Build<DesignationsViewModel>()
+            .With(x => x.CompartmentDesignations, containedModel)
+            .Create();
 
         useCase.Setup(s => s.GetApplicationDesignationsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(model));

@@ -1,5 +1,5 @@
 ﻿$(function() {
-    const $neededYesRadio = $("#consultation-needed-yes");
+    const $neededYesRadio = $("#ApplicationNeedsConsultations");
     const $neededNoRadio = $("#consultation-needed-no");
     const $submitButton = $("#submit-button");
 

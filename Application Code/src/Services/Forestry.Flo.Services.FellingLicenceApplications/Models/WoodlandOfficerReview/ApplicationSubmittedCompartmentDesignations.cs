@@ -15,4 +15,9 @@ public class ApplicationSubmittedCompartmentDesignations
     /// Gets and sets the list of compartment designations for the submitted FLA.
     /// </summary>
     public IList<SubmittedCompartmentDesignationsModel> CompartmentDesignations { get; set; }
+
+    /// <summary>
+    /// Gets and sets the list of proposed compartment designations for the submitted FLA.
+    /// </summary>
+    public IList<PawsCompartmentDesignationsModel> ProposedCompartmentDesignations { get; set; }
 }

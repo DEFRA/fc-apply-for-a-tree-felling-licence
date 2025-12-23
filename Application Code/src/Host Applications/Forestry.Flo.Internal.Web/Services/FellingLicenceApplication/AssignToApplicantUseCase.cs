@@ -144,8 +144,14 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         }
 
         var sectionDict = Enum.GetValues<FellingLicenceApplicationSection>()
-            .Where(x => x is not FellingLicenceApplicationSection.FlaTermsAndConditionsViewModel)
+            .Where(x => x is not FellingLicenceApplicationSection.FlaTermsAndConditionsViewModel 
+                && x is not FellingLicenceApplicationSection.TenYearLicence)
             .ToDictionary(section => section, _ => false);
+
+        if (!fellingLicenceApplication.Value.HasPaws)
+        {
+            sectionDict.Remove(FellingLicenceApplicationSection.PawsAndIawp);
+        }
 
         var compartmentDict = fellingLicenceApplication.Value.DetailsList
             .Select(x => x.CompartmentId)
@@ -228,6 +234,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
                 : new List<CompartmentFellingRestockingStatus>(),
             ConstraintsCheckComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.ConstraintCheck, out var ticked4) && ticked4 ? false : null,
             SupportingDocumentationComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.SupportingDocumentation, out var ticked5) && ticked5 ? false : null,
+            PawsCheckComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.PawsAndIawp, out var ticked6) && ticked6 ? false : null,
         };
 
         var consultationPr = await _getFellingLicenceApplicationService

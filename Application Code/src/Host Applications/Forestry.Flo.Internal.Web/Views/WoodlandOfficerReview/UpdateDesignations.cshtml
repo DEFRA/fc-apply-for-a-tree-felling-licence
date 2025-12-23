@@ -1,4 +1,6 @@
-﻿@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.UpdateDesignationsViewModel
+﻿@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.UpdateDesignationsViewModel
 
 
 @{
@@ -8,6 +10,12 @@
     var saveButtonText = Model.NextCompartmentId.HasValue
         ? "Save and continue to next compartment"
         : "Save and return to designations";
+
+    var pawsHint = (Model.ProposedCompartmentDesignations?.CrossesPawsZones.Count ?? 0) == 0
+        ? "Compartment does not cross any PAWS zones."
+        : Model.ProposedCompartmentDesignations.CrossesPawsZones.Count == 1
+            ? "Compartment crosses PAWS zone: " + Model.ProposedCompartmentDesignations.CrossesPawsZones[0]
+            : "Compartment crosses PAWS zones: " + string.Join(", ", Model.ProposedCompartmentDesignations.CrossesPawsZones);
 }
 
 <partial name="Partials/_ConfirmationMessageDisplay" />
@@ -70,6 +78,52 @@
                         <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Sbi">
                             SBI (local wildlife sites)
                         </label>
+                    </div>
+                    <div class="govuk-checkboxes__item">
+                        <input condition="@(Model.ProposedCompartmentDesignations != null)" class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Paws" aria-describedby="paws-hint" data-aria-controls="paws-values">
+                        <input condition="@(Model.ProposedCompartmentDesignations == null)" class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Paws" data-aria-controls="paws-values">
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentDesignations.Paws">
+                            PAWS
+                        </label>
+                        <div id="paws-hint" class="govuk-hint govuk-checkboxes__hint" condition="@(Model.ProposedCompartmentDesignations != null)">
+                            @pawsHint
+                        </div>
+                    </div>
+                    <div class="govuk-checkboxes__conditional" id="paws-values">
+                        <govuk-form-group asp-for="CompartmentDesignations.ProportionBeforeFelling" class="govuk-form-group">
+                            <label class="govuk-label" asp-for="CompartmentDesignations.ProportionBeforeFelling">What proportion of native tree species make up this compartment</label>
+                            <div id="proportion-before-hint" class="govuk-hint" condition="(Model.ProposedCompartmentDesignations.ProportionBeforeFelling.HasValue)">
+                                The applicant answered: @Model.ProposedCompartmentDesignations.ProportionBeforeFelling.GetDisplayName()
+                            </div>
+                            <validation asp-for="CompartmentDesignations.ProportionBeforeFelling"></validation>
+                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionBeforeFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionBeforeFelling.HasValue)" aria-describedby="proportion-before-hint">
+                                <option value="">Select an option</option>
+                            </select>
+                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionBeforeFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionBeforeFelling.HasNoValue())">
+                                <option value="">Select an option</option>
+                            </select>
+                        </govuk-form-group>
+                        <govuk-form-group asp-for="CompartmentDesignations.ProportionAfterFelling" class="govuk-form-group">
+                            <label class="govuk-label" asp-for="CompartmentDesignations.ProportionAfterFelling">What proportion of native tree species will be left in the compartment based on the proposed felling</label>
+                            <div id="proportion-after-hint" class="govuk-hint" condition="(Model.ProposedCompartmentDesignations.ProportionAfterFelling.HasValue)">
+                                The applicant answered: @Model.ProposedCompartmentDesignations.ProportionAfterFelling.GetDisplayName()
+                            </div>
+                            <validation asp-for="CompartmentDesignations.ProportionAfterFelling"></validation>
+                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionAfterFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionAfterFelling.HasValue)" aria-describedby="proportion-after-hint">
+                                <option value="">Select an option</option>
+                            </select>
+                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionAfterFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionAfterFelling.HasNoValue())">
+                                <option value="">Select an option</option>
+                            </select>
+                        </govuk-form-group>
+                        <div class="govuk-form-group" condition="Model.ProposedCompartmentDesignations != null">
+                            <label class="govuk-label">Are you restoring this compartment?</label>
+                            <div class="govuk-hint">The applicant answered: @(Model.ProposedCompartmentDesignations.IsRestoringCompartment is true ? "Yes" : "No")</div>
+                        </div>
+                        <div class="govuk-form-group" condition="Model.ProposedCompartmentDesignations is { IsRestoringCompartment: true }">
+                            <label class="govuk-label">Why is this compartment being restored?</label>
+                            <div class="govuk-hint">The applicant answered: @Model.ProposedCompartmentDesignations.RestorationDetails</div>
+                        </div>
                     </div>
                     <div class="govuk-checkboxes__item">
                         <input class="govuk-checkboxes__input" asp-for="CompartmentDesignations.Other" data-aria-controls="conditional-other">

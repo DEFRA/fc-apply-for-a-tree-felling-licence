@@ -1,0 +1,109 @@
+@using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
+@using Forestry.Flo.Services.Common.User
+@model ReApproveInErrorViewModel
+
+@{
+    ViewData["Title"] = "Edit duplicate licence created in error";
+    const string newExpiryDateId = "new-expiry-date";
+}
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container">
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+    <p class="govuk-body">This licence was marked as 'Approved in error'. You must review the details and make the necessary corrections before sending for approval.</p>
+
+    <h2 class="govuk-heading-m">Licence details</h2>
+    <p class="govuk-body">This duplicate licence has been created because the original was approved in error. Use this page to review and correct any administrative errors in the licence details.</p>
+    <p class="govuk-body">You can only use this process to fix clear mistakes, such as:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>expiry dates</li>
+        <li>supplementary points for conditions</li>
+    </ul>
+
+    <div class="govuk-inset-text">
+        This process cannot be used to cancel a licence or refuse an application after approval. In those cases, the applicant may need to submit a new licence application.
+    </div>
+
+    <form asp-controller="ApprovedInError" asp-action="ReApproveInError" method="post">
+        <input type="hidden" asp-for="Id" />
+        
+        @* Hidden inputs to preserve ApprovedInErrorViewModel boolean flags for validation *@
+        <input type="hidden" asp-for="ApprovedInErrorViewModel.ReasonExpiryDate" />
+        <input type="hidden" asp-for="ApprovedInErrorViewModel.ReasonSupplementaryPoints" />
+        <input type="hidden" asp-for="ApprovedInErrorViewModel.ReasonOther" />
+        
+        <div class="govuk-form-group" Condition="@Model.ApprovedInErrorViewModel.ReasonExpiryDate">
+			<h2 class="govuk-heading-m">Correct the licence expiry date</h2>
+
+			<p class="govuk-body">
+				<strong>Current licence expiry date</strong><br />
+				@Model.CurrentLicenceExpiryDate?.ToString("d MMMM yyyy", null)
+			</p>
+
+            <fieldset class="govuk-fieldset" role="group" aria-describedby="new-licence-expiry-date-hint" condition-disabled="@Model.IsReadonly">
+				<legend class="govuk-fieldset__legend govuk-fieldset__legend--s" for="@newExpiryDateId">
+                    <h3 class="govuk-fieldset__heading">
+                        Set a new licence expiry date
+                    </h3>
+                </legend>
+                <div id="new-licence-expiry-date-hint" class="govuk-hint">
+                    This new date will replace the current expiry date on the licence and will appear on the re-issued licence sent to the applicant.
+                </div>
+
+                <div class="govuk-form-group">
+                    <fieldset class="govuk-fieldset" role="group">
+                        <validation asp-for="NewLicenceExpiryDate.Day"></validation>
+                        <validation asp-for="NewLicenceExpiryDate.Month"></validation>
+                        <validation asp-for="NewLicenceExpiryDate.Year"></validation>
+                        <validation asp-for="NewLicenceExpiryDate"></validation>
+                        @Html.EditorFor(m => m.NewLicenceExpiryDate, new { htmlAttributes = new { id = newExpiryDateId } })
+                    </fieldset>
+                </div>
+
+			    <div class="govuk-form-group">
+				    <label class="govuk-label govuk-label--s" for="reason-for-change">
+					    Reason for change
+				    </label>
+				    <div id="reason-for-change-hint" class="govuk-hint">
+					    This reason will be recorded in the case history and may be included in notifications sent to the applicant.
+				    </div>
+                    <validation asp-for="ApprovedInErrorViewModel.ReasonExpiryDateText"></validation>
+                    <textarea class="govuk-textarea" asp-for="ApprovedInErrorViewModel.ReasonExpiryDateText" rows="5"></textarea>
+			    </div>
+			</fieldset>
+		</div>
+
+        <fieldset class="govuk-fieldset" role="group" aria-describedby="new-licence-supplementary-points" condition-disabled="@Model.IsReadonly">
+            <div class="govuk-form-group" Condition="@Model.ApprovedInErrorViewModel.ReasonSupplementaryPoints">
+
+			    <h2 class="govuk-heading-m">Correct supplementary points for conditions</h2>
+
+			    <div class="govuk-form-group">
+				    <h3 class="govuk-heading-s">Current supplementary points</h3>
+                    <p class="govuk-body show-line-breaks">@Model.CurrentSupplementaryPoints</p>
+			    </div>
+			    <label class="govuk-label govuk-label--s" for="new-supplementary-points">
+                    Add new supplementary points
+                </label>
+                <div id="new-supplementary-points-hint" class="govuk-hint">
+                    Enter the new note to appear on the licence.
+                    <br />
+                    These new points will replace the current ones on the licence and will appear on the re-issued licence sent to the applicant.
+                </div>
+                <validation asp-for="ApprovedInErrorViewModel.SupplementaryPointsText"></validation>
+                <textarea class="govuk-textarea" asp-for="ApprovedInErrorViewModel.SupplementaryPointsText" rows="5"></textarea>
+            </div>
+
+            <div class="govuk-button-group">
+                <button class="govuk-button" data-module="govuk-button" type="submit" condition-disabled="@Model.IsReadonly">Save and continue</button>
+                <a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.Id">Cancel</a>
+            </div>
+        </fieldset>
+    </form>
+</div>
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

@@ -16,6 +16,8 @@ using MassTransit;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using MassTransit.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.WoodlandOfficerReviewUseCase;
 
@@ -52,6 +54,8 @@ public abstract class WoodlandOfficerReviewUseCaseTestsBase<T>
     protected readonly Mock<IWoodlandOfficerReviewSubStatusService> WoodlandOfficerReviewSubStatusService = new();
 
     protected readonly Mock<IGetConfiguredFcAreas> GetConfiguredFcAreas = new();
+
+    protected readonly IOptions<FellingLicenceApplicationOptions> FellingLicenceApplicationOptions = Options.Create(new FellingLicenceApplicationOptions());
 
     protected readonly WoodlandOfficerReviewOptions WoodlandOfficerReviewOptions = new WoodlandOfficerReviewOptions
     {

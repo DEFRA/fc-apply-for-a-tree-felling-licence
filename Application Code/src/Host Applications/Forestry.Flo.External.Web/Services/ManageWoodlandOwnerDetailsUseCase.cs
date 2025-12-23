@@ -54,9 +54,17 @@ namespace Forestry.Flo.External.Web.Services
 
         public async Task<Result<ManageWoodlandOwnerDetailsModel>> GetWoodlandOwnerModelAsync(
             Guid id,
+            ExternalApplicant user,
             CancellationToken cancellationToken)
         {
-            var (_, isFailure, woodlandOwner, error) = await _retrievalService.RetrieveWoodlandOwnerByIdAsync(id, cancellationToken);
+            var userAccessModel = await _accountsService.RetrieveUserAccessAsync(user.UserAccountId!.Value, cancellationToken);
+            if (userAccessModel.IsFailure)
+            {
+                _logger.LogError("Could not retrieve user access");
+                return userAccessModel.ConvertFailure<ManageWoodlandOwnerDetailsModel>();
+            }
+
+            var (_, isFailure, woodlandOwner, error) = await _retrievalService.RetrieveWoodlandOwnerByIdAsync(id, userAccessModel.Value, cancellationToken);
 
             if (isFailure)
             {

@@ -74,6 +74,9 @@ public static class AuditEvents
     public const string CalculateCentrePointForApplication = "Calculate Centre Point For Application";
     public const string CalculateCentrePointForApplicationFailure = "Calculate Centre Point For Application Failure";
 
+    public const string PawsRequirementCheckCompleted = "PAWS Requirement Check Completed";
+    public const string PawsRequirementCheckFailed = "PAWS Requirement Check Failed";
+
     public const string UpdateDateReceived = "Update Date Received";
     public const string UpdateDateReceivedFailure = "Update Date Received Failure";
 
@@ -183,6 +186,9 @@ public static class AuditEvents
     public const string ApplicationApproved = "Application Approved";
     public const string ApplicationRefused = "Application Refused";
     public const string ApplicationReferredToLocalAuthority = "Application Referred To Local Authority";
+    public const string ConfirmApprovedInError = "Confirm Approved In Error";
+    public const string ConfirmApprovedInErrorFailure = "Confirm Approved In Error Failure";
+    public const string ReApprovedInError = "Re-Approved In Error";
 
     public const string ApplicationExtensionNotification = "Application Extension Notification";
     public const string ApplicationVoluntaryWithdrawalNotification = "Application Volutary Withdrawal Notification";
@@ -249,6 +255,13 @@ public static class AuditEvents
     public const string TenYearLicenceStepUpdatedFailure = "Ten Year Licence Step Updated Failure";
     public const string TenYearLicenceStepCompleted = "Ten Year Licence Step Completed Success";
     public const string TenYearLicenceStepCompletedFailure = "Ten Year Licence Step Completed Failure";
+
+    public const string HideFellingLicenceDocumentEvent = "Hide Felling Licence Document";
+    public const string HideFellingLicenceDocumentFailureEvent = "Hide Felling Licence Document Failure";
+
+    // PAWS designations data entry step
+    public const string PawsDesignationsUpdate = "PAWS Designations Update Success";
+    public const string PawsDesignationsUpdateFailure = "PAWS Designations Update Failure";
 
 
     /// <summary>
@@ -321,6 +334,9 @@ public static class AuditEvents
 
             CalculateCentrePointForApplication => SourceEntityType.FellingLicenceApplication,
             CalculateCentrePointForApplicationFailure => SourceEntityType.FellingLicenceApplication,
+
+            PawsRequirementCheckCompleted => SourceEntityType.FellingLicenceApplication,
+            PawsRequirementCheckFailed => SourceEntityType.FellingLicenceApplication,
 
             UpdateDateReceived => SourceEntityType.FellingLicenceApplication,
             UpdateDateReceivedFailure => SourceEntityType.FellingLicenceApplication,
@@ -471,6 +487,16 @@ public static class AuditEvents
             TenYearLicenceStepUpdatedFailure => SourceEntityType.FellingLicenceApplication,
             TenYearLicenceStepCompleted => SourceEntityType.FellingLicenceApplication,
             TenYearLicenceStepCompletedFailure => SourceEntityType.FellingLicenceApplication,
+
+            HideFellingLicenceDocumentEvent => SourceEntityType.FellingLicenceApplication,
+            HideFellingLicenceDocumentFailureEvent => SourceEntityType.FellingLicenceApplication,
+
+            ConfirmApprovedInError => SourceEntityType.FellingLicenceApplication,
+            ConfirmApprovedInErrorFailure => SourceEntityType.FellingLicenceApplication,
+            ReApprovedInError => SourceEntityType.FellingLicenceApplication,
+
+            PawsDesignationsUpdate => SourceEntityType.FellingLicenceApplication,
+            PawsDesignationsUpdateFailure => SourceEntityType.FellingLicenceApplication,
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

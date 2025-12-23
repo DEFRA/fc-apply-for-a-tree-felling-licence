@@ -1,7 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using CSharpFunctionalExtensions.ValueTasks;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -12,9 +11,6 @@ using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Newtonsoft.Json;
-using System.Reflection.Metadata;
-using System.Security.Policy;
-using Forestry.Flo.Services.Gis.Models.Internal;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -25,6 +21,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 /// </summary>
 public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 {
+    private readonly IUpdateConfirmedFellingAndRestockingDetailsService _updateConfirmedFellingAndRestockingDetailsService;
     private readonly ILogger<GetWoodlandOfficerReviewService> _logger;
     private readonly IFellingLicenceApplicationInternalRepository _internalFlaRepository;
     private readonly IForesterServices _iForesterServices;
@@ -36,13 +33,16 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
     /// <param name="internalFlaRepository">An <see cref="IFellingLicenceApplicationInternalRepository"/> instance.</param>
     /// <param name="iForesterServices">An <see cref="IForestryServices"/> instance.</param>
     /// <param name="viewCaseNotesService">An <see cref="IViewCaseNotesService"/> instance.</param>
+    /// <param name="updateConfirmedFellingAndRestockingDetailsService">An <see cref="IUpdateConfirmedFellingAndRestockingDetailsService"/> instance.</param>
     /// <param name="logger">An <see cref="ILogger"/> instance.</param>
     public GetWoodlandOfficerReviewService(
         IFellingLicenceApplicationInternalRepository internalFlaRepository,
         IForesterServices iForesterServices,
         IViewCaseNotesService viewCaseNotesService,
+        IUpdateConfirmedFellingAndRestockingDetailsService updateConfirmedFellingAndRestockingDetailsService,
         ILogger<GetWoodlandOfficerReviewService> logger)
     {
+        _updateConfirmedFellingAndRestockingDetailsService = Guard.Against.Null(updateConfirmedFellingAndRestockingDetailsService);
         _logger = logger ?? new NullLogger<GetWoodlandOfficerReviewService>();
         _internalFlaRepository = Guard.Against.Null(internalFlaRepository);
         _iForesterServices = Guard.Against.Null(iForesterServices);
@@ -76,8 +76,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
             }
 
             var confirmedFellingAndRestockingDetails = await
-                _internalFlaRepository.GetConfirmedFellingAndRestockingDetailsForApplicationAsync(
-                    applicationId, cancellationToken);
+                _updateConfirmedFellingAndRestockingDetailsService.RetrieveConfirmedFellingAndRestockingDetailModelAsync(
+                        applicationId, cancellationToken);
 
             if (confirmedFellingAndRestockingDetails.IsFailure)
             {
@@ -86,6 +86,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     applicationId);
                 return confirmedFellingAndRestockingDetails.ConvertFailure<WoodlandOfficerReviewStatusModel>();
             }
+
+            var fellingAmendments = confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels.Any(x => x.ConfirmedFellingDetailModels.Any(y => y.AmendedProperties.Any()));
+            var restockingAmendments = confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels.Any(x => x.ConfirmedFellingDetailModels.Any(y => y.ConfirmedRestockingDetailModels.Any(r => r.AmendedProperties.Any())));
 
             var designationsStatus = InternalReviewStepStatus.NotStarted;
 
@@ -106,18 +109,17 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     return submittedCompartments.ConvertFailure<WoodlandOfficerReviewStatusModel>();
                 }
 
-                if (submittedCompartments.Value.Any(c => c.SubmittedCompartmentDesignations != null))
+                if (submittedCompartments.Value.Any(c => c.SubmittedCompartmentDesignations?.HasBeenReviewed is true))
                 {
                     designationsStatus = InternalReviewStepStatus.InProgress;
                 }
             }
 
-            var fAndRStatus = confirmedFellingAndRestockingDetails.Value.Item1.Any() == false &&
-                              confirmedFellingAndRestockingDetails.Value.Item2.Any() == false
-                ? InternalReviewStepStatus.NotStarted
-                : woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.ConfirmedFellingAndRestockingComplete
-                    ? InternalReviewStepStatus.Completed
-                    : InternalReviewStepStatus.InProgress;
+            var fAndRStatus = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.ConfirmedFellingAndRestockingComplete
+                ? InternalReviewStepStatus.Completed
+                : fellingAmendments || restockingAmendments
+                    ? InternalReviewStepStatus.InProgress
+                    : InternalReviewStepStatus.NotStarted;
 
             var conditionsStatus = woodlandOfficerReview.HasNoValue || woodlandOfficerReview.Value.IsConditional.HasValue == false
                 ? InternalReviewStepStatus.NotStarted
@@ -141,9 +143,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 },
                 cancellationToken);
 
-            var isLarchApplication = fAndRStatus == InternalReviewStepStatus.NotStarted
-                ? IsFellingLarchSpecies(proposedFellingAndRestockingDetails.Value.Item1)
-                : IsFellingLarchSpecies(confirmedFellingAndRestockingDetails.Value.Item1);
+            var isLarchApplication = IsFellingLarchSpecies(proposedFellingAndRestockingDetails.Value.Item1)
+                || IsFellingLarchSpecies(confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels);
 
             var LarchFlyoverComplete = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.FellingLicenceApplication?.LarchCheckDetails?.FlightDate != null;
             // Flyover is required only when it's a larch application AND the inspection log was confirmed true during larch check
@@ -204,6 +205,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 RecommendationForDecisionPublicRegisterReason = woodlandOfficerReview.HasValue
                     ? woodlandOfficerReview.Value.RecommendationForDecisionPublicRegisterReason
                     : null,
+                SupplementaryPoints = woodlandOfficerReview.HasValue
+                    ? woodlandOfficerReview.Value.SupplementaryPoints
+                    : null,
                 WoodlandOfficerReviewTaskListStates = taskListStates,
                 WoodlandOfficerReviewComments = caseNotes
             };
@@ -223,9 +227,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
             .Select(species => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == species.Species))
             .Any(specie => specie?.IsLarch ?? false);
 
-    private static bool IsFellingLarchSpecies(List<ConfirmedFellingDetail> detailsList) =>
+    private static bool IsFellingLarchSpecies(List<FellingAndRestockingDetailModel> detailsList) =>
         detailsList
-            .SelectMany(detail => detail.ConfirmedFellingSpecies)
+            .SelectMany(detail => detail.ConfirmedFellingDetailModels.SelectMany(c => c.ConfirmedFellingSpecies))
             .Select(species => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == species.Species))
             .Any(specie => specie?.IsLarch ?? false);
 
@@ -538,6 +542,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 return compartments.ConvertFailure<ApplicationSubmittedCompartmentDesignations>();
             }
 
+            var proposedDesignations = await _internalFlaRepository.GetProposedCompartmentDesignationsForApplicationAsync(applicationId, cancellationToken);
+
             var result = new ApplicationSubmittedCompartmentDesignations
             {
                 HasCompletedDesignations = woReview.HasValue && woReview.Value.DesignationsComplete,
@@ -545,6 +551,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 {
                     CompartmentName = $"{x.CompartmentNumber}{x.SubCompartmentName}",
                     Id = x.SubmittedCompartmentDesignations?.Id,
+                    CompartmentId = x.CompartmentId,
+                    HasBeenReviewed = x.SubmittedCompartmentDesignations?.HasBeenReviewed ?? false,
                     SubmittedFlaCompartmentId = x.Id,
                     Sssi = x.SubmittedCompartmentDesignations?.Sssi ?? false,
                     Sacs = x.SubmittedCompartmentDesignations?.Sacs ?? false,
@@ -553,7 +561,20 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     Sbi = x.SubmittedCompartmentDesignations?.Sbi ?? false,
                     Other = x.SubmittedCompartmentDesignations?.Other ?? false,
                     OtherDesignationDetails = x.SubmittedCompartmentDesignations?.OtherDesignationDetails,
-                    None = x.SubmittedCompartmentDesignations?.None ?? false
+                    None = x.SubmittedCompartmentDesignations?.None ?? false,
+                    Paws = x.SubmittedCompartmentDesignations?.Paws ?? false,
+                    ProportionBeforeFelling = x.SubmittedCompartmentDesignations?.ProportionBeforeFelling,
+                    ProportionAfterFelling = x.SubmittedCompartmentDesignations?.ProportionAfterFelling
+                }).ToList(),
+                ProposedCompartmentDesignations = proposedDesignations.Select(x => new PawsCompartmentDesignationsModel
+                {
+                    Id = x.Id,
+                    PropertyProfileCompartmentId = x.PropertyProfileCompartmentId,
+                    CrossesPawsZones = x.CrossesPawsZones,
+                    ProportionBeforeFelling = x.ProportionBeforeFelling,
+                    ProportionAfterFelling = x.ProportionAfterFelling,
+                    IsRestoringCompartment = x.IsRestoringCompartment,
+                    RestorationDetails = x.RestorationDetails
                 }).ToList()
             };
 

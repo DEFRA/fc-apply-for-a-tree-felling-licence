@@ -35,4 +35,9 @@ public class LinkedPropertyProfile
     /// Gets or sets the proposed felling details.
     /// </summary>
     public IList<ProposedFellingDetail>? ProposedFellingDetails { get; set; }
+
+    /// <summary>
+    /// Gets or sets the proposed compartment designations.
+    /// </summary>
+    public IList<ProposedCompartmentDesignations>? ProposedCompartmentDesignations { get; set; }
 }

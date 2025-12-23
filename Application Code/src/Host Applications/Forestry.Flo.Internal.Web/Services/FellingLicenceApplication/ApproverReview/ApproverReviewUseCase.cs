@@ -91,7 +91,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
         _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
         _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _approverReviewService = Guard.Against.Null(approverReviewService);
-        _fellingLicenceApplicationOptions = fellingLicenceApplicationOptions.Value;
+        _fellingLicenceApplicationOptions = Guard.Against.Null(fellingLicenceApplicationOptions?.Value, nameof(fellingLicenceApplicationOptions));
     }
 
     /// <inheritdoc />
@@ -108,7 +108,7 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
         }
 
         var woodlandOwner =
-            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.Value.WoodlandOwnerId, cancellationToken);
+            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.Value.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             _logger.LogError("Application woodland owner not found, application id: {ApplicationId}, woodland owner id: {WoodlandOwnerId}, error: {Error}",
@@ -207,11 +207,18 @@ public class ApproverReviewUseCase : FellingLicenceApplicationUseCaseBase, IAppr
         var woodlandOfficerReview = await _getWoodlandOfficerReviewService.GetWoodlandOfficerReviewStatusAsync(application.Value.Id,
         cancellationToken);
 
+        if (woodlandOfficerReview.IsFailure)
+        {
+            _logger.LogError("Unable to retrieve woodland officer review for application id: {ApplicationId}, error: {Error}",
+                application.Value.Id, woodlandOfficerReview.Error);
+            return Maybe<ApproverReviewSummaryModel>.None;
+        }
+
         applicationReviewModel.IsWOReviewed = woodlandOfficerReview.Value.RecommendedLicenceDuration != null;
 
-        var defaultRecommendedLicenceDuration = Enum.IsDefined(typeof(RecommendedLicenceDuration), _fellingLicenceApplicationOptions.DefaultLicenseDuration)
-            ? (RecommendedLicenceDuration)_fellingLicenceApplicationOptions.DefaultLicenseDuration
-            : RecommendedLicenceDuration.None; // or another fallback if None is not appropriate
+        var defaultRecommendedLicenceDuration = application.Value.IsForTenYearLicence??false
+            ? RecommendedLicenceDuration.TenYear
+            : (RecommendedLicenceDuration)_fellingLicenceApplicationOptions.DefaultLicenseDuration;
         applicationReviewModel.RecommendedLicenceDuration = woodlandOfficerReview.Value.RecommendedLicenceDuration ?? defaultRecommendedLicenceDuration;
 
         applicationReviewModel.RecommendedLicenceDurations = Enum.GetValues(typeof(RecommendedLicenceDuration))

@@ -64,7 +64,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
     }
 
     [Theory, AutoData]
-    public async Task GetDesignations_WhenNoWoOrDesignationsYet(Guid applicationId)
+    public async Task GetDesignations_WhenNoWoOrCompletedDesignationsYet(Guid applicationId)
     {
         var sut = CreateSut();
 
@@ -79,18 +79,42 @@ public partial class GetWoodlandOfficerReviewServiceTests
             .CreateMany()
             .ToList();
 
+        List<ProposedCompartmentDesignations> proCpts = new();
+
+        cpts.ForEach(x =>
+        {
+            x.SubmittedCompartmentDesignations =
+                _fixture.Build<SubmittedCompartmentDesignations>()
+                    .With(s => s.SubmittedFlaPropertyCompartment, x)
+                    .With(x => x.HasBeenReviewed, false)
+                    .Create();
+            
+            proCpts.Add(
+                _fixture.Build<ProposedCompartmentDesignations>()
+                    .With(p => p.PropertyProfileCompartmentId, x.CompartmentId)
+                    .Without(z => z.LinkedPropertyProfile)
+                    .Create());
+        });
+
         _fellingLicenceApplicationRepository
             .Setup(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(cpts));
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetProposedCompartmentDesignationsForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(proCpts);
 
         var result = await sut.GetCompartmentDesignationsAsync(applicationId, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.False(result.Value.HasCompletedDesignations);
-        Assert.All(result.Value.CompartmentDesignations, x => Assert.False(x.HasCompletedDesignations));
+        Assert.All(result.Value.CompartmentDesignations, x => Assert.False(x.HasBeenReviewed));
 
         _fellingLicenceApplicationRepository
             .Verify(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetProposedCompartmentDesignationsForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
 
         _fellingLicenceApplicationRepository
             .Verify(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -122,14 +146,29 @@ public partial class GetWoodlandOfficerReviewServiceTests
             .CreateMany()
             .ToList();
 
-        cpts.ForEach(x => x.SubmittedCompartmentDesignations =
-            _fixture.Build<SubmittedCompartmentDesignations>()
-                .With(s => s.SubmittedFlaPropertyCompartment, x)
-                .Create());
+        List<ProposedCompartmentDesignations> proCpts = new();
+
+        cpts.ForEach(x =>
+        {
+            x.SubmittedCompartmentDesignations =
+                _fixture.Build<SubmittedCompartmentDesignations>()
+                    .With(s => s.SubmittedFlaPropertyCompartment, x)
+                    .Create();
+
+            proCpts.Add(
+                _fixture.Build<ProposedCompartmentDesignations>()
+                    .With(p => p.PropertyProfileCompartmentId, x.CompartmentId)
+                    .Without(z => z.LinkedPropertyProfile)
+                    .Create());
+        });
 
         _fellingLicenceApplicationRepository
             .Setup(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(cpts));
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetProposedCompartmentDesignationsForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(proCpts);
 
         var result = await sut.GetCompartmentDesignationsAsync(applicationId, CancellationToken.None);
 
@@ -139,7 +178,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         {
             var match = cpts.Single(c => x.Id == c.SubmittedCompartmentDesignations!.Id);
 
-            Assert.True(x.HasCompletedDesignations);
+            Assert.Equal(match.SubmittedCompartmentDesignations.HasBeenReviewed, x.HasBeenReviewed);
             Assert.Equal($"{match.CompartmentNumber}{match.SubCompartmentName}", x.CompartmentName);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sssi, x.Sssi);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sacs, x.Sacs);
@@ -149,10 +188,16 @@ public partial class GetWoodlandOfficerReviewServiceTests
             Assert.Equal(match.SubmittedCompartmentDesignations.Other, x.Other);
             Assert.Equal(match.SubmittedCompartmentDesignations.OtherDesignationDetails, x.OtherDesignationDetails);
             Assert.Equal(match.SubmittedCompartmentDesignations.None, x.None);
+            Assert.Equal(match.SubmittedCompartmentDesignations.Paws, x.Paws);
+            Assert.Equal(match.SubmittedCompartmentDesignations.ProportionBeforeFelling, x.ProportionBeforeFelling);
+            Assert.Equal(match.SubmittedCompartmentDesignations.ProportionAfterFelling, x.ProportionAfterFelling);
         });
 
         _fellingLicenceApplicationRepository
             .Verify(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetProposedCompartmentDesignationsForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
 
         _fellingLicenceApplicationRepository
             .Verify(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -184,14 +229,29 @@ public partial class GetWoodlandOfficerReviewServiceTests
             .CreateMany()
             .ToList();
 
-        cpts.ForEach(x => x.SubmittedCompartmentDesignations = 
-            _fixture.Build<SubmittedCompartmentDesignations>()
-                .With(s => s.SubmittedFlaPropertyCompartment, x)
-                .Create());
+        List<ProposedCompartmentDesignations> proCpts = new();
+
+        cpts.ForEach(x =>
+        {
+            x.SubmittedCompartmentDesignations =
+                _fixture.Build<SubmittedCompartmentDesignations>()
+                    .With(s => s.SubmittedFlaPropertyCompartment, x)
+                    .Create();
+
+            proCpts.Add(
+                _fixture.Build<ProposedCompartmentDesignations>()
+                    .With(p => p.PropertyProfileCompartmentId, x.CompartmentId)
+                    .Without(z => z.LinkedPropertyProfile)
+                    .Create());
+        });
 
         _fellingLicenceApplicationRepository
             .Setup(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(cpts));
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetProposedCompartmentDesignationsForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(proCpts);
 
         var result = await sut.GetCompartmentDesignationsAsync(applicationId, CancellationToken.None);
 
@@ -201,7 +261,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         {
             var match = cpts.Single(c => x.Id == c.SubmittedCompartmentDesignations!.Id);
 
-            Assert.True(x.HasCompletedDesignations);
+            Assert.Equal(match.SubmittedCompartmentDesignations.HasBeenReviewed, x.HasBeenReviewed);
             Assert.Equal($"{match.CompartmentNumber}{match.SubCompartmentName}", x.CompartmentName);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sssi, x.Sssi);
             Assert.Equal(match.SubmittedCompartmentDesignations.Sacs, x.Sacs);
@@ -211,10 +271,29 @@ public partial class GetWoodlandOfficerReviewServiceTests
             Assert.Equal(match.SubmittedCompartmentDesignations.Other, x.Other);
             Assert.Equal(match.SubmittedCompartmentDesignations.OtherDesignationDetails, x.OtherDesignationDetails);
             Assert.Equal(match.SubmittedCompartmentDesignations.None, x.None);
+            Assert.Equal(match.SubmittedCompartmentDesignations.Paws, x.Paws);
+            Assert.Equal(match.SubmittedCompartmentDesignations.ProportionBeforeFelling, x.ProportionBeforeFelling);
+            Assert.Equal(match.SubmittedCompartmentDesignations.ProportionAfterFelling, x.ProportionAfterFelling);
+        });
+
+        Assert.All(result.Value.ProposedCompartmentDesignations, x =>
+        {
+            var match = proCpts.Single(c => x.PropertyProfileCompartmentId == c.PropertyProfileCompartmentId);
+
+            Assert.Equal(match.Id, x.Id);
+            Assert.Equal(match.PropertyProfileCompartmentId, x.PropertyProfileCompartmentId);
+            Assert.Equal(match.CrossesPawsZones, x.CrossesPawsZones);
+            Assert.Equal(match.ProportionBeforeFelling, x.ProportionBeforeFelling);
+            Assert.Equal(match.ProportionAfterFelling, x.ProportionAfterFelling);
+            Assert.Equal(match.IsRestoringCompartment, x.IsRestoringCompartment);
+            Assert.Equal(match.RestorationDetails, x.RestorationDetails);
         });
 
         _fellingLicenceApplicationRepository
             .Verify(x => x.GetSubmittedFlaPropertyCompartmentsByApplicationIdAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+
+        _fellingLicenceApplicationRepository
+            .Verify(x => x.GetProposedCompartmentDesignationsForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
 
         _fellingLicenceApplicationRepository
             .Verify(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);

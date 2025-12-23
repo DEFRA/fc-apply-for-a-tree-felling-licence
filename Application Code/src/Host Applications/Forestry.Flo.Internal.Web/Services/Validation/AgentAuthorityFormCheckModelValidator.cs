@@ -7,9 +7,13 @@ public class AgentAuthorityFormCheckModelValidator : AbstractValidator<AgentAuth
 {
     public AgentAuthorityFormCheckModelValidator()
     {
+        RuleFor(x => x.CheckPassed)
+            .Must(x => x.HasValue)
+            .WithMessage("Select whether the provided AAF is valid");
+
         RuleFor(x => x.CheckFailedReason)
             .NotEmpty()
             .When(x => x.CheckPassed == false)
-            .WithMessage("Reason for failure must be provided");
+            .WithMessage("A reason for the AAF being invalid must be provided");
     }
 }

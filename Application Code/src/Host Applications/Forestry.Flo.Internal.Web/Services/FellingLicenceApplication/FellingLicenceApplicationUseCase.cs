@@ -76,7 +76,8 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         FellingLicenceStatus.Refused,
         FellingLicenceStatus.Withdrawn,
         FellingLicenceStatus.ReturnedToApplicant,
-        FellingLicenceStatus.ReferredToLocalAuthority
+        FellingLicenceStatus.ReferredToLocalAuthority,
+        FellingLicenceStatus.ApprovedInError
     };
 
     /// <inheritdoc />
@@ -135,6 +136,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
             {
                 AssignedUserIds = briefAssigneeHistories.Value.Where(y => y.FellingLicenceApplicationId == fla.Id).DistinctBy(y => y.UserId).Select(y => y.UserId).ToList(),
                 Reference = fla.ApplicationReference,
+                PreviousReference = fla.ApprovedInError?.PreviousReference,
                 FellingLicenceApplicationId = fla.Id,
                 Deadline = fla.FinalActionDate,
                 FellingLicenceStatus = fla.StatusHistories.OrderBy(y => y.Created).Last().Status,
@@ -175,7 +177,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         }
 
         var woodlandOwner =
-            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.Value.WoodlandOwnerId, cancellationToken);
+            await WoodlandOwnerService.RetrieveWoodlandOwnerByIdAsync(application.Value.WoodlandOwnerId, UserAccessModel.SystemUserAccessModel, cancellationToken);
         if (woodlandOwner.IsFailure)
         {
             _logger.LogError("Application woodland owner not found, application id: {ApplicationId}, woodland owner id: {WoodlandOwnerId}, error: {Error}",

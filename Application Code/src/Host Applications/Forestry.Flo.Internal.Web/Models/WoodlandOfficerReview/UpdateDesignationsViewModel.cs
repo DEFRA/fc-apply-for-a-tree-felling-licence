@@ -1,4 +1,5 @@
-﻿using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+﻿using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
@@ -18,6 +19,11 @@ public class UpdateDesignationsViewModel : WoodlandOfficerReviewModelBase
     /// Gets and sets the designations data for the compartment being reviewed.
     /// </summary>
     public SubmittedCompartmentDesignationsModel CompartmentDesignations { get; set; }
+
+    /// <summary>
+    /// Gets and sets the proposed compartment designations data for the compartment being reviewed.
+    /// </summary>
+    public PawsCompartmentDesignationsModel? ProposedCompartmentDesignations { get; set; }
 
     /// <summary>
     /// Gets and sets the submitted compartment identifier for the next compartment to be reviewed.

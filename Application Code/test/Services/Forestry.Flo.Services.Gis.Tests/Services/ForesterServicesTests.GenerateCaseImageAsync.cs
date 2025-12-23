@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using AutoFixture.Xunit2;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Newtonsoft.Json;
@@ -39,13 +40,16 @@ public partial class ForesterServicesTests
         }
     ];
 
-    [Fact]
-    public async Task GenerateCaseImageWithNoCompartments()
+    [Theory, AutoData]
+    public async Task GenerateCaseImageWithNoCompartments(
+        string applicationReference,
+        string osGridReference,
+        string nearestTown)
     {
         _mockHttpHandler.Reset();
 
         var sut = CreateSUT();
-        var result = await sut.GenerateImage_MultipleCompartmentsAsync([], CancellationToken.None, 100, MapGeneration.Other, "");
+        var result = await sut.GenerateImage_MultipleCompartmentsAsync(applicationReference, osGridReference, nearestTown, [], CancellationToken.None, 100, MapGeneration.Other, "");
 
         Assert.True(result.IsFailure);
         Assert.Equal("No shapes passed in", result.Error);
@@ -61,8 +65,13 @@ public partial class ForesterServicesTests
     [InlineData(MapGeneration.Restocking, "Restocking")]
     [InlineData(MapGeneration.Other, "")]
     [InlineData(MapGeneration.Other, "Other maps")]
-    public async Task GenerateCaseImageAsync_PostQueryWithConversionAsyncFails(MapGeneration mapGeneration, string title)
+    public async Task GenerateCaseImageAsync_PostQueryWithConversionAsyncFails(
+        MapGeneration mapGeneration, 
+        string title)
     {
+        var reference = "ABC123";
+        var osGridReference = "NJ1234567890";
+        var nearestTown = "Edinburgh";
 
         _mockHttpHandler.Reset();
 
@@ -82,7 +91,7 @@ public partial class ForesterServicesTests
 
 
         var sut = CreateSUT();
-        var result = await sut.GenerateImage_MultipleCompartmentsAsync(ShapesDetails, CancellationToken.None, 100, mapGeneration, title);
+        var result = await sut.GenerateImage_MultipleCompartmentsAsync(reference, osGridReference, nearestTown, ShapesDetails, CancellationToken.None, 100, mapGeneration, title);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Unable to connect to the esri service", result.Error);
@@ -92,6 +101,9 @@ public partial class ForesterServicesTests
     [Fact]
     public async Task GenerateCaseImageAsync_GetImageFails()
     {
+        var applicationReference = "ABC123";
+        var osGridReference = "NJ1234567890";
+        var nearestTown = "Edinburgh";
 
         _mockHttpHandler.Reset();
 
@@ -143,7 +155,7 @@ public partial class ForesterServicesTests
             .Returns(new HttpClient(_mockHttpHandler.Object));
 
         var sut = CreateSUT();
-        var result = await sut.GenerateImage_MultipleCompartmentsAsync(ShapesDetails, CancellationToken.None, 100,
+        var result = await sut.GenerateImage_MultipleCompartmentsAsync(applicationReference, osGridReference, nearestTown, ShapesDetails, CancellationToken.None, 100,
             MapGeneration.Other, "");
 
         Assert.True(result.IsFailure);

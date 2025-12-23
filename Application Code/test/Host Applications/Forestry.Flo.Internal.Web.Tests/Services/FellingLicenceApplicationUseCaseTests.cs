@@ -8,6 +8,7 @@ using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -86,7 +87,7 @@ public partial class FellingLicenceApplicationUseCaseTests
         SyncApplicationCompartmentData(application);
         _fellingLicenceApplicationRepository.Setup(r => r.GetAsync(application.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
-        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()))
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(woodlandOwner));
         _externalUserAccountService.Setup(r => r.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<UserAccount>(userAccount));
@@ -241,7 +242,7 @@ public partial class FellingLicenceApplicationUseCaseTests
         SyncApplicationCompartmentData(application);
         _fellingLicenceApplicationRepository.Setup(r => r.GetAsync(application.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync( Maybe<FellingLicenceApplication>.From(application));
-        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()))
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync( Result.Failure<WoodlandOwnerModel>(UserDbErrorReason.General.ToString()));
 
         //act
@@ -261,7 +262,7 @@ public partial class FellingLicenceApplicationUseCaseTests
         SyncApplicationCompartmentData(application);
         _fellingLicenceApplicationRepository.Setup(r => r.GetAsync(application.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync( Maybe<FellingLicenceApplication>.From(application));
-        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<CancellationToken>()))
+        _woodlandOwnerService.Setup(r => r.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync( Result.Success<WoodlandOwnerModel>(woodlandOwner));
         _userAccountService.Setup(r => r.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount>.None);

@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
@@ -41,7 +42,7 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         .ReturnsAsync(fla);
         MockExternalUserAccountService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdByUser);
-        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
         MockInternalUserAccountService.Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<UserAccount>.From(users.First()));
@@ -89,7 +90,7 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         .ReturnsAsync(fla);
         MockExternalUserAccountService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdByUser);
-        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
         MockInternalUserAccountService.Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<UserAccount>.From(users.First()));
@@ -139,7 +140,7 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         .ReturnsAsync(fla);
         MockExternalUserAccountService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdByUser);
-        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
         MockInternalUserAccountService.Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<UserAccount>.From(users.First()));
@@ -191,7 +192,7 @@ public class RetrieveAssignableUserDetailsAsyncTests : AssignToUserUseCaseTestsB
         .ReturnsAsync(fla);
         MockExternalUserAccountService.Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdByUser);
-        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        MockWoodlandOwnerRepository.Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwner);
         MockInternalUserAccountService.Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<UserAccount>.From(users.First()));

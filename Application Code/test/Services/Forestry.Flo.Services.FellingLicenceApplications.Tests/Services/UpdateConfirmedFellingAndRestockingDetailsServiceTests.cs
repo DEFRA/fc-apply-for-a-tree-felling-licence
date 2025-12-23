@@ -693,4 +693,199 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
 
         return fla;
     }
+
+    [Fact]
+    public void HasMissingProposedFellingOrRestockingLink_ReturnsTrue_WhenConfirmedRestockingReferencesMissingProposed()
+    {
+        var sut = CreateSut();
+
+        var proposedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel
+        {
+            Id = Guid.NewGuid(),
+            ProposedRestockingDetails = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel>()
+        };
+
+        var confirmedRestockMissing = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel
+        {
+            ConfirmedRestockingDetailsId = Guid.NewGuid(),
+            ProposedRestockingDetailsId = Guid.NewGuid(), // not present in proposed
+            ConfirmedRestockingSpecies = new List<ConfirmedRestockingSpecies>()
+        };
+
+        var confirmedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel
+        {
+            ConfirmedFellingDetailsId = Guid.NewGuid(),
+            ProposedFellingDetailsId = proposedFell.Id,
+            ConfirmedRestockingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel> { confirmedRestockMissing }
+        };
+
+        var compartment = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.FellingAndRestockingDetailModel
+        {
+            CompartmentId = Guid.NewGuid(),
+            SubmittedFlaPropertyCompartmentId = Guid.NewGuid(),
+            ProposedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel> { proposedFell },
+            ConfirmedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel> { confirmedFell }
+        };
+
+        Assert.True(sut.HasMissingProposedFellingOrRestockingLink(compartment));
+    }
+
+    [Fact]
+    public void HasMissingProposedFellingOrRestockingLink_ReturnsTrue_WhenConfirmedFellingReferencesMissingProposed()
+    {
+        var sut = CreateSut();
+
+        var proposedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel { Id = Guid.NewGuid() };
+        var confirmedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel
+        {
+            ConfirmedFellingDetailsId = Guid.NewGuid(),
+            ProposedFellingDetailsId = Guid.NewGuid(), // not present
+            ConfirmedRestockingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel>()
+        };
+
+        var compartment = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.FellingAndRestockingDetailModel
+        {
+            CompartmentId = Guid.NewGuid(),
+            SubmittedFlaPropertyCompartmentId = Guid.NewGuid(),
+            ProposedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel> { proposedFell },
+            ConfirmedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel> { confirmedFell }
+        };
+
+        Assert.True(sut.HasMissingProposedFellingOrRestockingLink(compartment));
+    }
+
+    [Fact]
+    public void HasMissingProposedFellingOrRestockingLink_ReturnsFalse_WhenAllConfirmedLinkedToProposed()
+    {
+        var sut = CreateSut();
+
+        var proposedRestockId = Guid.NewGuid();
+        var proposedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel
+        {
+            Id = Guid.NewGuid(),
+            ProposedRestockingDetails = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel>
+            {
+                new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel { Id = proposedRestockId }
+            }
+        };
+
+        var confirmedRestock = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel
+        {
+            ConfirmedRestockingDetailsId = Guid.NewGuid(),
+            ProposedRestockingDetailsId = proposedRestockId,
+            ConfirmedRestockingSpecies = new List<ConfirmedRestockingSpecies>()
+        };
+
+        var confirmedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel
+        {
+            ConfirmedFellingDetailsId = Guid.NewGuid(),
+            ProposedFellingDetailsId = proposedFell.Id,
+            ConfirmedRestockingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel> { confirmedRestock }
+        };
+
+        var compartment = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.FellingAndRestockingDetailModel
+        {
+            CompartmentId = Guid.NewGuid(),
+            SubmittedFlaPropertyCompartmentId = Guid.NewGuid(),
+            ProposedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel> { proposedFell },
+            ConfirmedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel> { confirmedFell }
+        };
+
+        Assert.False(sut.HasMissingProposedFellingOrRestockingLink(compartment));
+    }
+
+    [Fact]
+    public void HasUnmatchedProposedFellingOrRestocking_ReturnsTrue_WhenProposedFellingHasNoConfirmed()
+    {
+        var sut = CreateSut();
+
+        var proposedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel
+        {
+            Id = Guid.NewGuid(),
+            ProposedRestockingDetails = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel>()
+        };
+
+        var compartment = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.FellingAndRestockingDetailModel
+        {
+            CompartmentId = Guid.NewGuid(),
+            SubmittedFlaPropertyCompartmentId = Guid.NewGuid(),
+            ProposedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel> { proposedFell },
+            ConfirmedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel>()
+        };
+
+        Assert.True(sut.HasUnmatchedProposedFellingOrRestocking(compartment));
+    }
+
+    [Fact]
+    public void HasUnmatchedProposedFellingOrRestocking_ReturnsTrue_WhenProposedRestockingHasNoConfirmed()
+    {
+        var sut = CreateSut();
+
+        var proposedRestockId = Guid.NewGuid();
+        var proposedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel
+        {
+            Id = Guid.NewGuid(),
+            ProposedRestockingDetails = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel>
+            {
+                new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel { Id = proposedRestockId }
+            }
+        };
+
+        var confirmedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel
+        {
+            ConfirmedFellingDetailsId = Guid.NewGuid(),
+            ProposedFellingDetailsId = proposedFell.Id,
+            ConfirmedRestockingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel>() // none
+        };
+
+        var compartment = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.FellingAndRestockingDetailModel
+        {
+            CompartmentId = Guid.NewGuid(),
+            SubmittedFlaPropertyCompartmentId = Guid.NewGuid(),
+            ProposedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel> { proposedFell },
+            ConfirmedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel> { confirmedFell }
+        };
+
+        Assert.True(sut.HasUnmatchedProposedFellingOrRestocking(compartment));
+    }
+
+    [Fact]
+    public void HasUnmatchedProposedFellingOrRestocking_ReturnsFalse_WhenAllProposedHaveConfirmed()
+    {
+        var sut = CreateSut();
+
+        var proposedRestockId = Guid.NewGuid();
+        var proposedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel
+        {
+            Id = Guid.NewGuid(),
+            ProposedRestockingDetails = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel>
+            {
+                new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel { Id = proposedRestockId }
+            }
+        };
+
+        var confirmedRestock = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel
+        {
+            ConfirmedRestockingDetailsId = Guid.NewGuid(),
+            ProposedRestockingDetailsId = proposedRestockId,
+            ConfirmedRestockingSpecies = new List<ConfirmedRestockingSpecies>()
+        };
+
+        var confirmedFell = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel
+        {
+            ConfirmedFellingDetailsId = Guid.NewGuid(),
+            ProposedFellingDetailsId = proposedFell.Id,
+            ConfirmedRestockingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedRestockingDetailModel> { confirmedRestock }
+        };
+
+        var compartment = new Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.FellingAndRestockingDetailModel
+        {
+            CompartmentId = Guid.NewGuid(),
+            SubmittedFlaPropertyCompartmentId = Guid.NewGuid(),
+            ProposedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel> { proposedFell },
+            ConfirmedFellingDetailModels = new List<Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ConfirmedFellingDetailModel> { confirmedFell }
+        };
+
+        Assert.False(sut.HasUnmatchedProposedFellingOrRestocking(compartment));
+    }
 }

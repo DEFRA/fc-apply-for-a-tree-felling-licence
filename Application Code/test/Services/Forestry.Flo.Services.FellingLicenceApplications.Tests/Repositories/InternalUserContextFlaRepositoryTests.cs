@@ -85,48 +85,6 @@ public class InternalUserContextFlaRepositoryTests
     }
 
     [Theory, AutoMoqData]
-    public async Task ShouldUpdateApproverId(
-        FellingLicenceApplication fellingLicenceApplication,
-        Guid approverId)
-    {
-        //arrange
-        fellingLicenceApplication.AssigneeHistories = new List<AssigneeHistory>(0);
-        await _fellingLicenceApplicationsContext.FellingLicenceApplications.AddAsync(fellingLicenceApplication,
-            CancellationToken.None);
-        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
-
-        //act
-        var result = await _sut.SetApplicationApproverAsync(fellingLicenceApplication.Id, approverId, CancellationToken.None);
-
-        //assert
-
-        var storedFla =
-            await _fellingLicenceApplicationsContext.FellingLicenceApplications.FindAsync(fellingLicenceApplication.Id);
-
-        Assert.Equal(approverId, storedFla.ApproverId);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldRevertApproverIdToNull(FellingLicenceApplication fellingLicenceApplication)
-    {
-        //arrange
-        fellingLicenceApplication.AssigneeHistories = new List<AssigneeHistory>(0);
-        await _fellingLicenceApplicationsContext.FellingLicenceApplications.AddAsync(fellingLicenceApplication,
-            CancellationToken.None);
-        await _fellingLicenceApplicationsContext.SaveEntitiesAsync(CancellationToken.None);
-
-        //act
-        var result = await _sut.SetApplicationApproverAsync(fellingLicenceApplication.Id, null, CancellationToken.None);
-
-        //assert
-
-        var storedFla =
-            await _fellingLicenceApplicationsContext.FellingLicenceApplications.FindAsync(fellingLicenceApplication.Id);
-
-        Assert.Null(storedFla.ApproverId);
-    }
-
-    [Theory, AutoMoqData]
     public async Task ShouldNotAddAssigneeHistoryWhenUserIsAlreadyInRole(
         FellingLicenceApplication fellingLicenceApplication,
         AssignedUserRole role,
@@ -1649,7 +1607,6 @@ public class InternalUserContextFlaRepositoryTests
             FellingLicenceStatus.Submitted,
             FellingLicenceStatus.AdminOfficerReview
         };
-
         var now = DateTime.UtcNow;
 
         var app1 = new FellingLicenceApplication
@@ -1931,7 +1888,7 @@ public class InternalUserContextFlaRepositoryTests
         Assert.True(result.IsSuccess);
         var updated = await _fellingLicenceApplicationsContext.FellingLicenceApplications
             .Include(x => x.EnvironmentalImpactAssessment)
-            .Include(x => x.AdminOfficerReview)
+            .Include(fellingLicenceApplication => fellingLicenceApplication.AdminOfficerReview)
             .SingleAsync(x => x.Id == application.Id);
         Assert.Equal(eiaRecord.HasTheEiaFormBeenReceived.Value, updated.EnvironmentalImpactAssessment.HasTheEiaFormBeenReceived);
         Assert.Equal(eiaRecord.EiaTrackerReferenceNumber.Value, updated.EnvironmentalImpactAssessment.EiaTrackerReferenceNumber);

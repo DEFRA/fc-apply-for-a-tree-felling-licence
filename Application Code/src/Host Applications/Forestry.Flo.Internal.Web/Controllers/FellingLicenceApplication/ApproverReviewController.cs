@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Text;
-using MassTransit;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -62,13 +61,20 @@ public class ApproverReviewController : Controller
                 new(model.Value.FellingLicenceApplicationSummary!.ApplicationReference, "FellingLicenceApplication", "ApplicationSummary", id.ToString())
             }
         };
-        
-        // Restore decision from TempData if available
-        if (TempData.TryGetValue("Decision", out var decisionObj) && bool.TryParse(decisionObj?.ToString(), out var decision))
+
+        if (model.Value.FellingLicenceApplicationSummary.Status == FellingLicenceStatus.Approved)
         {
-            _logger.LogDebug("Retrieving decision from TempData, value: {Decision}", decision);
-            model.Value.Decision = decision;
-            TempData.Keep("Decision");
+            model.Value.Decision = true;
+        }
+        else
+        {
+            // Restore decision from TempData if available
+            if (TempData.TryGetValue("Decision", out var decisionObj) && bool.TryParse(decisionObj?.ToString(), out var decision))
+            {
+                _logger.LogDebug("Retrieving decision from TempData, value: {Decision}", decision);
+                model.Value.Decision = decision;
+                TempData.Keep("Decision");
+            }
         }
 
         return View(model.Value);
@@ -400,10 +406,15 @@ public class ApproverReviewController : Controller
         {
             _logger.LogDebug("Generating licence document for application with ID {ApplicationId} as it is being approved", id);
 
-            // update the approver id in order for the licence document to be generated with the correct approver details
-            var updateResult = await approvalRefusalUseCase.UpdateApproverIdAsync(
+            // Calculate the licence expiry date
+            var licenceExpiryDate =
+                await generatePdfApplicationUseCase.CalculateLicenceExpiryDateAsync(id, cancellationToken);
+            
+            // update the approver id and licence expiry date in order for the licence document to be generated with the correct details
+            var updateResult = await approvalRefusalUseCase.UpdateApplicationApproverAndExpiryDateAsync(
                 id,
                 internalUser.UserAccountId!.Value,
+                licenceExpiryDate,
                 cancellationToken);
 
             if (updateResult.IsFailure)

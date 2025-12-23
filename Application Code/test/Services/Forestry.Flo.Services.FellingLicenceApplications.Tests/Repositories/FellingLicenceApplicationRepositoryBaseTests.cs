@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoFixture;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -114,6 +115,10 @@ public class FellingLicenceApplicationRepositoryBaseTests
         Assert.Equal(stepStatusRecord.OperationDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus);
         Assert.Equal(stepStatusRecord.SelectedCompartmentsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus);
         Assert.Equal(stepStatusRecord.SupportingDocumentationComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
+        if (stepStatusRecord.PawsCheckComplete is true)
+        {
+            Assert.All(updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses, x => Assert.False(x.Status));
+        }
 
         Assert.Equivalent(stepStatusRecord.FellingAndRestockingDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses);
     }

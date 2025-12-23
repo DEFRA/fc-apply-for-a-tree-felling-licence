@@ -21,6 +21,11 @@ public class SubmittedCompartmentDesignations
     public SubmittedFlaPropertyCompartment SubmittedFlaPropertyCompartment { get; set; }
 
     /// <summary>
+    /// Gets and sets the id of the proposed compartment designations this record is based on.
+    /// </summary>
+    public Guid? ProposedCompartmentDesignationsId { get; set; }
+
+    /// <summary>
     /// Gets and sets a value indicating whether the compartment is within an SSSI.
     /// </summary>
     public bool Sssi { get; set; }
@@ -59,4 +64,26 @@ public class SubmittedCompartmentDesignations
     /// Gets and sets a value indicating whether the compartment has no designations.
     /// </summary>
     public bool None { get; set; }
+
+    /// <summary>
+    /// Gets and sets a value indicating that the compartment crosses a PAWS zone.
+    /// </summary>
+    public bool Paws { get; set; }
+
+    /// <summary>
+    /// Gets and sets the <see cref="NativeTreeSpeciesProportion"/> for the compartment before the
+    /// felling operation is carried out.
+    /// </summary>
+    public NativeTreeSpeciesProportion? ProportionBeforeFelling { get; set; }
+
+    /// <summary>
+    /// Gets and sets the <see cref="NativeTreeSpeciesProportion"/> for the compartment after the
+    /// felling operation is carried out.
+    /// </summary>
+    public NativeTreeSpeciesProportion? ProportionAfterFelling { get; set; }
+
+    /// <summary>
+    /// Gets and sets a value indicating whether the compartment designations have been reviewed.
+    /// </summary>
+    public bool HasBeenReviewed { get; set; }
 }

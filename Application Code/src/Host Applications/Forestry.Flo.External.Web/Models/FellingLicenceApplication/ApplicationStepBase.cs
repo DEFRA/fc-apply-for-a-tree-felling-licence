@@ -14,7 +14,9 @@ public class ApplicationStepBase : IApplicationStep
 
             if (!StepComplete.HasValue)
             {
-                applicationStepStatus = ApplicationStepStatus.NotStarted;
+                applicationStepStatus = IsWithApplicant
+                    ? ApplicationStepStatus.AmendmentRequired
+                    : ApplicationStepStatus.NotStarted;
             }
             else
             {
