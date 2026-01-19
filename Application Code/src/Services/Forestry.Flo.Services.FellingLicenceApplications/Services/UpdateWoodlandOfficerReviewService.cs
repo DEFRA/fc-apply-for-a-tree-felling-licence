@@ -132,7 +132,8 @@ public class UpdateWoodlandOfficerReviewService(
                 maybeExistingPr.Value.WoodlandOfficerConsultationPublicRegisterExemptionReason = null;
                 maybeExistingPr.Value.WoodlandOfficerSetAsExemptFromConsultationPublicRegister = false;
                 maybeExistingPr.Value.ConsultationPublicRegisterPublicationTimestamp = publishedDateTime;
-                maybeExistingPr.Value.ConsultationPublicRegisterExpiryTimestamp = publishedDateTime.Add(_woodlandOfficerReviewOptions.PublicRegisterPeriod);
+                maybeExistingPr.Value.ConsultationPublicRegisterExpiryTimestamp = publishedDateTime.Add(publicRegisterPeriod);
+                maybeExistingPr.Value.ConsultationPublicRegisterRemovedTimestamp = null;  // clear any prior removed date in case this is a re-publication
                 maybeExistingPr.Value.EsriId = esriId;
             }
             else
@@ -674,6 +675,43 @@ public class UpdateWoodlandOfficerReviewService(
     }
 
     /// <inheritdoc />
+    public async Task<Result> ConfirmTreeHealthCheckAsync(
+        Guid applicationId, 
+        Guid userId, 
+        bool applicantAnswersConfirmed,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+            {
+                return Result.Failure("Application woodland officer review unable to be updated");
+            }
+
+            var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+                applicationId,
+                userId,
+                cancellationToken);
+
+            if (isFailure)
+            {
+                return Result.Failure(error);
+            }
+
+            review.IsApplicantTreeHealthAnswersConfirmed = applicantAnswersConfirmed;
+
+            await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception caught in ConfirmTreeHealthCheckAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Result> UpdateLarchCheckAsync(
         Guid applicationId,
         Guid userId,
@@ -724,6 +762,41 @@ public class UpdateWoodlandOfficerReviewService(
         }
 
         review.EiaScreeningComplete = true;
+
+        var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+        if (saveResult.IsFailure)
+        {
+            logger.LogError("Could not save changes to woodland officer review, error: {Error}", saveResult.Error);
+            return Result.Failure(saveResult.Error.ToString());
+        }
+
+        return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> CompletePriorityOpenHabitatAsync(
+        Guid applicationId,
+        Guid userId,
+        bool isComplete,
+        CancellationToken cancellationToken)
+    {
+        if (await AssertApplication(applicationId, userId, cancellationToken) is false)
+        {
+            return Result.Failure("Application woodland officer review unable to be updated");
+        }
+
+        var (_, isFailure, review, error) = await UpdateWoodlandOfficerReviewLastUpdateDateAndBy(
+            applicationId,
+            userId,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            return Result.Failure(error);
+        }
+
+        review.PriorityOpenHabitatComplete = isComplete;
 
         var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 

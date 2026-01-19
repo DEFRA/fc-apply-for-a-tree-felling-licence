@@ -19,16 +19,20 @@
 
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
 
-    <p class="govuk-body">
-        We’ve reviewed you application and proposed some changes to make sure it meets UK Forestry Standards.
+    <p class="govuk-body" condition="@Model.IsEditable">
+        We’ve reviewed your application and proposed some changes to make sure it meets UK Forestry Standards.
+    </p>
+    
+    <p class="govuk-body" condition="@(!Model.IsEditable)">
+        We reviewed your application and proposed some changes to make sure it meets UK Forestry Standards.
     </p>
 
-    <p class="govuk-body">
+    <p class="govuk-body" condition="@Model.IsEditable">
         <b>What you have to do</b> <br/>
         Review the changes and confirm if you’re happy to go ahead.
     </p>
 
-    <p class="govuk-body">
+    <p class="govuk-body" condition="@Model.IsEditable">
         If we don’t hear from you by <b>@DateTimeDisplay.GetDateDisplayString(Model.ReviewDeadline)</b>, we’ll withdraw your application.
     </p>
     
@@ -182,10 +186,10 @@
 			<div class="govuk-heading-m">
 				Amendment reasons
 			</div>
-			<p>
+            <p class="govuk-body">
 				@Model.AmendmentsReason
 			</p>
-			<fieldset class="govuk-fieldset" id="@nameof(Model.ApplicantAgreed)">
+            <fieldset class="govuk-fieldset" id="@nameof(Model.ApplicantAgreed)" condition="@Model.IsEditable">
                 <legend class="govuk-heading-m">
                     Do you agree to the proposed amendments made by the Woodland Officer?
                 </legend>
@@ -232,6 +236,16 @@
 
                 </div>
             </fieldset>
+            
+            <fieldset class="govuk-fieldset" condition="@(!Model.IsEditable)">
+                <legend class="govuk-heading-m">
+                    You have provided a response to these proposed amendments
+                </legend>
+                <p class="govuk-body" condition="@(Model.ApplicantAgreed is true)">You agreed to these amendments on @DateTimeDisplay.GetDateTimeDisplayString(Model.ResponseReceivedDate)</p>
+                <p class="govuk-body" condition="@(Model.ApplicantAgreed is false)">You disagreed with these amendments on @DateTimeDisplay.GetDateTimeDisplayString(Model.ResponseReceivedDate)</p>
+                <p class="govuk-body" condition="@(Model.ApplicantAgreed is false)">You provided the following reason:</p>
+                <p class="govuk-body" condition="@(Model.ApplicantAgreed is false)">@Model.ApplicantDisagreementReason</p>
+            </fieldset>
         </govuk-form-group>
 
         <div class="govuk-button-group">
@@ -240,11 +254,8 @@
             </a>
         </div>
 
-        <div class="govuk-button-group">
-            <button condition-disabled="!Model.IsEditable"
-                    class="govuk-button"
-                    type="submit"
-                    data-module="govuk-button">
+        <div class="govuk-button-group" condition="@Model.IsEditable">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
                 Submit review
             </button>
         </div>

@@ -216,4 +216,30 @@ public class FellingLicenceApplication
     public string? WoodlandManagementPlanReference { get; set; }
 
     public ApprovedInError? ApprovedInError { get; set; }
+
+    /// <summary>
+    /// Gets and sets a flag indicating whether this application has a tree health issue.
+    /// </summary>
+    public bool? IsTreeHealthIssue { get; set; }
+
+    /// <summary>
+    /// Gets and sets the list of tree health issues for this application.
+    /// </summary>
+    public List<string> TreeHealthIssues { get; set; } = [];
+
+    /// <summary>
+    /// Gets and sets a flag indicating whether this application has other tree health issues outside of
+    /// the configured list.
+    /// </summary>
+    public bool? TreeHealthIssueOther { get; set; }
+
+    /// <summary>
+    /// Gets and sets the other tree health issue details for this application.
+    /// </summary>
+    public string? TreeHealthIssueOtherDetails { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating if any compartments are being converted into priority open habitats.
+    /// </summary>
+    public bool? IsPriorityOpenHabitat { get; set; }
 }

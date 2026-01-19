@@ -1,11 +1,14 @@
 ﻿using AutoFixture.Xunit2;
+using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
-using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Tests.Common;
 using LinqKit;
+using Moq;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AssignToApplicantTests;
 
@@ -28,6 +31,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         FellingLicenceApplication fla,
         string returnUrl)
     {
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+
         var sut = CreateSut();
 
         TestUtils.SetProtectedProperty(fla, nameof(fla.Id), Guid.NewGuid());
@@ -45,6 +57,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         UserAccount authorAccount,
         string returnUrl)
     {
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+
         var sut = CreateSut();
 
         TestUtils.SetProtectedProperty(fla, nameof(fla.Id), Guid.NewGuid());
@@ -65,6 +86,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         UserAccount authorAccount,
         string returnUrl)
     {
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+
         var sut = CreateSut();
 
         TestUtils.SetProtectedProperty(fla, nameof(fla.Id), Guid.NewGuid());
@@ -75,6 +105,85 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
             woodlandOwner,
             assigneeHistory,
             authorAccount);
+    }
+
+
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnFailureWhenFlaInWrongState(
+        FellingLicenceApplication fla,
+        WoodlandOwnerModel woodlandOwner,
+        UserAccount externalApplicantAccount,
+        Flo.Services.InternalUsers.Entities.UserAccount.UserAccount internalUserAccount,
+        List<UserAccountModel> externalApplicantAccountModels,
+        string returnUrl)
+    {
+        FellingLicenceStatus[] errorStates =
+        [
+            FellingLicenceStatus.Draft, FellingLicenceStatus.Approved, FellingLicenceStatus.SentForApproval,
+            FellingLicenceStatus.Received, FellingLicenceStatus.WithApplicant, FellingLicenceStatus.ReturnedToApplicant,
+            FellingLicenceStatus.ApprovedInError, FellingLicenceStatus.ReferredToLocalAuthority,
+            FellingLicenceStatus.Refused, FellingLicenceStatus.Withdrawn
+        ];
+
+        TestUtils.SetProtectedProperty(fla, nameof(fla.Id), Guid.NewGuid());
+        TestUtils.SetProtectedProperty(externalApplicantAccount, nameof(externalApplicantAccount.Id), Guid.NewGuid());
+        TestUtils.SetProtectedProperty(woodlandOwner, nameof(woodlandOwner.Id), fla.WoodlandOwnerId);
+
+        fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
+
+        externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
+        fla.CreatedById = externalApplicantAccount.Id;
+
+        foreach (var currentStatus in errorStates)
+        {
+            MockFlaRepository.Reset();
+            MockAuditService.Reset();
+
+            fla.StatusHistories =
+            [
+                new StatusHistory
+                {
+                    FellingLicenceApplication = fla,
+                    Status = currentStatus
+                }
+            ];
+
+            var sut = CreateSut();
+
+            MockFlaRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Maybe<FellingLicenceApplication>.From(fla));
+
+            MockWoodlandOwnerService.Setup(x =>
+                    x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success(woodlandOwner));
+
+            MockRetrieveUserAccountsService.Setup(x =>
+                    x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success(externalApplicantAccount));
+
+            MockInternalUserAccountService
+                .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Maybe<Flo.Services.InternalUsers.Entities.UserAccount.UserAccount>.From(internalUserAccount));
+
+            MockRetrieveUserAccountsService
+                .Setup(x => x.IsUserAccountLinkedToFcAgencyAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success(false));
+
+            MockRetrieveUserAccountsService
+                .Setup(x => x.RetrieveUserAccountsForFcAgencyAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success(externalApplicantAccountModels));
+
+            var result = await sut.GetValidExternalApplicantsForAssignmentAsync(TestUser, fla.Id, returnUrl,
+                CancellationToken.None);
+
+
+            Assert.False(result.IsSuccess);
+
+            MockFlaRepository.Verify(x => x.GetAsync(fla.Id, It.IsAny<CancellationToken>()), Times.Once);
+            MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y => y.EventName == AuditEvents.AssignFellingLicenceApplicationToApplicantFailure), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
     }
 
     [Theory, AutoMoqData]
@@ -98,6 +207,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
 
         externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
         fla.CreatedById = externalApplicantAccount.Id;
+
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
 
         await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
             async () =>
@@ -143,6 +261,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = Guid.NewGuid();
 
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+
         await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
             async () =>
             {
@@ -186,6 +313,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
 
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = Guid.NewGuid();
+
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
 
         await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
             async () =>
@@ -231,6 +367,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = Guid.NewGuid();
 
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+
         await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
             async () =>
             {
@@ -274,6 +419,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = externalApplicantAccount.Id;
         externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
+
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
 
         await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
             async () =>
@@ -322,6 +476,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = externalApplicantAccount.Id;
         externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
+        
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
 
         await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
             async () =>
@@ -368,6 +531,15 @@ public class GetValidExternalApplicantsForAssignmentTests : AssignToApplicantUse
         fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
         fla.CreatedById = externalApplicantAccount.Id;
         externalApplicantAccountModels.First().UserAccountId = externalApplicantAccount.Id;
+
+        fla.StatusHistories =
+        [
+            new StatusHistory
+            {
+                FellingLicenceApplication = fla,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
 
         await RetrieveFlaSummaryShouldReturnSuccessWhenDetailsRetrieved(
             async () =>

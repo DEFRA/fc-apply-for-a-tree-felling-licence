@@ -31,6 +31,7 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
         bool isAssignedWoodlandOfficer,
         bool isCBWApplication,
         bool isEiaApplication,
+        bool isTreeHealthApplication,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to retrieve admins officer review entry for application with id {ApplicationId}",
@@ -69,6 +70,9 @@ public class GetAdminOfficerReviewService : IGetAdminOfficerReview
                     : InternalReviewStepStatus.NotRequired,
                 CalculateCBWStatus(isCBWApplication, adminOfficerReview),
                 CalculateEiaStatus(isEiaApplication, adminOfficerReview),
+                isTreeHealthApplication
+                    ? ConvertBoolToInternalReviewStepStatus(adminOfficerReview?.IsTreeHealthAnswersChecked)
+                    : InternalReviewStepStatus.NotRequired,
                 isAgentApplication),
         };
     }

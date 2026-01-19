@@ -58,7 +58,7 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
             return Result.Failure<CompleteAdminOfficerReviewNotificationsModel>("Unable to complete Admin Officer review for given application");
         }
 
-        if (AssertAdminOfficerReviewCanBeCompleted(applicationMaybe.Value.AdminOfficerReview, isAgencyApplication) == false)
+        if (AssertAdminOfficerReviewCanBeCompleted(applicationMaybe.Value.AdminOfficerReview, isAgencyApplication, applicationMaybe.Value.IsTreeHealthIssue is true) == false)
         {
             _logger.LogError("All admin officer review tasks must be completed to complete the review for application {ApplicationId}", applicationId);
             return Result.Failure<CompleteAdminOfficerReviewNotificationsModel>("Unable to complete Admin Officer review for given application");
@@ -291,6 +291,34 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         return UnitResult.Success<UserDbErrorReason>();
     }
 
+    /// <inheritdoc />
+    public async Task<Result> ConfirmTreeHealthCheckAsync(Guid applicationId, Guid performingUserId, CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Setting admin officer review tree health check status to confirmed for application id {ApplicationId}", applicationId);
+
+        var (_, cannotBeAmended, adminOfficerReview, error) =
+            await CheckOrCreateAdminOfficerReviewAsync(applicationId, performingUserId, cancellationToken);
+
+        if (cannotBeAmended)
+        {
+            _logger.LogWarning("User id {UserId} cannot update admin officer review for application {ApplicationId}", performingUserId, applicationId);
+
+            return Result.Failure(error);
+        }
+
+        adminOfficerReview.IsTreeHealthAnswersChecked = true;
+        adminOfficerReview.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+        adminOfficerReview.LastUpdatedById = performingUserId;
+
+        var updateResult = await _internalFlaRepository.UnitOfWork
+            .SaveEntitiesAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return updateResult.IsFailure
+            ? Result.Failure(updateResult.Error.ToString())
+            : Result.Success();
+    }
+
     public enum AdminOfficerReviewSections
     {
         AgentAuthorityForm,
@@ -420,10 +448,11 @@ public class UpdateAdminOfficerReviewService : IUpdateAdminOfficerReviewService
         return Result.Success();
     }
 
-    private bool AssertAdminOfficerReviewCanBeCompleted(AdminOfficerReview? adminOfficerReview, bool isAgencyApplication)
+    private bool AssertAdminOfficerReviewCanBeCompleted(AdminOfficerReview? adminOfficerReview, bool isAgencyApplication, bool isTreeHealthApplication)
     {
         return adminOfficerReview is not null &&
                (adminOfficerReview.AgentAuthorityFormChecked is true || isAgencyApplication is false) &&
+               (adminOfficerReview.IsTreeHealthAnswersChecked is true || isTreeHealthApplication is false) &&
                adminOfficerReview is
                {
                    MappingChecked: true,

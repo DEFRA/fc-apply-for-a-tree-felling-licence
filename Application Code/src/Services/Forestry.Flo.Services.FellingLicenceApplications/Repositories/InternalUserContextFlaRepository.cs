@@ -335,6 +335,22 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     /// <inheritdoc />
+    public async Task<Result<List<HabitatRestoration>>> GetHabitatRestorationsAsync(Guid applicationId, CancellationToken cancellationToken)
+    {
+        var fla = await Context.FellingLicenceApplications
+            .Include(x => x.LinkedPropertyProfile)
+            .ThenInclude(x => x.HabitatRestorations)
+            .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
+
+        if (fla == null)
+        {
+            return Result.Failure<List<HabitatRestoration>>("Could not locate application with given id");
+        }
+
+        return Result.Success(fla.LinkedPropertyProfile?.HabitatRestorations?.ToList() ?? new List<HabitatRestoration>());
+    }
+
+    /// <inheritdoc />
     public async Task<Result<(List<ConfirmedFellingDetail>, List<ConfirmedRestockingDetail>)>> GetConfirmedFellingAndRestockingDetailsForApplicationAsync(Guid applicationId, CancellationToken cancellationToken)
     {
         var fla = await Context.FellingLicenceApplications

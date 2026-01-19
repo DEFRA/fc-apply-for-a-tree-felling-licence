@@ -151,6 +151,16 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Retrieves the habitat restoration details for the application with the given id.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to retrieve details for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The habitat restoration details for the application.</returns>
+    Task<Result<List<HabitatRestoration>>> GetHabitatRestorationsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Retrieves the confirmed felling and restocking details for the application with the given id.
     /// </summary>
     /// <param name="applicationId">The id of the application to retrieve details for.</param>

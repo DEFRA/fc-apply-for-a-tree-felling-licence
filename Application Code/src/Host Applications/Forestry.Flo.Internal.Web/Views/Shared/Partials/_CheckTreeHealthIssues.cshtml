@@ -1,0 +1,71 @@
+﻿@using System.Web
+@model Forestry.Flo.Internal.Web.Models.TreeHealthIssuesViewModel
+
+@{
+    var isTreeHealthIssue = Model.TreeHealthIssues.NoTreeHealthIssues == false;
+
+    var reasons = Model.TreeHealthIssues.NoTreeHealthIssues
+        ? []
+        : Model.TreeHealthIssues.TreeHealthIssueSelections.Select(x => x.Key).ToList();
+    if (Model.TreeHealthIssues.OtherTreeHealthIssue)
+    {
+        reasons.Add($"Other tree disease or public safety issue: {HttpUtility.HtmlEncode(Model.TreeHealthIssues.OtherTreeHealthIssueDetails)}");
+    }
+
+    var reasonsOutput = string.Join("<br />", reasons);
+}
+
+<div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+        <h2 class="govuk-summary-card__title">Tree health answers</h2>
+    </div>
+    <div class="govuk-summary-card__content">
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">
+                    Is there a tree health or public safety reason for the felling?
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @(isTreeHealthIssue ? "Yes" : "No")
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row" condition="@isTreeHealthIssue">
+                <dt class="govuk-summary-list__key">
+                    Select the tree health or public safety reasons
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @Html.Raw(reasonsOutput)
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row" condition="@isTreeHealthIssue">
+                <dt class="govuk-summary-list__key">
+                    Uploaded documents
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @if (Model.TreeHealthDocuments.Any())
+                    {
+                        foreach (var document in Model.TreeHealthDocuments)
+                        {
+                            <div>
+                                <a class="hidden-download-supporting-document"
+                                   asp-controller="SupportingDocuments"
+                                   asp-action="DownloadSupportingDocument"
+                                   asp-route-id="@Model.ApplicationId"
+                                   asp-route-documentIdentifier="@document.Id">
+                                    @document.FileName
+                                </a>
+                            </div>
+                            <br />
+                        }
+                    }
+                    else
+                    {
+                        <div>
+                            No documents uploaded
+                        </div>
+                    }
+                </dd>
+            </div>
+        </dl>
+    </div>
+</div>

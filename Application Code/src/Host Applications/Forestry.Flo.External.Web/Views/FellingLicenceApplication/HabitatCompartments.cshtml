@@ -1,0 +1,67 @@
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration.HabitatCompartmentsModel
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
+
+@{
+    ViewData["Title"] = "Habitat restoration compartments";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    else
+    {
+        ViewData.ManuallySetBackLink(Url.Action("HabitatRestoration", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    ViewData.ShowBackLink();
+
+    var selectedIds = Model.SelectedCompartmentIds?.ToHashSet() ?? new HashSet<Guid>();
+    var propertyHasCompartments = ViewBag.Compartments?.Count > 0;
+}
+
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary"/>
+
+<form id="habitat-compartments-form" method="post">
+    <input type="hidden" asp-for="ApplicationId" />
+    @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+
+    <div class="govuk-grid-column-two-thirds">
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    <h1 class="govuk-fieldset__heading">
+                        Select the compartments being converted into priority open habitats
+                    </h1>
+                </legend>
+            </fieldset>
+        </div>
+    </div>
+
+    <div class="govuk-grid-column-full">
+        <div class="govuk-form-group">
+            @if (!propertyHasCompartments)
+            {
+                <p class="govuk-hint">No compartments available.</p>
+            }
+            else
+            {
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    @foreach (var compartment in ViewBag.Compartments)
+                    {
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" id="SelectedCompartmentIds_@compartment.Id" name="SelectedCompartmentIds" type="checkbox" checked="@selectedIds.Contains(compartment.Id)" value="@compartment.Id">
+                            <label class="govuk-label govuk-checkboxes__label" for="SelectedCompartmentIds_@compartment.Id">
+                                @compartment.DisplayName
+                            </label>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-button-group">
+                <button class="govuk-button" type="submit" data-module="govuk-button">Continue</button>
+            </div>
+        </div>
+    </div>
+</form>

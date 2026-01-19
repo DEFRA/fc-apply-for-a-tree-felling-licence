@@ -1,0 +1,46 @@
+image:
+  repository: fsflo.azurecr.io/jmeter/jmeter
+  tag: "5.5"
+  pullPolicy: IfNotPresent
+
+testplan:
+  file: "testplans/stress-plan.jmx"
+  configMapName: jmeter-testplan
+
+results:
+  pvc:
+    enabled: true
+    name: jmeter-results-pvc
+    storageClassName: default
+    size: 1Gi
+
+job:
+  name: jmeter-stress-run
+  namespace: perf-tools
+  enabled: true
+  threads: 100
+  rampup: 60
+  duration: 600
+  baseUrl: stressflo.ps.conneqt.cloud
+  resources:
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+
+helperPod:
+  enabled: true
+  name: jmeter-results-shell
+  image: alpine
+  ttlSeconds: 3600
+
+nodeSelection:
+  environment: performance
+  appWorkload: flov2-app
+  tolerations:
+    - key: perf-app
+      operator: Equal
+      value: "true"
+      effect: NoSchedule

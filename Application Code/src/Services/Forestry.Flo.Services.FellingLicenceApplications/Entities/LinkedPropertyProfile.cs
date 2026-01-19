@@ -40,4 +40,9 @@ public class LinkedPropertyProfile
     /// Gets or sets the proposed compartment designations.
     /// </summary>
     public IList<ProposedCompartmentDesignations>? ProposedCompartmentDesignations { get; set; }
+
+    /// <summary>
+    /// Gets or sets the habitat restoration records for this property profile.
+    /// </summary>
+    public IList<HabitatRestoration>? HabitatRestorations { get; set; }
 }

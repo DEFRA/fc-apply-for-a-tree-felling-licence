@@ -1,0 +1,71 @@
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration.HabitatTypeModel
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
+@using Forestry.Flo.External.Web.Infrastructure
+
+@{
+    ViewData["Title"] = "Habitat type";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    else
+    {
+        ViewData.ManuallySetBackLink(Url.Action("HabitatCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    ViewData.ShowBackLink();
+}
+
+<partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-l">What type of priority open habitat is @Model.CompartmentName predominantly being converted into?</h1>
+    <p class="govuk-body">Priority open habitats are nationally important wildlife habitats.</p>
+    <p class="govuk-body"><a href="https://www.gov.uk/government/publications/priority-open-habitats-and-woodland-creation-a-field-guide" target="_blank">Learn more about priority open habitats (opens in new tab)</a></p>
+
+    <form method="post">
+        <input type="hidden" asp-for="ApplicationId" />
+        <input type="hidden" asp-for="CompartmentId" />
+        <input type="hidden" asp-for="CompartmentName" />
+        @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend">Select the habitat that best describes the compartment after felling.</legend>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    @foreach (var value in Enum.GetValues(typeof(HabitatType)).Cast<HabitatType>())
+                    {
+                        @if(value != HabitatType.Other)
+                        {
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" type="radio" id="habitat_@value" name="SelectedHabitatType" value="@value" checked="@(Model.SelectedHabitatType == value)">
+                            <label class="govuk-label govuk-radios__label" for="habitat_@value">@value.GetDisplayName()</label>
+                        </div>
+                        }
+                        else
+                        {
+                        <div class="govuk-radios__divider">or</div>
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" type="radio" id="habitat_@value" name="SelectedHabitatType" value="@value" checked="@(Model.SelectedHabitatType == value)" data-aria-controls="conditional-other">
+                            <label class="govuk-label govuk-radios__label" for="habitat_@value">@value.GetDisplayName()</label>
+                        </div>
+                        <div id="conditional-other" class="govuk-radios__conditional">
+                            <div class="govuk-form-group">
+                                    <label class="govuk-label" for="OtherHabitatDescription">Describe the type of open priority habitat this compartment is being converted to</label>
+                                <input class="govuk-input" asp-for="OtherHabitatDescription" />
+                            </div>
+                        </div>
+                        }
+                    }
+
+                </div>
+            </fieldset>
+        </div>
+
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">Continue</button>
+        </div>
+    </form>
+</div>

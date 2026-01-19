@@ -60,6 +60,8 @@ public class FellingLicenceApplicationRepositoryBase : IFellingLicenceApplicatio
         entity.SupportingDocumentationStatus = applicationStepStatuses.SupportingDocumentationComplete ?? entity.SupportingDocumentationStatus;
         entity.SelectCompartmentsStatus = applicationStepStatuses.SelectedCompartmentsComplete ?? entity.SelectCompartmentsStatus;
         entity.EnvironmentalImpactAssessmentStatus = applicationStepStatuses.EnvironmentalImpactAssessmentComplete ?? entity.EnvironmentalImpactAssessmentStatus;
+        entity.HabitatRestorationStatus = applicationStepStatuses.HabitatRestorationComplete ?? entity.HabitatRestorationStatus;
+        entity.TreeHealthIssuesStatus = applicationStepStatuses.TreeHealthComplete ?? entity.TreeHealthIssuesStatus;
 
         if (applicationStepStatuses.PawsCheckComplete is false)
         {

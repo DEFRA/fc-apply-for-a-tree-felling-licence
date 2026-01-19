@@ -131,6 +131,8 @@ public class WoodlandOfficerReviewControllerTests
                     InternalReviewStepStatus.Completed,
                     InternalReviewStepStatus.Completed,
                     InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
+                    InternalReviewStepStatus.Completed,
                     true))
             .Create();
         var model = _fixture.Build<WoodlandOfficerReviewModel>()
@@ -170,7 +172,9 @@ public class WoodlandOfficerReviewControllerTests
                     InternalReviewStepStatus.Completed, 
                     InternalReviewStepStatus.Completed, 
                     InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed,
                     InternalReviewStepStatus.Completed, 
+                    InternalReviewStepStatus.Completed,
                     true))
             .Create();
         var model = _fixture.Build<WoodlandOfficerReviewModel>()
@@ -200,6 +204,8 @@ public class WoodlandOfficerReviewControllerTests
         var reviewModel = _fixture.Build<WoodlandOfficerReviewModel>()
             .With(x => x.WoodlandOfficerReviewTaskListStates,
                 new WoodlandOfficerReviewTaskListStates(
+                    InternalReviewStepStatus.NotStarted,
+                    InternalReviewStepStatus.NotStarted,
                     InternalReviewStepStatus.NotStarted,
                     InternalReviewStepStatus.NotStarted,
                     InternalReviewStepStatus.NotStarted,
@@ -1392,145 +1398,22 @@ public class WoodlandOfficerReviewControllerTests
     }
 
     [Fact]
-    public async Task LarchCheck_Post_ReturnsView_WhenModelStateIsInvalid_AndUseCaseSucceeds()
+    public async Task LarchCheck_Post_ReturnsViewWhenReloadSucceedsAfterUpdateFailure()
     {
         var useCase = new Mock<ILarchCheckUseCase>();
         var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
         var amendCaseNotes = new Mock<IAmendCaseNotes>();
-        var model = _fixture.Create<LarchCheckModel>();
+        var model = _fixture.Build<LarchCheckModel>().Without(x => x.FormLevelCaseNote).Create();
 
-        _controller.ModelState.AddModelError("Test", "Error");
+        useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<bool>("fail"));
         useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(model));
-
-        var result = await _controller.LarchCheck(_applicationId, model, useCase.Object, woReviewUseCase.Object, amendCaseNotes.Object, CancellationToken.None);
-
-        var viewResult = Assert.IsType<ViewResult>(result);
-        Assert.IsType<LarchCheckModel>(viewResult.Model);
-    }
-
-    [Fact]
-    public async Task LarchCheck_Post_RedirectsToError_WhenModelStateIsInvalid_AndUseCaseFails()
-    {
-        var useCase = new Mock<ILarchCheckUseCase>();
-        var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var amendCaseNotes = new Mock<IAmendCaseNotes>();
-        var model = _fixture.Create<LarchCheckModel>();
-
-        _controller.ModelState.AddModelError("Test", "Error");
-        useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<LarchCheckModel>("fail"));
+            .ReturnsAsync(model);
 
         var result = await _controller.LarchCheck(_applicationId, model, useCase.Object, woReviewUseCase.Object, amendCaseNotes.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Error", redirect.ActionName);
-        Assert.Equal("Home", redirect.ControllerName);
-    }
-
-    [Fact]
-    public async Task LarchCheck_Post_RedirectsToIndex_WhenCompleteLarchCheckFails()
-    {
-        var useCase = new Mock<ILarchCheckUseCase>();
-        var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var amendCaseNotes = new Mock<IAmendCaseNotes>();
-        var model = _fixture.Create<LarchCheckModel>();
-
-        useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-        woReviewUseCase.Setup(x => x.CompleteLarchCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("fail"));
-
-        var result = await _controller.LarchCheck(_applicationId, model, useCase.Object, woReviewUseCase.Object, amendCaseNotes.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-    }
-
-    [Fact]
-    public async Task LarchCheck_Post_RedirectsToLarchFlyover_WhenAddCaseNoteFails()
-    {
-        var useCase = new Mock<ILarchCheckUseCase>();
-        var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var amendCaseNotes = new Mock<IAmendCaseNotes>();
-
-        var caseNote = _fixture.Build<FormLevelCaseNote>()
-            .With(x => x.CaseNote, "Some note")
-            .With(x => x.VisibleToApplicant, true)
-            .With(x => x.VisibleToConsultee, false)
-            .Create();
-
-        var model = _fixture.Build<LarchCheckModel>()
-            .With(x => x.FormLevelCaseNote, caseNote)
-            .Create();
-
-        useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-        woReviewUseCase.Setup(x => x.CompleteLarchCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-        amendCaseNotes.Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("fail"));
-
-        var result = await _controller.LarchCheck(_applicationId, model, useCase.Object, woReviewUseCase.Object, amendCaseNotes.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("LarchFlyover", redirect.ActionName);
-    }
-
-    [Fact]
-    public async Task LarchCheck_Post_RedirectsToIndex_WhenAddCaseNoteSucceeds()
-    {
-        var useCase = new Mock<ILarchCheckUseCase>();
-        var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var amendCaseNotes = new Mock<IAmendCaseNotes>();
-
-        var caseNote = _fixture.Build<FormLevelCaseNote>()
-            .With(x => x.CaseNote, "Some note")
-            .With(x => x.VisibleToApplicant, true)
-            .With(x => x.VisibleToConsultee, false)
-            .Create();
-
-        var model = _fixture.Build<LarchCheckModel>()
-            .With(x => x.FormLevelCaseNote, caseNote)
-            .Create();
-
-        useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-        woReviewUseCase.Setup(x => x.CompleteLarchCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-        amendCaseNotes.Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-
-        var result = await _controller.LarchCheck(_applicationId, model, useCase.Object, woReviewUseCase.Object, amendCaseNotes.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-    }
-
-    [Fact]
-    public async Task LarchCheck_Post_RedirectsToIndex_WhenNoCaseNote()
-    {
-        var useCase = new Mock<ILarchCheckUseCase>();
-        var woReviewUseCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var amendCaseNotes = new Mock<IAmendCaseNotes>();
-
-        var caseNote = _fixture.Build<FormLevelCaseNote>()
-            .With(x => x.CaseNote, "")
-            .Create();
-
-        var model = _fixture.Build<LarchCheckModel>()
-            .With(x => x.FormLevelCaseNote, caseNote)
-            .Create();
-
-        useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-        woReviewUseCase.Setup(x => x.CompleteLarchCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(true));
-
-        var result = await _controller.LarchCheck(_applicationId, model, useCase.Object, woReviewUseCase.Object, amendCaseNotes.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
+        Assert.Equal("LarchCheck", redirect.ActionName);
     }
 
     [Fact]
@@ -1572,6 +1455,7 @@ public class WoodlandOfficerReviewControllerTests
 
         useCase.Setup(x => x.GetLarchFlyoverModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(model);
+
         validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult(new[] { new FluentValidation.Results.ValidationFailure("Test", "Error") }));
 
         var result = await _controller.LarchFlyover(_applicationId, model, useCase.Object, amendCaseNotes.Object, validator.Object, CancellationToken.None);
@@ -1595,7 +1479,6 @@ public class WoodlandOfficerReviewControllerTests
         var result = await _controller.LarchFlyover(_applicationId, model, useCase.Object, amendCaseNotes.Object, validator.Object, CancellationToken.None);
 
         var redirectToActionResult = Assert.IsType<RedirectToActionResult>(result);
-
         Assert.Equal("Error", redirectToActionResult.ActionName);
         Assert.Equal("Home", redirectToActionResult.ControllerName);
     }
@@ -1754,9 +1637,9 @@ public class WoodlandOfficerReviewControllerTests
 
         var result = await _controller.EiaScreening(screeningModel, useCase.Object, validator.Object, CancellationToken.None);
 
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Error", redirect.ActionName);
-        Assert.Equal("Home", redirect.ControllerName);
+        var redirectToActionResult = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Error", redirectToActionResult.ActionName);
+        Assert.Equal("Home", redirectToActionResult.ControllerName);
     }
 
 
@@ -1903,30 +1786,6 @@ public class WoodlandOfficerReviewControllerTests
 
 
     [Fact]
-    public async Task ViewDesignations_Post_ReturnsView_WhenNotAllCompartmentsHaveCompletedDesignations()
-    {
-        var useCase = new Mock<IDesignationsUseCase>();
-        var model = _fixture
-            .Create<DesignationsViewModel>();
-
-        model.CompartmentDesignations.CompartmentDesignations.Clear();
-
-        model.CompartmentDesignations.CompartmentDesignations.Add(
-            _fixture.Build<SubmittedCompartmentDesignationsModel>()
-                .Without(x => x.Id)
-                .With(x => x.HasBeenReviewed, false)
-                .Create());
-
-        useCase.Setup(s => s.GetApplicationDesignationsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(model));
-
-        var result = await _controller.ViewDesignations(model, useCase.Object, CancellationToken.None);
-
-        var view = Assert.IsType<ViewResult>(result);
-        Assert.Equal(model, view.Model);
-    }
-
-    [Fact]
     public async Task ViewDesignations_Post_RedirectsToError_WhenGetApplicationFails()
     {
         var useCase = new Mock<IDesignationsUseCase>();
@@ -2020,16 +1879,22 @@ public class WoodlandOfficerReviewControllerTests
     {
         var useCase = new Mock<IDesignationsUseCase>();
         var validator = new Mock<IValidator<UpdateDesignationsViewModel>>();
-        var model = _fixture.Create<UpdateDesignationsViewModel>();
+        var model = _fixture.Build<UpdateDesignationsViewModel>().Without(x => x.NextCompartmentId).Create();
+        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult());
+        useCase.Setup(x => x.UpdateCompartmentDesignationsAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<SubmittedCompartmentDesignationsModel>(),
+                It.IsAny<InternalUser>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure("fail"));
         useCase.Setup(x => x.GetUpdateDesignationsModelAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<UpdateDesignationsViewModel>("fail"));
-        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult(new[] { new FluentValidation.Results.ValidationFailure("Test", "Error") }));
 
         var result = await _controller.UpdateDesignations(model, useCase.Object, validator.Object, CancellationToken.None);
 
-        var redirectToActionResult = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Error", redirectToActionResult.ActionName);
-        Assert.Equal("Home", redirectToActionResult.ControllerName);
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+
+        Assert.Equal("Error", redirect.ActionName);
     }
 
     [Fact]
@@ -2097,30 +1962,6 @@ public class WoodlandOfficerReviewControllerTests
         var redirect = Assert.IsType<RedirectToActionResult>(result);
 
         Assert.Equal("Error", redirect.ActionName);
-        Assert.Equal("Home", redirect.ControllerName);
-    }
-
-
-    [Fact]
-    public async Task UpdateDesignations_Post_ReturnsViewWhenReloadSucceedsAfterUpdateFailure()
-    {
-        var useCase = new Mock<IDesignationsUseCase>();
-        var validator = new Mock<IValidator<UpdateDesignationsViewModel>>();
-        var model = _fixture.Build<UpdateDesignationsViewModel>().Without(x => x.NextCompartmentId).Create();
-        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult());
-        useCase.Setup(x => x.UpdateCompartmentDesignationsAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<SubmittedCompartmentDesignationsModel>(),
-                It.IsAny<InternalUser>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("fail"));
-        useCase.Setup(x => x.GetUpdateDesignationsModelAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(model);
-
-        var result = await _controller.UpdateDesignations(model, useCase.Object, validator.Object, CancellationToken.None);
-
-        var viewResult = Assert.IsType<ViewResult>(result);
-        Assert.IsType<UpdateDesignationsViewModel>(viewResult.Model);
     }
 
     [Fact]

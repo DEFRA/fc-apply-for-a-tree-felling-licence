@@ -24,7 +24,7 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private readonly List<BreadCrumb> _breadCrumbsRoot = new()
     {
-        new ("Home", "Home", "Index", null)
+        new ("Open applications", "Home", "Index", null)
     };
 
     // Pagination & sorting input constraints

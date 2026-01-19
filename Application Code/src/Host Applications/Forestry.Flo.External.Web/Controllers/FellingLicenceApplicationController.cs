@@ -649,9 +649,28 @@ public partial class FellingLicenceApplicationController(
         var result = await createFellingLicenceApplicationUseCase.SetApplicationConstraintCheckAsync(user,
             model, cancellationToken);
 
-        return result.IsFailure
-            ? RedirectToAction(nameof(HomeController.Error), "Home")
-            : RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.ApplicationId });
+        if (result.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        // Next step depends on which steps are required for this application
+        if (resultModel.Value.HabitatRestoration.StepRequiredForApplication)
+        {
+            return RedirectToAction(nameof(HabitatRestoration), new { applicationId = model.ApplicationId });
+        }
+
+        if (resultModel.Value.EnvironmentalImpactAssessment.StepRequiredForApplication)
+        {
+            return RedirectToAction(nameof(EnvironmentalImpactAssessment), new { applicationId = model.ApplicationId });
+        }
+
+        if (resultModel.Value.PawsAndIawp.StepRequiredForApplication)
+        {
+            return RedirectToAction(nameof(PawsCheck), new { applicationId = model.ApplicationId });
+        }
+
+        return RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.ApplicationId });
     }
 
     [HttpPost]
@@ -741,7 +760,7 @@ public partial class FellingLicenceApplicationController(
             ? RedirectToAction(nameof(HomeController.Error), "Home")
             : operationDetailsModel.ReturnToApplicationSummary 
                 ? RedirectToAction(nameof(ApplicationSummary), new { applicationId = operationDetailsModel.ApplicationId })
-                : RedirectToAction(nameof(SelectCompartments), new { applicationId = operationDetailsModel.ApplicationId });
+                : RedirectToAction(nameof(TreeHealthCheck), new { applicationId = operationDetailsModel.ApplicationId });
     }
 
     [HttpGet]
@@ -1805,6 +1824,7 @@ public partial class FellingLicenceApplicationController(
     public async Task<IActionResult> ApplicationSummary(
         Guid applicationId,
         [FromServices] GetAgentAuthorityFormDocumentsUseCase useCase,
+        [FromServices] HabitatRestorationUseCase habitatUseCase,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -1820,6 +1840,8 @@ public partial class FellingLicenceApplicationController(
         {
             return RedirectToAction(nameof(ApplicationTaskList), new { applicationId = result.Value.Application.ApplicationId });
         }
+
+        result.Value.HabitatRestorations = await habitatUseCase.GetHabitatRestorations(applicationId, cancellationToken);
 
         ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = result.Value.Application.WoodlandOwnerId;
 

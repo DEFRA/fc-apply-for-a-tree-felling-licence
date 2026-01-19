@@ -58,8 +58,6 @@
             value = $selectedSpecies.val();
         }
 
-        const $speciesList = $(`#${formPrefix}-tree-species-select`);
-
 
         // Find row of table for the selected and take the value of the 1st cell as the Species Code
         let $row = $('tr[data-id="' + value + '"]');
@@ -79,23 +77,40 @@
             nameFieldPrefix = "Species";
         }
         if (selectedValue === undefined) {
-            // No selection
-            showTreeSpeciesSelectionError('You must select a species from the list before adding it', formPrefix);
+            // No valid selection
+            return;
         }
         else if (selectedSpecies.filter(e => e === selectedValue).length > 0) {
             // Tree species already exists in treeSpeciesSelections
+            clearSelection(formPrefix);
             return;
         }
         else {
             // Add the selection to the array and redraw
             selectedSpecies.push(selectedValue);
             appendSpeciesHtml(value, selectedValue, formPrefix, idFieldPrefix, nameFieldPrefix);
-
+            clearSelection(formPrefix);
         }
-        $speciesList.get(0).selectedIndex = 0;
-        $(`#${formPrefix}-tree-species-select`).val('');
     }
-    
+
+    function clearSelection(formPrefix) {
+        var selectElement = document.querySelector(`#${formPrefix}-tree-species-select`);
+        if (selectElement) {
+            selectElement.value = null;
+
+            selectElement.accessibleAutocomplete.setState({
+                focused: null,
+                hovered: null,
+                menuOpen: false,
+                query: '',
+                options: selectElement.accessibleAutocomplete.props.defaultValue ? [selectElement.accessibleAutocomplete.props.defaultValue] : [],
+                validChoiceMade: false
+            });
+
+            selectElement.accessibleAutocomplete.props.selectElement.value = null;
+        }
+    }
+
     function removeSpecies(e) {
         e.preventDefault();
         const formPrefix = e.data.formPrefix;

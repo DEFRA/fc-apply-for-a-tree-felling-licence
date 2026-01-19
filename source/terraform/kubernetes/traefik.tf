@@ -38,7 +38,7 @@ resource "helm_release" "traefik" {
     #helm_release.kube-prometheus-stack
   ]
   #force_update = true
-  timeout      = 60
+  timeout = 60
 
 }
 

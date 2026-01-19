@@ -1,0 +1,56 @@
+@using Forestry.Flo.External.Web.Infrastructure
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration.PriorityOpenHabitatsViewModel
+@{
+    ViewData["Title"] = "Habitat restoration";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    else
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    ViewData.ShowBackLink();
+}
+
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary" />
+
+<div class="govuk-grid-column-two-thirds">
+    <div class="govuk-body">
+        <h1 class="govuk-heading-xl">Are any of the compartments being converted into priority open habitats?</h1>
+        <div class="govuk-inset-text">
+            You are being asked this because you said at least one compartment will not be restocked after felling.
+            <br/>
+            <a class="govuk-link" target="_blank" href="https://www.gov.uk/government/publications/habitats-and-species-of-principal-importance-in-england">Learn more about priority habitats (opens in new tab)</a>
+        </div>
+
+        <form method="post" class="habitat-restoration-form">
+            <govuk-form-group asp-for="IsPriorityOpenHabitat">
+                <fieldset class="govuk-fieldset" id="@nameof(Model.IsPriorityOpenHabitat)">
+                    <legend class="govuk-heading-m">Select an option</legend>
+                    <validation asp-for="IsPriorityOpenHabitat"></validation>
+                    <div class="govuk-radios" data-module="govuk-radios">
+                        <div class="govuk-radios__item">
+                            <input asp-for="IsPriorityOpenHabitat" type="radio" class="govuk-radios__input" value="true" />
+                            <label class="govuk-label govuk-radios__label" asp-for="IsPriorityOpenHabitat">Yes</label>
+                        </div>
+                        <div class="govuk-radios__item">
+                            <input id="is-priority-open-habitat-no" asp-for="IsPriorityOpenHabitat" type="radio" class="govuk-radios__input" value="false" />
+                            <label class="govuk-label govuk-radios__label" for="is-priority-open-habitat-no">No</label>
+                        </div>
+                    </div>
+                </fieldset>
+            </govuk-form-group>
+
+            @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+
+            <button type="submit" class="govuk-button" data-module="govuk-button">Continue</button>
+        </form>
+    </div>
+</div>
+
+@section breadcrumbs {
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}

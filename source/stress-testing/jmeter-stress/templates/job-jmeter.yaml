@@ -1,0 +1,68 @@
+{{- if .Values.job.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.job.name }}
+  namespace: {{ .Values.job.namespace }}
+  annotations:
+    "helm.sh/hook": "post-install,post-upgrade"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: jmeter
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["jmeter"]
+          args:
+            - "-n"
+            - "-t"
+            - "/testplan/stress-plan.jmx"
+            - "-l"
+            - "/results/results.jtl"
+            - "-j"
+            - "/results/jmeter.log"
+            - "-JBASE_URL={{ .Values.job.baseUrl }}"
+            - "-JTHREADS={{ .Values.job.threads }}"
+            - "-JRAMPUP={{ .Values.job.rampup }}"
+            - "-JDURATION={{ .Values.job.duration }}"
+          resources:
+{{ toYaml .Values.job.resources | indent 12 }}
+          volumeMounts:
+            - name: testplan
+              mountPath: /testplan
+            - name: results
+              mountPath: /results
+
+      volumes:
+        - name: testplan
+          configMap:
+            name: {{ .Values.testplan.configMapName }}
+        - name: results
+          persistentVolumeClaim:
+            claimName: {{ .Values.results.pvc.name }}
+
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: environment
+                    operator: In
+                    values:
+                      - {{ .Values.nodeSelection.environment }}
+                  {{- if .Values.nodeSelection.appWorkload }}
+                  - key: workload
+                    operator: In
+                    values:
+                      - {{ .Values.nodeSelection.appWorkload }}
+                  {{- end }}
+
+      {{- if .Values.nodeSelection.tolerations }}
+      tolerations:
+{{ toYaml .Values.nodeSelection.tolerations | nindent 8 }}
+      {{- end }}
+{{- end }}

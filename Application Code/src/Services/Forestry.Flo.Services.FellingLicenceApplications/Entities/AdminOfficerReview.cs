@@ -86,4 +86,9 @@ public class AdminOfficerReview
     /// Gets and sets whether the Admin Officer has completed the review.
     /// </summary>
     public bool AdminOfficerReviewComplete { get; set; }
+
+    /// <summary>
+    /// Gets and sets whether the applicant's Tree Health answers have been checked.
+    /// </summary>
+    public bool? IsTreeHealthAnswersChecked { get; set; }
 }

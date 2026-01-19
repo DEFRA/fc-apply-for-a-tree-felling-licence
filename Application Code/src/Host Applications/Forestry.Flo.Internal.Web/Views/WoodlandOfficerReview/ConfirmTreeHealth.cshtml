@@ -1,0 +1,59 @@
+﻿@{
+    ViewData["Title"] = "Check tree health";
+
+    var user = new InternalUser(User);
+}
+@using System.Web
+@model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.ConfirmTreeHealthIssuesViewModel
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
+
+    <partial name="Partials/_ConfirmationMessageDisplay" />
+    <partial name="Partials/_UserGuideDisplay" />
+
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <partial model="@Model.TreeHealthIssuesViewModel" name="Partials/_CheckTreeHealthIssues"/>
+
+    <form id="admin-officer-review" method="post">
+        <input asp-for="ApplicationId" />
+
+        <govuk-form-group asp-for="Confirmed">
+            <fieldset class="govuk-fieldset" role="group" aria-describedby="is-prioritised-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+					Are the submitted tree health answers correct to the best of your understanding?
+                </legend>
+                <validation asp-for="Confirmed"></validation>
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Confirmed" type="radio" value="@true" />
+                        <label class="govuk-label govuk-radios__label" asp-for="Confirmed">
+                            Yes
+                        </label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Confirmed" id="confirmed-no" type="radio" value="@false" />
+                        <label class="govuk-label govuk-radios__label" for="confirmed-no">
+                            No (you will need to return this application to the applicant for amendment)
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </govuk-form-group>
+
+        <div class="govuk-button-group">
+
+            <button condition="@Model.Editable(user)" type="submit" class="govuk-button" data-module="govuk-button">
+                Continue
+            </button>
+
+            <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
+
+        </div>
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs"/>
+}

@@ -608,7 +608,7 @@ public class SiteVisitUseCase : FellingLicenceApplicationUseCaseBase, ISiteVisit
     {
         var breadCrumbs = new List<BreadCrumb>
         {
-            new BreadCrumb("Home", "Home", "Index", null),
+            new BreadCrumb("Open applications", "Home", "Index", null),
             new BreadCrumb(model.FellingLicenceApplicationSummary.ApplicationReference, "FellingLicenceApplication", "ApplicationSummary", model.FellingLicenceApplicationSummary.Id.ToString()),
             new BreadCrumb("Woodland Officer Review", "WoodlandOfficerReview", "Index", model.FellingLicenceApplicationSummary.Id.ToString())
         };

@@ -74,6 +74,11 @@ output "pg_live_pass" {
   sensitive = true
 }
 
+output "test_ssh" {
+  value     = data.azurerm_key_vault_secret.test_ssh.value
+  sensitive = true
+}
+
 # Variables
 output "prefix" {
   value = var.prefix
@@ -85,6 +90,14 @@ output "azure_location" {
 
 output "azure_tags" {
   value = var.azure_tags
+}
+
+output "k8s_common_labels" {
+  value = local.k8s_common_labels
+}
+
+output "k8s_main_labels" {
+  value = local.k8s_main_labels
 }
 
 output "rg_name" {

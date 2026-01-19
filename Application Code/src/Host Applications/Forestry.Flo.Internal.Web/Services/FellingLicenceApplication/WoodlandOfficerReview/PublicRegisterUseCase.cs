@@ -203,40 +203,64 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase, IPubl
             return Result.Failure("Retrieving data to publish application to consultation public register failed.");
         }
 
-       
-        //  Once the above call is working - then fix up the 3 failing unit tests, which are currently expecting string.empty for Local Authority currently, in order to pass.
-       
-        var publishResult = await _publicRegister.AddCaseToConsultationRegisterAsync(
-            getPublishModel.Value.CaseReference,
-            getPublishModel.Value.PropertyName,
-            _woodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister,
-            getPublishModel.Value.GridReference,
-            getPublishModel.Value.NearestTown,
-            getPublishModel.Value.LocalAuthority,
-            getPublishModel.Value.AdminRegion,
-            _clock.GetCurrentInstant().ToDateTimeUtc(),
-            Convert.ToInt32(Math.Floor(period.TotalDays)),
-            getPublishModel.Value.BroadleafArea,
-            getPublishModel.Value.ConiferousArea,
-            getPublishModel.Value.OpenGroundArea,
-            getPublishModel.Value.TotalArea,
-            getPublishModel.Value.Compartments,
-            cancellationToken);
-
-        if (publishResult.IsFailure)
-        {
-            _logger.LogError("Failed to publish application to public register with error {Error}", publishResult.Error);
-            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, "Public Register", publishResult.Error, cancellationToken);
-            await AuditPublicRegisterFailureEvent(applicationId, user, publishResult.Error, cancellationToken);
-            return Result.Failure("Publishing application to consultation public register failed.");
-        }
-
         var timestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
+        var esriId = getPublishModel.Value.ExistingEsriId;
+
+        if (esriId.HasValue)
+        {
+            // handle republishing an application that is already on the public register
+
+            var republishResult = await _publicRegister.ReturnCaseToConsultationRegisterAsync(
+                getPublishModel.Value.ExistingEsriId.Value,
+                getPublishModel.Value.CaseReference,
+                timestamp,
+                Convert.ToInt32(Math.Floor(period.TotalDays)),
+                cancellationToken);
+
+            if (republishResult.IsFailure)
+            {
+                _logger.LogError("Failed to republish application to public register with error {Error}", republishResult.Error);
+                await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, "Public Register", republishResult.Error, cancellationToken);
+                await AuditPublicRegisterFailureEvent(applicationId, user, republishResult.Error, cancellationToken);
+                return Result.Failure("Republishing application to consultation public register failed.");
+            }
+
+
+        }
+        else
+        {
+            var publishResult = await _publicRegister.AddCaseToConsultationRegisterAsync(
+                getPublishModel.Value.CaseReference,
+                getPublishModel.Value.PropertyName,
+                _woodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister,
+                getPublishModel.Value.GridReference,
+                getPublishModel.Value.NearestTown,
+                getPublishModel.Value.LocalAuthority,
+                getPublishModel.Value.AdminRegion,
+                timestamp,
+                Convert.ToInt32(Math.Floor(period.TotalDays)),
+                getPublishModel.Value.BroadleafArea,
+                getPublishModel.Value.ConiferousArea,
+                getPublishModel.Value.OpenGroundArea,
+                getPublishModel.Value.TotalArea,
+                getPublishModel.Value.Compartments,
+                cancellationToken);
+
+            if (publishResult.IsFailure)
+            {
+                _logger.LogError("Failed to publish application to public register with error {Error}", publishResult.Error);
+                await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, "Public Register", publishResult.Error, cancellationToken);
+                await AuditPublicRegisterFailureEvent(applicationId, user, publishResult.Error, cancellationToken);
+                return Result.Failure("Publishing application to consultation public register failed.");
+            }
+
+            esriId = publishResult.Value;
+        }
 
         var updateResult = await _updateWoodlandOfficerReviewService.PublishedToPublicRegisterAsync(
             applicationId,
             user.UserAccountId.Value,
-            publishResult.Value,
+            esriId.Value,
             timestamp,
             period,
             cancellationToken);
@@ -255,7 +279,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase, IPubl
                     applicationId,
                     user.UserAccountId,
                     _requestContext,
-                    new { PublicationDate = timestamp, EsriId = publishResult.Value }),
+                    new { PublicationDate = timestamp, EsriId = esriId.Value }),
                 cancellationToken);
 
             var adminHubAddress = await GetConfiguredFcAreasService.TryGetAdminHubAddress(getPublishModel.Value.AdminRegion, cancellationToken);
@@ -387,7 +411,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase, IPubl
     {
         var breadCrumbs = new List<BreadCrumb>
         {
-            new BreadCrumb("Home", "Home", "Index", null),
+            new BreadCrumb("Open applications", "Home", "Index", null),
             new BreadCrumb(model.FellingLicenceApplicationSummary.ApplicationReference, "FellingLicenceApplication", "ApplicationSummary", model.FellingLicenceApplicationSummary.Id.ToString()),
             new BreadCrumb("Woodland Officer Review", "WoodlandOfficerReview", "Index", model.FellingLicenceApplicationSummary.Id.ToString())
         };

@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -1149,7 +1150,7 @@ public partial class WoodlandOfficerReviewController(
     {
         var breadCrumbs = new List<BreadCrumb>
         {
-            new BreadCrumb("Home", "Home", "Index", null),
+            new BreadCrumb("Open applications", "Home", "Index", null),
             new BreadCrumb(model.FellingLicenceApplicationSummary.ApplicationReference, "FellingLicenceApplication", "ApplicationSummary", model.FellingLicenceApplicationSummary.Id.ToString()),
             new BreadCrumb("Woodland officer review", "WoodlandOfficerReview", "Index", model.FellingLicenceApplicationSummary.Id.ToString())
         };
@@ -1162,4 +1163,44 @@ public partial class WoodlandOfficerReviewController(
 
     [GeneratedRegex(@"Species\[\d+\]\.Value", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex SpeciesValueRegex();
+
+    [HttpGet]
+    public async Task<IActionResult> PriorityOpenHabitats(
+        Guid id,
+        [FromServices] PriorityOpenHabitatUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var result = await useCase.GetPriorityOpenHabitatsAsync(id, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        return View(result.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> PriorityOpenHabitats(
+        PriorityOpenHabitatsViewModel model,
+        [FromServices] PriorityOpenHabitatUseCase priorityOpenHabitatUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var result = await priorityOpenHabitatUseCase.CompletePriorityOpenHabitatAsync(
+            model.ApplicationId,
+            user,
+            model.AreDetailsCorrect ?? false,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Unable to complete Priority Open Habitat review");
+            return RedirectToAction(nameof(PriorityOpenHabitats), new { id = model.ApplicationId });
+        }
+
+        this.AddConfirmationMessage("Successfully completed the Priority Open Habitat review");
+        return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
+    }
 }

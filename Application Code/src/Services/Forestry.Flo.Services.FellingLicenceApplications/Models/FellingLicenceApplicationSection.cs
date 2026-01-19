@@ -24,5 +24,9 @@ public enum FellingLicenceApplicationSection
     [Description("10 Year Licence")]
     TenYearLicence,
     [Description("Plantation Ancient Woodlands and Infilled Ancient Wood Pastures")]
-    PawsAndIawp
+    PawsAndIawp,
+    [Description("Confirm if tree health or public safety issues")]
+    TreeHealthIssues,
+    [Description("Habitat restoration")]
+    HabitatRestoration
 }

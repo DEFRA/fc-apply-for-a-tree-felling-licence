@@ -129,6 +129,7 @@ public static class ApprovedInErrorExtensions
         entity.ReasonExpiryDateText = model.ReasonExpiryDateText;
         entity.ReasonOtherText = model.ReasonOtherText;
         entity.SupplementaryPointsText = model.SupplementaryPointsText;
+        entity.ApproverId = model.ApproverId;
 
         return entity;
     }

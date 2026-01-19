@@ -239,6 +239,9 @@ public static class AuditEvents
     public const string WoodlandOfficerReviewEiaScreening = "Woodland Officer Review EIA Screening";
     public const string WoodlandOfficerReviewEiaScreeningFailure = "Woodland Officer Review EIA Screening Failure";
 
+    public const string WoodlandOfficerReviewPriorityOpenHabitat = "Woodland Officer Review Priority Open Habitat";
+    public const string WoodlandOfficerReviewPriorityOpenHabitatFailure = "Woodland Officer Review Priority Open Habitat Failure";
+
     // amendment review
     public const string ApplicantReviewedAmendments = "Applicant Reviewed Amendments";
     public const string ApplicantReviewedAmendmentsFailure = "Applicant Reviewed Amendments Failure";
@@ -262,6 +265,24 @@ public static class AuditEvents
     // PAWS designations data entry step
     public const string PawsDesignationsUpdate = "PAWS Designations Update Success";
     public const string PawsDesignationsUpdateFailure = "PAWS Designations Update Failure";
+
+    // Tree health data entry step
+    public const string TreeHealthIssuesSubmitted = "Tree Health Issues Submitted Success";
+    public const string TreeHealthIssuesSubmittedFailure = "Tree Health Issues Submitted Failure";
+    public const string TreeHealthIssuesDocumentsUploaded = "Tree Health Issues Documents Uploaded Success";
+    public const string TreeHealthIssuesDocumentsUploadedFailure = "Tree Health Issues Documents Uploaded Failure";
+
+    // Tree health OAO check
+    public const string TreeHealthOaoCheckCompleted = "Tree Health OAO Check Completed Success";
+    public const string TreeHealthOaoCheckCompletedFailure = "Tree Health OAO Check Completed Failure";
+
+    // Tree health WO check
+    public const string TreeHealthWoCheckCompleted = "Tree Health WO Check Completed Success";
+    public const string TreeHealthWoCheckCompletedFailure = "Tree Health WO Check Completed Failure";
+
+    // Habitat Restoration data entry step
+    public const string HabitatRestorationUpdate = "Habitat Restoration Update Success";
+    public const string HabitatRestorationUpdateFailure = "Habitat Restoration Update Failure";
 
 
     /// <summary>
@@ -474,6 +495,9 @@ public static class AuditEvents
             WoodlandOfficerReviewEiaScreening => SourceEntityType.FellingLicenceApplication,
             WoodlandOfficerReviewEiaScreeningFailure => SourceEntityType.FellingLicenceApplication,
 
+            WoodlandOfficerReviewPriorityOpenHabitat => SourceEntityType.FellingLicenceApplication,
+            WoodlandOfficerReviewPriorityOpenHabitatFailure => SourceEntityType.FellingLicenceApplication,
+
             ApplicantReviewedAmendments => SourceEntityType.FellingLicenceApplication,
             ApplicantReviewedAmendmentsFailure => SourceEntityType.FellingLicenceApplication,
             SendAmendmentsToApplicant => SourceEntityType.FellingLicenceApplication,
@@ -497,6 +521,20 @@ public static class AuditEvents
 
             PawsDesignationsUpdate => SourceEntityType.FellingLicenceApplication,
             PawsDesignationsUpdateFailure => SourceEntityType.FellingLicenceApplication,
+
+            TreeHealthIssuesSubmitted => SourceEntityType.FellingLicenceApplication,
+            TreeHealthIssuesSubmittedFailure => SourceEntityType.FellingLicenceApplication,
+            TreeHealthIssuesDocumentsUploaded => SourceEntityType.FellingLicenceApplication,
+            TreeHealthIssuesDocumentsUploadedFailure => SourceEntityType.FellingLicenceApplication,
+
+            TreeHealthOaoCheckCompleted => SourceEntityType.FellingLicenceApplication,
+            TreeHealthOaoCheckCompletedFailure => SourceEntityType.FellingLicenceApplication,
+            
+            TreeHealthWoCheckCompleted => SourceEntityType.FellingLicenceApplication,
+            TreeHealthWoCheckCompletedFailure => SourceEntityType.FellingLicenceApplication,
+
+            HabitatRestorationUpdate => SourceEntityType.FellingLicenceApplication,
+            HabitatRestorationUpdateFailure => SourceEntityType.FellingLicenceApplication,
 
             _ => throw new NotSupportedException($"{eventName} event is not supported")
         };

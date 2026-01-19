@@ -2399,6 +2399,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             TermsAndConditionsStatus = true,
             ConstraintCheckStatus = true,
             EnvironmentalImpactAssessmentStatus = null,
+            TreeHealthIssuesStatus = true
         };
 
         for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)

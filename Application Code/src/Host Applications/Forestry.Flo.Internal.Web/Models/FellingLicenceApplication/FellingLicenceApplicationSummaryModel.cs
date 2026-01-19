@@ -153,6 +153,16 @@ public class FellingLicenceApplicationSummaryModel
     public bool HasPaws { get; set; }
 
     /// <summary>
+    /// Gets and sets a value indicating whether there are any tree health issues in the application.
+    /// </summary>
+    public bool HasTreeHealthIssue { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating if any compartments are being converted into priority open habitats.
+    /// </summary>
+    public bool? IsPriorityOpenHabitat { get; set; }
+
+    /// <summary>
     /// Gets if there are any larch species in the proposed felling details for the application.
     /// </summary>
     public bool AreAnyLarchSpecies => (DetailsList
@@ -285,5 +295,14 @@ public class FellingLicenceApplicationSummaryModel
     public bool IsWithFcStatus => Status is FellingLicenceStatus.Submitted
         or FellingLicenceStatus.AdminOfficerReview
         or FellingLicenceStatus.WoodlandOfficerReview
-        or FellingLicenceStatus.SentForApproval;
+        or FellingLicenceStatus.SentForApproval
+        or FellingLicenceStatus.ApprovedInError;
+
+    /// <summary>
+    /// Gets a flag to indicate whether the application is currently in a status
+    /// that means it can be returned to the applicant.
+    /// </summary>
+    public bool CanBeReturnedToApplicant => Status is FellingLicenceStatus.Submitted
+        or FellingLicenceStatus.AdminOfficerReview
+        or FellingLicenceStatus.WoodlandOfficerReview;
 }

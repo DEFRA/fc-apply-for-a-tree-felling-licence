@@ -10,7 +10,7 @@
 <partial name="Partials/_UserGuideDisplay" />
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary" />
 
-<div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container">
+<div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container" Condition="@Model.ApprovedInErrorViewModel.ReasonOther != true">
     <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     <p class="govuk-body">This licence was marked as 'Approved in error'. You must review the details and make the necessary corrections before sending for approval.</p>
 
@@ -102,6 +102,22 @@
             </div>
         </fieldset>
     </form>
+</div>
+<div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container" Condition="@Model.ApprovedInErrorViewModel.ReasonOther == true">
+    <h1 class="govuk-heading-l">This licence was approved in error</h1>
+    <p class="govuk-body">
+        This licence was marked as 'Approved in error' with the following reasons
+        provided. A new licence application will need to be created if not already done
+        by the OAO.
+    </p>
+
+    <h2 class="govuk-heading-m">Reason given for marking this licence as approved in error:</h2>
+    <p class="govuk-body">@Model.ApprovedInErrorViewModel.ReasonOtherText</p>
+
+
+    <div class="govuk-button-group">
+        <a class="govuk-button govuk-button--secondary" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.Id">Back to application overview</a>
+    </div>
 </div>
 @section breadcrumbs
 {

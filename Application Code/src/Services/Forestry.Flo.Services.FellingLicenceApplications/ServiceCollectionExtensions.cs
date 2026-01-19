@@ -74,6 +74,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICreateApplicationSnapshotDocumentService, CreateApplicationSnapshotDocumentService>();
         services.AddScoped<IUpdateCentrePoint, UpdateCentrePointService>();
         services.AddScoped<IUpdateApplicationFromForesterLayers, UpdateApplicationFromForesterLayersService>();
+        services.AddScoped<IHabitatRestorationService, HabitatRestorationService>();
 
         services.AddScoped<IImportApplications, ImportApplicationsService>();
         services.AddScoped<IReportQueryService, ReportQueryService>();

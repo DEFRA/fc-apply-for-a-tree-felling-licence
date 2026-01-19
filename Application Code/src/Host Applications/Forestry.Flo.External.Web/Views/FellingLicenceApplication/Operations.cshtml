@@ -1,4 +1,5 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.FellingLicenceApplications.DataImports.Models
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.OperationDetailsModel
 @{
@@ -32,6 +33,7 @@
         <input aria-hidden="True" type="hidden" asp-for="ReturnToApplicationSummary" />
         <input aria-hidden="True" type="hidden" asp-for="IsForTenYearLicence" />
         <input aria-hidden="True" type="hidden" asp-for="DisplayDateReceived" />
+        <input aria-hidden="True" type="hidden" condition="@(Model.IsForTenYearLicence is true)" asp-for="ApplicationSource" />
 
         <div class="govuk-body">
             
@@ -69,7 +71,7 @@
                             <h3 class="govuk-fieldset__heading">Application Source</h3>
                         </legend>
                         <validation asp-for="ApplicationSource"></validation>
-                        <select name="Application source" aria-label="Select application source" class="govuk-select" asp-for="ApplicationSource" asp-items="Html.GetEnumSelectList<FellingLicenceApplicationSource>()"></select>
+                        <select condition-disabled="@(Model.IsForTenYearLicence is true)" class="govuk-select" asp-for="ApplicationSource" asp-items="Html.GetEnumSelectList<FellingLicenceApplicationSource>().Where(x => Model.IsForTenYearLicence is true || x.Value != ((int)FellingLicenceApplicationSource.WoodlandManagementPlan).ToString())"></select>
                     </fieldset>
                 </govuk-form-group>
             </div>

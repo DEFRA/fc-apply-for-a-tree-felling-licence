@@ -18,6 +18,7 @@ public record AdminOfficerReviewTaskListStates(
     InternalReviewStepStatus LarchFlyoverStatus,
     InternalReviewStepStatus CBWStatus,
     InternalReviewStepStatus EiaStatus,
+    InternalReviewStepStatus TreeHealthStatus,
     bool AgentApplication = false) : ICompletable
 {
     /// <summary>
@@ -67,17 +68,24 @@ public record AdminOfficerReviewTaskListStates(
 
 
     /// <summary>
+    /// Gets the tree health/public safety step status of the admin officer review.
+    /// </summary>
+    [Display(Name = "Review tree health or public safety")]
+    public InternalReviewStepStatus TreeHealthStatus = TreeHealthStatus;
+
+    /// <summary>
     /// Gets the Assign Woodland Officer step status of the admin officer review.
     /// </summary>
     [Display(Name = "Assign woodland officer")]
     public InternalReviewStepStatus AssignWoodlandOfficerStatus = AssignWoodlandOfficerStatus;
 
     public bool IsCompletable() =>
-        AgentAuthorityFormStepStatus is InternalReviewStepStatus.Completed &&
+        AgentAuthorityFormStepStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.Completed &&
         MappingCheckStepStatus is InternalReviewStepStatus.Completed &&
         ConstraintsCheckStepStatus is InternalReviewStepStatus.Completed &&
-        (LarchApplicationStatus is InternalReviewStepStatus.Completed || LarchApplicationStatus is InternalReviewStepStatus.NotRequired) &&
-        (CBWStatus is InternalReviewStepStatus.Completed || CBWStatus is InternalReviewStepStatus.NotRequired) &&
+        LarchApplicationStatus is InternalReviewStepStatus.Completed or InternalReviewStepStatus.NotRequired &&
+        CBWStatus is InternalReviewStepStatus.Completed or InternalReviewStepStatus.NotRequired &&
         AssignWoodlandOfficerStatus is InternalReviewStepStatus.Completed &&
-        EiaStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.Completed;
+        EiaStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.Completed &&
+        TreeHealthStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.Completed;
 }

@@ -123,7 +123,9 @@ public abstract class FellingLicenceApplicationUseCaseBase
             IsForTenYearLicence = fla.IsForTenYearLicence is true,
             WoodlandManagementPlanReference = fla.WoodlandManagementPlanReference,
             OsGridReference = fla.OSGridReference,
-            HasPaws = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Any(x => x.SubmittedCompartmentDesignations?.Paws is true)
+            HasPaws = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Any(x => x.SubmittedCompartmentDesignations?.Paws is true),
+            HasTreeHealthIssue = fla.IsTreeHealthIssue is true,
+            IsPriorityOpenHabitat = fla.IsPriorityOpenHabitat
         };
         return Result.Success(applicationSummary);
     }

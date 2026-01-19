@@ -411,5 +411,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRevertApplicationFromWithdrawnUseCase, RevertApplicationFromWithdrawnUseCase>();
         services.AddScoped<IEnvironmentalImpactAssessmentAdminOfficerUseCase, EnvironmentalImpactAssessmentAdminOfficerUseCase>();
         services.AddScoped<ILateAmendmentResponseWithdrawalUseCase, LateAmendmentResponseWithdrawalUseCase>();
+        services.AddScoped<IAdminOfficerTreeHealthCheckUseCase, AdminOfficerTreeHealthCheckUseCase>();
+        services.AddScoped<IWoodlandOfficerTreeHealthCheckUseCase, WoodlandOfficerTreeHealthCheckUseCase>();
+        services.AddScoped<PriorityOpenHabitatUseCase>();
     }
 }

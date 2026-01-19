@@ -209,6 +209,8 @@ public class ApproverReviewUseCaseTests
                 LarchApplicationStatus: InternalReviewStepStatus.Completed,
                 LarchFlyoverStatus: InternalReviewStepStatus.Completed,
                 EiaScreeningStatus: InternalReviewStepStatus.Completed,
+                TreeHealthStatus: InternalReviewStepStatus.Completed,
+                PriorityOpenHabitatStepStatus: InternalReviewStepStatus.Completed,
                 WoodlandOfficerReviewComplete: true)
         };
 

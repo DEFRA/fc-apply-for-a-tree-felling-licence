@@ -7,6 +7,7 @@ using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.PawsDesignations;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
@@ -43,6 +44,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using System;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TreeHealth;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 using FellingLicenceApplicationStepStatus =
     Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplicationStepStatus;
@@ -771,10 +773,10 @@ public class CreateFellingLicenceApplicationUseCase(
             .OnFailure(async r =>
             {
                 await _auditService.PublishAuditEventAsync(new AuditEvent(
-                        AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
-                        new
-                        {
-                            user.WoodlandOwnerId, Section = "Select Restocking Options", Error = r.GetDescription()
+                    AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
+                    new
+                    {
+                        user.WoodlandOwnerId, Section = "Select Restocking Options", Error = r.GetDescription()
                         }),
                     cancellationToken);
                 _logger.LogError(
@@ -972,11 +974,13 @@ public class CreateFellingLicenceApplicationUseCase(
     /// <param name="applicationId">An application id</param>
     /// <param name="user">An Application user</param>
     /// <param name="cancellationToken">A Cancellation token</param>
+    /// <param name="fellingCompartmentsOnly">An optional filter to only include felling compartments</param>
     /// <returns>A SelectCompartmentsViewModel object</returns>
     public async Task<Maybe<SelectCompartmentsViewModel>> GetSelectCompartmentViewModel(
         Guid applicationId,
         ExternalApplicant user,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool fellingCompartmentsOnly = false)
     {
         var applicationResult =
             await RetrieveFellingLicenceApplication(user, applicationId,
@@ -994,9 +998,24 @@ public class CreateFellingLicenceApplicationUseCase(
                 application.WoodlandOwnerId,
                 cancellationToken);
 
+        var compartmentModelsToReturn = compartments.HasValue 
+            ? compartments.Value 
+            : new List<CompartmentModel>();
+
+        if (fellingCompartmentsOnly && compartmentModelsToReturn.Any())
+        {
+            var fellingCompartmentIds = application.FellingAndRestockingDetails.DetailsList
+                .Select(x => x.CompartmentId)
+                .ToList();
+
+            compartmentModelsToReturn = compartmentModelsToReturn
+                .Where(c => fellingCompartmentIds.Contains(c.Id))
+                .ToList();
+        }
+
         return Maybe<SelectCompartmentsViewModel>.From(new SelectCompartmentsViewModel()
         {
-            Compartments = compartments.HasValue ? compartments.Value : new List<CompartmentModel>(),
+            Compartments = compartmentModelsToReturn,
             Application = application
         });
     }
@@ -1475,6 +1494,35 @@ public class CreateFellingLicenceApplicationUseCase(
                 PawsCompartmentsCompleteCount = application.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses
                     .Count(x => x.Status is true)
             },
+            TreeHealth = new TreeHealthIssuesViewModel
+            {
+                ApplicationId = applicationId,
+                ApplicationReference = application.Value.ApplicationReference,
+                FellingLicenceStatus = application.Value.GetCurrentStatus(),
+                StepRequiredForApplication = true,
+                StepComplete = application.Value.FellingLicenceApplicationStepStatus.TreeHealthIssuesStatus,
+                TreeHealthIssues = new TreeHealthIssuesModel
+                {
+                    NoTreeHealthIssues = application.Value.IsTreeHealthIssue is false,
+                    TreeHealthIssueSelections = application.Value.TreeHealthIssues.Distinct().ToDictionary(item => item, _ => true),
+                    OtherTreeHealthIssue = application.Value.TreeHealthIssueOther is true,
+                    OtherTreeHealthIssueDetails = application.Value.TreeHealthIssueOtherDetails
+                },
+                TreeHealthDocuments = ModelMapping.ToDocumentsModelForApplicantView(
+                    application.Value.Documents?.Where(x =>
+                            x.Purpose is DocumentPurpose.TreeHealthAttachment &&
+                            x.DeletionTimestamp is null)
+                        .ToList()).ToArray()
+            },
+            HabitatRestoration = new PriorityOpenHabitatsViewModel
+            {
+                ApplicationId = applicationId,
+                ApplicationReference = application.Value.ApplicationReference,
+                FellingLicenceStatus = application.Value.GetCurrentStatus(),
+                StepComplete = application.Value.FellingLicenceApplicationStepStatus.HabitatRestorationStatus,
+                StepRequiredForApplication = application.Value.ShouldApplicationRequireHabitatRestoration(),
+                IsPriorityOpenHabitat = application.Value.IsPriorityOpenHabitat
+            },
             CurrentReviewModel = currentReview.Value.TryGetValue(out var current)
                 ? current
                 : null
@@ -1598,11 +1646,11 @@ public class CreateFellingLicenceApplicationUseCase(
     }
 
     public async Task<Maybe<FellingAndRestockingPlaybackViewModel>> GetFellingAndRestockingDetailsPlaybackViewModel(
-        Guid applicationID,
+        Guid applicationId,
         ExternalApplicant user,
         CancellationToken cancellationToken)
     {
-        var applicationResult = await GetFellingLicenceApplicationAsync(applicationID, user, cancellationToken);
+        var applicationResult = await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
 
         if (applicationResult.IsFailure)
         {
@@ -1630,7 +1678,7 @@ public class CreateFellingLicenceApplicationUseCase(
         }
 
         var maybeSubmittedProperty = await _fellingLicenceApplicationRepository
-            .GetExistingSubmittedFlaPropertyDetailAsync(applicationID, cancellationToken);
+            .GetExistingSubmittedFlaPropertyDetailAsync(applicationId, cancellationToken);
 
         var submittedCompartments = maybeSubmittedProperty.HasValue
             ? maybeSubmittedProperty.Value.SubmittedFlaPropertyCompartments
@@ -1640,12 +1688,9 @@ public class CreateFellingLicenceApplicationUseCase(
 
         var controllerName = "FellingLicenceApplication";
 
-        var requiresEia = application.ShouldApplicationRequireEia();
-        var requiresPaws = application.DoesApplicationRequirePawsDataInput();
-
         var fellingAndRestockingPlaybackViewModel = new FellingAndRestockingPlaybackViewModel()
         {
-            ApplicationId = applicationID,
+            ApplicationId = applicationId,
             ApplicationReference = application.ApplicationReference,
             FellingCompartmentDetails = new List<FellingCompartmentPlaybackViewModel>(),
             FellingCompartmentsChangeLink = new UrlActionContext
@@ -1655,23 +1700,7 @@ public class CreateFellingLicenceApplicationUseCase(
                 Values = new
                     { applicationId = application.Id, isForRestockingCompartmentSelection = false, returnToPlayback = true }
             },
-            FellingLicenceStatus = application.GetCurrentStatus(),
-            SaveAndContinueContext = new UrlActionContext
-            {
-                Action = requiresPaws
-                    ? nameof(FellingLicenceApplicationController.PawsCheck)
-                    : requiresEia
-                        ? nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment) 
-                        : nameof(FellingLicenceApplicationController.ConstraintsCheck),
-                Controller = controllerName,
-                Values = new Dictionary<string, string>
-                {
-                    {
-                        "applicationId",
-                        application.Id.ToString()
-                    }
-                }
-            }
+            FellingLicenceStatus = application.GetCurrentStatus()
         };
 
         var fellingCompartmentPlaybackViewModels = new List<FellingCompartmentPlaybackViewModel>();
@@ -2161,11 +2190,11 @@ public class CreateFellingLicenceApplicationUseCase(
             .OnFailure(async r =>
             {
                 await _auditService.PublishAuditEventAsync(new AuditEvent(
-                        AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
-                        new
-                        {
-                            application.WoodlandOwnerId, Section = "Application Details", Error = r.GetDescription()
-                        }),
+                    AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
+                    new
+                    {
+                        application.WoodlandOwnerId, Section = "Application Details", Error = r.GetDescription()
+                    }),
                     cancellationToken);
                 _logger.LogError(
                     "The application property profile has not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
@@ -2273,8 +2302,8 @@ public class CreateFellingLicenceApplicationUseCase(
             .OnFailure(async r =>
             {
                 await _auditService.PublishAuditEventAsync(new AuditEvent(
-                        AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
-                        new { application.WoodlandOwnerId, Section = "Felling Details", Error = r.GetDescription() }),
+                    AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
+                    new { application.WoodlandOwnerId, Section = "Felling Details", Error = r.GetDescription() }),
                     cancellationToken);
                 _logger.LogError(
                     "The application felling restocking details status has not been updated due to reason {ErrorReason} for application id: {ApplicationId}",
@@ -3105,51 +3134,51 @@ public class CreateFellingLicenceApplicationUseCase(
             if (updateResult.Value.PreviousStatus !=
                 Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.Draft)
             {
-                // Notify FC (internal) users already assigned to the application to inform them of resubmission
+            // Notify FC (internal) users already assigned to the application to inform them of resubmission
 
-                // TODO this should go to a service not a repo class
-                var internalUsers = await _internalUserAccountRepository
-                    .GetUsersWithIdsInAsync(updateResult.Value.AssignedInternalUsers, cancellationToken)
-                    .ConfigureAwait(false);
+            // TODO this should go to a service not a repo class
+            var internalUsers = await _internalUserAccountRepository
+                .GetUsersWithIdsInAsync(updateResult.Value.AssignedInternalUsers, cancellationToken)
+                .ConfigureAwait(false);
 
-                if (internalUsers.IsSuccess)
-                {
-                    var internalSiteApplicationLink = 
-                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
+            if (internalUsers.IsSuccess)
+            {
+                var internalSiteApplicationLink = 
+                    $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
                     
-                    foreach (var internalUser in internalUsers.Value)
+                foreach (var internalUser in internalUsers.Value)
+                {
+                    // Send a notification
+
+                    var recipient = new NotificationRecipient(
+                        internalUser.Email,
+                        internalUser.FullName(false));
+
+                    var notificationModel = new ApplicationResubmittedDataModel
                     {
-                        // Send a notification
+                        ApplicationReference = updateResult.Value.ApplicationReference,
+                        Name = recipient.Name!,
+                        PropertyName = submittedFlaPropertyDetail.Name,
+                        ViewApplicationURL = internalSiteApplicationLink,
+                        AdminHubFooter = adminHubFooter,
+                        ApplicationId = applicationId
+                    };
 
-                        var recipient = new NotificationRecipient(
-                            internalUser.Email,
-                            internalUser.FullName(false));
+                    var sendNotificationResult = await _sendNotifications.SendNotificationAsync(
+                        notificationModel,
+                        NotificationType.ApplicationResubmitted,
+                        recipient,
+                        senderName: user.FullName,
+                        cancellationToken: cancellationToken);
 
-                        var notificationModel = new ApplicationResubmittedDataModel
-                        {
-                            ApplicationReference = updateResult.Value.ApplicationReference,
-                            Name = recipient.Name!,
-                            PropertyName = submittedFlaPropertyDetail.Name,
-                            ViewApplicationURL = internalSiteApplicationLink,
-                            AdminHubFooter = adminHubFooter,
-                            ApplicationId = applicationId
-                        };
-
-                        var sendNotificationResult = await _sendNotifications.SendNotificationAsync(
-                            notificationModel,
-                            NotificationType.ApplicationResubmitted,
-                            recipient,
-                            senderName: user.FullName,
-                            cancellationToken: cancellationToken);
-
-                        if (sendNotificationResult.IsFailure)
-                        {
-                            _logger.LogError(
-                                "Could not send notification for resubmission of {ApplicationId} back to internal user id {InternalUserId} due to error: {SendNotificationError}",
-                                applicationId, internalUser.Id, sendNotificationResult.Error);
-                        }
+                    if (sendNotificationResult.IsFailure)
+                    {
+                        _logger.LogError(
+                            "Could not send notification for resubmission of {ApplicationId} back to internal user id {InternalUserId} due to error: {SendNotificationError}",
+                            applicationId, internalUser.Id, sendNotificationResult.Error);
                     }
                 }
+            }
             }
 
             // Select audit event depending on whether this is a resubmission

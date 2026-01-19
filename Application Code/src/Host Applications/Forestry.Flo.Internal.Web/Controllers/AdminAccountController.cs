@@ -16,7 +16,7 @@ public class AdminAccountController : Controller
 {
     private readonly List<BreadCrumb> _breadCrumbsRoot = new()
     {
-        new ("Home", "Home", "Index", null)
+        new ("Open applications", "Home", "Index", null)
     };
 
     /// <summary>

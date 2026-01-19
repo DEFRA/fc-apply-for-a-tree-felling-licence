@@ -259,6 +259,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
             ReasonExpiryDate = approvedInError.HasValue && approvedInError.Value.ReasonExpiryDate,
             ReasonSupplementaryPoints = approvedInError.HasValue && approvedInError.Value.ReasonSupplementaryPoints,
             ReasonOther = approvedInError.HasValue && approvedInError.Value.ReasonOther,
+            ReasonOtherText = approvedInError.Value.ReasonOtherText,
             ReasonExpiryDateText = approvedInError.HasValue ? approvedInError.Value.ReasonExpiryDateText : null,
             SupplementaryPointsText = approvedInError.HasValue ? approvedInError.Value.SupplementaryPointsText : woodlandOfficerReviewStatus.Value.SupplementaryPoints
         };

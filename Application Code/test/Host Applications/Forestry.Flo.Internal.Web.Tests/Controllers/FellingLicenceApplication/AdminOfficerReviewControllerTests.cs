@@ -416,6 +416,7 @@ public class AdminOfficerReviewControllerTests
                     InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired, 
                     InternalReviewStepStatus.NotRequired, 
+                    InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired))
             .Create();
         _adminOfficerReviewUseCaseMock.Setup(x => x.GetAdminOfficerReviewAsync(id, It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -455,6 +456,7 @@ public class AdminOfficerReviewControllerTests
                     InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired,
+                    InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired))
             .Create();
         _adminOfficerReviewUseCaseMock.Setup(x => x.GetAdminOfficerReviewAsync(id, It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -479,6 +481,7 @@ public class AdminOfficerReviewControllerTests
                     InternalReviewStepStatus.Completed,
                     InternalReviewStepStatus.NotStarted,
                     InternalReviewStepStatus.NotStarted,
+                    InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired,
                     InternalReviewStepStatus.NotRequired,

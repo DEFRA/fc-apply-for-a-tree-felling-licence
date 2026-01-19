@@ -360,7 +360,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
         [Theory, CombinatorialData]
         public async Task WhenDocumentIsSuccessfullySoftDeleted(
-            [CombinatorialValues(DocumentPurpose.EiaAttachment, DocumentPurpose.Attachment, DocumentPurpose.WmpDocument)] DocumentPurpose purpose)
+            [CombinatorialValues(DocumentPurpose.EiaAttachment, DocumentPurpose.Attachment, DocumentPurpose.WmpDocument, DocumentPurpose.TreeHealthAttachment)] DocumentPurpose purpose)
         {
 
 
@@ -560,7 +560,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         [Theory, CombinatorialData]
         public async Task ShouldReturnFailure_DocumentIsNotAttachmentOrEiaAttachmentOrWmpDocument(DocumentPurpose purpose)
         {
-            if (purpose is DocumentPurpose.EiaAttachment or DocumentPurpose.Attachment or DocumentPurpose.WmpDocument)
+            if (purpose is DocumentPurpose.EiaAttachment or DocumentPurpose.Attachment or DocumentPurpose.WmpDocument or DocumentPurpose.TreeHealthAttachment)
             {
                 return;
             }

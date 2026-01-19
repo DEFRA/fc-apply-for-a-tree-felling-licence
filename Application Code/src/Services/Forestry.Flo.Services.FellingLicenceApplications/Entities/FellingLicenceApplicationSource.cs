@@ -11,6 +11,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         PaperBasedSubmission,
 
         [Display(Name="Digital assistance")]
-        DigitalAssistance
+        DigitalAssistance,
+
+        [Display(Name="Woodland management plan (ten-year licence)")]
+        WoodlandManagementPlan
     }
 }

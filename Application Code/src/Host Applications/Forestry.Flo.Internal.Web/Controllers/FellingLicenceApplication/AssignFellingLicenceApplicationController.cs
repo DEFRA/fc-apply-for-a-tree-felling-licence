@@ -196,7 +196,7 @@ public class AssignFellingLicenceApplicationController : Controller
     {
         var breadCrumbs = new List<BreadCrumb>
         {
-            new("Home", "Home", "Index", null),
+            new("Open applications", "Home", "Index", null),
             new ($@"Application {model.FellingLicenceApplicationSummary.ApplicationReference}", "FellingLicenceApplication", "ApplicationSummary", model.FellingLicenceApplicationSummary.Id.ToString())
         };
 

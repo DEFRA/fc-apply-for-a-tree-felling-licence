@@ -1,0 +1,64 @@
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration.HabitatProductiveWoodlandModel
+@using Forestry.Flo.External.Web.Infrastructure
+
+@{
+    ViewData["Title"] = "Productive woodland";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    else
+    {
+        ViewData.ManuallySetBackLink(Url.Action("HabitatNativeBroadleaf", "FellingLicenceApplication", new { applicationId = Model.ApplicationId, compartmentId = Model.CompartmentId }));
+    }
+    ViewData.ShowBackLink();
+}
+
+<partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-l">Is @Model.CompartmentName a productive woodland?</h1>
+
+    <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+            <span class="govuk-details__summary-text">What is a productive woodland</span>
+        </summary>
+        <div class="govuk-details__text">
+            <p>Productive woodland is defined in the OHP as areas with an average yield class of at least 10 for conifers and 6 for broadleaves. Forestry Commission advisers need to use their discretion and knowledge of the area, as information on yield classes may not be available where a site has changed hands or records have not been kept.</p>
+            <p>Evidence of productivity could include whether, in the last 15 years, a site has had:</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>a woodland management plan</li>
+                <li>felling licence approval</li>
+                <li>silvicultural activities, for example, respacing, pruning or thinning</li>
+            </ul>
+            <p>Additionally, 'intent at the point of creation' is an important consideration. A site with natural regeneration, for example, of Sitka spruce mixed with birch/oak on an open habitat that had been poorly managed, would not be considered productive. However, land planted with Corsican pine, to produce a crop of timber would be considered productive, even if ownership has changed, and the crop is no longer being managed.</p>
+            <p>We need to consider the likelihood or practicalities of ongoing productive management of the forest under consideration. No benefit will come from abandoning overstood conifer plantations.</p>
+        </div>
+    </details>
+
+    <form method="post">
+        <input type="hidden" asp-for="ApplicationId" />
+        <input type="hidden" asp-for="CompartmentId" />
+        <input type="hidden" asp-for="CompartmentName" />
+        @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" type="radio" id="productive_yes" name="IsProductiveWoodland" value="true" checked="@(Model.IsProductiveWoodland == true)">
+                        <label class="govuk-label govuk-radios__label" for="productive_yes">Yes</label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" type="radio" id="productive_no" name="IsProductiveWoodland" value="false" checked="@(Model.IsProductiveWoodland == false)">
+                        <label class="govuk-label govuk-radios__label" for="productive_no">No</label>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">Continue</button>
+        </div>
+    </form>
+</div>

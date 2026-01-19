@@ -106,3 +106,9 @@ data "azurerm_key_vault_secret" "pg_live_pass" {
   key_vault_id = data.azurerm_key_vault.flov2_kv.id
 }
 
+data "azurerm_key_vault_secret" "test_ssh" {
+  provider     = azurerm
+  name         = "test-ssh"
+  key_vault_id = data.azurerm_key_vault.flov2_kv.id
+}
+

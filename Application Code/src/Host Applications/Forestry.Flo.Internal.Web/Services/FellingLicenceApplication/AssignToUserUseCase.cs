@@ -76,6 +76,17 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
             return fellingLicenceApplication.ConvertFailure<ConfirmReassignApplicationModel>();
         }
 
+        var currentStatus = fellingLicenceApplication.Value.StatusHistories.MaxBy(x => x.Created)!.Status;
+        if (fellingLicenceApplication.Value.IsWithFcStatus == false)
+        {
+            var errorStatuses = $"The application with Id {applicationId} is {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)} and a user cannot be assigned to it.";
+            _logger.LogError(
+                "The application with Id {ApplicationId} is in state {CurrentStatus} and a user cannot be assigned to it.",
+                applicationId, currentStatus.GetDisplayNameByActorType(ActorType.InternalUser));
+            await AuditErrorAsync(user, applicationId, null, null, errorStatuses, cancellationToken);
+            return Result.Failure<ConfirmReassignApplicationModel>($"Cannot assign to an application that has been {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)}.");
+        }
+
         var model = new ConfirmReassignApplicationModel
         {
             FellingLicenceApplicationSummary = fellingLicenceApplication.Value,
@@ -110,7 +121,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         }
 
         var currentStatus = fellingLicenceApplication.Value.StatusHistories.MaxBy(x => x.Created)!.Status;
-        if (ApplicationCompletedStatuses.Contains(currentStatus))
+        if (fellingLicenceApplication.Value.IsWithFcStatus == false)
         {
             var errorStatuses = $"The application with Id {applicationId} is {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)} and a user cannot be assigned to it.";
             _logger.LogError(

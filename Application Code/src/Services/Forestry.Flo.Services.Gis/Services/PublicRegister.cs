@@ -279,6 +279,68 @@ namespace Forestry.Flo.Services.Gis.Services
         }
 
         /// <inheritdoc/>
+        public async Task<Result> ReturnCaseToConsultationRegisterAsync(
+            int objectId, string caseReference, DateTime newPublicRegisterStart, int period, CancellationToken cancellationToken)
+        {
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = Guid.NewGuid(),
+                       ["CaseReference"] = caseReference,
+                       ["ObjectId"] = objectId
+                   }))
+            {
+                _logger.LogInformation("ReturnCaseToConsultationRegisterAsync called for caseReference: {CaseReference}, objectId: {ObjectId}", caseReference, objectId);
+
+                if (objectId == 0)
+                {
+                    _logger.LogError("Object ID not correctly set for application having reference {CaseReference}", caseReference);
+                    return Result.Failure("Object ID not correctly set");
+                }
+
+                if (string.IsNullOrEmpty(caseReference))
+                {
+                    _logger.LogError("No Case Reference given for application to remove from the consultation public register");
+                    return Result.Failure("No Case Reference given");
+                }
+
+                var boundaryCase = new List<ForesterBoundaryCase<int>>
+                {
+                    new ForesterBoundaryCase<int>
+                    {
+                        ObjectId = objectId,
+                        CaseStatus = _config.LookUps.Status.Consultation,
+                        PREndDate = null,
+                        PRStartDate = newPublicRegisterStart,
+                        TimeOnTheConsultationRegister = period,
+                    }
+                };
+                var featuresJson = JsonConvert.SerializeObject(boundaryCase.First());
+                var query = new EditFeaturesParameter($"[{{\"attributes\":{featuresJson}}}]");
+                var path = $"{_config.BaseUrl}{_config.Boundaries.Path}/updateFeatures";
+
+                var boundaryResult = await PostQueryWithConversionAsync<CreateUpdateDeleteResponse<int>>(query, path, _config.NeedsToken, cancellationToken);
+
+                if (boundaryResult.IsFailure)
+                {
+                    _logger.LogError("Attempting to remove application reference {CaseRef} from consultation public register failed with error {Error}", caseReference, boundaryResult.Error);
+                    return Result.Failure(boundaryResult.Error);
+                }
+
+                var compartmentUpdateResult = await UpdateCompartmentsByCaseRefAsync(caseReference, compartmentStatus: _config.LookUps.Status.Consultation, cancellationToken: cancellationToken);
+
+                if (compartmentUpdateResult.IsFailure)
+                {
+                    _logger.LogError("Attempting to update compartments for application reference {CaseRef} on the Consultation Public Register failed with error {Error}",
+                        caseReference, compartmentUpdateResult.Error);
+                }
+
+                return compartmentUpdateResult.IsFailure 
+                    ? Result.Failure($"Updated the Boundary, Updating Compartments returned '{compartmentUpdateResult.Error}'")
+                    : Result.Success();
+            }
+        }
+
+        /// <inheritdoc/>
         public async Task<Result> AddCaseToDecisionRegisterAsync(
             int objectId, 
             string caseReference, 

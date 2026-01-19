@@ -5,6 +5,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOffice
 
 public class ApplicationDetailsForPublicRegisterModel
 {
+    public int? ExistingEsriId { get; set; }
+    
     public string CaseReference { get; set; }
 
     public string PropertyName { get; set; }

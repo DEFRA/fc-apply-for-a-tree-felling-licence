@@ -107,6 +107,40 @@
                     </div>
                 </li>
             }
+
+            @if (Model.AdminOfficerReviewTaskListStates.TreeHealthStatus is InternalReviewStepStatus.NotRequired)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Review tree health
+                        <div class="govuk-task-list__hint">Applicant indicated no tree health or public safety reasons for the application</div>
+                    </div>
+                    <div class="govuk-task-list__status">
+                        <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.TreeHealthStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.TreeHealthStatus.GetDisplayName()</strong>
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action(nameof(AdminOfficerReviewController.TreeHealthCheck), new { applicationId = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="tree-health-check">
+                            Review tree health
+                        </a>
+                        <div class="govuk-task-list__hint">Applicant indicated tree health or public safety reasons for the application</div>
+                    </div>
+                    <div class="govuk-task-list__status" id="tree-health-check">
+                        @if (Model.AdminOfficerReviewTaskListStates.TreeHealthStatus is InternalReviewStepStatus.Completed)
+                        {
+                            @Model.AdminOfficerReviewTaskListStates.TreeHealthStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.AdminOfficerReviewTaskListStates.TreeHealthStatus.GetStatusStyleName()">@Model.AdminOfficerReviewTaskListStates.TreeHealthStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
             
             @if (Model.AdminOfficerReviewTaskListStates.EiaStatus is InternalReviewStepStatus.NotRequired or InternalReviewStepStatus.CannotStartYet)
             {

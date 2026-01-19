@@ -442,6 +442,8 @@ internal-web-app:
       microsoftClarity:
         enabled: true
         trackingId: "pcroui0u2v"
+    internalUserSite:
+      baseUrl: "https://internaltestflo.ps.conneqt.cloud/"
     GovUkNotifyOptions:
       enabled: true
       ApiKey: 

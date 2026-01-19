@@ -31,7 +31,7 @@
             </tr>
             <tr class="govuk-table__row">
                 <th scope="row" class="govuk-table__header">Application status</th>
-                @if (Model.IsWithFcStatus)
+                @if (Model.CanBeReturnedToApplicant)
                 {
                     <td class="govuk-table__cell">
                         <vc:gds-application-status-tag application-state="@Model.Status"></vc:gds-application-status-tag> (@DateTimeDisplay.GetDateDisplayString(currentStatusHistoryItem.Created))

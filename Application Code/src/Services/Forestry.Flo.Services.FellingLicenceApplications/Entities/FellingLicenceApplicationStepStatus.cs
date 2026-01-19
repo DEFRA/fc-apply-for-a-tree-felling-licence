@@ -61,6 +61,12 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         public bool? EnvironmentalImpactAssessmentStatus { get; set; }
 
         /// <summary>
+        /// Gets and sets a value indicating the status of the Habitat Restoration step.
+        /// true = complete, false = incomplete, null = not started/unknown.
+        /// </summary>
+        public bool? HabitatRestorationStatus { get; set; }
+
+        /// <summary>
         /// Gets and sets a value indicating the status of the Ten Year Licence step.
         /// true = complete, false = incomplete, null = not started/unknown.
         /// </summary>
@@ -71,6 +77,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         /// true = complete, false = incomplete, null = not started/unknown.
         /// </summary>
         public bool? AafStepStatus { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating the completion status of the Tree Health Issues step.
+        /// </summary>
+        public bool? TreeHealthIssuesStatus { get; set; }
 
         // https://stackoverflow.com/questions/44829824/how-to-store-json-in-an-entity-field-with-ef-core
 

@@ -168,4 +168,16 @@ public interface IUpdateAdminOfficerReviewService
     Task<UnitResult<UserDbErrorReason>> AddEnvironmentalImpactAssessmentRequestHistoryAsync(
         EnvironmentalImpactAssessmentRequestHistoryRecord record,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets the confirmation that tree health issues have been checked by the admin officer.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to confirm.</param>
+    /// <param name="performingUserId">The id of the user confirming the checks.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating success of the operation.</returns>
+    Task<Result> ConfirmTreeHealthCheckAsync(
+        Guid applicationId,
+        Guid performingUserId,
+        CancellationToken cancellationToken);
 }
