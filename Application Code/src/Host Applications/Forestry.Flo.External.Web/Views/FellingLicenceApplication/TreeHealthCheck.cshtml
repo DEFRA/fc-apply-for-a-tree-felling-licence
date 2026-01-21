@@ -1,0 +1,220 @@
+@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FileStorage.Configuration
+@using Microsoft.Extensions.Options
+@using Microsoft.IdentityModel.Tokens
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.TreeHealth.TreeHealthIssuesViewModel
+@inject IOptions<UserFileUploadOptions> Settings
+
+@{
+    ViewData["Title"] = "Are there any tree health or public safety reasons for this felling licence application?";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new
+        {
+            applicationId = Model.ApplicationId
+        }));
+    }
+    else
+    {
+        ViewData.ManuallySetBackLink(Url.Action("Operations", "FellingLicenceApplication", new
+        {
+            applicationId = Model.ApplicationId
+        }));
+    }
+    ViewData.ShowBackLink();
+
+    var allowedTypes = (Settings?.Value ?? new UserFileUploadOptions()).AllowedFileTypes
+        .Where(x => x.FileUploadReasons.Contains(FileUploadReason.SupportingDocument));
+    var allowedExtensions = allowedTypes.SelectMany(x => x.Extensions).ToArray();
+    var maxFileSize = (Settings?.Value ?? new UserFileUploadOptions()).MaxFileSizeBytes;
+    var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
+}
+
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+<partial name="Partials/_UserGuideDisplay"/>
+<partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
+
+<partial name="_ApplicationEditWarning.cshtml" model="@Model"/>
+
+<div class="govuk-grid-column-two-thirds">
+
+    <form method="post" id="tree-health-form" enctype="multipart/form-data">
+
+        @Html.HiddenFor(x => x.ApplicationId)
+        @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+        @Html.HiddenFor(x => x.FromDataImport)
+        @Html.HiddenFor(x => x.FellingLicenceStatus)
+
+        <govuk-form-group asp-for="TreeHealthIssues.TreeHealthIssueSelections">
+            <fieldset class="govuk-fieldset" aria-described-by="tree-health-issues-hint">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
+                    @ViewData["Title"]
+                </legend>
+                <div id="tree-health-issues-hint" class="govuk-hint">
+                    This includes tree diseases, pests, damage or events that make trees unsafe.
+                </div>
+                <validation asp-for="TreeHealthIssues.TreeHealthIssueSelections"></validation>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        @if (!Model.AllowEditing)
+                        {
+                            <input type="hidden" asp-for="TreeHealthIssues.NoTreeHealthIssues" />
+                        }
+
+                        <input condition-disabled="@(!Model.AllowEditing)" type="checkbox" id="TreeHealthIssues_TreeHealthIssueSelections" asp-for="TreeHealthIssues.NoTreeHealthIssues" class="govuk-checkboxes__input" />
+                        <label class="govuk-label govuk-checkboxes__label" for="TreeHealthIssues_TreeHealthIssueSelections">
+                            No tree health or public safety reasons
+                        </label>
+                    </div>
+
+                    <div class="govuk-checkboxes__divider">or</div>
+                    
+                    @foreach (var issueKey in Model.TreeHealthIssues.TreeHealthIssueSelections.Keys)
+                    {
+                        <div class="govuk-checkboxes__item">
+                            @if (!Model.AllowEditing)
+                            {
+                                <input type="hidden" asp-for="TreeHealthIssues.TreeHealthIssueSelections[issueKey]"/>
+                            }
+
+                            <input condition-disabled="@(!Model.AllowEditing)" type="checkbox" asp-for="TreeHealthIssues.TreeHealthIssueSelections[issueKey]" class="govuk-checkboxes__input" id="@($"{issueKey}_check")"/>
+                            <label class="govuk-label govuk-checkboxes__label" for="@($"{issueKey}_check")">
+                                @issueKey
+                            </label>
+                        </div>
+                    }
+
+                    <div class="govuk-checkboxes__item">
+                        @if (!Model.AllowEditing)
+                        {
+                            <input type="hidden" asp-for="TreeHealthIssues.OtherTreeHealthIssue"/>
+                        }
+
+                        <input condition-disabled="@(!Model.AllowEditing)" type="checkbox" asp-for="TreeHealthIssues.OtherTreeHealthIssue" class="govuk-checkboxes__input" data-aria-controls="conditional-other"/>
+                        <label class="govuk-label govuk-checkboxes__label" asp-for="TreeHealthIssues.OtherTreeHealthIssue">
+                            Other tree disease or public safety issue
+                        </label>
+
+                        <div class="govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden" id="conditional-other">
+                            <govuk-form-group asp-for="TreeHealthIssues.OtherTreeHealthIssueDetails">
+                                <label class="govuk-label" asp-for="TreeHealthIssues.OtherTreeHealthIssueDetails">Describe the reason</label>
+                                <div id="other-issue-hint" class="govuk-hint">
+                                    Describe any tree disease, damage or safety reasons that apply.
+                                </div>
+                                <validation asp-for="TreeHealthIssues.OtherTreeHealthIssueDetails"></validation>
+                                <input aria-describedby="other-issue-hint" type="text" condition-disabled="@(!Model.AllowEditing)" class="govuk-input govuk-input--width-30" asp-for="TreeHealthIssues.OtherTreeHealthIssueDetails"></input>
+                            </govuk-form-group>
+                        </div>
+                    </div>
+
+                </div>
+            </fieldset>
+        </govuk-form-group>
+        
+        <div class="govuk-form-group" id="file-select-group">
+            <input type="hidden">
+            <input id="allowed-extensions" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@string.Join(", ", allowedExtensions)"/>
+            <input id="allowed-max-size" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxFileSize"/>
+            <input id="allowed-max-size-description" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@FileSizeToStringConverter.SizeSuffix(maxFileSize)"/>
+            <input id="allowed-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@maxNumberDocs"/>
+            <input id="current-number-documents" aria-hidden="true" class="govuk-visually-hidden" type="hidden" value="@Model.TreeHealthDocuments.Count()"/>
+            <div class="govuk-form-group" id="file-select-group-2">
+                <label for="tree-health-file-upload" class="govuk-label govuk-label--m">Upload any relevant documents (optional)</label>
+                <label for="tree-health-file-upload-input" class="govuk-visually-hidden" aria-hidden="true">Upload any relevant documents (optional)</label>
+                <div class="govuk-hint">
+                    For example, photos or documents that support the tree health or public safety issues you have selected.
+                </div>
+                <div id="tree-health-file-upload-input-error" class="govuk-visually-hidden" aria-hidden="true"></div>
+                <div class="govuk-drop-zone"
+                     data-module="govuk-file-upload">
+                    <input multiple class="govuk-file-upload" id="tree-health-file-upload" name="treeHealthFiles" type="file" runat="server" tabindex="0">
+                </div>
+            </div>
+        </div>
+        
+        <div div class="govuk-form-group" condition="@Model.TreeHealthDocuments.Any()">
+            <h2 class="govuk-heading-m">Files you've uploaded</h2>
+
+            <table class="govuk-table" data-module="moj-sortable-table" id="documentation-list-table">
+
+                <thead class="govuk-table__head">
+
+                    <tr class="govuk-table__row">
+                        <th scope="col" class="govuk-table__header" aria-sort="none">Name</th>
+                        <th scope="col" class="govuk-table__header" aria-sort="descending">Uploaded Date</th>
+                        <th scope="col" class="govuk-table__header">Actions</th>
+                    </tr>
+
+                </thead>
+
+                <tbody class="govuk-table__body">
+                    @foreach (var document in Model.TreeHealthDocuments)
+                    {
+                        <tr class="govuk-table__row" data-id="@document.Id">
+
+                            <td class="govuk-table__cell wrapped-text">
+                                <a class="hidden-download-supporting-document"
+                                   asp-controller="FellingLicenceApplication"
+                                   asp-action="DownloadSupportingDocument"
+                                   asp-route-applicationId="@Model.ApplicationId"
+                                   asp-route-documentIdentifier="@document.Id">
+                                    @document.FileName
+                                </a>
+                            </td>
+
+                            <td class="govuk-table__cell" data-sort-value="@document.CreatedTimestamp.Ticks">
+                                @DateTimeDisplay.GetDateTimeDisplayString(document.CreatedTimestamp)
+                            </td>
+
+                            <td class="govuk-table__cell">
+                                <a class="govuk-link"
+                                   condition="@Model.AllowEditing"
+                                   asp-action="RemoveTreeHealthDocument"
+                                   asp-route-applicationId="@Model.ApplicationSummary!.Id"
+                                   asp-route-returnToApplicationSummary="@Model.ReturnToApplicationSummary"
+                                   asp-route-fromDataImport="@Model.FromDataImport"
+                                   asp-route-documentIdentifier="@document.Id">
+                                    Delete
+                                </a>
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
+                Save and continue
+            </button>
+        </div>
+    </form>
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}
+
+@section Scripts
+{
+    <script src="/js/tree-health.js" asp-append-version="true"></script>
+
+    @if (!Model.AllowEditing)
+    {
+        <script src="/js/disable-form-elements.js"></script>
+
+        <script>
+
+            $(function () {
+
+                disableFormElements('#tree-health-form');
+            });
+
+        </script>
+    }
+}

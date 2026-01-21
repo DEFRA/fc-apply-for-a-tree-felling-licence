@@ -89,6 +89,13 @@ public class DevelopmentPublicRegister(ILogger<DevelopmentPublicRegister> logger
         return Result.Success();
     }
 
+    public async Task<Result> ReturnCaseToConsultationRegisterAsync(
+        int objectId, string caseReference, DateTime newPublicRegisterStart, int period, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Development public register : received request to return application with ESRI id {EsriId} back onto the public register", objectId);
+        return Result.Success();
+    }
+
     public async Task<Result> AddCaseToDecisionRegisterAsync(
         int objectId,
         string caseReference,

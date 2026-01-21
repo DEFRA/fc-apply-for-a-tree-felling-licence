@@ -190,6 +190,11 @@ public class ApprovedInErrorService : IApprovedInErrorService
             entity.LastUpdatedById = userId;
             entity.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
 
+            // When the "Other" reason is selected, we do not regenerate reference
+            if (model.ReasonOther == true)
+            {
+                entity.PreviousReference = string.Empty;
+            }
             var upsertResult = await _internalFlaRepository.AddOrUpdateApprovedInErrorAsync(entity, cancellationToken);
             if (upsertResult.IsFailure)
             {

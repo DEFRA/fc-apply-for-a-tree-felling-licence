@@ -1,0 +1,48 @@
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration.HabitatNativeBroadleafModel
+@using Forestry.Flo.External.Web.Infrastructure
+
+@{
+    ViewData["Title"] = "Native broadleaf";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    else
+    {
+        ViewData.ManuallySetBackLink(Url.Action("HabitatWoodlandSpecies", "FellingLicenceApplication", new { applicationId = Model.ApplicationId, compartmentId = Model.CompartmentId }));
+    }
+    ViewData.ShowBackLink();
+}
+
+<partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-l">Are the broadleaf tree species in @Model.CompartmentName predominantly native?</h1>
+    <p class="govuk-body"><a href="https://cdn.forestresearch.gov.uk/2022/02/lru_bpg08.pdf" target="_blank">Learn more about native and non-native trees (opens in new tab)</a></p>
+
+    <form method="post">
+        <input type="hidden" asp-for="ApplicationId" />
+        <input type="hidden" asp-for="CompartmentId" />
+        <input type="hidden" asp-for="CompartmentName" />
+        @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" type="radio" id="native_yes" name="IsNativeBroadleaf" value="true" checked="@(Model.IsNativeBroadleaf == true)">
+                        <label class="govuk-label govuk-radios__label" for="native_yes">Yes</label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" type="radio" id="native_no" name="IsNativeBroadleaf" value="false" checked="@(Model.IsNativeBroadleaf == false)">
+                        <label class="govuk-label govuk-radios__label" for="native_no">No</label>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">Continue</button>
+        </div>
+    </form>
+</div>

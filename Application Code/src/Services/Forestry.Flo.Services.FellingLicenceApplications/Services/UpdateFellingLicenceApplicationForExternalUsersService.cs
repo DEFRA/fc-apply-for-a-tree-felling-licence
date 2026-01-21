@@ -438,6 +438,14 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
 
             application.Value.IsForTenYearLicence = isForTenYearLicence;
             application.Value.WoodlandManagementPlanReference = isForTenYearLicence ? woodlandManagementPlanReference : null;
+            if (isForTenYearLicence)
+            {
+                application.Value.Source = FellingLicenceApplicationSource.WoodlandManagementPlan;
+            }
+            if (!isForTenYearLicence && application.Value.Source == FellingLicenceApplicationSource.WoodlandManagementPlan)
+            {
+                application.Value.Source = FellingLicenceApplicationSource.ApplicantUser;
+            }
 
             // update step  status - if isForTenYearLicence is false then we don't need docs so set step status to true,
             // otherwise if there is no value set to false, if there is a value then only change it (to false) if there are no WMP docs yet
@@ -448,7 +456,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
                 ? true
                 : existingStepStatus.HasValue && wmpDocumentsCount == 0
                     ? false
-                    : existingStepStatus;
+                    : existingStepStatus ?? false;
             application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus = newStepStatus;
 
             _fellingLicenceApplicationRepository.Update(application.Value);
@@ -611,7 +619,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
             if (userAccess.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
             {
                 _logger.LogError(
-                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update ten-year licence status for the application with id {ApplicationId}",
+                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update PAWS designations data for the application with id {ApplicationId}",
                     userAccess.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
                 return Result.Failure("Could not update PAWS designations data for the application");
             }
@@ -666,6 +674,73 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
         }
         
 
+    }
+
+    public async Task<Result> UpdateApplicationTreeHealthIssuesDataAsync(
+        Guid applicationId, 
+        UserAccessModel userAccess,
+        TreeHealthIssuesModel treeHealthIssuesData, 
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogDebug(
+                "Updating application {ApplicationId} tree health issues data",
+                applicationId);
+
+            // get entity
+            var application = await _fellingLicenceApplicationRepository
+                .GetAsync(applicationId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (application.HasNoValue)
+            {
+                _logger.LogError("Could not locate application with id {ApplicationId} in the repository", applicationId);
+                return Result.Failure("Could not update tree health issues data for the application");
+            }
+
+            // verify user access to the application
+            var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
+            if (userAccess.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
+            {
+                _logger.LogError(
+                    "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot update tree health issues data for the application with id {ApplicationId}",
+                    userAccess.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
+                return Result.Failure("Could not update tree health issues data for the application");
+            }
+
+            application.Value.IsTreeHealthIssue = treeHealthIssuesData.NoTreeHealthIssues is false;
+            application.Value.TreeHealthIssues = treeHealthIssuesData.NoTreeHealthIssues is false
+                ? treeHealthIssuesData.TreeHealthIssueSelections
+                    .Where(x => x.Value).Select(x => x.Key).ToList()
+                : [];
+            application.Value.TreeHealthIssueOther = treeHealthIssuesData.NoTreeHealthIssues is false
+                ? treeHealthIssuesData.OtherTreeHealthIssue
+                : null;
+            application.Value.TreeHealthIssueOtherDetails = treeHealthIssuesData is { NoTreeHealthIssues: false, OtherTreeHealthIssue: true}
+                ? treeHealthIssuesData.OtherTreeHealthIssueDetails
+                : null;
+
+            application.Value.FellingLicenceApplicationStepStatus.TreeHealthIssuesStatus = true;
+
+            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+            if (dbResult.IsFailure)
+            {
+                _logger.LogError(
+                    "Error {Error} encountered in UpdateApplicationTreeHealthIssuesDataAsync, application id {ApplicationId}",
+                    dbResult.Error, applicationId);
+                return Result.Failure(dbResult.Error + $" in UpdateApplicationTreeHealthIssuesDataAsync, application id {applicationId}");
+            }
+
+            _logger.LogDebug("Successfully updated tree health issues data for application with id {ApplicationId}", applicationId);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in UpdateApplicationTreeHealthIssuesDataAsync");
+            return Result.Failure(ex.Message);
+        }
     }
 
     private Result ConvertProposedFellingDetailsToConfirmedAsync(FellingLicenceApplication fla)

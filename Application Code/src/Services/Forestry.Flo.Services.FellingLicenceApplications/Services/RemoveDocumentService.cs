@@ -100,7 +100,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Services
 
             var document = documentMaybe.Value;
 
-            if (document.Purpose is not (DocumentPurpose.Attachment or DocumentPurpose.EiaAttachment or DocumentPurpose.WmpDocument))
+            if (document.Purpose is not (DocumentPurpose.Attachment or DocumentPurpose.EiaAttachment or DocumentPurpose.WmpDocument or DocumentPurpose.TreeHealthAttachment))
             {
                 _logger.LogWarning("Only attachments, EIA attachments or WMP documents may be deleted, document id: [{DocumentIdentifier}], document purpose: [{Purpose}]", documentIdentifier, document.Purpose);
 

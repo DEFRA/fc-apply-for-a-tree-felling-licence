@@ -27,6 +27,7 @@
         @if (!Model.AllowEditing)
         {
             @Html.HiddenFor(x => x.IsForTenYearLicence)
+            @Html.HiddenFor(x => x.WoodlandManagementPlanReference)
         }
 
         <govuk-form-group asp-for="IsForTenYearLicence">

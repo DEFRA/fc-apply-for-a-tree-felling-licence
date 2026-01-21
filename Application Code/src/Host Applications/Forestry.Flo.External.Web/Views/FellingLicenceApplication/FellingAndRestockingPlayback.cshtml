@@ -77,9 +77,8 @@
                 <a
                     condition-disabled="@(Model.AllowEditing is false)"
                     class="govuk-button"
-                    asp-action="@Model.SaveAndContinueContext.Action"
-                    asp-controller="@Model.SaveAndContinueContext.Controller"
-                    asp-all-route-data="@(Model.SaveAndContinueContext.Values as Dictionary<string, string>)">
+                    asp-action="ConstraintsCheck"
+                    asp-route-applicationId="@Model.ApplicationId">
                     Save and continue
                 </a>
             </div>

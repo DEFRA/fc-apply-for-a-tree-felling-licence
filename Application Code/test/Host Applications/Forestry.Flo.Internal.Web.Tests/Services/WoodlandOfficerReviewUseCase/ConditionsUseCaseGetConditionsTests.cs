@@ -197,6 +197,8 @@ public class ConditionsUseCaseGetConditionsTests
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
+            InternalReviewStepStatus.NotStarted,
+            InternalReviewStepStatus.NotStarted,
             false);
 
         _getWoodlandOfficerReviewService
@@ -268,6 +270,8 @@ public class ConditionsUseCaseGetConditionsTests
             InternalReviewStepStatus.Completed,
             InternalReviewStepStatus.InProgress,
             InternalReviewStepStatus.InProgress,
+            InternalReviewStepStatus.NotStarted,
+            InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,
             InternalReviewStepStatus.NotStarted,

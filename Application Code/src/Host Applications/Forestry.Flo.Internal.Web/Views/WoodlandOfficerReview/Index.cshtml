@@ -4,7 +4,6 @@
 @using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
 @using Forestry.Flo.Services.FellingLicenceApplications.Models
 @using Forestry.Flo.Services.Common.Extensions
-@using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.WoodlandOfficerReviewModel
 
@@ -41,6 +40,25 @@
                     }
                 </div>
             </li>
+            
+            <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link" href="@Url.Action("ConfirmTreeHealth", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="confirm-tree-health">
+                        Confirm tree health
+                    </a>
+                </div>
+                <div class="govuk-task-list__status" id="confirm-tree-health">
+                    @if (Model.WoodlandOfficerReviewTaskListStates.TreeHealthStatus == InternalReviewStepStatus.Completed)
+                    {
+                        @Model.WoodlandOfficerReviewTaskListStates.TreeHealthStatus.GetDisplayName()
+                    }
+                    else
+                    {
+                        <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.TreeHealthStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.TreeHealthStatus.GetDisplayName()</strong>
+                    }
+                </div>
+            </li>
+
             @if (Model.WoodlandOfficerReviewTaskListStates.EiaScreeningStatus is InternalReviewStepStatus.NotRequired)
             {
                 <li class="govuk-task-list__item">
@@ -111,6 +129,41 @@
                     }
                 </div>
             </li>
+            
+            @if (Model.WoodlandOfficerReviewTaskListStates.PriorityOpenHabitatStepStatus == InternalReviewStepStatus.NotRequired)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Review priority open habitat
+                        <div class="govuk-task-list__hint">
+                            The application does not propose conversion to a priority open habitat.
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status">
+                        <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.PriorityOpenHabitatStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.PriorityOpenHabitatStepStatus.GetDisplayName()</strong>
+                    </div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("PriorityOpenHabitats", new { id = Model.FellingLicenceApplicationSummary.Id })" aria-describedby="priority-open-habitats">
+                            Review priority open habitat
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="priority-open-habitats">
+                        @if (Model.WoodlandOfficerReviewTaskListStates.PriorityOpenHabitatStepStatus == InternalReviewStepStatus.Completed)
+                        {
+                            @Model.WoodlandOfficerReviewTaskListStates.PriorityOpenHabitatStepStatus.GetDisplayName()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @Model.WoodlandOfficerReviewTaskListStates.PriorityOpenHabitatStepStatus.GetStatusStyleName()">@Model.WoodlandOfficerReviewTaskListStates.PriorityOpenHabitatStepStatus.GetDisplayName()</strong>
+                        }
+                    </div>
+                </li>
+            }
             
             @if (Model.WoodlandOfficerReviewTaskListStates.ConditionsStepStatus == InternalReviewStepStatus.CannotStartYet)
             {

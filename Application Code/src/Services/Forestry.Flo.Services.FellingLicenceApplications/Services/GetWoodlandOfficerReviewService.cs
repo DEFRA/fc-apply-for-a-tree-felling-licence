@@ -87,8 +87,11 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 return confirmedFellingAndRestockingDetails.ConvertFailure<WoodlandOfficerReviewStatusModel>();
             }
 
-            var fellingAmendments = confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels.Any(x => x.ConfirmedFellingDetailModels.Any(y => y.AmendedProperties.Any()));
-            var restockingAmendments = confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels.Any(x => x.ConfirmedFellingDetailModels.Any(y => y.ConfirmedRestockingDetailModels.Any(r => r.AmendedProperties.Any())));
+            var cfrAmendments = confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels.Any(c =>
+                c.ConfirmedFellingDetailModels.Any(f => f.AmendedProperties.Count > 0)
+                || c.ConfirmedFellingDetailModels.SelectMany(f => f.ConfirmedRestockingDetailModels).Any(r => r.AmendedProperties.Count > 0)
+                || _updateConfirmedFellingAndRestockingDetailsService.HasMissingProposedFellingOrRestockingLink(c)
+                || _updateConfirmedFellingAndRestockingDetailsService.HasUnmatchedProposedFellingOrRestocking(c));
 
             var designationsStatus = InternalReviewStepStatus.NotStarted;
 
@@ -109,7 +112,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     return submittedCompartments.ConvertFailure<WoodlandOfficerReviewStatusModel>();
                 }
 
-                if (submittedCompartments.Value.Any(c => c.SubmittedCompartmentDesignations?.HasBeenReviewed is true))
+                if (submittedCompartments.Value?.Any(c => c.SubmittedCompartmentDesignations?.HasBeenReviewed is true) ?? false)
                 {
                     designationsStatus = InternalReviewStepStatus.InProgress;
                 }
@@ -117,7 +120,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
             var fAndRStatus = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.ConfirmedFellingAndRestockingComplete
                 ? InternalReviewStepStatus.Completed
-                : fellingAmendments || restockingAmendments
+                : cfrAmendments
                     ? InternalReviewStepStatus.InProgress
                     : InternalReviewStepStatus.NotStarted;
 
@@ -179,7 +182,34 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                     }
                 }
             }
+
+            var habitatRestorationsResult = await _internalFlaRepository.GetHabitatRestorationsAsync(applicationId, cancellationToken);
+            var priorityOpenHabitatStatus = InternalReviewStepStatus.NotRequired;
+
+            if (habitatRestorationsResult.IsSuccess && habitatRestorationsResult.Value.Any())
+            {
+                priorityOpenHabitatStatus = InternalReviewStepStatus.NotStarted;
+
+                if (woodlandOfficerReview.HasValue)
+                {
+                    if (woodlandOfficerReview.Value.PriorityOpenHabitatComplete == true)
+                    {
+                        priorityOpenHabitatStatus = InternalReviewStepStatus.Completed;
+                    }
+                    else if (woodlandOfficerReview.Value.PriorityOpenHabitatComplete == false)
+                    {
+                        priorityOpenHabitatStatus = InternalReviewStepStatus.Failed;
+                    }
+                }
+            }
+
             var requiresEia = proposedFellingAndRestockingDetails.Value.Item1.ShouldProposedFellingDetailsRequireEia();
+
+            var treeHealthStatus = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.IsApplicantTreeHealthAnswersConfirmed.HasValue
+                ? woodlandOfficerReview.Value.IsApplicantTreeHealthAnswersConfirmed is true
+                    ? InternalReviewStepStatus.Completed
+                    : InternalReviewStepStatus.Failed
+                : InternalReviewStepStatus.NotStarted;
 
             var taskListStates = new WoodlandOfficerReviewTaskListStates(
                 publicRegister.GetPublicRegisterStatus(),
@@ -192,6 +222,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 isLarchApplication ? larchCheckStatus : InternalReviewStepStatus.NotRequired,
                 LarchFlyoverStatus,
                 woodlandOfficerReview.GetEiaScreeningStatus(requiresEia),
+                treeHealthStatus,
+                priorityOpenHabitatStatus,
                 woodlandOfficerReview.GetValueOrDefault()?.WoodlandOfficerReviewComplete ?? false);
 
             var result = new WoodlandOfficerReviewStatusModel
@@ -429,6 +461,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
             var result = new ApplicationDetailsForPublicRegisterModel
             {
+                ExistingEsriId = fla.Value.PublicRegister?.EsriId,
                 CaseReference = fla.Value.ApplicationReference,
                 PropertyName = fla.Value.SubmittedFlaPropertyDetail.Name,
                 GridReference = fla.Value.OSGridReference ?? string.Empty,

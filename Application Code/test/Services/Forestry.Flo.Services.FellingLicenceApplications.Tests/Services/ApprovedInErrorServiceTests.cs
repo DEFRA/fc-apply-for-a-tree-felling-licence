@@ -134,7 +134,7 @@ public class ApprovedInErrorServiceTests
             e.PreviousReference == model.PreviousReference &&
             e.ReasonExpiryDate == model.ReasonExpiryDate &&
             e.ReasonSupplementaryPoints == model.ReasonSupplementaryPoints &&
-            e.ReasonOther == model.ReasonOther &&
+            e.ReasonOther == true ? string.IsNullOrEmpty(e.PreviousReference) : e.ReasonOther == model.ReasonOther &&
             e.ReasonExpiryDateText == model.ReasonExpiryDateText &&
             e.LastUpdatedById == userId &&
             e.LastUpdatedDate == _now), It.IsAny<CancellationToken>()), Times.Once);
@@ -185,14 +185,21 @@ public class ApprovedInErrorServiceTests
         _repo.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _repo.Verify(x => x.GetApprovedInErrorAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _repo.Verify(x => x.AddOrUpdateApprovedInErrorAsync(existingEntity, It.IsAny<CancellationToken>()), Times.Once);
+
         Assert.Equal(applicationId, existingEntity.FellingLicenceApplicationId);
-        Assert.Equal(model.PreviousReference, existingEntity.PreviousReference);
+
+        // PreviousReference is cleared when ReasonOther is true
+        Assert.True(model.ReasonOther == true
+            ? string.IsNullOrEmpty(existingEntity.PreviousReference)
+            : existingEntity.PreviousReference == model.PreviousReference);
+
         Assert.Equal(model.ReasonExpiryDate, existingEntity.ReasonExpiryDate);
         Assert.Equal(model.ReasonSupplementaryPoints, existingEntity.ReasonSupplementaryPoints);
         Assert.Equal(model.ReasonOther, existingEntity.ReasonOther);
         Assert.Equal(model.ReasonExpiryDateText, existingEntity.ReasonExpiryDateText);
         Assert.Equal(userId, existingEntity.LastUpdatedById);
         Assert.Equal(_now, existingEntity.LastUpdatedDate);
+
         _repo.Verify(x => x.AddStatusHistory(userId, applicationId, FellingLicenceStatus.ApprovedInError, It.IsAny<CancellationToken>()), Times.Once);
         mockUnitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _repo.VerifyNoOtherCalls();

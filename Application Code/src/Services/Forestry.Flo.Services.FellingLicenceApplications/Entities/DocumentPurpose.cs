@@ -21,6 +21,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         [Display(Name = "Environmental Impact Assessment")]
         EiaAttachment,
         [Display(Name = "WMP document")]
-        WmpDocument
+        WmpDocument,
+        [Display(Name = "Tree health or public safety issue attachment")]
+        TreeHealthAttachment
     }
 }

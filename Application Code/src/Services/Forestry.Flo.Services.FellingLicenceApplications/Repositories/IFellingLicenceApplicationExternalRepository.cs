@@ -56,6 +56,51 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Retrieves the HabitatRestoration for a specific application and compartment, if one exists.
+    /// </summary>
+    /// <param name="applicationId">The Id of the FLA that owns the restoration.</param>
+    /// <param name="compartmentId">The Id of the compartment to retrieve the restoration for.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="HabitatRestoration"/> if found; otherwise <see cref="Maybe{T}.None"/>.</returns>
+    Task<Maybe<HabitatRestoration>> GetHabitatRestorationAsync(
+        Guid applicationId,
+        Guid compartmentId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns all HabitatRestoration records for the given application.
+    /// </summary>
+    Task<IReadOnlyList<HabitatRestoration>> GetHabitatRestorationsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Adds a HabitatRestoration for a given application/compartment when a matching linked profile exists.
+    /// </summary>
+    Task<UnitResult<UserDbErrorReason>> AddHabitatRestorationAsync(
+        Guid applicationId,
+        Guid compartmentId);
+
+    /// <summary>
+    /// Updates a HabitatRestoration entity with provided values.
+    /// </summary>
+    Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration);
+
+    /// <summary>
+    /// Deletes a HabitatRestoration for a specific application and compartment.
+    /// </summary>
+    Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationAsync(
+        Guid applicationId,
+        Guid compartmentId);
+
+    /// <summary>
+    /// Deletes multiple HabitatRestoration records for a specific application.
+    /// </summary>
+    Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Retrieves details for a specific compartment on a felling licence application.
     /// </summary>
     /// <remarks>A value is only returned if a compartment is located with all of the given

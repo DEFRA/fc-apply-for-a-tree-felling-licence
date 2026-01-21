@@ -183,6 +183,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 assignedWoodlandOfficer != null || assignedApprover != null,
                 summaryModel.IsCBWapplication,
                 eiaModel.IsSuccess,
+                summaryModel.HasTreeHealthIssue,
                 cancellationToken);
 
         var result = new AdminOfficerReviewModel
@@ -513,21 +514,6 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
         ), cancellationToken);
 
         return Result.Success();
-    }
-
-    private void SetBreadcrumbs(FellingLicenceApplicationPageViewModel model, string task)
-    {
-        var breadCrumbs = new List<BreadCrumb>
-        {
-            new("Open applications", "Home", "Index", null),
-            new(model.FellingLicenceApplicationSummary?.ApplicationReference!, "FellingLicenceApplication", "ApplicationSummary", model.FellingLicenceApplicationSummary?.Id.ToString()),
-        };
-
-        model.Breadcrumbs = new BreadcrumbsModel
-        {
-            Breadcrumbs = breadCrumbs,
-            CurrentPage = task
-        };
     }
 
     private async Task<Result> LarchFadExtensionUpdateAsync(

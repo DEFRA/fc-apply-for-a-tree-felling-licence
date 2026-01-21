@@ -1,13 +1,11 @@
-﻿using CSharpFunctionalExtensions;
-using FluentValidation;
+﻿using FluentValidation;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.Common.Extensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.External.Web.Controllers;
 
@@ -90,9 +88,20 @@ public partial class FellingLicenceApplicationController
             user, 
             cancellationToken);
 
-        return confirmCompletionResult.IsFailure 
-            ? RedirectToAction(nameof(HomeController.Error), "Home") 
-            : RedirectToAction(nameof(ConstraintsCheck), new { model.ApplicationId });
+        if (confirmCompletionResult.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        var applicationResult = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.ApplicationId, cancellationToken);
+        if (applicationResult.HasNoValue)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        return applicationResult.Value.PawsAndIawp.StepRequiredForApplication
+            ? RedirectToAction(nameof(PawsCheck), new { applicationId = model.ApplicationId })
+            : RedirectToAction(nameof(SupportingDocumentation), new { applicationId = model.ApplicationId });
     }
 
     [HttpPost]
@@ -156,8 +165,11 @@ public partial class FellingLicenceApplicationController
             logger.LogError("Failed to remove eia document with error {Error}", removeResult.Error);
             this.AddErrorMessage("Could not remove EIA document at this time, try again");
         }
+        else
+        {
+            this.AddConfirmationMessage("EIA document successfully removed");
+        }
 
-        this.AddConfirmationMessage("EIA document successfully removed");
         return RedirectToAction(nameof(EnvironmentalImpactAssessment), new { applicationId });
     }
 }

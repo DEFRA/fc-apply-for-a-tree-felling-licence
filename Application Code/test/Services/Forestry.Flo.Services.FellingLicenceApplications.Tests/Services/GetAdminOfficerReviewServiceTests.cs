@@ -26,7 +26,7 @@ public class GetAdminOfficerReviewServiceTests
             .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<Entities.AdminOfficerReview>.None);
 
-        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, isAgentApplication, true, false, false, false, CancellationToken.None);
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, isAgentApplication, true, false, false, false, false, CancellationToken.None);
 
         AssertIsDefault(result, isAgentApplication);
 
@@ -60,7 +60,7 @@ public class GetAdminOfficerReviewServiceTests
             .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
         .ReturnsAsync(review.AsMaybe);
 
-        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, isAgencyApplication, true, false, false, false, CancellationToken.None);
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, isAgencyApplication, true, false, false, false, false, CancellationToken.None);
         
         Assert.Equal(expectedAgentAuthorityTaskListState, result.AdminOfficerReviewTaskListStates.AgentAuthorityFormStepStatus);
 
@@ -90,7 +90,7 @@ public class GetAdminOfficerReviewServiceTests
             .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
         .ReturnsAsync(review.AsMaybe);
 
-        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, It.IsAny<bool>(), true, false, false, false, CancellationToken.None);
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, It.IsAny<bool>(), true, false, false, false, false, CancellationToken.None);
 
         Assert.Equal(expectedMappingTaskListState, result.AdminOfficerReviewTaskListStates.MappingCheckStepStatus);
 
@@ -117,7 +117,7 @@ public class GetAdminOfficerReviewServiceTests
             .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(review.AsMaybe);
 
-        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, It.IsAny<bool>(), true, isAssigned, false, false, CancellationToken.None);
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, It.IsAny<bool>(), true, isAssigned, false, false, false, CancellationToken.None);
 
         _mockRepository.Verify(x => x.GetAdminOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal(expectedMappingTaskListState, result.AdminOfficerReviewTaskListStates.AssignWoodlandOfficerStatus);
@@ -134,7 +134,7 @@ public class GetAdminOfficerReviewServiceTests
             .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<Entities.AdminOfficerReview>.None);
 
-        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, true, true, false, false, false, CancellationToken.None);
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, true, true, false, false, false, false, CancellationToken.None);
 
         Assert.Equal(InternalReviewStepStatus.CannotStartYet, result.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus);
 
@@ -162,7 +162,7 @@ public class GetAdminOfficerReviewServiceTests
             .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(review.AsMaybe);
 
-        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, true, true, false, false, false, CancellationToken.None);
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, true, true, false, false, false, false, CancellationToken.None);
 
         Assert.Equal(InternalReviewStepStatus.CannotStartYet, result.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus);
 
@@ -185,7 +185,7 @@ public class GetAdminOfficerReviewServiceTests
             .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(review.AsMaybe);
 
-        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, false, true, false, false, false, CancellationToken.None);
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, false, true, false, false, false, false, CancellationToken.None);
 
         Assert.Equal(InternalReviewStepStatus.CannotStartYet, result.AdminOfficerReviewTaskListStates.ConstraintsCheckStepStatus);
 
@@ -221,10 +221,41 @@ public class GetAdminOfficerReviewServiceTests
             isAssignedWoodlandOfficer: false,
             isCBWApplication: false,
             isEiaApplication: false,
+            isTreeHealthApplication: false,
             cancellationToken: CancellationToken.None);
 
         Assert.Equal(InternalReviewStepStatus.NotRequired, result.AdminOfficerReviewTaskListStates.LarchFlyoverStatus);
         _mockRepository.Verify(x => x.GetAdminOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(false, null, InternalReviewStepStatus.NotRequired)]
+    [InlineData(true, null, InternalReviewStepStatus.NotStarted)]
+    [InlineData(true, false, InternalReviewStepStatus.InProgress)]
+    [InlineData(true, true, InternalReviewStepStatus.Completed)]
+    public async Task ReturnsRelevantStatusForTreeHealthCheck(
+        bool isTreeHealthApplication,
+        bool? isTreeHealthChecked,
+        InternalReviewStepStatus expectedMappingTaskListState)
+    {
+        var applicationId = Guid.NewGuid();
+        var review = new Entities.AdminOfficerReview
+        {
+            MappingChecked = true,
+            MappingCheckPassed = true,
+            IsTreeHealthAnswersChecked = isTreeHealthChecked
+        };
+
+        var sut = CreateSut();
+
+        _mockRepository
+            .Setup(x => x.GetAdminOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(review.AsMaybe);
+
+        var result = await sut.GetAdminOfficerReviewStatusAsync(applicationId, It.IsAny<bool>(), true, false, false, false, isTreeHealthApplication, CancellationToken.None);
+
+        _mockRepository.Verify(x => x.GetAdminOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(expectedMappingTaskListState, result.AdminOfficerReviewTaskListStates.TreeHealthStatus);
     }
 
     private GetAdminOfficerReviewService CreateSut()

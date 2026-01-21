@@ -1,16 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoFixture;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Tests.Common;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Repositories;
@@ -115,6 +114,7 @@ public class FellingLicenceApplicationRepositoryBaseTests
         Assert.Equal(stepStatusRecord.OperationDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.OperationsStatus);
         Assert.Equal(stepStatusRecord.SelectedCompartmentsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus);
         Assert.Equal(stepStatusRecord.SupportingDocumentationComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
+        Assert.Equal(stepStatusRecord.TreeHealthComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.TreeHealthIssuesStatus);
         if (stepStatusRecord.PawsCheckComplete is true)
         {
             Assert.All(updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses, x => Assert.False(x.Status));
@@ -163,6 +163,7 @@ public class FellingLicenceApplicationRepositoryBaseTests
         Assert.Equal(stepStatusRecord.SelectedCompartmentsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus);
         Assert.Equal(fla.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus, updatedFla.Value.FellingLicenceApplicationStepStatus.SupportingDocumentationStatus);
         Assert.Equivalent(stepStatusRecord.FellingAndRestockingDetailsComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses);
+        Assert.Equivalent(stepStatusRecord.TreeHealthComplete, updatedFla.Value.FellingLicenceApplicationStepStatus.TreeHealthIssuesStatus);
     }
 
     [Theory, AutoMoqData]

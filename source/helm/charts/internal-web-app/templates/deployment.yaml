@@ -40,10 +40,20 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                - key: environment
-                  operator: In
-                  values:
-                  - {{ .Values.global.environment }}
+                  - key: environment
+                    operator: In
+                    values:
+                      - {{ .Values.global.environment }}
+                  {{- if .Values.global.appWorkload }}
+                  - key: workload
+                    operator: In
+                    values:
+                      - {{ .Values.global.appWorkload }}
+                  {{- end }}
+      {{- if .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
       initContainers:
         {{- if .Values.global.postgresql.enabled }}
         - name: init-db
@@ -933,13 +943,5 @@ spec:
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

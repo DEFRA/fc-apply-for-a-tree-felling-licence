@@ -21,4 +21,8 @@ public record ApplicationStepStatusRecord
     public bool? EnvironmentalImpactAssessmentComplete { get; init; } = null;
 
     public bool? PawsCheckComplete { get; init; } = null;
+
+    public bool? HabitatRestorationComplete { get; init; } = null;
+
+    public bool? TreeHealthComplete { get; init; } = null!;
 }

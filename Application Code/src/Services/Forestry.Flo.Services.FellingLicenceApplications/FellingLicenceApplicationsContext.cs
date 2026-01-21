@@ -87,6 +87,8 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
 
     public DbSet<ApprovedInError> ApprovedInErrors { get; set; } = null!;
 
+    public DbSet<HabitatRestoration> HabitatRestorations { get; set; } = null!;
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
@@ -139,6 +141,7 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<ConfirmedRestockingSpecies>().ToTable("ConfirmedRestockingSpecies");
         modelBuilder.Entity<SiteVisitEvidence>().ToTable("SiteVisitEvidence");
         modelBuilder.Entity<ApprovedInError>().ToTable("ApprovedInError");
+        modelBuilder.Entity<HabitatRestoration>().ToTable("HabitatRestoration");
 
         modelBuilder.Entity<WoodlandOwner>().ToTable("WoodlandOwner","Applicants", t => t.ExcludeFromMigrations());
         modelBuilder.Entity<UserAccount>().ToTable("UserAccount","Applicants", t => t.ExcludeFromMigrations());
@@ -171,6 +174,11 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .Entity<FellingLicenceApplication>()
             .Property(e => e.Source)
             .HasConversion<string>();
+
+        modelBuilder
+            .Entity<FellingLicenceApplication>()
+            .Property(x => x.TreeHealthIssues)
+            .HasJsonConversion();
 
         modelBuilder
             .Entity<StatusHistory>()
@@ -834,6 +842,15 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             })
             .IsUnique()
             .HasFilter($"\"{nameof(FellingAndRestockingAmendmentReview.ResponseReceivedDate)}\" IS NULL");
+
+        modelBuilder.Entity<HabitatRestoration>(entity =>
+        {
+            entity.HasKey(hr => hr.Id);
+            entity.HasOne(hr => hr.LinkedPropertyProfile)
+                .WithMany(lpp => lpp.HabitatRestorations)
+                .HasForeignKey(hr => hr.LinkedPropertyProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 
     public async Task<UnitResult<UserDbErrorReason>> SaveEntitiesAsync(CancellationToken cancellationToken = default)

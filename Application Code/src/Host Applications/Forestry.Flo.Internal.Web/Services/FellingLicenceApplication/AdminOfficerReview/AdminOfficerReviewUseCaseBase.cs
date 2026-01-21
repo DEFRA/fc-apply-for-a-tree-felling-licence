@@ -1,4 +1,7 @@
-﻿using Forestry.Flo.Services.Applicants.Services;
+﻿using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
+using Forestry.Flo.Internal.Web.Models;
+using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -90,5 +93,27 @@ public class AdminOfficerReviewUseCaseBase : FellingLicenceApplicationUseCaseBas
                     }), 
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    protected void SetBreadcrumbs(FellingLicenceApplicationPageViewModel model, string currentTask, bool isChildTask = false) 
+
+    {
+        var breadCrumbs = new List<BreadCrumb>
+        {
+            new("Open applications", "Home", "Index", null),
+            new(model.FellingLicenceApplicationSummary?.ApplicationReference!, "FellingLicenceApplication",
+                "ApplicationSummary", model.FellingLicenceApplicationSummary?.Id.ToString()),
+        };
+
+        if (isChildTask)
+        {
+            breadCrumbs.Add(new("Operations Admin Officer Review", "AdminOfficerReview", nameof(AdminOfficerReviewController.Index), model.FellingLicenceApplicationSummary?.Id.ToString()));
+        }
+
+        model.Breadcrumbs = new BreadcrumbsModel
+        {
+            Breadcrumbs = breadCrumbs,
+            CurrentPage = currentTask
+        };
     }
 }

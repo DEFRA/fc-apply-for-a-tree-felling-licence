@@ -132,14 +132,28 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
     /// <summary>
     /// Updates the PAWS designations data for a compartment in the specified application.
     /// </summary>
-    /// <param name="applicationId">The ID of the application to update</param>
+    /// <param name="applicationId">The ID of the application to update.</param>
     /// <param name="userAccess">The auth for the user performing the update.</param>
     /// <param name="pawsDesignationsData">A model of the PAWS designations data to store.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns></returns>
+    /// <returns>A <see cref="Result"/> indicating if the update was successful.</returns>
     Task<Result> UpdateApplicationPawsDesignationsDataAsync(
         Guid applicationId,
         UserAccessModel userAccess,
         PawsCompartmentDesignationsModel pawsDesignationsData,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the tree health issues data for the specified application.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userAccess">The auth for the user performing the update.</param>
+    /// <param name="treeHealthIssuesData">A model of the tree health issues data to store.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating if the update was successful.</returns>
+    Task<Result> UpdateApplicationTreeHealthIssuesDataAsync(
+        Guid applicationId,
+        UserAccessModel userAccess,
+        TreeHealthIssuesModel treeHealthIssuesData,
         CancellationToken cancellationToken);
 }

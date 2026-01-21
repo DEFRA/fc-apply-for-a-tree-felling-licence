@@ -84,4 +84,8 @@ resource "cloudflare_zone_settings_override" "zone" {
     min_tls_version = "1.2"
     tls_1_3         = "on"
   }
+
+  lifecycle {
+    ignore_changes = [ initial_settings ] # We need this to stop if trying to change something we do not touch.
+  }
 }

@@ -87,6 +87,7 @@ public class ApprovedInErrorController : Controller
             ReasonExpiryDate = model.ReasonExpiryDate,
             ReasonSupplementaryPoints = model.ReasonSupplementaryPoints,
             ReasonOther = model.ReasonOther,
+            ReasonOtherText = model.ReasonOtherText,
             ReasonExpiryDateText = model.ReasonExpiryDateText
         };
 

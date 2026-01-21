@@ -253,6 +253,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<Guid>("FellingLicenceApplicationId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool?>("IsTreeHealthAnswersChecked")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("LarchChecked")
                         .HasColumnType("boolean");
 
@@ -911,6 +914,12 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<bool?>("IsForTenYearLicence")
                         .HasColumnType("boolean");
 
+                    b.Property<bool?>("IsPriorityOpenHabitat")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("IsTreeHealthIssue")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("LicenceExpiryDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -938,6 +947,16 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
                     b.Property<bool>("TermsAndConditionsAccepted")
                         .HasColumnType("boolean");
+
+                    b.Property<bool?>("TreeHealthIssueOther")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TreeHealthIssueOtherDetails")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TreeHealthIssues")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("VoluntaryWithdrawalNotificationTimeStamp")
                         .HasColumnType("timestamp with time zone");
@@ -986,6 +1005,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<Guid>("FellingLicenceApplicationId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool?>("HabitatRestorationStatus")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("OperationsStatus")
                         .HasColumnType("boolean");
 
@@ -999,6 +1021,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<bool?>("TermsAndConditionsStatus")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("TreeHealthIssuesStatus")
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");
@@ -1061,6 +1086,46 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.HasIndex("ProposedFellingDetailsId");
 
                     b.ToTable("FellingSpecies", "FellingLicenceApplications");
+                });
+
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.HabitatRestoration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("Completed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("FelledEarly")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("HabitatType")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("LinkedPropertyProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("NativeBroadleaf")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OtherHabitatDescription")
+                        .HasColumnType("text");
+
+                    b.Property<bool?>("ProductiveWoodland")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PropertyProfileCompartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("WoodlandSpeciesType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedPropertyProfileId");
+
+                    b.ToTable("HabitatRestoration", "FellingLicenceApplications");
                 });
 
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.LarchCheckDetails", b =>
@@ -1628,6 +1693,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<bool?>("InterestDeclared")
                         .HasColumnType("boolean");
 
+                    b.Property<bool?>("IsApplicantTreeHealthAnswersConfirmed")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("IsApplicationValid")
                         .HasColumnType("boolean");
 
@@ -1650,6 +1718,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<bool?>("MapAccuracyConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool?>("PriorityOpenHabitatComplete")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("Pw14ChecksComplete")
@@ -2146,6 +2217,17 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Navigation("ProposedFellingDetail");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.HabitatRestoration", b =>
+                {
+                    b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.LinkedPropertyProfile", "LinkedPropertyProfile")
+                        .WithMany("HabitatRestorations")
+                        .HasForeignKey("LinkedPropertyProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LinkedPropertyProfile");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.LarchCheckDetails", b =>
                 {
                     b.HasOne("Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication", "FellingLicenceApplication")
@@ -2366,6 +2448,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
             modelBuilder.Entity("Forestry.Flo.Services.FellingLicenceApplications.Entities.LinkedPropertyProfile", b =>
                 {
+                    b.Navigation("HabitatRestorations");
+
                     b.Navigation("ProposedCompartmentDesignations");
 
                     b.Navigation("ProposedFellingDetails");

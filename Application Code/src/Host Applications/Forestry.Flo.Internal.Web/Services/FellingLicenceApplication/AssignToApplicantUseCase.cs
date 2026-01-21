@@ -108,11 +108,11 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         }
 
         var currentStatus = fellingLicenceApplication.Value.StatusHistories.MaxBy(x => x.Created)!.Status;
-        if (ApplicationCompletedStatuses.Contains(currentStatus))
+        if (fellingLicenceApplication.Value.CanBeReturnedToApplicant == false)
         {
-            var errorStatuses = $"The application with Id {applicationId} is {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)} and a user cannot be assigned to it."; 
+            var errorStatuses = $"The application with Id {applicationId} is {currentStatus.GetDisplayNameByActorType(ActorType.InternalUser)} and cannot be returned to applicant."; 
             _logger.LogError(
-                "The application with Id {ApplicationId} is in status {CurrentStatus} and a user cannot be assigned to it.",
+                "The application with Id {ApplicationId} is in status {CurrentStatus} and cannot be returned to the applicant.",
                 applicationId,
                 currentStatus.GetDisplayNameByActorType(ActorType.InternalUser));
             await AuditErrorAsync(internalUser.UserAccountId, applicationId, errorStatuses, cancellationToken);
@@ -151,6 +151,11 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         if (!fellingLicenceApplication.Value.HasPaws)
         {
             sectionDict.Remove(FellingLicenceApplicationSection.PawsAndIawp);
+        }
+
+        if (fellingLicenceApplication.Value.IsPriorityOpenHabitat != true)
+        {
+            sectionDict.Remove(FellingLicenceApplicationSection.HabitatRestoration);
         }
 
         var compartmentDict = fellingLicenceApplication.Value.DetailsList
@@ -235,6 +240,8 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
             ConstraintsCheckComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.ConstraintCheck, out var ticked4) && ticked4 ? false : null,
             SupportingDocumentationComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.SupportingDocumentation, out var ticked5) && ticked5 ? false : null,
             PawsCheckComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.PawsAndIawp, out var ticked6) && ticked6 ? false : null,
+            HabitatRestorationComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.HabitatRestoration, out var ticked7) && ticked7 ? false : null,
+            TreeHealthComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.TreeHealthIssues, out var ticked8) && ticked8 ? false : null,
         };
 
         var consultationPr = await _getFellingLicenceApplicationService

@@ -160,6 +160,37 @@
                 </div>
             </form>
         }
+        else
+        {
+            <form method="post" asp-action="PublishToConsultationPublicRegister" id="publish-form">
+
+                <input asp-for="ApplicationId"/>
+
+                <govuk-form-group asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays">
+                    <fieldset class="govuk-fieldset" aria-described-by="publish-hint">
+                        <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                            <h2 class="govuk-fieldset__heading">
+                                How long should it stay on the consultation public register?
+                            </h2>
+                        </legend>
+                        <label asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays" class="govuk-body govuk-label--s">Period on public register (days)</label>
+                        <validation asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays"></validation>
+                        <div class="govuk-input__wrapper">
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-input govuk-input--width-5" asp-for="PublicRegister.ConsultationPublicRegisterPeriodDays" type="text" inputmode="numeric" step="1" value="@(Model.PublicRegister?.ConsultationPublicRegisterPeriodDays ?? Settings.Value.PublicRegisterPeriod.Days)" />
+                            <div class="govuk-input__suffix" aria-hidden="true">days</div>
+                        </div>
+                    </fieldset>
+                </govuk-form-group>
+
+                <br/>
+                
+                <div class="govuk-button-group">
+                    <button condition="@Model.Editable(user)" id="publish-btn" type="submit" class="govuk-button" data-module="govuk-button">
+                        Republish to public register
+                    </button>
+                </div>
+            </form>
+        }
 
         <br/>
         <div class="govuk-grid-row">

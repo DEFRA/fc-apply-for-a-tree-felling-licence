@@ -1,0 +1,61 @@
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration.WoodlandSpeciesTypeModel
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@using Forestry.Flo.External.Web.Infrastructure
+
+@{
+    ViewData["Title"] = "Habitat woodland species";
+    if (Model.ReturnToApplicationSummary)
+    {
+        ViewData.ManuallySetBackLink(Url.Action("ApplicationSummary", "FellingLicenceApplication", new { applicationId = Model.ApplicationId }));
+    }
+    else
+    {
+        ViewData.ManuallySetBackLink(Url.Action("HabitatType", "FellingLicenceApplication", new { applicationId = Model.ApplicationId, compartmentId = Model.CompartmentId }));
+    }
+    ViewData.ShowBackLink();
+}
+
+<partial name="_ApplicationSummaryNotes" model="Model.ApplicationSummary"/>
+
+<div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-l">What type of trees make up most of @Model.CompartmentName?</h1>
+
+    <form method="post">
+        <input type="hidden" asp-for="ApplicationId" />
+        <input type="hidden" asp-for="CompartmentId" />
+        <input type="hidden" asp-for="CompartmentName" />
+        @Html.HiddenFor(x => x.ReturnToApplicationSummary)
+
+        <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+                <div class="govuk-radios" data-module="govuk-radios">
+                    @foreach (var value in Enum.GetValues(typeof(WoodlandSpeciesType)).Cast<WoodlandSpeciesType>())
+                    {
+                        <div class="govuk-radios__item">
+                            <input class="govuk-radios__input" type="radio" id="species_@value" name="SelectedSpeciesType" value="@value" checked="@(Model.SelectedSpeciesType == value)">
+                            <label class="govuk-label govuk-radios__label" for="species_@value">@value.GetDisplayName()
+                            @if (value == WoodlandSpeciesType.MixedWoodland)
+                            {
+                                <div class="govuk-hint">Between 20 to 80% broadleaved</div>
+                            }
+                            @if (value == WoodlandSpeciesType.ConiferWoodland)
+                            {
+                                <div class="govuk-hint">More than 80% coniferous</div>
+                            }
+                            @if (value == WoodlandSpeciesType.BroadleafWoodland)
+                            {
+                                <div class="govuk-hint">More than 80% broadleaved</div>
+                            }
+                            </label>
+                        </div>
+                    }
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="govuk-button-group">
+            <button class="govuk-button" type="submit" data-module="govuk-button">Continue</button>
+        </div>
+    </form>
+</div>

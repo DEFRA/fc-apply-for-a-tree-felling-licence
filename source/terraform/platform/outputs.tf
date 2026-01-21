@@ -18,3 +18,10 @@ output "azurerm_container_registry_fs_flov2_id" {
   value = azurerm_container_registry.fs_flov2.id
 }
 
+output "virtual_network_ukw_id" {
+  value = azurerm_virtual_network.fs_flov2_ukw.id
+}
+
+output "subnet_database_ukw_id" {
+  value = azurerm_subnet.database_ukw.id
+}

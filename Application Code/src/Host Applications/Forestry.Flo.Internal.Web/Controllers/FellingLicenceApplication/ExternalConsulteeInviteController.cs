@@ -191,7 +191,7 @@ public class ExternalConsulteeInviteController : Controller
         var breadcrumbs = new BreadcrumbsModel
         {
             Breadcrumbs = new List<BreadCrumb> { 
-                new("Home", "Home", "Index", null) ,
+                new("Open applications", "Home", "Index", null) ,
                 new( summaryModel.ApplicationReference,
                     "FellingLicenceApplication",
                     "ApplicationSummary",

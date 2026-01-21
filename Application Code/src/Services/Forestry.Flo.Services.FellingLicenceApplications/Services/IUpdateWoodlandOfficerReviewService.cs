@@ -189,6 +189,22 @@ public interface IUpdateWoodlandOfficerReviewService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Completes the Priority Open Habitat review for a given application.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application to be updated.</param>
+    /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="isComplete">A flag indicating if the review is complete.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>
+    /// A <see cref="Result"/> indicating the success or failure of the operation.
+    /// </returns>
+    Task<Result> CompletePriorityOpenHabitatAsync(
+        Guid applicationId,
+        Guid userId,
+        bool isComplete,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Updates the site visit evidence documents for an application.
     /// </summary>
     /// <param name="applicationId">The id of the application to be updated.</param>
@@ -272,4 +288,19 @@ public interface IUpdateWoodlandOfficerReviewService
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
     Task<Result> CompleteFellingAndRestockingAmendmentReviewAsync(Guid amendmentReviewId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets the flag indicating whether the applicant's tree health issues are confirmed by the woodland officer.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to confirm.</param>
+    /// <param name="userId">The id of the user confirming the checks.</param>
+    /// <param name="applicantAnswersConfirmed">A flag to indicate whether the woodland officer confirms the
+    /// applicant's tree health answers.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating success of the operation.</returns>
+    Task<Result> ConfirmTreeHealthCheckAsync(
+        Guid applicationId,
+        Guid userId,
+        bool applicantAnswersConfirmed,
+        CancellationToken cancellationToken);
 }

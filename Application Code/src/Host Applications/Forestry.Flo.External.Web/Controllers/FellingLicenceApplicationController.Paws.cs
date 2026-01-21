@@ -100,8 +100,6 @@ public partial class FellingLicenceApplicationController
             return RedirectToAction(nameof(PawsCheck), new { applicationId, compartmentDesignationsId = nextCompartmentResult.Value.NextCompartmentDesignationsId });
         }
 
-        return nextCompartmentResult.Value.RequiresEia is true
-            ? RedirectToAction(nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment), new { applicationId })
-            : RedirectToAction(nameof(FellingLicenceApplicationController.ConstraintsCheck), new { applicationId });
+        return RedirectToAction(nameof(FellingLicenceApplicationController.SupportingDocumentation), new { applicationId });
     }
 }

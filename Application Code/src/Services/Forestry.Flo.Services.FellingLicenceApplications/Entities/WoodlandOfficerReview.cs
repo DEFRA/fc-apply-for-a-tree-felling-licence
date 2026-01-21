@@ -208,6 +208,12 @@ public class WoodlandOfficerReview
     /// </summary>
     public bool DesignationsComplete { get; set; }
 
+    /// <summary>
+    /// Gets and sets whether the Woodland Officer has completed the priority open habitat stage of the review.
+    /// </summary>
+    public bool? PriorityOpenHabitatComplete { get; set; }
+
+    /// <summary>
     /// Gets and sets the felling and restocking amendment reviews associated with this WO review.
     /// </summary>
     public IList<FellingAndRestockingAmendmentReview> FellingAndRestockingAmendmentReviews { get; set; } = new List<FellingAndRestockingAmendmentReview>();
@@ -216,4 +222,10 @@ public class WoodlandOfficerReview
     /// Gets and sets any supplementary points or comments provided by the Woodland Officer during the review.
     /// </summary>
     public string? SupplementaryPoints { get; set; }
+
+    /// <summary>
+    /// Gets and sets whether the applicant's Tree Health answers have been confirmed to the best
+    /// of the woodland officer's knowledge.
+    /// </summary>
+    public bool? IsApplicantTreeHealthAnswersConfirmed { get; set; }
 }

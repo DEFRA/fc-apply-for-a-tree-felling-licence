@@ -1,6 +1,8 @@
 ﻿using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.PawsDesignations;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TreeHealth;
+using Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +25,8 @@ public class FellingLicenceApplicationModel
         _steps.Add(FellingLicenceApplicationSection.EnvironmentalImpactAssessment, new EnvironmentalImpactAssessmentViewModel());
         _steps.Add(FellingLicenceApplicationSection.TenYearLicence, new TenYearLicenceApplicationViewModel());
         _steps.Add(FellingLicenceApplicationSection.PawsAndIawp, new PawsDesignationsViewModel());
+        _steps.Add(FellingLicenceApplicationSection.TreeHealthIssues, new TreeHealthIssuesViewModel());
+        _steps.Add(FellingLicenceApplicationSection.HabitatRestoration, new PriorityOpenHabitatsViewModel());
     }
     
     public bool IsComplete => _steps.Values
@@ -95,6 +99,18 @@ public class FellingLicenceApplicationModel
     {
         get => (_steps[FellingLicenceApplicationSection.PawsAndIawp] as PawsDesignationsViewModel)!;
         set => _steps[FellingLicenceApplicationSection.PawsAndIawp] = value;
+    }
+
+    public TreeHealthIssuesViewModel TreeHealth
+    {
+        get => (_steps[FellingLicenceApplicationSection.TreeHealthIssues] as TreeHealthIssuesViewModel)!;
+        set => _steps[FellingLicenceApplicationSection.TreeHealthIssues] = value;
+    }
+
+    public PriorityOpenHabitatsViewModel HabitatRestoration
+    {
+        get => (_steps[FellingLicenceApplicationSection.HabitatRestoration] as PriorityOpenHabitatsViewModel)!;
+        set => _steps[FellingLicenceApplicationSection.HabitatRestoration] = value;
     }
 
     [HiddenInput]

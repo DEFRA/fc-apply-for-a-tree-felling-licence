@@ -60,6 +60,18 @@ namespace Forestry.Flo.Services.Gis.Interfaces
         Task<Result> RemoveCaseFromConsultationRegisterAsync(int objectId, string caseReference, DateTime endDateOnPR, CancellationToken cancellationToken);
 
         /// <summary>
+        /// Returns a case onto the consultation register that was previously published and then removed
+        /// with a new start date and period length.
+        /// </summary>
+        /// <param name="objectId">The Esri ID for the case. Created in the AddCaseToConsultationRegisterAsync method.</param>
+        /// <param name="caseReference">The case reference. This MUST match the case ref given when adding the case to the Consultation Register. As this is used to update the compartments.</param>
+        /// <param name="newPublicRegisterStart">The new start datetime for the case on the consultation public register.</param>
+        /// <param name="period">The new period for the case on teh consultation public register.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A <see cref="Result"/> struct indicating the success of the request.</returns>
+        Task<Result> ReturnCaseToConsultationRegisterAsync(int objectId, string caseReference, DateTime newPublicRegisterStart, int period, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Add case to the Decision Register
         /// </summary>
         /// <param name="objectId">The Esri ID for the case. Created in the AddCaseToConsultationRegisterAsync method</param>

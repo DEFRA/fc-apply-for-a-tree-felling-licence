@@ -5,6 +5,8 @@
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.Common.User
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
+@using FellingLicenceStatusConstants = Forestry.Flo.External.Web.Models.FellingLicenceStatusConstants
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingLicenceApplicationModel
 
 @{
@@ -123,6 +125,24 @@
                     }
                 </div>
             </li>
+            
+            <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link" href="@Url.Action("TreeHealthCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="tree-health-status">
+                        @FellingLicenceApplicationSection.TreeHealthIssues.GetDescription()
+                    </a>
+                </div>
+                <div class="govuk-task-list__status" id="tree-health-status">
+                    @if (Model.TreeHealth.Status == ApplicationStepStatus.Completed)
+                    {
+                        @Model.TreeHealth.Status.GetDescription()
+                    }
+                    else
+                    {
+                        <strong class="govuk-tag @GetStatusStyleName(Model.TreeHealth.Status)">@(Model.TreeHealth.Status.GetDescription())</strong>
+                    }
+                </div>
+            </li>
 
             <li class="govuk-task-list__item govuk-task-list__item--with-link">
                 <div class="govuk-task-list__name-and-hint">
@@ -187,6 +207,94 @@
                 </li>
             }
 
+            @if (Model.SelectedCompartments.Status != ApplicationStepStatus.Completed && Model.ConstraintCheck.Status == ApplicationStepStatus.NotStarted)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Check for constraints
+                        <div class="govuk-task-list__hint">
+                            (Select compartments must be Completed)
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet" id="check-for-constraints-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="check-for-constraints-status">
+                            Check for constraints
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="check-for-constraints-status">
+                        @if (Model.ConstraintCheck.Status == ApplicationStepStatus.Completed)
+                        {
+                            @Model.ConstraintCheck.Status.GetDescription()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @GetStatusStyleName(Model.ConstraintCheck.Status)">@(Model.ConstraintCheck.Status.GetDescription())</strong>
+                        }
+                    </div>
+                </li>
+            }
+
+            @if (Model.HabitatRestoration.StepRequiredForApplication && Model.FellingAndRestockingDetails.Status != ApplicationStepStatus.Completed)
+            {
+                <li class="govuk-task-list__item">
+                    <div class="govuk-task-list__name-and-hint">
+                        Confirm if priority open habitats
+                        <div class="govuk-task-list__hint">
+                            (Felling and restocking details must be Completed)
+                        </div>
+                    </div>
+                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet" id="habitat-restoration-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</div>
+                </li>
+            }
+            else
+            {
+                <li class="govuk-task-list__item govuk-task-list__item--with-link" condition="@Model.HabitatRestoration.StepRequiredForApplication">
+                    <div class="govuk-task-list__name-and-hint">
+                        <a class="govuk-link govuk-task-list__link"
+                           href="@Url.Action(nameof(FellingLicenceApplicationController.HabitatRestoration), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })"
+                           aria-describedby="habitat-restoration-status">
+                                Confirm if priority open habitats
+                        </a>
+                    </div>
+                    <div class="govuk-task-list__status" id="habitat-restoration-status">
+                        @if (Model.HabitatRestoration.Status == ApplicationStepStatus.Completed)
+                        {
+                            @Model.HabitatRestoration.Status.GetDescription()
+                        }
+                        else
+                        {
+                            <strong class="govuk-tag @GetStatusStyleName(Model.HabitatRestoration.Status)">@(Model.HabitatRestoration.Status.GetDescription())</strong>    
+                        }
+                    </div>
+                </li>
+            }
+
+            <li class="govuk-task-list__item govuk-task-list__item--with-link" condition="@Model.EnvironmentalImpactAssessment.StepRequiredForApplication">
+                <div class="govuk-task-list__name-and-hint">
+                    <a class="govuk-link govuk-task-list__link"
+                       href="@Url.Action(nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })"
+                       aria-describedby="felling-and-restocking-details-status">
+                        Environmental Impact Assessment
+                    </a>
+                </div>
+                <div class="govuk-task-list__status" id="eia-status">
+                    @if (Model.EnvironmentalImpactAssessment.Status == ApplicationStepStatus.Completed)
+                    {
+                        @Model.EnvironmentalImpactAssessment.Status.GetDescription()
+                    }
+                    else
+                    {
+                        <strong class="govuk-tag @GetStatusStyleName(Model.EnvironmentalImpactAssessment.Status)">@(Model.EnvironmentalImpactAssessment.Status.GetDescription())</strong>    
+                    }
+                </div>
+            </li>
+
             @if (Model.SelectedCompartments.Status != ApplicationStepStatus.Completed && Model.PawsAndIawp.StepRequiredForApplication)
             {
                 <li class="govuk-task-list__item">
@@ -218,59 +326,6 @@
                         else
                         {
                             <strong class="govuk-tag @GetStatusStyleName(Model.PawsAndIawp.Status)">@(Model.PawsAndIawp.Status.GetDescription())</strong>
-                        }
-                    </div>
-                </li>
-            }
-
-            <li class="govuk-task-list__item govuk-task-list__item--with-link" condition="@Model.EnvironmentalImpactAssessment.StepRequiredForApplication">
-                <div class="govuk-task-list__name-and-hint">
-                    <a class="govuk-link govuk-task-list__link"
-                       href="@Url.Action(nameof(FellingLicenceApplicationController.EnvironmentalImpactAssessment), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })"
-                       aria-describedby="felling-and-restocking-details-status">
-                        Environmental Impact Assessment
-                    </a>
-                </div>
-                <div class="govuk-task-list__status" id="eia-status">
-                    @if (Model.EnvironmentalImpactAssessment.Status == ApplicationStepStatus.Completed)
-                    {
-                        @Model.EnvironmentalImpactAssessment.Status.GetDescription()
-                    }
-                    else
-                    {
-                        <strong class="govuk-tag @GetStatusStyleName(Model.EnvironmentalImpactAssessment.Status)">@(Model.EnvironmentalImpactAssessment.Status.GetDescription())</strong>    
-                    }
-                </div>
-            </li>
-
-            @if (Model.SelectedCompartments.Status != ApplicationStepStatus.Completed && Model.ConstraintCheck.Status == ApplicationStepStatus.NotStarted)
-            {
-                <li class="govuk-task-list__item">
-                    <div class="govuk-task-list__name-and-hint">
-                        Check for constraints
-                        <div class="govuk-task-list__hint">
-                            (Select compartments must be Completed)
-                        </div>
-                    </div>
-                    <div class="govuk-task-list__status govuk-task-list__status--cannot-start-yet" id="check-for-constraints-status">@(ApplicationStepStatus.CannotStartYet.GetDescription())</div>
-                </li>
-            }
-            else
-            {
-                <li class="govuk-task-list__item govuk-task-list__item--with-link">
-                    <div class="govuk-task-list__name-and-hint">
-                        <a class="govuk-link govuk-task-list__link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })" aria-describedby="check-for-constraints-status">
-                            Check for constraints
-                        </a>
-                    </div>
-                    <div class="govuk-task-list__status" id="check-for-constraints-status">
-                        @if (Model.ConstraintCheck.Status == ApplicationStepStatus.Completed)
-                        {
-                            @Model.ConstraintCheck.Status.GetDescription()
-                        }
-                        else
-                        {
-                            <strong class="govuk-tag @GetStatusStyleName(Model.ConstraintCheck.Status)">@(Model.ConstraintCheck.Status.GetDescription())</strong>
                         }
                     </div>
                 </li>
@@ -317,13 +372,30 @@
 
     <div>
         <div condition="@(Model.CurrentReviewModel is not null)" class="govuk-body">
+            
+            @{
+                var status = Model.CurrentReviewModel.ResponseReceivedDate is not null 
+                             || (Model.CurrentReviewModel.AmendmentReviewCompleted ?? false) // completed by case officer
+                    ? ApplicationStepStatus.Completed
+                    : ApplicationStepStatus.NotStarted;
+            }
+            
             <h2 class="govuk-heading-m">Review and confirm amendments</h2>
-            <p>We’ve reviewed you application and proposed some changes to make sure it meets  UK Forestry Standards.</p>
-            <p>
-                <b>What you have to do</b> <br/>
-                Review the changes and confirm if you’re happy to go ahead.
-            </p>
-            <p>If we don’t hear from you by <b>@(DateTimeDisplay.GetDateDisplayString(Model.CurrentReviewModel!.ResponseDeadline))</b>, we’ll withdraw your application.</p>
+            
+            @if (status == ApplicationStepStatus.NotStarted)
+            {
+                <p>We’ve reviewed your application and proposed some changes to make sure it meets  UK Forestry Standards.</p>
+                <p>
+                    <b>What you have to do</b> <br/>
+                    Review the changes and confirm if you’re happy to go ahead.
+                </p>
+                <p>If we don’t hear from you by <b>@(DateTimeDisplay.GetDateDisplayString(Model.CurrentReviewModel!.ResponseDeadline))</b>, we’ll withdraw your application.</p>
+            }
+            else
+            {
+                <p>We reviewed your application and proposed some changes to make sure it meets  UK Forestry Standards.</p>
+                <p>You can review the amendments that you have responded to below.</p>
+            }
             
             <ul class="govuk-task-list">
                 <li class="govuk-task-list__item govuk-task-list__item--with-link">
@@ -335,12 +407,7 @@
                         </a>
                     </div>
                     
-                    @{
-						var status = Model.CurrentReviewModel.ResponseReceivedDate is not null 
-                                    || (Model.CurrentReviewModel.AmendmentReviewCompleted ?? false) // completed by case officer
-                            ? ApplicationStepStatus.Completed
-                            : ApplicationStepStatus.NotStarted;
-                    }
+
 
                     <div class="govuk-task-list__status" id="review-amendments-status">
                         @if (status == ApplicationStepStatus.Completed)
@@ -370,10 +437,6 @@
                 if (Model.IsComplete)
                 {
                     <a class="govuk-button" data-module="govuk-button" asp-action="ConfirmSubmitFellingLicenceApplication" asp-route-applicationId="@Model.ApplicationId"> Submit application</a>
-                }
-                else
-                {
-                    <button class="govuk-button" data-module="govuk-button" disabled="disabled">Submit application</button>
                 }
             }
 

@@ -26,6 +26,27 @@ variable "azure_tags" {
   }
 }
 
+locals {
+  k8s_common_labels = merge(
+    var.azure_tags,
+    {
+      # Override the bad one with a K8s-safe value
+      Customer = "forest-services"
+    }
+  )
+
+  k8s_main_labels = merge(
+    {
+      "Customer"                    = "Forest-Services"
+      "Source"                      = "Terraform"
+      "Team"                        = "Platform"
+    }
+  )
+}
+
+
+
+
 # Resource group fs_flov2
 variable "rg_name" {
   type        = string

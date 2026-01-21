@@ -263,5 +263,31 @@ public static class EntityExtensions
 
         return fellingCompartmentIds.Concat(restockingIds).Distinct();
     }
+
+    /// <summary>
+    /// Returns true if the ProposedFellingDetail has alternative area restocking in a different compartment.
+    /// </summary>
+    private static bool HasAlternativeCompartmentRestocking(ProposedFellingDetail f)
+    {
+        return f.ProposedRestockingDetails != null
+            && f.ProposedRestockingDetails.Any(r =>
+                r.PropertyProfileCompartmentId != f.PropertyProfileCompartmentId
+                && r.RestockingProposal.IsAlternativeCompartmentRestockingType());
+    }
+
+    /// <summary>
+    /// Determines whether the specified felling licence application requires the Habitat Restoration step.
+    /// Rule: true if any felling has no restocking selected OR has an alternative area restocking in a different compartment.
+    /// </summary>
+    public static bool ShouldApplicationRequireHabitatRestoration(this FellingLicenceApplication application)
+    {
+        var details = application.LinkedPropertyProfile?.ProposedFellingDetails;
+        if (details is null)
+        {
+            return false;
+        }
+
+        return details.Any(f => f.IsRestocking is false || HasAlternativeCompartmentRestocking(f));
+    }
 }
 

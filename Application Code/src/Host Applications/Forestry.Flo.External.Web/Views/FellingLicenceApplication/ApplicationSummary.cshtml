@@ -1,9 +1,11 @@
 ﻿@using System.ClientModel.Primitives
+@using System.Web
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.Common;
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.Common.User
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FellingLicenceApplications.Models
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FellingLicenceApplicationSummaryViewModel
 @{
     ViewData["Title"] = "Felling Licence Application Summary";
@@ -325,6 +327,73 @@
 
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">@FellingLicenceApplicationSection.TreeHealthIssues.GetDescription()</h2>
+            <ul class="govuk-summary-card__actions">
+                <li class="govuk-summary-card__action">
+                    <a class="govuk-link" href="@Url.Action("TreeHealthCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                    Condition="Model.Application.OperationDetails.AllowEditing">
+                        Change<span class="govuk-visually-hidden">&nbsp;the tree health or public safety issues</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        @{
+            var reasons = Model.Application.TreeHealth.TreeHealthIssues.NoTreeHealthIssues
+                ? [ "No tree health or public safety reasons" ]
+                : Model.Application.TreeHealth.TreeHealthIssues.TreeHealthIssueSelections.Select(x => x.Key).ToList();
+            if (Model.Application.TreeHealth.TreeHealthIssues.OtherTreeHealthIssue)
+            {
+                reasons.Add($"Other - {HttpUtility.HtmlEncode(Model.Application.TreeHealth.TreeHealthIssues.OtherTreeHealthIssueDetails)}");
+            }
+
+            var reasonsOutput = string.Join("<br/>", reasons);
+        }
+
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Tree health or public safety reasons for this application
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Html.Raw(reasonsOutput)
+                    </dd>
+                </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Tree health or public safety documents
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @if (Model.Application.TreeHealth.TreeHealthDocuments.Any())
+                        {
+                            foreach (var document in Model.Application.TreeHealth.TreeHealthDocuments)
+                            {
+                                <div>
+                                    <a class="hidden-download-supporting-document"
+                                       asp-controller="FellingLicenceApplication"
+                                       asp-action="DownloadSupportingDocument"
+                                       asp-route-applicationId="@Model.Application.ApplicationId"
+                                       asp-route-documentIdentifier="@document.Id">
+                                        @document.FileName
+                                    </a>
+                                </div>
+                                <br />
+                            }
+                        }
+                        else
+                        {
+                            <div>
+                                No documents uploaded
+                            </div>
+                        }
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
             <h2 class="govuk-summary-card__title">Felling and restocking details</h2>
         </div>
         <div class="govuk-summary-card__content">
@@ -386,6 +455,7 @@
 </div>
 
 
+
 <div class="govuk-grid-column-two-thirds">
 
     @foreach (var compartment in Model.FellingAndRestocking.FellingCompartmentDetails)
@@ -395,48 +465,194 @@
         </div>
     }
 
-    <div class="govuk-summary-card" condition="Model.PawsCompartmentDesignations.Any()">
+    <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Plantation ancient woodlands and infilled ancient wood pastures</h2>
+            <h2 class="govuk-summary-card__title">Constraint check</h2>
+            <ul class="govuk-summary-card__actions">
+                <li class="govuk-summary-card__action">
+                    <a class="govuk-link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                       Condition="Model.Application.ConstraintCheck.AllowEditing">
+                        Change<span class="govuk-visually-hidden">&nbsp;the constraints check</span>
+                    </a>
+                </li>
+            </ul>
         </div>
         <div class="govuk-summary-card__content">
-            @for (var i = 0; i < Model.PawsCompartmentDesignations.Count; i++)
-            {
-                var paws = Model.PawsCompartmentDesignations[i];
-                var divClass = i == 0 ? "govuk-body" : "govuk-body govuk-!-padding-top-5";
-
-                <div class="@divClass">
-                    <h3 class="govuk-heading-m">
-                        Compartment @paws.PropertyProfileCompartmentName
-                    </h3>
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Constraint check complete
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Application.ConstraintCheck.ExternalLisReportRun is true ? "Yes" : "No")
+                    </dd>
                 </div>
+            </dl>
+        </div>
+        @if (Model.Application.ConstraintCheck.ExternalLisReportRun is true)
+        {
+            <div class="govuk-summary-card__content">
                 <dl class="govuk-summary-list">
                     <div class="govuk-summary-list__row">
                         <dt class="govuk-summary-list__key">
-                            Proportion of native tree species making up this compartment
+                            Constraint check run date
                         </dt>
                         <dd class="govuk-summary-list__value">
-                            @paws.ProportionBeforeFelling?.GetDisplayName()
-                        </dd>
-                        <dd class="govuk-summary-list__actions" condition="@Model.FellingAndRestocking.AllowEditing">
-                            <a class="govuk-link" href="@Url.Action("PawsCheck", new { applicationId = Model.Application.ApplicationId, compartmentDesignationsId = paws.Id, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden"> the proportion of native tree species making up compartment @paws.PropertyProfileCompartmentName</span></a>
-                        </dd>
-                    </div>
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Proportion of native tree species left in this compartment based on the proposed felling
-                        </dt>
-                        <dd class="govuk-summary-list__value">
-                            @paws.ProportionAfterFelling?.GetDisplayName()
-                        </dd>
-                        <dd class="govuk-summary-list__actions" condition="@Model.FellingAndRestocking.AllowEditing">
-                            <a class="govuk-link" href="@Url.Action("PawsCheck", new { applicationId = Model.Application.ApplicationId, compartmentDesignationsId = paws.Id, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden"> the proportion of native tree species making up compartment @paws.PropertyProfileCompartmentName</span></a>
+                            @DateTimeDisplay.GetDateTimeDisplayString(Model.Application.ConstraintCheck.ExternalLisAccessedTimestamp)
                         </dd>
                     </div>
                 </dl>
-            }
+            </div>
+        }
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Opted out of constraint check
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Application.ConstraintCheck.NotRunningExternalLisReport == true ? "Yes" : "No")
+                    </dd>
+                </div>
+            </dl>
         </div>
     </div>
+
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Priority open habitats</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Are any of the compartments being converted into priority open habitats?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Application.HabitatRestoration.IsPriorityOpenHabitat is true ? "Yes" : "No")
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                        <a class="govuk-link" href="@Url.Action("HabitatRestoration", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Compartments being converted into priority open habitats
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @{
+                            var habitatIds = Model.HabitatRestorations.Select(r => r.PropertyProfileCompartmentId).ToHashSet();
+                        }
+                        @foreach (var comp in Model.FellingAndRestocking.FellingCompartmentDetails.Where(c => habitatIds.Contains(c.CompartmentId)))
+                        {
+                            <div>
+                                @comp.CompartmentName <br />
+                            </div>
+                        }
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                        <a class="govuk-link" href="@Url.Action("HabitatCompartments", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+
+        </div>
+    </div>
+
+    @foreach (var comp in Model.FellingAndRestocking.FellingCompartmentDetails.Where(c => habitatIds.Contains(c.CompartmentId)))
+    {
+        var habitat = Model.HabitatRestorations.Where(x => x.PropertyProfileCompartmentId == comp.CompartmentId).First();
+            
+
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Priority open habitat in compartment @comp.CompartmentName</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        What type of priority open habitat is @comp.CompartmentName being converted into?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                            @(habitat.HabitatType?.GetDisplayName()) <br />
+                            @(habitat.HabitatType == HabitatType.Other ? habitat.OtherHabitatDescription : string.Empty)
+
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("HabitatType", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                            What type of trees make up most of @comp.CompartmentName?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                            @(habitat.WoodlandSpeciesType?.GetDisplayName())
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("HabitatWoodlandSpecies", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+
+            <dl class="govuk-summary-list" condition="habitat.WoodlandSpeciesType == Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandSpeciesType.BroadleafWoodland">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                            Are the broadleaf tree species in @comp.CompartmentName predominantly native?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                            @(habitat.NativeBroadleaf is null ? string.Empty : (habitat.NativeBroadleaf == true ? "Yes" : "No"))
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("HabitatNativeBroadleaf", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Is @comp.CompartmentName a productive woodland?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                            @(habitat.ProductiveWoodland is true ? "Yes" : "No")
+                        </dd>
+                    <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("HabitatProductiveWoodland", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+
+                <dl class="govuk-summary-list" condition="habitat.ProductiveWoodland == true">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                            Are the trees in @comp.CompartmentName being felled early?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                            @(habitat.FelledEarly is null ? string.Empty : (habitat.FelledEarly == true ? "Yes" : "No"))
+                    </dd>
+                    <dd class="govuk-summary-list__actions">
+                            <a class="govuk-link" href="@Url.Action("HabitatFelledEarly", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+    }
 
     <div class="govuk-summary-card">
         <div class="govuk-summary-card__title-wrapper">
@@ -511,56 +727,46 @@
         </div>
     </div>
 
-    <div class="govuk-summary-card">
+    <div class="govuk-summary-card" condition="Model.PawsCompartmentDesignations.Any()">
         <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Constraint check</h2>
-            <ul class="govuk-summary-card__actions">
-                <li class="govuk-summary-card__action">
-                    <a class="govuk-link" href="@Url.Action("ConstraintsCheck", "FellingLicenceApplication", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })"
-                       Condition="Model.Application.ConstraintCheck.AllowEditing">
-                        Change<span class="govuk-visually-hidden">&nbsp;the constraints check</span>
-                    </a>
-                </li>
-            </ul>
+            <h2 class="govuk-summary-card__title">Plantation ancient woodlands and infilled ancient wood pastures</h2>
         </div>
         <div class="govuk-summary-card__content">
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        Constraint check complete
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                        @(Model.Application.ConstraintCheck.ExternalLisReportRun is true ? "Yes" : "No")
-                    </dd>
+            @for (var i = 0; i < Model.PawsCompartmentDesignations.Count; i++)
+            {
+                var paws = Model.PawsCompartmentDesignations[i];
+                var divClass = i == 0 ? "govuk-body" : "govuk-body govuk-!-padding-top-5";
+
+                <div class="@divClass">
+                    <h3 class="govuk-heading-m">
+                        Compartment @paws.PropertyProfileCompartmentName
+                    </h3>
                 </div>
-            </dl>
-        </div>
-        @if (Model.Application.ConstraintCheck.ExternalLisReportRun is true)
-        {
-            <div class="govuk-summary-card__content">
                 <dl class="govuk-summary-list">
                     <div class="govuk-summary-list__row">
                         <dt class="govuk-summary-list__key">
-                            Constraint check run date
+                            Proportion of native tree species making up this compartment
                         </dt>
                         <dd class="govuk-summary-list__value">
-                            @DateTimeDisplay.GetDateTimeDisplayString(Model.Application.ConstraintCheck.ExternalLisAccessedTimestamp)
+                            @paws.ProportionBeforeFelling?.GetDisplayName()
+                        </dd>
+                        <dd class="govuk-summary-list__actions" condition="@Model.FellingAndRestocking.AllowEditing">
+                            <a class="govuk-link" href="@Url.Action("PawsCheck", new { applicationId = Model.Application.ApplicationId, compartmentDesignationsId = paws.Id, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden"> the proportion of native tree species making up compartment @paws.PropertyProfileCompartmentName</span></a>
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Proportion of native tree species left in this compartment based on the proposed felling
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @paws.ProportionAfterFelling?.GetDisplayName()
+                        </dd>
+                        <dd class="govuk-summary-list__actions" condition="@Model.FellingAndRestocking.AllowEditing">
+                            <a class="govuk-link" href="@Url.Action("PawsCheck", new { applicationId = Model.Application.ApplicationId, compartmentDesignationsId = paws.Id, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden"> the proportion of native tree species making up compartment @paws.PropertyProfileCompartmentName</span></a>
                         </dd>
                     </div>
                 </dl>
-            </div>
-        }
-        <div class="govuk-summary-card__content">
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        Opted out of constraint check
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                        @(Model.Application.ConstraintCheck.NotRunningExternalLisReport == true ? "Yes" : "No")
-                    </dd>
-                </div>
-            </dl>
+            }
         </div>
     </div>
 
@@ -585,7 +791,7 @@
                     <dd class="govuk-summary-list__value">
                         @{
                             var supportingDocs = Model.Application.SupportingDocumentation.Documents
-                                                    .Where(x => x.DocumentPurpose is not (DocumentPurpose.WmpDocument or DocumentPurpose.EiaAttachment))
+                                                    .Where(x => x.DocumentPurpose is not (DocumentPurpose.WmpDocument or DocumentPurpose.EiaAttachment or DocumentPurpose.TreeHealthAttachment))
                                                     .ToList();
                         }
 

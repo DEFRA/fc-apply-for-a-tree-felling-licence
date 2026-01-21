@@ -93,6 +93,25 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     ///<inheritdoc />
+    public async Task<Maybe<HabitatRestoration>> GetHabitatRestorationAsync(
+        Guid applicationId,
+        Guid compartmentId,
+        CancellationToken cancellationToken)
+    {
+        var restoration = await Context.HabitatRestorations
+            .AsNoTracking()
+            .Include(hr => hr.LinkedPropertyProfile)
+            .Where(hr => hr.PropertyProfileCompartmentId == compartmentId)
+            .Where(hr => Context.LinkedPropertyProfiles
+                .Any(lpp => lpp.Id == hr.LinkedPropertyProfileId && lpp.FellingLicenceApplicationId == applicationId))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return restoration is null
+            ? Maybe<HabitatRestoration>.None
+            : Maybe<HabitatRestoration>.From(restoration);
+    }
+
+    ///<inheritdoc />
     public async Task<Maybe<List<Guid>>> GetApplicationComparmentIdsAsync(Guid applicationId, CancellationToken cancellationToken)
     {
         var result = await Context.ProposedFellingDetails
@@ -329,5 +348,146 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         {
             return UnitResult.Failure(UserDbErrorReason.General);
         }
+    }
+
+    ///<inheritdoc />
+    public async Task<IReadOnlyList<HabitatRestoration>> GetHabitatRestorationsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var restorations = await Context.HabitatRestorations
+            .AsNoTracking()
+            .Include(hr => hr.LinkedPropertyProfile)
+            .Where(hr => Context.LinkedPropertyProfiles
+                .Any(lpp => lpp.Id == hr.LinkedPropertyProfileId && lpp.FellingLicenceApplicationId == applicationId))
+            .ToListAsync(cancellationToken);
+
+        return restorations;
+    }
+
+    ///<inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration)
+    {
+        habitatRestoration.LinkedPropertyProfile = null;
+
+        var tracked = Context.HabitatRestorations.Local.FirstOrDefault(hr => hr.Id == habitatRestoration.Id);
+        if (tracked is not null)
+        {
+            tracked.HabitatType = habitatRestoration.HabitatType;
+            tracked.WoodlandSpeciesType = habitatRestoration.WoodlandSpeciesType;
+            tracked.NativeBroadleaf = habitatRestoration.NativeBroadleaf;
+            tracked.ProductiveWoodland = habitatRestoration.ProductiveWoodland;
+            tracked.FelledEarly = habitatRestoration.FelledEarly;
+            tracked.Completed = habitatRestoration.Completed;
+            tracked.OtherHabitatDescription = habitatRestoration.OtherHabitatDescription;
+        }
+        else
+        {
+            Context.HabitatRestorations.Attach(habitatRestoration);
+            Context.Entry(habitatRestoration).Property(r => r.HabitatType).IsModified = true;
+            Context.Entry(habitatRestoration).Property(r => r.WoodlandSpeciesType).IsModified = true;
+            Context.Entry(habitatRestoration).Property(r => r.NativeBroadleaf).IsModified = true;
+            Context.Entry(habitatRestoration).Property(r => r.ProductiveWoodland).IsModified = true;
+            Context.Entry(habitatRestoration).Property(r => r.FelledEarly).IsModified = true;
+            Context.Entry(habitatRestoration).Property(r => r.Completed).IsModified = true;
+            Context.Entry(habitatRestoration).Property(r => r.OtherHabitatDescription).IsModified = true;
+        }
+
+        return await Context.SaveEntitiesAsync();
+    }
+
+    ///<inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> AddHabitatRestorationAsync(
+        Guid applicationId,
+        Guid compartmentId)
+    {
+        var matchingLinkedProfileId = await Context.LinkedPropertyProfiles
+            .Where(lpp => lpp.FellingLicenceApplicationId == applicationId)
+            .Where(lpp => Context.ProposedFellingDetails
+                .Any(pfd => pfd.LinkedPropertyProfileId == lpp.Id && pfd.PropertyProfileCompartmentId == compartmentId))
+            .Select(lpp => lpp.Id)
+            .FirstOrDefaultAsync();
+
+        if (matchingLinkedProfileId == Guid.Empty)
+        {
+            return UnitResult.Failure(UserDbErrorReason.NotFound);
+        }
+
+        var exists = await Context.HabitatRestorations
+            .AnyAsync(hr => hr.LinkedPropertyProfileId == matchingLinkedProfileId
+                             && hr.PropertyProfileCompartmentId == compartmentId);
+
+        if (exists)
+        {
+            return UnitResult.Failure(UserDbErrorReason.NotUnique);
+        }
+
+        var toAdd = new HabitatRestoration
+        {
+            Id = Guid.NewGuid(),
+            LinkedPropertyProfileId = matchingLinkedProfileId,
+            PropertyProfileCompartmentId = compartmentId
+        };
+
+        Context.HabitatRestorations.Add(toAdd);
+        return await Context.SaveEntitiesAsync();
+    }
+
+    ///<inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationAsync(
+        Guid applicationId,
+        Guid compartmentId)
+    {
+        var matchingLinkedProfileId = await Context.LinkedPropertyProfiles
+            .Where(lpp => lpp.FellingLicenceApplicationId == applicationId)
+            .Where(lpp => Context.ProposedFellingDetails
+                .Any(pfd => pfd.LinkedPropertyProfileId == lpp.Id && pfd.PropertyProfileCompartmentId == compartmentId))
+            .Select(lpp => lpp.Id)
+            .FirstOrDefaultAsync();
+
+        if (matchingLinkedProfileId == Guid.Empty)
+        {
+            return UnitResult.Success<UserDbErrorReason>();
+        }
+
+        var existing = await Context.HabitatRestorations
+            .FirstOrDefaultAsync(hr => hr.LinkedPropertyProfileId == matchingLinkedProfileId
+                                       && hr.PropertyProfileCompartmentId == compartmentId);
+
+        if (existing is null)
+        {
+            return UnitResult.Success<UserDbErrorReason>();
+        }
+
+        Context.HabitatRestorations.Remove(existing);
+        return await Context.SaveEntitiesAsync();
+    }
+
+    ///<inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationsAsync(
+        Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var linkedIds = await Context.LinkedPropertyProfiles
+            .Where(lpp => lpp.FellingLicenceApplicationId == applicationId)
+            .Select(lpp => lpp.Id)
+            .ToListAsync(cancellationToken);
+
+        if (linkedIds.Count == 0)
+        {
+            return UnitResult.Success<UserDbErrorReason>();
+        }
+
+        var toDelete = await Context.HabitatRestorations
+            .Where(hr => linkedIds.Contains(hr.LinkedPropertyProfileId))
+            .ToListAsync(cancellationToken);
+
+        if (toDelete.Count == 0)
+        {
+            return UnitResult.Success<UserDbErrorReason>();
+        }
+
+        Context.HabitatRestorations.RemoveRange(toDelete);
+        return await Context.SaveEntitiesAsync(cancellationToken);
     }
 }

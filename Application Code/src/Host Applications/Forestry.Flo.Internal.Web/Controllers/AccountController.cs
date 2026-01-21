@@ -22,7 +22,7 @@ public class AccountController : Controller
 
         _breadCrumbsRoot = new List<BreadCrumb>
         {
-            new("Home", "Home", "Index", null)
+            new("Open applications", "Home", "Index", null)
         };
     }
 

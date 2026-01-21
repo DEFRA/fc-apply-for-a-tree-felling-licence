@@ -45,10 +45,13 @@ public abstract class UpdateAdminOfficerReviewServiceTestsBase
         Guid? performingUserId = null, 
         Guid? woodlandOfficerId = null,
         bool? agentAuthorityCheckPassed = null,
-        bool? mappingCheckPassed = null)
+        bool? mappingCheckPassed = null,
+        bool isTreeHealthApplication = false)
     {
         var application = Fixture.Create<FellingLicenceApplication>();
-        
+
+        application.IsTreeHealthIssue = isTreeHealthApplication;
+
         application.AdminOfficerReview = adminOfficerReview ?? new Entities.AdminOfficerReview 
         { 
             AgentAuthorityFormChecked = false,

@@ -1,7 +1,9 @@
 ﻿$(function () {
 
-    $(document).ready(function() {
-        setExemptOnOff();
+    $(document).ready(function () {
+        if ($('#PublicRegister_WoodlandOfficerSetAsExemptFromConsultationPublicRegister').length) {
+            setExemptOnOff();
+        }
     });
 
     $('#PublicRegister_WoodlandOfficerSetAsExemptFromConsultationPublicRegister').change(setExemptOnOff);

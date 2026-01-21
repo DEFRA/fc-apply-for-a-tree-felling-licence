@@ -151,7 +151,8 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
     public async Task WhenTaskNotComplete(
         bool agentAuthorityComplete,
         bool mappingComplete, 
-        bool constraintsComplete)
+        bool constraintsComplete,
+        bool isTreeHealthComplete)
     {
         if (agentAuthorityComplete && mappingComplete && constraintsComplete)
         {
@@ -169,10 +170,11 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
             AgentAuthorityFormChecked = agentAuthorityComplete,
             MappingChecked = mappingComplete,
             ConstraintsChecked = constraintsComplete,
+            IsTreeHealthAnswersChecked = isTreeHealthComplete,
             AdminOfficerReviewComplete = false
         };
 
-        var application = await CreateAndSaveAdminOfficerReviewApplicationAsync(FellingLicenceStatus.AdminOfficerReview, adminOfficerReview, performingUserId);
+        var application = await CreateAndSaveAdminOfficerReviewApplicationAsync(FellingLicenceStatus.AdminOfficerReview, adminOfficerReview, performingUserId, isTreeHealthApplication: !isTreeHealthComplete);
 
         var result = await Sut.CompleteAdminOfficerReviewAsync(
             application.Id,
@@ -288,6 +290,7 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
                 Role = AssignedUserRole.WoodlandOfficer
             }
         };
+        application.IsTreeHealthIssue = true;
 
         CompletableAdminOfficerReview(application, true);
 
@@ -298,6 +301,64 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
             application.Id,
             performingUserId, 
             completedDateTime, 
+            false,
+            false,      // no CBW do not skip WO
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        Assert.Equal(woodlandOfficerId, result.Value.WoodlandOfficerId);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(application.CreatedById, result.Value.ApplicantId);
+        Assert.Equal(2, application.StatusHistories.Count);
+        Assert.Equal(FellingLicenceStatus.WoodlandOfficerReview, application.StatusHistories.Last().Status);
+        Assert.Equal(completedDateTime, application.StatusHistories.Last().Created);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenApplicationUpdatedForNonTreeHealthApplication(
+        Guid performingUserId,
+        Guid woodlandOfficerId,
+        DateTime completedDateTime,
+        FellingLicenceApplication application)
+    {
+        application.CitizensCharterDate = null;
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new()
+            {
+                Created = DateTime.UtcNow,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        };
+        application.AssigneeHistories = new List<AssigneeHistory>
+        {
+            new()
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = performingUserId,
+                Role = AssignedUserRole.AdminOfficer
+            },
+            new()
+            {
+                TimestampAssigned = DateTime.UtcNow,
+                AssignedUserId = woodlandOfficerId,
+                Role = AssignedUserRole.WoodlandOfficer
+            }
+        };
+
+        application.IsTreeHealthIssue = false;
+
+        CompletableAdminOfficerReview(application, true);
+        application.AdminOfficerReview.IsTreeHealthAnswersChecked = null;
+
+        FellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
+        await FellingLicenceApplicationsContext.SaveEntitiesAsync().ConfigureAwait(false);
+
+        var result = await Sut.CompleteAdminOfficerReviewAsync(
+            application.Id,
+            performingUserId,
+            completedDateTime,
             false,
             false,      // no CBW do not skip WO
             CancellationToken.None);
@@ -374,6 +435,7 @@ public class UpdateAdminOfficerReviewServiceTests : UpdateAdminOfficerReviewServ
             AgentAuthorityFormChecked = completable,
             MappingChecked = completable,
             ConstraintsChecked = completable,
+            IsTreeHealthAnswersChecked = true,
             AdminOfficerReviewComplete = false
         };
     }

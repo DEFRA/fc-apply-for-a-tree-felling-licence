@@ -492,5 +492,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<EnvironmentalImpactAssessmentUseCase>();
         services.AddScoped<ReviewFellingAndRestockingAmendmentsUseCase>();
         services.AddScoped<TenYearLicenceUseCase>();
+        services.AddScoped<ICollectTreeHealthIssuesUseCase, CollectTreeHealthIssuesUseCase>();
+        services.AddScoped<HabitatRestorationUseCase>();
     }
 }

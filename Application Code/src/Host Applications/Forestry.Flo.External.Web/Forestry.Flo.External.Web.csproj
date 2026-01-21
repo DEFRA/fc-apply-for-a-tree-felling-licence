@@ -49,6 +49,7 @@
   <ItemGroup>
     <Folder Include="Infrastructure\Filters\" />
     <Folder Include="Models\DataImport\" />
+    <Folder Include="Views\HabitatRestoration\" />
     <Folder Include="Views\Shared\Components\" />
     <Folder Include="wwwroot\assets\resources\" />
   </ItemGroup>

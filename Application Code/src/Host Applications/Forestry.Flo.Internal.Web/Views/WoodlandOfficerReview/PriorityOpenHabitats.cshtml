@@ -1,0 +1,155 @@
+@using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview
+@model PriorityOpenHabitatsViewModel
+
+@{
+    var summary = Model.FellingLicenceApplicationSummary;
+    ViewData["Title"] = "Review priority habitat restoration";
+}
+
+@if (summary != null)
+{
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@summary"/>
+}
+
+<div class="govuk-grid-column-two-thirds width-limit-override">
+    <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Priority habitat restoration</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Are any of the compartments being converted into priority open habitats?
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @(Model.Habitats.Any() ? "Yes" : "No")
+                    </dd>
+                </div>
+                @if (Model.Habitats.Any())
+                {
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Compartments being converted into priority open habitats
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @{
+                                var compartmentNames = new List<string>();
+                                foreach (var item in Model.Habitats)
+                                {
+                                    var comp = summary?.DetailsList.FirstOrDefault(d => d.CompartmentId == item.PropertyProfileCompartmentId);
+                                    if (comp != null)
+                                    {
+                                        compartmentNames.Add(comp.CompartmentName);
+                                    }
+                                }
+                            }
+                            @string.Join(", ", compartmentNames)
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    </div>
+
+    @foreach (var item in Model.Habitats)
+    {
+        var comp = summary?.DetailsList.FirstOrDefault(d => d.CompartmentId == item.PropertyProfileCompartmentId);
+        var compartmentName = comp?.CompartmentName ?? "Unknown";
+
+        <div class="govuk-summary-card">
+            <div class="govuk-summary-card__title-wrapper">
+                <h2 class="govuk-summary-card__title">Priority habitat restoration in compartment @compartmentName</h2>
+            </div>
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            What type of priority open habitat is @compartmentName predominantly being converted into?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @item.HabitatType?.GetDisplayName()
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            What type of trees make up most of @compartmentName?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @item.WoodlandSpeciesType?.GetDisplayName()
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Are the broadleaf tree species in @compartmentName native?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @(item.NativeBroadleaf == true ? "Yes" : "No")
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Is @compartmentName a productive woodland?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @(item.ProductiveWoodland == true ? "Yes" : "No")
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Are the trees in @compartmentName being felled early?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @(item.FelledEarly == true ? "Yes" : "No")
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    }
+
+    <h2 class="govuk-heading-m">Are the priority habitat restoration details correct?</h2>
+    
+    <form method="post">
+        <input type="hidden" asp-for="ApplicationId" />
+        <div class="govuk-form-group @(ViewData.ModelState[nameof(Model.AreDetailsCorrect)]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+            <fieldset class="govuk-fieldset">
+                @if (ViewData.ModelState[nameof(Model.AreDetailsCorrect)]?.Errors.Count > 0)
+                {
+                    <span class="govuk-error-message">
+                        <span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState[nameof(Model.AreDetailsCorrect)]?.Errors.First().ErrorMessage
+                    </span>
+                }
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" id="correct-yes" asp-for="AreDetailsCorrect" type="radio" value="true">
+                        <label class="govuk-label govuk-radios__label" for="correct-yes">
+                            Yes
+                        </label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" id="correct-no" asp-for="AreDetailsCorrect" type="radio" value="false">
+                        <label class="govuk-label govuk-radios__label" for="correct-no">No</label>
+                        <div class="govuk-hint govuk-radios__hint">
+                            You will need to return this application to the applicant for amendment.
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+        
+        <button type="submit" class="govuk-button" data-module="govuk-button">
+            Complete habitat restoration review
+        </button>
+    </form>
+
+</div>
+
+@section breadcrumbs
+{
+    <partial name="Partials/_BreadcrumbsMenu" model="@Model.Breadcrumbs" />
+}
