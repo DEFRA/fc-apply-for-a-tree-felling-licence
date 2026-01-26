@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using AutoFixture;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
@@ -61,8 +62,19 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
         EiaContactPhone = "123456"
     };
 
+    private readonly ExternalApplicantSiteOptions _externalSiteOptions = new()
+    {
+        BaseUrl = "http://test2"
+    };
+
+    private readonly string _adminHubFooter = "admin hub";
+
     private EnvironmentalImpactAssessmentAdminOfficerUseCase CreateSut()
     {
+        _getConfiguredFcAreasService
+            .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_adminHubFooter);
+
         var user = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
             localAccountId: Guid.NewGuid(),
             accountTypeInternal: AccountTypeInternal.WoodlandOfficer);
@@ -72,6 +84,9 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
             new RequestUserModel(user));
 
         _eiaOptions.Setup(x => x.Value).Returns(_eiaOptionsValue);
+
+        var externalSiteOptions = new OptionsWrapper<ExternalApplicantSiteOptions>(this._externalSiteOptions);
+
         return new EnvironmentalImpactAssessmentAdminOfficerUseCase(
             _internalUserAccountService.Object,
             _externalUserAccountService.Object,
@@ -86,6 +101,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
             _updateFellingLicenceApplication.Object,
             _sendNotifications.Object,
             _eiaOptions.Object,
+            externalSiteOptions,
             _woodlandOfficerReviewSubStatusService.Object,
             _clock.Object,
             _requestContext
@@ -665,7 +681,9 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
                         y.RecipientName == externalModel.FullName(true) &&
                         y.ContactEmail == _eiaOptionsValue.EiaContactEmail &&
                         y.ContactNumber == _eiaOptionsValue.EiaContactPhone &&
-                        y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri),
+                        y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri &&
+                        y.AdminHubFooter == _adminHubFooter &&
+                        y.ViewApplicationURL == $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{fla.Id}"),
                     NotificationType.EiaReminderMissingDocuments,
                     It.IsAny<NotificationRecipient>(),
                     null, null, null,
@@ -950,7 +968,9 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
                         y.RecipientName == externalModel.FullName(true) &&
                         y.ContactEmail == _eiaOptionsValue.EiaContactEmail &&
                         y.ContactNumber == _eiaOptionsValue.EiaContactPhone &&
-                        y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri),
+                        y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri &&
+                        y.AdminHubFooter == _adminHubFooter &&
+                        y.ViewApplicationURL == $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{fla.Id}"),
                     NotificationType.EiaReminderToSendDocuments,
                     It.IsAny<NotificationRecipient>(),
                     null, null, null,

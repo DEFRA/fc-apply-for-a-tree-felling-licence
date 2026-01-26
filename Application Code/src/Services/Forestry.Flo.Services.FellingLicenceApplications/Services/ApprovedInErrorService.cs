@@ -59,40 +59,12 @@ public interface IApprovedInErrorService
 public class ApprovedInErrorService : IApprovedInErrorService
 {
     private readonly IFellingLicenceApplicationInternalRepository _internalFlaRepository;
-    private readonly IFellingLicenceApplicationReferenceRepository? _flaReferenceRepository;
-    private readonly IApplicationReferenceHelper? _applicationReferenceHelper;
+    private readonly IFellingLicenceApplicationReferenceRepository _flaReferenceRepository;
+    private readonly IApplicationReferenceHelper _applicationReferenceHelper;
     private readonly IClock _clock;
     private readonly ILogger<ApprovedInErrorService> _logger;
     private readonly IPublicRegister _publicRegister;
     private readonly IUpdateFellingLicenceApplication _updateFellingLicenceApplicationService;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ApprovedInErrorService"/> class without reference regeneration capabilities.
-    /// </summary>
-    /// <param name="internalFlaRepository">The repository for felling licence application data access.</param>
-    /// <param name="clock">The clock service for obtaining the current timestamp.</param>
-    /// <param name="logger">The logger for diagnostic and error logging.</param>
-    /// <param name="publicRegister">The service for managing public register operations.</param>
-    /// <param name="updateFellingLicenceApplicationService">The service for updating felling licence applications.</param>
-    /// <remarks>
-    /// Use this constructor when reference regeneration is not required. The service will skip reference
-    /// regeneration even if <see cref="ApprovedInErrorModel.ReasonOther"/> is false.
-    /// </remarks>
-    public ApprovedInErrorService(
-    IFellingLicenceApplicationInternalRepository internalFlaRepository,
-    IClock clock,
-    ILogger<ApprovedInErrorService> logger,
-    IPublicRegister publicRegister,
-    IUpdateFellingLicenceApplication updateFellingLicenceApplicationService)
-    {
-        _internalFlaRepository = Guard.Against.Null(internalFlaRepository);
-        _clock = Guard.Against.Null(clock);
-        _logger = Guard.Against.Null(logger);
-        _publicRegister = Guard.Against.Null(publicRegister);
-        _updateFellingLicenceApplicationService = Guard.Against.Null(updateFellingLicenceApplicationService);
-        _flaReferenceRepository = null;
-        _applicationReferenceHelper = null;
-    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ApprovedInErrorService"/> class with full reference regeneration capabilities.
@@ -407,13 +379,6 @@ public class ApprovedInErrorService : IApprovedInErrorService
     {
         try
         {
-            // Check if reference regeneration dependencies are configured
-            if (_flaReferenceRepository is null || _applicationReferenceHelper is null)
-            {
-                _logger.LogWarning("Reference regeneration dependencies not configured. Skipping regeneration for application {ApplicationId}", applicationId);
-                return Result.Success();
-            }
-
             // Retrieve the application
             var maybeApp = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
             if (maybeApp.HasNoValue)

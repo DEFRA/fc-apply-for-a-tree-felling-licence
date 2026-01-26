@@ -626,7 +626,6 @@ internal-web-app:
 
 pdf-generation-service:
   enabled: true
-
   config:
     bitbucket:
       folder: /source/html-templates/*
@@ -640,6 +639,15 @@ pdf-generation-service:
       value: file:///templates/source/html-templates/
     - name: ORGANISATION_CONFIGURATION_SERVICE_ENABLED
       value: "false"
+  nodeSelector:
+    environment: performance
+    workload: flov2-app
+  tolerations:
+    - key: perf-app
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+
 
 rabbitmq:
   auth:
@@ -647,3 +655,11 @@ rabbitmq:
     username: qxlva_rabbitmq
     password: rabbitmq.password
     erlangCookie: rabbitmq.erlang_cookie
+  nodeSelector:
+    environment: performance
+    workload: flov2-app
+  tolerations:
+    - key: perf-app
+      operator: Equal
+      value: "true"
+      effect: NoSchedule

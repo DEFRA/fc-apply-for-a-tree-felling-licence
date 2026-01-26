@@ -3,6 +3,7 @@ using FluentValidation;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Infrastructure.Display;
 using Forestry.Flo.External.Web.Models;
+using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Services;
@@ -368,7 +369,8 @@ public partial class FellingLicenceApplicationController(
 
     [HttpPost]
     public async Task<IActionResult> SelectCompartments(
-        SelectedCompartmentsModel compartmentsModel, 
+        SelectedCompartmentsModel compartmentsModel,
+        [FromServices] HabitatRestorationUseCase habitatsUseCase,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -457,7 +459,10 @@ public partial class FellingLicenceApplicationController(
             }
         }
 
-        if (compartmentsModel.StepComplete.Value 
+        // ensure that all existing habitat restoration entities are still valid for the selected compartments on the application
+        await habitatsUseCase.EnsureExistingHabitatRestorationRecordsAsync(compartmentsModel.ApplicationId, user, cancellationToken);
+
+        if (compartmentsModel.StepComplete.Value
             && !(viewModel.Value.Compartments.Where(x => compartmentsModel.SelectedCompartmentIds!.Contains(x.Id)).Any(x => x.GISData == null)))
         {
             // enqueue the asynchronous calculation of centre point, OS grid reference and set Area Code ready for when the FLA is submitted
@@ -535,7 +540,10 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> SelectFellingOperationTypes(SelectFellingOperationTypesViewModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> SelectFellingOperationTypes(
+        SelectFellingOperationTypesViewModel model,
+        [FromServices] HabitatRestorationUseCase habitatsUseCase,
+        CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
 
@@ -592,6 +600,9 @@ public partial class FellingLicenceApplicationController(
         {
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
+
+        // ensure that all existing habitat restoration entities are still valid for the selected felling operations on the compartment
+        await habitatsUseCase.EnsureExistingHabitatRestorationRecordsAsync(model.ApplicationId, user, cancellationToken);
 
         return await IterateFellingOperationTypesInCompartment(model.ApplicationId, model.FellingCompartmentId, cancellationToken);
     }
@@ -1040,7 +1051,10 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> SelectRestockingOptions(SelectRestockingOptionsViewModel model, CancellationToken cancellationToken)
+    public async Task<IActionResult> SelectRestockingOptions(
+        SelectRestockingOptionsViewModel model,
+        [FromServices] HabitatRestorationUseCase habitatsUseCase,
+        CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
 
@@ -1115,6 +1129,9 @@ public partial class FellingLicenceApplicationController(
         {
             RedirectToAction(nameof(HomeController.Error), "Home");
         }
+
+        // ensure that all existing habitat restoration entities are still valid for the selected restocking operations on the compartment
+        await habitatsUseCase.EnsureExistingHabitatRestorationRecordsAsync(model.ApplicationId, user, cancellationToken);
 
         return await IterateRestockingTypesForRestockingCompartment(
             model.ApplicationId,

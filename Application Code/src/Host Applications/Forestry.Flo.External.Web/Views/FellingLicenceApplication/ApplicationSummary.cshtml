@@ -12,6 +12,8 @@
     ViewData.ShowBackLink();
 
     var user = new ExternalApplicant(User);
+
+    var habitatIds = (Model.HabitatRestorations?.Select(r => r.PropertyProfileCompartmentId) ?? []).ToHashSet();
 }
 
 <div class="govuk-grid-column-two-thirds">
@@ -154,7 +156,7 @@
                         <dd class="govuk-summary-list__value">
                             @(Model.Application.TenYearLicence?.IsForTenYearLicence is true ? "Yes" : "No")
                         </dd>
-                        <dd class="govuk-summary-list__actions">
+                        <dd class="govuk-summary-list__actions" condition="Model.Application.SupportingDocumentation.AllowEditing">
                             <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;if the application is for a ten-year licence</span></a>
                         </dd>
                     </div>
@@ -167,7 +169,7 @@
                             <dd class="govuk-summary-list__value">
                                 @Model.Application.TenYearLicence?.WoodlandManagementPlanReference
                             </dd>
-                            <dd class="govuk-summary-list__actions">
+                            <dd class="govuk-summary-list__actions" condition="Model.Application.SupportingDocumentation.AllowEditing">
                                 <a class="govuk-link" href="@Url.Action("TenYearLicence", new { applicationId = Model.Application.ApplicationId, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden">&nbsp;the woodland management plan reference</span></a>
                             </dd>
                         </div>
@@ -518,7 +520,7 @@
         </div>
     </div>
 
-    <div class="govuk-summary-card">
+    <div class="govuk-summary-card" condition="@Model.Application.HabitatRestoration.StepRequiredForApplication">
         <div class="govuk-summary-card__title-wrapper">
             <h2 class="govuk-summary-card__title">Priority open habitats</h2>
         </div>
@@ -536,17 +538,12 @@
                            Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
                     </dd>
                 </div>
-            </dl>
-
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
+                
+                <div class="govuk-summary-list__row" condition="@habitatIds.Any()">
                     <dt class="govuk-summary-list__key">
                         Compartments being converted into priority open habitats
                     </dt>
                     <dd class="govuk-summary-list__value">
-                        @{
-                            var habitatIds = Model.HabitatRestorations.Select(r => r.PropertyProfileCompartmentId).ToHashSet();
-                        }
                         @foreach (var comp in Model.FellingAndRestocking.FellingCompartmentDetails.Where(c => habitatIds.Contains(c.CompartmentId)))
                         {
                             <div>
@@ -563,98 +560,87 @@
 
         </div>
     </div>
-
+    
+    @* if habitat restorations aren't required then there should be no habitatIds *@
     @foreach (var comp in Model.FellingAndRestocking.FellingCompartmentDetails.Where(c => habitatIds.Contains(c.CompartmentId)))
     {
         var habitat = Model.HabitatRestorations.Where(x => x.PropertyProfileCompartmentId == comp.CompartmentId).First();
             
 
-    <div class="govuk-summary-card">
-        <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Priority open habitat in compartment @comp.CompartmentName</h2>
-        </div>
-        <div class="govuk-summary-card__content">
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        What type of priority open habitat is @comp.CompartmentName being converted into?
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                            @(habitat.HabitatType?.GetDisplayName()) <br />
-                            @(habitat.HabitatType == HabitatType.Other ? habitat.OtherHabitatDescription : string.Empty)
+        <div class="govuk-summary-card">
+            <div class="govuk-summary-card__title-wrapper">
+                <h2 class="govuk-summary-card__title">Priority open habitat in compartment @comp.CompartmentName</h2>
+            </div>
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            What type of priority open habitat is @comp.CompartmentName being converted into?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                                @(habitat.HabitatType?.GetDisplayName()) <br />
+                                @(habitat.HabitatType == HabitatType.Other ? habitat.OtherHabitatDescription : string.Empty)
 
-                    </dd>
-                    <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action("HabitatType", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
-                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                            What type of trees make up most of @comp.CompartmentName?
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                            @(habitat.WoodlandSpeciesType?.GetDisplayName())
-                    </dd>
-                    <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action("HabitatWoodlandSpecies", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
-                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-            <dl class="govuk-summary-list" condition="habitat.WoodlandSpeciesType == Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandSpeciesType.BroadleafWoodland">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                            Are the broadleaf tree species in @comp.CompartmentName predominantly native?
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                            @(habitat.NativeBroadleaf is null ? string.Empty : (habitat.NativeBroadleaf == true ? "Yes" : "No"))
-                    </dd>
-                    <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action("HabitatNativeBroadleaf", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
-                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                        Is @comp.CompartmentName a productive woodland?
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                            @(habitat.ProductiveWoodland is true ? "Yes" : "No")
                         </dd>
-                    <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action("HabitatProductiveWoodland", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
-                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
-                    </dd>
-                </div>
-            </dl>
-
-                <dl class="govuk-summary-list" condition="habitat.ProductiveWoodland == true">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                            Are the trees in @comp.CompartmentName being felled early?
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                            @(habitat.FelledEarly is null ? string.Empty : (habitat.FelledEarly == true ? "Yes" : "No"))
-                    </dd>
-                    <dd class="govuk-summary-list__actions">
-                            <a class="govuk-link" href="@Url.Action("HabitatFelledEarly", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
-                           Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
-                    </dd>
-                </div>
-            </dl>
+                        <dd class="govuk-summary-list__actions">
+                                <a class="govuk-link" href="@Url.Action("HabitatType", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                               Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                                What type of trees make up most of @comp.CompartmentName?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                                @(habitat.WoodlandSpeciesType?.GetDisplayName())
+                        </dd>
+                        <dd class="govuk-summary-list__actions">
+                                <a class="govuk-link" href="@Url.Action("HabitatWoodlandSpecies", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                               Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row" condition="habitat.WoodlandSpeciesType == WoodlandSpeciesType.BroadleafWoodland">
+                        <dt class="govuk-summary-list__key">
+                                Are the broadleaf tree species in @comp.CompartmentName predominantly native?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                                @(habitat.NativeBroadleaf is null ? string.Empty : (habitat.NativeBroadleaf == true ? "Yes" : "No"))
+                        </dd>
+                        <dd class="govuk-summary-list__actions">
+                                <a class="govuk-link" href="@Url.Action("HabitatNativeBroadleaf", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                               Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Is @comp.CompartmentName a productive woodland?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                                @(habitat.ProductiveWoodland is true ? "Yes" : "No")
+                            </dd>
+                        <dd class="govuk-summary-list__actions">
+                                <a class="govuk-link" href="@Url.Action("HabitatProductiveWoodland", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                               Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row" condition="habitat.ProductiveWoodland == true">
+                        <dt class="govuk-summary-list__key">
+                                Are the trees in @comp.CompartmentName being felled early?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                                @(habitat.FelledEarly is null ? string.Empty : (habitat.FelledEarly == true ? "Yes" : "No"))
+                        </dd>
+                        <dd class="govuk-summary-list__actions">
+                                <a class="govuk-link" href="@Url.Action("HabitatFelledEarly", new { applicationId = Model.Application.ApplicationId, compartmentId = comp.CompartmentId, returnToApplicationSummary = true })"
+                               Condition="Model.Application.FellingAndRestockingDetails.AllowEditing">Change<span class="govuk-visually-hidden">&nbsp;the felling compartments</span></a>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
         </div>
-    </div>
     }
 
-    <div class="govuk-summary-card">
+    <div class="govuk-summary-card" condition="@Model.Application.EnvironmentalImpactAssessment.StepRequiredForApplication">
         <div class="govuk-summary-card__title-wrapper">
             <h2 class="govuk-summary-card__title">Environmental Impact Assessment</h2>
             <ul class="govuk-summary-card__actions">
@@ -676,7 +662,7 @@
                         @(Model.Application.EnvironmentalImpactAssessment.HasApplicationBeenCompleted is true ? "Yes" : "No")
                     </dd>
                 </div>
-                <div class="govuk-summary-list__row">
+                <div class="govuk-summary-list__row" condition="@Model.Application.EnvironmentalImpactAssessment.HasApplicationBeenCompleted is true">
                     <dt class="govuk-summary-list__key">
                         Have you sent it to us?
                     </dt>
@@ -684,11 +670,7 @@
                         @(Model.Application.EnvironmentalImpactAssessment.HasApplicationBeenSent is true ? "Yes" : "No")
                     </dd>
                 </div>
-            </dl>
-        </div>
-        <div class="govuk-summary-card__content">
-            <dl class="govuk-summary-list">
-                <div class="govuk-summary-list__row">
+                <div class="govuk-summary-list__row" condition="@Model.Application.EnvironmentalImpactAssessment.HasApplicationBeenCompleted is true">
                     <dt class="govuk-summary-list__key">
                         EIA documents
                     </dt>

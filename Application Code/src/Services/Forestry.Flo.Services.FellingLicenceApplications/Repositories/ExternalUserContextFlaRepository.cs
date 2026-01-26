@@ -337,8 +337,15 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
             review.DesignationsComplete = false;
             review.ConfirmedFellingAndRestockingComplete = false;
-            review.ConditionsToApplicantDate = null;
             review.WoodlandOfficerReviewComplete = false;
+
+            // if the conditions were sent to the applicant, record this date in the OldConditionsSentToApplicantDate field
+            // then clear the ConditionsToApplicantDate field
+            if (review.ConditionsToApplicantDate.HasValue)
+            {
+                review.OldConditionsSentToApplicantDate = review.ConditionsToApplicantDate;
+                review.ConditionsToApplicantDate = null;
+            }
 
             review.LastUpdatedDate = updatedDate;
 
@@ -366,7 +373,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     ///<inheritdoc />
-    public async Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration)
+    public async Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration, CancellationToken cancellationToken)
     {
         habitatRestoration.LinkedPropertyProfile = null;
 
@@ -393,20 +400,21 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             Context.Entry(habitatRestoration).Property(r => r.OtherHabitatDescription).IsModified = true;
         }
 
-        return await Context.SaveEntitiesAsync();
+        return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
     ///<inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> AddHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId)
+        Guid compartmentId,
+        CancellationToken cancellationToken)
     {
         var matchingLinkedProfileId = await Context.LinkedPropertyProfiles
             .Where(lpp => lpp.FellingLicenceApplicationId == applicationId)
             .Where(lpp => Context.ProposedFellingDetails
                 .Any(pfd => pfd.LinkedPropertyProfileId == lpp.Id && pfd.PropertyProfileCompartmentId == compartmentId))
             .Select(lpp => lpp.Id)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (matchingLinkedProfileId == Guid.Empty)
         {
@@ -415,7 +423,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
         var exists = await Context.HabitatRestorations
             .AnyAsync(hr => hr.LinkedPropertyProfileId == matchingLinkedProfileId
-                             && hr.PropertyProfileCompartmentId == compartmentId);
+                             && hr.PropertyProfileCompartmentId == compartmentId, cancellationToken);
 
         if (exists)
         {
@@ -430,20 +438,19 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         };
 
         Context.HabitatRestorations.Add(toAdd);
-        return await Context.SaveEntitiesAsync();
+        return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
     ///<inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId)
+        Guid compartmentId,
+        CancellationToken cancellationToken)
     {
         var matchingLinkedProfileId = await Context.LinkedPropertyProfiles
             .Where(lpp => lpp.FellingLicenceApplicationId == applicationId)
-            .Where(lpp => Context.ProposedFellingDetails
-                .Any(pfd => pfd.LinkedPropertyProfileId == lpp.Id && pfd.PropertyProfileCompartmentId == compartmentId))
             .Select(lpp => lpp.Id)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (matchingLinkedProfileId == Guid.Empty)
         {
@@ -452,7 +459,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
         var existing = await Context.HabitatRestorations
             .FirstOrDefaultAsync(hr => hr.LinkedPropertyProfileId == matchingLinkedProfileId
-                                       && hr.PropertyProfileCompartmentId == compartmentId);
+                                       && hr.PropertyProfileCompartmentId == compartmentId, cancellationToken);
 
         if (existing is null)
         {
@@ -460,7 +467,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         }
 
         Context.HabitatRestorations.Remove(existing);
-        return await Context.SaveEntitiesAsync();
+        return await Context.SaveEntitiesAsync(cancellationToken);
     }
 
     ///<inheritdoc />

@@ -9,9 +9,12 @@ using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.ConditionsBuilder.Models;
+using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -34,7 +37,9 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using NodaTime.Testing;
+using FellingOperationType = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingOperationType;
 using IUserAccountRepository = Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository;
+using RestockingSpecies = Forestry.Flo.Services.FellingLicenceApplications.Entities.RestockingSpecies;
 using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
@@ -76,6 +81,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
     private readonly Mock<IPublicRegister> _publicRegisterService;
     private readonly Mock<IDbContextTransaction> _transactionMock;
     private readonly Mock<IGetWoodlandOfficerReviewService> _getWoodlandOfficerReviewService;
+    private readonly Mock<ICalculateConditions> _calculateConditionsService;
 
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas;
     private const string AdminHubAddress = "admin hub address";
@@ -119,6 +125,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .ReturnsAsync(AdminHubAddress);
         _publicRegisterService = new Mock<IPublicRegister>();
         _getWoodlandOfficerReviewService = new Mock<IGetWoodlandOfficerReviewService>();
+        _calculateConditionsService = new();
 
         _mockBus = new Mock<IBusControl>();
 
@@ -194,7 +201,8 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             _mockEiaOptions.Object,
             _getWoodlandOfficerReviewService.Object,
             _mockInternalSiteOptions.Object,
-            _getConfiguredFcAreas.Object);
+            _getConfiguredFcAreas.Object,
+            _calculateConditionsService.Object);
     }
 
     [Theory, AutoMoqData]
@@ -862,6 +870,83 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
 
         _updateFellingLicenceService.Verify(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
             applicationId, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldClearDownConditions_OnFlaResubmission(
+        Guid applicationId,
+        SubmitFellingLicenceApplicationResponse submitResponse,
+        UserAccessModel userAccessModel)
+    {
+        // Arrange
+
+        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _fixture.Create<Guid>(),
+            AccountTypeExternal.WoodlandOwnerAdministrator);
+        var externalApplicant = new ExternalApplicant(user);
+
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus),
+            Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.WoodlandOfficerReview);
+
+        // Create dummy dependencies
+
+        var propertyProfile = new PropertyProfile(
+            "Test",
+            "Test",
+            "Test",
+            "Test",
+            false,
+            "Test",
+            false,
+            "Test",
+            Guid.NewGuid(),
+            new List<Compartment>());
+
+        var linkedPropertyProfile = new LinkedPropertyProfile();
+
+        _mockRetrieveUserAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccessModel));
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(propertyProfile);
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetLinkedPropertyProfileAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(linkedPropertyProfile);
+
+        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_woodlandOwner);
+
+        _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<UserAccessModel>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submitResponse));
+
+        _updateFellingLicenceService
+            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _calculateConditionsService
+            .Setup(x => x.StoreConditionsAsync(It.IsAny<StoreConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        await _sut.SubmitFellingLicenceApplicationAsync(applicationId, externalApplicant, "link",
+            CancellationToken.None);
+
+        // Assert
+
+        _calculateConditionsService
+            .Verify(x => x.StoreConditionsAsync(
+                It.Is<StoreConditionsRequest>(r => r.FellingLicenceApplicationId == applicationId && r.Conditions.IsNullOrEmpty()),
+                externalApplicant.UserAccountId.Value,
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]

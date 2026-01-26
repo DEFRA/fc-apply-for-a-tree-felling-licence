@@ -134,6 +134,15 @@ public class WoodlandOfficerReview
     public DateTime? ConditionsToApplicantDate { get; set; }
 
     /// <summary>
+    /// Gets and sets the date and time when conditions from a previous submission of the application were sent to the applicant.
+    /// </summary>
+    /// <remarks>
+    /// This value is set when an application is resubmitted after being returned to the applicant for changes,
+    /// if the Woodland Officer had previously sent conditions to the applicant.
+    /// </remarks>
+    public DateTime? OldConditionsSentToApplicantDate { get; set; }
+
+    /// <summary>
     /// Gets and sets whether the woodland officer has completed entering the confirmed felling and restocking details.
     /// </summary>
     public bool ConfirmedFellingAndRestockingComplete { get; set; }

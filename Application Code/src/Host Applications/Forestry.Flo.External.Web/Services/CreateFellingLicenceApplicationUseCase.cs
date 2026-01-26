@@ -43,15 +43,18 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
-using System;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TreeHealth;
+using Forestry.Flo.Services.ConditionsBuilder.Models;
+using Forestry.Flo.Services.ConditionsBuilder.Services;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 using FellingLicenceApplicationStepStatus =
     Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplicationStepStatus;
+using FellingOperationType = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingOperationType;
 using IUserAccountRepository = Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository;
 using PropertyProfileDetails = Forestry.Flo.External.Web.Models.FellingLicenceApplication.PropertyProfileDetails;
 using ProposedFellingDetailModel = Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedFellingDetailModel;
 using ProposedRestockingDetailModel = Forestry.Flo.External.Web.Models.FellingLicenceApplication.ProposedRestockingDetailModel;
+using RestockingSpecies = Forestry.Flo.Services.FellingLicenceApplications.Entities.RestockingSpecies;
 
 namespace Forestry.Flo.External.Web.Services;
 
@@ -83,7 +86,8 @@ public class CreateFellingLicenceApplicationUseCase(
     IOptions<EiaOptions> eiaOptions,
     IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
     IOptions<InternalUserSiteOptions> internalUserSiteOptions,
-    IGetConfiguredFcAreas getConfiguredFcAreasService) 
+    IGetConfiguredFcAreas getConfiguredFcAreasService,
+    ICalculateConditions calculateConditionsService) 
     : ApplicationUseCaseCommon(retrieveUserAccountsService,
         retrieveWoodlandOwnersService,
         getFellingLicenceApplicationService,
@@ -131,6 +135,8 @@ public class CreateFellingLicenceApplicationUseCase(
     private readonly IApplicationReferenceHelper _applicationReferenceHelper = Guard.Against.Null(applicationHelper);
     private readonly IPublicRegister _publicRegisterService = Guard.Against.Null(publicRegisterService);
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
+
+    private readonly ICalculateConditions _calculateConditionsService = Guard.Against.Null(calculateConditionsService);
 
     private readonly InternalUserSiteOptions _internalUserSiteOptions =
         Guard.Against.Null(internalUserSiteOptions?.Value);
@@ -2976,8 +2982,18 @@ public class CreateFellingLicenceApplicationUseCase(
                 return Result.Failure("Could not update Felling Licence Application to submitted state");
             }
 
-            isResubmission = updateResult.Value.PreviousStatus !=
-                             Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.Draft;
+            isResubmission = updateResult.Value.PreviousStatus != FellingLicenceStatus.Draft;
+
+            // clear down any existing conditions
+            if (isResubmission)
+            {
+                var request = new StoreConditionsRequest
+                {
+                    FellingLicenceApplicationId = applicationId,
+                    Conditions = []
+                };
+                await _calculateConditionsService.StoreConditionsAsync(request, user.UserAccountId.Value, cancellationToken);
+            }
 
             // Get property profile via linked property profile table
             var propertyProfile =
