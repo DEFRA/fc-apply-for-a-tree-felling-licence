@@ -79,19 +79,23 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
     /// </summary>
     Task<UnitResult<UserDbErrorReason>> AddHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId);
+        Guid compartmentId,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Updates a HabitatRestoration entity with provided values.
     /// </summary>
-    Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration);
+    Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(
+        HabitatRestoration habitatRestoration, 
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Deletes a HabitatRestoration for a specific application and compartment.
     /// </summary>
     Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId);
+        Guid compartmentId,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Deletes multiple HabitatRestoration records for a specific application.

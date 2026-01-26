@@ -510,6 +510,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
             {
                 result.IsConditional = woodlandOfficerReview.Value.IsConditional;
                 result.ConditionsToApplicantDate = woodlandOfficerReview.Value.ConditionsToApplicantDate;
+                result.OldConditionsToApplicantDate = woodlandOfficerReview.Value.OldConditionsSentToApplicantDate;
             }
 
             return Result.Success(result);

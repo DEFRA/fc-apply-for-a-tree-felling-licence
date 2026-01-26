@@ -18,15 +18,17 @@ public interface IHabitatRestorationService
 
     Task<UnitResult<UserDbErrorReason>> AddHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId);
+        Guid compartmentId,
+        CancellationToken cancellationToken);
 
-    Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration);
+    Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration, CancellationToken cancellationToken);
 
-    Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationModelAsync(Models.HabitatRestorationModel model);
+    Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationModelAsync(Models.HabitatRestorationModel model, CancellationToken cancellationToken);
 
     Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId);
+        Guid compartmentId,
+        CancellationToken cancellationToken);
 
     Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationsAsync(
         Guid applicationId,
@@ -100,17 +102,22 @@ public class HabitatRestorationService : IHabitatRestorationService
 
     public async Task<UnitResult<UserDbErrorReason>> AddHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId)
+        Guid compartmentId,
+        CancellationToken cancellationToken)
     {
-        return await _externalRepository.AddHabitatRestorationAsync(applicationId, compartmentId);
+        return await _externalRepository.AddHabitatRestorationAsync(applicationId, compartmentId, cancellationToken);
     }
 
-    public async Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(HabitatRestoration habitatRestoration)
+    public async Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationAsync(
+        HabitatRestoration habitatRestoration,
+        CancellationToken cancellationToken)
     {
-        return await _externalRepository.UpdateHabitatRestorationAsync(habitatRestoration);
+        return await _externalRepository.UpdateHabitatRestorationAsync(habitatRestoration, cancellationToken);
     }
 
-    public Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationModelAsync(Models.HabitatRestorationModel model)
+    public Task<UnitResult<UserDbErrorReason>> UpdateHabitatRestorationModelAsync(
+        Models.HabitatRestorationModel model,
+        CancellationToken cancellationToken)
     {
         var entity = new HabitatRestoration
         {
@@ -126,14 +133,15 @@ public class HabitatRestorationService : IHabitatRestorationService
             Completed = model.Completed
         };
 
-        return UpdateHabitatRestorationAsync(entity);
+        return UpdateHabitatRestorationAsync(entity, cancellationToken);
     }
 
     public async Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationAsync(
         Guid applicationId,
-        Guid compartmentId)
+        Guid compartmentId,
+        CancellationToken cancellationToken)
     {
-        return await _externalRepository.DeleteHabitatRestorationAsync(applicationId, compartmentId);
+        return await _externalRepository.DeleteHabitatRestorationAsync(applicationId, compartmentId, cancellationToken);
     }
 
     public async Task<UnitResult<UserDbErrorReason>> DeleteHabitatRestorationsAsync(

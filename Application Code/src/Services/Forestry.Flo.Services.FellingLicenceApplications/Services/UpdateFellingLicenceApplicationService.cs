@@ -216,6 +216,15 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
             timestamp,
             cancellationToken).ConfigureAwait(false);
 
+        // check if there's an outstanding amendment review that needs closing
+        var existingAmendmentReview = await _fellingLicenceApplicationInternalRepository
+            .GetCurrentFellingAndRestockingAmendmentReviewAsync(request.ApplicationId, cancellationToken, includeComplete: false);
+
+        if (existingAmendmentReview.IsSuccess && existingAmendmentReview.Value.HasValue)
+        {
+            await _fellingLicenceApplicationInternalRepository
+                .SetAmendmentReviewCompletedAsync(existingAmendmentReview.Value.Value.Id, true, cancellationToken);
+        }
 
         // now get the assigned staff that need to be sent a notification
         var staffMemberIds = new List<Guid>();

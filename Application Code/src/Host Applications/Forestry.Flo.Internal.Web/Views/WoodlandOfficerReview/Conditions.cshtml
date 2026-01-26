@@ -29,7 +29,17 @@
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
             <span class="govuk-warning-text__assistive">Warning</span>
-            The conditions were sent to the applicant on @Model.ConditionsStatus.ConditionsToApplicantDate.Value.ToLocalTime().ToString("F")
+            The conditions were sent to the applicant on @Model.ConditionsStatus.ConditionsToApplicantDate!.Value.ToLocalTime().ToString("F")
+        </strong>
+    </div>
+    
+    <div class="govuk-warning-text" condition="@(Model.ConditionsStatus.ConditionsToApplicantDate.HasNoValue() && Model.ConditionsStatus.OldConditionsToApplicantDate.HasValue)">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            Conditions from a previous version of this application (before it was subsequently resubmitted by the applicant) 
+            were sent to the applicant on @(Model.ConditionsStatus.OldConditionsToApplicantDate!.Value.ToLocalTime().ToString("F")).
+            You must regenerate and resend the conditions to the applicant.
         </strong>
     </div>
 

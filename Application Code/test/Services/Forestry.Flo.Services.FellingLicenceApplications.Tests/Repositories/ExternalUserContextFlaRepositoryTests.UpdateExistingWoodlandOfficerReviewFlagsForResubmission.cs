@@ -15,6 +15,7 @@ public partial class ExternalUserContextFlaRepositoryTests
         FellingLicenceApplication application,
         DateTime updatedDate)
     {
+        var oldConditionsToApplicantDate = application.WoodlandOfficerReview.ConditionsToApplicantDate;
         _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
         await _fellingLicenceApplicationsContext.SaveChangesAsync();
 
@@ -29,6 +30,7 @@ public partial class ExternalUserContextFlaRepositoryTests
         Assert.False(updated.DesignationsComplete);
         Assert.False(updated.ConfirmedFellingAndRestockingComplete);
         Assert.Null(updated.ConditionsToApplicantDate);
+        Assert.Equal(oldConditionsToApplicantDate, updated.OldConditionsSentToApplicantDate);
         Assert.False(updated.WoodlandOfficerReviewComplete);
     }
 

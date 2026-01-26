@@ -81,9 +81,11 @@ public class ActivityFeedAmendmentReviewService : IActivityFeedService
 
             activityFeedItems.Add(officerActivityFeedItem);
 
-            if (review.ResponseReceivedDate != null && review.ApplicantDisagreementReason != null)
+            if (review.ResponseReceivedDate != null)
             {
-                var applicantText = "Applicant disagreed amendments: " + review.ApplicantDisagreementReason;
+                var applicantText = review.ApplicantAgreed is false
+                    ? "Applicant disagreed with amendments: " + review.ApplicantDisagreementReason
+                    : "Applicant agreed to amendments";
 
                 var activityFeedItemExternalUserModel = activityFeedItemExternalUsers.FirstOrDefault(x => x.Id == review.RespondingApplicantId);
 

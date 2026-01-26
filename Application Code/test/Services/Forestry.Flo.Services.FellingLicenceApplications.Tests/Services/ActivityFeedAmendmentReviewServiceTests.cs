@@ -73,8 +73,28 @@ public class ActivityFeedAmendmentReviewServiceTests
         var result = await sut.RetrieveActivityFeedItemsAsync(input, ActorType.InternalUser, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Contains(result.Value, x => x.ActivityFeedItemType == ActivityFeedItemType.AmendmentOfficerReason && x.Text == "Reason 1");
-        Assert.Contains(result.Value, x => x.ActivityFeedItemType == ActivityFeedItemType.AmendmentApplicantReason && x.Text.Contains("Applicant disagreed amendments: Disagree reason"));
+
+        amendmentReviews.ForEach(review =>
+        {
+            Assert.Contains(result.Value, x =>
+                x.ActivityFeedItemType == ActivityFeedItemType.AmendmentOfficerReason
+                && x.Text == review.AmendmentsReason);
+
+            switch (review.ApplicantAgreed)
+            {
+                case true:
+                    Assert.Contains(result.Value, x =>
+                        x.ActivityFeedItemType == ActivityFeedItemType.AmendmentApplicantReason
+                        && x.Text.Contains("Applicant agreed to amendments"));
+                    break;
+                case false:
+                    Assert.Contains(result.Value, x =>
+                        x.ActivityFeedItemType == ActivityFeedItemType.AmendmentApplicantReason
+                        && x.Text.Contains($"Applicant disagreed with amendments: {review.ApplicantDisagreementReason}"));
+                    break;
+            }
+        });
+
 
         _internalAccountsRepository.Verify(x => x.GetUsersWithIdsInAsync(It.Is<IList<Guid>>(ids => ids.Contains(officerId)), It.IsAny<CancellationToken>()), Times.Once);
         _externalAccountsRepository.Verify(x => x.GetUsersWithIdsInAsync(It.Is<IList<Guid>>(ids => ids.Contains(applicantId)), It.IsAny<CancellationToken>()), Times.Once);

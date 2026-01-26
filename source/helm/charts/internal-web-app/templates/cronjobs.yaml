@@ -10,11 +10,15 @@ metadata:
   name: {{ $job.name }}
 spec:
   schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
         spec:
           restartPolicy: OnFailure
+          {{ include "flo.cronjobScheduling" . | nindent 10 }}
           containers:
             - name: {{ $job.name }}
               image: fsflo.azurecr.io/docker/qtools:1.2.1
@@ -50,11 +54,15 @@ metadata:
   name: {{ $job.name }}
 spec:
   schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
         spec:
           restartPolicy: OnFailure
+          {{ include "flo.cronjobScheduling" . | nindent 10 }}
           containers:
             - name: {{ $job.name }}
               image: fsflo.azurecr.io/docker/qtools:1.2.1
@@ -90,11 +98,15 @@ metadata:
   name: {{ $job.name }}
 spec:
   schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
         spec:
           restartPolicy: OnFailure
+          {{ include "flo.cronjobScheduling" . | nindent 10 }}
           containers:
             - name: {{ $job.name }}
               image: fsflo.azurecr.io/docker/qtools:1.2.1
@@ -130,11 +142,15 @@ metadata:
   name: {{ $job.name }}
 spec:
   schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
         spec:
           restartPolicy: OnFailure
+          {{ include "flo.cronjobScheduling" . | nindent 10 }}
           containers:
             - name: {{ $job.name }}
               image: fsflo.azurecr.io/docker/qtools:1.2.1
@@ -170,11 +186,15 @@ metadata:
   name: {{ $job.name }}
 spec:
   schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
         spec:
           restartPolicy: OnFailure
+          {{ include "flo.cronjobScheduling" . | nindent 10 }}
           containers:
             - name: {{ $job.name }}
               image: fsflo.azurecr.io/docker/qtools:1.2.1

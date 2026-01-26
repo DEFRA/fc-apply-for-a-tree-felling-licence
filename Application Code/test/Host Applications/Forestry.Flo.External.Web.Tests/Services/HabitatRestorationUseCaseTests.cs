@@ -1,18 +1,18 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Services;
+using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common; // IUnitOfWork, UserDbErrorReason
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
-using Microsoft.Extensions.Logging;
-using Moq;
-using System.Security.Claims;
-using Forestry.Flo.Services.Applicants.Services;
-using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.PropertyProfiles.Services;
-using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Tests.Common;
+using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace Forestry.Flo.External.Web.Tests.Services
 {
@@ -188,9 +188,9 @@ namespace Forestry.Flo.External.Web.Tests.Services
                     new HabitatRestorationModel { PropertyProfileCompartmentId = Guid.Parse("00000000-0000-0000-0000-000000000002") }
                 });
 
-            habitat.Setup(h => h.DeleteHabitatRestorationAsync(appId, It.IsAny<Guid>()))
+            habitat.Setup(h => h.DeleteHabitatRestorationAsync(appId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-            habitat.Setup(h => h.AddHabitatRestorationAsync(appId, It.IsAny<Guid>()))
+            habitat.Setup(h => h.AddHabitatRestorationAsync(appId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
             var sut = CreateUseCase(repo, habitat, out _);
@@ -202,8 +202,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             var result = await sut.UpdateHabitatCompartments(appId, selected, CancellationToken.None);
             Assert.True(result.IsSuccess);
-            habitat.Verify(h => h.DeleteHabitatRestorationAsync(appId, Guid.Parse("00000000-0000-0000-0000-000000000001")), Times.Once);
-            habitat.Verify(h => h.AddHabitatRestorationAsync(appId, Guid.Parse("00000000-0000-0000-0000-000000000003")), Times.Once);
+            habitat.Verify(h => h.DeleteHabitatRestorationAsync(appId, Guid.Parse("00000000-0000-0000-0000-000000000001"), It.IsAny<CancellationToken>()), Times.Once);
+            habitat.Verify(h => h.AddHabitatRestorationAsync(appId, Guid.Parse("00000000-0000-0000-0000-000000000003"), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -226,7 +226,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             habitat.Setup(h => h.GetHabitatRestorationModelAsync(appId, compId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<HabitatRestorationModel>.From(existing));
-            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>()))
+            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
             var sut = CreateUseCase(repo, habitat, out var retrieveUserAccountsServiceMock);
@@ -259,7 +259,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             habitat.Setup(h => h.GetHabitatRestorationModelAsync(appId, compId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<HabitatRestorationModel>.From(existing));
-            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>()))
+            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
             var sut = CreateUseCase(repo, habitat, out var retrieveUserAccountsServiceMock);
@@ -312,7 +312,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             habitat.Setup(h => h.GetHabitatRestorationModelAsync(appId, compId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<HabitatRestorationModel>.From(existing));
-            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>()))
+            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
             var sut = CreateUseCase(repo, habitat, out var retrieveUserAccountsServiceMock);
@@ -344,7 +344,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             habitat.Setup(h => h.GetHabitatRestorationModelAsync(appId, compId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<HabitatRestorationModel>.From(existing));
-            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>()))
+            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
             var sut = CreateUseCase(repo, habitat, out var retrieveUserAccountsServiceMock);
@@ -377,7 +377,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             habitat.Setup(h => h.GetHabitatRestorationModelAsync(appId, compId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<HabitatRestorationModel>.From(existing));
-            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>()))
+            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
             var sut = CreateUseCase(repo, habitat, out var retrieveUserAccountsServiceMock);
@@ -410,7 +410,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             habitat.Setup(h => h.GetHabitatRestorationModelAsync(appId, compId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<HabitatRestorationModel>.From(existing));
-            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>()))
+            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
             var sut = CreateUseCase(repo, habitat, out _, out var auditMock);
@@ -441,7 +441,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             habitat.Setup(h => h.GetHabitatRestorationModelAsync(appId, compId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Maybe<HabitatRestorationModel>.From(existing));
-            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>()))
+            habitat.Setup(h => h.UpdateHabitatRestorationModelAsync(It.IsAny<HabitatRestorationModel>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.General));
 
             var sut = CreateUseCase(repo, habitat, out _, out var auditMock);
@@ -452,6 +452,206 @@ namespace Forestry.Flo.External.Web.Tests.Services
             auditMock.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                     a.EventName == AuditEvents.HabitatRestorationUpdateFailure && a.SourceEntityId == appId),
                 It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task EnsureExistingHabitatRestorationRecordsShouldRemoveInvalidOnes(
+            List<HabitatRestorationModel> existingRecords,
+            UserAccessModel uam)
+        {
+            var appId = Guid.NewGuid();
+            var repo = new Mock<IFellingLicenceApplicationExternalRepository>();
+            var getFlaForExternal = new Mock<IGetFellingLicenceApplicationForExternalUsers>();
+            var habitat = new Mock<IHabitatRestorationService>();
+            Mock<IRetrieveUserAccountsService> userAccounts;
+            Mock<IAuditService<HabitatRestorationUseCase>> auditService;
+
+            var user = CreateExternalApplicant(Guid.NewGuid());
+
+            SetupUnitOfWork(repo);
+
+            var app = CreateApplication(appId);
+            var existingRecordIds = existingRecords.Select(x => x.PropertyProfileCompartmentId);
+
+            app.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>
+            {
+                new ProposedFellingDetail
+                {
+                    PropertyProfileCompartmentId = existingRecordIds.FirstOrDefault(),  // first existing record - valid
+                    IsRestocking = false
+                },
+                new ProposedFellingDetail
+                {
+                    PropertyProfileCompartmentId = Guid.NewGuid(),
+                    IsRestocking = true
+                },
+                new ProposedFellingDetail
+                {
+                    PropertyProfileCompartmentId = existingRecordIds.LastOrDefault(),   // last existing record - now invalid
+                    IsRestocking = true,
+                    ProposedRestockingDetails = new List<ProposedRestockingDetail>
+                    {
+                        new ProposedRestockingDetail
+                        {
+                            PropertyProfileCompartmentId = Guid.NewGuid(),
+                            RestockingProposal = TypeOfProposal.ReplantTheFelledArea
+                        }
+                    }
+                }
+            };
+
+            app.IsPriorityOpenHabitat = true;
+            app.FellingLicenceApplicationStepStatus.HabitatRestorationStatus = true;
+
+            var stillValidId = existingRecordIds.FirstOrDefault();
+
+            var sut = CreateUseCase(repo, habitat, out userAccounts, out auditService);
+
+            userAccounts
+                .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(uam);
+
+            habitat
+                .Setup(h => h.GetHabitatRestorationModelsAsync(appId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(existingRecords);
+
+            repo
+                .Setup(x => x.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+            repo
+                .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(app);
+
+            habitat
+                .Setup(x => x.DeleteHabitatRestorationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+            var result = await sut.EnsureExistingHabitatRestorationRecordsAsync(app.Id, user, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+
+            //verify only invalid records are removed
+            foreach (var existingItem in existingRecords)
+            {
+                var compartmentId = existingItem.PropertyProfileCompartmentId;
+
+                if (compartmentId != stillValidId)
+                {
+                    habitat
+                        .Verify(x => 
+                                x.DeleteHabitatRestorationAsync(app.Id, compartmentId, It.IsAny<CancellationToken>()), Times.Once);
+                }
+                else
+                {
+                    habitat
+                        .Verify(x =>
+                            x.DeleteHabitatRestorationAsync(app.Id, compartmentId, It.IsAny<CancellationToken>()), Times.Never);
+                }
+            }
+
+            //verify we didn't change the status incorrectly
+            Assert.True(app.IsPriorityOpenHabitat);
+            Assert.True(app.FellingLicenceApplicationStepStatus.HabitatRestorationStatus);
+            
+            repo.Verify(x => x.Update(app), Times.Never);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task EnsureExistingHabitatRestorationRecordsWhenAllRecordsNowInvalid(
+            List<HabitatRestorationModel> existingRecords,
+            UserAccessModel uam)
+        {
+            var appId = Guid.NewGuid();
+            var repo = new Mock<IFellingLicenceApplicationExternalRepository>();
+            var getFlaForExternal = new Mock<IGetFellingLicenceApplicationForExternalUsers>();
+            var habitat = new Mock<IHabitatRestorationService>();
+            Mock<IRetrieveUserAccountsService> userAccounts;
+            Mock<IAuditService<HabitatRestorationUseCase>> auditService;
+
+            var user = CreateExternalApplicant(Guid.NewGuid());
+
+            SetupUnitOfWork(repo);
+
+            var app = CreateApplication(appId);
+            var existingRecordIds = existingRecords.Select(x => x.PropertyProfileCompartmentId);
+
+            app.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>
+            {
+                new ProposedFellingDetail
+                {
+                    PropertyProfileCompartmentId = existingRecordIds.FirstOrDefault(),  // first existing record - now invalid
+                    IsRestocking = true,
+                    ProposedRestockingDetails = new List<ProposedRestockingDetail>
+                    {
+                        new ProposedRestockingDetail
+                        {
+                            PropertyProfileCompartmentId = Guid.NewGuid(),
+                            RestockingProposal = TypeOfProposal.ReplantTheFelledArea
+                        }
+                    }
+                },
+                new ProposedFellingDetail
+                {
+                    PropertyProfileCompartmentId = Guid.NewGuid(),
+                    IsRestocking = true
+                },
+                new ProposedFellingDetail
+                {
+                    PropertyProfileCompartmentId = existingRecordIds.LastOrDefault(),   // last existing record - now invalid
+                    IsRestocking = true,
+                    ProposedRestockingDetails = new List<ProposedRestockingDetail>
+                    {
+                        new ProposedRestockingDetail
+                        {
+                            PropertyProfileCompartmentId = Guid.NewGuid(),
+                            RestockingProposal = TypeOfProposal.ReplantTheFelledArea
+                        }
+                    }
+                }
+            };
+
+            app.IsPriorityOpenHabitat = true;
+            app.FellingLicenceApplicationStepStatus.HabitatRestorationStatus = true;
+
+            var sut = CreateUseCase(repo, habitat, out userAccounts, out auditService);
+
+            userAccounts
+                .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(uam);
+
+            habitat
+                .Setup(h => h.GetHabitatRestorationModelsAsync(appId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(existingRecords);
+
+            repo
+                .Setup(x => x.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+            repo
+                .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(app);
+
+            habitat
+                .Setup(x => x.DeleteHabitatRestorationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+            var result = await sut.EnsureExistingHabitatRestorationRecordsAsync(app.Id, user, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+
+            //verify only invalid records are removed
+            foreach (var existingItem in existingRecords)
+            {
+                var compartmentId = existingItem.PropertyProfileCompartmentId;
+                habitat
+                    .Verify(x =>
+                            x.DeleteHabitatRestorationAsync(app.Id, compartmentId, It.IsAny<CancellationToken>()), Times.Once);
+            }
+
+            //verify we didn't change the status incorrectly
+            Assert.Null(app.IsPriorityOpenHabitat);
+            Assert.Null(app.FellingLicenceApplicationStepStatus.HabitatRestorationStatus);
+
+            repo.Verify(x => x.Update(app), Times.Once);
         }
     }
 }

@@ -367,7 +367,7 @@ define(["require",
                         }
                         const graphic = results[0].graphic;
 
-                        if (that._validateShapeUseCase.Execute(graphic, []) !== CheckingResult.Passed) {
+                        if (that._validateShapeUseCase.Execute(graphic, [], this.simplifyOperator) !== CheckingResult.Passed) {
                             that.ShowMessage("error", "This shape is invalid and importing it has been canceled");
                             return;
                         }
@@ -1350,7 +1350,7 @@ define(["require",
                             const graphic = this._drawingLayer.graphics.items.find((g) => g.attributes && g.attributes["ImportKey"] === key);
 
                             // Validate shape before selecting
-                            if (that._validateShapeUseCase.Execute(graphic, []) === CheckingResult.Passed) {
+                            if (that._validateShapeUseCase.Execute(graphic, [], this.simplifyOperator) === CheckingResult.Passed) {
                                 // Optionally check for intersection here as well
                                 const intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
                                 if (!intersects) {

@@ -3,6 +3,7 @@ using Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestorat
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace Forestry.Flo.External.Web.Controllers;
 
@@ -37,13 +38,16 @@ public partial class FellingLicenceApplicationController : Controller
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
+
         if (!ModelState.IsValid)
         {
-            var appResult = await createUseCase.RetrieveFellingLicenceApplication(user, model.ApplicationId, cancellationToken);
-            if (appResult.HasValue)
+            var invalidAppResult = await createUseCase.RetrieveFellingLicenceApplication(user, model.ApplicationId, cancellationToken);
+            if (invalidAppResult.HasNoValue)
             {
-                model.ApplicationSummary = appResult.Value.ApplicationSummary;
+                return RedirectToAction(nameof(HomeController.Error), "Home");
             }
+
+            model.ApplicationSummary = invalidAppResult.Value.ApplicationSummary;
             return View(model);
         }
 
@@ -53,7 +57,13 @@ public partial class FellingLicenceApplicationController : Controller
             return RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        if (model.ReturnToApplicationSummary)
+        var appResult = await createUseCase.RetrieveFellingLicenceApplication(user, model.ApplicationId, cancellationToken);
+        if (appResult.HasNoValue)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        if (model.ReturnToApplicationSummary && appResult.Value.IsComplete)
         {
             return RedirectToAction(nameof(ApplicationSummary), new { applicationId = model.ApplicationId });
         }
@@ -63,7 +73,18 @@ public partial class FellingLicenceApplicationController : Controller
             return RedirectToAction(nameof(HabitatCompartments), new { applicationId = model.ApplicationId });
         }
 
-        return RedirectToAction(nameof(ApplicationTaskList), new { applicationId = model.ApplicationId });
+        // No habitat compartments to process - go to next required step
+        if (appResult.Value.EnvironmentalImpactAssessment.StepRequiredForApplication)
+        {
+            return RedirectToAction(nameof(EnvironmentalImpactAssessment), new { model.ApplicationId });
+        }
+
+        if (appResult.Value.PawsAndIawp.StepRequiredForApplication)
+        {
+            return RedirectToAction(nameof(PawsCheck), new { model.ApplicationId });
+        }
+
+        return RedirectToAction(nameof(SupportingDocumentation), new { model.ApplicationId });
     }
 
     // GET action to select compartments for habitat restoration
@@ -89,19 +110,26 @@ public partial class FellingLicenceApplicationController : Controller
         ViewBag.ApplicationSummary = viewModel.Value.Application.ApplicationSummary;
 
         // Use habitat restorations to determine initially selected compartments
-        var selectedFromRestorations = await habitatUseCase.GetHabitatCompartmentIds(applicationId, cancellationToken);
+        var selectedFromRestorations = await habitatUseCase.GetHabitatCompartmentIds(applicationId, user, cancellationToken);
+        if (selectedFromRestorations.IsFailure)
+        {
+            return RedirectToAction(nameof(HomeController.Error), "Home");
+        }
+
+        var filteredCompartments = viewModel.Value.Compartments
+            .Where(x => selectedFromRestorations.Value.ContainsKey(x.Id));
 
         var model = new HabitatCompartmentsModel
         {
             ApplicationId = viewModel.Value.Application.ApplicationSummary.Id,
             ApplicationReference = viewModel.Value.Application.ApplicationSummary.ApplicationReference,
             FellingLicenceStatus = viewModel.Value.Application.ApplicationSummary.Status,
-            SelectedCompartmentIds = selectedFromRestorations,
+            SelectedCompartmentIds = selectedFromRestorations.Value.Where(x => x.Value).Select(x => x.Key).ToList(),
             ReturnToApplicationSummary = returnToApplicationSummary ?? false
         };
 
         // Order compartments as per existing behavior
-        ViewBag.Compartments = viewModel.Value.Compartments.OrderByNameNumericOrAlpha().ToList();
+        ViewBag.Compartments = filteredCompartments.OrderByNameNumericOrAlpha().ToList();
 
         return View(model);
     }
@@ -141,7 +169,7 @@ public partial class FellingLicenceApplicationController : Controller
         }
 
         // Capture existing selected habitat compartments before update
-        var areAnyNewResult = await useCase.AreAnyNewHabitats(model.ApplicationId, model.SelectedCompartmentIds, cancellationToken);
+        var areAnyNewResult = await useCase.AreAnyNewHabitats(model.ApplicationId, model.SelectedCompartmentIds, user, cancellationToken);
         if (areAnyNewResult.IsFailure)
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
