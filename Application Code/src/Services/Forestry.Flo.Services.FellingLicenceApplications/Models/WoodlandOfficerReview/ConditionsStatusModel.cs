@@ -14,4 +14,9 @@ public class ConditionsStatusModel
     /// Gets and sets the date and time that the completed conditions were sent to the applicant.
     /// </summary>
     public DateTime? ConditionsToApplicantDate { get; set; }
+
+    /// <summary>
+    /// Gets and sets the date and time when conditions from a previous submission of the application were sent to the applicant.
+    /// </summary>
+    public DateTime? OldConditionsToApplicantDate { get; set; }
 }

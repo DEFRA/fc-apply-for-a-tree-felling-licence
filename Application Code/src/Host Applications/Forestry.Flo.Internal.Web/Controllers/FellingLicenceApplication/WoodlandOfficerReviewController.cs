@@ -800,34 +800,14 @@ public partial class WoodlandOfficerReviewController(
     public async Task<IActionResult> EiaScreening(
         EiaScreeningViewModel model,
         [FromServices] IWoodlandOfficerReviewUseCase useCase,
-        [FromServices] IValidator<EiaScreeningViewModel> validator,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
 
-        ValidateModel(model, validator);
-
-        if (ModelState.IsValid is false)
-        {
-            var (_, isFailure, viewModel) = await LoadEiaScreeningViewModel(model.ApplicationId, cancellationToken);
-
-            if (isFailure)
-            {
-                return RedirectToAction(nameof(HomeController.Error), "Home");
-            }
-
-            model.RequestHistoryItems = viewModel.RequestHistoryItems;
-            model.EiaDocumentModels = viewModel.EiaDocumentModels;
-            model.FellingLicenceApplicationSummary = viewModel.FellingLicenceApplicationSummary;
-
-            SetEiaBreadcrumbs(model);
-
-            return View(model);
-        }
-
         var result = await useCase.CompleteEiaScreeningAsync(
             model.ApplicationId,
             user,
+            model.ScreeningCompleted,
             cancellationToken);
 
         if (result.IsFailure)
@@ -836,7 +816,11 @@ public partial class WoodlandOfficerReviewController(
             return RedirectToAction(nameof(EiaScreening), new { id = model.ApplicationId });
         }
 
-        this.AddConfirmationMessage("Successfully completed the EIA screening");
+        if (model.ScreeningCompleted)
+        {
+            this.AddConfirmationMessage("Successfully completed the EIA screening");
+        }
+
         return RedirectToAction(nameof(Index), new { id = model.ApplicationId });
     }
 

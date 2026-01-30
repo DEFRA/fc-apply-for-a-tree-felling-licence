@@ -74,7 +74,9 @@ public static class EntityExtensions
 
         return review.Value.EiaScreeningComplete is true 
             ? InternalReviewStepStatus.Completed
-            : InternalReviewStepStatus.NotStarted;
+            : review.Value.EiaScreeningComplete is false
+                ? InternalReviewStepStatus.InProgress
+                : InternalReviewStepStatus.NotStarted;
     }
 
     public static bool AllAreComplete(this WoodlandOfficerReviewTaskListStates woodlandOfficerReviewTaskListStates)
@@ -288,6 +290,25 @@ public static class EntityExtensions
         }
 
         return details.Any(f => f.IsRestocking is false || HasAlternativeCompartmentRestocking(f));
+    }
+
+    /// <summary>
+    /// Returns a list of compartment ids that are valid for habitat restoration on the given application.
+    /// </summary>
+    /// <param name="application">The application to evaluate.</param>
+    /// <returns>A list of property profile compartment ids that are valid for habitat restoration.</returns>
+    public static List<Guid> CompartmentIdsValidForHabitatRestoration(this FellingLicenceApplication application)
+    {
+        var details = application.LinkedPropertyProfile?.ProposedFellingDetails;
+        if (details is null)
+        {
+            return [];
+        }
+
+        return details
+            .Where(c => c.IsRestocking is false || HasAlternativeCompartmentRestocking(c))
+            .Select(c => c.PropertyProfileCompartmentId)
+            .ToList();
     }
 }
 

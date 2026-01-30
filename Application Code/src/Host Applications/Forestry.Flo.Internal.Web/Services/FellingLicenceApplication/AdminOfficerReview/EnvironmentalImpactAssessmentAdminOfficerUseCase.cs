@@ -1,4 +1,5 @@
-﻿using CSharpFunctionalExtensions;
+﻿using Ardalis.GuardClauses;
+using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.AdminOfficerReview;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
@@ -38,6 +39,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
     IUpdateFellingLicenceApplication updateFellingLicenceApplication,
     ISendNotifications sendNotifications,
     IOptions<EiaOptions> eiaOptions,
+    IOptions<ExternalApplicantSiteOptions> externalSiteOptions,
     IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
     IClock clock,
     RequestContext requestContext)
@@ -54,6 +56,8 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
         woodlandOfficerReviewSubStatusService,
         requestContext), IEnvironmentalImpactAssessmentAdminOfficerUseCase
 {
+    private readonly ExternalApplicantSiteOptions _externalSiteOptions = Guard.Against.Null(externalSiteOptions?.Value);
+
     /// <inheritdoc />
     public async Task<Result<EnvironmentalImpactAssessmentModel>> GetEnvironmentalImpactAssessmentAsync(
         Guid applicationId,
@@ -335,6 +339,8 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
             return Result.Failure<EnvironmentalImpactAssessmentReminderDataModel>("Unable to retrieve felling licence application");
         }
 
+        var externalViewUrl = $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+
         var applicantId = application.AssigneeHistories
             .First(x => x.Role is AssignedUserRole.Author)
             .AssignedUserId;
@@ -360,6 +366,9 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
             return Result.Failure<EnvironmentalImpactAssessmentReminderDataModel>("Unable to retrieve admin officer user account");
         }
 
+        var adminHubFooter = await
+            GetConfiguredFcAreasService.TryGetAdminHubAddress(application.AdministrativeRegion, cancellationToken);
+
         var dataModel = new EnvironmentalImpactAssessmentReminderDataModel
         {
             ApplicationReference = application.ApplicationReference,
@@ -371,7 +380,9 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
             ApplicationFormUri = eiaOptions.Value.EiaApplicationExternalUri,
             ContactEmail = eiaOptions.Value.EiaContactEmail,
             ContactNumber = eiaOptions.Value.EiaContactPhone,
-            ApplicationId = applicationId
+            ApplicationId = applicationId,
+            AdminHubFooter = adminHubFooter,
+            ViewApplicationURL = externalViewUrl
         };
 
         var notificationResult = await sendNotifications.SendNotificationAsync(

@@ -83,7 +83,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var appId = Guid.NewGuid();
             var compartmentId = Guid.NewGuid();
 
-            var result = await service.AddHabitatRestorationAsync(appId, compartmentId);
+            var result = await service.AddHabitatRestorationAsync(appId, compartmentId, CancellationToken.None);
             Assert.True(result.IsFailure);
             Assert.Equal(UserDbErrorReason.NotFound, result.Error);
         }
@@ -107,7 +107,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             ctx.ProposedFellingDetails.Add(pfd);
             await ctx.SaveChangesAsync();
 
-            var result = await service.AddHabitatRestorationAsync(appId, compartmentId);
+            var result = await service.AddHabitatRestorationAsync(appId, compartmentId, CancellationToken.None);
             Assert.True(result.IsSuccess);
 
             var restorations = await service.GetHabitatRestorationModelsAsync(appId, CancellationToken.None);
@@ -161,7 +161,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 OtherHabitatDescription = "new"
             };
 
-            var result = await service.UpdateHabitatRestorationAsync(updateModel);
+            var result = await service.UpdateHabitatRestorationAsync(updateModel, CancellationToken.None);
             Assert.True(result.IsSuccess);
 
             // Updated via repository (attached or tracked instance), re-query to verify changes persisted

@@ -743,6 +743,7 @@ public class UpdateWoodlandOfficerReviewService(
     public async Task<Result> CompleteEiaScreeningCheckAsync(
         Guid applicationId,
         Guid userId,
+        bool isScreeningCompleted,
         CancellationToken cancellationToken)
     {
 
@@ -761,7 +762,7 @@ public class UpdateWoodlandOfficerReviewService(
             return Result.Failure(error);
         }
 
-        review.EiaScreeningComplete = true;
+        review.EiaScreeningComplete = isScreeningCompleted;
 
         var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 

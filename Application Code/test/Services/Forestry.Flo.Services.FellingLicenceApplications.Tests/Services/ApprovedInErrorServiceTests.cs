@@ -47,7 +47,9 @@ public class ApprovedInErrorServiceTests
             _clock.Object, 
             new NullLogger<ApprovedInErrorService>(),
             _publicRegister.Object,
-            _updateFellingLicenceApplicationService.Object);
+            _updateFellingLicenceApplicationService.Object,
+            new Mock<IFellingLicenceApplicationReferenceRepository>().Object,
+            new ApplicationReferenceHelper());
     }
 
     [Theory, AutoData]
@@ -281,9 +283,10 @@ public class ApprovedInErrorServiceTests
     {
         model.ApplicationId = applicationId;
         model.ReasonOther = false;
-        model.PreviousReference = "ABC/2024/12345";
+        model.PreviousReference = "ABC/12345/2024/TEST";
         // Service extracts prefix from the application's current reference
         application.ApplicationReference = model.PreviousReference;
+        application.CreatedTimestamp = DateTime.Parse("01/01/2024");
         application.StatusHistories = new List<StatusHistory>
         {
             new StatusHistory { Status = FellingLicenceStatus.Approved, Created = DateTime.UtcNow }
@@ -291,7 +294,7 @@ public class ApprovedInErrorServiceTests
         application.Documents = new List<Document>();
         
         var mockReferenceRepo = new Mock<IFellingLicenceApplicationReferenceRepository>();
-        var mockReferenceHelper = new Mock<IApplicationReferenceHelper>();
+        var referenceHelper = new ApplicationReferenceHelper();
         var mockUnitOfWork = new Mock<IUnitOfWork>();
         
         _repo.Setup(x => x.GetApprovedInErrorAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -306,13 +309,7 @@ public class ApprovedInErrorServiceTests
         _repo.SetupGet(x => x.UnitOfWork).Returns(mockUnitOfWork.Object);
         
         mockReferenceRepo.Setup(x => x.GetNextApplicationReferenceIdValueAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync(12345L);
-        
-        mockReferenceHelper.Setup(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int?>()))
-        .Returns("NEW/2024/12345");
-        
-        mockReferenceHelper.Setup(x => x.UpdateReferenceNumber(It.IsAny<string>(), It.IsAny<string>()))
-        .Returns("ABC/2024/12345");
+        .ReturnsAsync(45678L);
         
         mockUnitOfWork.Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
         .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
@@ -327,17 +324,15 @@ public class ApprovedInErrorServiceTests
         _publicRegister.Object,
         _updateFellingLicenceApplicationService.Object,
         mockReferenceRepo.Object,
-        mockReferenceHelper.Object);
+        referenceHelper);
         
         var result = await sutWithRegeneration.SetToApprovedInErrorAsync(applicationId, model, userId, CancellationToken.None);
         
         Assert.True(result.IsSuccess);
         _repo.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Exactly(2)); // Once for validation, once for regeneration
-        _repo.Verify(x => x.Update(It.Is<FellingLicenceApplication>(a => a.ApplicationReference == "ABC/2024/12345")), Times.Once);
+        _repo.Verify(x => x.Update(It.Is<FellingLicenceApplication>(a => a.ApplicationReference == "ABC/45678/2024/TEST")), Times.Once);
         _repo.Verify(x => x.AddStatusHistory(userId, applicationId, FellingLicenceStatus.ApprovedInError, It.IsAny<CancellationToken>()), Times.Once);
         mockReferenceRepo.Verify(x => x.GetNextApplicationReferenceIdValueAsync(application.CreatedTimestamp.Year, It.IsAny<CancellationToken>()), Times.Once);
-        mockReferenceHelper.Verify(x => x.GenerateReferenceNumber(application, 12345L, "12345", null), Times.Once);
-        mockReferenceHelper.Verify(x => x.UpdateReferenceNumber("NEW/2024/12345", "ABC"), Times.Once);
         mockUnitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -345,10 +340,11 @@ public class ApprovedInErrorServiceTests
     public async Task SaveApprovedInError_Regeneration_ExtractsPostfix_WhenPresent(Guid applicationId, ApprovedInErrorModel model, FellingLicenceApplication application, Guid userId)
     {
         // Application reference with postfix after the last slash
-        var currentRefWithPostfix = "ABC/2024/12345/XYZ";
+        var currentRefWithPostfix = "ABC/12345/2025/XYZ";
         model.ApplicationId = applicationId;
         model.ReasonOther = false;
         application.ApplicationReference = currentRefWithPostfix;
+        application.CreatedTimestamp = DateTime.Parse("01/01/2025");
         application.StatusHistories = new List<StatusHistory>
         {
             new StatusHistory { Status = FellingLicenceStatus.Approved, Created = DateTime.UtcNow }
@@ -356,7 +352,7 @@ public class ApprovedInErrorServiceTests
         application.Documents = new List<Document>();
 
         var mockReferenceRepo = new Mock<IFellingLicenceApplicationReferenceRepository>();
-        var mockReferenceHelper = new Mock<IApplicationReferenceHelper>();
+        var referenceHelper = new ApplicationReferenceHelper();
         var mockUnitOfWork = new Mock<IUnitOfWork>();
 
         _repo.Setup(x => x.GetApprovedInErrorAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -370,11 +366,6 @@ public class ApprovedInErrorServiceTests
         mockReferenceRepo.Setup(x => x.GetNextApplicationReferenceIdValueAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(55555L);
 
-        // Assert that postfix "XYZ" is passed to GenerateReferenceNumber
-        mockReferenceHelper.Setup(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int?>()))
-            .Returns("NEW/2024/55555/XYZ");
-        mockReferenceHelper.Setup(x => x.UpdateReferenceNumber(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns("ABC/2024/55555/XYZ");
         mockUnitOfWork.Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
         _repo.Setup(x => x.AddStatusHistory(userId, applicationId, FellingLicenceStatus.ApprovedInError, It.IsAny<CancellationToken>()))
@@ -387,14 +378,12 @@ public class ApprovedInErrorServiceTests
             _publicRegister.Object,
             _updateFellingLicenceApplicationService.Object,
             mockReferenceRepo.Object,
-            mockReferenceHelper.Object);
+            referenceHelper);
 
         var result = await sutWithRegeneration.SetToApprovedInErrorAsync(applicationId, model, userId, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        mockReferenceHelper.Verify(x => x.GenerateReferenceNumber(application, 55555L, "XYZ", null), Times.Once);
-        mockReferenceHelper.Verify(x => x.UpdateReferenceNumber("NEW/2024/55555/XYZ", "ABC"), Times.Once);
-        _repo.Verify(x => x.Update(It.Is<FellingLicenceApplication>(a => a.ApplicationReference == "ABC/2024/55555/XYZ")), Times.Once);
+        _repo.Verify(x => x.Update(It.Is<FellingLicenceApplication>(a => a.ApplicationReference == "ABC/55555/2025/XYZ")), Times.Once);
         mockUnitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -402,10 +391,11 @@ public class ApprovedInErrorServiceTests
     public async Task SaveApprovedInError_Regeneration_SetsNoPostfix_WhenLastSlashIsEnd(Guid applicationId, ApprovedInErrorModel model, FellingLicenceApplication application, Guid userId)
     {
         // Application reference ending with slash should not produce postfix
-        var currentRefNoPostfix = "ABC/2024/";
+        var currentRefNoPostfix = "ABC/12345/2024/";
         model.ApplicationId = applicationId;
         model.ReasonOther = false;
         application.ApplicationReference = currentRefNoPostfix;
+        application.CreatedTimestamp = DateTime.Parse("01/01/2024");
         application.StatusHistories = new List<StatusHistory>
         {
             new StatusHistory { Status = FellingLicenceStatus.Approved, Created = DateTime.UtcNow }
@@ -413,7 +403,7 @@ public class ApprovedInErrorServiceTests
         application.Documents = new List<Document>();
 
         var mockReferenceRepo = new Mock<IFellingLicenceApplicationReferenceRepository>();
-        var mockReferenceHelper = new Mock<IApplicationReferenceHelper>();
+        var referenceHelper = new ApplicationReferenceHelper();
         var mockUnitOfWork = new Mock<IUnitOfWork>();
 
         _repo.Setup(x => x.GetApprovedInErrorAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -427,10 +417,6 @@ public class ApprovedInErrorServiceTests
         mockReferenceRepo.Setup(x => x.GetNextApplicationReferenceIdValueAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(77777L);
 
-        mockReferenceHelper.Setup(x => x.GenerateReferenceNumber(It.IsAny<FellingLicenceApplication>(), It.IsAny<long>(), It.IsAny<string>(), It.IsAny<int?>()))
-            .Returns("NEW/2024/77777");
-        mockReferenceHelper.Setup(x => x.UpdateReferenceNumber(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns("ABC/2024/77777");
         mockUnitOfWork.Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
         _repo.Setup(x => x.AddStatusHistory(userId, applicationId, FellingLicenceStatus.ApprovedInError, It.IsAny<CancellationToken>()))
@@ -443,60 +429,13 @@ public class ApprovedInErrorServiceTests
             _publicRegister.Object,
             _updateFellingLicenceApplicationService.Object,
             mockReferenceRepo.Object,
-            mockReferenceHelper.Object);
+            referenceHelper);
 
         var result = await sutWithRegeneration.SetToApprovedInErrorAsync(applicationId, model, userId, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         // Postfix must be null since last slash is at the end
-        mockReferenceHelper.Verify(x => x.GenerateReferenceNumber(application, 77777L, null, null), Times.Once);
-        mockReferenceHelper.Verify(x => x.UpdateReferenceNumber("NEW/2024/77777", "ABC"), Times.Once);
-        _repo.Verify(x => x.Update(It.Is<FellingLicenceApplication>(a => a.ApplicationReference == "ABC/2024/77777")), Times.Once);
-        mockUnitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task SaveApprovedInError_SkipsReferenceRegeneration_WhenDependenciesNotConfigured(Guid applicationId, ApprovedInErrorModel model, Guid userId)
-    {
-        var sut = CreateSut(); // Creates with null reference dependencies
-        model.ApplicationId = applicationId;
-        model.ReasonOther = false;
-        model.PreviousReference = "ABC/2024/12345";
-
-        // Mock the application with Approved status
-        var application = new FellingLicenceApplication
-        {
-            Id = applicationId,
-            StatusHistories = new List<StatusHistory>
-            {
-                new StatusHistory { Status = FellingLicenceStatus.Approved, Created = DateTime.UtcNow }
-            },
-            Documents = new List<Document>()
-        };
-
-        var mockUnitOfWork = new Mock<IUnitOfWork>();
-        _repo.SetupGet(x => x.UnitOfWork).Returns(mockUnitOfWork.Object);
-        mockUnitOfWork.Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
-        .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-        
-        _repo.Setup(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()))
-        .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
-        
-        _repo.Setup(x => x.GetApprovedInErrorAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync(Maybe<ApprovedInError>.None);
-        
-        _repo.Setup(x => x.AddOrUpdateApprovedInErrorAsync(It.IsAny<ApprovedInError>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-
-        _repo.Setup(x => x.AddStatusHistory(userId, applicationId, FellingLicenceStatus.ApprovedInError, It.IsAny<CancellationToken>()))
-        .Returns(Task.CompletedTask);
-
-        var result = await sut.SetToApprovedInErrorAsync(applicationId, model, userId, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        // Since dependencies are not configured, GetAsync is called once for validation but not again for regeneration
-        _repo.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        _repo.Verify(x => x.AddStatusHistory(userId, applicationId, FellingLicenceStatus.ApprovedInError, It.IsAny<CancellationToken>()), Times.Once);
+        _repo.Verify(x => x.Update(It.Is<FellingLicenceApplication>(a => a.ApplicationReference == "ABC/77777/2024")), Times.Once);
         mockUnitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 

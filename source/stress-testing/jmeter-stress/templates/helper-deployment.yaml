@@ -1,0 +1,63 @@
+{{- if .Values.helperPod.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.helperPod.name }}
+  namespace: {{ .Values.job.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.helperPod.name }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.helperPod.name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.helperPod.name }}
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: shell
+          image: {{ .Values.helperPod.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "sleep {{ .Values.helperPod.ttlSeconds }}"]
+          volumeMounts:
+            - name: results
+              mountPath: /results
+
+      {{- /* Keep helper on the same node pool as JMeter (optional but usually desired) */}}
+      {{- if .Values.nodeSelection }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: environment
+                    operator: In
+                    values:
+                      - {{ .Values.nodeSelection.environment | quote }}
+                  {{- if .Values.nodeSelection.appWorkload }}
+                  - key: workload
+                    operator: In
+                    values:
+                      - {{ .Values.nodeSelection.appWorkload | quote }}
+                  {{- end }}
+      {{- end }}
+
+      {{- if .Values.nodeSelection.tolerations }}
+      tolerations:
+        {{- toYaml .Values.nodeSelection.tolerations | nindent 8 }}
+      {{- end }}
+
+      volumes:
+        - name: results
+          {{- if .Values.results.pvc.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.results.pvc.name }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

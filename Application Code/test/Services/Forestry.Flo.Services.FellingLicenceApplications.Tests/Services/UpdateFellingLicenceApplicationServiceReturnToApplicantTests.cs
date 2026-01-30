@@ -290,6 +290,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
             _internalFlaRepository.Verify(x => x.RemoveAssignedRolesFromApplicationAsync(
                 request.ApplicationId, new[] { AssignedUserRole.AdminOfficer, AssignedUserRole.WoodlandOfficer }, now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
         }
+        _internalFlaRepository.Verify(x => x.GetCurrentFellingAndRestockingAmendmentReviewAsync(request.ApplicationId, It.IsAny<CancellationToken>(), false), Times.Once);
         _internalFlaRepository.VerifyNoOtherCalls();
 
         _mockCaseNotes
@@ -367,6 +368,61 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _mockClock.VerifyNoOtherCalls();
     }
 
+    [Theory, AutoMoqData]
+    public async Task AssigningToApplicantClearsDownExistingAmendmentReview(FellingAndRestockingAmendmentReview review)
+    {
+        var sut = CreateSut();
+
+        var request = FixtureInstance.Build<ReturnToApplicantRequest>().With(x => x.PerformingUserIsAccountAdmin, true).Create();
+
+        var statuses = new List<StatusHistory>
+        {
+            new()
+            {
+                Created = DateTime.Today,
+                Status = FellingLicenceStatus.WoodlandOfficerReview,
+                FellingLicenceApplicationId = request.ApplicationId
+            }
+        };
+
+        var now = Instant.FromDateTimeUtc(DateTime.UtcNow);
+
+        _internalFlaRepository
+            .Setup(x => x.CheckUserCanAccessApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
+        _internalFlaRepository
+            .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(statuses);
+        _mockCaseNotes
+            .Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+        _internalFlaRepository
+            .Setup(x => x.UpdateApplicationStepStatusAsync(It.IsAny<Guid>(), It.IsAny<ApplicationStepStatusRecord>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+        _internalFlaRepository
+            .Setup(x => x.GetAssigneeHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<AssigneeHistory>(0));
+        _mockClock
+            .Setup(x => x.GetCurrentInstant())
+            .Returns(now);
+        _internalFlaRepository
+            .Setup(x => x.GetCurrentFellingAndRestockingAmendmentReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(Maybe.From(review));
+        _internalFlaRepository
+            .Setup(x => x.SetAmendmentReviewCompletedAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+        var result = await sut.ReturnToApplicantAsync(request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _internalFlaRepository.Verify(x => x.GetCurrentFellingAndRestockingAmendmentReviewAsync(request.ApplicationId, It.IsAny<CancellationToken>(), false), Times.Once);
+        _internalFlaRepository.Verify(x => x.SetAmendmentReviewCompletedAsync(review.Id, true, It.IsAny<CancellationToken>()), Times.Once);
+
+    }
+
     [Fact]
     public async Task RequestWithNoCaseNoteContentDoesNotCreateCaseNote()
     {
@@ -428,6 +484,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository.Verify(x => x.GetAssigneeHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()), Times.Once);
         _internalFlaRepository.Verify(x => x.RemoveAssignedRolesFromApplicationAsync(
             request.ApplicationId, new[] { AssignedUserRole.AdminOfficer, AssignedUserRole.WoodlandOfficer }, now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        _internalFlaRepository.Verify(x => x.GetCurrentFellingAndRestockingAmendmentReviewAsync(request.ApplicationId, It.IsAny<CancellationToken>(), false), Times.Once);
         _internalFlaRepository.VerifyNoOtherCalls();
 
         _mockCaseNotes.VerifyNoOtherCalls();
@@ -540,6 +597,10 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         }
         _internalFlaRepository.Verify(x => x.GetAssigneeHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()), Times.Once);
 
+        if (expectedResult)
+        {
+            _internalFlaRepository.Verify(x => x.GetCurrentFellingAndRestockingAmendmentReviewAsync(request.ApplicationId, It.IsAny<CancellationToken>(), false), Times.Once);
+        }
 
         _internalFlaRepository.VerifyNoOtherCalls();
 
@@ -621,6 +682,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository.Verify(x => x.GetAssigneeHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()), Times.Once);
         _internalFlaRepository.Verify(x => x.RemoveAssignedRolesFromApplicationAsync(
             request.ApplicationId, new[] { AssignedUserRole.AdminOfficer, AssignedUserRole.WoodlandOfficer }, now.ToDateTimeUtc(), It.IsAny<CancellationToken>()), Times.Once);
+        _internalFlaRepository.Verify(x => x.GetCurrentFellingAndRestockingAmendmentReviewAsync(request.ApplicationId, It.IsAny<CancellationToken>(), false), Times.Once);
         _internalFlaRepository.VerifyNoOtherCalls();
 
         _mockCaseNotes.VerifyNoOtherCalls();

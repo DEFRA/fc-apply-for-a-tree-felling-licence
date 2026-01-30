@@ -42,8 +42,12 @@ spec:
           configMap:
             name: {{ .Values.testplan.configMapName }}
         - name: results
+          {{- if .Values.results.pvc.enabled }}
           persistentVolumeClaim:
             claimName: {{ .Values.results.pvc.name }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
 
       affinity:
         nodeAffinity:

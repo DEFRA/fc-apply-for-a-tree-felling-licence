@@ -9,7 +9,7 @@ testplan:
 
 results:
   pvc:
-    enabled: true
+    enabled: false
     name: jmeter-results-pvc
     storageClassName: default
     size: 1Gi
@@ -38,9 +38,9 @@ helperPod:
 
 nodeSelection:
   environment: performance
-  appWorkload: flov2-app
+  appWorkload: loadgen
   tolerations:
-    - key: perf-app
+    - key: perf-load
       operator: Equal
       value: "true"
       effect: NoSchedule

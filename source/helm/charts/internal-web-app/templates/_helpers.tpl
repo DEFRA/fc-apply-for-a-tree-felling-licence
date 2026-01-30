@@ -60,3 +60,30 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{- define "flo.cronjobScheduling" -}}
+{{- if .Values.global.environment }}
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: environment
+              operator: In
+              values:
+                - {{ .Values.global.environment }}
+            {{- if .Values.global.appWorkload }}
+            - key: workload
+              operator: In
+              values:
+                - {{ .Values.global.appWorkload }}
+            {{- end }}
+{{- end }}
+
+{{- if .Values.global.tolerations }}
+tolerations:
+{{- toYaml .Values.global.tolerations | nindent 2 }}
+{{- end }}
+{{- end }}
+
+

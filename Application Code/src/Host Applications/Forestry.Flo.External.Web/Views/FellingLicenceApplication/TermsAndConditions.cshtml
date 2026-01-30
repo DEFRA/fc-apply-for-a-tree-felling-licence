@@ -1,4 +1,5 @@
-﻿@using Forestry.Flo.External.Web.Infrastructure
+﻿@using Forestry.Flo.External.Web.Controllers
+@using Forestry.Flo.External.Web.Infrastructure
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FlaTermsAndConditionsViewModel
 
 @{
@@ -187,10 +188,14 @@
             </div>
         </govuk-form-group>
 
-        <div class="govuk-button-group">
-            <button class="govuk-button" type="submit" data-module="govuk-button" condition-disabled="@Model.AllowEditing == false">
+        <div class="govuk-button-group" condition="@Model.AllowEditing">
+            <button class="govuk-button" type="submit" data-module="govuk-button">
                 Accept and continue
             </button>
+        </div>
+        
+        <div class="govuk-form-group" condition="@Model.ReturnToApplicationSummary">
+            <a class="govuk-link" asp-action="@nameof(FellingLicenceApplicationController.ApplicationSummary)" asp-route-applicationId="@Model.ApplicationId">Return to application summary</a>
         </div>
     </div>
 </form>

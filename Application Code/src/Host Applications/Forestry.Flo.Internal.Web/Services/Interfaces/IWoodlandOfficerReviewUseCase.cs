@@ -81,6 +81,7 @@ public interface IWoodlandOfficerReviewUseCase
     /// </summary>
     /// <param name="applicationId">The unique identifier of the application.</param>
     /// <param name="user">The internal user performing the update.</param>
+    /// <param name="isScreeningCompleted">A flag to indicate if screening has been completed.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>
     /// A <see cref="Task{Result}"/> indicating the success or failure of the EIA screening completion.
@@ -88,5 +89,6 @@ public interface IWoodlandOfficerReviewUseCase
     Task<Result> CompleteEiaScreeningAsync(
         Guid applicationId,
         InternalUser user,
+        bool isScreeningCompleted,
         CancellationToken cancellationToken);
 }

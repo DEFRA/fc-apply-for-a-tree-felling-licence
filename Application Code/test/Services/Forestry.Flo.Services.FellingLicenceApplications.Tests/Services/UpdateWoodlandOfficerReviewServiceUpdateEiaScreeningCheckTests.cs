@@ -37,8 +37,8 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
         _fellingLicenceApplicationRepository = new InternalUserContextFlaRepository(_context);
     }
 
-    [Fact]
-    public async Task WhenWoodlandOfficerSuccessfullyMarksEiaScreeningAsComplete()
+    [Theory, AutoMoqData]
+    public async Task WhenWoodlandOfficerSuccessfullyMarksEiaScreeningAsComplete(bool isScreeningComplete)
     {
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
@@ -51,6 +51,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
         var result = await sut.CompleteEiaScreeningCheckAsync(
             fla.Id, 
             woodlandOfficerId, 
+            isScreeningComplete,
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -60,7 +61,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
             .First(x => x.Id == fla.Id);
 
         Assert.NotNull(updatedFla.WoodlandOfficerReview);
-        Assert.True(updatedFla.WoodlandOfficerReview.EiaScreeningComplete);
+        Assert.Equal(isScreeningComplete, updatedFla.WoodlandOfficerReview.EiaScreeningComplete);
         Assert.InRange(
             updatedFla.WoodlandOfficerReview.LastUpdatedDate,
             DateTime.UtcNow.AddMinutes(-1), 
@@ -68,8 +69,8 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
         Assert.Equal(woodlandOfficerId, updatedFla.WoodlandOfficerReview.LastUpdatedById);
     }
 
-    [Fact]
-    public async Task CompleteEiaScreeningCheckAsync_ReturnsFailure_WhenApplicationNotInWoodlandOfficerReviewState()
+    [Theory, AutoMoqData]
+    public async Task CompleteEiaScreeningCheckAsync_ReturnsFailure_WhenApplicationNotInWoodlandOfficerReviewState(bool isScreeningComplete)
     {
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
@@ -86,7 +87,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
         _context.FellingLicenceApplications.Add(fla);
         await _context.SaveChangesAsync();
 
-        var result = await sut.CompleteEiaScreeningCheckAsync(fla.Id, woodlandOfficerId, CancellationToken.None);
+        var result = await sut.CompleteEiaScreeningCheckAsync(fla.Id, woodlandOfficerId, isScreeningComplete, CancellationToken.None);
 
         Assert.False(result.IsSuccess);
         Assert.Contains("unable to be updated", result.Error, StringComparison.OrdinalIgnoreCase);
@@ -99,8 +100,8 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
         Assert.False(updatedFla.WoodlandOfficerReview.EiaScreeningComplete);
     }
 
-    [Fact]
-    public async Task CompleteEiaScreeningCheckAsync_ReturnsFailure_WhenUserIsNotAssignedWoodlandOfficer()
+    [Theory, AutoMoqData]
+    public async Task CompleteEiaScreeningCheckAsync_ReturnsFailure_WhenUserIsNotAssignedWoodlandOfficer(bool isScreeningComplete)
     {
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
@@ -112,7 +113,7 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
         _context.FellingLicenceApplications.Add(fla);
         await _context.SaveChangesAsync();
 
-        var result = await sut.CompleteEiaScreeningCheckAsync(fla.Id, woodlandOfficerId, CancellationToken.None);
+        var result = await sut.CompleteEiaScreeningCheckAsync(fla.Id, woodlandOfficerId, isScreeningComplete, CancellationToken.None);
 
         Assert.False(result.IsSuccess);
         Assert.Contains("unable to be updated", result.Error, StringComparison.OrdinalIgnoreCase);

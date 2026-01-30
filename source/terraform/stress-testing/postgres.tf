@@ -9,7 +9,7 @@ resource "azurerm_postgresql_flexible_server" "stress_testing" {
   name                = "stress-testing-flo"
   resource_group_name = data.terraform_remote_state.platform.outputs.resource_group_name
   location            = module.shared.azure_location
-  version             = "13"
+  version             = "17"
 
   delegated_subnet_id = data.terraform_remote_state.platform.outputs.subnet_database_id
   private_dns_zone_id = data.azurerm_private_dns_zone.database.id

@@ -15,6 +15,7 @@ public class CompleteEiaScreeningTests : WoodlandOfficerReviewUseCaseTestsBase<W
     public async Task CompleteEiaScreeningAsync_WhenServiceReturnsError(
         Guid applicationId,
         Guid userId,
+        bool isScreeningComplete,
         string error)
     {
         // Arrange
@@ -22,18 +23,18 @@ public class CompleteEiaScreeningTests : WoodlandOfficerReviewUseCaseTestsBase<W
         var user = new InternalUser(UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: userId));
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteEiaScreeningCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteEiaScreeningCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure(error));
 
         // Act
-        var result = await sut.CompleteEiaScreeningAsync(applicationId, user, CancellationToken.None);
+        var result = await sut.CompleteEiaScreeningAsync(applicationId, user, isScreeningComplete, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal(error, result.Error);
 
         UpdateWoodlandOfficerReviewService.Verify(x =>
-            x.CompleteEiaScreeningCheckAsync(applicationId, userId, It.IsAny<CancellationToken>()), Times.Once);
+            x.CompleteEiaScreeningCheckAsync(applicationId, userId, isScreeningComplete, It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -45,6 +46,7 @@ public class CompleteEiaScreeningTests : WoodlandOfficerReviewUseCaseTestsBase<W
                 && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
                 JsonSerializer.Serialize(new
                 {
+                    ScreeningCompleted = isScreeningComplete,
                     Error = error,
                 }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -69,24 +71,25 @@ public class CompleteEiaScreeningTests : WoodlandOfficerReviewUseCaseTestsBase<W
     [Theory, AutoMoqData]
     public async Task CompleteEiaScreeningAsync_WhenServiceReturnsSuccess(
         Guid applicationId,
-        Guid userId)
+        Guid userId,
+        bool isScreeningComplete)
     {
         // Arrange
         var sut = CreateSut();
         var user = new InternalUser(UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: userId));
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.CompleteEiaScreeningCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CompleteEiaScreeningCheckAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         // Act
-        var result = await sut.CompleteEiaScreeningAsync(applicationId, user, CancellationToken.None);
+        var result = await sut.CompleteEiaScreeningAsync(applicationId, user, isScreeningComplete, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
 
         UpdateWoodlandOfficerReviewService.Verify(x =>
-            x.CompleteEiaScreeningCheckAsync(applicationId, userId, It.IsAny<CancellationToken>()), Times.Once);
+            x.CompleteEiaScreeningCheckAsync(applicationId, userId, isScreeningComplete, It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -94,7 +97,12 @@ public class CompleteEiaScreeningTests : WoodlandOfficerReviewUseCaseTestsBase<W
                 && a.ActorType == ActorType.InternalUser
                 && a.UserId == userId
                 && a.SourceEntityId == applicationId
-                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication),
+                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
+                JsonSerializer.Serialize(new
+                {
+                    ScreeningCompleted = isScreeningComplete
+                }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>

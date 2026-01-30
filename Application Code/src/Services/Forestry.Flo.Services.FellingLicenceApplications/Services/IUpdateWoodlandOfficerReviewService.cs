@@ -179,6 +179,7 @@ public interface IUpdateWoodlandOfficerReviewService
     /// </summary>
     /// <param name="applicationId">The ID of the application to be updated.</param>
     /// <param name="userId">The ID of the user performing the update.</param>
+    /// <param name="isScreeningCompleted">A flag indicating whether screening has been completed.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>
     /// A <see cref="Result"/> indicating the success or failure of the operation.
@@ -186,6 +187,7 @@ public interface IUpdateWoodlandOfficerReviewService
     Task<Result> CompleteEiaScreeningCheckAsync(
         Guid applicationId,
         Guid userId,
+        bool isScreeningCompleted,
         CancellationToken cancellationToken);
 
     /// <summary>

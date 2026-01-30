@@ -320,11 +320,13 @@ public class WoodlandOfficerReviewUseCase(
     public async Task<Result> CompleteEiaScreeningAsync(
         Guid applicationId,
         InternalUser user,
+        bool isScreeningCompleted,
         CancellationToken cancellationToken)
     {
         var result = await _updateWoodlandOfficerReviewService.CompleteEiaScreeningCheckAsync(
             applicationId,
             user.UserAccountId!.Value,
+            isScreeningCompleted,
             cancellationToken);
 
         if (result.IsFailure)
@@ -348,6 +350,7 @@ public class WoodlandOfficerReviewUseCase(
                     _requestContext,
                     new
                     {
+                        ScreeningCompleted = isScreeningCompleted,
                         Error = result.Error
                     }),
                 cancellationToken);
@@ -371,7 +374,11 @@ public class WoodlandOfficerReviewUseCase(
                 AuditEvents.WoodlandOfficerReviewEiaScreening,
                 applicationId,
                 user.UserAccountId!.Value,
-                _requestContext),
+                _requestContext,
+                new
+                {
+                    ScreeningCompleted = isScreeningCompleted,
+                }),
             cancellationToken);
 
         return result;

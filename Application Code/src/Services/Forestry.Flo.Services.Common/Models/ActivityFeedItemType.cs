@@ -92,9 +92,9 @@ public enum ActivityFeedItemType
     [Display(Name = "Application extended"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
     InformApplicantOfApplicationExtension,
 
-
-    [Display(Name = "Applicant amendment"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
+    [Display(Name = "Applicant responded to amendments"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
     AmendmentApplicantReason,
-    [Display(Name = "Woodland officer amendment"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
+
+    [Display(Name = "Amendments sent to applicant"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
     AmendmentOfficerReason,
 }

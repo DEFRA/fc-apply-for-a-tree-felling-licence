@@ -1,26 +1,21 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using CSharpFunctionalExtensions.ValueTasks;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
-using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
-using Forestry.Flo.Services.FellingLicenceApplications;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Notifications.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using UserAccountModel = Forestry.Flo.Services.InternalUsers.Models.UserAccountModel;
 
 namespace Forestry.Flo.Internal.Web.Tests.Controllers.FellingLicenceApplication;
@@ -33,6 +28,7 @@ public class WoodlandOfficerReviewControllerTests
     private readonly WoodlandOfficerReviewController _controller;
     private readonly Fixture _fixture = new();
     private readonly Guid _applicationId = Guid.NewGuid();
+    private readonly Guid _localUserId = Guid.NewGuid();
 
     public WoodlandOfficerReviewControllerTests()
     {
@@ -44,7 +40,7 @@ public class WoodlandOfficerReviewControllerTests
             _eiaUseCaseMock.Object,
             _woReviewUseCaseMock.Object
         );
-        _controller.PrepareControllerForTest(Guid.NewGuid());
+        _controller.PrepareControllerForTest(_localUserId);
     }
 
     [Fact]
@@ -1582,155 +1578,51 @@ public class WoodlandOfficerReviewControllerTests
     }
 
     [Fact]
-    public async Task EiaScreening_Post_ReturnsError_WhenValidationFails()
+    public async Task EiaScreening_Post_RedirectsToIndex_WhenCompleteAndSuccess()
     {
         var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var validator = new Mock<IValidator<EiaScreeningViewModel>>();
-        var screeningModel = _fixture.Create<EiaScreeningViewModel>();
-
-
-        var woReview = _fixture.Create<WoodlandOfficerReviewModel>();
-        _woReviewUseCaseMock.Setup(s => s.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(woReview);
-
-        var model = Result.Success(_fixture.Create<EnvironmentalImpactAssessmentModel>());
-        _eiaUseCaseMock.Setup(s => s.GetEnvironmentalImpactAssessmentAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(model);
-
-        var userAccounts = model.Value.EiaRequests.Select(x => x.RequestingUserId).ToList();
-
-        var userAccountModels = userAccounts.Select(x => _fixture.Build<UserAccountModel>().With(y => y.UserAccountId, x).Create());
-
-        _eiaUseCaseMock.Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(userAccountModels.ToList());
-        validator.Setup(x => x.Validate(screeningModel)).Returns(new FluentValidation.Results.ValidationResult(new[] { new FluentValidation.Results.ValidationFailure("Test", "Error") }));
-
-        var result = await _controller.EiaScreening(screeningModel, useCase.Object, validator.Object, CancellationToken.None);
-
-        var viewResult = Assert.IsType<ViewResult>(result);
-        Assert.IsType<EiaScreeningViewModel>(viewResult.Model);
-    }
-
-    [Fact]
-    public async Task EiaScreening_Post_RedirectsToError_WhenReloadFails()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var validator = new Mock<IValidator<EiaScreeningViewModel>>();
-        var screeningModel = _fixture.Create<EiaScreeningViewModel>();
-
-
-        var woReview = _fixture.Create<WoodlandOfficerReviewModel>();
-        _woReviewUseCaseMock.Setup(s => s.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(woReview);
-
-        var model = Result.Success(_fixture.Create<EnvironmentalImpactAssessmentModel>());
-        _eiaUseCaseMock.Setup(s => s.GetEnvironmentalImpactAssessmentAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<EnvironmentalImpactAssessmentModel>("fail"));
-
-        var userAccounts = model.Value.EiaRequests.Select(x => x.RequestingUserId).ToList();
-
-        var userAccountModels = userAccounts.Select(x => _fixture.Build<UserAccountModel>().With(y => y.UserAccountId, x).Create());
-
-        _eiaUseCaseMock.Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(userAccountModels.ToList());
-        validator.Setup(x => x.Validate(screeningModel)).Returns(new FluentValidation.Results.ValidationResult(new[] { new FluentValidation.Results.ValidationFailure("Test", "Error") }));
-
-        var result = await _controller.EiaScreening(screeningModel, useCase.Object, validator.Object, CancellationToken.None);
-
-        var redirectToActionResult = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Error", redirectToActionResult.ActionName);
-        Assert.Equal("Home", redirectToActionResult.ControllerName);
-    }
-
-
-    [Fact]
-    public async Task EiaScreening_Post_RedirectsToError_WhenWoReviewRetrievalFails()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var validator = new Mock<IValidator<EiaScreeningViewModel>>();
-        var screeningModel = _fixture.Create<EiaScreeningViewModel>();
-
-
-        _woReviewUseCaseMock.Setup(s => s.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<WoodlandOfficerReviewModel>("fail"));
-
-        var model = Result.Success(_fixture.Create<EnvironmentalImpactAssessmentModel>());
-        _eiaUseCaseMock.Setup(s => s.GetEnvironmentalImpactAssessmentAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(model);
-
-        var userAccounts = model.Value.EiaRequests.Select(x => x.RequestingUserId).ToList();
-
-        var userAccountModels = userAccounts.Select(x => _fixture.Build<UserAccountModel>().With(y => y.UserAccountId, x).Create());
-
-        _eiaUseCaseMock.Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(userAccountModels.ToList());
-        validator.Setup(x => x.Validate(screeningModel)).Returns(new FluentValidation.Results.ValidationResult(new[] { new FluentValidation.Results.ValidationFailure("Test", "Error") }));
-
-        var result = await _controller.EiaScreening(screeningModel, useCase.Object, validator.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Error", redirect.ActionName);
-        Assert.Equal("Home", redirect.ControllerName);
-    }
-
-
-    [Fact]
-    public async Task EiaScreening_Post_RedirectsToError_WhenAuthorRequestFails()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var validator = new Mock<IValidator<EiaScreeningViewModel>>();
-        var screeningModel = _fixture.Create<EiaScreeningViewModel>();
-
-        var woReview = _fixture.Create<WoodlandOfficerReviewModel>();
-        _woReviewUseCaseMock.Setup(s => s.WoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(woReview);
-
-        var model = Result.Success(_fixture.Create<EnvironmentalImpactAssessmentModel>());
-        _eiaUseCaseMock.Setup(s => s.GetEnvironmentalImpactAssessmentAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(model);
-
-        var userAccounts = model.Value.EiaRequests.Select(x => x.RequestingUserId).ToList();
-
-        var userAccountModels = userAccounts.Select(x => _fixture.Build<UserAccountModel>().With(y => y.UserAccountId, x).Create());
-
-        _eiaUseCaseMock.Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<List<UserAccountModel>>("fail"));
-        validator.Setup(x => x.Validate(screeningModel)).Returns(new FluentValidation.Results.ValidationResult(new[] { new FluentValidation.Results.ValidationFailure("Test", "Error") }));
-
-        var result = await _controller.EiaScreening(screeningModel, useCase.Object, validator.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Error", redirect.ActionName);
-        Assert.Equal("Home", redirect.ControllerName);
-    }
-
-    [Fact]
-    public async Task EiaScreening_Post_RedirectsToIndex_WhenSuccess()
-    {
-        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var validator = new Mock<IValidator<EiaScreeningViewModel>>();
         var model = _fixture.Create<EiaScreeningViewModel>();
-        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult());
-        useCase.Setup(x => x.CompleteEiaScreeningAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        model.ScreeningCompleted = true;
+        useCase.Setup(x => x.CompleteEiaScreeningAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(true));
 
-        var result = await _controller.EiaScreening(model, useCase.Object, validator.Object, CancellationToken.None);
+        var result = await _controller.EiaScreening(model, useCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
+
+        useCase.Verify(x => x.CompleteEiaScreeningAsync(model.ApplicationId, It.Is<InternalUser>(u => u.UserAccountId == _localUserId), true, It.IsAny<CancellationToken>()), Times.Once);
+        useCase.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task EiaScreening_Post_RedirectsToIndex_WhenIncompleteAndSuccess()
+    {
+        var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
+        var model = _fixture.Create<EiaScreeningViewModel>();
+        model.ScreeningCompleted = false;
+        useCase.Setup(x => x.CompleteEiaScreeningAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
+
+        var result = await _controller.EiaScreening(model, useCase.Object, CancellationToken.None);
+
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Index", redirect.ActionName);
+
+        useCase.Verify(x => x.CompleteEiaScreeningAsync(model.ApplicationId, It.Is<InternalUser>(u => u.UserAccountId == _localUserId), false, It.IsAny<CancellationToken>()), Times.Once);
+        useCase.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task EiaScreening_Post_RedirectsToEiaScreening_WhenCompletionFails()
     {
         var useCase = new Mock<IWoodlandOfficerReviewUseCase>();
-        var validator = new Mock<IValidator<EiaScreeningViewModel>>();
         var model = _fixture.Create<EiaScreeningViewModel>();
-        validator.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult());
-        useCase.Setup(x => x.CompleteEiaScreeningAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        model.ScreeningCompleted = true;
+        useCase.Setup(x => x.CompleteEiaScreeningAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure("fail"));
 
-        var result = await _controller.EiaScreening(model, useCase.Object, validator.Object, CancellationToken.None);
+        var result = await _controller.EiaScreening(model, useCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
 
