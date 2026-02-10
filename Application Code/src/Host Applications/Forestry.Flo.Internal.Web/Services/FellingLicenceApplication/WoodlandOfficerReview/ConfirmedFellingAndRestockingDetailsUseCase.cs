@@ -171,8 +171,7 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 AmendmentReason = currentReview?.AmendmentsReason,
                 ApplicantDisagreementReason = currentReview?.ApplicantDisagreementReason,
                 CanCurrentUserAmend = canCurrentUserAmend,
-                IsAmended = amendmentsMade,
-                FurtherAmendments = false
+                IsAmended = amendmentsMade
             },
             ActivityFeedItems = activityFeedItems.Value.ToList(),
             ApplicationId = applicationId,

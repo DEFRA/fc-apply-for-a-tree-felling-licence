@@ -1,0 +1,185 @@
+## Create default rules for monitoring the cluster
+defaultRules:
+  rules:
+    etcd: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+    inhibit_rules:
+      - source_matchers: ["severity = critical"]
+        target_matchers: ["severity =~ warning|info"]
+        equal: ["namespace", "alertname"]
+      - source_matchers: ["severity = warning"]
+        target_matchers: ["severity = info"]
+        equal: ["namespace", "alertname"]
+      - source_matchers: ["alertname = InfoInhibitor"]
+        target_matchers: ["severity = info"]
+        equal: ["namespace"]
+      - target_matchers: ["alertname = InfoInhibitor"]
+      - target_matchers: ["alertname = PrometheusDuplicateTimestamps"]
+
+    route:
+      group_by: ["cluster", "namespace", "alertname", "service"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+
+      # Default: go to "dev/test" receiver (safe).
+      receiver: opsgenie-dev
+
+      routes:
+        # Deadman’s switch / watchdog -> heartbeat ping
+        - receiver: heartbeat
+          matchers:
+            - alertname = Watchdog
+          repeat_interval: 60s
+
+        # PRODUCTION namespace(s) -> OOH paging
+        - receiver: opsgenie-prod
+          matchers:
+            - namespace = live-flo
+
+        # PRE-PROD / MIGRATE namespace(s)
+        - receiver: opsgenie-preprod
+          matchers:
+            - namespace = migrate-flo
+
+        - receiver: opsgenie-infra
+          matchers:
+            - namespace = prometheus
+
+    receivers:
+      - name: opsgenie-prod
+        opsgenie_configs:
+          - api_key_file: /etc/alertmanager/secrets/alertmanager-opsgenie-keys/PROD_API_KEY
+            responders:
+              - name: flo-v2-test-oncall
+                type: team
+            priority: P3
+            send_resolved: true
+
+      - name: opsgenie-preprod
+        opsgenie_configs:
+          - api_key_file: /etc/alertmanager/secrets/alertmanager-opsgenie-keys/PREPROD_API_KEY
+            responders:
+              - name: flo-v2-test-oncall
+                type: team
+            priority: P3
+            send_resolved: true
+
+      - name: opsgenie-dev
+        opsgenie_configs:
+          - api_key_file: /etc/alertmanager/secrets/alertmanager-opsgenie-keys/DEV_API_KEY
+            responders:
+              - name: flo-v2-test-oncall
+                type: team
+            priority: P3
+            send_resolved: true
+
+      - name: opsgenie-infra
+        opsgenie_configs:
+          - api_key_file: /etc/alertmanager/secrets/alertmanager-opsgenie-keys/INFRA_API_KEY
+            responders:
+              - name: flo-v2-test-oncall
+                type: team
+            send_resolved: true
+
+      - name: heartbeat
+        webhook_configs:
+          - send_resolved: false
+            url: https://api.atlassian.com/jsm/ops/api/35efdd32-d355-48b9-b149-ac7b3166381d/v1/teams/72106663-f708-4785-82bc-895ae3064b4f/heartbeats/ping?name=flov2-aks
+            http_config:
+              basic_auth:
+                username: "aliddle@harriscomputer.com"
+                password_file: /etc/alertmanager/secrets/alertmanager-heartbeat-auth/API_TOKEN
+
+  alertmanagerSpec:
+    # Mount secrets so api_key_file/bearer_token_file paths work
+    secrets:
+      - alertmanager-opsgenie-keys
+      - alertmanager-heartbeat-auth
+
+    # Optional: keep your existing storage settings if you need persistence
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: managed
+          resources:
+            requests:
+              storage: 5Gi
+
+# grafana:
+#   enabled: false
+
+grafana:
+  enabled: true
+
+  # Optional but common: persist dashboards, plugins, etc.
+  persistence:
+    enabled: true
+    storageClassName: managed
+    size: 5Gi
+
+  # Optional: sensible defaults
+  defaultDashboardsEnabled: true
+
+  # Optional: if you want a predictable admin secret (otherwise chart generates one)
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+
+# AKS control-plane components: often fine to disable
+kubeControllerManager:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: true
+  service:
+    enabled: true
+    port: 10249
+    targetPort: 10249
+    selector:
+      component: kube-proxy
+
+kube-state-metrics:
+  extraArgs:
+    - --metric-labels-allowlist=nodes=[*],pods=[*],persistentvolumeclaims=[*],deployments=[*],statefulsets=[*],configmaps=[*],secrets=[*],services=[*],endpoints=[*],replicasets=[*]
+
+prometheus:
+  prometheusSpec:
+    # These labels get attached to ALL series and are very useful for multi-cluster/env routing
+    externalLabels:
+      service: flo-v2
+      region: uksouth
+      cloud: Azure
+      cluster: fs_flov2
+
+    retention: 7d
+
+    # Prometheus HA: 2 replicas is fine if you really need it
+    replicas: 2
+
+    # These reduce surprises when you add ServiceMonitors/PodMonitors outside Helm values
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: managed
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi

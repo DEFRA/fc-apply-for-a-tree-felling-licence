@@ -15,7 +15,7 @@ locals {
 
   # Blob Storage string
   stress_blob_accountname = "testflo"
-  stress_blob_accountkey  = module.shared.test_blob_account_key
+  stress_blob_accountkey  = module.kube_workloads.test_blob_account_key
   # Connection string for Azure Blob Storage
   stress_blob_connection_string = format(
     "DefaultEndpointsProtocol=https;AccountName=%s;AccountKey=%s;EndpointSuffix=core.windows.net",
@@ -23,7 +23,7 @@ locals {
     local.stress_blob_accountkey
   )
 
-  stress_github_token = module.shared.github_token
+  stress_github_token = module.kube_workloads.github_token
   stress_github_connection_string = format(
     "https://Harris-HealthAlliance:%s@github.com/Harris-HealthAlliance/flo-v2.git",
     local.stress_github_token
@@ -47,41 +47,41 @@ resource "kubernetes_secret" "stress-flo-all-secrets" {
   data = {
     "db.connectionstring" = local.stress_db_connection_string
 
-    "azuread.tennant_id"     = module.shared.test_azuread_tenant_id
-    "azureb2c.client_id"     = module.shared.test_azuread_client_id
-    "azureb2c.client_secret" = module.shared.test_azuread_client_secret
+    "azuread.tennant_id"     = module.kube_workloads.test_azuread_tenant_id
+    "azureb2c.client_id"     = module.kube_workloads.test_azuread_client_id
+    "azureb2c.client_secret" = module.kube_workloads.test_azuread_client_secret
 
     "blob.connectionString" = local.stress_blob_connection_string
 
-    "landInformationSearch.clientID"     = module.shared.landInformationSearch_clientID
-    "landInformationSearch.clientSecret" = module.shared.landInformationSearch_clientSecret
+    "landInformationSearch.clientID"     = module.kube_workloads.landInformationSearch_clientID
+    "landInformationSearch.clientSecret" = module.kube_workloads.landInformationSearch_clientSecret
 
-    "cronJobs.apiKey"         = module.shared.test_cronjobs_api_key
-    "teamcity.artifact_token" = module.shared.teamcity_artifact_token
+    "cronJobs.apiKey"         = module.kube_workloads.test_cronjobs_api_key
+    "teamcity.artifact_token" = module.kube_workloads.teamcity_artifact_token
 
-    "smtp.username" = module.shared.smtp_username
-    "smtp.password" = module.shared.smtp_password
+    "smtp.username" = module.kube_workloads.smtp_username
+    "smtp.password" = module.kube_workloads.smtp_password
 
-    "govuk.notify_apikey" = module.shared.test_govuk_notify_apikey
+    "govuk.notify_apikey" = module.kube_workloads.test_govuk_notify_apikey
 
-    "esri.APIKey"                                       = module.shared.esri_APIKey
-    "esri.Forester.GenerateTokenService.Username"       = module.shared.esri_Forester_GenerateTokenService_Username
-    "esri.Forester.GenerateTokenService.Password"       = module.shared.esri_Forester_GenerateTokenService_Password
-    "esri.Forestry.GenerateTokenService.ClientID"       = module.shared.esri_Forestry_GenerateTokenService_ClientID
-    "esri.Forestry.GenerateTokenService.ClientSecret"   = module.shared.esri_Forestry_GenerateTokenService_ClientSecret
-    "esri.PublicRegister.GenerateTokenService.Username" = module.shared.esri_PublicRegister_GenerateTokenService_Username
-    "esri.PublicRegister.GenerateTokenService.Password" = module.shared.esri_PublicRegister_GenerateTokenService_Password
+    "esri.APIKey"                                       = module.kube_workloads.esri_APIKey
+    "esri.Forester.GenerateTokenService.Username"       = module.kube_workloads.esri_Forester_GenerateTokenService_Username
+    "esri.Forester.GenerateTokenService.Password"       = module.kube_workloads.esri_Forester_GenerateTokenService_Password
+    "esri.Forestry.GenerateTokenService.ClientID"       = module.kube_workloads.esri_Forestry_GenerateTokenService_ClientID
+    "esri.Forestry.GenerateTokenService.ClientSecret"   = module.kube_workloads.esri_Forestry_GenerateTokenService_ClientSecret
+    "esri.PublicRegister.GenerateTokenService.Username" = module.kube_workloads.esri_PublicRegister_GenerateTokenService_Username
+    "esri.PublicRegister.GenerateTokenService.Password" = module.kube_workloads.esri_PublicRegister_GenerateTokenService_Password
 
     # PDF Generator (GitHub Token Embedded in Origin URL)
     "github.token" = local.stress_github_connection_string
 
-    "smtp.password" = module.shared.smtp_password
-    "smtp.username" = module.shared.smtp_username
+    "smtp.password" = module.kube_workloads.smtp_password
+    "smtp.username" = module.kube_workloads.smtp_username
 
     # RabbitMQ
-    "rabbitmq.username"      = module.shared.test_rabbitmq_username
-    "rabbitmq.password"      = module.shared.test_rabbitmq_password
-    "rabbitmq.erlang_cookie" = module.shared.test_rabbitmq_erlang_cookie
+    "rabbitmq.username"      = module.kube_workloads.test_rabbitmq_username
+    "rabbitmq.password"      = module.kube_workloads.test_rabbitmq_password
+    "rabbitmq.erlang_cookie" = module.kube_workloads.test_rabbitmq_erlang_cookie
   }
 
   type = "Opaque"

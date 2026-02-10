@@ -428,6 +428,10 @@ spec:
             - name: LandInformationSearch__DeepLinkUrlAndPath
               value: {{ .Values.config.landInformationSearch.deepLinkUrlAndPath }}
             {{- end }}
+            {{- if .Values.config.landInformationSearch.targetEnvironment }}
+            - name: LandInformationSearch__TargetEnvironment
+              value: {{ .Values.config.landInformationSearch.targetEnvironment }}
+            {{- end }}
             {{- if .Values.config.landInformationSearch.lisConfig }}
             - name: LandInformationSearch__LisConfig
               value: {{ .Values.config.landInformationSearch.lisConfig }}

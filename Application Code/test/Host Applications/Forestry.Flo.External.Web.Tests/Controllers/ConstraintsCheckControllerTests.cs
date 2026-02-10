@@ -80,7 +80,7 @@ public class ConstraintsCheckControllerTests : IClassFixture<ExternalWebApplicat
             It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success<PropertyProfile, UserDbErrorReason>(propertyProfile));
 
 
-        var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_lisOptions.Value.LisConfig}&caseId={application.Id}");
+        var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_lisOptions.Value.LisConfig}&caseId={application.Id}&targetEnv={_lisOptions.Value.TargetEnvironment.ToString()}");
 
         var testUser = new UserAccount
         {

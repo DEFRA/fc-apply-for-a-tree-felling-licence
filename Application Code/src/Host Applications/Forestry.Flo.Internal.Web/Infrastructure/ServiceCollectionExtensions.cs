@@ -392,6 +392,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IReturnApplicationUseCase, ReturnApplicationUseCase>();
         services.AddScoped<IPublicRegisterExpiryUseCase, PublicRegisterExpiryUseCase>();
         services.AddScoped<IPublicRegisterCommentsUseCase, PublicRegisterCommentsUseCase>();
+        services.AddScoped<IRemoveApplicationsFromDecisionPublicRegisterUseCase, RemoveApplicationsFromDecisionPublicRegisterUseCase>();
         services.AddScoped<IGetFcStaffMembersUseCase, GetFcStaffMembersUseCase>();
         services.AddScoped<ICloseFcStaffAccountUseCase, CloseFcStaffAccountUseCase>();
         services.AddScoped<IGetApplicantUsersUseCase, GetApplicantUsersUseCase>();

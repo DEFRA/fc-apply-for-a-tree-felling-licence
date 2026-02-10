@@ -186,6 +186,7 @@ public class ConstraintCheckerService
         {
             ["isFlo"] = "true", 
             ["caseId"] = constraintCheckRequest.ApplicationId.ToString(),
+            ["targetEnv"] = _landInformationSearchOptions.TargetEnvironment.ToString()
         };
 
         deepLinkQueryString.Add(constraintCheckRequest.IsInternalUser ? "lisconfig" : "config",

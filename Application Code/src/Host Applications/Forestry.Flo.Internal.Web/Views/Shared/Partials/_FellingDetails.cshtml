@@ -64,7 +64,7 @@
                     @Html.Raw(outputSpecies)
                 </td>
                 <td class="govuk-table__cell">@isRestocking</td>
-                <td class="govuk-table__cell">@fellingDetails.FellingDetail.NoRestockingReason</td>
+                    <td class="govuk-table__cell width-limited"><p class="govuk-body long-link">@fellingDetails.FellingDetail.NoRestockingReason</p></td>
             </tr>
         }
         </tbody>

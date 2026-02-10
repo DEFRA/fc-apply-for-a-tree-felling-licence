@@ -59,10 +59,10 @@ public class ActivityFeedService : IActivityFeedService
 
             var text = activityFeedItemType.GetActivityFeedItemTypeAttribute() ==
                        ActivityFeedItemCategory.OutgoingNotification
-                ? activityFeedItemType.GetDisplayName()
+                ? activityFeedItemType.GetDisplayName() ?? activityFeedItemType.ToString()
                 : notification.Text;
 
-            activityFeedItems.Add(new()
+            activityFeedItems.Add(new ActivityFeedItemModel
             {
                 CreatedTimestamp = notification.CreatedTimestamp,
                 Text = text,
@@ -97,7 +97,25 @@ public class ActivityFeedService : IActivityFeedService
             ActivityFeedItemType.InformApplicantOfApplicationExtension,
             ActivityFeedItemType.InformApplicantOfApplicationApproval,
             ActivityFeedItemType.InformApplicantOfApplicationRefusal,
-            ActivityFeedItemType.InformApplicantOfApplicationReferredToLocalAuthority
+            ActivityFeedItemType.InformApplicantOfApplicationReferredToLocalAuthority,
+            ActivityFeedItemType.InformApplicantOfApplicationVoluntaryWithdrawOption,
+            ActivityFeedItemType.ApplicationWithdrawn,
+            ActivityFeedItemType.InformFCStaffOfFinalActionDateReached,
+            ActivityFeedItemType.InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure,
+            ActivityFeedItemType.InformFcStaffOfApplicationAddedToConsultationPublicRegister,
+            ActivityFeedItemType.InformFcStaffOfApplicationAddedToDecisionPublicRegister,
+            ActivityFeedItemType.InformApplicantOfLarchOnlyApplicationFADextension,
+            ActivityFeedItemType.InformApplicantOfReturnedApplicationMixLarchZone1,
+            ActivityFeedItemType.InformApplicantOfReturnedApplicationMixLarchMixZone,
+            ActivityFeedItemType.InformApplicantOfReturnedApplicationLarchOnlyMixZone,
+            ActivityFeedItemType.EiaReminderMissingDocuments,
+            ActivityFeedItemType.EiaReminderToSendDocuments,
+            ActivityFeedItemType.ApplicantReviewedAmendments,
+            ActivityFeedItemType.AmendmentsSentToApplicant,
+            ActivityFeedItemType.ReminderForApplicantToRespondToAmendments,
+            ActivityFeedItemType.InformFcStaffOfApplicationApprovedInError,
+            ActivityFeedItemType.InformApplicantOfAIENewLicenceRequired,
+            ActivityFeedItemType.InformApplicantOfAIENewLicenceApproved
         };
     }
 }

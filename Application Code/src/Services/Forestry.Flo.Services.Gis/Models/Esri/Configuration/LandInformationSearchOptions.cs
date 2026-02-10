@@ -18,6 +18,12 @@ public class LandInformationSearchOptions
     public string DeepLinkUrlAndPath { get; set; }
 
     /// <summary>
+    /// Gets and sets which environment to instruct LIS to send the generated constraints file back to.
+    /// </summary>
+    [Required]
+    public LisResponseTargetEnvironment TargetEnvironment { get; set; }
+
+    /// <summary>
     /// Parameter used as part of the query string in the deeplink.
     /// <para>
     /// The value of this configuration item is applied to the query param named "config" in the external LIS deep-link.

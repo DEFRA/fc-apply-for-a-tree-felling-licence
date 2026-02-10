@@ -126,7 +126,12 @@ public class AmendmentReview
     /// <summary>
     /// Gets or sets a value indicating whether further amendments are allowed or present.
     /// </summary>
-    public bool FurtherAmendments { get; set; }
+    /// <remarks>
+    /// This value is not stored and so will always start as null until the user makes a selection. Making
+    /// a selection in the UI will then open up the relevant workflow to continue making amendments or
+    /// complete the confirmed felling and restocking process.
+    /// </remarks>
+    public bool? FurtherAmendments { get; set; }
 
     /// <summary>
     /// Gets or sets the current amendment state for the application.

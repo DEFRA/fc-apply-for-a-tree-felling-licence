@@ -1435,13 +1435,7 @@ public partial class FellingLicenceApplicationController(
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
-
-        // only FC users should be able to post this page, and only if the application is still editable
-        if (!user.IsFcUser || !model.AllowEditing)
-        {
-            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
-        }
-
+        
         var viewModel = await tenYearLicenceUseCase
             .GetWmpDocumentsViewModel(user, model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, cancellationToken);
 
@@ -1449,6 +1443,16 @@ public partial class FellingLicenceApplicationController(
         {
             return RedirectToAction(nameof(HomeController.Error), "Home");
         }
+
+        var agency =
+            await GetAgentAuthorityAsync(viewModel.Value.ApplicationSummary.WoodlandOwnerId!, cancellationToken);
+
+        // only FC users should be able to post this page, and only if the application is still editable
+        if (!user.IsFcUser || !model.AllowEditing)
+        {
+            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agency);
+        }
+
 
         var atLeastOneWmpDocument = viewModel.Value.Documents.Any();
 
@@ -1481,7 +1485,7 @@ public partial class FellingLicenceApplicationController(
 
         }
 
-        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agency);
     }
 
     /// <summary>
@@ -2485,14 +2489,14 @@ public partial class FellingLicenceApplicationController(
             return RedirectToAction(nameof(ApplicationSummary), new { applicationId });
         }
 
-        if (fromDataImport)
-        {
-            return RedirectToAction(nameof(FellingAndRestockingPlayback), new { applicationId });
-        }
-
         if (agentAuthorityId is not null)
         {
-            return RedirectToAction(nameof(AgentAuthorityForm), new { applicationId, agentAuthorityId });
+            return RedirectToAction(nameof(AgentAuthorityForm), new { applicationId, agentAuthorityId, fromDataImport });
+        }
+
+        if (fromDataImport)
+        {
+            return RedirectToAction(nameof(TreeHealthCheck), new { applicationId, fromDataImport });
         }
 
         return RedirectToAction(nameof(Operations), new { applicationId, returnToApplicationSummary });

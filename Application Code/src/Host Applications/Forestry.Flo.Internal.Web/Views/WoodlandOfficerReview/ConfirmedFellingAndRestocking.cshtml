@@ -13,6 +13,8 @@
     var user = new InternalUser(User);
     const string newDetailClassName = "new-confirmed-detail";
     const string deletedDetailClassName = "deleted-confirmed-detail";
+
+    var outstandingResponse = Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantAgreed or AmendmentStateEnum.ApplicantDisagreed;
 }
 <partial name="Partials/_ConfirmationMessageDisplay" />
 <partial name="Partials/_UserGuideDisplay" />
@@ -92,12 +94,14 @@
                 var canAddRestocking = confirmedFellingDetail.OperationType!.Value
                     .AllowedRestockingForFellingType(false)
                     .Any(x => x != TypeOfProposal.DoNotIntendToRestock)
-                    && !Model.ConfirmedFellingAndRestockingComplete;
+                    && !Model.ConfirmedFellingAndRestockingComplete
+                    && !outstandingResponse;
 
                 var deletedRestockingDetails = Model.DeletedRestockingOperations(confirmedFellingDetail.ProposedFellingDetailsId);
                 var confirmedFellingType = confirmedFellingDetail.GetConfirmedFellingType(deletedRestockingDetails.Any());
 
-                var shouldShowRevert = confirmedFellingType is not (ConfirmedFellingType.Unmodified or ConfirmedFellingType.NewFelling);
+                var shouldShowRevert = confirmedFellingType is not (ConfirmedFellingType.Unmodified or ConfirmedFellingType.NewFelling)
+                    && !outstandingResponse;
 
                 shouldShowRevert = shouldShowRevert && Model.Amendment.CanCurrentUserAmend;
                 var fellingClassName = confirmedFellingType is ConfirmedFellingType.NewFelling 
@@ -215,7 +219,7 @@
                                             <li class="govuk-summary-card__action">
                                                 <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@compartment.SubmittedFlaPropertyCompartmentId')">Show on map</a>
                                             </li>
-                                            <li condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__action">
+                                            <li condition="@(Model.Amendment.CanCurrentUserAmend && !outstandingResponse)" class="govuk-summary-card__action">
                                                 <a class="govuk-link" id="amend-link-felling-@(confirmedFellingDetail.ConfirmedFellingDetailsId)"
                                                    href="@Url.Action("AmendConfirmedFellingDetails", new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId })" 
                                                    aria-describedby="amend-link-felling-desc-@(confirmedFellingDetail.ConfirmedFellingDetailsId)">
@@ -253,7 +257,7 @@
                                                 <li class="govuk-summary-card__action">
                                                     <a class="govuk-link govuk-link--no-visited-state view-on-map" href="#@(viewDivId)" onclick="viewOnMap('@(viewDivId)', '@restockingDetail!.RestockingCompartmentId')">Show on map</a>
                                                 </li>
-                                                <li condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__action">
+                                                <li condition="@(Model.Amendment.CanCurrentUserAmend && !outstandingResponse)" class="govuk-summary-card__action">
 										            <a class="govuk-link" id="amend-link-restocking-@(restockingDetail.ConfirmedRestockingDetailsId)" href="@Url.Action("AmendConfirmedRestockingDetails", 
 											            new { applicationId = Model.ApplicationId, confirmedFellingDetailsId = confirmedFellingDetail.ConfirmedFellingDetailsId, confirmedRestockingDetailsId = confirmedFellingDetail.ConfirmedRestockingDetails[k].ConfirmedRestockingDetailsId })" 
 										            aria-describedby="amend-link-restocking-desc-@(restockingDetail.ConfirmedRestockingDetailsId)">
@@ -287,7 +291,7 @@
                                 }
                                 <div class="govuk-button-group">
                                     <a
-                                        condition="@(Model.Editable(user) && canAddRestocking && Model.Amendment.CanCurrentUserAmend)"
+                                        condition="@(Model.Editable(user) && canAddRestocking && Model.Amendment.CanCurrentUserAmend && !outstandingResponse)"
                                         id="add-button-restocking-@confirmedFellingDetail.ConfirmedFellingDetailsId"
                                         data-prevent-double-click="true"
                                         asp-action="AddConfirmedRestockingDetails"
@@ -337,7 +341,7 @@
                                 <strong>Compartment size:</strong> @compartment.TotalHectares!.Value.FormatDoubleForDisplay() Ha
                             </div>
                         </div>
-                        <ul condition="@Model.Amendment.CanCurrentUserAmend" class="govuk-summary-card__actions">
+                        <ul condition="@(Model.Amendment.CanCurrentUserAmend && !outstandingResponse)" class="govuk-summary-card__actions">
                             @{
                                 var visibleId = $"delete-amendments-visible-{deletedFelling.Id}";
                                 var invisibleId = $"delete-amendments-invisible-{deletedFelling.Id}";
@@ -439,7 +443,7 @@
 
         <div class="govuk-button-group">
             <a
-                condition="@(Model.Editable(user) && !Model.ConfirmedFellingAndRestockingComplete && Model.Amendment.CanCurrentUserAmend)"
+                condition="@(Model.Editable(user) && Model is { ConfirmedFellingAndRestockingComplete: false, Amendment.CanCurrentUserAmend: true } && !outstandingResponse)"
                 id="add-felling-operation"
                 data-prevent-double-click="true"
                 asp-action="SelectFellingCompartment"
@@ -461,7 +465,7 @@
                 <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.NoAmendment)" class="govuk-body">
                 </div>
 
-                <div condition="@((Model.Amendment.AmendmentState is AmendmentStateEnum.NewAmendment || Model.Amendment.AmendmentState is AmendmentStateEnum.Completed) && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
+                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.NewAmendment or AmendmentStateEnum.Completed && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
                     Please provide details and reasoning for the amendments
 
                     <textarea rows="5" class="@GdsConstants.GdsTextAreaCssClass" name="amendmentReason">@Model.Amendment.AmendmentReason</textarea>
@@ -482,20 +486,21 @@
                 </div>
 
                 <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.SentToApplicant)" class="govuk-body">
-                    <p>Amendments sent @Model.Amendment.AmendmentsSentDate?.ToString("dd/MM/yyyy") - see case notes/timeline for further detail.</p>
-                    <p>The applicant has been sent the amendments for confirmation</p>
+                    <p class="govuk-body">Amendments sent @Model.Amendment.AmendmentsSentDate?.ToString("dd/MM/yyyy") - see case notes/timeline for further detail.</p>
+                    <p class="govuk-body">The applicant has been sent the amendments for confirmation</p>
                 </div>
 
                 <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantAgreed)" class="govuk-hint">
-                    <p>The applicant has agreed with the amendments - see case notes/timeline for further detail</p>
+                    <p class="govuk-body">The applicant has agreed with the amendments - see case notes/timeline for further detail</p>
                 </div>
 
-                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantDisagreed && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
-                    <p>The applicant does not agree with the amendments, providing the following reasons:</p>
-                    <p>@Model.Amendment.ApplicantDisagreementReason</p>
+                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantDisagreed)" class="govuk-body">
+                    <p class="govuk-body">The applicant does not agree with the amendments, providing the following reasons:</p>
+                    <p class="govuk-body">@Model.Amendment.ApplicantDisagreementReason</p>
                 </div>
 
-                <div condition="@((Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantAgreed || Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantDisagreed) && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
+                <div condition="@((Model.Amendment.AmendmentState is AmendmentStateEnum.ApplicantAgreed or AmendmentStateEnum.ApplicantDisagreed) 
+                                && Model.Amendment.CanCurrentUserAmend)" class="govuk-body">
                     <div class="govuk-form-group">
                         <fieldset class="govuk-fieldset">
                             <legend class="govuk-heading-m" id="@Html.IdFor(x => x.Amendment.FurtherAmendments)">
@@ -523,7 +528,7 @@
                                                 asp-action="MakeFurtherAmendments"
                                                 asp-route-applicationId="@Model.ApplicationId"
                                                 asp-route-amendmentReviewId="@Model.Amendment.AmendmentReviewId"
-                                                id="confirm-btn" 
+                                                id="more-amendments-btn" 
                                                 data-prevent-double-click="true"
                                                 type="submit" 
                                                 class="govuk-button" 
@@ -535,17 +540,41 @@
                                 </div>
 
                                 <div class="govuk-radios__item">
-                                    <input id="make-further-amendments-no" type="radio" class="govuk-radios__input" asp-for="Amendment.FurtherAmendments" value="@false">
+                                    <input id="make-further-amendments-no" 
+                                           type="radio" 
+                                           class="govuk-radios__input" 
+                                           asp-for="Amendment.FurtherAmendments" 
+                                           value="@false"
+                                           data-aria-controls="conditional-@Html.NameFor(x => x.Amendment.FurtherAmendments)-no">
                                     <label class="govuk-label govuk-radios__label" for="make-further-amendments-no" asp-for="Amendment.FurtherAmendments">
                                         No
                                     </label>
+                                </div>
+                                
+                                <div class="govuk-radios__conditional govuk-radios__conditional--hidden" id="conditional-@Html.NameFor(x => x.Amendment.FurtherAmendments)-no">
+                                    <div class="govuk-form-group">
+                                        <div class="govuk-button-group">
+                                            <button 
+                                                condition-disabled="@(!Model.Editable(user) || !ViewContext.ModelState.IsValid)"
+                                                asp-controller="WoodlandOfficerReview"
+                                                asp-action="ConfirmFellingAndRestocking"
+                                                id="confirm-btn-no-more-amendments" 
+                                                data-prevent-double-click="true"
+                                                type="submit" 
+                                                class="govuk-button" 
+                                                data-module="govuk-button">
+                                                Confirm felling and restocking
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </fieldset>
                     </div>
                 </div>
 
-                <div condition="@(Model.Amendment.AmendmentState is not AmendmentStateEnum.Completed && !Model.ConfirmedFellingAndRestockingComplete)" class="govuk-body">
+                <div condition="@(Model.Amendment.AmendmentState is AmendmentStateEnum.Completed or AmendmentStateEnum.NoAmendment 
+                                && !Model.ConfirmedFellingAndRestockingComplete)" class="govuk-body">
                     <input type="hidden" asp-for="Amendment.AmendmentReviewId" />
                     <div class="govuk-button-group">
                         <button 

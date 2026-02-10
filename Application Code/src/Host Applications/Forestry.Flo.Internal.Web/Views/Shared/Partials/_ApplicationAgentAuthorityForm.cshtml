@@ -22,7 +22,7 @@
         <p class="govuk-body">
             AAF when application was submitted:
             <a class="govuk-link govuk-link--no-visited-state"
-               title="Download"
+               title="Download AAF at application submission"
                asp-route-agentAuthorityId="@Model.AgentAuthorityId"
                asp-route-agentAuthorityFormId="@Model.SpecificTimestampAgentAuthorityForm.Value.Id"
                asp-action="DownloadAgentAuthorityFormDocument"
@@ -42,7 +42,7 @@
         <p class="govuk-body">
             Current AAF for Agency and Woodland Owner:
             <a class="govuk-link govuk-link--no-visited-state"
-               title="Download"
+               title="Download current AAF"
                asp-route-agentAuthorityId="@Model.AgentAuthorityId"
                asp-route-agentAuthorityFormId="@Model.CurrentAgentAuthorityForm.Value.Id"
                asp-action="DownloadAgentAuthorityFormDocument"
@@ -50,7 +50,7 @@
 
             <a class="govuk-link govuk-link--no-visited-state"
                condition="@Model.AgentAuthorityFormManagementUrl.HasValue"
-               title="Manage"
+               title="Manage current AAF"
                href="@agentAuthorityUrl">Manage</a>
         </p>
     </div>

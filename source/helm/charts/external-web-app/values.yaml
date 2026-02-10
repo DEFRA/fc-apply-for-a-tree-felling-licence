@@ -179,6 +179,8 @@ config:
   landInformationSearch:
     # -- the deeplink into the esri, forester land information search app
     deepLinkUrlAndPath: 
+    # -- the target environment to tell the LIS where to send the constraints report back to
+    targetEnvironment: 
     # -- config as specified by esri, to pass to the land information search app
     lisConfig: 
     # -- the baseUrl for the arcgis endpoint

@@ -5,6 +5,7 @@
     ViewData["Title"] = "Agent Authority Forms";
     var applicationId = Context.Request.Query["ApplicationId"];
     var returnToApplicationSummary = Context.Request.Query["returnToApplicationSummary"];
+    var fromDataImport = Context.Request.Query["fromDataImport"];
     ViewData.ShowBackLink();
     var aafStepStatus = Model.DoesNotHaveAnyAuthorityForms ? false : ViewData["AafStepStatus"] ?? false;   
 }
@@ -34,6 +35,7 @@
         <div class="govuk-button-group">
             <input aria-hidden="True" type="hidden" asp-for="@applicationId" />
             <input aria-hidden="True" type="hidden" asp-for="@returnToApplicationSummary" />
+            <input aria-hidden="True" type="hidden" asp-for="@fromDataImport" />
             <input type="hidden" asp-for="AgentAuthorityId"/>
 			<button class="govuk-button" type="submit" data-module="govuk-button">
 				Save and continue

@@ -383,7 +383,7 @@ define(["require",
                 // Loop through the layers
                 this.view.map.layers.forEach(layer => {
                     layer.graphics.items.forEach(graphic => {
-                        if (graphic.attributes) {
+                        if (graphic.attributes && graphic.geometry.type != "point") {
 
                             jsonData.features.push({
                                 type: "Feature",

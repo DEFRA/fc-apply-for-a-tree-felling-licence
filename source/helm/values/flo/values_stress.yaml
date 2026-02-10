@@ -71,6 +71,7 @@ external-web-app:
       StartCounter: 0
     landInformationSearch:
       deepLinkUrlAndPath: "https://www.forestergis.com/Apps/mapbrowserdev/"
+      targetEnvironment: "ExternalStaging"
       lisConfig: configs\\isflo.json
       baseUrl: "https://services-eu1.arcgis.com/dzWO3ZisLb7i278T/arcgis/"
       featurePath: rest/services/FLOv2_LIS_integration_TESTv2/FeatureServer/0
@@ -417,6 +418,7 @@ internal-web-app:
       FlyoverPeriodEndMonth: "8"
     landInformationSearch:
       deepLinkUrlAndPath: "https://test.forestergis.com/Apps/LIS/fc"
+      targetEnvironment: "InternalStaging"
       lisConfig: d31b956c1314e72acb9cc5a6bbb86f1
       baseUrl: "https://services-eu1.arcgis.com/dzWO3ZisLb7i278T/arcgis/"
       featurePath: rest/services/FLOv2_LIS_integration_TESTv2/FeatureServer/0

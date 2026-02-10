@@ -190,7 +190,7 @@
             </table>
         </div>
 
-        <input type="hidden" asp-for="@Model.GIS"/>
+        <input type="hidden" asp-for="@Model.GIS" name="FellingAndRestocking.GIS"/>
 
         <div class="govuk-grid-column-full">
 
@@ -208,13 +208,13 @@
                 <br/>
                 <div class="govuk-button-group placer">
                     <span>Download map data:</span>
-                    <a class="govuk-link" data-prevent-double-click="true" aira-role="button" id="Download-JSON">
+                    <a class="govuk-link" data-prevent-double-click="true" aria-role="button" id="Download-JSON">
                         GeoJSON
                     </a>
-                    <a class="govuk-link" data-prevent-double-click="true" id="Download-KML" aira-role="button">
+                    <a class="govuk-link" data-prevent-double-click="true" id="Download-KML" aria-role="button">
                         KML
                     </a>
-                    <a class="govuk-link" data-prevent-double-click="true" aira-role="button" id="Download-SHP">
+                    <a class="govuk-link" data-prevent-double-click="true" aria-role="button" id="Download-SHP">
                         ESRI shapefile
                     </a>
                 </div>

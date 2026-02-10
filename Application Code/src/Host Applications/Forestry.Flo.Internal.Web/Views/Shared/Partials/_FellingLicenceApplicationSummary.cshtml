@@ -112,7 +112,7 @@
             </tr>
             <tr class="govuk-table__row">
                 <th scope="row" class="govuk-table__header">WO review phase</th>
-                <td class="govuk-table__cell">
+                <td class="govuk-table__cell" id="assigned-woodland-officer">
                     @(assignedWo == null ? "Unassigned" : $"{assignedWo.UserAccount.FirstName} {assignedWo.UserAccount.LastName}")
                 </td>
                 <td class="govuk-table__cell govuk-table__cell--numeric">

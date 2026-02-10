@@ -1,0 +1,95 @@
+resource "kubernetes_namespace_v1" "cloudflare" {
+  wait_for_default_service_account = false
+
+  metadata {
+    name = "cloudflare"
+
+    labels = {
+      "kubernetes.io/metadata.name" = "cloudflare"
+      "name"                        = "cloudflare"
+    }
+  }
+}
+
+resource "kubernetes_deployment_v1" "cloudflared" {
+  wait_for_rollout = true
+
+  metadata {
+    name = "cloudflared-deployment"
+    labels = {
+      app = "cloudflared"
+    }
+    namespace = kubernetes_namespace_v1.cloudflare.metadata[0].name
+  }
+
+  spec {
+    replicas = 2
+
+    selector {
+      match_labels = {
+        pod = "cloudflared"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          pod = "cloudflared"
+        }
+      }
+
+      spec {
+        container {
+          image = "cloudflare/cloudflared:latest"
+          name  = "cloudflared"
+
+          command = ["cloudflared", "tunnel", "--metrics", "0.0.0.0:2000", "run"]
+          args    = ["--token", module.shared.cloudflare_token]
+
+          resources {
+            limits = {
+              cpu    = "0.5"
+              memory = "512Mi"
+            }
+            requests = {
+              cpu    = "250m"
+              memory = "50Mi"
+            }
+          }
+
+          liveness_probe {
+            http_get {
+              path = "/ready"
+              port = 2000
+            }
+
+            failure_threshold     = 1
+            initial_delay_seconds = 10
+            period_seconds        = 10
+          }
+        }
+      }
+    }
+  }
+}
+
+data "cloudflare_zone" "zone-devTest" {
+  name = "ps.conneqt.cloud"
+}
+
+data "cloudflare_zone" "zone-production" {
+  name = "tree-felling.forestrycommission.gov.uk"
+}
+
+resource "cloudflare_zone_settings_override" "zone" {
+  zone_id = data.cloudflare_zone.zone-production.id
+  settings {
+    ssl             = "strict"
+    min_tls_version = "1.2"
+    tls_1_3         = "on"
+  }
+
+  lifecycle {
+    ignore_changes = [initial_settings] # We need this to stop if trying to change something we do not touch.
+  }
+}

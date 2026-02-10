@@ -272,8 +272,8 @@ public class CompartmentController : Controller
             SetBreadcrumbs(model);
             return View("Draw", model);
         }
-        model.CompartmentModelOfInterest.GISData = string.Empty;
-        model.CompartmentModelOfInterest.TotalHectares = 0;
+        model.CompartmentModelOfInterest.GISData = null;
+        model.CompartmentModelOfInterest.TotalHectares = null;
 
         if (model.CompartmentModelOfInterest.Id == Guid.Empty)
         {
@@ -310,6 +310,9 @@ public class CompartmentController : Controller
             _logger.LogWarning("Did not find a compartment having id of {Id}", model.CompartmentModelOfInterest.Id);
             return RedirectToAction(nameof(HomeController.Index), "Home");
         }
+
+        compartment.GISData = null;
+        compartment.TotalHectares = null;
 
         var updateResult = await EditCompartmentAsync(compartment, cancellationToken);
 
