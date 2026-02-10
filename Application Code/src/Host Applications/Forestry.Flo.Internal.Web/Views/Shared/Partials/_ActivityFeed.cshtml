@@ -71,7 +71,7 @@
                         </p>
 
                         <div class="moj-timeline__description">
-                            <p class="show-line-breaks">@activityFeedItem.Text</p>
+                            <p class="show-line-breaks wrapped-text word-break">@activityFeedItem.Text</p>
                             <p>
                                 This case note is visible to:
                                 <div class="status-row">
@@ -118,7 +118,7 @@
                                 </p>
 
                                 <div class="moj-timeline__description">
-                                    <p class="show-line-breaks">@activityFeedItem.Text</p>
+                                    <p class="show-line-breaks wrapped-text word-break">@activityFeedItem.Text</p>
                                 </div>
 
                                 @if (activityFeedItem.Attachments?.Any() ?? false)
@@ -177,12 +177,7 @@
                             @if (activityFeedItem.Recipients != null)
                             {
                                 <p class="moj-timeline__byline">
-                                    sent to:
-
-                                    @foreach (var recipient in activityFeedItem.Recipients)
-                                    {
-                                        <b> @recipient </b>
-                                    }
+                                    sent to: <b>@string.Join(", ", activityFeedItem.Recipients.Distinct())</b>
                                 </p>
                             }
                         </div>
@@ -208,7 +203,7 @@
                         </p>
 
                         <div class="moj-timeline__description">
-                            <p class="show-line-breaks">@activityFeedItem.Text</p>
+                            <p class="show-line-breaks wrapped-text word-break">@activityFeedItem.Text</p>
                             <p>
                                 This case note is visible to:
                                 <div class="status-row">

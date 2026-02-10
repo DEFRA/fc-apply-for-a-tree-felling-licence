@@ -30,7 +30,7 @@ public class RunApplicantUserConstraintCheckUseCaseTests
     private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepository;
     private readonly Mock<IPropertyProfileRepository> _propertyProfileRepository;
     private readonly ExternalApplicant _user;
-    private readonly LandInformationSearchOptions _settings = new() { DeepLinkUrlAndPath = "http://www.tempuri.org/abc", LisConfig = "someValue"};
+    private readonly LandInformationSearchOptions _settings = new() { DeepLinkUrlAndPath = "http://www.tempuri.org/abc", LisConfig = "someValue", TargetEnvironment = LisResponseTargetEnvironment.ExternalStaging };
 
     public RunApplicantUserConstraintCheckUseCaseTests()
     {
@@ -61,7 +61,7 @@ public class RunApplicantUserConstraintCheckUseCaseTests
                 "{\"spatialReference\":{\"latestWkid\":27700,\"wkid\":27700},\"rings\":[[[1,1], [1,2], [2,2],[2,1], [1,1]]]}";
         }
 
-        var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_settings.LisConfig}&caseId={application.Id}");
+        var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_settings.LisConfig}&caseId={application.Id}&targetEnv=ExternalStaging");
         var sut = CreateSut();
 
         //Act

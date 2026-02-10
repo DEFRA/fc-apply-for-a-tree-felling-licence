@@ -7,96 +7,98 @@
 }
 
 <div class="govuk-grid-column-full" id="summary-container">
-<h1 class="govuk-heading-xl">
-    Application @Model.FellingLicenceApplicationSummary!.ApplicationReference
-</h1>
-<partial name="Partials/_ConfirmationMessageDisplay"/>
-<partial name="Partials/_UserGuideDisplay"/>
-<partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
-
-<div class="govuk-grid-column-full">
-<div class="govuk-button-group">
-    <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="AdminOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
-        Operations admin officer review
-    </a>
-    <a id="mapButton" data-module="govuk-button" class="govuk-button govuk-button--secondary">
-        Generate images
-    </a>
-    <a condition="@(Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.WoodlandOfficerReview))" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
-        Woodland officer review
-    </a>
-    <a condition="@(Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.SentForApproval))" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="ApproverReview" asp-action="Index" asp-route-id="@Model.Id">
-        Approver review
-    </a>
-    <a condition="@Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.ApprovedInError)" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="ApprovedInError" asp-action="ReApproveInError" asp-route-id="@Model.Id">
-        Approved In Error
-    </a>
+    <h1 class="govuk-heading-xl">
+        Application @Model.FellingLicenceApplicationSummary!.ApplicationReference
+    </h1>
+    <partial name="Partials/_ConfirmationMessageDisplay"/>
+    <partial name="Partials/_UserGuideDisplay"/>
+    <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 </div>
 
-<input type="hidden" id="runningMode" value="felling"/>
-<input type="hidden" id="printer-runningMode" value="felling"/>
-@if (Model.FellingAndRestockingDetail?.DetailsList is not null)
-{
-    @foreach (var item in Model.FellingAndRestockingDetail!.DetailsList!)
+<div class="govuk-grid-column-full">
+    <div class="govuk-button-group">
+        <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="AdminOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
+            Operations admin officer review
+        </a>
+        <a id="mapButton" data-module="govuk-button" class="govuk-button govuk-button--secondary">
+            Generate images
+        </a>
+        <a condition="@(Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.WoodlandOfficerReview))" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
+            Woodland officer review
+        </a>
+        <a condition="@(Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.SentForApproval))" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="ApproverReview" asp-action="Index" asp-route-id="@Model.Id">
+            Approver review
+        </a>
+        <a condition="@Model.FellingLicenceApplicationSummary.StatusHistories.Any(x => x.Status == FellingLicenceStatus.ApprovedInError)" class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="ApprovedInError" asp-action="ReApproveInError" asp-route-id="@Model.Id">
+            Approved In Error
+        </a>
+    </div>
+
+    <input type="hidden" id="runningMode" value="felling"/>
+    <input type="hidden" id="printer-runningMode" value="felling"/>
+    @if (Model.FellingAndRestockingDetail?.DetailsList is not null)
     {
-        <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling"/>
-        @foreach (var restocking in item.RestockingDetail)
+        @foreach (var item in Model.FellingAndRestockingDetail!.DetailsList!)
         {
-            <input type="hidden" id="@restocking.RestockingCompartmentId" value="@restocking.GISData" data-label="@restocking.RestockingCompartmentName" data-group="compartments_GIS" data-type="restocking"/>
+            <input type="hidden" id="@item.CompartmentId" value="@item.GISData" data-label="@item.CompartmentName" data-group="compartments_GIS" data-type="felling"/>
+            @foreach (var restocking in item.RestockingDetail)
+            {
+                <input type="hidden" id="@restocking.RestockingCompartmentId" value="@restocking.GISData" data-label="@restocking.RestockingCompartmentName" data-group="compartments_GIS" data-type="restocking"/>
+            }
         }
     }
-}
-<div class="govuk-accordion" data-module="govuk-accordion" id="accordion-default">
-    <div id="compartments-display">
-        <div class="govuk-accordion__section ">
-            <div class="govuk-accordion__section-header">
-                <h2 class="govuk-accordion__section-heading">
-                    <span class="govuk-accordion__section-button" id="accordion-default-heading-1">
-                        Compartment map
-                    </span>
-                </h2>
-            </div>
-            <div id="accordion-default-content-1" class="govuk-accordion__section-content" aria-labelledby="accordion-default-heading-1">
-                <calcite-shell id="shell" content-behind>
-                    <h2 id="header-title" slot="header">
-                        Felling
+    <div class="govuk-accordion" data-module="govuk-accordion" id="accordion-default">
+        <div id="compartments-display">
+            <div class="govuk-accordion__section ">
+                <div class="govuk-accordion__section-header">
+                    <h2 class="govuk-accordion__section-heading">
+                        <span class="govuk-accordion__section-button" id="accordion-default-heading-1">
+                            Compartment map
+                        </span>
                     </h2>
-                    <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed>
+                </div>
+                <div id="accordion-default-content-1" class="govuk-accordion__section-content" aria-labelledby="accordion-default-heading-1">
+                    <calcite-shell id="shell" content-behind>
+                        <h2 id="header-title" slot="header">
+                            Felling
+                        </h2>
+                        <calcite-shell-panel id="panelMenu" slot="panel-start" display-mode="float" detached closed>
 
-                        <calcite-action-bar slot="action-bar" expanded>
-                            <calcite-action data-action-id="basemaps"
-                                            icon="basemap"
-                                            text="Basemaps"
-                                            scale="l" text-enabled>
-                            </calcite-action>
-                            <calcite-action id="view"
-                                            icon="analysis"
-                                            text="View Restocking"
-                                            scale="l" text-enabled>
-                            </calcite-action>
-                        </calcite-action-bar>
+                            <calcite-action-bar slot="action-bar" expanded>
+                                <calcite-action data-action-id="basemaps"
+                                                icon="basemap"
+                                                text="Basemaps"
+                                                scale="l" text-enabled>
+                                </calcite-action>
+                                <calcite-action id="view"
+                                                icon="analysis"
+                                                text="View Restocking"
+                                                scale="l" text-enabled>
+                                </calcite-action>
+                            </calcite-action-bar>
 
-                        <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden>
-                            <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-basemap-button" scale="s"></calcite-action>
-                            <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
-                            <div id="basemaps-container">
-                                <arcgis-basemap-gallery></arcgis-basemap-gallery>
-                            </div>
-                        </calcite-panel>
+                            <calcite-panel heading="Basemap Selection" description="Please select an base map to view" height-scale="s" data-panel-id="basemaps" hidden>
+                                <calcite-action icon="question" text="Help" slot="header-actions-start" id="help-basemap-button" scale="s"></calcite-action>
+                                <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
+                                <div id="basemaps-container">
+                                    <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                                </div>
+                            </calcite-panel>
 
-                    </calcite-shell-panel>
-                    <arcgis-map id="viewDivMain" class="profileMap">
-                        <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
-                        <arcgis-zoom slot="top-right"></arcgis-zoom>
-                        <arcgis-compass slot="top-right"></arcgis-compass>
-                    </arcgis-map>
+                        </calcite-shell-panel>
+                        <arcgis-map id="viewDivMain" class="profileMap">
+                            <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+                            <arcgis-zoom slot="top-right"></arcgis-zoom>
+                            <arcgis-compass slot="top-right"></arcgis-compass>
+                        </arcgis-map>
 
-                </calcite-shell>
+                    </calcite-shell>
+                </div>
             </div>
         </div>
     </div>
 
-    <partial name="Partials/_FellingLicenceApplicationInfoTabs" model="@Model"/>
+   <partial name="Partials/_FellingLicenceApplicationInfoTabs" model="@Model"/>
 
 </div>
 
@@ -195,7 +197,7 @@
                                        heading="Polygon Style">
                             <calcite-icon scale="s" slot="icon" icon="polygon"></calcite-icon>
                             <calcite-label>
-                                style
+                                <label for="ployon-shape-symbol">Style</label>
                                 <select id="ployon-shape-symbol">
                                     <option>backward-diagonal</option>
                                     <option>cross</option>
@@ -208,19 +210,19 @@
                                 </select>
                             </calcite-label>
                             <calcite-label>
-                                Fill
+                                <label for="ployon-shape-color">Fill</label>
                                 <input type="color" id="ployon-shape-color"/>
                             </calcite-label>
-                            <calcite-block-section expanded text="Outline" toggle-display="button">
-                                <calcite-notice expanded>
+                            <calcite-block-section collapsible expanded text="Outline" toggle-display="button">
+                                <calcite-notice open>
                                     <div slot="message">
                                         <calcite-label>
-                                            Color
+                                            <label for="ploygon-line-color">Colour</label>
                                             <input type="color"
                                                    id="ploygon-line-color"/>
                                         </calcite-label>
                                         <calcite-label>
-                                            Width
+                                            <label for="ploygon-line-width">Width</label>
                                             <input type="number"
                                                    min="0"
                                                    step="0.25"
@@ -233,22 +235,22 @@
                         <calcite-block key="LabelSymbol" id="printer-label-symbol" collapsible heading="Label Style" expanded>
                             <calcite-icon scale="s" slot="icon" icon="label"></calcite-icon>
                             <calcite-label>
-                                Text
+                                <label for="printer-label-text">Text</label>
                                 <input type="text"
                                        id="printer-label-text"/>
                             </calcite-label>
                             <calcite-label>
-                                Color
+                                <label for="printer-label-color">Colour</label>
                                 <input type="color"
                                        id="printer-label-color"/>
                             </calcite-label>
                             <calcite-label>
-                                Halo Color
+                                <label for="printer-halo-color">Halo Colour</label>
                                 <input type="color"
                                        id="printer-halo-color"/>
                             </calcite-label>
                             <calcite-label>
-                                Halo Size
+                                <label for="printer-halo-size">Halo Size</label>
                                 <input type="number"
                                        min="0"
                                        step="1"
@@ -256,24 +258,24 @@
                                        id="printer-halo-size"/>
                             </calcite-label>
                             <calcite-label>
-                                X-Offset
+                                <label for="printer-label-x-offset">X-Offset</label>
                                 <input type="number"
                                        min="0"
                                        step="1"
                                        id="printer-label-x-offset"/>
                             </calcite-label>
                             <calcite-label>
-                                Y-Offset
+                                <label for="printer-label-y-offset">Y-Offset</label>
                                 <input type="number"
                                        min="0"
                                        step="1"
                                        id="printer-label-y-offset"/>
                             </calcite-label>
-                            <calcite-block-section expanded text="Font" toggle-display="button">
-                                <calcite-notice expanded>
+                            <calcite-block-section collapsible expanded text="Font" toggle-display="button">
+                                <calcite-notice open>
                                     <div slot="message">
                                         <calcite-label>
-                                            Size
+                                            <label for="printer-font-size">Size</label>
                                             <input type="number"
                                                    min="0"
                                                    step="1"
@@ -281,7 +283,7 @@
                                                    id="printer-font-size"/>
                                         </calcite-label>
                                         <calcite-label>
-                                            style
+                                            <label for="printer-font-weight">Style</label>
                                             <select id="printer-font-weight">
                                                 <option value="normal">normal</option>
                                                 <option value="bold">bold</option>
@@ -306,8 +308,6 @@
 
         <input type="button" class="modal-close modal-exit" id="close_modal" value="x"/>
     </div>
-</div>
-</div>
 </div>
 
 @section breadcrumbs

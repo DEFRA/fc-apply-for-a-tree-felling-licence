@@ -38,7 +38,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         private readonly Mock<IFellingLicenceApplicationInternalRepository> _fellingLicenceApplicationRepository;
         private readonly Mock<IPropertyProfileRepository> _propertyProfileRepository;
         private readonly Mock<IAuditService<ConstraintCheckerService>> _mockConstraintCheckerServiceAudit;
-        private readonly LandInformationSearchOptions _settings = new() { DeepLinkUrlAndPath = "http://www.tempuri.org/abc", LisConfig = "lisConfigValue"};
+        private readonly LandInformationSearchOptions _settings = new() { DeepLinkUrlAndPath = "http://www.tempuri.org/abc", LisConfig = "lisConfigValue", TargetEnvironment = LisResponseTargetEnvironment.ExternalStaging };
         private readonly Mock<ILandInformationSearch> _landInformationSearchService;
         private readonly ClaimsPrincipal _testInternalUser;
         private readonly ClaimsPrincipal _testExternalUser;
@@ -74,7 +74,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         {
             //arrange
             EnsureSubmittedCompartments(application);
-            var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&lisconfig={_settings.LisConfig}&caseId={application.Id}");
+            var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&lisconfig={_settings.LisConfig}&caseId={application.Id}&targetEnv={_settings.TargetEnvironment.ToString()}");
             
             _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(application.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync( Maybe.From(application));
@@ -163,8 +163,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
         {
             //arrange
             EnsurePreSubmittedCompartmentsInApplication(application);
-            var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_settings.LisConfig}&caseId={application.Id}");
-            
+            var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_settings.LisConfig}&caseId={application.Id}&targetEnv={_settings.TargetEnvironment.ToString()}");
+
             _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(application.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe.From(application));
 

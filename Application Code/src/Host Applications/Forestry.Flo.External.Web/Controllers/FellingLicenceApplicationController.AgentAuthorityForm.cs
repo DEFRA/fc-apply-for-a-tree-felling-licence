@@ -15,6 +15,7 @@ public partial class FellingLicenceApplicationController
     Guid agentAuthorityId,
     Guid applicationId,
     bool? returnToApplicationSummary,
+    bool? fromDataImport,
     [FromServices] GetAgentAuthorityFormDocumentsUseCase useCase,
     CancellationToken cancellationToken)
     {
@@ -45,6 +46,7 @@ public partial class FellingLicenceApplicationController
         [FromForm] Guid applicationId,
         [FromForm] bool aafStepStatus,
         [FromForm] bool? returnToApplicationSummary,
+        [FromForm] bool? fromDataImport,
         AgentAuthorityFormDocumentModel model,
         [FromServices] GetAgentAuthorityFormDocumentsUseCase useCase,
         CancellationToken cancellationToken)
@@ -86,6 +88,11 @@ public partial class FellingLicenceApplicationController
         if (returnToApplicationSummary is true)
         {
             return RedirectToAction(nameof(ApplicationSummary), new { applicationId });
+        }
+
+        if (fromDataImport is true)
+        {
+            return RedirectToAction(nameof(TreeHealthCheck), new { applicationId, fromDataImport });
         }
 
         return RedirectToAction(nameof(Operations), new { applicationId });

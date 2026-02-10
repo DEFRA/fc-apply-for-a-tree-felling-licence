@@ -92,37 +92,51 @@
                     <div class="govuk-checkboxes__conditional" id="paws-values">
                         <govuk-form-group asp-for="CompartmentDesignations.ProportionBeforeFelling" class="govuk-form-group">
                             <label class="govuk-label" asp-for="CompartmentDesignations.ProportionBeforeFelling">What proportion of native tree species make up this compartment</label>
-                            <div id="proportion-before-hint" class="govuk-hint" condition="(Model.ProposedCompartmentDesignations.ProportionBeforeFelling.HasValue)">
-                                The applicant answered: @Model.ProposedCompartmentDesignations.ProportionBeforeFelling.GetDisplayName()
+                            <div id="proportion-before-hint" class="govuk-hint" condition="(Model.ProposedCompartmentDesignations?.ProportionBeforeFelling.HasValue ?? false)">
+                                The applicant answered: @Model.ProposedCompartmentDesignations?.ProportionBeforeFelling?.GetDisplayName()
                             </div>
                             <validation asp-for="CompartmentDesignations.ProportionBeforeFelling"></validation>
-                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionBeforeFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionBeforeFelling.HasValue)" aria-describedby="proportion-before-hint">
+                            <select class="govuk-select" 
+                                    asp-for="CompartmentDesignations.ProportionBeforeFelling" 
+                                    asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" 
+                                    condition="(Model.ProposedCompartmentDesignations?.ProportionBeforeFelling.HasValue ?? false)" 
+                                    aria-describedby="proportion-before-hint">
                                 <option value="">Select an option</option>
                             </select>
-                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionBeforeFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionBeforeFelling.HasNoValue())">
+                            <select class="govuk-select" 
+                                    asp-for="CompartmentDesignations.ProportionBeforeFelling" 
+                                    asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" 
+                                    condition="(Model.ProposedCompartmentDesignations?.ProportionBeforeFelling.HasNoValue() ?? true)">
                                 <option value="">Select an option</option>
                             </select>
                         </govuk-form-group>
                         <govuk-form-group asp-for="CompartmentDesignations.ProportionAfterFelling" class="govuk-form-group">
                             <label class="govuk-label" asp-for="CompartmentDesignations.ProportionAfterFelling">What proportion of native tree species will be left in the compartment based on the proposed felling</label>
-                            <div id="proportion-after-hint" class="govuk-hint" condition="(Model.ProposedCompartmentDesignations.ProportionAfterFelling.HasValue)">
+                            <div id="proportion-after-hint" class="govuk-hint" condition="(Model.ProposedCompartmentDesignations?.ProportionAfterFelling.HasValue ?? false)">
                                 The applicant answered: @Model.ProposedCompartmentDesignations.ProportionAfterFelling.GetDisplayName()
                             </div>
                             <validation asp-for="CompartmentDesignations.ProportionAfterFelling"></validation>
-                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionAfterFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionAfterFelling.HasValue)" aria-describedby="proportion-after-hint">
+                            <select class="govuk-select" 
+                                    asp-for="CompartmentDesignations.ProportionAfterFelling" 
+                                    asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" 
+                                    condition="(Model.ProposedCompartmentDesignations?.ProportionAfterFelling.HasValue ?? false)" 
+                                    aria-describedby="proportion-after-hint">
                                 <option value="">Select an option</option>
                             </select>
-                            <select class="govuk-select" asp-for="CompartmentDesignations.ProportionAfterFelling" asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" condition="(@Model.ProposedCompartmentDesignations.ProportionAfterFelling.HasNoValue())">
+                            <select class="govuk-select" 
+                                    asp-for="CompartmentDesignations.ProportionAfterFelling" 
+                                    asp-items="Html.GetEnumSelectList<NativeTreeSpeciesProportion>()" 
+                                    condition="(@Model.ProposedCompartmentDesignations?.ProportionAfterFelling.HasNoValue() ?? true)">
                                 <option value="">Select an option</option>
                             </select>
                         </govuk-form-group>
                         <div class="govuk-form-group" condition="Model.ProposedCompartmentDesignations != null">
                             <label class="govuk-label">Are you restoring this compartment?</label>
-                            <div class="govuk-hint">The applicant answered: @(Model.ProposedCompartmentDesignations.IsRestoringCompartment is true ? "Yes" : "No")</div>
+                            <div class="govuk-hint">The applicant answered: @(Model.ProposedCompartmentDesignations?.IsRestoringCompartment is true ? "Yes" : "No")</div>
                         </div>
                         <div class="govuk-form-group" condition="Model.ProposedCompartmentDesignations is { IsRestoringCompartment: true }">
                             <label class="govuk-label">Why is this compartment being restored?</label>
-                            <div class="govuk-hint">The applicant answered: @Model.ProposedCompartmentDesignations.RestorationDetails</div>
+                            <div class="govuk-hint">The applicant answered: @Model.ProposedCompartmentDesignations?.RestorationDetails</div>
                         </div>
                     </div>
                     <div class="govuk-checkboxes__item">
@@ -154,7 +168,7 @@
         </govuk-form-group>
         
         <div class="govuk-hint">
-            Saving this compartment will make it @(Model.CompartmentDesignations.Id.HasValue ? Model.CompartmentsReviewed : Model.CompartmentsReviewed + 1) of @Model.TotalCompartments reviewed
+            Saving this compartment will make it @(Model.CompartmentDesignations.HasBeenReviewed ? Model.CompartmentsReviewed : Model.CompartmentsReviewed + 1) of @Model.TotalCompartments reviewed
         </div>
         <div class="govuk-button-group">
             <button id="submit-button" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">@saveButtonText</button>

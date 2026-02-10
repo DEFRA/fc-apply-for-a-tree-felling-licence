@@ -127,10 +127,16 @@
                         return "⇵";
                     };
                     Func<int, string> getPageUrl = (page) => {
-                        var query = Context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
-                        query["page"] = page.ToString();
-                        var queryString = string.Join("&", query.Select(x => $"{x.Key}={x.Value}"));
-                        return $"?{queryString}";
+                        var queryString = new List<string>();
+                        foreach (var queryKey in Context.Request.Query.Where(x => !x.Key.Equals("page", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            foreach (var queryValue in queryKey.Value)
+                            {
+                                queryString.Add($"{queryKey.Key}={queryValue}");
+                            }
+                        }
+                        queryString.Add($"page={page}");
+                        return $"?{string.Join("&", queryString)}";
                     };
                 }
 

@@ -1,0 +1,187 @@
+
+# Custom Prometheus Rules for FLO workloads
+additionalPrometheusRulesMap:
+  flo-workloads:
+    groups:
+      - name: flo.workloads
+        rules:
+          # ----------------------------------------------------------
+          # General FLO workload alerts
+          - alert: FloDeploymentRolloutStuck
+            expr: |
+              (
+                kube_deployment_spec_replicas{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  deployment=~".*-external-web-app|.*-internal-web-app|.*-pdf-generation-service"
+                } > 0
+              )
+              and
+              (
+                kube_deployment_status_replicas_updated{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  deployment=~".*-external-web-app|.*-internal-web-app|.*-pdf-generation-service"
+                }
+                <
+                kube_deployment_spec_replicas{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  deployment=~".*-external-web-app|.*-internal-web-app|.*-pdf-generation-service"
+                }
+              )
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Deployment rollout stuck"
+              description: "{{ $labels.namespace }}/{{ $labels.deployment }} has not updated desired replicas for 15m (new pods may be failing while old stay up)."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337281028/FLO+Workloads+Deployment+Rollout+Stuck"
+
+          - alert: FloDeploymentDown
+            expr: |
+              (
+                kube_deployment_spec_replicas{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  deployment=~".*-external-web-app|.*-internal-web-app|.*-pdf-generation-service"
+                } > 0
+              )
+              and
+              (
+                kube_deployment_status_replicas_available{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  deployment=~".*-external-web-app|.*-internal-web-app|.*-pdf-generation-service"
+                } < 1
+              )
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Deployment has no available replicas for 5m"
+              description: "{{ $labels.namespace }}/{{ $labels.deployment }} has < 1 available replica for 5m (desired replicas > 0)."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337215511/FloDeploymentDown"
+
+
+          - alert: FloDeploymentDegraded
+            expr: |
+              kube_deployment_status_replicas_available{
+                namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                deployment=~".*-external-web-app|.*-internal-web-app"
+              }
+              <
+              kube_deployment_spec_replicas{
+                namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                deployment=~".*-external-web-app|.*-internal-web-app"
+              }
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Deployment degraded"
+              description: "{{ $labels.namespace }}/{{ $labels.deployment }} has fewer available replicas than desired for 10m."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337182784/FLO+Workloads+Deployment+Degraded"
+
+
+          - alert: FloStatefulSetNotReady
+            expr: |
+              kube_statefulset_status_replicas_ready{
+                namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                statefulset=~"^rabbitmq$|.*-postgresql$"
+              } < 1
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "StatefulSet has no ready replicas"
+              description: "{{ $labels.namespace }}/{{ $labels.statefulset }} has < 1 ready replica for 5m."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337182792/FLO+Workloads+StatefulSet+Not+Ready"
+
+
+          - alert: FloContainerCrashLooping
+            expr: |
+              max_over_time(
+                kube_pod_container_status_waiting_reason{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  reason="CrashLoopBackOff",
+                  pod=~".*-external-web-app-.*|.*-internal-web-app-.*|.*-pdf-generation-service-.*"
+                }[10m]
+              ) == 1
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Container CrashLoopBackOff"
+              description: "CrashLoopBackOff in {{ $labels.namespace }} pod {{ $labels.pod }} ({{ $labels.container }}) for 10m."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337412143/Container+Crash+Looping"
+
+
+          # ----------------------------------------------------------
+          # Specific alerts for pdf-generation-service
+          - alert: PdfTemplatesInitContainerFailing
+            expr: |
+              max_over_time(
+                kube_pod_container_status_waiting_reason{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  container="clone-templates",
+                  reason=~"CrashLoopBackOff|Error|ImagePullBackOff|ErrImagePull|CreateContainerConfigError"
+                }[10m]
+              ) == 1
+            for: 10m
+            labels:
+              severity: critical
+              service: pdf-generation-service
+            annotations:
+              summary: "pdf-generation-service templates init failing"
+              description: "clone-templates init container failing in {{ $labels.namespace }}/{{ $labels.pod }} for 10m (likely git auth/token)."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337182817/PDF+Templates+Init+Container+Failing"
+
+          # ----------------------------------------------------------
+          # Specific alerts for rabbitmq
+          - alert: FloRabbitMQPodNotReady
+            expr: |
+              kube_pod_status_ready{
+                namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                pod="rabbitmq-0",
+                condition="true"
+              } == 0
+            for: 5m
+            labels:
+              severity: critical
+              service: rabbitmq
+            annotations:
+              summary: "RabbitMQ pod not ready"
+              description: "{{ $labels.namespace }}/rabbitmq-0 has not been Ready for 5m."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337281061/RabbitMQ+Pod+Not+Ready"
+
+          - alert: FloRabbitMQCrashLooping
+            expr: |
+              max_over_time(
+                kube_pod_container_status_waiting_reason{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  pod="rabbitmq-0",
+                  reason="CrashLoopBackOff"
+                }[10m]
+              ) == 1
+            for: 10m
+            labels:
+              severity: critical
+              service: rabbitmq
+            annotations:
+              summary: "RabbitMQ CrashLoopBackOff"
+              description: "{{ $labels.namespace }}/rabbitmq-0 is CrashLoopBackOff for 10m."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337412151/RabbitMQ+Crash+Looping"
+
+          - alert: FloRabbitMQRestartsHigh
+            expr: |
+              increase(
+                kube_pod_container_status_restarts_total{
+                  namespace=~"dev-flo|test-flo|stage-flo|migrate-flo|live-flo",
+                  pod="rabbitmq-0",
+                  container="rabbitmq"
+                }[15m]
+              ) > 3
+            for: 5m
+            labels:
+              severity: warning
+              service: rabbitmq
+            annotations:
+              summary: "RabbitMQ restarting frequently"
+              description: "{{ $labels.namespace }}/rabbitmq-0 restarted >3 times in the last 15m."
+              runbook_url: "https://harrishealthalliance.atlassian.net/wiki/spaces/FLOV2/pages/337313834/RabbitMQ+Restarts+High"

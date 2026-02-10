@@ -25,3 +25,37 @@ output "virtual_network_ukw_id" {
 output "subnet_database_ukw_id" {
   value = azurerm_subnet.database_ukw.id
 }
+
+output "acr" {
+  description = "ACR details"
+  value = {
+    id   = azurerm_container_registry.fs_flov2.id
+    name = azurerm_container_registry.fs_flov2.name
+  }
+}
+
+output "storage_accounts" {
+  description = "Storage accounts"
+  value = {
+    dev = {
+      id   = azurerm_storage_account.dev.id
+      name = azurerm_storage_account.dev.name
+    }
+    test = {
+      id   = azurerm_storage_account.test.id
+      name = azurerm_storage_account.test.name
+    }
+    stage = {
+      id   = azurerm_storage_account.stage.id
+      name = azurerm_storage_account.stage.name
+    }
+    migrate = {
+      id   = azurerm_storage_account.migrate.id
+      name = azurerm_storage_account.migrate.name
+    }
+    live = {
+      id   = azurerm_storage_account.live.id
+      name = azurerm_storage_account.live.name
+    }
+  }
+}

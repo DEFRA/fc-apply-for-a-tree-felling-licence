@@ -267,7 +267,7 @@ define(["require",
                 this.view.when(() => {
                     this.view.extent = mapSettings.englandExtent;
                     this.view.constraints = { maxZoom: 20 };
-                    return this.loadData.bind(this);
+                    return this.loadData();
                 })
                     .then(this.buildGraphics.bind(this))
                     .then(this.setUpWidgets.bind(this))
@@ -428,13 +428,17 @@ define(["require",
                             const importKey = li.id;
                             const item = that._drawingLayer.graphics.items.find((pi) => pi.attributes && pi.attributes["ImportKey"] === importKey);
                             if (item) {
-                                const existingTextNode = li.querySelector("span");
+                                var shapeName = item.attributes[that.fieldControl.options[that.fieldControl.selectedIndex].value];
+                                const existingTextNode = li.querySelector("label");
                                 if (existingTextNode) {
-                                    existingTextNode.textContent = item.attributes[that.fieldControl.options[that.fieldControl.selectedIndex].value];
+                                    existingTextNode.textContent = shapeName;
                                 } else {
-                                    const textNode = document.createElement("span");
-                                    textNode.textContent = item.attributes[that.fieldControl.options[that.fieldControl.selectedIndex].value];
-                                    li.appendChild(textNode);
+                                    var labelDiv = document.createElement("div");
+                                    var label = document.createElement("label");
+                                    label.setAttribute("for", "check" + item.attributes.ImportKey);
+                                    label.textContent = shapeName;
+                                    labelDiv.appendChild(label);
+                                    li.appendChild(labelDiv);
                                 }
                             }
                         });
@@ -1188,15 +1192,21 @@ define(["require",
                 all.id = "all";
 
                 possibleItems.forEach(item => {
+                    var shapeName = item.attributes[that.fieldControl.options[that.fieldControl.selectedIndex].value] || item.attributes["FID"];
                     const li = document.createElement("li");
                     var checkbox = document.createElement("input");
                     checkbox.setAttribute("data-ImportKey", item.attributes.ImportKey);
+                    checkbox.setAttribute("id", "check" + item.attributes.ImportKey);
+                    checkbox.setAttribute("data-CptName", shapeName);
                     checkbox.type = "checkbox";
                     li.appendChild(checkbox);
                     li.setAttribute("data-ImportKey", item.attributes.ImportKey);
-                    var span = document.createElement("span");
-                    span.textContent = item.attributes[that.fieldControl.options[that.fieldControl.selectedIndex].value] || item.attributes["FID"];
-                    li.appendChild(span);
+                    var labelDiv = document.createElement("div");
+                    var label = document.createElement("label");
+                    label.setAttribute("for", "check" + item.attributes.ImportKey);
+                    label.textContent = shapeName;
+                    labelDiv.appendChild(label);
+                    li.appendChild(labelDiv);
 
                     const goToButton = document.createElement("button");
                     goToButton.textContent = "Go to";
@@ -1266,9 +1276,6 @@ define(["require",
                         let key = e.target.getAttribute("data-ImportKey");
                         if (e.target.type === "checkbox") {
                             checkbox = e.target;
-                        } else {
-                            checkbox = e.target.querySelector("input[type='checkbox']");
-                            checkbox.checked = !checkbox.checked;
                         }
 
                         const gotoItem = this._drawingLayer.graphics.items.find((pi) => pi.attributes && pi.attributes["ImportKey"] === key);
@@ -1278,31 +1285,33 @@ define(["require",
                             return;
                         }
 
-                        if (checkbox.checked) {
-                            if (that._validateShapeUseCase.Execute(gotoItem, [], this.simplifyOperator) !== CheckingResult.Passed) {
-                                checkbox.checked = false;
-                                that.ShowMessage("error", "This shape is invalid and importing it has been canceled");
-                                return;
+                        if (checkbox) {
+                            if (checkbox.checked) {
+                                if (that._validateShapeUseCase.Execute(gotoItem, [], this.simplifyOperator) !== CheckingResult.Passed) {
+                                    checkbox.checked = false;
+                                    that.ShowMessage("error", "This shape is invalid and importing it has been canceled");
+                                    return;
+                                }
+
+                                const intersects = await this.checkIntersectionsWithFeatureLayer(gotoItem.geometry);
+
+                                if (intersects) {
+                                    that.ShowMessage("error", "This shape intersects with another shape in the map.");
+                                    checkbox.checked = false;
+                                    return;
+                                }
+                                gotoItem.attributes.isSelected = true;
+                                gotoItem.symbol = mapSettings.importShapeSelected;
+                                this._drawingLayer.remove(gotoItem);
+                                this._drawingLayer.add(gotoItem);
+                            } else {
+                                // Unselect the graphic
+                                gotoItem.attributes.isSelected = false;
+                                gotoItem.symbol = mapSettings.importShape;
+
+                                this._drawingLayer.remove(gotoItem);
+                                this._drawingLayer.add(gotoItem);
                             }
-
-                            const intersects = await this.checkIntersectionsWithFeatureLayer(gotoItem.geometry);
-
-                            if (intersects) {
-                                that.ShowMessage("error", "This shape intersects with another shape in the map.");
-                                checkbox.checked = false;
-                                return;
-                            }
-                            gotoItem.attributes.isSelected = true;
-                            gotoItem.symbol = mapSettings.importShapeSelected;
-                            this._drawingLayer.remove(gotoItem);
-                            this._drawingLayer.add(gotoItem);
-                        } else {
-                            // Unselect the graphic
-                            gotoItem.attributes.isSelected = false;
-                            gotoItem.symbol = mapSettings.importShape;
-
-                            this._drawingLayer.remove(gotoItem);
-                            this._drawingLayer.add(gotoItem);
                         }
 
                         if (checkbox) {
@@ -1329,6 +1338,7 @@ define(["require",
 
                 var checkbox = document.createElement("input");
                 checkbox.type = "checkbox";
+                checkbox.setAttribute("id", "check-all");
                 all.appendChild(checkbox);
                 all.addEventListener("click", async (e) => {
                     e.stopPropagation();
@@ -1365,7 +1375,8 @@ define(["require",
                             } else {
                                 childCheckbox.checked = false;
                                 graphic.attributes.isSelected = false;
-                                that.ShowMessage("error", `Shape ${graphic.attributes.compartmentName} is invalid and was not selected.`, true);
+                                var shapeName = childCheckbox.getAttribute("data-CptName") || graphic.attributes.compartmentName;
+                                that.ShowMessage("error", `Shape ${shapeName} is invalid and was not selected.`, true);
                                 checkbox.checked = false;
                             }
                         }
@@ -1383,7 +1394,10 @@ define(["require",
                     that._drawingLayer.removeMany(items);
                     that._drawingLayer.addMany(items);
                 });
-                all.appendChild(document.createTextNode("All"));
+                var label = document.createElement("label");
+                label.textContent = "All";
+                label.setAttribute("for", "check-all");
+                all.appendChild(label);
                 all.appendChild(main);
                 list.appendChild(all);
 

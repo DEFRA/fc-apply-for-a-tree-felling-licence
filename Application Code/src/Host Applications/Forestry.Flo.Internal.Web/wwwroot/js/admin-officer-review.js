@@ -5,10 +5,8 @@
     $('#review-complete-check').on('change', setButtonState);
 
     function setAssignButtonText() {
-        var assignedWoodlandOfficer = $("#assigned-woodland-officer").html();
-        if (assignedWoodlandOfficer != "None") {
-            $("#assign-woodland-officer").html("Reassign");
-        } else {
+        var assignedWoodlandOfficer = $("#assigned-woodland-officer").html().toString().trim();
+        if (assignedWoodlandOfficer === "Unassigned") {
             $("#assign-woodland-officer").html("Assign");
         }
     }

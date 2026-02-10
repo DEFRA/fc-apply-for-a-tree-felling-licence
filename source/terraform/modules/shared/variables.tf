@@ -45,8 +45,6 @@ locals {
 }
 
 
-
-
 # Resource group fs_flov2
 variable "rg_name" {
   type        = string

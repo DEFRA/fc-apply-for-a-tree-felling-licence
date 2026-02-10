@@ -101,6 +101,14 @@ module "shared" {
   }
 }
 
+module "kube_workloads" {
+  source = "../modules/kubernetes/workloads"
+
+  providers = {
+    azurerm = azurerm.cli
+  }
+}
+
 data "terraform_remote_state" "platform" {
   backend = "remote"
 
@@ -118,7 +126,7 @@ data "terraform_remote_state" "kubernetes" {
   config = {
     organization = "Quicksilva"
     workspaces = {
-      name = "FLOv2-kubernetes"
+      name = "FLOv2-kubernetes-infra"
     }
   }
 }

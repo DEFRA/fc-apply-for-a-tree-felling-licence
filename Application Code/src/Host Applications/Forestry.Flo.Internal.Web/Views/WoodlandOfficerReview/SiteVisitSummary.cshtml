@@ -25,12 +25,11 @@
 
     <partial name="Partials/_SiteVisitApplicationSummary" model="@Model"/>
     <p class="govuk-body govuk-!-margin-bottom-5"></p>
-
-    <partial name="Partials/_FellingDetails" model="@Model.FellingAndRestockingDetail"/>
-    <p class="govuk-body govuk-!-margin-bottom-5"></p>
 </div>
+<div class="govuk-grid-column-three-quarters">
 
-<div class="govuk-grid-column-full">
+    <partial name="Partials/_FellingDetails" model="@Model.FellingAndRestockingDetail" />
+    <p class="govuk-body govuk-!-margin-bottom-5"></p>
 
     <div class="page-break"></div>
     <h2 class="govuk-heading-m">Felling operation map</h2>

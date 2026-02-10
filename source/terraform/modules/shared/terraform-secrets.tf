@@ -111,4 +111,3 @@ data "azurerm_key_vault_secret" "test_ssh" {
   name         = "test-ssh"
   key_vault_id = data.azurerm_key_vault.flov2_kv.id
 }
-

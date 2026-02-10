@@ -5,6 +5,10 @@ resource "azurerm_network_security_group" "jumpbox" {
   location            = module.shared.azure_location
   resource_group_name = azurerm_resource_group.fs_flov2.name
 
+  lifecycle {
+    ignore_changes = [security_rule]
+  }
+
   security_rule {
     name                       = "Allow-SSH-FE"
     priority                   = 100

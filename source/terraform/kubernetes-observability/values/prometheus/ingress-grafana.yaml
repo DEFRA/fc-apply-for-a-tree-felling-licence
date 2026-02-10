@@ -1,0 +1,16 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana
+  namespace: prometheus
+  labels:
+    app: grafana
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`flov2-grafana.ps.conneqt.cloud`)
+      kind: Rule
+      services:
+        - name: prometheus-grafana
+          port: 80

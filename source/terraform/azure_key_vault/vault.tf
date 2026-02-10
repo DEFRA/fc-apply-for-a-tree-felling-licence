@@ -10,6 +10,9 @@ resource "azurerm_key_vault" "main" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes = [ 
+      access_policy
+     ]
   }
 
   access_policy {
@@ -36,5 +39,3 @@ resource "azurerm_key_vault" "main" {
     team        = "devops"
   }
 }
-
-data "azurerm_client_config" "current" {}

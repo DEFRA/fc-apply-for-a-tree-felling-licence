@@ -83,3 +83,5 @@ data "terraform_remote_state" "platform" {
     }
   }
 }
+
+data "azurerm_client_config" "current" {}
