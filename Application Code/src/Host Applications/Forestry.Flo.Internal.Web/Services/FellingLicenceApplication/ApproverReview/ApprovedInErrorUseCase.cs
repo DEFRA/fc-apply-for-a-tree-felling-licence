@@ -572,7 +572,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
             Name = applicantUser.FullName,
             PropertyName = application.SubmittedFlaPropertyDetail?.Name,
             ApproverName = approverName,
-            ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}",
+            ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}",
             AdminHubFooter = adminHubFooter,
             ApplicationId = application.Id,
             ApprovedDate = approvedDate

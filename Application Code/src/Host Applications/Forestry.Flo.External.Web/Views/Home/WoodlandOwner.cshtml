@@ -38,8 +38,8 @@
 
     <User-Is-In-Role-Multiple role-names="new[] { AccountTypeExternal.FcUser, AccountTypeExternal.WoodlandOwnerAdministrator }">
         <br/>
-        <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@user.WoodlandOwnerId">
-            Manage contact details for @user.WoodlandOwnerName
+        <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@Model.WoodlandOwnerId">
+            Manage contact details for <b>@(Model.WoodlandOwnerDetails.OrganisationName ?? Model.WoodlandOwnerDetails.ContactName)</b>
         </a>
         @{
             ViewBag.BackLinkShow = false;
@@ -55,7 +55,7 @@
     <user-is-in-role role-name="WoodlandOwnerAdministrator">
         <br/>
         <a class="govuk-link" asp-controller="AccountAdministration" asp-action="WoodlandOwnerList">
-            Manage user accounts associated with @user.WoodlandOwnerName
+            Manage user accounts associated with <b>@(Model.WoodlandOwnerDetails.OrganisationName ?? Model.WoodlandOwnerDetails.ContactName)</b>
         </a>
     </user-is-in-role>
 

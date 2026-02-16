@@ -87,7 +87,7 @@ namespace Forestry.Flo.External.Web.Services
                 IsOrganisation = woodlandOwner.IsOrganisation,
                 OrganisationAddress = organisationAddress,
                 OrganisationName = woodlandOwner.OrganisationName,
-                Id = woodlandOwner.Id!.Value
+                Id = woodlandOwner.Id!.Value,
             };
         }
 

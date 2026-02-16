@@ -3,17 +3,18 @@ using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.User;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Forestry.Flo.Services.Applicants.Repositories;
 
-public class UserAccountRepository : IUserAccountRepository
+public class UserAccountRepository(ApplicantsContext context, ILogger<UserAccountRepository> logger) : IUserAccountRepository
 {
-    private readonly ApplicantsContext _context;
+    private readonly ApplicantsContext _context = context  ?? throw new ArgumentNullException(nameof(context));
+    private readonly ILogger<UserAccountRepository> _logger = logger ?? new NullLogger<UserAccountRepository>();
 
     ///<inheritdoc />
     public IUnitOfWork UnitOfWork => _context;
-
-    public UserAccountRepository(ApplicantsContext context) => _context = context  ?? throw new ArgumentNullException(nameof(context));
 
     ///<inheritdoc />
     public UserAccount Add(UserAccount userAccount) => _context.UserAccounts.Add(userAccount).Entity;
@@ -30,7 +31,8 @@ public class UserAccountRepository : IUserAccountRepository
             .Include(x => x.Agency)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken: cancellationToken);
 
-        return userAccount == null ? Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound) 
+        return userAccount == null 
+            ? Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound) 
             : Result.Success<UserAccount, UserDbErrorReason>(userAccount);
     }
 
@@ -43,7 +45,8 @@ public class UserAccountRepository : IUserAccountRepository
             .SingleOrDefaultAsync(a => a.Email.ToLower() == email.ToLower(),
                 cancellationToken: cancellationToken);
         
-        return userAccount == null ? Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound) 
+        return userAccount == null 
+            ? Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound) 
             : Result.Success<UserAccount, UserDbErrorReason>(userAccount);
     }
 
@@ -59,30 +62,6 @@ public class UserAccountRepository : IUserAccountRepository
             .SingleOrDefaultAsync(a => a.IdentityProviderId == userIdentifier,
                 cancellationToken: cancellationToken);
 
-        // todo: this must be removed once the transition to Gov.UK One Login is complete as part of FLOV2-2485
-
-        #region Remove after FLOV2-2485
-
-        if (userAccount is null && email is not null)
-        {
-            var matchByEmail = await _context.UserAccounts
-                .Include(u => u.WoodlandOwner)
-                .Include(u => u.Agency)
-                .SingleOrDefaultAsync(a =>
-                        a.Email.ToLower() == email.ToLower() &&
-                        a.IdentityProviderId == null,
-                    cancellationToken: cancellationToken);
-
-            if (matchByEmail is not null)
-            {
-                matchByEmail.IdentityProviderId = userIdentifier;
-                await _context.SaveEntitiesAsync(cancellationToken);
-                return matchByEmail;
-            }
-        }
-
-        #endregion
-
         return userAccount == null ? Result.Failure<UserAccount, UserDbErrorReason>(UserDbErrorReason.NotFound) 
             : Result.Success<UserAccount, UserDbErrorReason>(userAccount);
     }
@@ -92,12 +71,19 @@ public class UserAccountRepository : IUserAccountRepository
     {
         var distinctUserIds = userIds.Distinct();
 
-        var users = await _context.UserAccounts
-            .Where(x => distinctUserIds.Contains(x.Id))
-            .ToListAsync(cancellationToken);
+        try
+        {
+            var users = await _context.UserAccounts
+                .Where(x => distinctUserIds.Contains(x.Id))
+                .ToListAsync(cancellationToken);
 
-        return users == null ? Result.Failure<IList<UserAccount>, UserDbErrorReason>(UserDbErrorReason.NotFound)
-            : Result.Success<IList<UserAccount>, UserDbErrorReason>(users);
+            return Result.Success<IList<UserAccount>, UserDbErrorReason>(users);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in GetUsersWithIdsInAsync");
+            return Result.Failure<IList<UserAccount>, UserDbErrorReason>(UserDbErrorReason.NotFound);
+        }
     }
 
     ///<inheritdoc />
@@ -107,12 +93,9 @@ public class UserAccountRepository : IUserAccountRepository
             .Where(x => x.WoodlandOwnerId == woodlandOwnerId && x.Status == UserAccountStatus.Active)
             .ToListAsync(cancellationToken);
 
-        if (users.Count == 0)
-        {
-            return Result.Failure<IList<UserAccount>, UserDbErrorReason>(UserDbErrorReason.NotFound);
-        }
-
-        return Result.Success<IList<UserAccount>, UserDbErrorReason>(users);
+        return users.Count == 0 
+            ? Result.Failure<IList<UserAccount>, UserDbErrorReason>(UserDbErrorReason.NotFound) 
+            : Result.Success<IList<UserAccount>, UserDbErrorReason>(users);
     }
 
     ///<inheritdoc />
@@ -122,12 +105,9 @@ public class UserAccountRepository : IUserAccountRepository
             .Where(x => x.AgencyId == agencyId && x.Status == UserAccountStatus.Active)
             .ToListAsync(cancellationToken);
 
-        if (users.Count == 0)
-        {
-            return Result.Failure<IList<UserAccount>, UserDbErrorReason>(UserDbErrorReason.NotFound);
-        }
-
-        return Result.Success<IList<UserAccount>, UserDbErrorReason>(users);
+        return users.Count == 0 
+            ? Result.Failure<IList<UserAccount>, UserDbErrorReason>(UserDbErrorReason.NotFound) 
+            : Result.Success<IList<UserAccount>, UserDbErrorReason>(users);
     }
 
     ///<inheritdoc />

@@ -233,11 +233,11 @@ external-web-app:
             NeedsToken: true
             Fields: [ "name"]
           - Name: "Ancient_Woodland"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/75"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1003"
             NeedsToken: true
             Fields: [ "name", "status" ]
           - Name: "Ancient_Woodlands_Revised"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1001"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1004"
             NeedsToken: true
             Fields: [ "name", "status" ]
         GeometryService:
@@ -575,11 +575,11 @@ internal-web-app:
             NeedsToken: true
             Fields: [ "name"]
           - Name: "Ancient_Woodland"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/75"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1003"
             NeedsToken: true
             Fields: [ "name", "status" ]
           - Name: "Ancient_Woodlands_Revised"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1001"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1004"
             NeedsToken: true
             Fields: [ "name", "status" ]
         UtilitiesService:

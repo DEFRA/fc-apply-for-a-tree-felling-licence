@@ -113,6 +113,7 @@ public class WoodlandOwnerController : Controller
     [HttpGet]
     public async Task<IActionResult> ManageWoodlandOwnerDetails(
         Guid id, 
+        Guid? fromManageClientAgencyId,
         [FromServices] ManageWoodlandOwnerDetailsUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -150,7 +151,6 @@ public class WoodlandOwnerController : Controller
             }
         }
 
-
         var (_, isFailure, model) = await useCase.GetWoodlandOwnerModelAsync(id, user, cancellationToken);
 
         if (isFailure)
@@ -159,6 +159,7 @@ public class WoodlandOwnerController : Controller
         }
 
         SetBreadcrumbs(model, "Manage Woodland Owner");
+        model.FromManageClientAgencyId = fromManageClientAgencyId;
         
         return View(model);
     }
@@ -184,6 +185,7 @@ public class WoodlandOwnerController : Controller
 
         if (!await VerifyUserAuthorityAsync(useCase, user, model.Id, cancellationToken))
         {
+            this.AddErrorMessage("You do not have permissions to edit this managed owner");
             return RedirectToAction(nameof(HomeController.Index), "Home");
         }
 
@@ -198,10 +200,19 @@ public class WoodlandOwnerController : Controller
         {
             return RedirectToAction(nameof(ManagedClientSummary), "WoodlandOwner", new { woodlandOwnerId = model.Id });
         }
-        else
+
+        if (user.IsFcUser && model.FromManageClientAgencyId.HasValue)
         {
-                return RedirectToAction(nameof(HomeController.Index), "Home");
+            return RedirectToAction(nameof(ManagedClientSummary), "WoodlandOwner", 
+                new { woodlandOwnerId = model.Id, agencyId = model.FromManageClientAgencyId.Value });
         }
+
+        if (user.IsFcUser)
+        {
+            return RedirectToAction("WoodlandOwner", "Home", new { woodlandOwnerId = model.Id });
+        }
+
+        return RedirectToAction(nameof(HomeController.Index), "Home");
     }
 
     private async Task<bool> VerifyUserAuthorityAsync(
@@ -210,6 +221,11 @@ public class WoodlandOwnerController : Controller
         Guid woodlandOwnerId,
         CancellationToken cancellationToken)
     {
+        if (user.IsFcUser)
+        {
+            return true;
+        }
+
         if (user.AccountType is AccountTypeExternal.Agent or AccountTypeExternal.AgentAdministrator)
         {
             // check agent has authority

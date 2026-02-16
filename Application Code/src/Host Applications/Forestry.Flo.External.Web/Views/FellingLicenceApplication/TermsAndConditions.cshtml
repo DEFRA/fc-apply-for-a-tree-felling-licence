@@ -3,7 +3,7 @@
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.FlaTermsAndConditionsViewModel
 
 @{
-    ViewData["Title"] = "Apply for a felling licence: Declaration and confirmation";
+    ViewData["Title"] = "Apply for felling licence: Certification requirements";
     ViewData.ShowBackLink();
 }
 
@@ -14,168 +14,208 @@
     <div class="govuk-grid-column-two-thirds">
         
         <h1 class="govuk-heading-xl">@ViewData["Title"]</h1>
-        
-        <h2 class="govuk-heading-s">Before you submit</h2>
-        <p class="govuk-body">
-            Make sure you’ve read and understood all the statements and declaration. 
-            You must agree to them before you can submit your application.
-        </p>
 
         <partial name="_ApplicationEditWarning.cshtml" model="@Model" />
 
-        <div class="govuk-body">
-            <p>I hereby apply for a licence to fell the trees described in this application and I certify that:</p>
 
-            <h3 class="govuk-heading-m">Authority to act and control</h3>
-            <p>
-                I am the applicant or an agent acting under the authority of the applicant.
-            </p>
-            <p>
-                I have sufficient interest in or control over the land on which the trees are growing to fell the trees, with or without the consent of another person.
-            </p>
+        <p class="govuk-body">
+            I hereby apply for a licence to fell the trees described in this application and I certify that
+        </p>
 
-            <h3 class="govuk-heading-m">Obtaining permissions</h3>
-            <p>
-                I will obtain any necessary permissions or consents from other persons or bodies, if required, prior to the commencement of felling operations.
-            </p>
-
-            <h3 class="govuk-heading-m">Safeguarding European protected species (EPS)</h3>
-            <p>
-                I understand the importance of protecting European protected species according to the Conservation of Habitats and Species Regulations 2017.
-            </p>
-            <p>
-                I am familiar with the Good Practice guidance and protocol for safeguarding these species during forestry operations.
-            </p>
-            <p>
-                I know that if I cannot meet these requirements, I must obtain a species licence.
-            </p>
-
-            <h3 class="govuk-heading-m">Environmental Impact Assessment</h3>
-            <p>
-                I understand that I may need to support the application by requesting a deforestation assessment or opinion under the Environmental Impact Assessment (Forestry) Regulations (England and Wales) 1999 using the EIA application form if my application is for:
-            </p>
-            <ul class="govuk-list govuk-list--bullet">
-                <li>
-                    deforestation
-                </li>
-                <li>
-                    clear-felling with a requirement to restock in a different area
-                </li>
-            </ul>
-
-            <h3 class="govuk-heading-m">Impact on wild birds</h3>
-            <p>
-                I have taken into account the impact this application will have on the area and diversity of habitats for wild birds.
-            </p>
-            <p>
-                I have also considered the legal protection given to wild birds, especially during the breeding season, under the Wildlife and Countryside Act 1981.
-            </p>
-
-            <h3 class="govuk-heading-m">Tree Preservation Orders (TPO) and conservation areas</h3>
-            <p>
-                I have checked with the local planning authorities to determine if there are Tree Preservation Orders, or Conservation Areas on the trees or land related to this application.
-            </p>
-            <p>
-                I have accurately documented TPO and conservation area information in my application.
-            </p>
-
-            <h3 class="govuk-heading-m">Historic England consents</h3>
-            <p>
-                I have consulted with Natural England to determine if the trees mentioned in this application are located within a designated Site of Special Scientific Interest under the Wildlife and Countryside Act 1981.
-            </p>
-            <p>
-                If the land is designated, I will obtain the required consent from Natural England before proceeding with the proposed tree felling operations in this application.
-            </p>
-
-            @if (Model.IsCBWapplication)
-            {
-                <h3 class="govuk-heading-m">Cricket bat willow conditions</h3>
-                <p>
-                    These conditions apply to the licensed felling at the site shown on the map and form part of the agreement between the Forestry Commission and the landowner.
-                </p>
-                <p>
-                    I understand that I must meet these conditions as part of my felling licence
-                </p>
-                <p>
-                    Failure to comply may result in:
-                </p>
-                <ul class="govuk-list govuk-list--bullet">
-                    <li>
-                        an Enforcement Notice under section 24 of the Forestry Act 1967
-                    </li>
-                    <li>
-                        prosecution and a fine with no upper limit
-                    </li>
-                    <li>
-                        the Forestry Commission carrying out the work and recovering costs from me
-                    </li>
-                </ul>
-                <p>
-                    Before the compliance date, I will ensure the land where felling took place is:
-                </p>
-                <ul class="govuk-list govuk-list--bullet">
-                    <li>
-                        prepared for tree planting
-                    </li>
-                    <li>
-                        planted with cricket bat willow, with at least 100 plants per hectare, evenly spread across the site.  This equates to at least @Model.TotalNumberOfTreesRestocking trees at this site.
-                    </li>
-                </ul>
-                <p>
-                    For 10 years from planting, I will:
-                </p>
-                <ul class="govuk-list govuk-list--bullet">
-                    <li>
-                        protect the trees from damage and keep them weed-free
-                    </li>
-                    <li>
-                        replace any trees that fail to meet the required stocking level
-                    </li>
-                    <li>
-                        maintain the trees following good forestry practice
-                    </li>
-                </ul>
-                <p>
-                    I understand that failure to meet these conditions may result in enforcement action.
-                </p>
-            }
-
-
-            <h3 class="govuk-heading-m">Information disclosure</h3>
-            <p>
-                I consent to:
-            </p>
-            <ul class="govuk-list govuk-list--bullet">
-                <li>
-                    the disclosure and sharing of information regarding this felling licence application with other organisations or consultants deemed necessary by the Forestry Commission for the purposes of managing, monitoring, assessing, and publicising this application or licence
-                </li>
-                <li>
-                    information about this application, including that provided in the application or the approved licence, as well as any other pertinent documentation, may be accessible to the public
-                </li>
-                <li>
-                    details being shared with future owners of this property
-                </li>
-            </ul>
-
-            <h3 class="govuk-heading-m">Verification and accuracy</h3>
-            <p>
-                I have completed the necessary checks to validate the details of this application and, to the best of my knowledge, the information provided in this application is accurate and complete.
-            </p>
-
-            <h3 class="govuk-heading-m">Updates to this declaration</h3>
-            <p>
-                We may update this declaration and guidance at any time without notice. <br/>
-                By submitting your application, you confirm that you’ve read, understood, and agreed to the declaration as it appears on the date you submit it.
-            </p>
-            <p>
-                Last updated 08 July 2024
-            </p>
-
-            <input type="hidden" aria-hidden="True" asp-for="ApplicationId"/>
-            <input type="hidden" aria-hidden="True" asp-for="ReturnToApplicationSummary" />
-
-        </div>
+        <h2 class="govuk-heading-l">Authority to act and control</h2>
+        <p class="govuk-body">
+            I am the applicant or an agent acting under the authority of the applicant.
+        </p>
+        <p class="govuk-body">
+            I have sufficient interest in or control over the land on which the trees 
+            are growing to fell the trees, with or without the consent of another 
+            person.
+        </p>
+        <p class="govuk-body">
+            I confirm that where a conditional licence is applied for, I have all necessary 
+            legal authority to restock (by replanting or natural regeneration) the felled 
+            land, or any agreed alternative land, with the agreed tree species and to 
+            maintain those trees for a period of 10 years.
+        </p>
         
+        <h2 class="govuk-heading-l">Obtaining permissions</h2>
+        <p class="govuk-body">
+            I will obtain any necessary permissions or consents from other persons or 
+            bodies, if required, prior to the commencement of felling operations.
+        </p>
+        
+        <h2 class="govuk-heading-l">Safeguarding European protected species (EPS)</h2>
+        <p class="govuk-body">
+            I understand the importance of protecting European protected species 
+            according to the Conservation of Habitats and Species Regulations 2017.
+        </p>
+        <p class="govuk-body">
+            I am familiar with the Good Practice guidance and protocol for safeguarding 
+            these species during forestry operations.
+        </p>
+        <p class="govuk-body">
+            I know that if I cannot meet these requirements, I must 
+            <a class="govuk-link long-link" href="https://www.gov.uk/guidance/wildlife-licences" target="_blank" rel="noreferrer noopener">
+                obtain a species licence (opens in new tab)
+            </a>.
+        </p>
+        
+        <h2 class="govuk-heading-l">Impact on wild birds</h2>
+        <p class="govuk-body">
+            I have taken into account the impact this application will have on the area 
+            and diversity of habitats for wild birds.
+        </p>
+        <p class="govuk-body">
+            I have also considered the legal protection given to wild birds, especially 
+            during the breeding season, under the Wildlife and Countryside Act 1981.
+        </p>
+        
+        <h2 class="govuk-heading-l">Tree Preservation Orders (TPO) and conservation areas</h2>
+        <p class="govuk-body">
+            I have checked with the local planning authorities to determine if there are 
+            Tree Preservation Orders, or Conservation Areas on the trees or land related 
+            to this application.
+        </p>
+        <p class="govuk-body">
+            I have accurately documented TPO and conservation area information in my 
+            application.
+        </p>
+        
+        <h2 class="govuk-heading-l">Natural England consents</h2>
+        <p class="govuk-body">
+            I have confirmed with Natural England whether the trees to which this 
+            application relates are on, or within, a designated Site of Special Scientific 
+            Interest under the Wildlife and Countryside Act 1981.
+        </p>
+        <p class="govuk-body">
+            Where the land is designated, I will ensure that I have the necessary consent 
+            from Natural England to carry out the tree felling works proposed within this 
+            application.
+        </p>
+        
+        <h2 class="govuk-heading-l">Historic England consents</h2>
+        <p class="govuk-body">
+            I have confirmed with Historic England whether the trees to which this 
+            application relates are on, or within, a designated Scheduled Monument 
+            under the Ancient Monuments and Archaeological Areas Act 1979.
+        </p>
+        <p class="govuk-body">
+            Where the land is designated, I will secure the necessary consent from 
+            Historic England to carry out the tree felling works proposed within this 
+            application.
+        </p>
+        
+        <h2 class="govuk-heading-l">Environmental Impact Assessment</h2>
+        <p class="govuk-body">
+            I understand that felling licence applications for deforestation and or clear 
+            felling with a condition of restocking an alternative area may also need to be 
+            supported by the 
+            <a class="govuk-link long-link" href="https://www.gov.uk/guidance/environmental-impact-assessments-for-woodland" target="_blank" rel="noreferrer noopener">
+                relevant deforestation and, or afforestation enquiry form(s) (opens in new tab)
+            </a>
+            for Assessment or Opinion under the Environmental Impact 
+            Assessment (Forestry) Regulations (England and Wales) 1999. These forms 
+            can be found on GOV.UK.
+        </p>
+
+        @if (Model.IsCBWapplication)
+        {
+            <h2 class="govuk-heading-l">Cricket bat willow conditions</h2>
+            <p class="govuk-body">
+                These conditions apply to the licensed felling at the site shown on the map and form part of the agreement between the Forestry Commission and the landowner.
+            </p>
+            <p class="govuk-body">
+                I understand that I must meet these conditions as part of my felling licence
+            </p>
+            <p class="govuk-body">
+                Failure to comply may result in:
+            </p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>
+                    an Enforcement Notice under section 24 of the Forestry Act 1967
+                </li>
+                <li>
+                    prosecution and a fine with no upper limit
+                </li>
+                <li>
+                    the Forestry Commission carrying out the work and recovering costs from me
+                </li>
+            </ul>
+            <p class="govuk-body">
+                Before the compliance date, I will ensure the land where felling took place is:
+            </p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>
+                    prepared for tree planting
+                </li>
+                <li>
+                    planted with cricket bat willow, with at least 100 plants per hectare, evenly spread across the site.  This equates to at least @Model.TotalNumberOfTreesRestocking trees at this site.
+                </li>
+            </ul>
+            <p class="govuk-body">
+                For 10 years from planting, I will:
+            </p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>
+                    protect the trees from damage and keep them weed-free
+                </li>
+                <li>
+                    replace any trees that fail to meet the required stocking level
+                </li>
+                <li>
+                    maintain the trees following good forestry practice
+                </li>
+            </ul>
+            <p class="govuk-body">
+                I understand that failure to meet these conditions may result in enforcement action.
+            </p>
+        }
+
+
+        <h2 class="govuk-heading-l">Information disclosure</h2>
+        <p class="govuk-body">
+            I consent to:
+        </p>
+        <ul class="govuk-list govuk-list--bullet">
+            <li>
+                the disclosure and sharing of information regarding this felling licence application with other organisations or consultants deemed necessary by the Forestry Commission for the purposes of managing, monitoring, assessing, and publicising this application or licence
+            </li>
+            <li>
+                information about this application, including that provided in the application or the approved licence, as well as any other pertinent documentation, may be accessible to the public
+            </li>
+            <li>
+                details being shared with future owners of this property
+            </li>
+        </ul>
+
+        <h2 class="govuk-heading-l">Verification and accuracy</h2>
+        <p class="govuk-body">
+            I understand that I cannot start felling until a felling licence has been granted.
+        </p>
+        
+        <p class="govuk-body">
+            I have completed the necessary checks to validate the details of this 
+            application and, to the best of my knowledge, the information provided in this 
+            application is accurate and complete.
+        </p>
+
+        <h2 class="govuk-heading-m">Changes to these terms and conditions</h2>
+        <p class="govuk-body">
+            Please check these terms and conditions regularly. We can update them at 
+            any time without notice.
+        </p>
+        <p class="govuk-body">
+            You’ll agree to any changes if you continue to use GOV.UK after the terms and 
+            conditions have been updated.
+        </p>
+
+        <p class="govuk-body">
+            Last updated 08 July 2024
+        </p>
+
+        <input type="hidden" aria-hidden="True" asp-for="ApplicationId"/>
+        <input type="hidden" aria-hidden="True" asp-for="ReturnToApplicationSummary" />
+
         <govuk-form-group asp-for="TermsAndConditionsAccepted">
             <validation asp-for="TermsAndConditionsAccepted"></validation>
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
@@ -192,9 +232,11 @@
             <button class="govuk-button" type="submit" data-module="govuk-button">
                 Accept and continue
             </button>
+            <a condition="@(!Model.ReturnToApplicationSummary)" class="govuk-link" asp-action="@nameof(FellingLicenceApplicationController.ApplicationTaskList)" asp-route-applicationId="@Model.ApplicationId" title="Abandon changes and go to the previous page">Cancel</a>
+            <a condition="@(Model.ReturnToApplicationSummary)" class="govuk-link" asp-action="@nameof(FellingLicenceApplicationController.ApplicationSummary)" asp-route-applicationId="@Model.ApplicationId">Return to application summary</a>
         </div>
         
-        <div class="govuk-form-group" condition="@Model.ReturnToApplicationSummary">
+        <div class="govuk-form-group" condition="@(Model.ReturnToApplicationSummary && !Model.AllowEditing)">
             <a class="govuk-link" asp-action="@nameof(FellingLicenceApplicationController.ApplicationSummary)" asp-route-applicationId="@Model.ApplicationId">Return to application summary</a>
         </div>
     </div>

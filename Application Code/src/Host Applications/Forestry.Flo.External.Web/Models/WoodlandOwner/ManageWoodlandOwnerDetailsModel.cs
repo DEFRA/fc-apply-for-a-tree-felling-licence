@@ -66,5 +66,12 @@ namespace Forestry.Flo.External.Web.Models.WoodlandOwner
         /// Gets and Sets the address of the Organisation that the woodland owner is part of.
         /// </summary>
         public Address? OrganisationAddress { get; set; }
+
+        /// <summary>
+        /// Gets and sets the Id of the agency when the managed owner is being viewed/edited from
+        /// the perspective of an agent.
+        /// </summary>
+        [HiddenInput]
+        public Guid? FromManageClientAgencyId { get; set; }
     }
 }

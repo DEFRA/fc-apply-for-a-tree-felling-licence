@@ -10,5 +10,5 @@ public class EiaOptions
     /// <summary>
     /// Gets or sets the external URI for Environmental Impact Assessment (EIA) guidance.
     /// </summary>
-    public string EiaApplicationExternalUri { get; set; } = "https://www.gov.uk/guidance/environmental-impact-assessment";
+    public string EiaApplicationExternalUri { get; set; } = "https://www.gov.uk/guidance/environmental-impact-assessments-for-woodland";
 }

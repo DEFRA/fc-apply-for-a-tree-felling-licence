@@ -141,7 +141,7 @@
                     <div class="govuk-summary-card__title-wrapper">
                         <div>
                             <span class="govuk-summary-card__title" style="font-size: 1.1rem;">
-                                <strong>@confirmedFellingDetail.OperationType!.GetDisplayName() with related restocking in compartment @compartment.CompartmentNumber @headingSuffix</strong>
+                                <strong>@confirmedFellingDetail.OperationType!.GetDisplayName() in compartment @compartment.CompartmentNumber with related restocking (including alternative compartments where relevant) @headingSuffix</strong>
                             </span>
                             <div class="govuk-body-s compartment-info">
                                 <strong condition="@compartment.NearestTown is not null">Location: @compartment.NearestTown</strong>

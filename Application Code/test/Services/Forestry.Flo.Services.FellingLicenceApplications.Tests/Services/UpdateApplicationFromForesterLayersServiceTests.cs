@@ -122,20 +122,27 @@ public class UpdateApplicationFromForesterLayersServiceTests
             .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
+        _unitOfWork.Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
         _foresterServices
             .Setup(x => x.GetAncientWoodlandAsync(It.IsAny<BaseShape>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<List<AncientWoodland>>("error"));
 
+        _foresterServices
+            .Setup(x => x.GetAncientWoodlandsRevisedAsync(It.IsAny<BaseShape>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<List<AncientWoodland>>(new List<AncientWoodland>()));
+
         var result = await sut.UpdateForPawsLayersAsync(applicationId, compartments, CancellationToken.None);
 
-        Assert.False(result.IsSuccess);
+        Assert.True(result.IsSuccess);
 
         _repository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _repository.VerifyNoOtherCalls();
-
         _unitOfWork.VerifyNoOtherCalls();
 
-        _foresterServices.Verify(x => x.GetAncientWoodlandAsync(It.Is<Polygon>(p => JsonConvert.SerializeObject(p) == compartments.First().Value), It.IsAny<CancellationToken>()), Times.Once);
+        _foresterServices.Verify(x => x.GetAncientWoodlandAsync(It.Is<Polygon>(p => JsonConvert.SerializeObject(p) == compartments.First().Value), It.IsAny<CancellationToken>()), Times.Exactly(compartments.Count));
+        _foresterServices.Verify(x => x.GetAncientWoodlandsRevisedAsync(It.Is<Polygon>(p => JsonConvert.SerializeObject(p) == compartments.First().Value), It.IsAny<CancellationToken>()), Times.Exactly(compartments.Count));
         _foresterServices.VerifyNoOtherCalls();
     }
 
@@ -161,21 +168,66 @@ public class UpdateApplicationFromForesterLayersServiceTests
             .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
+        _unitOfWork.Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+        _foresterServices
+            .Setup(x => x.GetAncientWoodlandsRevisedAsync(It.IsAny<BaseShape>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<List<AncientWoodland>>("error"));
+
         _foresterServices
             .Setup(x => x.GetAncientWoodlandAsync(It.IsAny<BaseShape>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(ancientWoodlandResults));
+            .ReturnsAsync(Result.Success<List<AncientWoodland>>(new List<AncientWoodland>()));
+
+        var result = await sut.UpdateForPawsLayersAsync(applicationId, compartments, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _repository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _repository.VerifyNoOtherCalls();
+        _unitOfWork.VerifyNoOtherCalls();
+
+        _foresterServices.Verify(x => x.GetAncientWoodlandAsync(It.Is<Polygon>(p => JsonConvert.SerializeObject(p) == compartments.First().Value), It.IsAny<CancellationToken>()), Times.Exactly(compartments.Count));
+        _foresterServices.Verify(x => x.GetAncientWoodlandsRevisedAsync(It.Is<Polygon>(p => JsonConvert.SerializeObject(p) == compartments.First().Value), It.IsAny<CancellationToken>()), Times.Exactly(compartments.Count));
+        _foresterServices.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenGetForBothLayersFails(
+        Guid applicationId,
+        Dictionary<Guid, string> compartments,
+        Polygon polygon,
+        FellingLicenceApplication application,
+        List<AncientWoodland> ancientWoodlandResults)
+    {
+        var sut = CreateSut();
+
+        application.LinkedPropertyProfile.ProposedCompartmentDesignations = [];
+        application.FellingLicenceApplicationStepStatus.CompartmentDesignationsStatuses.Clear();
+
+        foreach (var compartment in compartments)
+        {
+            compartments[compartment.Key] = JsonConvert.SerializeObject(polygon);
+        }
+
+        _repository
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
 
         _foresterServices
             .Setup(x => x.GetAncientWoodlandsRevisedAsync(It.IsAny<BaseShape>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<List<AncientWoodland>>("error"));
 
+        _foresterServices
+            .Setup(x => x.GetAncientWoodlandAsync(It.IsAny<BaseShape>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<List<AncientWoodland>>("error"));
+
         var result = await sut.UpdateForPawsLayersAsync(applicationId, compartments, CancellationToken.None);
 
-        Assert.False(result.IsSuccess);
+        Assert.True(result.IsFailure);
 
         _repository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _repository.VerifyNoOtherCalls();
-
         _unitOfWork.VerifyNoOtherCalls();
 
         _foresterServices.Verify(x => x.GetAncientWoodlandAsync(It.Is<Polygon>(p => JsonConvert.SerializeObject(p) == compartments.First().Value), It.IsAny<CancellationToken>()), Times.Once);
