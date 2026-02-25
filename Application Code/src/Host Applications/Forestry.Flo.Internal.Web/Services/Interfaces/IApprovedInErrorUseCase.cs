@@ -1,8 +1,6 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.Common.Models;
-using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
 namespace Forestry.Flo.Internal.Web.Services.Interfaces;
 
@@ -30,6 +28,7 @@ public interface IApprovedInErrorUseCase
     /// </summary>
     /// <param name="model">The Approved In Error model containing the details to save.</param>
     /// <param name="user">The internal user performing the operation.</param>
+    /// <param name="viewApplicationUrl">The URL to view the application.</param>
     /// <param name="cancellationToken">A cancellation token for the async operation.</param>
     /// <returns>
     /// A <see cref="Result"/> indicating the outcome of the save operation.
@@ -37,6 +36,7 @@ public interface IApprovedInErrorUseCase
     Task<Result> ConfirmApprovedInErrorAsync(
         ApprovedInErrorModel model,
         InternalUser user,
+        string viewApplicationUrl,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -62,9 +62,9 @@ public interface IApprovedInErrorUseCase
     /// <param name="model">The approved in error model containing the corrected details.</param>
     /// <param name="cancellationToken">A cancellation token for the async operation.</param>
     /// <returns>
-    /// A <see cref="Result{Document}"/> containing the generated PDF document if successful, or an error if unsuccessful.
+    /// A <see cref="Result"/> indicating if successful, or an error if unsuccessful.
     /// </returns>
-    Task<Result<Document>> ReApprovedInErrorAsync(
+    Task<Result> ReApprovedInErrorAsync(
         Guid applicationId,
         InternalUser user,
         ApprovedInErrorModel model,

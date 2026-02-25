@@ -20,15 +20,15 @@
     <div class="govuk-warning-text" condition="@(Model.ConfirmedFellingAndRestockingComplete == false)">
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive">Warning</span>
-            The confirmed felling and restocking details are not yet complete.  Conditions should be regenerated once the felling and restocking is confirmed.
+            <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
+            The felling and restocking details are not yet confirmed. Conditions should be regenerated once the felling and restocking is confirmed.
         </strong>
     </div>
     
     <div class="govuk-warning-text" condition="@Model.ConditionsStatus.ConditionsToApplicantDate.HasValue">
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive">Warning</span>
+            <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
             The conditions were sent to the applicant on @Model.ConditionsStatus.ConditionsToApplicantDate!.Value.ToLocalTime().ToString("F")
         </strong>
     </div>
@@ -36,8 +36,8 @@
     <div class="govuk-warning-text" condition="@(Model.ConditionsStatus.ConditionsToApplicantDate.HasNoValue() && Model.ConditionsStatus.OldConditionsToApplicantDate.HasValue)">
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive">Warning</span>
-            Conditions from a previous version of this application (before it was subsequently resubmitted by the applicant) 
+            <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
+            Conditions from a previous version of the felling and restocking (before further amendments were made, or the application was returned to the applicant) 
             were sent to the applicant on @(Model.ConditionsStatus.OldConditionsToApplicantDate!.Value.ToLocalTime().ToString("F")).
             You must regenerate and resend the conditions to the applicant.
         </strong>
@@ -52,7 +52,7 @@
 
         <div class="govuk-form-group">
             <div class="govuk-hint" condition="@(Model.Editable(user) && Model.Conditions.Any())"> 
-                Indicate whether or not the application is conditional and then click <b>Save</b>. 
+                Indicate whether the application is conditional and then click <b>Save</b>. 
                 Conditions have been generated for this application. Updating the application to <b>unconditional</b> will clear these conditions. 
             </div> 
             <fieldset class="govuk-fieldset">
@@ -186,6 +186,33 @@
             <button condition="@Model.Editable(user)" condition-disabled="@Model.ConfirmedFellingAndRestockingComplete == false" id="send-notification-button" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
                 Send conditions to applicant
             </button>
+        </form>
+    }
+
+    @if (Model.ConditionsStatus.ConditionsToApplicantDate.HasValue && Model.Editable(user))
+    {
+        <form method="post" asp-action="UpdateConditionsStatusForFurtherAmendments">
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                    <h3 class="govuk-fieldset__heading">This task has been completed, you can re-open it to make further amendments</h3>
+                </legend>
+            </fieldset>
+            
+            <input asp-for="ApplicationId"/>
+            
+            <div class="govuk-warning-text">
+                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                <strong class="govuk-warning-text__text">
+                    <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
+                    Related tasks that have been completed may also need to be re-opened as a result of re-opening this task.
+                </strong>
+            </div>
+            <div class="govuk-button-group">
+                <button id="revert-conditions-button" data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
+                    Re-open this task
+                </button>
+
+            </div>
         </form>
     }
     

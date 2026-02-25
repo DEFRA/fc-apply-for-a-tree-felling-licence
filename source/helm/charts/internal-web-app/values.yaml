@@ -300,6 +300,10 @@ config:
       InformApplicantOfReturnedApplication:
       # -- Inform Applicant of Application FAD extension - Email to applicant
       InformApplicantOfApplicationExtension:
+      # -- Inform applicant of AIE, new licence required
+      InformApplicantOfAIENewLicenceRequired:
+      # -- Inform applicant of new licence approved after AIE
+      InformApplicantOfAIENewLicenceApproved:
       # -- Inform FC staff of application published to Consultation public register - Email to AO/WO/FM to inform application published and removal dates
       InformFcStaffOfApplicationAddedToConsultationPublicRegister:
       # -- Inform FC staff of application published to Decision public register date - Email to nominated AO/WO/FM to inform application published and removal date
@@ -330,8 +334,20 @@ config:
       InformApplicantOfReturnedApplicationMixLarchZone1: 
       # -- Inform Applicant of mixed larch and non-larch species in mixed high risk zones
       InformApplicantOfReturnedApplicationMixLarchMixZone: 
-      # --Inform Applicant of Larch in mixed Zones
+      # -- Inform Applicant of Larch in mixed Zones
       InformApplicantOfReturnedApplicationLarchOnlyMixZone: 
+      # -- EIA reminder to applicant to send missing documents
+      EiaReminderMissingDocuments:
+      # -- EIA reminder to applicant to send documents
+      EiaReminderToSendDocuments:
+      # -- Notification to internal user that applicant has reviewed F&R amendments
+      ApplicantReviewedAmendments:
+      # -- Notification of amendments sent to applicant
+      AmendmentsSentToApplicant:
+      # -- Reminder to applicant to respond to f&r amendments
+      ReminderForApplicantToRespondToAmendments:
+      # -- Inform internal users of application approved in error process started
+      InformFcStaffOfApplicationApprovedInError:
   # -- Allowed Email Domains for Internal Users
   PermittedRegisteredUser:
     enabled: false

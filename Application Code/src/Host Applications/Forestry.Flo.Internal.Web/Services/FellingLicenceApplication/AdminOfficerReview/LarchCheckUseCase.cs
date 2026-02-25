@@ -14,7 +14,6 @@ using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Microsoft.Extensions.Options;
-using System;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Result = CSharpFunctionalExtensions.Result;
 
@@ -57,6 +56,7 @@ public class LarchCheckUseCase(
     public async Task<Result<LarchCheckModel>> GetLarchCheckModelAsync(
         Guid applicationId,
         InternalUser user,
+        bool forAoReview,
         CancellationToken cancellationToken)
     {
         var (_, licenceRetrievalFailure, fellingLicence) = await GetFellingLicenceApplication.GetApplicationByIdAsync(applicationId, cancellationToken);
@@ -84,6 +84,12 @@ public class LarchCheckUseCase(
 
         var larchCheckDetails = await _larchCheckService.GetLarchCheckDetailsAsync(applicationId, cancellationToken);
 
+        var allSpecies = await _larchCheckService.GetAllFellingSpeciesLarchFirstAsync(applicationId, forAoReview, cancellationToken);
+        if (allSpecies.IsFailure)
+        {
+            return allSpecies.ConvertFailure<LarchCheckModel>();
+        }
+
         var providerModel = new ActivityFeedItemProviderModel()
         {
             FellingLicenceId = applicationId,
@@ -106,7 +112,7 @@ public class LarchCheckUseCase(
         {
             ApplicationId = applicationId,
             FellingLicenceApplicationSummary = applicationSummary.Value,
-            AllSpecies = applicationSummary.Value.AllSpeciesBoldLarch,
+            AllSpecies = allSpecies.Value,
             ExtendedFAD = applicationSummary.Value.FadLarchExtension(_larchOptions),
             FlyoverPeriod = FlyoverPeriodToString(_larchOptions),
             MoratoriumPeriod = MoratoriumDatesToString(_larchOptions),

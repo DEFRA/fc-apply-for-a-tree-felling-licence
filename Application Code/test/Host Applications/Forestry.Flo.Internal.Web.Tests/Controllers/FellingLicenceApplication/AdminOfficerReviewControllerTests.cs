@@ -618,7 +618,7 @@ public class AdminOfficerReviewControllerTests
     {
         var id = Guid.NewGuid();
         var model = Result.Success(_fixture.Create<LarchCheckModel>());
-        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(model);
 
         var result = await _controller.LarchCheck(id, _larchCheckUseCaseMock.Object, _fellingLicenceApplicationUseCaseMock.Object, CancellationToken.None);
@@ -631,7 +631,7 @@ public class AdminOfficerReviewControllerTests
     public async Task LarchCheck_Get_Redirects_WhenFailure()
     {
         var id = Guid.NewGuid();
-        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<LarchCheckModel>("fail"));
 
         var result = await _controller.LarchCheck(id, _larchCheckUseCaseMock.Object, _fellingLicenceApplicationUseCaseMock.Object, CancellationToken.None);
@@ -646,7 +646,7 @@ public class AdminOfficerReviewControllerTests
         var id = Guid.NewGuid();
         var model = _fixture.Create<LarchCheckModel>();
         _controller.ModelState.AddModelError("Test", "Error");
-        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(model));
 
         var result = await _controller.LarchCheck(id, model, _larchCheckUseCaseMock.Object, _adminOfficerReviewUseCaseMock.Object, _amendCaseNotesMock.Object, CancellationToken.None);
@@ -662,7 +662,7 @@ public class AdminOfficerReviewControllerTests
         var id = Guid.NewGuid();
         var model = _fixture.Create<LarchCheckModel>();
         _controller.ModelState.AddModelError("Test", "Error");
-        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        _larchCheckUseCaseMock.Setup(x => x.GetLarchCheckModelAsync(id, It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<LarchCheckModel>("fail"));
 
         var result = await _controller.LarchCheck(id, model, _larchCheckUseCaseMock.Object, _adminOfficerReviewUseCaseMock.Object, _amendCaseNotesMock.Object, CancellationToken.None);

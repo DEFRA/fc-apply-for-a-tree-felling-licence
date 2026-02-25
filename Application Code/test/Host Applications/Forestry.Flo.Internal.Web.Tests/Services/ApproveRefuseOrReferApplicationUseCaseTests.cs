@@ -177,7 +177,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             a.ApplicationReference == application.ApplicationReference
             && a.PropertyName == application.SubmittedFlaPropertyDetail.Name
             && a.ApproverName == approver.FullName(false)
-            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}"
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
             && a.Name == applicant.FullName),
             NotificationType.InformApplicantOfApplicationApproval,
@@ -432,7 +432,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             a.ApplicationReference == application.ApplicationReference
             && a.PropertyName == application.SubmittedFlaPropertyDetail.Name
             && a.ApproverName == approver.FullName(false)
-            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}"
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
             && a.Name == applicant.FullName),
             NotificationType.InformApplicantOfApplicationApproval,
@@ -545,7 +545,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             a.ApplicationReference == application.ApplicationReference
             && a.PropertyName == application.SubmittedFlaPropertyDetail.Name
             && a.ApproverName == approver.FullName(false)
-            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}"
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
             && a.Name == applicant.FullName),
             NotificationType.InformApplicantOfApplicationApproval,
@@ -654,7 +654,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
-            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}"
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
             && a.Name == applicant.FullName),
             NotificationType.InformApplicantOfApplicationApproval,
@@ -775,7 +775,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             a.ApplicationReference == application.ApplicationReference
             && a.PropertyName == application.SubmittedFlaPropertyDetail.Name
             && a.ApproverName == approver.FullName(false)
-            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}"
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
             && a.Name == applicant.FullName),
             NotificationType.InformApplicantOfApplicationApproval,
@@ -1093,7 +1093,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             a.ApplicationReference == application.ApplicationReference
             && a.PropertyName == application.SubmittedFlaPropertyDetail.Name
             && a.ApproverName == approver.FullName(false)
-            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}"
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
             && a.Name == applicant.FullName),
             NotificationType.InformApplicantOfApplicationApproval,
@@ -1191,7 +1191,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             a.ApplicationReference == application.ApplicationReference
             && a.PropertyName == application.SubmittedFlaPropertyDetail.Name
             && a.ApproverName == approver.FullName(false)
-            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}"
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
             && a.Name == applicant.FullName),
             NotificationType.InformApplicantOfApplicationApproval,

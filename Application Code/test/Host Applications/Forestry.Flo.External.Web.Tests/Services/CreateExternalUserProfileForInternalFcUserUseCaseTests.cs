@@ -196,7 +196,7 @@ public class CreateExternalUserProfileForInternalFcUserUseCaseTests
             await _applicantsContext.SaveEntitiesAsync(CancellationToken.None);
         }
 
-        var userAccountRepository = new UserAccountRepository(_applicantsContext);
+        var userAccountRepository = new UserAccountRepository(_applicantsContext, new NullLogger<UserAccountRepository>());
 
         return new CreateExternalUserProfileForInternalFcUserUseCase(
             new AccountRegistrationService(

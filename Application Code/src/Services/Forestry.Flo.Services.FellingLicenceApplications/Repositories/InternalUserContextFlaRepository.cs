@@ -61,6 +61,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Include(x => x.WoodlandOfficerReview)
                 .ThenInclude(x => x!.FellingAndRestockingAmendmentReviews)
             .Include(x => x.ConsulteeComments)
+            .Include(x => x.ApprovedInError)
             .AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == applicationId, cancellationToken);
         return application is null ? Maybe<FellingLicenceApplication>.None : Maybe<FellingLicenceApplication>.From(application);

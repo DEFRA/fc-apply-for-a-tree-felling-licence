@@ -45,7 +45,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
     private readonly IUpdateConfirmedFellingAndRestockingDetailsService _updateConfirmedFellingAndRestockingDetailsService;
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
     private readonly ICalculateConditions _calculateConditionsService;
-    private readonly IBus _busControl;
+    private readonly IBus _bus;
 
     public AdminOfficerReviewUseCase(
         ISendNotifications emailService,
@@ -72,7 +72,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
         IUpdateWoodlandOfficerReviewService updateWoodlandOfficerReviewService,
         IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ICalculateConditions calculateConditionsService,
-        IBus busControl)
+        IBus bus)
         : base(internalUserAccountService,
             externalUserAccountService,
             logger,
@@ -98,7 +98,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
         ArgumentNullException.ThrowIfNull(updateConfirmedFellingAndRestockingDetailsService);
         ArgumentNullException.ThrowIfNull(calculateConditionsService);
         ArgumentNullException.ThrowIfNull(updateWoodlandOfficerReviewService);
-        ArgumentNullException.ThrowIfNull(busControl);
+        ArgumentNullException.ThrowIfNull(bus);
 
         _updateFellingLicenceApplication = updateFellingLicenceApplication;
         _getAdminOfficerReview = getAdminOfficerReview;
@@ -112,7 +112,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
         _updateConfirmedFellingAndRestockingDetailsService = updateConfirmedFellingAndRestockingDetailsService;
         _updateWoodlandOfficerReviewService = updateWoodlandOfficerReviewService;
         _calculateConditionsService = calculateConditionsService;
-        _busControl = busControl;
+        _bus = bus;
     }
 
     /// <inheritdoc />
@@ -331,7 +331,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
             return Result.Failure("Unable to update application");
         }
 
-        await _busControl.Publish(
+        await _bus.Publish(
             new GenerateSubmittedPdfPreviewMessage(
                 user.UserAccountId!.Value,
                 applicationId),

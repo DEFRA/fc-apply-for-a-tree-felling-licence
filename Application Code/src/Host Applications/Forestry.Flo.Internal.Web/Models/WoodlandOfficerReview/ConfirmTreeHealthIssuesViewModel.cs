@@ -19,8 +19,8 @@ public class ConfirmTreeHealthIssuesViewModel : WoodlandOfficerReviewModelBase
     public TreeHealthIssuesViewModel TreeHealthIssuesViewModel { get; set; }
 
     /// <summary>
-    /// Gets and sets a flag indicating whether the user has indicated that the applicant's
-    /// tree health issues are confirmed.
+    /// Gets and sets a flag indicating whether the user has indicated that there is a tree
+    /// health or public safety reason to expedite the application.
     /// </summary>
-    public bool? Confirmed { get; set; }
+    public bool? IsTreeHealthReasonToExpedite { get; set; }
 }

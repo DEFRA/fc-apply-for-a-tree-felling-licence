@@ -58,7 +58,7 @@ public partial class WoodlandOfficerReviewController
         var user = new InternalUser(User);
 
         var (_, isFailure) = await useCase
-            .ConfirmTreeHealthIssuesAsync(model.ApplicationId, user, model.Confirmed!.Value, cancellationToken);
+            .ConfirmTreeHealthIssuesAsync(model.ApplicationId, user, model.IsTreeHealthReasonToExpedite!.Value, cancellationToken);
 
         if (isFailure)
         {

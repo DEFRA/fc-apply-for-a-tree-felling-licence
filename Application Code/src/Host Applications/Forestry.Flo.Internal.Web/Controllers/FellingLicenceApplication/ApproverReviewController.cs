@@ -5,9 +5,11 @@ using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -21,13 +23,18 @@ public class ApproverReviewController : Controller
 {
     private readonly ILogger<ApproverReviewController> _logger;
     private readonly IApproverReviewUseCase _approverReviewUseCase;
+    private readonly IBus _bus;
 
     public ApproverReviewController(
         IApproverReviewUseCase approverReviewUseCase,
+        IBus bus,
         ILogger<ApproverReviewController> logger)
     {
         ArgumentNullException.ThrowIfNull(approverReviewUseCase);
+        ArgumentNullException.ThrowIfNull(bus);
+
         _approverReviewUseCase = approverReviewUseCase;
+        _bus = bus;
         _logger = logger ?? new NullLogger<ApproverReviewController>();
     }
 
@@ -144,22 +151,20 @@ public class ApproverReviewController : Controller
     public async Task<IActionResult> SaveGeneratePdfPreview(
         ApproverReviewSummaryModel model,
         [FromServices] IApproverReviewUseCase useCase,
-        [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Saving approver review and generating PDF preview for application with ID {ApplicationId}", model.Id);
 
         var user = new InternalUser(User);
 
-        var resultPdfGenerated =
-            await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(user.UserAccountId!.Value, model.Id, cancellationToken);
+        await _bus.Publish(
+            new GenerateSubmittedPdfPreviewMessage(
+                user.UserAccountId!.Value,
+                model.Id),
+            cancellationToken);
 
-        if (resultPdfGenerated.IsFailure)
-        {
-            _logger.LogError("Failed to generate PDF preview for application with ID {ApplicationId}. Error: {Error}", model.Id, resultPdfGenerated.Error);
-            this.AddErrorMessage("Unable to generate the preview licence document for the application");
-            return RedirectToAction("Index", new { model.Id });
-        }
+        this.AddConfirmationMessage("Request to generate PDF preview has been submitted, please check back later.");
+
         return RedirectToAction("Index", "ApproverReview", new { model.Id });
     }
 
@@ -224,7 +229,6 @@ public class ApproverReviewController : Controller
         Guid id,
         [FromServices] IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
         [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
-        [FromServices] IRemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Changing application status to Refused for application with ID {ApplicationId}", id);
@@ -240,7 +244,6 @@ public class ApproverReviewController : Controller
         Guid id,
         [FromServices] IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
         [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
-        [FromServices] IRemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Changing application status to Approved for application with ID {ApplicationId}", id);
@@ -256,7 +259,6 @@ public class ApproverReviewController : Controller
         Guid id,
         [FromServices] IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
         [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
-        [FromServices] IRemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Changing application status to ReferredToLocalAuthority for application with ID {ApplicationId}", id);
@@ -407,8 +409,8 @@ public class ApproverReviewController : Controller
             _logger.LogDebug("Generating licence document for application with ID {ApplicationId} as it is being approved", id);
 
             // Calculate the licence expiry date
-            var licenceExpiryDate =
-                await generatePdfApplicationUseCase.CalculateLicenceExpiryDateAsync(id, cancellationToken);
+            var licenceExpiryDate = await generatePdfApplicationUseCase
+                .CalculateLicenceExpiryDateAsync(id, cancellationToken);
             
             // update the approver id and licence expiry date in order for the licence document to be generated with the correct details
             var updateResult = await approvalRefusalUseCase.UpdateApplicationApproverAndExpiryDateAsync(
@@ -425,20 +427,18 @@ public class ApproverReviewController : Controller
                 return RedirectToAction("Index", new { id });
             }
 
-            // generate a final licence document for the approved application
-            // this cannot be asynchronous, as the approval should not complete if the document generation fails
-            var resultPdfGenerated =
-                await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(internalUser.UserAccountId.Value, id, cancellationToken);
-            if (resultPdfGenerated.IsFailure)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                _logger.LogError("Failed to generate licence document for application with ID {ApplicationId}. Error: {Error}", id, resultPdfGenerated.Error);
-                this.AddErrorMessage("Unable to generate the licence document for the application");
-                return RedirectToAction("Index", new { id });
-            }
-        }
+            await transaction.CommitAsync(cancellationToken);
 
-        await transaction.CommitAsync(cancellationToken);
+            await _bus.Publish(
+                new GenerateSubmittedPdfPreviewMessage(
+                    internalUser.UserAccountId!.Value,
+                    id),
+                cancellationToken);
+        }
+        else
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
 
         if (result is { IsSuccess: true, SubProcessFailures.Count: > 0 })
         {
@@ -470,7 +470,11 @@ public class ApproverReviewController : Controller
             }
         }
 
-        this.AddConfirmationMessage($"Application status successfully set to {requestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)}.");
+        var licenceGenText = requestedStatus is FellingLicenceStatus.Approved
+            ? "Final licence generation is in progress and will be available shortly. "
+            : string.Empty;
+
+        this.AddConfirmationMessage($"Application status successfully set to {requestedStatus.GetDisplayNameByActorType(ActorType.InternalUser)}. {licenceGenText}");
         return RedirectToAction("Index", new { id });
     }
 }

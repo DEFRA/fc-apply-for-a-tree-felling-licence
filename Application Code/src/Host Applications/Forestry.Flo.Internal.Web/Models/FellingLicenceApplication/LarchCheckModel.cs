@@ -39,7 +39,7 @@ public class LarchCheckModel : FellingLicenceApplicationPageViewModel
     [Required(ErrorMessage = "Recommend split application")]
     public RecommendSplitApplicationEnum? RecommendSplitApplicationDue { get; set; }
 
-    public IEnumerable<FellingSpeciesModel>? AllSpecies { get; set; }
+    public IEnumerable<TreeSpeciesModel>? AllSpecies { get; set; }
 
     /// <summary>
     /// Gets and sets the application ID.

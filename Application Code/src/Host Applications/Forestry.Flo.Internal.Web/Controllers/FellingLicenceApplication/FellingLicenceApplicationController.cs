@@ -4,7 +4,9 @@ using Forestry.Flo.Internal.Web.Models;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Common.User;
+using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,6 +40,24 @@ public class FellingLicenceApplicationController() : Controller
         };
 
         return View(model.Value);
+    }
+
+    public async Task<IActionResult> GenerateLicenceDocument(
+        [FromQuery] Guid applicationId,
+        [FromServices] IBus bus,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        await bus.Publish(
+            new GenerateSubmittedPdfPreviewMessage(
+                user.UserAccountId!.Value,
+                applicationId),
+            cancellationToken);
+
+        this.AddConfirmationMessage("Request to generate licence PDF has been submitted, please check back later.");
+
+        return RedirectToAction(nameof(ApplicationSummary), new { id = applicationId });
     }
 
     [HttpGet]

@@ -3,12 +3,16 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
+using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Extensions;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.InternalUsers.Models;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
@@ -16,10 +20,7 @@ using Forestry.Flo.Services.Notifications.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Moq;
 using System.Text.Json;
-using Forestry.Flo.Services.Common.Extensions;
-using Forestry.Flo.Services.InternalUsers.Models;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
@@ -30,7 +31,8 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
     private readonly Mock<IGetWoodlandOfficerReviewService> _getWoodlandOfficerReviewService = new();
     private readonly Mock<IUpdateWoodlandOfficerReviewService> _updateWoodlandOfficerReviewService = new();
     private readonly Mock<IAuditService<ReviewFellingAndRestockingAmendmentsUseCase>> _auditService = new();
-    private readonly Mock<IGetFellingLicenceApplicationForInternalUsers> _getFellingLicenceApplicationService = new();
+    private readonly Mock<IGetFellingLicenceApplicationForExternalUsers> _getFellingLicenceApplicationService = new();
+    private readonly Mock<IRetrieveUserAccountsService> _getExternalUsersService = new();
     private readonly Mock<IUserAccountService> _userAccountService = new();
     private readonly Mock<ISendNotifications> _sendNotifications = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
@@ -351,7 +353,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
     }
 
     [Fact]
-    public async Task CompleteAmendmentReviewAsync_ApplicationRetrievalFails_NotificationNotSent()
+    public async Task CompleteAmendmentReviewAsync_UserAccessRetrievalFails()
     {
         var record = new FellingAndRestockingAmendmentReviewUpdateRecord
         {
@@ -362,25 +364,93 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
         var userId = Guid.NewGuid();
         var sut = CreateSut();
 
-        _updateWoodlandOfficerReviewService
-            .Setup(s => s.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<UserAccessModel>("error"));
+
+        var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _sendNotifications.VerifyNoOtherCalls();
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
+        _userAccountService.VerifyNoOtherCalls();
+        _getFellingLicenceApplicationService.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task CompleteAmendmentReviewAsync_ApplicationRetrievalFails(UserAccessModel userAccess)
+    {
+        var record = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = Guid.NewGuid(),
+            ApplicantAgreed = true,
+            ApplicantDisagreementReason = null
+        };
+        var userId = Guid.NewGuid();
+        var sut = CreateSut();
+
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
 
         _getFellingLicenceApplicationService
-            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<FellingLicenceApplication>("App not found"));
 
         var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
-        _sendNotifications.VerifyNoOtherCalls();
+        Assert.False(result.IsSuccess);
 
-        _updateWoodlandOfficerReviewService.Verify(v => v.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, CancellationToken.None), Times.Once);
-        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, CancellationToken.None), Times.Once);
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess, CancellationToken.None), Times.Once);
+        _sendNotifications.VerifyNoOtherCalls();
+        _userAccountService.VerifyNoOtherCalls();
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
     }
 
-    [Fact]
-    public async Task CompleteAmendmentReviewAsync_NoWoodlandOfficerAssigned_NotificationNotSent()
+    [Theory, AutoMoqData]
+    public async Task CompleteAmendmentReviewAsync_AmendmentReviewUpdateFails(
+        UserAccessModel userAccess, 
+        FellingLicenceApplication application)
+    {
+        var record = new FellingAndRestockingAmendmentReviewUpdateRecord
+        {
+            FellingLicenceApplicationId = Guid.NewGuid(),
+            ApplicantAgreed = true,
+            ApplicantDisagreementReason = null
+        };
+        var userId = Guid.NewGuid();
+        var sut = CreateSut();
+
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
+        _getFellingLicenceApplicationService
+            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _updateWoodlandOfficerReviewService
+            .Setup(x => x.UpdateFellingAndRestockingAmendmentReviewAsync(It.IsAny<FellingAndRestockingAmendmentReviewUpdateRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure("error"));    
+
+        var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess, CancellationToken.None), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()));
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
+        _userAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task CompleteAmendmentReviewAsync_NoWoodlandOfficerAssigned_NotificationNotSent(
+        UserAccessModel userAccess)
     {
         var record = new FellingAndRestockingAmendmentReviewUpdateRecord
         {
@@ -399,22 +469,33 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
         };
         var sut = CreateSut();
 
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _updateWoodlandOfficerReviewService
             .Setup(s => s.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         _getFellingLicenceApplicationService
-            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(app));
 
         var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
+
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess, CancellationToken.None), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()));
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
+        _userAccountService.VerifyNoOtherCalls();
         _sendNotifications.VerifyNoOtherCalls();
     }
 
-    [Fact]
-    public async Task CompleteAmendmentReviewAsync_UserAccountRetrievalFails_NotificationNotSent()
+    [Theory, AutoMoqData]
+    public async Task CompleteAmendmentReviewAsync_UserAccountRetrievalFails_NotificationNotSent(
+        UserAccessModel userAccess)
     {
         var record = new FellingAndRestockingAmendmentReviewUpdateRecord
         {
@@ -428,12 +509,16 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
 
         var sut = CreateSut();
 
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _updateWoodlandOfficerReviewService
             .Setup(s => s.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         _getFellingLicenceApplicationService
-            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(app));
 
         _userAccountService
@@ -443,11 +528,18 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
         var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
+        
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess, CancellationToken.None), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()));
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         _sendNotifications.VerifyNoOtherCalls();
+        _userAccountService.Verify(x => x.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(l => l.Single() == woUserId), It.IsAny<CancellationToken>()), Times.Once);
+        _userAccountService.VerifyNoOtherCalls();
     }
 
-    [Fact]
-    public async Task CompleteAmendmentReviewAsync_NotificationSendFails_StillReturnsSuccess()
+    [Theory, AutoMoqData]
+    public async Task CompleteAmendmentReviewAsync_NotificationSendFails_StillReturnsSuccess(UserAccessModel userAccess)
     {
         var record = new FellingAndRestockingAmendmentReviewUpdateRecord
         {
@@ -467,12 +559,16 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
                 Email = "wo@email.com",
             };
 
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _updateWoodlandOfficerReviewService
             .Setup(s => s.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         _getFellingLicenceApplicationService
-            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(app));
 
         _userAccountService
@@ -513,14 +609,17 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
             It.IsAny<NotificationRecipient[]>(),
             null, null, It.IsAny<CancellationToken>()), Times.Once);
 
-        _updateWoodlandOfficerReviewService.Verify(v => v.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, CancellationToken.None), Times.Once);
-        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, CancellationToken.None), Times.Once);
-        _userAccountService.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(x => x.Contains(woUserId)), CancellationToken.None), Times.Once);
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess, CancellationToken.None), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()));
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
+        _userAccountService.Verify(x => x.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(l => l.Single() == woUserId), It.IsAny<CancellationToken>()), Times.Once);
+        _userAccountService.VerifyNoOtherCalls();
         _getConfiguredFcAreas.Verify(v => v.TryGetAdminHubAddress(app.AdministrativeRegion!, CancellationToken.None), Times.Once);
     }
 
-    [Fact]
-    public async Task CompleteAmendmentReviewAsync_NotificationSendSucceeds_ReturnsSuccess()
+    [Theory, AutoMoqData]
+    public async Task CompleteAmendmentReviewAsync_NotificationSendSucceeds_ReturnsSuccess(UserAccessModel userAccess)
     {
         var record = new FellingAndRestockingAmendmentReviewUpdateRecord
         {
@@ -540,12 +639,16 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
         };
         var sut = CreateSut();
 
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _updateWoodlandOfficerReviewService
             .Setup(s => s.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         _getFellingLicenceApplicationService
-            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(app));
 
         _userAccountService
@@ -586,13 +689,14 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
             null, null, It.IsAny<CancellationToken>()), Times.Once);
 
         _updateWoodlandOfficerReviewService.Verify(v => v.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, CancellationToken.None), Times.Once);
-        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, CancellationToken.None), Times.Once);
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess, CancellationToken.None), Times.Once);
         _userAccountService.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(x => x.Count == 1 && x.Contains(woUserId)), CancellationToken.None), Times.Once);
         _getConfiguredFcAreas.Verify(v => v.TryGetAdminHubAddress(app.AdministrativeRegion!, CancellationToken.None), Times.Once);
     }
 
-    [Fact]
-    public async Task CompleteAmendmentReviewAsync_NotificationSendSucceeds_ReturnsSuccess_AndCCsAdminOfficer()
+    [Theory, AutoMoqData]
+    public async Task CompleteAmendmentReviewAsync_NotificationSendSucceeds_ReturnsSuccess_AndCCsAdminOfficer(UserAccessModel userAccess)
     {
         var record = new FellingAndRestockingAmendmentReviewUpdateRecord
         {
@@ -621,12 +725,16 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
         };
         var sut = CreateSut();
 
+        _getExternalUsersService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccess));
+
         _updateWoodlandOfficerReviewService
             .Setup(s => s.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
         _getFellingLicenceApplicationService
-            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(app));
 
         _userAccountService
@@ -672,7 +780,8 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
             null, null, It.IsAny<CancellationToken>()), Times.Once);
 
         _updateWoodlandOfficerReviewService.Verify(v => v.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, CancellationToken.None), Times.Once);
-        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, CancellationToken.None), Times.Once);
+        _getExternalUsersService.Verify(x => x.RetrieveUserAccessAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        _getFellingLicenceApplicationService.Verify(v => v.GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess, CancellationToken.None), Times.Once);
         _userAccountService.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(x => x.Count == 2 && x.Contains(woUserId) && x.Contains(adminOfficerId)), CancellationToken.None), Times.Once);
         _getConfiguredFcAreas.Verify(v => v.TryGetAdminHubAddress(app.AdministrativeRegion!, CancellationToken.None), Times.Once);
     }
@@ -693,6 +802,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
         _updateWoodlandOfficerReviewService.Reset();
         _auditService.Reset();
         _getFellingLicenceApplicationService.Reset();
+        _getExternalUsersService.Reset();
         _userAccountService.Reset();
         _sendNotifications.Reset();
         _getConfiguredFcAreas.Reset();
@@ -706,6 +816,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
             _updateWoodlandOfficerReviewService.Object,
             _getFellingLicenceApplicationService.Object,
             _userAccountService.Object,
+            _getExternalUsersService.Object,
             _sendNotifications.Object,
             _getConfiguredFcAreas.Object,
             _internalUserSiteOptions.Object,

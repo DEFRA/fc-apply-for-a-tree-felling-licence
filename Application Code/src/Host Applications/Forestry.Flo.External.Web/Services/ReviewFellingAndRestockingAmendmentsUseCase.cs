@@ -1,6 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.ReviewFellingAndRestockingAmendments;
+using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
@@ -20,8 +21,9 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
     IUpdateConfirmedFellingAndRestockingDetailsService updateConfirmedFellingAndRestockingDetailsService,
     IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
     IUpdateWoodlandOfficerReviewService updateWoodlandOfficerReviewService,
-    IGetFellingLicenceApplicationForInternalUsers getFellingLicenceApplicationService,
+    IGetFellingLicenceApplicationForExternalUsers getFellingLicenceApplicationService,
     IUserAccountService userAccountService,
+    IRetrieveUserAccountsService externalUsersService,
     ISendNotifications sendNotifications,
     IGetConfiguredFcAreas getConfiguredFcAreas,
     IOptions<InternalUserSiteOptions> internalUserSiteOptions,
@@ -270,6 +272,47 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
     {
         logger.LogDebug("Attempting to complete amendment review for application {ApplicationId} by user {UserId}", record.FellingLicenceApplicationId, userId);
 
+        var userAccess = await externalUsersService.RetrieveUserAccessAsync(userId, cancellationToken);
+
+        if (userAccess.IsFailure)
+        { 
+            logger.LogError("Failed to retrieve user access for user {UserId} with error {Error}", userId, userAccess.Error);
+            
+            await auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.ApplicantReviewedAmendmentsFailure,
+                    record.FellingLicenceApplicationId,
+                    userId,
+                    requestContext,
+                    new
+                    {
+                        userAccess.Error
+                    }),
+                cancellationToken);
+
+            return userAccess.ConvertFailure();
+        }
+
+        // get the application - for notifications later, and also to check access before attempting the update
+        var application = await getFellingLicenceApplicationService
+            .GetApplicationByIdAsync(record.FellingLicenceApplicationId, userAccess.Value, cancellationToken);
+
+        if (application.IsFailure)
+        {
+            logger.LogError("Failed to retrieve application {ApplicationId} with error {Error}", record.FellingLicenceApplicationId, application.Error);
+            await auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.ApplicantReviewedAmendmentsFailure,
+                    record.FellingLicenceApplicationId,
+                    userId,
+                    requestContext,
+                    new
+                    {
+                        application.Error
+                    }),
+                cancellationToken);
+
+            return application.ConvertFailure();
+        }
+
         var result = await updateWoodlandOfficerReviewService.UpdateFellingAndRestockingAmendmentReviewAsync(record, userId, cancellationToken);
 
         if (result.IsFailure)
@@ -291,7 +334,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
         }
 
         var notificationResult = await SendNotificationOfAmendmentReviewAsync(
-            record.FellingLicenceApplicationId, 
+            application.Value, 
             $"{internalUserSiteOptions.Value.BaseUrl}FellingLicenceApplication/ApplicationSummary/{record.FellingLicenceApplicationId}",
             cancellationToken);
 
@@ -318,32 +361,22 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
     }
 
     private async Task<Result> SendNotificationOfAmendmentReviewAsync(
-        Guid applicationId,
+        FellingLicenceApplication application,
         string linkToApplication, 
         CancellationToken cancellationToken)
     {
-        var fla = await getFellingLicenceApplicationService.GetApplicationByIdAsync(
-            applicationId, 
-            cancellationToken);
-
-        if (fla.IsFailure)
-        {
-            logger.LogError("Failed to retrieve application {ApplicationId} for sending amendment review notification with error {Error}", applicationId, fla.Error);
-            return Result.Failure($"Unable to retrieve application id {applicationId} for sending amendment review notification");
-        }
-
-        var adminOfficer = fla.Value.AssigneeHistories.FirstOrDefault(x =>
+        var adminOfficer = application.AssigneeHistories.FirstOrDefault(x =>
             x.Role is AssignedUserRole.AdminOfficer && 
             x.TimestampUnassigned is null);
 
-        var woodlandOfficer = fla.Value.AssigneeHistories.FirstOrDefault(x =>
+        var woodlandOfficer = application.AssigneeHistories.FirstOrDefault(x =>
             x.Role is AssignedUserRole.WoodlandOfficer && 
             x.TimestampUnassigned is null);
 
         if (woodlandOfficer is null)
         {
-            logger.LogWarning("No woodland officer assigned to application {ApplicationId} for sending amendment review notification", applicationId);
-            return Result.Failure($"No woodland officer assigned to application id {applicationId} for sending amendment review notification");
+            logger.LogWarning("No woodland officer assigned to application {ApplicationId} for sending amendment review notification", application.Id);
+            return Result.Failure($"No woodland officer assigned to application id {application.Id} for sending amendment review notification");
         }
 
         var idList = new HashSet<Guid>
@@ -360,12 +393,12 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
 
         if (retrieveUsersResult.IsFailure)
         {
-            logger.LogError("Failed to retrieve user accounts for sending amendment review notification for application {ApplicationId} with error {Error}", applicationId, retrieveUsersResult.Error);
-            return Result.Failure($"Unable to retrieve user accounts for sending amendment review notification for application id {applicationId}");
+            logger.LogError("Failed to retrieve user accounts for sending amendment review notification for application {ApplicationId} with error {Error}", application.Id, retrieveUsersResult.Error);
+            return Result.Failure($"Unable to retrieve user accounts for sending amendment review notification for application id {application.Id}");
         }
 
         var adminHubFooter = await
-            getConfiguredFcAreas.TryGetAdminHubAddress(fla.Value.AdministrativeRegion!, cancellationToken);
+            getConfiguredFcAreas.TryGetAdminHubAddress(application.AdministrativeRegion!, cancellationToken);
 
         var woModel = retrieveUsersResult.Value.First(x => x.UserAccountId == woodlandOfficer.AssignedUserId);
         var aoModel = adminOfficer is not null
@@ -375,9 +408,9 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
         var dataModel = new ApplicantReviewedAmendmentsDataModel
         {
             Name = woModel.FullName,
-            ApplicationReference = fla.Value.ApplicationReference,
-            PropertyName = fla.Value.SubmittedFlaPropertyDetail!.Name,
-            ApplicationId = applicationId,
+            ApplicationReference = application.ApplicationReference,
+            PropertyName = application.SubmittedFlaPropertyDetail!.Name,
+            ApplicationId = application.Id,
             ViewApplicationURL = linkToApplication,
             AdminHubFooter = adminHubFooter
         };

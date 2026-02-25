@@ -80,7 +80,7 @@ public class WoodlandOfficerReviewTreeHealthCheckUseCaseTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal(applicationId, result.Value.ApplicationId);
-        Assert.Equal(treeHealthCheckComplete is true, result.Value.Confirmed);
+        Assert.Equal(treeHealthCheckComplete is true, result.Value.IsTreeHealthReasonToExpedite);
         Assert.NotNull(result.Value.TreeHealthIssuesViewModel);
         Assert.NotNull(result.Value.TreeHealthIssuesViewModel.TreeHealthIssues);
         Assert.True(result.Value.TreeHealthIssuesViewModel.TreeHealthIssues.NoTreeHealthIssues);
@@ -173,7 +173,7 @@ public class WoodlandOfficerReviewTreeHealthCheckUseCaseTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal(applicationId, result.Value.ApplicationId);
-        Assert.Equal(treeHealthCheckComplete is true, result.Value.Confirmed);
+        Assert.Equal(treeHealthCheckComplete is true, result.Value.IsTreeHealthReasonToExpedite);
         Assert.NotNull(result.Value.TreeHealthIssuesViewModel);
         Assert.NotNull(result.Value.TreeHealthIssuesViewModel.TreeHealthIssues);
         Assert.False(result.Value.TreeHealthIssuesViewModel.TreeHealthIssues.NoTreeHealthIssues);
@@ -326,7 +326,7 @@ public class WoodlandOfficerReviewTreeHealthCheckUseCaseTests
         application.TreeHealthIssueOtherDetails = treeHealthIssueOtherDetails;
         application.TreeHealthIssues = treeHealthIssues ?? [];
         application.TreeHealthIssueOther = treeHealthIssueOther;
-        application.WoodlandOfficerReview.IsApplicantTreeHealthAnswersConfirmed = treeHealthChecksComplete;
+        application.WoodlandOfficerReview.IsTreeHealthReasonToExpedite = treeHealthChecksComplete;
     }
 
     private InternalUser GetInternalUser(Guid? userId = null)

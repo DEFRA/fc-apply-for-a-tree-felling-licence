@@ -84,7 +84,7 @@
 
     <div class="govuk-form-group">
         <div class="govuk-button-group">
-            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@Model.ManageWoodlandOwnerDetails.Id">
+            <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@Model.ManageWoodlandOwnerDetails.Id" asp-route-fromManageClientAgencyId="@Model.AgencyId">
                 Edit Client Details
             </a>
 

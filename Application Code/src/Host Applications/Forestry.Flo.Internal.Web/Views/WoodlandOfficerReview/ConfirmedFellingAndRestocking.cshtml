@@ -141,7 +141,7 @@
                     <div class="govuk-summary-card__title-wrapper">
                         <div>
                             <span class="govuk-summary-card__title" style="font-size: 1.1rem;">
-                                <strong>@confirmedFellingDetail.OperationType!.GetDisplayName() with related restocking in compartment @compartment.CompartmentNumber @headingSuffix</strong>
+                                <strong>@confirmedFellingDetail.OperationType!.GetDisplayName() in compartment @compartment.CompartmentNumber with related restocking (including alternative compartments where relevant) @headingSuffix</strong>
                             </span>
                             <div class="govuk-body-s compartment-info">
                                 <strong condition="@compartment.NearestTown is not null">Location: @compartment.NearestTown</strong>
@@ -589,6 +589,33 @@
                             Confirm felling and restocking
                         </button>
                     </div>
+                </div>
+
+                <div condition="@(Model.ConfirmedFellingAndRestockingComplete && Model.Editable(user))" class="govuk-body">
+                    <fieldset class="govuk-fieldset">
+                        <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">
+                            <h3 class="govuk-fieldset__heading">This task has been completed, you can re-open it to make further amendments</h3>
+                        </legend>
+                        <div class="govuk-warning-text">
+                            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                            <strong class="govuk-warning-text__text">
+                                <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
+                                Related tasks that have been completed may also need to be re-opened as a result of re-opening this task.
+                            </strong>
+                        </div>
+                        <div class="govuk-button-group">
+                            <button
+                                asp-controller="WoodlandOfficerReview"
+                                asp-action="RevertCompletionOfConfirmedFellingAndRestocking"
+                                id="unconfirm-btn"
+                                data-prevent-double-click="true"
+                                type="submit"
+                                class="govuk-button"
+                                data-module="govuk-button">
+                                Re-open this task
+                            </button>
+                        </div>
+                    </fieldset>
                 </div>
 
             </fieldset>

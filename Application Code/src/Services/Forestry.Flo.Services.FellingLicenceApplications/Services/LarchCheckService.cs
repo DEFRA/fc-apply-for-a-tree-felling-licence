@@ -41,6 +41,24 @@ public interface ILarchCheckService
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The result of the save operation.</returns>
     Task<Result> SaveLarchFlyoverAsync(Guid applicationId, DateTime flightDate, string flightObservations, Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets a list of <see cref="TreeSpeciesModel"/> for the application, for the species being felled,
+    /// with larch species listed first.
+    /// </summary>
+    /// <remarks>
+    /// If the application Confirmed felling and restocking is not complete yet, this will be based on the
+    /// proposed felling and restocking details, otherwise it will be based on the confirmed felling and restocking details.
+    /// </remarks>
+    /// <param name="applicationId">The id of the application to interrogate.</param>
+    /// <param name="forceProposedDetails">Force returning species from the proposed details, even if the
+    /// confirmed felling and restocking has been completed.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The relevant list of species models for the application.</returns>
+    Task<Result<IEnumerable<TreeSpeciesModel>>> GetAllFellingSpeciesLarchFirstAsync(
+        Guid applicationId,
+        bool forceProposedDetails,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -161,6 +179,66 @@ public class LarchCheckService : ILarchCheckService
         {
             _logger.LogError(ex, "Exception caught in SaveLarchFlyoverAsync");
             return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<Result<IEnumerable<TreeSpeciesModel>>> GetAllFellingSpeciesLarchFirstAsync(
+        Guid applicationId,
+        bool forceProposedDetails = false,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Attempting to retrieve if there are any larch species in application with id {ApplicationId}", applicationId);
+
+        try
+        {
+            var entity = await _internalFlaRepository.GetAsync(applicationId, cancellationToken);
+
+            if (entity.HasNoValue)
+            {
+                return Result.Failure<IEnumerable<TreeSpeciesModel>>("Could not locate application with id " + applicationId);
+            }
+
+            List<string> allSpecies;
+
+            //not confirmed f&r yet, so based on proposed details
+            if (entity.Value.WoodlandOfficerReview?.ConfirmedFellingAndRestockingComplete is false
+                || forceProposedDetails)
+            {
+                var fellingSpecies =
+                    entity.Value.LinkedPropertyProfile?.ProposedFellingDetails?.SelectMany(x => x.FellingSpecies ?? [])
+                    ?? [];
+
+                allSpecies = fellingSpecies.Select(x => x.Species)
+                    .Distinct()
+                    .ToList();
+            }
+            else
+            {
+                //confirmed f&r, so based on confirmed details
+                var confirmedFellingSpecies =
+                    entity.Value.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?.SelectMany(x =>
+                        x.ConfirmedFellingDetails.SelectMany(y => y.ConfirmedFellingSpecies)) ?? [];
+
+                allSpecies = confirmedFellingSpecies.Select(x => x.Species)
+                    .Distinct()
+                    .ToList();
+            }
+
+            var models = allSpecies
+                .Select(x => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == x))
+                .Where(x => x != null)
+                .Select(x => x!)
+                .OrderByDescending(x => x.IsLarch)
+                    .ThenBy(x => x.Name)
+                .AsEnumerable();
+
+            return Result.Success(models);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception caught in GetAllFellingSpeciesLarchFirst");
+            return Result.Failure<IEnumerable<TreeSpeciesModel>>(ex.Message);
         }
     }
 }
