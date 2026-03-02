@@ -435,6 +435,48 @@ public partial class WoodlandOfficerReviewController
         return RedirectToAction("Index", "WoodlandOfficerReview", new { id = applicationId });
     }
 
+    [HttpPost]
+    public async Task<IActionResult> RevertCompletionOfConfirmedFellingAndRestocking(
+        Guid applicationId,
+        [FromServices] IConfirmedFellingAndRestockingDetailsUseCase cfrUseCase,
+        [FromServices] IWoodlandOfficerReviewUseCase woReviewUseCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var model = await cfrUseCase.GetConfirmedFellingAndRestockingDetailsAsync(
+            applicationId,
+            user,
+            cancellationToken);
+
+        if (model.IsFailure)
+        {
+            return RedirectToAction("Error", "Home");
+        }
+
+        if (!model.Value.ConfirmedFellingAndRestockingComplete)
+        {
+            // cfandr is not complete, so cannot be reverted
+            return RedirectToAction("ConfirmedFellingAndRestocking", new { id = applicationId });
+        }
+
+        var (_, isFailure, error) = await woReviewUseCase.RevertCompletionOfConfirmedFellingAndRestockingDetailsAsync(
+            applicationId,
+            user,
+            cancellationToken);
+
+        if (isFailure)
+        {
+            this.AddErrorMessage("Could not revert confirmation of felling and restocking details");
+        }
+        else
+        {
+            this.AddConfirmationMessage("Confirmation of felling and restocking details reverted, further amendments can be made");
+        }
+        
+        return RedirectToAction(nameof(ConfirmedFellingAndRestocking), new { id = applicationId });
+    }
+
     public async Task<IActionResult> DeleteConfirmedFellingDetails(
         [FromQuery] Guid applicationId,
         [FromQuery] Guid confirmedFellingDetailId,

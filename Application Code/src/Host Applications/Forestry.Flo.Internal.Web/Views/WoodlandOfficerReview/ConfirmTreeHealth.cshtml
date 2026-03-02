@@ -18,24 +18,27 @@
     <form id="admin-officer-review" method="post">
         <input asp-for="ApplicationId" />
 
-        <govuk-form-group asp-for="Confirmed">
+        <govuk-form-group asp-for="IsTreeHealthReasonToExpedite">
             <fieldset class="govuk-fieldset" role="group" aria-describedby="is-prioritised-hint">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-					Are the submitted tree health answers correct to the best of your understanding?
+                    Is there a tree health or public safety reason that means the application needs to be expedited (consultation PR exempt)?
                 </legend>
-                <validation asp-for="Confirmed"></validation>
+                <validation asp-for="IsTreeHealthReasonToExpedite"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Confirmed" type="radio" value="@true" />
-                        <label class="govuk-label govuk-radios__label" asp-for="Confirmed">
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="IsTreeHealthReasonToExpedite" type="radio" value="@true" />
+                        <label class="govuk-label govuk-radios__label" asp-for="IsTreeHealthReasonToExpedite">
                             Yes
                         </label>
                     </div>
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="Confirmed" id="confirmed-no" type="radio" value="@false" />
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="IsTreeHealthReasonToExpedite" id="confirmed-no" type="radio" value="@false" aria-describedby="expedited-no-hint" />
                         <label class="govuk-label govuk-radios__label" for="confirmed-no">
-                            No (you will need to return this application to the applicant for amendment)
+                            No
                         </label>
+                        <div id="expedited-no-hint" class="govuk-hint govuk-radios__hint">
+                            Add the reason in a case note in the woodland officer review page, make sure to set the case note visible to Applicant
+                        </div>
                     </div>
                 </div>
             </fieldset>

@@ -11,6 +11,7 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Tests.Common;
+using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -27,11 +28,12 @@ public class ApproverReviewControllerTests
     private readonly ApproverReviewController _controller;
     private readonly Guid _applicationId = Guid.NewGuid();
     private readonly IFixture _fixture = new Fixture().CustomiseFixtureForFellingLicenceApplications();
+    private readonly Mock<IBus> _busMock = new();
 
     public ApproverReviewControllerTests()
     {
         _loggerMock = new Mock<ILogger<ApproverReviewController>>();
-        _controller = new ApproverReviewController(_approverReviewUseCaseMock.Object, _loggerMock.Object);
+        _controller = new ApproverReviewController(_approverReviewUseCaseMock.Object, _busMock.Object, _loggerMock.Object);
         _controller.PrepareControllerForTest(Guid.NewGuid(), role: AccountTypeInternal.FieldManager);
     }
 
@@ -446,11 +448,7 @@ public class ApproverReviewControllerTests
     public async Task SaveGeneratePdfPreview_RedirectsToIndex_WhenSuccess()
     {
         var useCase = new Mock<IApproverReviewUseCase>();
-        var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var doc = _fixture .Create<Document>();
-        pdfUseCase.Setup(x => x.GeneratePdfApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(doc));
-
+        
         var model = _fixture .Build<ApproverReviewSummaryModel>()
             .With(x => x.Id, _applicationId)
             .With(x => x.FellingLicenceApplicationSummary, new FellingLicenceApplicationSummaryModel
@@ -460,7 +458,7 @@ public class ApproverReviewControllerTests
             })
             .Create();
 
-        var result = await _controller.SaveGeneratePdfPreview(model, useCase.Object, pdfUseCase.Object, CancellationToken.None);
+        var result = await _controller.SaveGeneratePdfPreview(model, useCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -471,10 +469,7 @@ public class ApproverReviewControllerTests
     public async Task SaveGeneratePdfPreview_RedirectsToIndex_WhenFailure()
     {
         var useCase = new Mock<IApproverReviewUseCase>();
-        var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        pdfUseCase.Setup(x => x.GeneratePdfApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<Document>("fail"));
-
+        
         var model = _fixture.Build<ApproverReviewSummaryModel>()
             .With(x => x.Id, _applicationId)
             .With(x => x.FellingLicenceApplicationSummary, new FellingLicenceApplicationSummaryModel
@@ -484,7 +479,7 @@ public class ApproverReviewControllerTests
             })
             .Create();
 
-        var result = await _controller.SaveGeneratePdfPreview(model, useCase.Object, pdfUseCase.Object, CancellationToken.None);
+        var result = await _controller.SaveGeneratePdfPreview(model, useCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -593,13 +588,12 @@ public class ApproverReviewControllerTests
     {
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), FellingLicenceStatus.Refused, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateSuccess([]));
-        var result = await _controller.RefuseApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.RefuseApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -611,7 +605,6 @@ public class ApproverReviewControllerTests
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
         var doc = _fixture.Create<Document>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
@@ -623,7 +616,7 @@ public class ApproverReviewControllerTests
             .ReturnsAsync(doc);
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), FellingLicenceStatus.Approved, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateSuccess([]));
-        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -634,13 +627,12 @@ public class ApproverReviewControllerTests
     {
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), FellingLicenceStatus.ReferredToLocalAuthority, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateSuccess([]));
-        var result = await _controller.ReferApplicationToLocalAuthority(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.ReferApplicationToLocalAuthority(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -651,13 +643,12 @@ public class ApproverReviewControllerTests
     {
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
         _controller.PrepareControllerForTest(Guid.NewGuid(), true);
 
-        var result = await _controller.RefuseApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.RefuseApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -668,7 +659,6 @@ public class ApproverReviewControllerTests
     {
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
@@ -679,32 +669,7 @@ public class ApproverReviewControllerTests
         approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure("fail"));
 
-        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal("Index", redirect.ActionName);
-
-        transactionMock.Verify(v => v.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        transactionMock.Verify(v => v.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task ChangeApplicationStatus_RedirectsToIndex_WhenPdfGenerationFails()
-    {
-        var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
-        var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
-        var transactionMock = new Mock<IDbContextTransaction>();
-        _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(transactionMock.Object);
-        approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
-        approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<FellingLicenceStatus>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateSuccess([]));
-        pdfUseCase.Setup(x => x.GeneratePdfApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<Document>("fail"));
-
-        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -718,28 +683,18 @@ public class ApproverReviewControllerTests
     {
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<FellingLicenceStatus>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateFailure("fail", FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister));
 
-        pdfUseCase.Setup(x =>
-                x.GeneratePdfApplicationAsync(
-                    It.IsAny<Guid>(),
-                    It.IsAny<Guid>(),
-                    It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_fixture.Create<Document>());
-
-        removeDocUseCase.Setup(x => x.RemoveFellingLicenceDocument(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
         pdfUseCase.Setup(x => x.CalculateLicenceExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(DateTime.UtcNow);
         approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), null, It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -749,32 +704,20 @@ public class ApproverReviewControllerTests
     [Fact]
     public async Task ChangeApplicationStatus_AddsErrorWhenApprovedIdCannotBeUpdated()
     {
-        var internalUser = new InternalUser(_controller.User);
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
         var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<FellingLicenceStatus>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(FinaliseFellingLicenceApplicationResult.CreateSuccess([]));
 
-        pdfUseCase.Setup(x =>
-                x.GeneratePdfApplicationAsync(
-                    It.IsAny<Guid>(),
-                    It.IsAny<Guid>(),
-                    It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_fixture.Create<Document>());
-
-        removeDocUseCase.Setup(x => x.RemoveFellingLicenceDocument(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
-
         pdfUseCase.Setup(x => x.CalculateLicenceExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(DateTime.UtcNow);
         approvalRefusalUseCase.Setup(x => x.UpdateApplicationApproverAndExpiryDateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure("fail"));
 
-        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.ApproveApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);
@@ -789,8 +732,7 @@ public class ApproverReviewControllerTests
     {
         var approvalRefusalUseCase = new Mock<IApproveRefuseOrReferApplicationUseCase>();
         var pdfUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        var removeDocUseCase = new Mock<IRemoveSupportingDocumentUseCase>();
-        var transactionMock = new Mock<IDbContextTransaction>();
+       var transactionMock = new Mock<IDbContextTransaction>();
         _approverReviewUseCaseMock.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(transactionMock.Object);
         approvalRefusalUseCase.Setup(x => x.ApproveOrRefuseOrReferApplicationAsync(It.IsAny<InternalUser>(), It.IsAny<Guid>(), It.IsAny<FellingLicenceStatus>(), It.IsAny<CancellationToken>()))
@@ -800,7 +742,7 @@ public class ApproverReviewControllerTests
                 FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotStoreDecisionDetailsLocally
             ]));
 
-        var result = await _controller.RefuseApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, removeDocUseCase.Object, CancellationToken.None);
+        var result = await _controller.RefuseApplication(_applicationId, approvalRefusalUseCase.Object, pdfUseCase.Object, CancellationToken.None);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Index", redirect.ActionName);

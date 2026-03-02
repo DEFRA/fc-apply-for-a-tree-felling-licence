@@ -7,12 +7,14 @@ using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.EnvironmentalIm
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Notifications.Models;
+using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -1337,7 +1339,7 @@ public class WoodlandOfficerReviewControllerTests
     {
         var useCase = new Mock<ILarchCheckUseCase>();
         var model = Result.Success(_fixture.Create<LarchCheckModel>());
-        useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(),It.IsAny<CancellationToken>()))
+        useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(model);
 
         var result = await _controller.LarchCheck(_applicationId, useCase.Object, CancellationToken.None);
@@ -1350,7 +1352,7 @@ public class WoodlandOfficerReviewControllerTests
     public async Task LarchCheck_Get_RedirectsToError_WhenFailure()
     {
         var useCase = new Mock<ILarchCheckUseCase>();
-        useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<LarchCheckModel>("fail"));
 
         var result = await _controller.LarchCheck(_applicationId, useCase.Object, CancellationToken.None);
@@ -1403,7 +1405,7 @@ public class WoodlandOfficerReviewControllerTests
 
         useCase.Setup(x => x.SaveLarchCheckAsync(It.IsAny<LarchCheckModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<bool>("fail"));
-        useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        useCase.Setup(x => x.GetLarchCheckModelAsync(It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(model);
 
         var result = await _controller.LarchCheck(_applicationId, model, useCase.Object, woReviewUseCase.Object, amendCaseNotes.Object, CancellationToken.None);
@@ -1857,34 +1859,18 @@ public class WoodlandOfficerReviewControllerTests
     }
 
     [Fact]
-    public async Task GenerateLicencePreview_RedirectsToIndex_WhenSuccess()
+    public async Task GenerateLicencePreview_RedirectsToIndex()
     {
-        var generatePdfApplicationUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        generatePdfApplicationUseCase
-            .Setup(x => x.GeneratePdfApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(new Document()));
+        var mockBus = new Mock<IBusControl>();
+        mockBus.Setup(x => x.Publish(It.IsAny<GenerateSubmittedPdfPreviewMessage>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        var result = await _controller.GenerateLicencePreview(_applicationId, generatePdfApplicationUseCase.Object, CancellationToken.None);
+        var result = await _controller.GenerateLicencePreview(_applicationId, mockBus.Object, CancellationToken.None);
+
+        mockBus.Verify(x => x.Publish(It.Is<GenerateSubmittedPdfPreviewMessage>(m => m.ApplicationId == _applicationId && m.InternalUserId == _localUserId), It.IsAny<CancellationToken>()), Times.Once);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal(nameof(WoodlandOfficerReviewController.Index), redirect.ActionName);
         Assert.Equal(_applicationId, redirect.RouteValues["id"]);
     }
-
-    [Fact]
-    public async Task GenerateLicencePreview_AddsErrorMessageAndRedirects_WhenFailure()
-    {
-        var generatePdfApplicationUseCase = new Mock<IGeneratePdfApplicationUseCase>();
-        generatePdfApplicationUseCase
-            .Setup(x => x.GeneratePdfApplicationAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<Document>("fail"));
-
-        var result = await _controller.GenerateLicencePreview(_applicationId, generatePdfApplicationUseCase.Object, CancellationToken.None);
-
-        var redirect = Assert.IsType<RedirectToActionResult>(result);
-        Assert.Equal(nameof(WoodlandOfficerReviewController.Index), redirect.ActionName);
-        Assert.Equal(_applicationId, redirect.RouteValues["id"]);
-        Assert.Equal("Unable to generate the preview licence document for the application", _controller.TempData[Forestry.Flo.Internal.Web.Infrastructure.ControllerExtensions.ErrorMessageKey]);
-    }
-
 }

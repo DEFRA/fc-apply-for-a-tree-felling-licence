@@ -233,7 +233,7 @@ public class ApprovedInErrorControllerTests
     public async Task ConfirmApprovedInError_RedirectsToApplicationSummary_WhenSaveSucceeds()
     {
         _useCase
-        .Setup(x => x.ConfirmApprovedInErrorAsync(It.IsAny<ApprovedInErrorModel>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        .Setup(x => x.ConfirmApprovedInErrorAsync(It.IsAny<ApprovedInErrorModel>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
         .ReturnsAsync(Result.Success());
 
         var input = new ApprovedInErrorViewModel
@@ -256,7 +256,7 @@ public class ApprovedInErrorControllerTests
     public async Task ConfirmApprovedInError_ReturnsView_WhenSaveFails_AndReloadHasValue()
     {
         _useCase
-        .Setup(x => x.ConfirmApprovedInErrorAsync(It.IsAny<ApprovedInErrorModel>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        .Setup(x => x.ConfirmApprovedInErrorAsync(It.IsAny<ApprovedInErrorModel>(), It.IsAny<InternalUser>(), It.IsAny<string>(),It.IsAny<CancellationToken>()))
         .ReturnsAsync(Result.Failure("fail"));
 
         var summary = new FellingLicenceApplicationSummaryModel
@@ -300,7 +300,7 @@ public class ApprovedInErrorControllerTests
     {
         // Save fails, controller attempts to reload view model
         _useCase
-        .Setup(x => x.ConfirmApprovedInErrorAsync(It.IsAny<ApprovedInErrorModel>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+        .Setup(x => x.ConfirmApprovedInErrorAsync(It.IsAny<ApprovedInErrorModel>(), It.IsAny<InternalUser>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
         .ReturnsAsync(Result.Failure("fail"));
 
         // Reload returns no value -> controller redirects to Error/Home

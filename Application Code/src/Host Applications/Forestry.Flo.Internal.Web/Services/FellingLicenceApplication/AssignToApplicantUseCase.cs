@@ -598,6 +598,15 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
 
         var adminHubFooter = await GetAdminHubAddressDetailsAsync(applicationDetails.AdminHubName, cancellationToken);
 
+        var forAoReview = applicationSummary.Status == FellingLicenceStatus.AdminOfficerReview;
+
+        var allSpeciesWithLarchFirst =
+            await _larchCheckService.GetAllFellingSpeciesLarchFirstAsync(applicationId, forAoReview, cancellationToken);
+        if (allSpeciesWithLarchFirst.IsFailure)
+        {
+            return allSpeciesWithLarchFirst.ConvertFailure();
+        }
+
         var informApplicantModel = new InformApplicantOfReturnedLarchApplicationDataModel
         {
             ApplicationReference = applicationDetails.ApplicationReference,
@@ -607,7 +616,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
             FinalActionDate = applicationSummary.FadLarchExtension(_larchOptions).ToString("dd/MM/yyyy"),
             InitialFinalActionDate = applicationSummary.FinalActionDate!.Value.ToString("dd/MM/yyyy"),
             MoratoriumDates = MoratoriumDatesToString(_larchOptions),
-            IdentifiedSpeciesList = applicationSummary.AllSpeciesLarchFirst.Select(species => species.SpeciesName).ToList(),
+            IdentifiedSpeciesList = allSpeciesWithLarchFirst.Value.Select(x => x.Name).ToList(),
             IdentifiedCompartmentsList = applicationSummary.DetailsList
                 .Where(detail => detail.Zone1 || detail.Zone2 || detail.Zone3)
                 .Select(detail => $"{detail.CompartmentName} - {(detail.Zone1 ? "Zone 1" : detail.Zone2 ? "Zone 2" : "Zone 3")}")

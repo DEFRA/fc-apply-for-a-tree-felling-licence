@@ -1787,6 +1787,75 @@ public partial class GetWoodlandOfficerReviewServiceTests
     }
 
     [Theory, AutoMoqData]
+    public async Task ShouldReturnSuccess_LarchCheckNotRequired_LarchInProposedButNotConfirmed(Guid applicationId, CombinedConfirmedFellingAndRestockingDetailRecord cfandr)
+    {
+        var review = new WoodlandOfficerReview
+        {
+            ConfirmedFellingAndRestockingComplete = true,
+            LarchCheckComplete = null,
+            DesignationsComplete = true
+        };
+
+        var proposedSpecies = _fixture.Build<FellingSpecies>()
+            .With(x => x.Species, "EL")
+            .Without(x => x.ProposedFellingDetail)
+            .Create();
+
+        var confirmedSpecies = _fixture.Build<ConfirmedFellingSpecies>()
+            .With(x => x.Species, "SCI")
+            .Without(x => x.ConfirmedFellingDetail)
+            .Create();
+
+        var proposedFelling = _fixture.Build<ProposedFellingDetail>()
+            .With(x => x.FellingSpecies, [proposedSpecies])
+            .Without(x => x.LinkedPropertyProfile)
+            .Without(x => x.FellingOutcomes)
+            .With(x => x.ProposedRestockingDetails, [])
+            .Create();
+
+        cfandr.ConfirmedFellingAndRestockingDetailModels.ForEach(x =>
+                x.ConfirmedFellingDetailModels.ForEach(y => y.ConfirmedFellingSpecies = [confirmedSpecies]));
+
+        var sut = CreateSut();
+
+        _updateConfirmedFellingAndRestockingService.Setup(x =>
+                x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(cfandr));
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(It.IsAny<Guid>(),
+                It.IsAny<ExternalAccessLinkType>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
+        _fellingLicenceApplicationRepository.Setup(x =>
+                x.GetProposedFellingAndRestockingDetailsForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success((new List<ProposedFellingDetail> { proposedFelling }, new List<ProposedRestockingDetail>(0))));
+
+        _fellingLicenceApplicationRepository.Setup(x =>
+                x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<WoodlandOfficerReview>.From(review));
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<PublicRegister>.None);
+
+        _fellingLicenceApplicationRepository.Setup(x =>
+                x.GetHabitatRestorationsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<HabitatRestoration>()));
+
+        _viewCaseNotesService.Setup(x =>
+                x.GetSpecificCaseNotesAsync(It.IsAny<Guid>(), It.IsAny<CaseNoteType[]>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<CaseNoteModel>(0));
+
+        var result = await sut.GetWoodlandOfficerReviewStatusAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        Assert.Equal(InternalReviewStepStatus.NotRequired, result.Value.WoodlandOfficerReviewTaskListStates.LarchApplicationStatus);
+
+        _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
     public async Task ShouldReturnSuccess_LarchCheckComplete(Guid applicationId, CombinedConfirmedFellingAndRestockingDetailRecord cfandr)
     {
         var review = new WoodlandOfficerReview
@@ -1912,7 +1981,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
     {
         var review = new WoodlandOfficerReview
         {
-            IsApplicantTreeHealthAnswersConfirmed = null
+            IsTreeHealthReasonToExpedite = null
         };
 
         var species = _fixture.Build<ConfirmedFellingSpecies>()
@@ -1963,11 +2032,11 @@ public partial class GetWoodlandOfficerReviewServiceTests
     }
 
     [Theory, AutoMoqData]
-    public async Task ShouldReturnSuccess_TreeHealthConfirmed(Guid applicationId, CombinedConfirmedFellingAndRestockingDetailRecord cfandr)
+    public async Task ShouldReturnSuccess_TreeHealthConfirmedWhenReasonTrue(Guid applicationId, CombinedConfirmedFellingAndRestockingDetailRecord cfandr)
     {
         var review = new WoodlandOfficerReview
         {
-            IsApplicantTreeHealthAnswersConfirmed = true
+            IsTreeHealthReasonToExpedite = true
         };
 
         var species = _fixture.Build<ConfirmedFellingSpecies>()
@@ -2018,11 +2087,11 @@ public partial class GetWoodlandOfficerReviewServiceTests
     }
 
     [Theory, AutoMoqData]
-    public async Task ShouldReturnSuccess_TreeHealthFailed(Guid applicationId, CombinedConfirmedFellingAndRestockingDetailRecord cfandr)
+    public async Task ShouldReturnSuccess_TreeHealthConfirmedWhenReasonFalse(Guid applicationId, CombinedConfirmedFellingAndRestockingDetailRecord cfandr)
     {
         var review = new WoodlandOfficerReview
         {
-            IsApplicantTreeHealthAnswersConfirmed = false
+            IsTreeHealthReasonToExpedite = false
         };
 
         var species = _fixture.Build<ConfirmedFellingSpecies>()
@@ -2067,7 +2136,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
 
         Assert.True(result.IsSuccess);
 
-        Assert.Equal(InternalReviewStepStatus.Failed, result.Value.WoodlandOfficerReviewTaskListStates.TreeHealthStatus);
+        Assert.Equal(InternalReviewStepStatus.Completed, result.Value.WoodlandOfficerReviewTaskListStates.TreeHealthStatus);
 
         _fellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
     }

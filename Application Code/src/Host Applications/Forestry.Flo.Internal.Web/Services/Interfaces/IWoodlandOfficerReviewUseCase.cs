@@ -77,6 +77,21 @@ public interface IWoodlandOfficerReviewUseCase
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Sets a completed Confirmed Felling and Restocking details task in the woodland officer review
+    /// back to incomplete.
+    /// </summary>
+    /// <param name="applicationId">The unique identifier of the application.</param>
+    /// <param name="user">The internal user performing the update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Task{Result}"/> indicating the success or failure of the operation.
+    /// </returns>
+    Task<Result> RevertCompletionOfConfirmedFellingAndRestockingDetailsAsync(
+        Guid applicationId,
+        InternalUser user,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Completes the Environmental Impact Assessment (EIA) screening check for the specified application.
     /// </summary>
     /// <param name="applicationId">The unique identifier of the application.</param>

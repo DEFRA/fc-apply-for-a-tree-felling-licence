@@ -25,7 +25,7 @@ resource "azurerm_kubernetes_cluster" "default_system" {
     os_disk_size_gb              = module.shared.cluster_system_os_disk_size_gb
     os_disk_type                 = "Ephemeral"
     vnet_subnet_id               = data.terraform_remote_state.platform.outputs.azurerm_subnet_id
-    orchestrator_version         = "1.33.3"
+    orchestrator_version         = "1.34.2"
     only_critical_addons_enabled = false
     node_public_ip_enabled       = false
     host_encryption_enabled      = false
@@ -78,7 +78,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "dev" {
   os_disk_size_gb       = module.shared.cluster_dev_os_disk_size_gb
   vnet_subnet_id        = data.terraform_remote_state.platform.outputs.azurerm_subnet_id
 
-  orchestrator_version = "1.33.3"
+  orchestrator_version = "1.34.2"
   max_pods             = module.shared.cluster_dev_max_pods
 
   auto_scaling_enabled    = false
@@ -107,7 +107,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "production" {
   os_disk_size_gb       = module.shared.cluster_prod_os_disk_size_gb
   vnet_subnet_id        = data.terraform_remote_state.platform.outputs.azurerm_subnet_id
 
-  orchestrator_version = "1.33.3"
+  orchestrator_version = "1.34.2"
   max_pods             = module.shared.cluster_dev_max_pods
 
   auto_scaling_enabled    = false

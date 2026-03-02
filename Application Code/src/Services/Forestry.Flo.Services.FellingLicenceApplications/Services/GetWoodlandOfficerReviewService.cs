@@ -146,8 +146,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 },
                 cancellationToken);
 
-            var isLarchApplication = IsFellingLarchSpecies(proposedFellingAndRestockingDetails.Value.Item1)
-                || IsFellingLarchSpecies(confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels);
+            var isLarchApplication = fAndRStatus == InternalReviewStepStatus.Completed
+                ? IsFellingLarchSpecies(confirmedFellingAndRestockingDetails.Value.ConfirmedFellingAndRestockingDetailModels)
+                : IsFellingLarchSpecies(proposedFellingAndRestockingDetails.Value.Item1);
 
             var LarchFlyoverComplete = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.FellingLicenceApplication?.LarchCheckDetails?.FlightDate != null;
             // Flyover is required only when it's a larch application AND the inspection log was confirmed true during larch check
@@ -205,10 +206,8 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
 
             var requiresEia = proposedFellingAndRestockingDetails.Value.Item1.ShouldProposedFellingDetailsRequireEia();
 
-            var treeHealthStatus = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.IsApplicantTreeHealthAnswersConfirmed.HasValue
-                ? woodlandOfficerReview.Value.IsApplicantTreeHealthAnswersConfirmed is true
-                    ? InternalReviewStepStatus.Completed
-                    : InternalReviewStepStatus.Failed
+            var treeHealthStatus = woodlandOfficerReview.HasValue && woodlandOfficerReview.Value.IsTreeHealthReasonToExpedite.HasValue
+                ? InternalReviewStepStatus.Completed
                 : InternalReviewStepStatus.NotStarted;
 
             var taskListStates = new WoodlandOfficerReviewTaskListStates(

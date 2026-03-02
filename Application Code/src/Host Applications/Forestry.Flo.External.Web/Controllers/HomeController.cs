@@ -158,6 +158,7 @@ public partial class HomeController : Controller
     public async Task<IActionResult> WoodlandOwner(
         Guid woodlandOwnerId,
         [FromServices] CreateFellingLicenceApplicationUseCase applicationUseCase,
+        [FromServices] ManageWoodlandOwnerDetailsUseCase woodlandOwnersUseCase,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -172,9 +173,16 @@ public partial class HomeController : Controller
             return RedirectToAction(nameof(Error), "Home");
         }
 
+        var woDetails = await woodlandOwnersUseCase.GetWoodlandOwnerModelAsync(woodlandOwnerId, user, cancellationToken);
+        //Access failure
+        if (woDetails.IsFailure)
+        {
+            return RedirectToAction(nameof(Error), "Home");
+        }
+
         ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = woodlandOwnerId;
 
-        var viewModel = new WoodlandOwnerHomePageModel(fellingLicenceApplications.Value.ToList(), woodlandOwnerId);
+        var viewModel = new WoodlandOwnerHomePageModel(fellingLicenceApplications.Value.ToList(), woodlandOwnerId, woDetails.Value);
 
         return View(viewModel);
     }

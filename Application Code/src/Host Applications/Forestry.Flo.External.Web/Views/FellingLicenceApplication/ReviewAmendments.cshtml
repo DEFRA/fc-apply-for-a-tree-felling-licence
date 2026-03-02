@@ -10,6 +10,8 @@
 
     ViewData["Title"] = "Review and confirm amendments";
     ViewData.ShowBackLink();
+
+    var hasOperationsToShow = false;
 }
 
 <partial name="Partials/_ConfirmationMessageDisplay" />
@@ -63,11 +65,9 @@
 
         foreach (var amendmentFelling in amendedFellingDetails)
         {
-            var confirmedFellingDetail = amendmentFelling.felling;
+            hasOperationsToShow = true;
 
-            var fellingClassName = amendmentFelling.type is ConfirmedFellingType.NewFelling
-                ? newDetailClassName
-                : string.Empty;
+            var confirmedFellingDetail = amendmentFelling.felling;
 
             var tagText = amendmentFelling.type is ConfirmedFellingType.NewFelling 
                 ? "New" 
@@ -138,43 +138,55 @@
 
         foreach(var deletedFelling in deletedFellingDetails)
         {
-           <div class="govuk-summary-card @deletedDetailClassName" id="felling-operation-card">
-                    <div class="govuk-summary-card__title-wrapper">
-                        <div>
-                            <span class="govuk-summary-card__title govuk-!-font-size-16">
-                                Deleted
-                            </span>
-                            <span class="govuk-summary-card__title"> <br />
-                                <strong>
-                                    @deletedFelling.OperationType!.GetDisplayName() in compartment @compartment.CompartmentNumber
-                                </strong>
-                            </span>
-                        </div>
-                    </div>
+            hasOperationsToShow = true;
 
-                    <div class="govuk-summary-card__content" id="felling-card-content">
-                        <div class="govuk-grid-row govuk-!-margin-bottom-6">
-                            @await Html.PartialAsync("_FellingDetailSummary", new FellingDetailViewModel(deletedFelling, compartment))    
-                            @foreach(var deletedRestocking in deletedFelling.ProposedRestockingDetails)
-                            {
-                                <div class="govuk-summary-card @deletedDetailClassName">
-                                    <div class="govuk-summary-card__title-wrapper">
-                                        <h2 class="govuk-summary-card__title">
-                                            <span class="govuk-summary-card__title govuk-!-font-size-16">
-                                                Deleted
-                                            </span>
-                                            <br/>
-                                            Restocking: @deletedRestocking!.RestockingProposal.GetDisplayName() in compartment @deletedRestocking.CompartmentNumber
-                                        </h2>
-                                    </div>
-                                    @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(deletedRestocking))
+            <div class="govuk-summary-card @deletedDetailClassName" id="felling-operation-card">
+                <div class="govuk-summary-card__title-wrapper">
+                    <div>
+                        <span class="govuk-summary-card__title govuk-!-font-size-16">
+                            Deleted
+                        </span>
+                        <span class="govuk-summary-card__title"> <br />
+                            <strong>
+                                @deletedFelling.OperationType!.GetDisplayName() in compartment @compartment.CompartmentNumber
+                            </strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="govuk-summary-card__content" id="felling-card-content">
+                    <div class="govuk-grid-row govuk-!-margin-bottom-6">
+                        @await Html.PartialAsync("_FellingDetailSummary", new FellingDetailViewModel(deletedFelling, compartment))    
+                        @foreach(var deletedRestocking in deletedFelling.ProposedRestockingDetails)
+                        {
+                            <div class="govuk-summary-card @deletedDetailClassName">
+                                <div class="govuk-summary-card__title-wrapper">
+                                    <h2 class="govuk-summary-card__title">
+                                        <span class="govuk-summary-card__title govuk-!-font-size-16">
+                                            Deleted
+                                        </span>
+                                        <br/>
+                                        Restocking: @deletedRestocking!.RestockingProposal.GetDisplayName() in compartment @deletedRestocking.CompartmentNumber
+                                    </h2>
                                 </div>
-                            }
-                        </div>
-			        </div>
-		        </div> 
+                                @await Html.PartialAsync("_RestockingDetailSummary", new RestockingDetailViewModel(deletedRestocking))
+                            </div>
+                        }
+                    </div>
+			    </div>
+		    </div> 
         }
+
     }
+
+    <div class="govuk-warning-text" condition="@(!hasOperationsToShow)">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-visually-hidden">Warning</span>
+            We have reverted all amendments that were made to your application, but you will still need to 
+            respond below to ensure that your application is not automatically withdrawn.
+        </strong>
+    </div>
 
     <form method="post">
         <input hidden="hidden" aria-hidden="True" asp-for="ApplicationId" />

@@ -94,6 +94,7 @@ public class ApprovedInErrorController : Controller
         var saveResult = await useCase.ConfirmApprovedInErrorAsync(
             aie,
             user,
+            Url.Action("ApplicationSummary", "FellingLicenceApplication", new { id = model.ApplicationId }, Request.Scheme)!,
             cancellationToken);
 
         if (saveResult.IsFailure)

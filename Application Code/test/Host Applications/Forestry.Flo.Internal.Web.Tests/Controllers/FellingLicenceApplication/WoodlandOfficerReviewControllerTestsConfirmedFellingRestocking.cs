@@ -37,6 +37,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
     private readonly Guid _restockingDetailsId = Guid.NewGuid();
     private readonly CancellationToken _cancellationToken = CancellationToken.None;
     private readonly Fixture _fixture = new();
+    private readonly Guid _userAccountId = Guid.NewGuid();
 
     public WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking()
     {
@@ -49,7 +50,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         _addFellingValidatorMock = new Mock<IValidator<AddNewConfirmedFellingDetailsViewModel>>();
         _amendRestockingValidatorMock = new Mock<IValidator<AmendConfirmedRestockingDetailsViewModel>>();
         _controller = new WoodlandOfficerReviewController(validatorMock.Object, eiaUseCase.Object, woMock.Object);
-        _controller.PrepareControllerForTest(Guid.NewGuid());
+        _controller.PrepareControllerForTest(_userAccountId);
     }
 
     [Fact]
@@ -1083,6 +1084,142 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         Assert.Equal("ConfirmedFellingAndRestocking", redirect.ActionName);
         Assert.Equal(_applicationId, redirect.RouteValues["id"]);
     }
+
+    [Fact]
+    public async Task RevertCompletionOfConfirmedFellingAndRestocking_Post_RedirectsToError_WhenUnableToLoadDetails()
+    {
+        var woReviewUseCaseMock = new Mock<IWoodlandOfficerReviewUseCase>();
+
+        _cfrUseCaseMock.Setup(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+            _applicationId, It.IsAny<InternalUser>(), _cancellationToken, null))
+            .ReturnsAsync(Result.Failure<ConfirmedFellingRestockingDetailsModel>("fail"));
+
+        var result = await _controller.RevertCompletionOfConfirmedFellingAndRestocking(
+            _applicationId, _cfrUseCaseMock.Object, woReviewUseCaseMock.Object, _cancellationToken);
+
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("Error", redirect.ActionName);
+        Assert.Equal("Home", redirect.ControllerName);
+
+        _cfrUseCaseMock.Verify(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+            _applicationId, It.Is<InternalUser>(u => u.UserAccountId == _userAccountId), It.IsAny<CancellationToken>(), null),
+            Times.Once);
+        _cfrUseCaseMock.VerifyNoOtherCalls();
+        woReviewUseCaseMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RevertCompletionOfConfirmedFellingAndRestocking_Post_RedirectsToCfandr_WhenCfandrNotCompleted()
+    {
+        var woReviewUseCaseMock = new Mock<IWoodlandOfficerReviewUseCase>();
+
+        var model = new ConfirmedFellingRestockingDetailsModel
+        {
+            ConfirmedFellingAndRestockingComplete = false,
+            Amendment = new AmendmentReview
+            {
+                CanCurrentUserAmend = true,
+                AmendmentState = AmendmentStateEnum.NewAmendment
+            }
+        };
+        _cfrUseCaseMock.Setup(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.IsAny<InternalUser>(), _cancellationToken, null))
+            .ReturnsAsync(Result.Success(model));
+
+        var result = await _controller.RevertCompletionOfConfirmedFellingAndRestocking(
+            _applicationId, _cfrUseCaseMock.Object, woReviewUseCaseMock.Object, _cancellationToken);
+
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("ConfirmedFellingAndRestocking", redirect.ActionName);
+        Assert.Equal(_applicationId, redirect.RouteValues["id"]);
+
+        _cfrUseCaseMock.Verify(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.Is<InternalUser>(u => u.UserAccountId == _userAccountId), It.IsAny<CancellationToken>(), null),
+            Times.Once);
+        _cfrUseCaseMock.VerifyNoOtherCalls();
+        woReviewUseCaseMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RevertCompletionOfConfirmedFellingAndRestocking_Post_RedirectsToCfandr_WhenCfandrCompletedAndUpdateFails()
+    {
+        var woReviewUseCaseMock = new Mock<IWoodlandOfficerReviewUseCase>();
+
+        woReviewUseCaseMock.Setup(x => x.RevertCompletionOfConfirmedFellingAndRestockingDetailsAsync(
+                It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure("error"));
+
+        var model = new ConfirmedFellingRestockingDetailsModel
+        {
+            ConfirmedFellingAndRestockingComplete = true,
+            Amendment = new AmendmentReview
+            {
+                CanCurrentUserAmend = true,
+                AmendmentState = AmendmentStateEnum.NewAmendment
+            }
+        };
+        _cfrUseCaseMock.Setup(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.IsAny<InternalUser>(), _cancellationToken, null))
+            .ReturnsAsync(Result.Success(model));
+
+        var result = await _controller.RevertCompletionOfConfirmedFellingAndRestocking(
+            _applicationId, _cfrUseCaseMock.Object, woReviewUseCaseMock.Object, _cancellationToken);
+
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("ConfirmedFellingAndRestocking", redirect.ActionName);
+        Assert.Equal(_applicationId, redirect.RouteValues["id"]);
+
+        _cfrUseCaseMock.Verify(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.Is<InternalUser>(u => u.UserAccountId == _userAccountId), It.IsAny<CancellationToken>(), null),
+            Times.Once);
+        _cfrUseCaseMock.VerifyNoOtherCalls();
+
+        woReviewUseCaseMock.Verify(x => x.RevertCompletionOfConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.Is<InternalUser>(u => u.UserAccountId == _userAccountId), It.IsAny<CancellationToken>()),
+            Times.Once);
+        woReviewUseCaseMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task RevertCompletionOfConfirmedFellingAndRestocking_Post_RedirectsToCfandr_WhenCfandrCompletedAndUpdateSucceeds()
+    {
+        var woReviewUseCaseMock = new Mock<IWoodlandOfficerReviewUseCase>();
+
+        woReviewUseCaseMock.Setup(x => x.RevertCompletionOfConfirmedFellingAndRestockingDetailsAsync(
+                It.IsAny<Guid>(), It.IsAny<InternalUser>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        var model = new ConfirmedFellingRestockingDetailsModel
+        {
+            ConfirmedFellingAndRestockingComplete = true,
+            Amendment = new AmendmentReview
+            {
+                CanCurrentUserAmend = true,
+                AmendmentState = AmendmentStateEnum.NewAmendment
+            }
+        };
+        _cfrUseCaseMock.Setup(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.IsAny<InternalUser>(), _cancellationToken, null))
+            .ReturnsAsync(Result.Success(model));
+
+        var result = await _controller.RevertCompletionOfConfirmedFellingAndRestocking(
+            _applicationId, _cfrUseCaseMock.Object, woReviewUseCaseMock.Object, _cancellationToken);
+
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal("ConfirmedFellingAndRestocking", redirect.ActionName);
+        Assert.Equal(_applicationId, redirect.RouteValues["id"]);
+
+        _cfrUseCaseMock.Verify(x => x.GetConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.Is<InternalUser>(u => u.UserAccountId == _userAccountId), It.IsAny<CancellationToken>(), null),
+            Times.Once);
+        _cfrUseCaseMock.VerifyNoOtherCalls();
+
+        woReviewUseCaseMock.Verify(x => x.RevertCompletionOfConfirmedFellingAndRestockingDetailsAsync(
+                _applicationId, It.Is<InternalUser>(u => u.UserAccountId == _userAccountId), It.IsAny<CancellationToken>()),
+            Times.Once);
+        woReviewUseCaseMock.VerifyNoOtherCalls();
+    }
+
 
     [Fact]
     public async Task DeleteConfirmedFellingDetails_RedirectsToConfirmedFellingAndRestocking_WhenFailure()

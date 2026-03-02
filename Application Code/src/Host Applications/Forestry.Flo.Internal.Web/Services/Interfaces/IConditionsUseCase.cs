@@ -73,4 +73,17 @@ public interface IConditionsUseCase
         Guid applicationId,
         InternalUser user,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the conditions status to indicate that further amendments are required for a given application
+    /// after the conditions were already sent to the applicant.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application.</param>
+    /// <param name="user">The internal user performing the operation.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result indicating success or failure.</returns>
+    Task<Result> UpdateConditionalStatusForFurtherAmendmentsAsync(
+        Guid applicationId,
+        InternalUser user,
+        CancellationToken cancellationToken);
 }

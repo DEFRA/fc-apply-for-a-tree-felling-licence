@@ -357,6 +357,36 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
         return Result.Success();
     }
 
+    /// <inheritdoc />
+    public async Task<Result> UpdateConditionalStatusForFurtherAmendmentsAsync(
+        Guid applicationId, 
+        InternalUser user,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogDebug("Attempting to update conditions status for application with id {ApplicationId} to make further amendments", applicationId);
+
+        var updateResult = await _updateWoodlandOfficerReviewService.UpdateConditionalStatusForFurtherAmendmentsAsync(
+            applicationId, user.UserAccountId!.Value, cancellationToken);
+
+        if (updateResult.IsFailure)
+        {
+            _logger.LogError("Failed to update application conditional status for further amendments with error {Error}", updateResult.Error);
+            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, "Conditions", updateResult.Error, cancellationToken);
+            return Result.Failure(updateResult.Error);
+        }
+
+        await _auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.UpdateWoodlandOfficerReview,
+                applicationId,
+                user.UserAccountId,
+                _requestContext,
+                new { Section = "Conditions" }),
+            cancellationToken);
+
+        return Result.Success();
+    }
+
+
     private async Task AuditWoodlandOfficerReviewFailureEvent(
         Guid applicationId,
         InternalUser user,

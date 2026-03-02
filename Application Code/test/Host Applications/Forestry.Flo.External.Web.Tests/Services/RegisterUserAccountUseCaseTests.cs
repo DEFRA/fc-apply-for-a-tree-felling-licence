@@ -1341,7 +1341,7 @@ public class RegisterUserAccountUseCaseTests
         _mockPropertyProfileRepository.Reset();
         _mockFellingLicenceApplicationRepository.Reset();
 
-        var userAccountRepository = new UserAccountRepository(_testDatabase);
+        var userAccountRepository = new UserAccountRepository(_testDatabase, new NullLogger<UserAccountRepository>());
 
         return new RegisterUserAccountUseCase(
             TestDatabaseContextFactory<ApplicantsContext>.CreateDefaultTestContextFactory(_testDatabase),

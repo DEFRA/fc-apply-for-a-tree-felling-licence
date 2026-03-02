@@ -1,6 +1,6 @@
 ﻿using Ardalis.GuardClauses;
-using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.External.Web.Models.WoodlandOwner;
 
 namespace Forestry.Flo.External.Web.Models.Home;
 
@@ -17,15 +17,24 @@ public class WoodlandOwnerHomePageModel
     /// </summary>
     public Guid WoodlandOwnerId { get; set; }
 
+    /// <summary>
+    /// Details of the woodland owner.
+    /// </summary>
+    public ManageWoodlandOwnerDetailsModel WoodlandOwnerDetails { get; set; }
+
     public WoodlandOwnerHomePageModel(
-        List<FellingLicenceApplicationSummary> fellingLicenceApplications, Guid woodlandOwnerId)
+        List<FellingLicenceApplicationSummary> fellingLicenceApplications, 
+        Guid woodlandOwnerId,
+        ManageWoodlandOwnerDetailsModel woodlandOwnerModel)
     {
         Guard.Against.Null(fellingLicenceApplications);
+        Guard.Against.Null(woodlandOwnerModel);
 
         FellingLicenceApplications = fellingLicenceApplications.Any()
             ? fellingLicenceApplications
             : new List<FellingLicenceApplicationSummary>(0);
 
         WoodlandOwnerId = woodlandOwnerId;
+        WoodlandOwnerDetails = woodlandOwnerModel;
     }
 }

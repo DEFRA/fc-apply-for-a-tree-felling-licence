@@ -60,6 +60,15 @@
         <input type="hidden" asp-for="RecommendedLicenceDuration" />
         <input type="hidden" asp-for="IsWOReviewed" />
 
+        <div class="govuk-form-group">
+            <button data-prevent-double-click="true" type="submit" asp-action="SaveGeneratePdfPreview" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" 
+                    class="govuk-button govuk-button--secondary" data-module="govuk-button" condition-disabled="Model.IsReadonly">
+                Generate preview document
+            </button>
+
+            <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
+        </div>
+
         <div class="govuk-form-group @checkboxGroupError">
             <fieldset class="govuk-fieldset" condition-disabled="Model.IsReadonly">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
@@ -224,13 +233,6 @@
                             </label>
                         </div>
                     </div>
-
-				    <button data-prevent-double-click="true" type="submit" asp-action="SaveGeneratePdfPreview" asp-route-id="@Model.FellingLicenceApplicationSummary.Id" 
-                            class="govuk-button govuk-button--secondary" data-module="govuk-button" condition-disabled="Model.IsReadonly">
-                        Generate preview document
-                    </button>
-
-                    <partial name="Partials/_ApplicationDocumentDownloadLink" model="@Model.FellingLicenceApplicationSummary" />
 
                 </fieldset>
             </govuk-form-group>

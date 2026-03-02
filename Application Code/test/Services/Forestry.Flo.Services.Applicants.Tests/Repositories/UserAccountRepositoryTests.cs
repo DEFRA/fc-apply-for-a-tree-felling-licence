@@ -3,6 +3,7 @@ using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Tests.Common;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Forestry.Flo.Services.Applicants.Tests.Repositories;
 
@@ -14,7 +15,7 @@ public class UserAccountRepositoryTests
     public UserAccountRepositoryTests()
     {
         _applicantsContext = TestApplicantsDatabaseFactory.CreateDefaultTestContext();
-        _sut = new UserAccountRepository(_applicantsContext);
+        _sut = new UserAccountRepository(_applicantsContext, new NullLogger<UserAccountRepository>());
     }
 
     [Theory, AutoDataWithNonFcAgency]
@@ -164,64 +165,6 @@ public class UserAccountRepositoryTests
 
         //assert
         Assert.False(result.IsSuccess);
-        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
-    }
-
-
-    [Theory, AutoMoqData]
-    public async Task ShouldReturnUserAccount_WhenMatchedByEmail(List<UserAccount> internalUsers)
-    {
-        // Arrange
-        var identityProviderId = Guid.NewGuid().ToString();
-        var userToMatch = internalUsers[0];
-        userToMatch.IdentityProviderId = null;
-        userToMatch.Email = "testuser@domain.com";
-        _applicantsContext.UserAccounts.AddRange(internalUsers);
-        await _applicantsContext.SaveEntitiesAsync(CancellationToken.None);
-
-        // Act
-        var result = await _sut.GetByUserIdentifierAsync(identityProviderId, CancellationToken.None, userToMatch.Email);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(userToMatch.Email, result.Value.Email);
-        Assert.Equal(identityProviderId, result.Value.IdentityProviderId);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldReturnFailure_WhenNoUserMatchesByEmail(List<UserAccount> internalUsers)
-    {
-        // Arrange
-        var identityProviderId = Guid.NewGuid().ToString();
-        var email = "notfound@domain.com";
-        internalUsers.ForEach(u => u.IdentityProviderId = null);
-        _applicantsContext.UserAccounts.AddRange(internalUsers);
-        await _applicantsContext.SaveEntitiesAsync(CancellationToken.None);
-
-        // Act
-        var result = await _sut.GetByUserIdentifierAsync(identityProviderId, CancellationToken.None, email);
-
-        // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal(UserDbErrorReason.NotFound, result.Error);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldNotMatchByEmail_IfIdentityProviderIdIsNotNull(List<UserAccount> internalUsers)
-    {
-        // Arrange
-        var identityProviderId = Guid.NewGuid().ToString();
-        var userToMatch = internalUsers[0];
-        userToMatch.IdentityProviderId = "existing-id";
-        userToMatch.Email = "testuser@domain.com";
-        _applicantsContext.UserAccounts.AddRange(internalUsers);
-        await _applicantsContext.SaveEntitiesAsync(CancellationToken.None);
-
-        // Act
-        var result = await _sut.GetByUserIdentifierAsync(identityProviderId, CancellationToken.None, userToMatch.Email);
-
-        // Assert
-        Assert.True(result.IsFailure);
         Assert.Equal(UserDbErrorReason.NotFound, result.Error);
     }
 

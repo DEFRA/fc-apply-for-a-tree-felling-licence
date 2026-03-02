@@ -165,52 +165,10 @@ public class FellingLicenceApplicationSummaryModel
     /// <summary>
     /// Gets if there are any larch species in the proposed felling details for the application.
     /// </summary>
-    public bool AreAnyLarchSpecies => (DetailsList
+    public bool AreAnyLarchSpecies => DetailsList
             .SelectMany(detail => detail.FellingDetail.Species)
             .Select(species => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == species.Key))
-        )
         .Where(specie => specie?.IsLarch ?? false).Any();
-
-    /// <summary>
-    /// Gets if all species in the proposed felling details for the application are larch species.
-    /// </summary>
-    public bool AreAllSpeciesLarch => DetailsList
-        .SelectMany(detail => detail.FellingDetail.Species)
-        .Select(species => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == species.Key))
-        .All(specie => specie?.IsLarch ?? false);
-
-    /// <summary>
-    /// Gets a collection of all species in the proposed felling details for the application, ordered with larch species first.
-    /// </summary>
-    public IEnumerable<FellingSpeciesModel> AllSpeciesLarchFirst => DetailsList
-        .SelectMany(detail => detail.FellingDetail.Species)
-        .Select(species => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == species.Key))
-        .Where(specie => specie != null)
-        .Select(specie => new FellingSpeciesModel
-        {
-            Id = Guid.NewGuid(),
-            Species = specie.Code,
-            SpeciesName = specie.Name
-        })
-        .OrderByDescending(specie => TreeSpeciesFactory.SpeciesDictionary.Values
-            .FirstOrDefault(treeSpecies => treeSpecies.Code == specie.Species)?.IsLarch ?? false) // Larch species first
-        .ThenBy(specie => specie.SpeciesName);
-
-    /// <summary>
-    /// Gets a collection of all species in the proposed felling details for the application, with larch species in bold.
-    /// </summary>
-    public IEnumerable<FellingSpeciesModel> AllSpeciesBoldLarch => DetailsList
-        .SelectMany(detail => detail.FellingDetail.Species)
-        .Select(species => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == species.Key))
-        .Where(specie => specie != null)
-        .Select(specie => new FellingSpeciesModel
-        {
-            Id = Guid.NewGuid(),
-            Species = specie.Code,
-            SpeciesName = specie.IsLarch ? $"<b>{specie.Name}</b>" : specie.Name
-        })
-        .OrderBy(specie => !specie.SpeciesName.Contains("<b>")) // Larch species (with <b> tags) come first
-        .ThenBy(specie => specie.SpeciesName.Replace("<b>", "").Replace("</b>", "")); // Then sort alphabetically
 
     /// <summary>
     /// Gets a collection of all larch species in the proposed felling details for the application.
@@ -219,6 +177,7 @@ public class FellingLicenceApplicationSummaryModel
         .SelectMany(detail => detail.FellingDetail.Species)
         .Select(species => TreeSpeciesFactory.SpeciesDictionary.Values.FirstOrDefault(treeSpecies => treeSpecies.Code == species.Key))
         .Where(specie => specie?.IsLarch ?? false)
+        .DistinctBy(specie => specie.Code) // Ensure distinct species based on their code
         .Select(specie => new FellingSpeciesModel
         {
             Id = Guid.NewGuid(),

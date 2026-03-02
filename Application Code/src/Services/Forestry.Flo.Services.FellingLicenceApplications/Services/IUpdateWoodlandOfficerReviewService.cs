@@ -149,6 +149,19 @@ public interface IUpdateWoodlandOfficerReviewService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Updates the stored values for the conditional status for an application after
+    /// the conditions have been sent to the applicant to allow for further amendments.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to update.</param>
+    /// <param name="userId">The id of the user making the update.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
+    Task<Result> UpdateConditionalStatusForFurtherAmendmentsAsync(
+        Guid applicationId,
+        Guid userId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Enacts changes to a <see cref="WoodlandOfficerReview"/> after confirmed felling and restocking details are modified.
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
@@ -292,17 +305,17 @@ public interface IUpdateWoodlandOfficerReviewService
     Task<Result> CompleteFellingAndRestockingAmendmentReviewAsync(Guid amendmentReviewId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Sets the flag indicating whether the applicant's tree health issues are confirmed by the woodland officer.
+    /// Sets the flag indicating whether the there is a tree health/public safety issue to expedite the application.
     /// </summary>
     /// <param name="applicationId">The id of the application to confirm.</param>
     /// <param name="userId">The id of the user confirming the checks.</param>
-    /// <param name="applicantAnswersConfirmed">A flag to indicate whether the woodland officer confirms the
-    /// applicant's tree health answers.</param>
+    /// <param name="isTreeHealthReasonToExpedite">A flag to indicate whether the woodland officer confirms there is a tree
+    /// health or public safety reason to expedite the application.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="Result"/> indicating success of the operation.</returns>
     Task<Result> ConfirmTreeHealthCheckAsync(
         Guid applicationId,
         Guid userId,
-        bool applicantAnswersConfirmed,
+        bool isTreeHealthReasonToExpedite,
         CancellationToken cancellationToken);
 }

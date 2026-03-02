@@ -116,6 +116,8 @@ external-web-app:
         InformApplicantOfApplicationVoluntaryWithdrawOption: "a7fd4e9f-dbf4-452b-9509-42e17f1b125f"
         InformApplicantOfReturnedApplication: "da5c3822-c793-438f-a36c-e8a91889bd94"
         InformApplicantOfApplicationExtension: "bd959a9c-0fdd-4012-a154-7be260e5f51c"
+        InformApplicantOfAIENewLicenceRequired: "aa2f5255-856c-40ad-b481-d88253880f0c"
+        InformApplicantOfAIENewLicenceApproved: "d932e5a6-155e-4555-898c-b07a8e34bf01"
         InformFcStaffOfApplicationAddedToConsultationPublicRegister: "99167a43-04ad-4fbe-8aeb-ae3f419beb5a"
         InformFcStaffOfApplicationAddedToDecisionPublicRegister: "edb04065-d755-4932-8c1e-eb63ba9f8def"
         InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure: "532d9a32-a527-4d64-895b-883568f1897e"
@@ -128,9 +130,16 @@ external-web-app:
         InformInternalUserOfAccountApproval: "de00a309-81cd-4525-8218-f3a1e1b0eeb1"
         InviteWoodlandOwnerUserToOrganisation: "ae780279-31d0-419b-a35e-39edca775c51"
         InviteAgentUserToOrganisation: "4506918c-4666-4bbc-9c02-43ebe98804fb"
+        InformApplicantOfLarchOnlyApplicationFADextension: "2c6ab3f7-85b9-4ca2-9386-abc70fa5b010"
+        InformApplicantOfReturnedApplicationMixLarchZone1: "8ad474f1-5a93-44bd-b06a-ed79f88da44b"
+        InformApplicantOfReturnedApplicationMixLarchMixZone: "fd331395-e8a4-4394-b61c-61cf27e7fb0f"
+        InformApplicantOfReturnedApplicationLarchOnlyMixZone: "59380bf2-28fb-4c70-9c6e-8f47cfdc8bd3"
         EiaReminderMissingDocuments: "e189fead-f4b8-4b0b-8431-8fd04958a288"
         EiaReminderToSendDocuments: "e6445f8b-93cb-4d7e-bfe1-722ebf56a576"
         ApplicantReviewedAmendments: "fbf55260-bcd8-4832-a995-bd18e456616e"
+        AmendmentsSentToApplicant: "caddb6c9-195a-4502-9792-105f0e4dc86b"
+        ReminderForApplicantToRespondToAmendments: "339009f8-8bc5-45e8-aba5-c4ea7743b95c"
+        InformFcStaffOfApplicationApprovedInError: "ce4ca4f2-8352-4544-ba3d-22d6e91e5ce1"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
@@ -233,11 +242,11 @@ external-web-app:
             NeedsToken: true
             Fields: [ "name"]
           - Name: "Ancient_Woodland"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/75"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1003"
             NeedsToken: true
             Fields: [ "name", "status" ]
           - Name: "Ancient_Woodlands_Revised"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1001"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1004"
             NeedsToken: true
             Fields: [ "name", "status" ]
         GeometryService:
@@ -463,6 +472,8 @@ internal-web-app:
         InformApplicantOfApplicationVoluntaryWithdrawOption: "a7fd4e9f-dbf4-452b-9509-42e17f1b125f"
         InformApplicantOfReturnedApplication: "da5c3822-c793-438f-a36c-e8a91889bd94"
         InformApplicantOfApplicationExtension: "bd959a9c-0fdd-4012-a154-7be260e5f51c"
+        InformApplicantOfAIENewLicenceRequired: "aa2f5255-856c-40ad-b481-d88253880f0c"
+        InformApplicantOfAIENewLicenceApproved: "d932e5a6-155e-4555-898c-b07a8e34bf01"
         InformFcStaffOfApplicationAddedToConsultationPublicRegister: "99167a43-04ad-4fbe-8aeb-ae3f419beb5a"
         InformFcStaffOfApplicationAddedToDecisionPublicRegister: "edb04065-d755-4932-8c1e-eb63ba9f8def"
         InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure: "532d9a32-a527-4d64-895b-883568f1897e"
@@ -482,9 +493,12 @@ internal-web-app:
         EiaReminderMissingDocuments: "e189fead-f4b8-4b0b-8431-8fd04958a288"
         EiaReminderToSendDocuments: "e6445f8b-93cb-4d7e-bfe1-722ebf56a576"
         ApplicantReviewedAmendments: "fbf55260-bcd8-4832-a995-bd18e456616e"
-    permittedRegisteredUser:
+        AmendmentsSentToApplicant: "caddb6c9-195a-4502-9792-105f0e4dc86b"
+        ReminderForApplicantToRespondToAmendments: "339009f8-8bc5-45e8-aba5-c4ea7743b95c"
+        InformFcStaffOfApplicationApprovedInError: "ce4ca4f2-8352-4544-ba3d-22d6e91e5ce1"
+    PermittedRegisteredUser:
       enabled: true
-      permittedEmailDomainsForRegisteredUser:
+      PermittedEmailDomainsForRegisteredUser:
         - "qxlva.com"
         - "forestrycommission.gov.uk"
         - "harriscomputer.com"
@@ -579,11 +593,11 @@ internal-web-app:
             NeedsToken: true
             Fields: [ "name"]
           - Name: "Ancient_Woodland"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/75"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1003"
             NeedsToken: true
             Fields: [ "name", "status" ]
           - Name: "Ancient_Woodlands_Revised"
-            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1001"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/1004"
             NeedsToken: true
             Fields: [ "name", "status" ]
         GeometryService:

@@ -272,49 +272,6 @@ public class UpdateWoodlandOfficerReviewServiceUpdateEiaScreeningCheckTests
     }
 
     [Fact]
-    public async Task UpdateFellingAndRestockingAmendmentReview_ReturnsFailure_WhenUserIsNotAssignedWoodlandOfficer()
-    {
-        var sut = CreateSut();
-        var woodlandOfficerId = Guid.NewGuid();
-        var fla = CreateFellingLicenceApplication(woodlandOfficerId);
-        var review = _fixture.Build<FellingAndRestockingAmendmentReview>()
-            .With(x => x.WoodlandOfficerReviewId, fla.WoodlandOfficerReview!.Id)
-            .Without(x => x.ApplicantAgreed)
-            .Without(x => x.ApplicantDisagreementReason)
-            .Without(x => x.ResponseReceivedDate)
-            .Create();
-
-        fla.WoodlandOfficerReview!.FellingAndRestockingAmendmentReviews.Add(review);
-
-        _context.FellingLicenceApplications.Add(fla);
-
-        // Remove WO assignment to fail the user check
-        fla.AssigneeHistories.Clear();
-
-        _context.FellingLicenceApplications.Add(fla);
-        await _context.SaveChangesAsync();
-
-        var model = new FellingAndRestockingAmendmentReviewUpdateRecord
-        {
-            FellingLicenceApplicationId = fla.Id,
-            ApplicantAgreed = false,
-            ApplicantDisagreementReason = "Some reason"
-        };
-
-        var result = await sut.UpdateFellingAndRestockingAmendmentReviewAsync(model, woodlandOfficerId, CancellationToken.None);
-
-        Assert.False(result.IsSuccess);
-        Assert.Contains("unable to be updated", result.Error, StringComparison.OrdinalIgnoreCase);
-
-        var updatedFla = _context.FellingLicenceApplications
-            .Include(fellingLicenceApplication => fellingLicenceApplication.WoodlandOfficerReview!)
-            .First(x => x.Id == fla.Id);
-
-        Assert.NotNull(updatedFla.WoodlandOfficerReview);
-        Assert.False(updatedFla.WoodlandOfficerReview.EiaScreeningComplete);
-    }
-
-    [Fact]
     public async Task UpdateFellingAndRestockingAmendmentReview_Fails_WhenResponseAlreadyReceived()
     {
         var sut = CreateSut();

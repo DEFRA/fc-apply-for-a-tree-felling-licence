@@ -13,11 +13,14 @@ public interface ILarchCheckUseCase
     /// </summary>
     /// <param name="applicationId">The ID of the application.</param>
     /// <param name="user">The internal user requesting the model.</param>
+    /// <param name="forAoReview">A flag indicating if the larch check is being retrieved for the AO review
+    /// - if not, assume for the WO review.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result containing the <see cref="LarchCheckModel"/> if successful.</returns>
     Task<Result<LarchCheckModel>> GetLarchCheckModelAsync(
         Guid applicationId,
         InternalUser user,
+        bool forAoReview,
         CancellationToken cancellationToken);
 
     /// <summary>

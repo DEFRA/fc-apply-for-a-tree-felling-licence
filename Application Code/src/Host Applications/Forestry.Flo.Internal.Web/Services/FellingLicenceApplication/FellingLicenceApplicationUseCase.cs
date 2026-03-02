@@ -234,6 +234,11 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
             return Maybe<FellingLicenceApplicationReviewSummaryModel>.None;
         }
 
+        var applicationDocument = application.Value.Documents?
+            .Where(x => x.DeletionTimestamp is null)
+            .OrderByDescending(x => x.CreatedTimestamp)
+            .FirstOrDefault(d => d.Purpose == DocumentPurpose.ApplicationDocument);
+
         var applicationReviewModel = new FellingLicenceApplicationReviewSummaryModel
         {
             Documents = ModelMapping.ToDocumentModelList(application.Value.Documents?
@@ -242,8 +247,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
                 .OrderByDescending(x => x.CreatedTimestamp),
 
             Id = application.Value.Id,
-            ApplicationDocument =
-                application.Value.Documents?.FirstOrDefault(d => d.Purpose == DocumentPurpose.ApplicationDocument),
+            ApplicationDocument = applicationDocument,
             ActivityFeedItems = activityFeedNotes.Value,
             ApplicationOwner = new ApplicationOwnerModel
             {

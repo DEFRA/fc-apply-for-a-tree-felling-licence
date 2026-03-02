@@ -576,6 +576,10 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplication }}
             - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationExtension
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationExtension }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfAIENewLicenceRequired
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfAIENewLicenceRequired }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfAIENewLicenceApproved
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfAIENewLicenceApproved }}
             - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationAddedToConsultationPublicRegister
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfApplicationAddedToConsultationPublicRegister }}
             - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationAddedToDecisionPublicRegister
@@ -608,8 +612,18 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationMixLarchMixZone }}
             - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfReturnedApplicationLarchOnlyMixZone
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfReturnedApplicationLarchOnlyMixZone }}
+            - name: GovUkNotifyOptions__TemplateIds__EiaReminderMissingDocuments
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.EiaReminderMissingDocuments }}
+            - name: GovUkNotifyOptions__TemplateIds__EiaReminderToSendDocuments
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.EiaReminderToSendDocuments }}
             - name: GovUkNotifyOptions__TemplateIds__ApplicantReviewedAmendments
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ApplicantReviewedAmendments }}
+            - name: GovUkNotifyOptions__TemplateIds__AmendmentsSentToApplicant
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.AmendmentsSentToApplicant }}
+            - name: GovUkNotifyOptions__TemplateIds__ReminderForApplicantToRespondToAmendments
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ReminderForApplicantToRespondToAmendments }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationApprovedInError
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfApplicationApprovedInError }}
             {{- end }}
             # ------------------- ESRI Config start -------------------
             {{- if .Values.config.esriConfig.enabled }}

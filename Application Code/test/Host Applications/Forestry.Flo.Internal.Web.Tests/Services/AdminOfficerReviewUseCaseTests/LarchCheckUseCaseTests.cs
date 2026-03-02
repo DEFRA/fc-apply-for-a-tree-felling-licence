@@ -136,8 +136,8 @@ public class LarchCheckUseCaseTests
             new RequestContext("test", new RequestUserModel(_internalUser.Principal)));
     }
 
-    [Fact]
-    public async Task ShouldReturnCorrectModel_WhenSuccessful()
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnCorrectModel_WhenSuccessful(IEnumerable<TreeSpeciesModel> allSpecies)
     {
         _fellingLicenceApplication = await CreateAndSaveAdminOfficerReviewApplicationAsync(FellingLicenceStatus.AdminOfficerReview);
 
@@ -157,6 +157,10 @@ public class LarchCheckUseCaseTests
             .Setup(s => s.GetLarchCheckDetailsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(larchCheckDetails);
 
+        _larchCheckServiceMock
+            .Setup(x => x.GetAllFellingSpeciesLarchFirstAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(allSpecies));
+
         _activityFeedItemProviderMock
             .Setup(s => s.RetrieveAllRelevantActivityFeedItemsAsync(
                 It.IsAny<ActivityFeedItemProviderModel>(), 
@@ -164,7 +168,7 @@ public class LarchCheckUseCaseTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IList<ActivityFeedItemModel>>(new List<ActivityFeedItemModel>()));
 
-        var result = await _sut.GetLarchCheckModelAsync(_fellingLicenceApplication.Id, _internalUser, CancellationToken.None);
+        var result = await _sut.GetLarchCheckModelAsync(_fellingLicenceApplication.Id, _internalUser, true, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
@@ -175,6 +179,7 @@ public class LarchCheckUseCaseTests
         Assert.True(result.Value.Zone3);
         Assert.True(result.Value.ConfirmMoratorium);
         Assert.True(result.Value.ConfirmInspectionLog);
+        Assert.Equal(allSpecies, result.Value.AllSpecies);
         Assert.Equal(RecommendSplitApplicationEnum.LarchOnlyMixZone, result.Value.RecommendSplitApplicationDue);
     }
 
@@ -186,7 +191,7 @@ public class LarchCheckUseCaseTests
         _fellingLicenceApplicationsContext.Remove(_fellingLicenceApplication);
         await _fellingLicenceApplicationsContext.SaveChangesAsync();
 
-        var result = await _sut.GetLarchCheckModelAsync(_fellingLicenceApplication.Id, _internalUser, CancellationToken.None);
+        var result = await _sut.GetLarchCheckModelAsync(_fellingLicenceApplication.Id, _internalUser, true, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         

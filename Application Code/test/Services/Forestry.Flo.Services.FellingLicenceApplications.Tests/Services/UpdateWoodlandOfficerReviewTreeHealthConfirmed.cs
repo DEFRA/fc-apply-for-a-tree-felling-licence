@@ -40,7 +40,7 @@ public class UpdateWoodlandOfficerReviewTreeHealthConfirmed
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
         var fla = CreateFellingLicenceApplication(woodlandOfficerId);
-        fla.WoodlandOfficerReview.IsApplicantTreeHealthAnswersConfirmed = null;
+        fla.WoodlandOfficerReview.IsTreeHealthReasonToExpedite = null;
 
         // Change status to Draft to fail state check
         fla.StatusHistories.Clear();
@@ -66,7 +66,7 @@ public class UpdateWoodlandOfficerReviewTreeHealthConfirmed
             .First(x => x.Id == fla.Id);
 
         Assert.NotNull(updatedFla.WoodlandOfficerReview);
-        Assert.Null(updatedFla.WoodlandOfficerReview.IsApplicantTreeHealthAnswersConfirmed);
+        Assert.Null(updatedFla.WoodlandOfficerReview.IsTreeHealthReasonToExpedite);
     }
 
     [Theory, AutoMoqData]
@@ -75,7 +75,7 @@ public class UpdateWoodlandOfficerReviewTreeHealthConfirmed
         var sut = CreateSut();
         var woodlandOfficerId = Guid.NewGuid();
         var fla = CreateFellingLicenceApplication(woodlandOfficerId);
-        fla.WoodlandOfficerReview.IsApplicantTreeHealthAnswersConfirmed = null;
+        fla.WoodlandOfficerReview.IsTreeHealthReasonToExpedite = null;
 
         // Remove WO assignment
         fla.AssigneeHistories.Clear();
@@ -96,7 +96,7 @@ public class UpdateWoodlandOfficerReviewTreeHealthConfirmed
             .First(x => x.Id == fla.Id);
 
         Assert.NotNull(updatedFla.WoodlandOfficerReview);
-        Assert.Null(updatedFla.WoodlandOfficerReview.IsApplicantTreeHealthAnswersConfirmed);
+        Assert.Null(updatedFla.WoodlandOfficerReview.IsTreeHealthReasonToExpedite);
     }
 
     [Theory, AutoMoqData] 
@@ -122,7 +122,7 @@ public class UpdateWoodlandOfficerReviewTreeHealthConfirmed
             .First(x => x.Id == fla.Id);
 
         Assert.NotNull(updatedFla.WoodlandOfficerReview);
-        Assert.Equal(isConfirmed, updatedFla.WoodlandOfficerReview.IsApplicantTreeHealthAnswersConfirmed);
+        Assert.Equal(isConfirmed, updatedFla.WoodlandOfficerReview.IsTreeHealthReasonToExpedite);
         Assert.Equal(woodlandOfficerId, updatedFla.WoodlandOfficerReview.LastUpdatedById);
         Assert.InRange(updatedFla.WoodlandOfficerReview.LastUpdatedDate, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow.AddMinutes(1));
     }

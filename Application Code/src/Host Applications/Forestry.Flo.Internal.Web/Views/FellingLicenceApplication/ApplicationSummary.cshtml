@@ -4,6 +4,20 @@
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.FellingLicenceApplicationReviewSummaryModel
 @{
     ViewData["Title"] = "Application summary";
+
+    var showGenLicence = false;
+    if (Model.FellingLicenceApplicationSummary.Status is FellingLicenceStatus.Approved)
+    {
+        var approvedDate = Model.FellingLicenceApplicationSummary
+            .StatusHistories
+            .OrderByDescending(x => x.Created).First().Created;
+        var latestDocumentDate = Model.ApplicationDocument?.CreatedTimestamp;
+
+        if (latestDocumentDate is null || approvedDate > latestDocumentDate)
+        {
+            showGenLicence = true;
+        }
+    }
 }
 
 <div class="govuk-grid-column-full" id="summary-container">
@@ -15,7 +29,27 @@
     <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 </div>
 
+<div class="govuk-grid-column-two-thirds" condition="@showGenLicence">
+    <div class="govuk-button-group">
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-visually-hidden">Warning</span>
+                This approved application does not appear to have a licence attached. Unless you have recently approved this application 
+                (licence generation is still processing) you should generate the licence now.
+            </strong>
+        </div>
+        <a data-prevent-double-click="true" asp-action="GenerateLicenceDocument" asp-route-applicationId="@Model.FellingLicenceApplicationSummary.Id" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+            Generate licence document
+        </a>
+        
+    </div>
+</div>
+
 <div class="govuk-grid-column-full">
+
+    <hr condition="@showGenLicence" class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
     <div class="govuk-button-group">
         <a class="govuk-button govuk-button--secondary" data-module="govuk-button" asp-controller="AdminOfficerReview" asp-action="Index" asp-route-id="@Model.Id">
             Operations admin officer review
@@ -98,15 +132,17 @@
         </div>
     </div>
 
-   <partial name="Partials/_FellingLicenceApplicationInfoTabs" model="@Model"/>
+    <partial name="Partials/_FellingLicenceApplicationInfoTabs" model="@Model"/>
 
 </div>
 
 <require-user-account-type required-account-type="AccountAdministrator">
-    <a condition="@(Model.FellingLicenceApplicationSummary.Status == FellingLicenceStatus.Approved)" class="govuk-button govuk-button--warning" 
-        data-module="govuk-button" asp-controller="ApprovedInError" asp-action="Index" asp-route-id="@Model.Id">
-        Mark as approved in error
-    </a>
+    <div class="govuk-grid-column-two-thirds" condition="@(Model.FellingLicenceApplicationSummary.Status == FellingLicenceStatus.Approved)">
+        <a class="govuk-button govuk-button--warning" 
+           data-module="govuk-button" asp-controller="ApprovedInError" asp-action="Index" asp-route-id="@Model.Id">
+            Mark as approved in error
+        </a>
+    </div>
 </require-user-account-type>
 
 <div class="modal" id="modal">

@@ -5,6 +5,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.Gis.Interfaces;
+using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -136,6 +137,8 @@ public class UpdateApplicationFromForesterLayersService(
         // deserialize the compartment GIS data
         var shape = JsonConvert.DeserializeObject<Polygon>(gisData)!;
 
+        List<string> detectedZones = new();
+
         // get the zones from the two Forester layers for this shape
         var zonesOnLayer1 = await _foresterServices.GetAncientWoodlandAsync(shape, cancellationToken);
 
@@ -145,8 +148,10 @@ public class UpdateApplicationFromForesterLayersService(
                 "Failed to retrieve Ancient Woodland layer data from Forester for compartment {CompartmentId}: {Error}",
                 compartmentId,
                 zonesOnLayer1.Error);
-            return Result.Failure(
-                $"Failed to retrieve Ancient Woodland layer data from Forester for compartment {compartmentId}: {zonesOnLayer1.Error}");
+        }
+        else
+        {
+            detectedZones.AddRange(zonesOnLayer1.Value.Select(x => x.Status?.ToUpper() ?? string.Empty));
         }
 
         var zonesOnLayer2 = await _foresterServices.GetAncientWoodlandsRevisedAsync(shape, cancellationToken);
@@ -157,13 +162,20 @@ public class UpdateApplicationFromForesterLayersService(
                 "Failed to retrieve Ancient Woodlands Revised layer data from Forester for compartment {CompartmentId}: {Error}",
                 compartmentId,
                 zonesOnLayer2.Error);
-            return Result.Failure(
-                $"Failed to retrieve Ancient Woodlands Revised layer data from Forester for compartment {compartmentId}: {zonesOnLayer2.Error}");
+
+            if (zonesOnLayer1.IsFailure)
+            {
+                //if both layers failed, return failure as we have no data to update the application with
+                return Result.Failure($"Failed to retrieve data from Forester for both PAWS layers for compartment {compartmentId}: {zonesOnLayer1.Error}; {zonesOnLayer2.Error}");
+            }
+        }
+        else
+        {
+            detectedZones.AddRange(zonesOnLayer2.Value.Select(x => x.Status?.ToUpper() ?? string.Empty));
         }
 
         // get list of detected zone names
-        var detectedZones = zonesOnLayer1.Value.Concat(zonesOnLayer2.Value)
-            .Select(z => z.Status?.ToUpper() ?? string.Empty)
+        detectedZones = detectedZones
             .Distinct()
             .ToList();
 

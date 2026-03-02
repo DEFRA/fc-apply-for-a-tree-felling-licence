@@ -413,7 +413,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     Name = applicantUser.FullName,
                     PropertyName = application.SubmittedFlaPropertyDetail?.Name,
                     ApproverName = approverName,
-                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}",
+                    ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}",
                     AdminHubFooter = adminHubFooter,
                     ApplicationId = application.Id
                 };

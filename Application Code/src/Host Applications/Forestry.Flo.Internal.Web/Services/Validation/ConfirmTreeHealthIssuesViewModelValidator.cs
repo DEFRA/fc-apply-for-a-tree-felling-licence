@@ -7,8 +7,8 @@ public class ConfirmTreeHealthIssuesViewModelValidator: AbstractValidator<Confir
 {
     public ConfirmTreeHealthIssuesViewModelValidator()
     {
-        RuleFor(x => x.Confirmed)
+        RuleFor(x => x.IsTreeHealthReasonToExpedite)
             .NotNull()
-            .WithMessage("Select whether the submitted tree health answers are correct to the best of your understanding");
+            .WithMessage("Select whether there are tree health or public safety reasons to expedite this application");
     }
 }

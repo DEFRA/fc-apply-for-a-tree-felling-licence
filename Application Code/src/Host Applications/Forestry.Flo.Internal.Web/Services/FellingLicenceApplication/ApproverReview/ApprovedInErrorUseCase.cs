@@ -3,14 +3,13 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
-using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
-using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -20,8 +19,8 @@ using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using MassTransit;
 using Microsoft.Extensions.Options;
-using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
 
@@ -31,27 +30,19 @@ namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverR
 /// </summary>
 public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApprovedInErrorUseCase
 {
-    private readonly IAgentAuthorityInternalService _agentAuthorityInternalService;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationInternalRepository;
     private readonly ILogger<FellingLicenceApplicationUseCase> _logger;
-    private readonly IActivityFeedItemProvider _activityFeedItemProvider;
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService;
     private readonly IApprovedInErrorService _approvedInErrorService;
     private readonly IAuditService<FellingLicenceApplicationUseCase> _auditService;
     private readonly RequestContext _requestContext;
-    private readonly FellingLicenceApplicationOptions _fellingLicenceApplicationOptions;
-    private readonly IClock _clock;
     private readonly IApproverReviewUseCase _approverReviewUseCase;
-    private readonly IApproveRefuseOrReferApplicationUseCase _approvalRefusalUseCase;
-    private readonly IGeneratePdfApplicationUseCase _generatePdfApplicationUseCase;
+    private readonly IBus _bus;
     private readonly IUpdateFellingLicenceApplication _updateFellingLicenceService;
     private readonly ISendNotifications _notificationsService;
     private readonly IRetrieveUserAccountsService _externalAccountService;
     private readonly IUserAccountService _internalAccountService;
     private readonly ExternalApplicantSiteOptions _externalApplicantSiteOptions;
-
-    // Extract all Parameter 6 values from conditions and combine them
-    private const int SupplementaryPointsParameterIndex = 6;
 
     public ApprovedInErrorUseCase(
     IUserAccountService internalUserAccountService,
@@ -59,20 +50,15 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
     IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository,
     IRetrieveWoodlandOwners woodlandOwnerService,
     IAuditService<FellingLicenceApplicationUseCase> auditService,
-    IActivityFeedItemProvider activityFeedItemProvider,
     IAgentAuthorityService agentAuthorityService,
-    IAgentAuthorityInternalService agentAuthorityInternalService,
     IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
     IApprovedInErrorService approvedInErrorService,
     IGetConfiguredFcAreas getConfiguredFcAreasService,
     RequestContext requestContext,
-    IOptions<FellingLicenceApplicationOptions> fellingLicenceApplicationOptions,
     IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
-    IClock clock,
     ILogger<FellingLicenceApplicationUseCase> logger,
     IApproverReviewUseCase approverReviewUseCase,
-    IApproveRefuseOrReferApplicationUseCase approvalRefusalUseCase,
-    IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
+    IBus busControl,
     IUpdateFellingLicenceApplication updateFellingLicenceService,
     ISendNotifications notificationsService,
     IOptions<ExternalApplicantSiteOptions> externalApplicantSiteOptions)
@@ -84,20 +70,15 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
     getConfiguredFcAreasService,
     woodlandOfficerReviewSubStatusService)
     {
-        _agentAuthorityInternalService = Guard.Against.Null(agentAuthorityInternalService);
         _internalAccountService = Guard.Against.Null(internalUserAccountService);
         _fellingLicenceApplicationInternalRepository = Guard.Against.Null(fellingLicenceApplicationInternalRepository);
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
         _logger = Guard.Against.Null(logger);
-        _activityFeedItemProvider = Guard.Against.Null(activityFeedItemProvider);
         _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
         _approvedInErrorService = Guard.Against.Null(approvedInErrorService);
-        _fellingLicenceApplicationOptions = fellingLicenceApplicationOptions.Value;
-        _clock = Guard.Against.Null(clock);
         _approverReviewUseCase = Guard.Against.Null(approverReviewUseCase);
-        _approvalRefusalUseCase = Guard.Against.Null(approvalRefusalUseCase);
-        _generatePdfApplicationUseCase = Guard.Against.Null(generatePdfApplicationUseCase);
+        _bus = Guard.Against.Null(busControl);
         _updateFellingLicenceService = Guard.Against.Null(updateFellingLicenceService);
         _notificationsService = Guard.Against.Null(notificationsService);
         _externalAccountService = Guard.Against.Null(externalUserAccountService);
@@ -153,6 +134,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
     public async Task<Result> ConfirmApprovedInErrorAsync(
     ApprovedInErrorModel model,
     InternalUser user,
+    string viewApplicationUrl,
     CancellationToken cancellationToken)
     {
         if (user.AccountType is not AccountTypeInternal.AccountAdministrator)
@@ -184,6 +166,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
                 model.ApplicationId,
                 model.PreviousReference,
                 user,
+                viewApplicationUrl,
                 cancellationToken);
 
             if (notificationResult.IsFailure)
@@ -285,7 +268,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
     }
 
     /// <inheritdoc />
-    public async Task<Result<Document>> ReApprovedInErrorAsync(
+    public async Task<Result> ReApprovedInErrorAsync(
         Guid applicationId,
         InternalUser user,
         ApprovedInErrorModel model,
@@ -298,7 +281,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
         if (!application.HasValue)
         {
             _logger.LogError("Failed to retrieve application {ApplicationId} for re-approval", applicationId);
-            return Result.Failure<Document>("Unable to retrieve the application");
+            return Result.Failure("Unable to retrieve the application");
         }
 
         // Begin transaction for atomic operation
@@ -317,7 +300,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
             {
                 await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError("Failed to update Approved In Error record for application with ID {ApplicationId}. Error: {Error}", applicationId, updateApprovedInErrorResult.Error);
-                return Result.Failure<Document>($"Unable to update the approved in error record: {updateApprovedInErrorResult.Error}");
+                return Result.Failure($"Unable to update the approved in error record: {updateApprovedInErrorResult.Error}");
             }
 
             // Change the status to Approved after successful PDF generation
@@ -327,19 +310,13 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
                 FellingLicenceStatus.Approved,
                 cancellationToken);
 
-            // Regenerate a final licence document for the approved application
-            // This cannot be asynchronous, as the approval should not complete if the document generation fails
-            var resultPdfGenerated = await _generatePdfApplicationUseCase.GeneratePdfApplicationAsync(
-                user.UserAccountId.Value,
-                applicationId,
+            // queue message to generate licence document with new expiry date
+            // async now, can regenerate the document on demand if this fails
+            await _bus.Publish(
+                new GenerateSubmittedPdfPreviewMessage(
+                    user.UserAccountId!.Value,
+                    applicationId),
                 cancellationToken);
-
-            if (resultPdfGenerated.IsFailure)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                _logger.LogError("Failed to generate licence document for application with ID {ApplicationId}. Error: {Error}", applicationId, resultPdfGenerated.Error);
-                return Result.Failure<Document>($"Unable to generate the licence document for the application: {resultPdfGenerated.Error}");
-            }
 
             await transaction.CommitAsync(cancellationToken);
 
@@ -367,7 +344,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
                 new { model.LicenceExpiryDate, model.ReasonExpiryDate, model.ReasonSupplementaryPoints, model.ReasonOther, NotificationSent = applicantNotificationResult.IsSuccess }),
                 cancellationToken);
 
-            return Result.Success(resultPdfGenerated.Value);
+            return Result.Success();
         }
         catch (Exception ex)
         {
@@ -381,6 +358,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
         Guid applicationId,
         string applicationReference,
         InternalUser performingUser,
+        string viewApplicationUrl,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Sending approved in error notifications for application {ApplicationId}", applicationId);
@@ -439,7 +417,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
             Reasons = reasonsText,
             CaseNote = approvedInError.HasValue ? approvedInError.Value.ReasonExpiryDateText : null,
             Name = approver.Value.FullName(false),
-            ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}",
+            ViewApplicationURL = viewApplicationUrl,
             AdminHubFooter = adminHubFooter,
             ApplicationId = applicationId
         };
@@ -501,7 +479,6 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
         }
 
         string? approverName = null;
-        string? approverEmail = null;
 
         var approverId = application.AssigneeHistories
             .Where(x => x.Role is AssignedUserRole.FieldManager)
@@ -520,7 +497,6 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
             }
 
             approverName = approver.Value.FullName(false);
-            approverEmail = approver.Value.Email;
         }
 
         var adminHubFooter = string.IsNullOrWhiteSpace(application.AdministrativeRegion)
@@ -572,7 +548,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
             Name = applicantUser.FullName,
             PropertyName = application.SubmittedFlaPropertyDetail?.Name,
             ApproverName = approverName,
-            ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/SupportingDocumentation?applicationId={application.Id}",
+            ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}",
             AdminHubFooter = adminHubFooter,
             ApplicationId = application.Id,
             ApprovedDate = approvedDate

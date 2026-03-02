@@ -34,9 +34,16 @@
         <p class="govuk-body">
             Identified species:
             <ul>
-                @foreach (var species in Model.AllSpecies)
+                @foreach (var species in Model.AllSpecies.OrderByDescending(s => s.IsLarch).ThenBy(s => s.Name))
                 {
-                    <li>@Html.Raw(species.SpeciesName)</li>
+                    if (species.IsLarch)
+                    {
+                        <li><b>@species.Name</b></li>
+                    }
+                    else
+                    {
+                        <li>@species.Name</li>
+                    }
                 }
             </ul>
         </p>
@@ -77,9 +84,17 @@
                     <ul class="govuk-body no-margin-bottom">
                         @foreach (var species in Model.AllSpecies)
                         {
-                            <li>@Html.Raw(species.SpeciesName)</li>
+                            if (species.IsLarch)
+                            {
+                                <li><b>@species.Name</b></li>
+                            }
+                            else
+                            {
+                                <li>@species.Name</li>
+                            }
                         }
                     </ul>
+                    <br/>
                 </legend>
 
                 <div class="govuk-radios" data-module="govuk-radios">

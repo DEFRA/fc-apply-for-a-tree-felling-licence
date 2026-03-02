@@ -17,6 +17,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
+using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
+using MassTransit;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 
@@ -620,6 +622,26 @@ public partial class WoodlandOfficerReviewController(
         return RedirectToAction("Conditions", new { id = model.ApplicationId });
     }
 
+    [HttpPost]
+    public async Task<IActionResult> UpdateConditionsStatusForFurtherAmendments(
+        ConditionsViewModel model,
+        [FromServices] IConditionsUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+
+        var result = await useCase.UpdateConditionalStatusForFurtherAmendmentsAsync(model.ApplicationId, user, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Could not update conditions status for further amendments");
+            return RedirectToAction("Conditions", new { id = model.ApplicationId });
+        }
+
+        this.AddConfirmationMessage("Conditions status updated successfully");
+        return RedirectToAction("Conditions", new { id = model.ApplicationId });
+    }
+
     [HttpGet]
     public async Task<IActionResult> LarchCheck(
         Guid id,
@@ -627,7 +649,7 @@ public partial class WoodlandOfficerReviewController(
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
-        var model = await useCase.GetLarchCheckModelAsync(id, user, cancellationToken);
+        var model = await useCase.GetLarchCheckModelAsync(id, user, false, cancellationToken);
 
         if (model.IsFailure)
         {
@@ -651,7 +673,7 @@ public partial class WoodlandOfficerReviewController(
 
         if (ModelState.IsValid is false)
         {
-            var newModel = await useCase.GetLarchCheckModelAsync(id, user, cancellationToken);
+            var newModel = await useCase.GetLarchCheckModelAsync(id, user, false, cancellationToken);
 
             if (newModel.IsFailure)
             {
@@ -937,18 +959,18 @@ public partial class WoodlandOfficerReviewController(
 
     public async Task<IActionResult> GenerateLicencePreview(
         [FromQuery] Guid applicationId,
-        [FromServices] IGeneratePdfApplicationUseCase generatePdfApplicationUseCase,
+        [FromServices] IBus bus,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
 
-        var resultPdfGenerated =
-            await generatePdfApplicationUseCase.GeneratePdfApplicationAsync(user.UserAccountId!.Value, applicationId, cancellationToken);
+        await bus.Publish(
+            new GenerateSubmittedPdfPreviewMessage(
+                user.UserAccountId!.Value,
+                applicationId),
+            cancellationToken);
 
-        if (resultPdfGenerated.IsFailure)
-        {
-            this.AddErrorMessage("Unable to generate the preview licence document for the application");
-        }
+        this.AddConfirmationMessage("Request to generate PDF preview has been submitted, please check back later.");
 
         return RedirectToAction(nameof(Index), new { id = applicationId });
     }

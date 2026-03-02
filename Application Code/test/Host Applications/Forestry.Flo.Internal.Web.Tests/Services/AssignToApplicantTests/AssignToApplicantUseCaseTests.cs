@@ -1186,6 +1186,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         ApplicationNotificationDetails applicationDetails,
         LarchCheckDetailsModel larchDetails,
         FellingLicenceApplicationSummaryModel applicationSummary,
+        IEnumerable<TreeSpeciesModel> allSpecies,
         UserAccountModel applicantAccount)
     {
         // Arrange
@@ -1193,6 +1194,10 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var expectedNotificationType = NotificationType.InformApplicantOfReturnedApplicationMixLarchZone1;
 
         var sut = CreateSut();
+
+        MockLarchCheckService
+            .Setup(x => x.GetAllFellingSpeciesLarchFirstAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(allSpecies));
 
         MockRetrieveUserAccountsService
             .Setup(x => x.RetrieveUserAccountByIdAsync(applicantId, It.IsAny<CancellationToken>()))
@@ -1226,7 +1231,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 model.ApplicationReference == applicationDetails.ApplicationReference &&
                 model.PropertyName == applicationDetails.PropertyName &&
                 model.AdminHubFooter == AdminHubFooter &&
-                model.Name == applicantAccount.FullName),
+                model.Name == applicantAccount.FullName
+                && model.IdentifiedSpeciesList.All(s => allSpecies.Select(a => a.Name).Contains(s))),
             expectedNotificationType,
             It.Is<NotificationRecipient>(recipient =>
                 recipient.Name == applicantAccount.FullName &&
@@ -1244,6 +1250,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         ApplicationNotificationDetails applicationDetails,
         LarchCheckDetailsModel larchDetails,
         FellingLicenceApplicationSummaryModel applicationSummary,
+        IEnumerable<TreeSpeciesModel> allSpecies,
         UserAccountModel applicantAccount)
     {
         // Arrange
@@ -1251,6 +1258,10 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var expectedNotificationType = NotificationType.InformApplicantOfReturnedApplicationLarchOnlyMixZone;
 
         var sut = CreateSut();
+
+        MockLarchCheckService
+            .Setup(x => x.GetAllFellingSpeciesLarchFirstAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(allSpecies));
 
         MockRetrieveUserAccountsService
             .Setup(x => x.RetrieveUserAccountByIdAsync(applicantId, It.IsAny<CancellationToken>()))
@@ -1284,7 +1295,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 model.ApplicationReference == applicationDetails.ApplicationReference &&
                 model.PropertyName == applicationDetails.PropertyName &&
                 model.AdminHubFooter == AdminHubFooter &&
-                model.Name == applicantAccount.FullName),
+                model.Name == applicantAccount.FullName
+                && model.IdentifiedSpeciesList.All(s => allSpecies.Select(a => a.Name).Contains(s))),
             expectedNotificationType,
             It.Is<NotificationRecipient>(recipient =>
                 recipient.Name == applicantAccount.FullName &&
@@ -1302,6 +1314,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         ApplicationNotificationDetails applicationDetails,
         LarchCheckDetailsModel larchDetails,
         FellingLicenceApplicationSummaryModel applicationSummary,
+        IEnumerable<TreeSpeciesModel> allSpecies,
         UserAccountModel applicantAccount)
     {
         // Arrange
@@ -1309,6 +1322,10 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var expectedNotificationType = NotificationType.InformApplicantOfReturnedApplicationMixLarchMixZone;
 
         var sut = CreateSut();
+
+        MockLarchCheckService
+            .Setup(x => x.GetAllFellingSpeciesLarchFirstAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(allSpecies));
 
         MockRetrieveUserAccountsService
             .Setup(x => x.RetrieveUserAccountByIdAsync(applicantId, It.IsAny<CancellationToken>()))
@@ -1342,7 +1359,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 model.ApplicationReference == applicationDetails.ApplicationReference &&
                 model.PropertyName == applicationDetails.PropertyName &&
                 model.AdminHubFooter == AdminHubFooter &&
-                model.Name == applicantAccount.FullName),
+                model.Name == applicantAccount.FullName
+                && model.IdentifiedSpeciesList.All(s => allSpecies.Select(a => a.Name).Contains(s))),
             expectedNotificationType,
             It.Is<NotificationRecipient>(recipient =>
                 recipient.Name == applicantAccount.FullName &&

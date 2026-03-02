@@ -233,8 +233,7 @@ public class WoodlandOfficerReview
     public string? SupplementaryPoints { get; set; }
 
     /// <summary>
-    /// Gets and sets whether the applicant's Tree Health answers have been confirmed to the best
-    /// of the woodland officer's knowledge.
+    /// Gets and sets whether there is a tree health or public safety reason to expedite the application.
     /// </summary>
-    public bool? IsApplicantTreeHealthAnswersConfirmed { get; set; }
+    public bool? IsTreeHealthReasonToExpedite { get; set; }
 }

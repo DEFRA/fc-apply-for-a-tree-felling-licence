@@ -584,6 +584,59 @@ public class UpdateWoodlandOfficerReviewService(
     }
 
     /// <inheritdoc />
+    public async Task<Result> UpdateConditionalStatusForFurtherAmendmentsAsync(
+        Guid applicationId, 
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Attempting to update the conditional status for further amendments on application with id {ApplicationId}", applicationId);
+
+        try
+        {
+            if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+            {
+                return Result.Failure("Application woodland officer review unable to be updated");
+            }
+
+            var maybeExistingWoodlandOfficerReview =
+                await _internalFlaRepository.GetWoodlandOfficerReviewAsync(applicationId, cancellationToken);
+
+            if (maybeExistingWoodlandOfficerReview.HasNoValue)
+            {
+                logger.LogDebug("No woodland officer review found for application with id {ApplicationId}, no update required", applicationId);
+                return Result.Success();
+            }
+
+            var review = maybeExistingWoodlandOfficerReview.Value;
+
+            // if the conditions were sent to the applicant, record this date in the OldConditionsSentToApplicantDate field
+            // then clear the ConditionsToApplicantDate field
+            if (review.ConditionsToApplicantDate.HasValue)
+            {
+                review.OldConditionsSentToApplicantDate = review.ConditionsToApplicantDate;
+                review.ConditionsToApplicantDate = null;
+
+                review.LastUpdatedById = userId;
+                review.LastUpdatedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+            }
+
+            var saveResult = await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+            if (saveResult.IsFailure)
+            {
+                logger.LogError("Could not save changes to woodland officer review, error: {Error}", saveResult.Error);
+                return Result.Failure(saveResult.Error.ToString());
+            }
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Exception caught in UpdateConditionalStatusForFurtherAmendmentsAsync");
+            return Result.Failure(ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<Result> HandleConfirmedFellingAndRestockingChangesAsync(
         Guid applicationId,
         Guid userId,
@@ -678,7 +731,7 @@ public class UpdateWoodlandOfficerReviewService(
     public async Task<Result> ConfirmTreeHealthCheckAsync(
         Guid applicationId, 
         Guid userId, 
-        bool applicantAnswersConfirmed,
+        bool isTreeHealthReasonToExpedite,
         CancellationToken cancellationToken)
     {
         try
@@ -698,7 +751,7 @@ public class UpdateWoodlandOfficerReviewService(
                 return Result.Failure(error);
             }
 
-            review.IsApplicantTreeHealthAnswersConfirmed = applicantAnswersConfirmed;
+            review.IsTreeHealthReasonToExpedite = isTreeHealthReasonToExpedite;
 
             await _internalFlaRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 
@@ -1021,7 +1074,7 @@ public class UpdateWoodlandOfficerReviewService(
                 return Result.Failure("Cannot set applicant agreed to true without a disagreement reason");
             }
 
-            if (await AssertApplicationAsApplicant(model.FellingLicenceApplicationId, userId, cancellationToken) is false)
+            if (await AssertApplicationIsInWoodlandOfficerReviewState(model.FellingLicenceApplicationId, cancellationToken) is false)
             {
                 return Result.Failure("Application woodland officer review unable to be updated");
             }
@@ -1266,27 +1319,6 @@ public class UpdateWoodlandOfficerReviewService(
         return true;
     }
 
-
-    private async Task<bool> AssertApplicationAsApplicant(Guid applicationId, Guid performingUserId, CancellationToken cancellationToken)
-    {
-        if (await AssertApplicationIsInWoodlandOfficerReviewState(applicationId, cancellationToken) == false)
-        {
-            logger.LogError("Cannot update woodland officer review for application with id {ApplicationId} as it is not in the Woodland Officer Review state", applicationId);
-            return false;
-        }
-
-        if (await AssertPerformingUserIsAuthorOfApplication(applicationId, performingUserId, cancellationToken) == false)
-        {
-            logger.LogError("Cannot update woodland officer review for application with id {ApplicationId} as performing user with id {UserId} is not the author of the application",
-                applicationId, performingUserId);
-            return false;
-        }
-
-        logger.LogDebug("Application with id {ApplicationId} and user with id {UserId} passed state checks to update woodland officer review details",
-            applicationId, performingUserId);
-        return true;
-    }
-
     private async Task<bool> AssertPerformingUserIsAssignedWoodlandOfficer(Guid applicationId, Guid performingUserId, CancellationToken cancellationToken)
     {
         var assigneeHistory = await _internalFlaRepository.GetAssigneeHistoryForApplicationAsync(
@@ -1295,15 +1327,6 @@ public class UpdateWoodlandOfficerReviewService(
             x.Role == AssignedUserRole.WoodlandOfficer && x.TimestampUnassigned.HasValue == false);
 
         return assignedWo?.AssignedUserId == performingUserId;
-    }
-    private async Task<bool> AssertPerformingUserIsAuthorOfApplication(Guid applicationId, Guid performingUserId, CancellationToken cancellationToken)
-    {
-        var assigneeHistory = await _internalFlaRepository.GetAssigneeHistoryForApplicationAsync(
-            applicationId, cancellationToken);
-        var assignedAuthors = assigneeHistory.Where(x =>
-            x.Role == AssignedUserRole.Author);
-
-        return assignedAuthors.Any(x => x.AssignedUserId == performingUserId);
     }
 
     private bool AssertPerformingUserIsAssignedWoodlandOfficer(FellingLicenceApplication application, Guid performingUserId)

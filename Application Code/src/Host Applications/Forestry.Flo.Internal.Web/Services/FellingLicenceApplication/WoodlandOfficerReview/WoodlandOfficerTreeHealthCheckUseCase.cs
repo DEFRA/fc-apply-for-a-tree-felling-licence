@@ -70,7 +70,7 @@ public class WoodlandOfficerTreeHealthCheckUseCase(
         var result = new ConfirmTreeHealthIssuesViewModel
         {
             ApplicationId = applicationId,
-            Confirmed = application.Value.WoodlandOfficerReview?.IsApplicantTreeHealthAnswersConfirmed,
+            IsTreeHealthReasonToExpedite = application.Value.WoodlandOfficerReview?.IsTreeHealthReasonToExpedite,
             FellingLicenceApplicationSummary = summaryResult.Value,
             TreeHealthIssuesViewModel = new TreeHealthIssuesViewModel
             {

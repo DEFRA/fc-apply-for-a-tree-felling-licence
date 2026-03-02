@@ -317,6 +317,39 @@ public class WoodlandOfficerReviewUseCase(
     }
 
     /// <inheritdoc />
+    public async Task<Result> RevertCompletionOfConfirmedFellingAndRestockingDetailsAsync(
+        Guid applicationId,
+        InternalUser user,
+        CancellationToken cancellationToken)
+    {
+        var result = await _updateWoodlandOfficerReviewService.HandleConfirmedFellingAndRestockingChangesAsync(
+            applicationId,
+            user.UserAccountId!.Value,
+            false,
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.UpdateWoodlandOfficerReviewFailure,
+                    applicationId,
+                    user.UserAccountId!.Value,
+                    _requestContext),
+                cancellationToken);
+            return result;
+        }
+
+        await _auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.UpdateWoodlandOfficerReview,
+                applicationId,
+                user.UserAccountId!.Value,
+                _requestContext),
+            cancellationToken);
+
+        return result;
+    }
+
+    /// <inheritdoc />
     public async Task<Result> CompleteEiaScreeningAsync(
         Guid applicationId,
         InternalUser user,

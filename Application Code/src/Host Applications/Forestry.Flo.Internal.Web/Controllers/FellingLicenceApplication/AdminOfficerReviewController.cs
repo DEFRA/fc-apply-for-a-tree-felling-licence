@@ -337,7 +337,7 @@ public partial class AdminOfficerReviewController : Controller
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
-        var model = await useCase.GetLarchCheckModelAsync(id, user, cancellationToken);
+        var model = await useCase.GetLarchCheckModelAsync(id, user, true, cancellationToken);
 
         if (model.IsFailure)
         {
@@ -361,7 +361,7 @@ public partial class AdminOfficerReviewController : Controller
 
         if (ModelState.IsValid is false)
         {
-            var newModel = await useCase.GetLarchCheckModelAsync(id, user, cancellationToken);
+            var newModel = await useCase.GetLarchCheckModelAsync(id, user, true, cancellationToken);
 
             if (newModel.IsFailure)
             {
