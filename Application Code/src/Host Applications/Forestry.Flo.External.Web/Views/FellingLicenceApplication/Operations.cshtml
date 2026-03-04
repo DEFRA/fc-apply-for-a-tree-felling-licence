@@ -1,19 +1,36 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
-@using Forestry.Flo.Services.FellingLicenceApplications.DataImports.Models
 @using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @model Forestry.Flo.External.Web.Models.FellingLicenceApplication.OperationDetailsModel
 @{
     ViewData["Title"] = "Proposed felling schedule";
-    var backLinkAction = Model.ReturnToApplicationSummary
-        ? "ApplicationSummary"
-        : Model.IsForTenYearLicence is true
-            ? "WmpDocuments"
-            : "TenYearLicence";
+    var user = new ExternalApplicant(User);
 
-    ViewData.ManuallySetBackLink(Url.Action(backLinkAction, "FellingLicenceApplication", new
+    var aafId = ViewData["AgentAuthorityId"];
+
+    if (!Model.ReturnToApplicationSummary && aafId != null)
     {
-        applicationId = Model.ApplicationId
-    }));
+        ViewData.ManuallySetBackLink(Url.Action("AgentAuthorityForm", "FellingLicenceApplication", new
+        {
+            applicationId = Model.ApplicationId,
+            agentAuthorityId = aafId
+        }));
+    }
+    else
+    {
+        var backLinkAction = Model.ReturnToApplicationSummary
+            ? "ApplicationSummary"
+            : user.IsFcUser && Model.IsForTenYearLicence is true
+                ? "WmpDocuments"
+                : user.IsFcUser
+                    ? "TenYearLicence"
+                    : "ApplicationTaskList";
+
+        ViewData.ManuallySetBackLink(Url.Action(backLinkAction, "FellingLicenceApplication", new
+        {
+            applicationId = Model.ApplicationId
+        }));
+    }
+
     ViewData.ShowBackLink();
 }
 <partial name="Partials/_ConfirmationMessageDisplay"/>
@@ -40,7 +57,7 @@
             <div condition="@Model.DisplayDateReceived">
 
                 <h2 class="govuk-heading-m">When was the application received?</h2>
-                
+
                 <govuk-form-group asp-for="DateReceived">
                     <fieldset class="govuk-fieldset" role="group" aria-describedby="date-received-hint" id="@nameof(Model.DateReceived)">
                         <legend class="govuk-fieldset__legend">

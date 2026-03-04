@@ -85,6 +85,35 @@ namespace Forestry.Flo.Services.FileStorage.Tests.Services
         }
 
         [Theory]
+        public async Task ValidJpegFileIsStoredWithAlternateExtension()
+        {
+            //arrange
+            _sut = CreateSut();
+
+            _mockFileFormatInspector.Setup(c => c.DetermineFileFormat(It.IsAny<Stream>()))
+                .Returns(new Jpeg());    // the extension for this file format is "jpg" but our file (below) is "jpeg"
+
+            //act
+            var result = await _sut.StoreFileAsync(
+                "test.jpeg",
+                new byte[10L],
+                _storeLocationUnderRoot,
+                receivedByApi: false,
+                FileUploadReason.SupportingDocument,
+                new CancellationToken());
+
+            //assert
+            Assert.True(result.IsSuccess);
+            Assert.That(result.Value.FileSize, Is.EqualTo(10L));
+
+            var storedFile = new FileInfo(result.Value.Location!);
+            Assert.NotNull(storedFile);
+            Assert.That(storedFile.DirectoryName, Is.EqualTo(Path.Combine(_testExecutionPath, _storeLocationUnderRoot)));
+            Assert.True(storedFile.Exists);
+            Assert.That(storedFile.Length, Is.EqualTo(10L));
+        }
+
+        [Theory]
         public async Task InvalidFileExtensionNotStored()
         {
             //arrange
@@ -399,7 +428,13 @@ namespace Forestry.Flo.Services.FileStorage.Tests.Services
                         FileUploadReasons = [FileUploadReason.SupportingDocument, FileUploadReason.AgentAuthorityForm],
                         Description = "test",
                         Extensions = new[] { _permittedExtension,"csv","doc" }
-                    }
+                    },
+                    new AllowedFileType
+                    {
+                        FileUploadReasons = [FileUploadReason.SupportingDocument, FileUploadReason.AgentAuthorityForm],
+                        Description = "image",
+                        Extensions = new[] { "jpg", "jpeg", "png" }
+                    },
                 }
             };
 

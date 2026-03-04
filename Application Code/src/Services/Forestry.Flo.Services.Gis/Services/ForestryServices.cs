@@ -216,31 +216,24 @@ public class ForestryServices : BaseServices, IForestryServices
     /// <param name="includeSpaces">Add spaces to the ref</param>
     /// <param name="cancellationToken">the cancellation token</param>
     /// <returns></returns>
-    protected Result<string> ConvertLatLongToOSGrid(LatLongObj latLongObj, int gridLength, bool includeSpaces,
+    protected Result<string> ConvertLatLongToOSGrid(
+        LatLongObj latLongObj, 
+        int gridLength, 
+        bool includeSpaces,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("ConvertLatLongToOSGrid called with latLongObj: {@LatLongObj}, gridLength: {GridLength}, includeSpaces: {IncludeSpaces}", latLongObj, gridLength, includeSpaces);
-
+        _logger.LogInformation(
+            "ConvertLatLongToOSGrid called with latLongObj: {@LatLongObj}, gridLength: {GridLength}, includeSpaces: {IncludeSpaces}",
+            latLongObj, gridLength, includeSpaces);
         try
         {
             var cartesian = Convert.ToCartesian(new Wgs84(),
                 new LatitudeLongitude(latLongObj.Latitude, latLongObj.Longitude));
             var bngEN = Convert.ToEastingNorthing(new Airy1830(), new BritishNationalGrid(),
                 Transform.Etrs89ToOsgb36(cartesian));
-
             var osgb36EN = new Osgb36(bngEN);
             var mapReference = osgb36EN.MapReference;
-
-            var space = string.Empty;
-            if (includeSpaces)
-            {
-                space = " ";
-            }
-
-            if ((gridLength is < 8) || (gridLength % 2) != 0)
-            {
-                gridLength = 8;
-            }
+            var space = includeSpaces ? " " : string.Empty;
 
             if (!Regex.IsMatch(mapReference[..2], @"^[a-zA-Z]+$"))
             {
@@ -248,12 +241,37 @@ public class ForestryServices : BaseServices, IForestryServices
                 return Result.Failure<string>("The given points are not in the uk");
             }
 
-            var result = gridLength == 0
-                ? $"{mapReference[..2]} {bngEN.Easting} {bngEN.Northing}"
-                : $"{mapReference[..2]}{space}{bngEN.Easting.ToString().Substring(1, (gridLength - 2) / 2)}{space}{bngEN.Northing.ToString().Substring(1, (gridLength - 2) / 2)}";
+            // If you genuinely want gridLength==0 to mean "full metres", handle it BEFORE normalising.
+            if (gridLength == 0)
+            {
+                var eFull = (int)Math.Floor(bngEN.Easting);
+                var nFull = (int)Math.Floor(bngEN.Northing);
 
+                var max = Math.Max(eFull, nFull);
+
+                var eFullPad = eFull.ToString().PadLeft(max.ToString().Length, '0');
+                var nFullPad = nFull.ToString().PadLeft(max.ToString().Length, '0');
+
+                var full = $"{mapReference[..2]}{space}{eFullPad}{space}{nFullPad}";
+                _logger.LogInformation("OS Grid Reference calculated: {OSGrid}", full);
+                return Result.Success(full);
+            }
+
+            if (gridLength < 8 || (gridLength % 2) != 0)
+            {
+                gridLength = 8;
+            }
+
+            var digits = (gridLength - 2) / 2; // 8->3, 10->4, 12->5
+            var e = (int)Math.Floor(bngEN.Easting);
+            var n = (int)Math.Floor(bngEN.Northing);
+            // within the 100km square, padded to 5 digits
+            var eWithin = (e % 100000).ToString("D5");
+            var nWithin = (n % 100000).ToString("D5");
+            var ePart = eWithin.Substring(0, digits);
+            var nPart = nWithin.Substring(0, digits);
+            var result = $"{mapReference[..2]}{space}{ePart}{space}{nPart}";
             _logger.LogInformation("OS Grid Reference calculated: {OSGrid}", result);
-
             return Result.Success(result);
         }
         catch (Exception e)

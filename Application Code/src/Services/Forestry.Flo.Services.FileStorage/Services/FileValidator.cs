@@ -2,6 +2,7 @@
 using CSharpFunctionalExtensions;
 using FileSignatures;
 using Forestry.Flo.Services.FileStorage.Configuration;
+using Forestry.Flo.Services.FileStorage.Model;
 using Forestry.Flo.Services.FileStorage.ResultModels;
 using Microsoft.Extensions.Options;
 
@@ -89,7 +90,7 @@ public class FileValidator
         return CreateValidFileResult();
     }
 
-    private bool TryGetFileExtension(string fileName, out string extension)
+    private static bool TryGetFileExtension(string fileName, out string extension)
     {
         extension = string.Empty;
 
@@ -98,6 +99,14 @@ public class FileValidator
         if (filePartsArray.Length <= 0) return false;
 
         extension = filePartsArray[^1];
+
+        var checkExtension = extension;
+        var interchangeableFileExtension = 
+            FileStorageConstants.InterchangeableFileExtensions.FirstOrDefault(f =>
+            f.Value.Contains(checkExtension, StringComparer.CurrentCultureIgnoreCase));
+       
+        extension = interchangeableFileExtension.Key ?? extension;
+
         return true;
     }
 
