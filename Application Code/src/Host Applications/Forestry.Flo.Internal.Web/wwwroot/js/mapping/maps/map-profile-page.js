@@ -67,42 +67,36 @@
                 if (button !== null) {
                     var items = maps_html_Helper.getCompartments("restocking");
 
-                    if (items && items.length > 0) {
-                        const panelMenu = document.getElementById("panelMenu");
-                        if (!panelMenu) {
-                            return
-                        }
+                    if (!items || items.length <= 0) {
+                        button.setAttribute("hidden", "true");
+                    } else {
+                        button.addEventListener("click", (evt) => {
+                            const state = document.getElementById("runningMode");
+                            const headerTitle = document.getElementById("header-title");
 
-                        panelMenu.removeAttribute("closed");
+                            if (state.value === "felling") {
+                                state.value = "restocking"
+                                if (headerTitle) {
+                                    headerTitle.innerHTML = "Restocking";
+                                }
+                                button.text = "View Felling";
+                                button.icon = "analysis";
+                            } else {
+                                state.value = "felling"
+                                if (headerTitle) {
+                                    headerTitle.innerHTML = "Felling";
+                                }
+                                button.text = "View Restocking";
+                                button.icon = "analysis";
+                            }
+
+                            that.map.layers.removeAll();
+                            that.loadCompartments()
+                                .then(that.GetStartingPoint.bind(that));
+
+                        });
                     }
-
-                    button.addEventListener("click", (evt) => {
-                        const state = document.getElementById("runningMode");
-                        const headerTitle = document.getElementById("header-title");
-
-                        if (state.value === "felling") {
-                            state.value = "restocking"
-                            if (headerTitle) {
-                                headerTitle.innerHTML = "Restocking";
-                            }
-                            button.text = "View Felling";
-                            button.icon = "analysis";
-                        } else {
-                            state.value = "felling"
-                            if (headerTitle) {
-                                headerTitle.innerHTML = "Felling";
-                            }
-                            button.text = "View Restocking";
-                            button.icon = "analysis";
-                        }
-
-                        that.map.layers.removeAll();
-                        that.loadCompartments()
-                            .then(that.GetStartingPoint.bind(that));
-
-                    });
                 }
-
 
                 const mapComponent = document.getElementById(location);
                 mapComponent.map = this.map;

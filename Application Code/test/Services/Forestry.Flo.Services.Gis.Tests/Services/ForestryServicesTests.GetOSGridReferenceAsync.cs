@@ -9,8 +9,16 @@ namespace Forestry.Flo.Services.Gis.Tests.Services;
 public partial class ForestryServicesTests
 {
     [Theory]
-    [InlineData(51.557540, -1.7366200, "SU183843")]
-    public async Task GetOSGridReference_Success(float lat, float lon, string expectedResult)
+    [InlineData(50.3484764, -4.07245541, 0, "SX252647051894")]
+    [InlineData(50.3484764, -4.07245541, 12, "SX5264751894")]
+    [InlineData(50.3484764, -4.07245541, 10, "SX52645189")]
+    [InlineData(50.3484764, -4.07245541, 8, "SX526518")]
+
+    [InlineData(51.557540, -1.7366200, 00, "SU418356184328")]
+    [InlineData(51.557540, -1.7366200, 12, "SU1835684328")]
+    [InlineData(51.557540, -1.7366200, 10, "SU18358432")]
+    [InlineData(51.557540, -1.7366200, 08, "SU183843")]
+    public async Task GetOSGridReference_Success(float lat, float lon, int gridLength, string expectedResult)
     {
         _mockHttpHandler.Reset();
 
@@ -27,6 +35,8 @@ public partial class ForestryServicesTests
         _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient(_mockHttpHandler.Object));
 
         var access = CreateSut();
+
+        _config.Forestry.GeometryService.ProjectService.GridLength = gridLength;
 
         var response = await access.GetOSGridReferenceAsync(_polygons[0].GetCenterPoint()!, CancellationToken.None);
 

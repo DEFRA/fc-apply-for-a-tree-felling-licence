@@ -3,7 +3,6 @@ using FluentValidation;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Infrastructure.Display;
 using Forestry.Flo.External.Web.Models;
-using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Services;
@@ -715,7 +714,10 @@ public partial class FellingLicenceApplicationController(
 
     [HttpGet]
     [EditingAllowed]
-    public async Task<IActionResult> Operations(Guid applicationId, bool returnToApplicationSummary, CancellationToken cancellationToken)
+    public async Task<IActionResult> Operations(
+        Guid applicationId, 
+        bool returnToApplicationSummary,
+        CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
         var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
@@ -731,6 +733,10 @@ public partial class FellingLicenceApplicationController(
 
         ViewBag.ApplicationSummary = application.ApplicationSummary;
         model.ReturnToApplicationSummary = returnToApplicationSummary;
+
+        var agentAuthorityId = await GetAgentAuthorityAsync(application.ApplicationSummary.WoodlandOwnerId, cancellationToken);
+        ViewData["AgentAuthorityId"] = agentAuthorityId;
+
         SetTaskBreadcrumbs(model);
         return View(model);
     }
@@ -1256,7 +1262,13 @@ public partial class FellingLicenceApplicationController(
         // only FC users should be able to see this page
         if (!user.IsFcUser)
         {
-            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport, null);
+            var application = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            Guid? agentAuthorityId = null;
+            if (application.HasValue)
+            {
+                agentAuthorityId = await GetAgentAuthorityAsync(application.Value.ApplicationSummary.WoodlandOwnerId, cancellationToken);
+            }
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport, agentAuthorityId);
         }
 
         var viewModel = await tenYearLicenceUseCase
@@ -1396,7 +1408,13 @@ public partial class FellingLicenceApplicationController(
         // only FC users should be able to see this page
         if (!user.IsFcUser)
         {
-            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+            var application = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            Guid? agentAuthorityId = null;
+            if (application.HasValue)
+            {
+                agentAuthorityId = await GetAgentAuthorityAsync(application.Value.ApplicationSummary.WoodlandOwnerId, cancellationToken);
+            }
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport, agentAuthorityId);
         }
 
         var isTenYearLicenceApplication = await tenYearLicenceUseCase.IsTenYearLicenceApplicationAsync(
@@ -1409,7 +1427,13 @@ public partial class FellingLicenceApplicationController(
 
         if (!isTenYearLicenceApplication.Value)
         {
-            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+            var application = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            Guid? agentAuthorityId = null;
+            if (application.HasValue)
+            {
+                agentAuthorityId = await GetAgentAuthorityAsync(application.Value.ApplicationSummary.WoodlandOwnerId, cancellationToken);
+            }
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport, agentAuthorityId);
         }
 
         var viewModel = await tenYearLicenceUseCase
@@ -1444,13 +1468,13 @@ public partial class FellingLicenceApplicationController(
             return RedirectToAction(nameof(HomeController.Error), "Home");
         }
 
-        var agency =
+        var agentAuthorityId =
             await GetAgentAuthorityAsync(viewModel.Value.ApplicationSummary.WoodlandOwnerId!, cancellationToken);
 
         // only FC users should be able to post this page, and only if the application is still editable
         if (!user.IsFcUser || !model.AllowEditing)
         {
-            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agency);
+            return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agentAuthorityId);
         }
 
 
@@ -1485,7 +1509,7 @@ public partial class FellingLicenceApplicationController(
 
         }
 
-        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agency);
+        return GetRedirectPostTenYearLicencePages(model.ApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agentAuthorityId);
     }
 
     /// <summary>
@@ -1506,7 +1530,13 @@ public partial class FellingLicenceApplicationController(
         // only FC users should be able to see this page
         if (!user.IsFcUser)
         {
-            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport);
+            var application = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+            Guid? agentAuthorityId = null;
+            if (application.HasValue)
+            {
+                agentAuthorityId = await GetAgentAuthorityAsync(application.Value.ApplicationSummary.WoodlandOwnerId, cancellationToken);
+            }
+            return GetRedirectPostTenYearLicencePages(applicationId, returnToApplicationSummary, fromDataImport, agentAuthorityId);
         }
 
         var removeResult = await useCase.RemoveSupportingDocumentAsync(user, applicationId, documentIdentifier, cancellationToken);
@@ -1652,10 +1682,16 @@ public partial class FellingLicenceApplicationController(
 
         var user = new ExternalApplicant(User);
 
+        var fellingLicenceApplicationModelResult =
+            await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.FellingLicenceApplicationId, cancellationToken);
+
         // only FC users should be able to upload WMP documents
         if (model.Purpose == DocumentPurpose.WmpDocument && !user.IsFcUser)
         {
-            return GetRedirectPostTenYearLicencePages(model.FellingLicenceApplicationId, model.ReturnToApplicationSummary, model.FromDataImport);
+            var agentAuthorityId = fellingLicenceApplicationModelResult.HasValue 
+                ? fellingLicenceApplicationModelResult.Value.AgentAuthorityForm?.AgentAuthorityId 
+                : null;
+            return GetRedirectPostTenYearLicencePages(model.FellingLicenceApplicationId, model.ReturnToApplicationSummary, model.FromDataImport, agentAuthorityId);
         }
 
         var saveDocumentsResult = await useCase.AddDocumentsToApplicationAsync(
@@ -1696,7 +1732,8 @@ public partial class FellingLicenceApplicationController(
                 });
         }
 
-        var fellingLicenceApplicationModelResult =
+        // reload to pick up any documents it *could* store even if not all of them
+        fellingLicenceApplicationModelResult =
             await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, model.FellingLicenceApplicationId, cancellationToken);
 
         if (fellingLicenceApplicationModelResult.HasNoValue)

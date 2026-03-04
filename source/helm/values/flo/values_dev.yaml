@@ -191,7 +191,7 @@ external-web-app:
           ProjectService:
             Path: "project"
             OutSR: 4326
-            GridLength: 12
+            GridLength: 8
             IncludeSpaces: true
           UnionService:
             Path: "union"
@@ -260,7 +260,7 @@ external-web-app:
           ProjectService:
             Path: "project"
             OutSR: 4326
-            GridLength: 12
+            GridLength: 8
             IncludeSpaces: true
           UnionService:
             Path: "union"
@@ -538,7 +538,7 @@ internal-web-app:
           ProjectService:
             Path: "project"
             OutSR: 4326
-            GridLength: 12
+            GridLength: 8
             IncludeSpaces: true
           UnionService:
             Path: "union"

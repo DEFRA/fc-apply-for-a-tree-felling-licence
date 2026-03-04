@@ -30,27 +30,30 @@
 
     <partial name="Partials/_FellingDetails" model="@Model.FellingAndRestockingDetail" />
     <p class="govuk-body govuk-!-margin-bottom-5"></p>
+    
+</div>
 
-    <div class="page-break"></div>
+<div class="page-break"></div>
+
+<div class="govuk-grid-column-full">
     <h2 class="govuk-heading-m">Felling operation map</h2>
-    <img src="data:image/jpeg;base64,@Model.FellingMapBase64" alt="Felling operations map"/>
+    <img src="data:image/jpeg;base64,@Model.FellingMapBase64" alt="Felling operations map" width="100%" />
     <p class="govuk-body govuk-!-margin-bottom-5"></p>
 
     <div class="page-break"></div>
     <h2 class="govuk-heading-m">Restocking operation map</h2>
     @if (string.IsNullOrWhiteSpace(Model.RestockingMapBase64) is false)
     {
-        <img src="data:image/jpeg;base64,@Model.RestockingMapBase64" alt="Restocking operations map"/>
+        <img src="data:image/jpeg;base64,@Model.RestockingMapBase64" alt="Restocking operations map" width="100%" />
         <p class="govuk-body govuk-!-margin-bottom-5"></p>
     }
     else
     {
         <p class="govuk-body">No restocking operations in the application.</p>
     }
-
-    <div class="page-break"></div>
-
 </div>
+
+<div class="page-break"></div>
 
 <div class="govuk-grid-column-two-thirds width-limit-override">
     <partial name="Partials/_ActivityFeed" model="@Model.SiteVisitComments"/>

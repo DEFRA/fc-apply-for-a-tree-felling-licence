@@ -289,4 +289,8 @@ td.width-limited {
     .no-print {
         display: none;
     }
+
+    table *{
+        transform: scale(0.9)
+    }
 }

@@ -10,81 +10,115 @@
 <partial name="Partials/_UserGuideDisplay" />
 <partial name="_ApplicationSummaryNotes" model="@ViewBag.ApplicationSummary" />
 
-<div class="govuk-grid-column-two-thirds">
+<form id="felling-and-restocking-playback-form" asp-controller="FellingLicenceApplication" asp-action="FellingAndRestockingPlayback">
 
-    <form id="felling-and-restocking-playback-form" asp-controller="FellingLicenceApplication" asp-action="FellingAndRestockingPlayback">
+    <div class="govuk-grid-column-two-thirds">
+
         <input type="hidden" asp-for="ApplicationId" />
-        <input type="hidden" asp-for="@Model.GIS" />
+        <input type="hidden" asp-for="@Model.GIS" name="FellingAndRestocking.GIS" />
         
-        <div class="govuk-body">
-            <h1 class="govuk-heading-l">
-                Check your felling and restocking answers
-            </h1>
-                
-            <partial name="_ApplicationEditWarning.cshtml" model="@Model" />
+        <h1 class="govuk-heading-l">
+            Check your felling and restocking answers
+        </h1>
+            
+        <partial name="_ApplicationEditWarning.cshtml" model="@Model" />
 
-            <div class="govuk-summary-card">
-                <div class="govuk-summary-card__title-wrapper">
-                    <h2 class="govuk-summary-card__title">
-                        Felling and restocking details
-                    </h2>
-                </div>
-                <div class="govuk-summary-card__content">
-                    <dl class="govuk-summary-list">
+        <div class="govuk-summary-card">
+            <div class="govuk-summary-card__title-wrapper">
+                <h2 class="govuk-summary-card__title">
+                    Felling and restocking details
+                </h2>
+            </div>
+            <div class="govuk-summary-card__content">
+                <dl class="govuk-summary-list">
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Felling compartments
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @foreach (var comp in Model.FellingCompartmentDetails)
+                            {
+                                <div>
+                                    @comp.CompartmentName <br/>
+                                </div>
+                            }
+                        </dd>
+                        <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
+                            <a class="govuk-link" href="@Url.Action(Model.FellingCompartmentsChangeLink)">Change<span class="govuk-visually-hidden"> compartments with felling operations</span></a>
+                        </dd>
+                    </div>
+
+                    @foreach (var compartmentDetails in Model.FellingCompartmentDetails)
+                    {
                         <div class="govuk-summary-list__row">
                             <dt class="govuk-summary-list__key">
-                                Felling compartments
+                                Felling operations in compartment @compartmentDetails.CompartmentName
                             </dt>
                             <dd class="govuk-summary-list__value">
-                                @foreach (var comp in Model.FellingCompartmentDetails)
-                                {
-                                    <div>
-                                        @comp.CompartmentName <br/>
-                                    </div>
-                                }
+                                @compartmentDetails.OperationsString
                             </dd>
                             <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
-                                <a class="govuk-link" href="@Url.Action(Model.FellingCompartmentsChangeLink)">Change<span class="govuk-visually-hidden"> compartments with felling operations</span></a>
+                                <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)">Change<span class="govuk-visually-hidden"> felling operations in @compartmentDetails.CompartmentName</span></a>
                             </dd>
                         </div>
-
-                        @foreach (var compartmentDetails in Model.FellingCompartmentDetails)
-                        {
-                            <div class="govuk-summary-list__row">
-                                <dt class="govuk-summary-list__key">
-                                    Felling operations in compartment @compartmentDetails.CompartmentName
-                                </dt>
-                                <dd class="govuk-summary-list__value">
-                                    @compartmentDetails.OperationsString
-                                </dd>
-                                <dd class="govuk-summary-list__actions" condition="@Model.AllowEditing">
-                                    <a class="govuk-link" href="@Url.Action(compartmentDetails.FellingOperationsChangeLink)">Change<span class="govuk-visually-hidden"> felling operations in @compartmentDetails.CompartmentName</span></a>
-                                </dd>
-                            </div>
-                        }
-                    </dl>
-                </div>
-            </div>
-
-            @foreach (var compartment in Model.FellingCompartmentDetails)
-            {
-                <div>
-                    <partial name="_FellingCompartmentPlayback" model="@compartment" />
-                </div>
-            }
-
-            <div class="govuk-button-group">
-                <a
-                    condition-disabled="@(Model.AllowEditing is false)"
-                    class="govuk-button"
-                    asp-action="ConstraintsCheck"
-                    asp-route-applicationId="@Model.ApplicationId">
-                    Save and continue
-                </a>
+                    }
+                </dl>
             </div>
         </div>
-    </form>
-</div>
+    </div>
+    
+    <div class="govuk-grid-column-full">
+
+        <arcgis-map id="viewDiv" class="govuk-!-margin-bottom-6" aria-label="Map of compartments within this application">
+            <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
+            <arcgis-zoom slot="top-right"></arcgis-zoom>
+            <arcgis-compass slot="top-right"> </arcgis-compass>
+            <arcgis-expand slot="top-right">
+                <arcgis-basemap-gallery></arcgis-basemap-gallery>
+            </arcgis-expand>
+        </arcgis-map>
+
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+        @foreach (var compartment in Model.FellingCompartmentDetails)
+        {
+            <div>
+                <partial name="_FellingCompartmentPlayback" model="@compartment" />
+            </div>
+        }
+
+        <div class="govuk-button-group">
+            <a
+                condition-disabled="@(Model.AllowEditing is false)"
+                class="govuk-button"
+                asp-action="ConstraintsCheck"
+                asp-route-applicationId="@Model.ApplicationId">
+                Save and continue
+            </a>
+        </div>
+    </div>
+</form>
+
+
+@section Css {
+    <link rel="stylesheet" href="https://js.arcgis.com/4.34/esri/themes/light/main.css" />
+    <link rel="stylesheet" href="/css/govuk-frontend-4.2.0.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/css/map.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+
+    <style>
+        #viewDiv {
+            border-color: black;
+            border-style: solid;
+            border-width: 1px;
+            padding: 0;
+            margin: 0;
+            height: 85vh !important;
+        }
+    </style>
+}
 
 @section Scripts {
     @if (!Model.AllowEditing)
@@ -100,4 +134,14 @@
 
         </script>
     }
+    
+    <script src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js" type="module"></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+    <script type="module" src="https://js.arcgis.com/4.34/map-components/"></script>
+
+    <script>
+        require(["../../js/mapping/maps/map-compartment-selection.js?v=" + Date.now()], function (MapCompartmentSelection) {
+            var mapObj = new MapCompartmentSelection("viewDiv");
+        })
+    </script>
 }

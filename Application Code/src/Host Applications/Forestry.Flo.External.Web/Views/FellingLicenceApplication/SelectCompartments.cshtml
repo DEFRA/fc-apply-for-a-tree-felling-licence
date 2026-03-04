@@ -120,7 +120,7 @@
                             </div>
                         }
 
-                        <input type="hidden" aria-hidden="True" asp-for="@Model.GIS"/>
+                        <input type="hidden" aria-hidden="True" asp-for="@Model.GIS" name="FellingAndRestocking.GIS"/>
                         @if (!ViewData.ModelState.IsValid)
                         {
                             <p class="govuk-error-message">

@@ -6,6 +6,8 @@
 @{
     var user = new InternalUser(User);
     var treeSpeciesValues = TreeSpeciesFactory.SpeciesDictionary.Values;
+
+    var hasRestocking = Model.DetailsList.Any(x => x.RestockingDetail.Any());
 }
 
 <div id = "felling-restocking-summary">
@@ -72,23 +74,25 @@
     
     <h2 class="govuk-heading-m">Proposed restocking details</h2>
     
-    <table class="govuk-table">
-        <thead class="govuk-table__head">
-        <tr class="govuk-table__row">
-            <th scope="col" class="govuk-table__header">Felling</th>
-            <th scope="col" class="govuk-table__header">Compartment</th>
-            <th scope="col" class="govuk-table__header">Type</th>
-            <th scope="col" class="govuk-table__header">Area (Ha)</th>
-            <th scope="col" class="govuk-table__header">Density (stems per Ha)</th>
-            <th scope="col" class="govuk-table__header">No. trees</th>
-            <th scope="col" class="govuk-table__header">% of restock area</th>
-            <th scope="col" class="govuk-table__header">Species</th>
+    @if (hasRestocking)
+    {
+        <table class="govuk-table">
+            <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Felling</th>
+                <th scope="col" class="govuk-table__header">Compartment</th>
+                <th scope="col" class="govuk-table__header">Type</th>
+                <th scope="col" class="govuk-table__header">Area (Ha)</th>
+                <th scope="col" class="govuk-table__header">Density (stems per Ha)</th>
+                <th scope="col" class="govuk-table__header">No. trees</th>
+                <th scope="col" class="govuk-table__header">% of restock area</th>
+                <th scope="col" class="govuk-table__header">Species</th>
                 <th scope="col" class="govuk-table__header">% of restock species</th>
-        </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-        @foreach (var felling in Model.DetailsList.OrderByNameNumericOrAlpha())
-        {
+            </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+            @foreach (var felling in Model.DetailsList.OrderByNameNumericOrAlpha())
+            {
                 @foreach (var restockingDetails in felling.RestockingDetail.OrderByNameNumericOrAlpha())
                 {
                     string outputSpecies = string.Empty;
@@ -103,6 +107,7 @@
                             outputPercentage += "<br />";
                         }
                     }
+
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@felling.Felling</td>
                         <td class="govuk-table__cell">@restockingDetails.RestockingCompartmentName</td>
@@ -119,9 +124,14 @@
                         </td>
                     </tr>
                 }
-        }
-        </tbody>
-    </table>
+            }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="govuk-body">No restocking operations in the application.</p>
+    }
 
     <a class="govuk-link" condition="@(Model.ConfirmedFellingAndRestockingCompleted == true)" aria-describedby="felling-and-restocking" asp-controller="WoodlandOfficerReview" asp-action="ConfirmedFellingAndRestocking" asp-route-id="@Model.ApplicationId">
         Confirmed Felling and Restocking details
