@@ -10,7 +10,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FileStorage.Model;
 using Forestry.Flo.Services.PropertyProfiles.Entities;
-
+using Microsoft.Extensions.Logging.Abstractions;
 using ServiceTenantType = Forestry.Flo.Services.Applicants.Entities.WoodlandOwner.TenantType;
 namespace Forestry.Flo.External.Web.Services;
 
@@ -96,7 +96,7 @@ public static class ModelMapping
                         _ => null
                     };
                 });
-        });
+        }, new NullLoggerFactory());
 
         Mapper = config.CreateMapper();
     }

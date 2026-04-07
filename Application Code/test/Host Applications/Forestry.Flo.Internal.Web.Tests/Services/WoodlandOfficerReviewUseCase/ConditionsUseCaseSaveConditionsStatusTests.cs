@@ -2,7 +2,6 @@
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
-using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -57,14 +56,14 @@ public class ConditionsUseCaseSaveConditionsStatusTests
         var sut = CreateSut();
 
         _updateWoodlandOfficerReviewService
-            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Failure(error));
 
         var result = await sut.SaveConditionStatusAsync(applicationId, user, model, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>()), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>(), false), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         _conditionsService.VerifyNoOtherCalls();
@@ -101,7 +100,7 @@ public class ConditionsUseCaseSaveConditionsStatusTests
         var sut = CreateSut();
 
         _updateWoodlandOfficerReviewService
-            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
         _conditionsService
             .Setup(x => x.StoreConditionsAsync(It.IsAny<StoreConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -111,7 +110,7 @@ public class ConditionsUseCaseSaveConditionsStatusTests
 
         Assert.True(result.IsFailure);
 
-        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>()), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>(), false), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         _conditionsService.Verify(x => x.StoreConditionsAsync(
@@ -150,14 +149,14 @@ public class ConditionsUseCaseSaveConditionsStatusTests
         var sut = CreateSut();
 
         _updateWoodlandOfficerReviewService
-            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
 
         var result = await sut.SaveConditionStatusAsync(applicationId, user, model, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
-        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>()), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>(), false), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         _conditionsService.VerifyNoOtherCalls();
@@ -192,7 +191,7 @@ public class ConditionsUseCaseSaveConditionsStatusTests
         var sut = CreateSut();
 
         _updateWoodlandOfficerReviewService
-            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
         _conditionsService
             .Setup(x => x.StoreConditionsAsync(It.IsAny<StoreConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -202,7 +201,7 @@ public class ConditionsUseCaseSaveConditionsStatusTests
 
         Assert.True(result.IsSuccess);
 
-        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>()), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, model, userId, It.IsAny<CancellationToken>(), false), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         _conditionsService.Verify(x => x.StoreConditionsAsync(

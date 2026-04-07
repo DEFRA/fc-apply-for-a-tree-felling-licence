@@ -17,6 +17,7 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
@@ -158,11 +159,11 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
         var assignedWoodlandOfficer =
             summaryModel.AssigneeHistories.FirstOrDefault(x =>
                 x.Role is AssignedUserRole.WoodlandOfficer
-                && x.TimestampUnassigned.HasValue is false)?.UserAccount?.FullName;
+                && x.TimestampUnassigned.HasValue is false);
         var assignedApprover =
             summaryModel.AssigneeHistories.FirstOrDefault(x =>
                 x.Role is AssignedUserRole.FieldManager
-                && x.TimestampUnassigned.HasValue is false)?.UserAccount?.FullName;
+                && x.TimestampUnassigned.HasValue is false);
 
         var editable = summaryModel.AssigneeHistories.Any(x =>
                            x.Role is AssignedUserRole.AdminOfficer
@@ -175,13 +176,17 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
         var eiaModel =
             await GetFellingLicenceApplication.GetEnvironmentalImpactAssessmentAsync(applicationId, cancellationToken);
 
+        var isNextUserAssigned = requireWOReview
+            ? assignedWoodlandOfficer != null
+            : assignedApprover != null;
+
         var adminOfficerReviewStatus = await
             _getAdminOfficerReview.GetAdminOfficerReviewStatusAsync(
                 applicationId,
                 isAgencyApplication,
                 summaryModel.AreAnyLarchSpecies && summaryModel.DetailsList.Any(x => x.Zone1),
-                assignedWoodlandOfficer != null || assignedApprover != null,
-                summaryModel.IsCBWapplication,
+                isNextUserAssigned,
+                summaryModel.IsCBWApplication,
                 eiaModel.IsSuccess,
                 summaryModel.HasTreeHealthIssue,
                 cancellationToken);
@@ -204,7 +209,9 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 ? new DatePart(summaryModel.DateReceived.Value.ToLocalTime(), "date-received")
                 : null,
             ApplicationSource = summaryModel.Source,
-            AssignedWoodlandOfficer = requireWOReview ? assignedWoodlandOfficer : assignedApprover,
+            AssignedWoodlandOfficer = requireWOReview 
+                ? assignedWoodlandOfficer?.UserAccount?.FullName 
+                : assignedApprover?.UserAccount?.FullName,
             Editable = editable,
             AdminOfficerReviewTaskListStates = adminOfficerReviewStatus.AdminOfficerReviewTaskListStates,
             RequireWOReview = requireWOReview,
@@ -298,6 +305,26 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 return Result.Failure($"Unable to flag completed Confirmed F&R for application {applicationId}, error {updateWoReviewResult.Error}");
             }
 
+            var conditionsStatusModel = new ConditionsStatusModel
+            {
+                IsConditional = true
+            };
+            var updateConditionalResult = await _updateWoodlandOfficerReviewService.UpdateConditionalStatusAsync(
+                applicationId, conditionsStatusModel, user.UserAccountId!.Value, cancellationToken, true);
+            
+            if (updateConditionalResult.IsFailure)
+            {
+                _logger.LogError("Unable to update conditional status for application {ApplicationId}, error {Error}", applicationId, updateConditionalResult.Error);
+                await AppendAuditFailure(
+                    applicationId,
+                    user.UserAccountId!.Value,
+                    new
+                    {
+                        updateConditionalResult.Error
+                    }, cancellationToken);
+                return Result.Failure($"Unable to update conditional status for application {applicationId}, error {updateConditionalResult.Error}");
+            }
+
             var generateConditionsResult = await GenerateConditionsAsync(
                 applicationId,
                 user,
@@ -308,6 +335,10 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 // already audited and logged
                 return generateConditionsResult;
             }
+
+            // set as CPR exempt due to being a CBW application in a non-sensitive area, so no need to show on public register
+            await _updateWoodlandOfficerReviewService.SetPublicRegisterExemptAsync(
+                    applicationId, user.UserAccountId!.Value, true, "Cricket bat willow expedited application", cancellationToken, true);
         }
 
         var updateResult = await UpdateAdminOfficerReviewService.CompleteAdminOfficerReviewAsync(
@@ -609,7 +640,7 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
         var calculateConditionsRequest = fellingAndRestocking.Value.ConfirmedFellingAndRestockingDetailModels
             .GenerateCalculateConditionsRequest(applicationId);
 
-        var calculateConditionsResult = await _calculateConditionsService.CalculateConditionsAsync(calculateConditionsRequest, user.UserAccountId!.Value, cancellationToken);
+        var calculateConditionsResult = await _calculateConditionsService.CalculateConditionsAsync(calculateConditionsRequest, user.UserAccountId!.Value, true, cancellationToken);
 
         if (calculateConditionsResult.IsFailure)
         {

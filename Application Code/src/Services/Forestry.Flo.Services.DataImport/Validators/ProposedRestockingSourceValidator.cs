@@ -102,6 +102,17 @@ public class ProposedRestockingSourceValidator : AbstractValidator<ProposedResto
                     .WithMessage(s => $"Species and percentages {s.SpeciesAndPercentages} contains repeated duplicate species codes for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}"))
             .WithMessage(s => $"Species and percentages must be provided for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
 
+        RuleFor(s => s.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .NotEmpty()
+            .When(s => s.RestockingProposal.IsCoppiceOrNaturalRegen())
+            .WithMessage(s =>
+                $"Percentage established by coppice or natural regeneration must be provided for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
+
+        RuleFor(s => s.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .Must(s => s is > 0 and <= 100)
+            .When(s => s.RestockingProposal.IsCoppiceOrNaturalRegen() && s.PercentageEstablishedByCoppiceOrNaturalRegen.HasValue)
+            .WithMessage(s =>
+                $"Percentage established by coppice or natural regeneration must be greater than 0 and less than or equal to 100 for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
     }
 
     private bool ValidPercentages(string speciesAndPercentages)

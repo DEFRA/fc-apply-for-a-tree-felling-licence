@@ -425,33 +425,28 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 return Result.Failure<ApplicationDetailsForPublicRegisterModel>("Could not retrieve application with given id");
             }
 
-            // TODO: LAYER IS NOT THE CORRECT LAYER, https://harrishealthalliance.atlassian.net/browse/FLOV2-1595
             var localAuthority = await GetLocalAuthorityForFellingLicenceApplicationAsync(fla.Value, cancellationToken);
 
-            double compartmentAreaTotal = 0;
+            double fellingAreaTotal = 0;
 
             if (fla.Value.WoodlandOfficerReview?.ConfirmedFellingAndRestockingComplete ?? false)
             {
-                var fellingDetails =
-                    fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?.SelectMany(x => x.ConfirmedFellingDetails) ?? new List<ConfirmedFellingDetail>(0);
-                
-                foreach (var fellingDetail in fellingDetails)
+                foreach (var fellingCpt in fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
                 {
-                    compartmentAreaTotal += fellingDetail.AreaToBeFelled;
+                    var cptFellArea = fellingCpt.ConfirmedFellingDetails.Sum(x => x.AreaToBeFelled);
+                    fellingAreaTotal += cptFellArea;
                 }
             }
             else
             {
-                var fellingDetails =
-                    fla.Value.LinkedPropertyProfile.ProposedFellingDetails ?? new List<ProposedFellingDetail>(0);
-
-                foreach (var fellingDetail in fellingDetails)
+                foreach (var fellingCpt in fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
                 {
-                    compartmentAreaTotal += fellingDetail.AreaToBeFelled;
+                    var cptFellArea = fla.Value.LinkedPropertyProfile.ProposedFellingDetails
+                        .Where(x => x.PropertyProfileCompartmentId == fellingCpt.CompartmentId)
+                        .Sum(x => x.AreaToBeFelled);
+                    fellingAreaTotal += cptFellArea;
                 }
             }
-
-            var totalArea = fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?.Sum(x => x.TotalHectares) ?? 0;
 
             var compartmentDetails =
                 fla.Value.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
@@ -467,10 +462,7 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 NearestTown = fla.Value.SubmittedFlaPropertyDetail.NearestTown ?? string.Empty,
                 LocalAuthority = localAuthority,
                 AdminRegion = fla.Value.AdministrativeRegion ?? string.Empty,
-                TotalArea = totalArea,
-                BroadleafArea = 0,
-                ConiferousArea = 0,
-                OpenGroundArea = totalArea - compartmentAreaTotal,
+                TotalArea = Math.Round(fellingAreaTotal, 2),
                 Compartments = compartmentDetails,
                 CentrePoint = fla.HasValue && !string.IsNullOrEmpty(fla.Value.CentrePoint)
                     ? JsonConvert.DeserializeObject<Point>(fla.Value.CentrePoint)
@@ -544,7 +536,9 @@ public class GetWoodlandOfficerReviewService : IGetWoodlandOfficerReviewService
                 ApplicationAuthorId = fla.Value.CreatedById,
                 PropertyName = fla.Value.SubmittedFlaPropertyDetail?.Name,
                 WoodlandOwnerId = fla.Value.WoodlandOwnerId,
-                AdministrativeRegion = fla.Value.AdministrativeRegion
+                AdministrativeRegion = fla.Value.AdministrativeRegion,
+                ConditionsNotificationAlreadySent = fla.Value.WoodlandOfficerReview?.ConditionsToApplicantDate != null 
+                                                    || fla.Value.WoodlandOfficerReview?.OldConditionsSentToApplicantDate != null
             };
 
             return Result.Success(result);

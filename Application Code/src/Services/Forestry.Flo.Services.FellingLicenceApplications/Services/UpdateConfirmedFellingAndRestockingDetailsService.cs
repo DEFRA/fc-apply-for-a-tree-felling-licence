@@ -109,10 +109,12 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
                                 .SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
                                 .Where(x => x.Id == restockingDetails.SubmittedFlaPropertyCompartmentId).FirstOrDefault()?.TotalHectares ?? 0, 2),
                             PercentageOfRestockArea = restockingDetails.PercentageOfRestockArea,
+                            PercentageOfFellingArea = restockingDetails.PercentageOfFellingArea,
                             PercentNaturalRegeneration = restockingDetails.PercentNaturalRegeneration,
                             PercentOpenSpace = restockingDetails.PercentOpenSpace,
                             RestockingDensity = restockingDetails.RestockingDensity,
                             NumberOfTrees = restockingDetails.NumberOfTrees,
+                            PercentageEstablishedByCoppiceOrNaturalRegen = restockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen,
                             RestockingProposal = restockingDetails.RestockingProposal,
                             CompartmentId = restockingDetails.SubmittedFlaPropertyCompartmentId,
                             AmendedProperties =
@@ -174,8 +176,10 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
                                                 Percentage = x.Percentage
                                             }),
                                     PercentageOfRestockArea = restockingDetails.PercentageOfRestockArea,
+                                    PercentageOfFellingArea = restockingDetails.PercentageOfFellingArea,
                                     RestockingDensity = restockingDetails.RestockingDensity,
                                     NumberOfTrees = restockingDetails.NumberOfTrees,
+                                    PercentageEstablishedByCoppiceOrNaturalRegen = restockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen,
                                     RestockingProposal = restockingDetails.RestockingProposal,
                                     OperationType = restockingDetails.ProposedFellingDetail.OperationType,
                                     CompartmentId = restockingDetails.PropertyProfileCompartmentId,
@@ -430,8 +434,10 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
                         Area = proposedRestock.Area,
                         SubmittedFlaPropertyCompartmentId = restockCompartment?.Id ?? compartment.Id,
                         PercentageOfRestockArea = proposedRestock.PercentageOfRestockArea,
+                        PercentageOfFellingArea = proposedRestock.PercentageOfFellingArea,
                         RestockingDensity = proposedRestock.RestockingDensity,
                         NumberOfTrees = proposedRestock.NumberOfTrees,
+                        PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestock.PercentageEstablishedByCoppiceOrNaturalRegen,
                         RestockingProposal = proposedRestock.RestockingProposal,
                         ConfirmedFellingDetail = newConfirmedFellingDetail,
                         ConfirmedFellingDetailId = newConfirmedFellingDetail.Id,
@@ -694,9 +700,12 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
             dbConfirmedRestock.PercentOpenSpace = newConfirmedRestock.PercentOpenSpace;
             dbConfirmedRestock.PercentNaturalRegeneration = newConfirmedRestock.PercentNaturalRegeneration;
             dbConfirmedRestock.PercentageOfRestockArea = newConfirmedRestock.PercentageOfRestockArea;
+            dbConfirmedRestock.PercentageOfFellingArea = newConfirmedRestock.PercentageOfFellingArea;
             dbConfirmedRestock.RestockingDensity = newConfirmedRestock.RestockingDensity;
             dbConfirmedRestock.ConfirmedRestockingSpecies = newConfirmedRestock.ConfirmedRestockingSpecies!.ToList();
             dbConfirmedRestock.ConfirmedFellingDetailId = newConfirmedRestock.ConfirmedFellingDetailsId;
+            dbConfirmedRestock.PercentageEstablishedByCoppiceOrNaturalRegen =
+                newConfirmedRestock.PercentageEstablishedByCoppiceOrNaturalRegen;
 
             foreach (var fellingSpecies in dbConfirmedRestock.ConfirmedRestockingSpecies.ToList()
                          .Where(fellingSpecies => speciesModel.ContainsKey(fellingSpecies.Species) is false))
@@ -943,8 +952,10 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
 
         AddIfChanged(nameof(proposed.Area), proposed.Area, confirmed.Area);
         AddIfChanged(nameof(proposed.PercentageOfRestockArea), proposed.PercentageOfRestockArea, confirmed.PercentageOfRestockArea);
+        AddIfChanged(nameof(proposed.PercentageOfFellingArea), proposed.PercentageOfFellingArea, confirmed.PercentageOfFellingArea);
         AddIfChanged(nameof(proposed.RestockingDensity), proposed.RestockingDensity, confirmed.RestockingDensity);
         AddIfChanged(nameof(proposed.NumberOfTrees), proposed.NumberOfTrees, confirmed.NumberOfTrees);
+        AddIfChanged(nameof(proposed.PercentageEstablishedByCoppiceOrNaturalRegen), proposed.PercentageEstablishedByCoppiceOrNaturalRegen, confirmed.PercentageEstablishedByCoppiceOrNaturalRegen);
         AddIfChanged(nameof(proposed.RestockingProposal), proposed.RestockingProposal.GetDisplayName(), confirmed.RestockingProposal.GetDisplayName());
 
         // Compare RestockingSpecies
@@ -1189,8 +1200,10 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
                     Area = proposedRestock.Area,
                     SubmittedFlaPropertyCompartmentId = restockCompartment?.Id ?? compartment.Id,
                     PercentageOfRestockArea = proposedRestock.PercentageOfRestockArea,
+                    PercentageOfFellingArea = proposedRestock.PercentageOfFellingArea,
                     RestockingDensity = proposedRestock.RestockingDensity,
                     NumberOfTrees = proposedRestock.NumberOfTrees,
+                    PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestock.PercentageEstablishedByCoppiceOrNaturalRegen,
                     RestockingProposal = proposedRestock.RestockingProposal,
                     ConfirmedFellingDetail = confirmedFellingDetail,
                     ConfirmedFellingDetailId = confirmedFellingDetail.Id,

@@ -638,6 +638,7 @@ public partial class FellingLicenceApplicationController(
     public async Task<IActionResult> ConstraintsCheck(
         [FromForm] Guid applicationId,
         [FromForm] bool? notRunningExternalLisReport,
+        [FromServices] ConstraintsCheckUseCase constraintsCheckUseCase,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -656,7 +657,7 @@ public partial class FellingLicenceApplicationController(
             model.StepComplete = false;
         }
 
-        var result = await createFellingLicenceApplicationUseCase.SetApplicationConstraintCheckAsync(user,
+        var result = await constraintsCheckUseCase.SetApplicationConstraintCheckAsync(user,
             model, cancellationToken);
 
         if (result.IsFailure)
@@ -687,6 +688,7 @@ public partial class FellingLicenceApplicationController(
     public async Task<IActionResult> RunConstraintsCheck(
         [FromForm] Guid applicationId,
         [FromServices] RunApplicantConstraintCheckUseCase useCase,
+        [FromServices] ConstraintsCheckUseCase constraintsCheckUseCase,
         CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
@@ -702,7 +704,7 @@ public partial class FellingLicenceApplicationController(
                 model.NotRunningExternalLisReport = false;
                 model.ExternalLisReportRun = true;
 
-                await createFellingLicenceApplicationUseCase.SetApplicationConstraintCheckAsync(user,
+                await constraintsCheckUseCase.SetApplicationConstraintCheckAsync(user,
                     model, cancellationToken);
             }
 
@@ -1186,9 +1188,13 @@ public partial class FellingLicenceApplicationController(
     {
         var user = new ExternalApplicant(User);
 
-        // recalculate percentage in case front-end javascript failed
-        model.PercentageOfRestockArea = model.Area.HasValue && model.CompartmentTotalHectares.HasValue
+        // recalculate area percentage fields in case area was amended
+        model.PercentageOfRestockArea = model is { Area: not null, CompartmentTotalHectares: > 0 }
             ? Math.Round(model.Area.Value / model.CompartmentTotalHectares.Value * 100, 2)
+            : null;
+
+        model.PercentageOfFellingArea = model is { Area: not null, FellingOperationArea: > 0 }
+            ? Math.Round(model.Area.Value / model.FellingOperationArea * 100, 2)
             : null;
 
         ValidateModel(model, restockingDetailsValidator);
@@ -1781,8 +1787,10 @@ public partial class FellingLicenceApplicationController(
 
         var model = application.FlaTermsAndConditionsViewModel;
         model.ReturnToApplicationSummary = returnToApplicationSummary;
-        model.IsCBWapplication = application.IsCBWapplication;
+        model.IsCBWapplication = application.IsCBWApplication;
         model.TotalNumberOfTreesRestocking = application.TotalNumberOfTreesRestocking;
+        model.IsAllRestockingIndividualTrees = application.IsAllRestockingIndividualTrees;
+        model.LicenceHolderName = application.ApplicationSummary.WoodlandOwnerName;
 
         ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = application.WoodlandOwnerId;
 

@@ -115,7 +115,9 @@ public class ActivityFeedService : IActivityFeedService
             ActivityFeedItemType.ReminderForApplicantToRespondToAmendments,
             ActivityFeedItemType.InformFcStaffOfApplicationApprovedInError,
             ActivityFeedItemType.InformApplicantOfAIENewLicenceRequired,
-            ActivityFeedItemType.InformApplicantOfAIENewLicenceApproved
+            ActivityFeedItemType.InformApplicantOfAIENewLicenceApproved,
+            ActivityFeedItemType.InformFcStaffOfConsulteeCommentReceived,
+            ActivityFeedItemType.ExternalConsulteeInviteReminder
         };
     }
 }

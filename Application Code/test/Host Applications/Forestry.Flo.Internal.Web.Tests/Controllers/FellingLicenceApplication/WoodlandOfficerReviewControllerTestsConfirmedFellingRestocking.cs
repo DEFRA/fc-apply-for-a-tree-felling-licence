@@ -260,6 +260,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -298,6 +299,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -332,6 +334,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -365,6 +368,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -1449,6 +1453,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -1480,6 +1485,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -1511,6 +1517,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -1570,6 +1577,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -1601,6 +1609,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,
@@ -1632,6 +1641,7 @@ public class WoodlandOfficerReviewControllerTestsConfirmedFellingRestocking
         var viewModel = new AmendConfirmedRestockingDetailsViewModel
         {
             ApplicationId = _applicationId,
+            ConfirmedFellingArea = 10,
             ConfirmedFellingRestockingDetails = new IndividualConfirmedRestockingDetailModel
             {
                 CompartmentId = _compartmentId,

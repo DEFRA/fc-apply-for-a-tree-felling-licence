@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Internal.Web.Models.ExternalConsulteeReview;
 
@@ -23,6 +24,11 @@ public class ExternalConsulteeReviewViewModel
     /// </summary>
     [Required]
     public AddConsulteeCommentModel AddConsulteeComment { get; set; }
+
+    /// <summary>
+    /// Gets and sets a populated <see cref="PublicRegisterModel"/> representing the public register details of the application.
+    /// </summary>
+    public PublicRegisterModel PublicRegister { get; set; }
 
     /// <summary>
     /// Gets and sets a populated <see cref="ActivityFeedModel"/> configured for consultee comments only.

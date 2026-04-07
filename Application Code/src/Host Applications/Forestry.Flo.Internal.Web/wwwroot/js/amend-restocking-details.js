@@ -4,6 +4,7 @@ function toggleRestockingInputs() {
     var treesGroup = document.getElementById('number-of-trees-group');
     var compartmentGroup = document.getElementById('RestockingCompartmentId');
     var speciesGroup = document.getElementById('restocking-tree-species-selection-form-group');
+    var establishedByCoppiceGroup = document.getElementById('established-coppice-group');
     var compartmentSelect = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_RestockingCompartmentId');
     if (!proposal || !densityGroup || !treesGroup || !compartmentGroup || !speciesGroup) return;
     var value = proposal.value;
@@ -30,6 +31,13 @@ function toggleRestockingInputs() {
             if (typeof updateGrossSizeDisplay === 'function') updateGrossSizeDisplay();
             if (typeof updateRestockingCompartmentNumber === 'function') updateRestockingCompartmentNumber();
         }
+    }
+
+    if (value === 'RestockWithCoppiceRegrowth' || value === 'RestockByNaturalRegeneration') {
+        establishedByCoppiceGroup.style.display = '';
+
+    } else {
+        establishedByCoppiceGroup.style.display = 'none';
     }
 }
 function updateRestockingCompartmentNumber() {
@@ -85,13 +93,34 @@ function updateGrossSizeDisplay() {
     }
 
     // Update PercentOpenSpace
+    //var restockAreaInput = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_RestockArea');
+    //var percentOpenSpaceInput = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_PercentOpenSpace');
+    //if (restockAreaInput && percentOpenSpaceInput) {
+    //    var restockArea = parseFloat(restockAreaInput.value);
+    //    var gross = parseFloat(hectares);
+    //    var percent = (gross > 0 && !isNaN(restockArea)) ? ((restockArea / gross) * 100) : '';
+    //    percentOpenSpaceInput.value = percent !== '' ? formatDoubleForDisplay(percent) : '';
+    //}
+
+    // Update Percent of restock area
     var restockAreaInput = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_RestockArea');
-    var percentOpenSpaceInput = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_PercentOpenSpace');
-    if (restockAreaInput && percentOpenSpaceInput) {
+    var percentRestockArea = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_PercentageOfRestockArea');
+    if (restockAreaInput && percentRestockArea) {
         var restockArea = parseFloat(restockAreaInput.value);
         var gross = parseFloat(hectares);
         var percent = (gross > 0 && !isNaN(restockArea)) ? ((restockArea / gross) * 100) : '';
-        percentOpenSpaceInput.value = percent !== '' ? formatDoubleForDisplay(percent) : '';
+        percentRestockArea.value = percent !== '' ? formatDoubleForDisplay(percent) : '';
+    }
+
+    // Update Percent of felling area
+    var restockAreaInput = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_RestockArea');
+    var fellingArea = document.getElementById('ConfirmedFellingArea')?.value;
+    var percentFellingArea = document.getElementById('ConfirmedFellingRestockingDetails_ConfirmedRestockingDetails_PercentageOfFellingArea');
+    if (restockAreaInput && percentFellingArea && fellingArea) {
+        var restockArea = parseFloat(restockAreaInput.value);
+        var gross = parseFloat(fellingArea);
+        var percent = (gross > 0 && !isNaN(restockArea)) ? ((restockArea / gross) * 100) : '';
+        percentFellingArea.value = percent !== '' ? formatDoubleForDisplay(percent) : '';
     }
 }
 

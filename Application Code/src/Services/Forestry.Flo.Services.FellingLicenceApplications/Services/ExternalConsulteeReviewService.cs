@@ -1,7 +1,9 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Microsoft.Extensions.Logging;
 using NodaTime;
@@ -84,7 +86,7 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
     }
 
     /// <inheritdoc />
-    public async Task<Result> AddCommentAsync(
+    public async Task<Result<ConsulteeCommentNotificationModel>> AddCommentAsync(
         ConsulteeCommentModel model, 
         CancellationToken cancellationToken)
     {
@@ -105,9 +107,33 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
         if (result.IsFailure)
         {
             _logger.LogError("Could not add consultee comment, error: {Error}", result.Error);
-            return Result.Failure("Could not add consultee comment");
+            return Result.Failure<ConsulteeCommentNotificationModel>("Could not add consultee comment");
         }
 
-        return Result.Success();
+        var application = await _repository.GetAsync(model.FellingLicenceApplicationId, cancellationToken);
+
+        if (application.HasNoValue)
+        {
+            // this shouldn't be possible, as the application must exist for the comment to have been added successfully, but we should still handle it just in case
+            _logger.LogError("Could not find application with id {ApplicationId}", model.FellingLicenceApplicationId);
+            return Result.Failure<ConsulteeCommentNotificationModel>("Could not find application");
+        }
+
+        var assignedStaff = application.Value.AssigneeHistories
+            .Where(x => x.Role != AssignedUserRole.Author
+                        && x.Role != AssignedUserRole.Applicant
+                        && x.TimestampUnassigned.HasNoValue())
+            .Select(x => x.AssignedUserId)
+            .Distinct();
+
+        var notificationModel = new ConsulteeCommentNotificationModel
+        {
+            AdminHub = application.Value.AdministrativeRegion,
+            ApplicationReference = application.Value.ApplicationReference,
+            AssignedFcStaff = assignedStaff.ToArray(),
+            PropertyName = application.Value.SubmittedFlaPropertyDetail.Name
+        };
+
+        return Result.Success(notificationModel);
     }
 }

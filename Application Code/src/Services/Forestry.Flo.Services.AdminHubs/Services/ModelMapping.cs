@@ -1,6 +1,7 @@
 using AutoMapper;
 using Forestry.Flo.Services.AdminHubs.Entities;
 using Forestry.Flo.Services.AdminHubs.Model;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Forestry.Flo.Services.AdminHubs.Services;
 
@@ -16,7 +17,7 @@ public static class ModelMapping
                 .ForMember(d => d.AdminManagerUserAccountId, opts => opts.MapFrom(s => s.AdminManagerId));
             cfg.CreateMap<AdminHubOfficer, AdminHubOfficerModel>();
             cfg.CreateMap<Area, AreaModel>();
-        });
+        }, new NullLoggerFactory());
 
         Mapper = config.CreateMapper();
     }

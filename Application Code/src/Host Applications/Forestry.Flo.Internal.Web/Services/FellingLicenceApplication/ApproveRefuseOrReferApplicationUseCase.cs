@@ -9,10 +9,12 @@ using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.Gis.Models.Internal.Request;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
@@ -42,8 +44,11 @@ public class ApproveRefuseOrReferApplicationUseCase(
     RequestContext requestContext,
     IApproverReviewService approverReviewService,
     IGetConfiguredFcAreas getConfiguredFcAreasService,
+    IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
+    IOptions<WoodlandOfficerReviewOptions> woodlandOfficerReviewOptions,
     IForesterServices agolServices) : IApproveRefuseOrReferApplicationUseCase
 {
+    private readonly WoodlandOfficerReviewOptions _woodlandOfficerReviewOptions = Guard.Against.Null(woodlandOfficerReviewOptions.Value);
     private readonly ILogger<ApproveRefuseOrReferApplicationUseCase> _logger = Guard.Against.Null(logger);
 
 
@@ -61,6 +66,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     private readonly IApproverReviewService _approverReviewService = Guard.Against.Null(approverReviewService);
     private readonly IForesterServices _agolServices = Guard.Against.Null(agolServices);
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
+    private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
 
     /// <summary>
     /// Approves, refuses or refers an application that has been sent for approval.
@@ -246,23 +252,6 @@ public class ApproveRefuseOrReferApplicationUseCase(
         //entity and poss extending it for WO recommendations and the actual approver's action, with expiry date for decision PR:
 
         _logger.LogDebug("Attempting to publish application with id {ApplicationId} to the Decision Public Register", application.Id);
-        
-        if (application.PublicRegister is { WoodlandOfficerSetAsExemptFromConsultationPublicRegister: true })
-        {
-            _logger.LogDebug("Application with Id {Id}, with Reference {CaseReference} is exempt from the Consultation Public Register, so will not be published to the Decision Public Register.",
-                application.Id, application.ApplicationReference);
-            return SendToDecisionPublicRegisterOutcome.Exempt;
-        }
-
-        if (application.PublicRegister?.EsriId == null)
-        {
-            _logger.LogError("Application having Id of {Id}, with Reference {CaseReference} does not have a prior consultation public register record stored internally.",
-                application.Id, application.ApplicationReference);
-
-            return SendToDecisionPublicRegisterOutcome.Failure;
-        }
-
-        var esriId = application.PublicRegister!.EsriId.Value;
 
         if (fellingLicenceStatus != FellingLicenceStatus.ReferredToLocalAuthority &&
             fellingLicenceStatus != FellingLicenceStatus.Approved
@@ -275,12 +264,38 @@ public class ApproveRefuseOrReferApplicationUseCase(
         }
 
         var now = _clock.GetCurrentInstant().ToDateTimeUtc();
-        var publishToDecisionPublicRegisterResult = await _publicRegister.AddCaseToDecisionRegisterAsync(
-            esriId,
-            application.ApplicationReference,
-            fellingLicenceStatus.ToString(),
-            now,
-            cancellationToken).ConfigureAwait(false);
+
+        var getPublishModel = await _getWoodlandOfficerReviewService
+            .GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (getPublishModel.IsFailure)
+        {
+            _logger.LogError("Failed to get publish details for application with Id {Id}, Reference {CaseReference}: {Error}",
+                application.Id, application.ApplicationReference, getPublishModel.Error);
+            return SendToDecisionPublicRegisterOutcome.Failure;
+        }
+
+        var publishModel = new AddToDecisionPublicRegisterModel
+        {
+            ExistingEsriId = getPublishModel.Value.ExistingEsriId,
+            CaseReference = getPublishModel.Value.CaseReference,
+            PropertyName = getPublishModel.Value.PropertyName,
+            CaseType = _woodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister,
+            GridReference = getPublishModel.Value.GridReference,
+            NearestTown = getPublishModel.Value.NearestTown,
+            LocalAuthority = getPublishModel.Value.LocalAuthority,
+            AdminRegion = getPublishModel.Value.AdminRegion,
+            PublicRegisterStart = now,
+            TotalArea = getPublishModel.Value.TotalArea,
+            Compartments = getPublishModel.Value.Compartments,
+            CaseApprovalDate = now,
+            FellingLicenceOutcome = fellingLicenceStatus.ToString()
+        };
+
+        var publishToDecisionPublicRegisterResult = await _publicRegister
+            .AddCaseToDecisionRegisterAsync(publishModel, cancellationToken)
+            .ConfigureAwait(false);
 
         if (publishToDecisionPublicRegisterResult.IsFailure)
         {
@@ -295,6 +310,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
         
         var saveDetailsResult = await _updateFellingLicenceService.AddDecisionPublicRegisterDetailsAsync(
             application.Id,
+            publishToDecisionPublicRegisterResult.Value,
             now,
             expiresAt,
             cancellationToken);

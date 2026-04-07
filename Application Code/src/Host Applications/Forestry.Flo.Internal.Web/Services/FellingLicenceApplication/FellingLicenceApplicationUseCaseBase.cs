@@ -7,6 +7,7 @@ using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
@@ -125,7 +126,8 @@ public abstract class FellingLicenceApplicationUseCaseBase
             OsGridReference = fla.OSGridReference,
             HasPaws = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Any(x => x.SubmittedCompartmentDesignations?.Paws is true),
             HasTreeHealthIssue = fla.IsTreeHealthIssue is true,
-            IsPriorityOpenHabitat = fla.IsPriorityOpenHabitat
+            IsPriorityOpenHabitat = fla.IsPriorityOpenHabitat,
+            IsCBWApplication = fla.IsCBWApplication()
         };
         return Result.Success(applicationSummary);
     }

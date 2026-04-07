@@ -49,6 +49,7 @@ public class GetFellingLicenceApplicationForInternalUsersService : IGetFellingLi
 
         return applicationsRequiringNotifications.Select(x => new PublicRegisterPeriodEndModel
         {
+            ApplicationId = x.Id,
             PublicRegister = x.PublicRegister,
             AssignedUserIds = x.AssigneeHistories
                 .Where(y => y.TimestampUnassigned is null)
@@ -75,6 +76,7 @@ public class GetFellingLicenceApplicationForInternalUsersService : IGetFellingLi
 
         return applicationsRequiringNotifications.Select(x => new PublicRegisterPeriodEndModel
         {
+            ApplicationId = x.Id,
             PublicRegister = x.PublicRegister,
             AssignedUserIds = x.AssigneeHistories
                 .Where(y => y.TimestampUnassigned is null && y.Role is AssignedUserRole.FieldManager) //only the Approver (internally the FM) needs to know
@@ -99,6 +101,7 @@ public class GetFellingLicenceApplicationForInternalUsersService : IGetFellingLi
 
         return Maybe<PublicRegisterPeriodEndModel>.From(new PublicRegisterPeriodEndModel
         {
+            ApplicationId = application.Value.Id,
             ApplicationReference = application.Value.ApplicationReference,
             PropertyName = application.Value.SubmittedFlaPropertyDetail?.Name,
             PublicRegister = application.Value.PublicRegister,
@@ -220,6 +223,7 @@ public class GetFellingLicenceApplicationForInternalUsersService : IGetFellingLi
                 && x.PublicRegister.ConsultationPublicRegisterPublicationTimestamp != null)
             .Select(x => new PublicRegisterPeriodEndModel
             {
+                ApplicationId = x.Id,
                 PublicRegister = x.PublicRegister,
                 AssignedUserIds = x.AssigneeHistories
                     .Where(y => y.TimestampUnassigned is null)

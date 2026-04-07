@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using AutoFixture;
+﻿using AutoFixture;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
@@ -10,7 +9,6 @@ using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FileStorage.ResultModels;
 using Forestry.Flo.Services.FileStorage.Services;
@@ -18,6 +16,7 @@ using Forestry.Flo.Services.PropertyProfiles.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using NodaTime;
+using System.Text.Json;
 
 namespace Forestry.Flo.External.Web.Tests.Services
 {
@@ -245,7 +244,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             //act
 
-            var result = await sut.RemoveFellingLicenceDocument(_externalApplicant,
+            var result = await sut.RemoveFellingLicenceDocumentAsync(_externalApplicant,
                 fla.Id,
                 fla.Documents.First().Id,
                 CancellationToken.None);
@@ -283,7 +282,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
             //act
 
-            var result = await sut.RemoveFellingLicenceDocument(_externalApplicant,
+            var result = await sut.RemoveFellingLicenceDocumentAsync(_externalApplicant,
                 fla.Id,
                 fla.Documents.First().Id,
                 CancellationToken.None);
@@ -303,6 +302,112 @@ namespace Forestry.Flo.External.Web.Tests.Services
                          }, _options)), CancellationToken.None), Times.Once);
 
             Assert.True(result.IsFailure);
+
+            _removeDocumentsService
+                .Verify(x => x.PermanentlyRemoveDocumentAsync(fla.Id, fla.Documents.First().Id, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+
+        [Theory, AutoMoqData]
+        public async Task RemoveBySystem_WhenApplicationIsNonEditable(FellingLicenceApplication application)
+        {
+            //arrange
+            var sut = CreateSut();
+
+            // Simulate application in non-editable state
+
+            _getFellingLicenceApplicationForExternalUsersService.Setup(x => x.GetIsEditable(
+                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            var document = application.Documents!.First();
+
+            //act, assert
+            var result = await sut.RemoveSupportingDocumentBySystemAsync(application.Id, document.Id, CancellationToken.None);
+            Assert.True(result.IsFailure);
+
+            _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+        }
+
+        [Theory, AutoMoqData]
+        public async Task RemoveBySystem_WhenDocumentCannotBeRemoved(
+            FellingLicenceApplication fla)
+        {
+            //arrange
+            var sut = CreateSut();
+
+            _getFellingLicenceApplicationForExternalUsersService.Setup(x => x.GetIsEditable(
+                    It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            _removeDocumentsService
+                .Setup(s => s.PermanentlyRemoveDocumentAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Failure("Could not remove file"));
+
+            var documentId = fla.Documents.First().Id;
+
+            //act
+
+            var result = await sut.RemoveSupportingDocumentBySystemAsync(fla.Id, documentId, CancellationToken.None);
+
+            //assert
+
+            _mockUseCaseAuditService.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(
+                    e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentFailureEvent
+                         && JsonSerializer.Serialize(e.AuditData, _options) ==
+                         JsonSerializer.Serialize(new
+                         {
+                             ApplicationId = fla.Id,
+                             Section = "Supporting Documentation",
+                             DocumentId = documentId,
+                             error = result.Error
+                         }, _options)), CancellationToken.None), Times.Once);
+
+            Assert.True(result.IsFailure);
+
+            _removeDocumentsService
+                .Verify(x => x.PermanentlyRemoveDocumentAsync(fla.Id, fla.Documents.First().Id, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Theory, AutoMoqData]
+        public async Task RemoveBySystemSuccess(
+            FellingLicenceApplication fla)
+        {
+            //arrange
+            var sut = CreateSut();
+
+            _getFellingLicenceApplicationForExternalUsersService.Setup(x => x.GetIsEditable(
+                    It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            _removeDocumentsService
+                .Setup(s => s.PermanentlyRemoveDocumentAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success());
+
+            var documentId = fla.Documents.First().Id;
+
+            //act
+
+            var result = await sut.RemoveSupportingDocumentBySystemAsync(fla.Id, documentId, CancellationToken.None);
+
+            //assert
+
+            _mockUseCaseAuditService.Verify(s =>
+                s.PublishAuditEventAsync(It.Is<AuditEvent>(
+                    e => e.EventName == AuditEvents.RemoveFellingLicenceAttachmentEvent
+                         && JsonSerializer.Serialize(e.AuditData, _options) ==
+                         JsonSerializer.Serialize(new
+                         {
+                             ApplicationId = fla.Id,
+                             Section = "Supporting Documentation",
+                             DocumentId = documentId
+                         }, _options)), CancellationToken.None), Times.Once);
+
+            Assert.True(result.IsSuccess);
 
             _removeDocumentsService
                 .Verify(x => x.PermanentlyRemoveDocumentAsync(fla.Id, fla.Documents.First().Id, It.IsAny<CancellationToken>()), Times.Once);

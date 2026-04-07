@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using AutoFixture;
+﻿using AutoFixture;
 using AutoFixture.Xunit2;
 using Forestry.Flo.Services.ConditionsBuilder.Configuration;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using Xunit;
 
 namespace Forestry.Flo.Services.ConditionsBuilder.Tests.Services;
@@ -218,7 +218,7 @@ public class ConditionBuilderTests
     }
 
     [Theory, AutoData]
-    public void DoNotMatchCompartmentsWithDifferentNaturalRegenIfConditionC(
+    public void DoNotMatchCompartmentsWithDifferentNaturalRegenIfRestockByNaturalRegen(
         RestockingOperationDetails baseCompartment,
         Guid compartmentId1,
         Guid compartmentId2,
@@ -236,6 +236,33 @@ public class ConditionBuilderTests
         compartment2.PercentNaturalRegeneration += 10;
 
         var result = regenCondition.CalculateCondition(new List<RestockingOperationDetails> { compartment1, compartment2 });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value.Count);
+
+        Assert.Contains(result.Value.First().AppliesToSubmittedCompartmentIds, x => x == compartmentId1);
+        Assert.Contains(result.Value.Last().AppliesToSubmittedCompartmentIds, x => x == compartmentId2);
+    }
+
+    [Theory, AutoData]
+    public void DoNotMatchCompartmentsWithDifferentNaturalRegenIfRestockByCoppice(
+        RestockingOperationDetails baseCompartment,
+        Guid compartmentId1,
+        Guid compartmentId2,
+        string compartmentNumber1,
+        string compartmentNumber2,
+        string subCompartmentName1,
+        string subCompartmentName2)
+    {
+        var (_, _, coppiceCondition) = GetConditionBuilders();
+
+        var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
+            compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
+        compartment1.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
+        compartment2.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
+        compartment2.PercentNaturalRegeneration += 10;
+
+        var result = coppiceCondition.CalculateCondition(new List<RestockingOperationDetails> { compartment1, compartment2 });
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value.Count);
@@ -272,33 +299,6 @@ public class ConditionBuilderTests
     }
 
     [Theory, AutoData]
-    public void CanMatchCompartmentsWithDifferentNaturalRegenIfCoppice(
-        RestockingOperationDetails baseCompartment,
-        Guid compartmentId1,
-        Guid compartmentId2,
-        string compartmentNumber1,
-        string compartmentNumber2,
-        string subCompartmentName1,
-        string subCompartmentName2)
-    {
-        var (_, _, coppiceCondition) = GetConditionBuilders();
-
-        var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
-            compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
-        compartment1.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
-        compartment2.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
-        compartment2.PercentNaturalRegeneration += 10;
-
-        var result = coppiceCondition.CalculateCondition(new List<RestockingOperationDetails> { compartment1, compartment2 });
-
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Value);
-
-        Assert.Contains(result.Value.Single().AppliesToSubmittedCompartmentIds, x => x == compartmentId1);
-        Assert.Contains(result.Value.Single().AppliesToSubmittedCompartmentIds, x => x == compartmentId2);
-    }
-
-    [Theory, AutoData]
     public void ImportsCorrectDetailsIntoConditionText(
         RestockingOperationDetails compartment)
     {
@@ -309,9 +309,9 @@ public class ConditionBuilderTests
         var speciesList = compartment
             .RestockingSpecies
             .OrderBy(x => x.SpeciesCode)
-            .Select(x => $"{x.Percentage:00.00}% {x.SpeciesName}")
+            .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
-        var expectedSpeciesText = string.Join(", ", speciesList.Take(speciesList.Count - 1)) + speciesList.Last();
+        var expectedSpeciesText = string.Join(", ", speciesList);
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -322,25 +322,26 @@ public class ConditionBuilderTests
         Assert.Equal(expectedSpeciesText, result.Value.Single().ConditionsText[0]);
         Assert.Equal($"{compartment.RestockingDensity.ToString()} stems per Ha", result.Value.Single().ConditionsText[1]);
         Assert.Equal(expectedCompartmentName, result.Value.Single().ConditionsText[2]);
-        Assert.Equal($"{compartment.PercentNaturalRegeneration:00.00}% natural regeneration", result.Value.Single().ConditionsText[3]);
+        Assert.Equal($"{compartment.PercentNaturalRegeneration:0.00}% natural regeneration", result.Value.Single().ConditionsText[3]);
         Assert.Equal(_options.ReplantingOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
         Assert.Equal(_options.ReplantingOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
     }
 
     [Theory, AutoData]
-    public void ImportsCorrectDetailsIntoConditionTextForRegen(
+    public void ImportsCorrectDetailsIntoConditionTextForLessThan100PercentRegen(
         RestockingOperationDetails compartment)
     {
         compartment.RestockingProposalType = RestockingProposalType.RestockByNaturalRegeneration;
+        compartment.PercentNaturalRegeneration = 80;
 
         var (_, regenCondition, _) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
             .OrderBy(x => x.SpeciesCode)
-            .Select(x => $"{x.Percentage:00.00}% {x.SpeciesName}")
+            .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
-        var expectedSpeciesText = string.Join(", ", speciesList.Take(speciesList.Count - 1)) + speciesList.Last();
+        var expectedSpeciesText = string.Join(", ", speciesList);
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -351,25 +352,58 @@ public class ConditionBuilderTests
         Assert.Equal(expectedSpeciesText, result.Value.Single().ConditionsText[0]);
         Assert.Equal($"{compartment.RestockingDensity.ToString()} stems per Ha", result.Value.Single().ConditionsText[1]);
         Assert.Equal(expectedCompartmentName, result.Value.Single().ConditionsText[2]);
-        Assert.Equal($"{compartment.PercentNaturalRegeneration:00.00}% natural regeneration", result.Value.Single().ConditionsText[3]);
-        Assert.Equal(_options.CoppiceRegrowthOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
-        Assert.Equal(_options.CoppiceRegrowthOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal($"{compartment.PercentNaturalRegeneration:0.00}% natural regeneration", result.Value.Single().ConditionsText[3]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal("If planting alongside natural regeneration, the remaining area will be planted with {0} to achieve not less than {1}.", result.Value.Single().ConditionsText[6]);
     }
 
     [Theory, AutoData]
-    public void ImportsCorrectDetailsIntoConditionTextForCoppice(
+    public void ImportsCorrectDetailsIntoConditionTextForSingleDigitPercentRegen(
+        RestockingOperationDetails compartment)
+    {
+        compartment.RestockingProposalType = RestockingProposalType.RestockByNaturalRegeneration;
+        compartment.PercentNaturalRegeneration = 8.5;
+
+        var (_, regenCondition, _) = GetConditionBuilders();
+
+        var speciesList = compartment
+            .RestockingSpecies
+            .OrderBy(x => x.SpeciesCode)
+            .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
+            .ToList();
+        var expectedSpeciesText = string.Join(", ", speciesList);
+        var expectedCompartmentName =
+            $"compartment {compartment.RestockingCompartmentNumber}";
+
+        var result = regenCondition.CalculateCondition(new List<RestockingOperationDetails> { compartment });
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value);
+        Assert.Equal(expectedSpeciesText, result.Value.Single().ConditionsText[0]);
+        Assert.Equal($"{compartment.RestockingDensity.ToString()} stems per Ha", result.Value.Single().ConditionsText[1]);
+        Assert.Equal(expectedCompartmentName, result.Value.Single().ConditionsText[2]);
+        Assert.Equal($"8.50% natural regeneration", result.Value.Single().ConditionsText[3]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal("If planting alongside natural regeneration, the remaining area will be planted with {0} to achieve not less than {1}.", result.Value.Single().ConditionsText[6]);
+    }
+
+    [Theory, AutoData]
+    public void ImportsCorrectDetailsIntoConditionTextForLessThan100PercentCoppice(
         RestockingOperationDetails compartment)
     {
         compartment.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
+        compartment.PercentNaturalRegeneration = 80;
 
         var (_, _, coppiceCondition) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
             .OrderBy(x => x.SpeciesCode)
-            .Select(x => $"{x.Percentage:00.00}% {x.SpeciesName}")
+            .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
-        var expectedSpeciesText = string.Join(", ", speciesList.Take(speciesList.Count - 1)) + speciesList.Last();
+        var expectedSpeciesText = string.Join(", ", speciesList);
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -380,9 +414,75 @@ public class ConditionBuilderTests
         Assert.Equal(expectedSpeciesText, result.Value.Single().ConditionsText[0]);
         Assert.Equal($"{compartment.RestockingDensity.ToString()} stems per Ha", result.Value.Single().ConditionsText[1]);
         Assert.Equal(expectedCompartmentName, result.Value.Single().ConditionsText[2]);
-        Assert.Equal("coppice regrowth", result.Value.Single().ConditionsText[3]);
-        Assert.Equal(_options.CoppiceRegrowthOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
-        Assert.Equal(_options.CoppiceRegrowthOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal($"{compartment.PercentNaturalRegeneration:0.00}% coppice regrowth", result.Value.Single().ConditionsText[3]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal("If planting alongside coppice regrowth, the remaining area will be planted with {0} to achieve not less than {1}.", result.Value.Single().ConditionsText[6]);
+        Assert.Equal($"{compartment.RestockingDensity.ToString()} stools per Ha", result.Value.Single().ConditionsText[7]);
+    }
+
+    [Theory, AutoData]
+    public void ImportsCorrectDetailsIntoConditionTextFor100PercentRegen(
+        RestockingOperationDetails compartment)
+    {
+        compartment.RestockingProposalType = RestockingProposalType.RestockByNaturalRegeneration;
+        compartment.PercentNaturalRegeneration = 100;
+
+        var (_, regenCondition, _) = GetConditionBuilders();
+
+        var speciesList = compartment
+            .RestockingSpecies
+            .OrderBy(x => x.SpeciesCode)
+            .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
+            .ToList();
+        var expectedSpeciesText = string.Join(", ", speciesList);
+        var expectedCompartmentName =
+            $"compartment {compartment.RestockingCompartmentNumber}";
+
+        var result = regenCondition.CalculateCondition(new List<RestockingOperationDetails> { compartment });
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value);
+        Assert.Equal(expectedSpeciesText, result.Value.Single().ConditionsText[0]);
+        Assert.Equal($"{compartment.RestockingDensity.ToString()} stems per Ha", result.Value.Single().ConditionsText[1]);
+        Assert.Equal(expectedCompartmentName, result.Value.Single().ConditionsText[2]);
+        Assert.Equal($"{compartment.PercentNaturalRegeneration:0.00}% natural regeneration", result.Value.Single().ConditionsText[3]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal($"{compartment.RestockingDensity.ToString()} stools per Ha", result.Value.Single().ConditionsText[6]);
+        Assert.Equal(7, result.Value.Single().ConditionsText.Length);  // the planting alongside text should not be included for 100% regen
+    }
+
+    [Theory, AutoData]
+    public void ImportsCorrectDetailsIntoConditionTextFor100PercentCoppice(
+        RestockingOperationDetails compartment)
+    {
+        compartment.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
+        compartment.PercentNaturalRegeneration = 100;
+
+        var (_, _, coppiceCondition) = GetConditionBuilders();
+
+        var speciesList = compartment
+            .RestockingSpecies
+            .OrderBy(x => x.SpeciesCode)
+            .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
+            .ToList();
+        var expectedSpeciesText = string.Join(", ", speciesList);
+        var expectedCompartmentName =
+            $"compartment {compartment.RestockingCompartmentNumber}";
+
+        var result = coppiceCondition.CalculateCondition(new List<RestockingOperationDetails> { compartment });
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value);
+        Assert.Equal(expectedSpeciesText, result.Value.Single().ConditionsText[0]);
+        Assert.Equal($"{compartment.RestockingDensity.ToString()} stems per Ha", result.Value.Single().ConditionsText[1]);
+        Assert.Equal(expectedCompartmentName, result.Value.Single().ConditionsText[2]);
+        Assert.Equal($"{compartment.PercentNaturalRegeneration:0.00}% coppice regrowth", result.Value.Single().ConditionsText[3]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
+        Assert.Equal(_options.NaturalRegenOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal($"{compartment.RestockingDensity.ToString()} stools per Ha", result.Value.Single().ConditionsText[6]);
+        Assert.Equal(7, result.Value.Single().ConditionsText.Length);  // the planting alongside text should not be included for 100% regen
     }
 
     private (IBuildCondition ReplantCondition, IBuildCondition RegenCondition, IBuildCondition CoppiceCondition) GetConditionBuilders()
@@ -396,7 +496,9 @@ public class ConditionBuilderTests
             ConditionOptions.CompartmentsParameter,
             ConditionOptions.RegenerationParameter,
             "{0}",
-            Fixture.Create<string>()
+            Fixture.Create<string>(),
+            ConditionOptions.LessThan100PercentRegenerationParameter,
+            ConditionOptions.DensityCoppiceParameter
         };
 
         _options.ReplantingOptions.ConditionText = text.ToArray();

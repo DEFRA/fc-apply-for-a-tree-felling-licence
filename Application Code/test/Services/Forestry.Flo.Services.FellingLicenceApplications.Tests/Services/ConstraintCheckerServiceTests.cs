@@ -47,6 +47,8 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
         private readonly Result<CreateUpdateDeleteResponse<int>?> _expectedEsriSuccessResponseResult;
 
+        private PropertyProfile? _setUpPropertyProfile = null;
+
         public ConstraintCheckerServiceTests()
         {
             _testInternalUser = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId:Guid.NewGuid());
@@ -176,7 +178,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             var request = ConstraintCheckRequest.Create(_testExternalUser, application.Id);
 
             //act
-            var result = await sut.ExecuteAsync(request, new CancellationToken());
+            var result = await sut.ExecuteAsync(request, CancellationToken.None);
 
             //assert
             Assert.True(result.IsSuccess);
@@ -198,6 +200,82 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                     esriFeatureServiceResponse = _expectedEsriSuccessObject
                 }, _options)
             ), It.IsAny<CancellationToken>()), Times.Once);
+
+            var fellingAndRestockingCptIds = application.LinkedPropertyProfile.ProposedFellingDetails.Select(x => x.PropertyProfileCompartmentId)
+                .Union(application.LinkedPropertyProfile.ProposedFellingDetails.SelectMany(x => x.ProposedRestockingDetails ?? []).Select(x => x.PropertyProfileCompartmentId))
+                .ToList();
+
+            var expectedCompartments = _setUpPropertyProfile
+                .Compartments
+                .Where(x => fellingAndRestockingCptIds.Contains(x.Id))
+                .ToList();
+
+            _landInformationSearchService
+                .Verify(x => x.AddFellingLicenceGeometriesAsync(
+                    application.Id, It.Is<List<InternalCompartmentDetails<Polygon>>>(g => g.Count == expectedCompartments.Count && expectedCompartments.All(c => g.Any(actual => actual.CompartmentNumber == c.CompartmentNumber))), It.IsAny<CancellationToken>()), Times.Once);
+            _landInformationSearchService
+                .Verify(x => x.ClearLayerAsync(application.Id.ToString(), It.IsAny<CancellationToken>()), Times.Once);
+            _landInformationSearchService
+                .VerifyNoOtherCalls();
+        }
+
+        [Theory, AutoMoqData]
+        public async Task WhenCalledByExternalUserWithRestockingOnlyCpt(FellingLicenceApplication application)
+        {
+            //arrange
+            EnsurePreSubmittedCompartmentsInApplication(application, withRestockingOnlyCpt: true);
+            var expectedQueryParams = QueryHelpers.ParseQuery($"isFlo=true&config={_settings.LisConfig}&caseId={application.Id}&targetEnv={_settings.TargetEnvironment.ToString()}");
+
+            _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(application.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
+
+            _landInformationSearchService.Setup(x => x.AddFellingLicenceGeometriesAsync(application.Id,
+                    It.IsAny<List<InternalCompartmentDetails<Polygon>>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_expectedEsriSuccessResponseResult!);
+
+            var sut = CreateSut(_testExternalUser);
+            var request = ConstraintCheckRequest.Create(_testExternalUser, application.Id);
+
+            //act
+            var result = await sut.ExecuteAsync(request, CancellationToken.None);
+
+            //assert
+            Assert.True(result.IsSuccess);
+
+            var actualQueryParams = QueryHelpers.ParseQuery(result.Value.Query);
+
+            Assert.True(actualQueryParams.All(e => expectedQueryParams.Contains(e)));
+            Assert.Equal(_settings.DeepLinkUrlAndPath, result.Value.AbsoluteUri.Split('?')[0]);
+
+            _mockConstraintCheckerServiceAudit.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
+                y.EventName == AuditEvents.ConstraintCheckerExecutionSuccess
+                && y.SourceEntityId == application.Id
+                && y.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && y.ActorType == ActorType.ExternalApplicant
+                && JsonSerializer.Serialize(y.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    url = result.Value,
+                    esriFeatureServiceResponse = _expectedEsriSuccessObject
+                }, _options)
+            ), It.IsAny<CancellationToken>()), Times.Once);
+
+            var fellingAndRestockingCptIds = application.LinkedPropertyProfile.ProposedFellingDetails.Select(x => x.PropertyProfileCompartmentId)
+                .Union(application.LinkedPropertyProfile.ProposedFellingDetails.SelectMany(x => x.ProposedRestockingDetails ?? []).Select(x => x.PropertyProfileCompartmentId))
+                .ToList();
+
+            var expectedCompartments = _setUpPropertyProfile
+                .Compartments
+                .Where(x => fellingAndRestockingCptIds.Contains(x.Id))
+                .ToList();
+
+            _landInformationSearchService
+                .Verify(x => x.AddFellingLicenceGeometriesAsync(
+                    application.Id, It.Is<List<InternalCompartmentDetails<Polygon>>>(g => expectedCompartments.All(c => g.Any(actual => actual.CompartmentNumber == c.CompartmentNumber))), It.IsAny<CancellationToken>()), Times.Once);
+            _landInformationSearchService
+                .Verify(x => x.ClearLayerAsync(application.Id.ToString(), It.IsAny<CancellationToken>()), Times.Once);
+            _landInformationSearchService
+                .VerifyNoOtherCalls();
         }
 
         [Theory, AutoMoqData]
@@ -347,20 +425,50 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             }
         }
 
-        private void EnsurePreSubmittedCompartmentsInApplication(FellingLicenceApplication application, Action<Mock<IPropertyProfileRepository>>? setupPropertyProfileRepo = null)
+        private void EnsurePreSubmittedCompartmentsInApplication(
+            FellingLicenceApplication application, 
+            Action<Mock<IPropertyProfileRepository>>? setupPropertyProfileRepo = null,
+            bool withRestockingOnlyCpt = false)
         {
             var propertyProfile = FixtureInstance.Create<PropertyProfile>();
             propertyProfile.Compartments.Clear();
 
             //ensure enough property compartments exist to match the count of ProposedFellingDetails by AutoFixture FLA 
-            var propertyComps = FixtureInstance.CreateMany<Compartment>(application.LinkedPropertyProfile.ProposedFellingDetails.Count).ToList();
+            var propertyComps = FixtureInstance.CreateMany<Compartment>(application.LinkedPropertyProfile!.ProposedFellingDetails!.Count).ToList();
             propertyProfile.Compartments.AddRange(propertyComps);
 
+            // if we want a restocking-only cpt, force the last one to be ignored other than the first restocking detail encountered
+            var propertyCompsCount = withRestockingOnlyCpt
+                ? propertyProfile.Compartments.Count - 1
+                : propertyProfile.Compartments.Count;
+
             //force the pfd compartment Ids to match the actual compartmentIds
-            const int i = 0;
+            var i = 0;
             foreach (var pfd in application.LinkedPropertyProfile.ProposedFellingDetails)
             {
-                pfd.PropertyProfileCompartmentId = propertyComps.ElementAt(i).Id;
+                pfd.PropertyProfileCompartmentId = propertyProfile.Compartments.ElementAt(i).Id;
+
+                var nexti = i >= propertyCompsCount - 1 ? 0 : i + 1;
+
+                foreach (var pfdProposedRestockingDetail in pfd.ProposedRestockingDetails ?? [])
+                {
+                    if (withRestockingOnlyCpt)
+                    {
+                        pfdProposedRestockingDetail.RestockingProposal = TypeOfProposal.PlantAnAlternativeArea;
+                        pfdProposedRestockingDetail.PropertyProfileCompartmentId =
+                            propertyProfile.Compartments.Last().Id;
+
+                        withRestockingOnlyCpt = false;
+                    }
+                    else
+                    {
+                        pfdProposedRestockingDetail.PropertyProfileCompartmentId = pfdProposedRestockingDetail.RestockingProposal is TypeOfProposal.PlantAnAlternativeArea or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees
+                            ? propertyProfile.Compartments.ElementAt(nexti).Id
+                            : propertyProfile.Compartments.ElementAt(i).Id;
+                    }
+                }
+
+                i = nexti;
             }
 
             if (setupPropertyProfileRepo == null)
@@ -373,6 +481,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
                 setupPropertyProfileRepo(_propertyProfileRepository);
             }
 
+            _setUpPropertyProfile = propertyProfile;
         }
 
         private ConstraintCheckerService CreateSut(ClaimsPrincipal userPrincipal)

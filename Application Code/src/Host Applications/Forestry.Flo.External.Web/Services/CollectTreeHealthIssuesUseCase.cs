@@ -226,7 +226,7 @@ public class CollectTreeHealthIssuesUseCase(
 
         var documentsCount = applicationResult.Value.Documents!.Count(x =>
             x.DeletionTimestamp is null
-            && x.Purpose is DocumentPurpose.EiaAttachment or DocumentPurpose.Attachment or DocumentPurpose.TreeHealthAttachment);
+            && DocumentConstants.ExternalDocumentTypesWithCountLimitation.Contains(x.Purpose));
 
         var addDocumentRequest = new AddDocumentsExternalRequest
         {

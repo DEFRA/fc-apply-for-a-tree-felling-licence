@@ -1,26 +1,39 @@
 ﻿@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.RestockingDetailViewModel
 
 @functions {
-    public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
+
+    public string GetValueAndMeasure(object? value, string? measure)
     {
         var hasValue = value != null && !string.IsNullOrWhiteSpace(value.ToString());
-        var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
         var hasMeasure = !string.IsNullOrEmpty(measure);
+
+        if (!hasValue)
+        {
+            return string.Empty;
+        }
+
+        if (!hasMeasure)
+        {
+            return value.ToString();
+        }
+
+        var separator = measure is "%" or "m³" ? string.Empty : " ";
+
+        return $"{value.ToString().Trim()}{separator}{measure.Trim()}";
+    }
+
+    public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
+    {
+        var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
 
         if (!hasOldValue)
         {
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">@key</dt>
                 <dd class="govuk-summary-list__value">
-                    @if (hasValue)
-                    {
-                        @value
-                        @if (hasMeasure)
-                        {
-                            @(" " + measure)
-                        }
-                    }
+                    @GetValueAndMeasure(value, measure)
                 </dd>
             </div>
         }
@@ -29,11 +42,7 @@
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">@key</dt>
                 <dd class="govuk-summary-list__value">
-                    @oldValue
-                    @if (hasMeasure)
-                    {
-                        @(" " + measure)
-                    }
+                    @GetValueAndMeasure(oldValue, measure)
                 </dd>
             </div>
             <div class="govuk-summary-list__row" style="background:#fff3bf;">
@@ -42,11 +51,7 @@
                     @key (amended)
                 </dt>
                 <dd class="govuk-summary-list__value">
-                    @value
-                    @if (hasMeasure)
-                    {
-                        @(" " + measure)
-                    }
+                    @GetValueAndMeasure(value, measure)
                 </dd>
             </div>
         }
@@ -70,19 +75,13 @@
         @{
             RenderSummaryRow("Restocking operation type", "", Model.RestockingProposal!.GetDisplayName(), Model.OldValue(nameof(Model.RestockingProposal)));
             RenderSummaryRow("Restocking compartment", "", Model.CompartmentName, Model.OldValue(nameof(Model.CompartmentName)));
+            RenderSummaryRow("Estimated area to be restocked", "Ha", Model.RestockArea, Model.OldValue("Area"));
+            RenderSummaryRow("Estimated percentage of compartment area", "%", Model.PercentageOfRestockArea, Model.OldValue(nameof(Model.PercentageOfRestockArea)));
+            RenderSummaryRow("Estimated percentage of felling area", "%", Model.PercentageOfFellingArea, Model.OldValue(nameof(Model.PercentageOfFellingArea)));
         }
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Estimated percentage of the area that will be restocked</dt>
-            <dd class="govuk-summary-list__value">
-                @(Model.TotalHectares.HasValue
-                                ? Math.Round((Model.RestockArea ?? 0) / Model.TotalHectares!.Value * 100, 2) + "%"
-                                : string.Empty)
-            </dd>
-        </div>
         @{
             if (Model.RestockingProposal != Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.CreateDesignedOpenGround)
             {
-                RenderSummaryRow("Estimated area to be restocked", " Ha", Model.RestockArea, Model.OldValue("Area"));
                 if (Model.RestockingProposal == Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.RestockWithIndividualTrees ||
                 Model.RestockingProposal == Forestry.Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
                 {
@@ -96,6 +95,11 @@
                     RenderSummaryRow("Estimate of the restocking density", "", Model.RestockingDensity, Model.OldValue((nameof(Model.RestockingDensity))));
                 }
                 RenderSummaryRow("Species and restocking percentage", "", Model.ConfirmedRestockingSpecies, Model.OldValue("RestockingSpecies"));
+
+                if (Model.RestockingProposal.HasValue && Model.RestockingProposal.Value.IsCoppiceOrNaturalRegen())
+                {
+                    RenderSummaryRow("Percentage to be established by coppice regrowth or natural regeneration", "%", Model.PercentageEstablishedByCoppiceOrNaturalRegen, Model.OldValue(nameof(Model.PercentageEstablishedByCoppiceOrNaturalRegen)));
+                }
             }
         }
     </dl>

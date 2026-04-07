@@ -91,7 +91,8 @@ public class SendNotificationsByGovUkNotifyTests
     public async Task SendsUsingCorrectTemplateId(
         GovUkNotifyOptions options, 
         ConditionsToApplicantDataModel model,
-        NotificationRecipient recipient)
+        NotificationRecipient recipient,
+        string expectedResponse)
     {
         var sut = CreateSut(options);
 
@@ -105,7 +106,13 @@ public class SendNotificationsByGovUkNotifyTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>()))
-            .ReturnsAsync(new EmailNotificationResponse());
+            .ReturnsAsync(new EmailNotificationResponse
+            {
+                content = new EmailResponseContent
+                {
+                    body = expectedResponse
+                }
+            });
 
         _mockNotificationHistoryRepository.Setup(x => x.Add(It.IsAny<NotificationHistory>()))
             .Returns(new NotificationHistory());
@@ -130,7 +137,7 @@ public class SendNotificationsByGovUkNotifyTests
             n.ApplicationReference == model.ApplicationReference
             && n.NotificationType == expectedTemplateId.Key
             && n.Recipients == JsonConvert.SerializeObject(new List<NotificationRecipient> { recipient })
-            && n.Text == JsonConvert.SerializeObject(model)
+            && n.Text == expectedResponse
         )), Times.Once);
     }
 
@@ -138,7 +145,8 @@ public class SendNotificationsByGovUkNotifyTests
     public async Task SendsToExpectedRecipientAddress(
         GovUkNotifyOptions options,
         ConditionsToApplicantDataModel model,
-        NotificationRecipient recipient)
+        NotificationRecipient recipient,
+        string expectedResponse)
     {
         var sut = CreateSut(options);
 
@@ -152,7 +160,13 @@ public class SendNotificationsByGovUkNotifyTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>()))
-            .ReturnsAsync(new EmailNotificationResponse());
+            .ReturnsAsync(new EmailNotificationResponse
+            {
+                content = new EmailResponseContent
+                {
+                    body = expectedResponse
+                }
+            });
 
         _mockNotificationHistoryRepository.Setup(x => x.Add(It.IsAny<NotificationHistory>()))
             .Returns(new NotificationHistory());
@@ -179,7 +193,8 @@ public class SendNotificationsByGovUkNotifyTests
         GovUkNotifyOptions options,
         ConditionsToApplicantDataModel model,
         NotificationRecipient recipient,
-        NotificationRecipient[] copyTos)
+        NotificationRecipient[] copyTos,
+        string expectedResponse)
     {
         var sut = CreateSut(options);
 
@@ -193,7 +208,13 @@ public class SendNotificationsByGovUkNotifyTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>()))
-            .ReturnsAsync(new EmailNotificationResponse());
+            .ReturnsAsync(new EmailNotificationResponse
+            {
+                content = new EmailResponseContent
+                {
+                    body = expectedResponse
+                }
+            });
 
         _mockNotificationHistoryRepository.Setup(x => x.Add(It.IsAny<NotificationHistory>()))
             .Returns(new NotificationHistory());
@@ -231,7 +252,7 @@ public class SendNotificationsByGovUkNotifyTests
             n.ApplicationReference == model.ApplicationReference
             && n.NotificationType == expectedTemplateId.Key
             && n.Recipients == JsonConvert.SerializeObject(expectedRecipients)
-            && n.Text == JsonConvert.SerializeObject(model)
+            && n.Text == expectedResponse
         )), Times.Once);
     }
 
@@ -239,7 +260,8 @@ public class SendNotificationsByGovUkNotifyTests
     public async Task SendsExpectedPersonalisation(
         GovUkNotifyOptions options,
         ConditionsToApplicantDataModel model,
-        NotificationRecipient recipient)
+        NotificationRecipient recipient,
+        string expectedResponse)
     {
         var sut = CreateSut(options);
 
@@ -257,6 +279,7 @@ public class SendNotificationsByGovUkNotifyTests
             { "ViewApplicationURL", model.ViewApplicationURL },
             { "WoodlandOwnerName", model.WoodlandOwnerName },
             { "AdminHubFooter", model.AdminHubFooter },
+            { "SupersedesPreviousNotification", model.SupersedesPreviousNotification },
             { "HasAttachments", false },
             { "Attachment1", string.Empty },
             { "Attachment2", string.Empty },
@@ -273,7 +296,13 @@ public class SendNotificationsByGovUkNotifyTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>()))
-            .ReturnsAsync(new EmailNotificationResponse());
+            .ReturnsAsync(new EmailNotificationResponse
+            {
+                content = new EmailResponseContent
+                {
+                    body = expectedResponse
+                }
+            });
 
         _mockNotificationHistoryRepository.Setup(x => x.Add(It.IsAny<NotificationHistory>()))
             .Returns(new NotificationHistory());
@@ -298,7 +327,7 @@ public class SendNotificationsByGovUkNotifyTests
             n.ApplicationReference == model.ApplicationReference
             && n.NotificationType == expectedTemplateId.Key
             && n.Recipients == JsonConvert.SerializeObject(new List<NotificationRecipient> {recipient})
-            && n.Text == JsonConvert.SerializeObject(model)
+            && n.Text == expectedResponse
             )), Times.Once);
     }
 

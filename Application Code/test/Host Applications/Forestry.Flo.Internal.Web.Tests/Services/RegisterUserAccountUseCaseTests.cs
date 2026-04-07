@@ -553,7 +553,7 @@ public class RegisterUserAccountUseCaseTests
                 It.IsAny<NotificationAttachment[]>(),
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("test"));
+            .ReturnsAsync(Result.Failure<Guid>("test"));
 
         var result = await sut.UpdateUserAccountStatusAsync(_performingUser, user.Id, Status.Confirmed, false, loginUrl, CancellationToken.None);
 

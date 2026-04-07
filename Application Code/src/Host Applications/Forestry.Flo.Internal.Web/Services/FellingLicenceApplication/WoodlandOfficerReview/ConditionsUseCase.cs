@@ -200,7 +200,7 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
         var request = fellingAndRestocking.Value.ConfirmedFellingAndRestockingDetailModels
             .GenerateCalculateConditionsRequest(applicationId);
 
-        var result = await _conditionsService.CalculateConditionsAsync(request, user.UserAccountId!.Value, cancellationToken);
+        var result = await _conditionsService.CalculateConditionsAsync(request, user.UserAccountId!.Value, false, cancellationToken);
 
         if (result.IsFailure)
         {
@@ -317,7 +317,8 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
             SenderName = user.FullName,
             SenderEmail = user.EmailAddress,
             AdminHubFooter = adminHubFooter,
-            ApplicationId = applicationId
+            ApplicationId = applicationId,
+            SupersedesPreviousNotification = getDetails.Value.ConditionsNotificationAlreadySent
         };
 
         var notificationResult = await _notificationsService.SendNotificationAsync(

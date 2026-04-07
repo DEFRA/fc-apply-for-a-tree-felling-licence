@@ -644,6 +644,196 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
     }
 
     [Theory, AutoMoqData]
+    public async Task ShouldUpdateApplicationFellingDetails_WhenNoLongerCBW_UnsetsDeclaration(
+        FellingLicenceApplication application)
+    {
+        //arrange
+        application.TermsAndConditionsAccepted = true;
+        application.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus = true;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+        [
+            new ProposedFellingDetail
+            {
+                Id = Guid.NewGuid(),
+                FellingSpecies = new List<FellingSpecies>
+                {
+                    new() { Species = "CBW" }
+                },
+                OperationType = FellingOperationType.FellingIndividualTrees,
+                NumberOfTrees = 100,
+                ProposedRestockingDetails = new List<ProposedRestockingDetail>
+                {
+                    new ProposedRestockingDetail
+                    {
+                        RestockingSpecies = new List<RestockingSpecies>()
+                        {
+                            new RestockingSpecies
+                            {
+                                Species = "CBW"
+                            }
+                        },
+                        RestockingProposal = TypeOfProposal.RestockWithIndividualTrees,
+                        NumberOfTrees = 100,
+                    }
+                }
+            }
+        ];
+        var existingFellingDetail = application.LinkedPropertyProfile!.ProposedFellingDetails!.First();
+
+        var proposedFellingDetail = new ProposedFellingDetailModel
+        {
+            Id = existingFellingDetail.Id,
+            ApplicationId = application.Id,
+            NumberOfTrees = 200, // change number of trees to trigger CBW declaration to be unset
+            OperationType = existingFellingDetail.OperationType,
+            AreaToBeFelled = existingFellingDetail.AreaToBeFelled,
+            EstimatedTotalFellingVolume = existingFellingDetail.EstimatedTotalFellingVolume,
+            IsWithinConservationArea = false,
+            ConservationAreaReference = null,
+            IsPartOfTreePreservationOrder = false,
+            TreePreservationOrderReference = null
+        };
+
+        Guid compartmentId = Guid.NewGuid();
+
+        application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses =
+            new List<CompartmentFellingRestockingStatus>()
+            {
+                new() { CompartmentId = compartmentId }
+            };
+
+        proposedFellingDetail.FellingCompartmentId = compartmentId;
+
+        _fellingLicenceApplicationRepository.Setup(
+            r => r.GetAsync(It.Is<Guid>(a => a == application.Id),
+                It.IsAny<CancellationToken>())).ReturnsAsync(application);
+
+        // Simulate application in editable state
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetIsEditable(application.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        //act
+        var result =
+            await _sut.UpdateApplicationFellingDetailsAsync(_externalApplicant, proposedFellingDetail,
+                CancellationToken.None);
+
+        //assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
+
+        _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
+            app.Id == application.Id
+            && app.LinkedPropertyProfile!.ProposedFellingDetails!.First().Id == proposedFellingDetail.Id
+            && app.LinkedPropertyProfile!.ProposedFellingDetails!.First().OperationType ==
+            proposedFellingDetail.OperationType
+            && app.TermsAndConditionsAccepted == false
+            && app.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus == false
+        )), Times.Once);
+
+        _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _auditService.Verify(s =>
+            s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                It.IsAny<CancellationToken>()));
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldUpdateApplicationFellingDetails_WhenBecomesCBW_UnsetsDeclaration(
+        FellingLicenceApplication application)
+    {
+        //arrange
+        application.TermsAndConditionsAccepted = true;
+        application.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus = true;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+        [
+            new ProposedFellingDetail
+            {
+                Id = Guid.NewGuid(),
+                FellingSpecies = new List<FellingSpecies>
+                {
+                    new() { Species = "CBW" }
+                },
+                OperationType = FellingOperationType.FellingIndividualTrees,
+                NumberOfTrees = 150,
+                ProposedRestockingDetails = new List<ProposedRestockingDetail>
+                {
+                    new ProposedRestockingDetail
+                    {
+                        RestockingSpecies = new List<RestockingSpecies>()
+                        {
+                            new RestockingSpecies
+                            {
+                                Species = "CBW"
+                            }
+                        },
+                        RestockingProposal = TypeOfProposal.RestockWithIndividualTrees,
+                        NumberOfTrees = 100,
+                    }
+                }
+            }
+        ];
+        var existingFellingDetail = application.LinkedPropertyProfile!.ProposedFellingDetails!.First();
+
+        var proposedFellingDetail = new ProposedFellingDetailModel
+        {
+            Id = existingFellingDetail.Id,
+            ApplicationId = application.Id,
+            NumberOfTrees = 100, // change number of trees to trigger CBW declaration to be unset
+            OperationType = existingFellingDetail.OperationType,
+            AreaToBeFelled = existingFellingDetail.AreaToBeFelled,
+            EstimatedTotalFellingVolume = existingFellingDetail.EstimatedTotalFellingVolume,
+            IsWithinConservationArea = false,
+            ConservationAreaReference = null,
+            IsPartOfTreePreservationOrder = false,
+            TreePreservationOrderReference = null
+        };
+
+        Guid compartmentId = Guid.NewGuid();
+
+        application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses =
+            new List<CompartmentFellingRestockingStatus>()
+            {
+                new() { CompartmentId = compartmentId }
+            };
+
+        proposedFellingDetail.FellingCompartmentId = compartmentId;
+
+        _fellingLicenceApplicationRepository.Setup(
+            r => r.GetAsync(It.Is<Guid>(a => a == application.Id),
+                It.IsAny<CancellationToken>())).ReturnsAsync(application);
+
+        // Simulate application in editable state
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetIsEditable(application.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        //act
+        var result =
+            await _sut.UpdateApplicationFellingDetailsAsync(_externalApplicant, proposedFellingDetail,
+                CancellationToken.None);
+
+        //assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
+
+        _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
+            app.Id == application.Id
+            && app.LinkedPropertyProfile!.ProposedFellingDetails!.First().Id == proposedFellingDetail.Id
+            && app.LinkedPropertyProfile!.ProposedFellingDetails!.First().OperationType ==
+            proposedFellingDetail.OperationType
+            && app.TermsAndConditionsAccepted == false
+            && app.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus == false
+        )), Times.Once);
+
+        _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _auditService.Verify(s =>
+            s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                It.IsAny<CancellationToken>()));
+    }
+
+    [Theory, AutoMoqData]
     public async Task ShouldUpdateApplicationRestockingDetails_GivenProposedRestockingDetailsModel(
         FellingLicenceApplication application,
         ProposedRestockingDetailModel proposedRestockingDetail)
@@ -715,6 +905,221 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
                 .RestockingProposal == proposedRestockingDetail.RestockingProposal
             && app.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.First().FellingStatuses
                 .First().RestockingCompartmentStatuses.First().RestockingStatuses.First().Status == true
+        )), Times.Once);
+
+        _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _auditService.Verify(s =>
+            s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                It.IsAny<CancellationToken>()));
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldUpdateApplicationRestockingDetails_WhenNoLongerCBW_UnsetsDeclaration(
+        FellingLicenceApplication application)
+    {
+        //arrange
+        application.TermsAndConditionsAccepted = true;
+        application.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus = true;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+        [
+            new ProposedFellingDetail
+            {
+                Id = Guid.NewGuid(),
+                FellingSpecies = new List<FellingSpecies>
+                {
+                    new() { Species = "CBW" }
+                },
+                OperationType = FellingOperationType.FellingIndividualTrees,
+                NumberOfTrees = 100,
+                ProposedRestockingDetails = new List<ProposedRestockingDetail>
+                {
+                    new ProposedRestockingDetail
+                    {
+                        Id = Guid.NewGuid(),
+                        RestockingSpecies = new List<RestockingSpecies>()
+                        {
+                            new RestockingSpecies
+                            {
+                                Species = "CBW"
+                            }
+                        },
+                        RestockingProposal = TypeOfProposal.RestockWithIndividualTrees,
+                        NumberOfTrees = 100,
+                    }
+                }
+            }
+        ];
+
+        var existingRestockingDetail = application.LinkedPropertyProfile!.ProposedFellingDetails!.First().ProposedRestockingDetails!.First();
+
+        var proposedRestockingDetail = ModelMapping.ToProposedRestockingDetailModel(existingRestockingDetail, 150);
+        proposedRestockingDetail.ApplicationId = application.Id;
+        proposedRestockingDetail.ProposedFellingDetailsId = application.LinkedPropertyProfile!.ProposedFellingDetails!.First().Id;
+        proposedRestockingDetail.NumberOfTrees = 150;
+
+        application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses =
+            new List<CompartmentFellingRestockingStatus>()
+            {
+                new CompartmentFellingRestockingStatus
+                {
+                    CompartmentId = proposedRestockingDetail.FellingCompartmentId,
+                    FellingStatuses = new List<FellingStatus>()
+                    {
+                        new FellingStatus()
+                        {
+                            Id = application.LinkedPropertyProfile.ProposedFellingDetails.First().Id,
+                            Status = true,
+                            RestockingCompartmentStatuses = new List<RestockingCompartmentStatus>()
+                            {
+                                new RestockingCompartmentStatus()
+                                {
+                                    Status = true,
+                                    CompartmentId = proposedRestockingDetail.RestockingCompartmentId,
+                                    RestockingStatuses = new List<RestockingStatus>()
+                                    {
+                                        new RestockingStatus()
+                                        {
+                                            Id = proposedRestockingDetail.Id,
+                                            Status = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+        _fellingLicenceApplicationRepository.Setup(
+            r => r.GetAsync(It.Is<Guid>(a => a == application.Id),
+                It.IsAny<CancellationToken>())).ReturnsAsync(application);
+
+        // Simulate application in editable state
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetIsEditable(application.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        //act
+        var result =
+            await _sut.UpdateApplicationRestockingDetailsAsync(_externalApplicant, proposedRestockingDetail,
+                CancellationToken.None);
+
+        //assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
+
+        _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
+            app.Id == application.Id
+            && application.TermsAndConditionsAccepted == false
+            && application.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus == false
+        )), Times.Once);
+
+        _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _auditService.Verify(s =>
+            s.PublishAuditEventAsync(It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplication),
+                It.IsAny<CancellationToken>()));
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldUpdateApplicationRestockingDetails_WhenBecomesCBW_UnsetsDeclaration(FellingLicenceApplication application)
+    {
+        //arrange
+        application.TermsAndConditionsAccepted = true;
+        application.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus = true;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+        [
+            new ProposedFellingDetail
+            {
+                Id = Guid.NewGuid(),
+                FellingSpecies = new List<FellingSpecies>
+                {
+                    new() { Species = "CBW" }
+                },
+                OperationType = FellingOperationType.FellingIndividualTrees,
+                NumberOfTrees = 100,
+                ProposedRestockingDetails = new List<ProposedRestockingDetail>
+                {
+                    new ProposedRestockingDetail
+                    {
+                        Id = Guid.NewGuid(),
+                        RestockingSpecies = new List<RestockingSpecies>()
+                        {
+                            new RestockingSpecies
+                            {
+                                Species = "CBW"
+                            }
+                        },
+                        RestockingProposal = TypeOfProposal.RestockWithIndividualTrees,
+                        NumberOfTrees = 150,
+                    }
+                }
+            }
+        ];
+
+        var existingRestockingDetail = application.LinkedPropertyProfile!.ProposedFellingDetails!.First().ProposedRestockingDetails!.First();
+
+        var proposedRestockingDetail = ModelMapping.ToProposedRestockingDetailModel(existingRestockingDetail, 150);
+        proposedRestockingDetail.ApplicationId = application.Id;
+        proposedRestockingDetail.ProposedFellingDetailsId = application.LinkedPropertyProfile!.ProposedFellingDetails!.First().Id;
+        proposedRestockingDetail.NumberOfTrees = 100;
+
+        application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses =
+            new List<CompartmentFellingRestockingStatus>()
+            {
+                new CompartmentFellingRestockingStatus
+                {
+                    CompartmentId = proposedRestockingDetail.FellingCompartmentId,
+                    FellingStatuses = new List<FellingStatus>()
+                    {
+                        new FellingStatus()
+                        {
+                            Id = application.LinkedPropertyProfile.ProposedFellingDetails.First().Id,
+                            Status = true,
+                            RestockingCompartmentStatuses = new List<RestockingCompartmentStatus>()
+                            {
+                                new RestockingCompartmentStatus()
+                                {
+                                    Status = true,
+                                    CompartmentId = proposedRestockingDetail.RestockingCompartmentId,
+                                    RestockingStatuses = new List<RestockingStatus>()
+                                    {
+                                        new RestockingStatus()
+                                        {
+                                            Id = proposedRestockingDetail.Id,
+                                            Status = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+        _fellingLicenceApplicationRepository.Setup(
+            r => r.GetAsync(It.Is<Guid>(a => a == application.Id),
+                It.IsAny<CancellationToken>())).ReturnsAsync(application);
+
+        // Simulate application in editable state
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetIsEditable(application.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        //act
+        var result =
+            await _sut.UpdateApplicationRestockingDetailsAsync(_externalApplicant, proposedRestockingDetail,
+                CancellationToken.None);
+
+        //assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(application.Id, result.Value);
+
+        _fellingLicenceApplicationRepository.Verify(r => r.Update(It.Is<FellingLicenceApplication>(app =>
+            app.Id == application.Id
+            && application.TermsAndConditionsAccepted == false
+            && application.FellingLicenceApplicationStepStatus.TermsAndConditionsStatus == false
         )), Times.Once);
 
         _unitOfWOrkMock.Verify(i => i.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -814,8 +1219,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             AccountTypeExternal.WoodlandOwnerAdministrator);
         var externalApplicant = new ExternalApplicant(user);
 
-        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus),
-            Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.Draft);
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus), FellingLicenceStatus.Draft);
 
         // Create dummy dependencies
 
@@ -851,6 +1255,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
             It.IsAny<Guid>(),
             It.IsAny<UserAccessModel>(),
+            It.IsAny<SubmittedFlaPropertyDetail>(),
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(submitResponse));
 
@@ -865,11 +1270,8 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         // Assert
 
         _updateFellingLicenceService.Verify(x => x
-                .SubmitFellingLicenceApplicationAsync(applicationId, userAccessModel, It.IsAny<CancellationToken>()),
+                .SubmitFellingLicenceApplicationAsync(applicationId, userAccessModel, It.IsAny<SubmittedFlaPropertyDetail>(), It.IsAny<CancellationToken>()),
             Times.Once);
-
-        _updateFellingLicenceService.Verify(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
-            applicationId, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -888,8 +1290,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             AccountTypeExternal.WoodlandOwnerAdministrator);
         var externalApplicant = new ExternalApplicant(user);
 
-        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus),
-            Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.WoodlandOfficerReview);
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus), FellingLicenceStatus.WoodlandOfficerReview);
 
         // Create dummy dependencies
 
@@ -925,13 +1326,9 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
             It.IsAny<Guid>(),
             It.IsAny<UserAccessModel>(),
+            It.IsAny<SubmittedFlaPropertyDetail>(),
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(submitResponse));
-
-        _updateFellingLicenceService
-            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
-                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
 
         _calculateConditionsService
             .Setup(x => x.StoreConditionsAsync(It.IsAny<StoreConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -947,86 +1344,6 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
                 It.Is<StoreConditionsRequest>(r => r.FellingLicenceApplicationId == applicationId && r.Conditions.IsNullOrEmpty()),
                 externalApplicant.UserAccountId.Value,
                 It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldFail_IfUnableToConvertProposedFAndR(
-        Guid applicationId,
-        SubmitFellingLicenceApplicationResponse submitResponse,
-        UserAccessModel userAccessModel)
-    {
-        // Arrange
-
-        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
-            _fixture.Create<string>(),
-            _fixture.Create<string>(),
-            _fixture.Create<Guid>(),
-            _fixture.Create<Guid>(),
-            AccountTypeExternal.WoodlandOwnerAdministrator);
-        var externalApplicant = new ExternalApplicant(user);
-
-        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus),
-            Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.Draft);
-
-        // Create dummy dependencies
-
-        var propertyProfile = new PropertyProfile(
-            "Test",
-            "Test",
-            "Test",
-            "Test",
-            false,
-            "Test",
-            false,
-            "Test",
-            Guid.NewGuid(),
-            new List<Compartment>());
-
-        var linkedPropertyProfile = new LinkedPropertyProfile();
-
-        _mockRetrieveUserAccountsService
-            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(userAccessModel));
-
-        _getPropertyProfilesService
-            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                It.IsAny<CancellationToken>())).ReturnsAsync(propertyProfile);
-
-        _fellingLicenceApplicationRepository
-            .Setup(r => r.GetLinkedPropertyProfileAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(linkedPropertyProfile);
-
-        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_woodlandOwner);
-
-        _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
-            It.IsAny<Guid>(),
-            It.IsAny<UserAccessModel>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(submitResponse));
-
-        _updateFellingLicenceService
-            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
-                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
-
-        var result = await _sut.SubmitFellingLicenceApplicationAsync(applicationId, externalApplicant, "link",
-            CancellationToken.None);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-
-        _auditService.Verify(s =>
-            s.PublishAuditEventAsync(
-                It.Is<AuditEvent>(e => e.EventName == AuditEvents.UpdateFellingLicenceApplicationFailure),
-                It.IsAny<CancellationToken>()));
-
-        _updateFellingLicenceService.Verify(x => x
-                .SubmitFellingLicenceApplicationAsync(applicationId, userAccessModel, It.IsAny<CancellationToken>()),
-            Times.Once);
-
-        _updateFellingLicenceService.Verify(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
-            applicationId, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -1048,22 +1365,11 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         application.AreaCode = "022";
         application.ApplicationReference = "---/1/2023";
 
-        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus),
-            Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus.Draft);
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus), FellingLicenceStatus.Draft);
 
         _mockRetrieveUserAccountsService
             .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(userAccessModel));
-
-        _updateFellingLicenceService.Setup(x => x
-                .SubmitFellingLicenceApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                    It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(submitResponse));
-
-        _updateFellingLicenceService
-            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
-                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
 
         // Create dummy dependencies
 
@@ -1134,13 +1440,17 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             .Verifiable();
 
         // Capture the submitted compartment
-        _updateFellingLicenceService.Setup(r => r.AddSubmittedFellingLicenceApplicationPropertyDetailAsync(
+        _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<UserAccessModel>(),
                 It.IsAny<SubmittedFlaPropertyDetail>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success)
-            .Callback<SubmittedFlaPropertyDetail, CancellationToken>((
+            .ReturnsAsync(Result.Success(submitResponse))
+            .Callback<Guid, UserAccessModel, SubmittedFlaPropertyDetail, CancellationToken>((
+                _,
+                _,
                 detail,
-                token) => capturedDetail = detail);
+                _) => capturedDetail = detail);
 
         _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_woodlandOwner);
@@ -1177,11 +1487,8 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         Assert.Equal(propertyProfile.WoodlandOwnerId, capturedDetail.WoodlandOwnerId);
         Assert.Equal(propertyProfile.Compartments.Count, capturedDetail.SubmittedFlaPropertyCompartments.Count);
 
-        _updateFellingLicenceService.Verify(r => r.AddSubmittedFellingLicenceApplicationPropertyDetailAsync(
-            capturedDetail, It.IsAny<CancellationToken>()), Times.Once);
-
-        _updateFellingLicenceService.Verify(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
-            application.Id, userAccessModel, It.IsAny<CancellationToken>()), Times.Once);
+        _updateFellingLicenceService.Verify(r => r.SubmitFellingLicenceApplicationAsync(
+            application.Id, userAccessModel, capturedDetail, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]

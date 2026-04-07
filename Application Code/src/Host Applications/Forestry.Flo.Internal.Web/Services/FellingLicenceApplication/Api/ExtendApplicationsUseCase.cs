@@ -225,13 +225,16 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
             var fcRecipient = new NotificationRecipient(assignedUser.Email, fcNotificationModel.Name);
 
-            var notificationResult = 
-                await _sendNotifications.SendNotificationAsync(
-                        fcNotificationModel,
-                        NotificationType.InformFCStaffOfFinalActionDateReached,
-                        fcRecipient,
-                        cancellationToken: cancellationToken)
-                    .Map(() => notificationsSent++);
+            var notificationResult = await _sendNotifications.SendNotificationAsync(
+                fcNotificationModel,
+                NotificationType.InformFCStaffOfFinalActionDateReached,
+                fcRecipient,
+                cancellationToken: cancellationToken);
+
+            if (notificationResult.IsSuccess)
+            {
+                notificationsSent++;
+            }
 
             if (notificationResult.IsFailure)
             {

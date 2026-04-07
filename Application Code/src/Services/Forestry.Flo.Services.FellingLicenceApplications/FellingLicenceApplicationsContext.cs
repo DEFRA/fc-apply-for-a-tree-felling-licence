@@ -432,6 +432,10 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .Property(e => e.PercentageOfRestockArea)
             .HasPrecision(5, 2);
 
+        modelBuilder.Entity<ProposedRestockingDetail>()
+            .Property(e => e.PercentageOfFellingArea)
+            .HasPrecision(5, 2);
+
         modelBuilder
             .Entity<ProposedCompartmentDesignations>()
             .Property(x => x.Id)
@@ -703,6 +707,10 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
 
         modelBuilder.Entity<ConfirmedRestockingDetail>()
             .Property(e => e.PercentageOfRestockArea)
+            .HasPrecision(5, 2);
+
+        modelBuilder.Entity<ConfirmedRestockingDetail>()
+            .Property(e => e.PercentageOfFellingArea)
             .HasPrecision(5, 2);
 
         modelBuilder

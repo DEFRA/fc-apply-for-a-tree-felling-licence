@@ -13,6 +13,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.Gis.Interfaces;
+using Forestry.Flo.Services.Gis.Models.Internal.Request;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
@@ -204,63 +205,39 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase, IPubl
         }
 
         var timestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
-        var esriId = getPublishModel.Value.ExistingEsriId;
 
-        if (esriId.HasValue)
+        var publishModel = new AddToPublicRegisterModel
         {
-            // handle republishing an application that is already on the public register
+            ExistingEsriId = getPublishModel.Value.ExistingEsriId,
+            CaseReference = getPublishModel.Value.CaseReference,
+            PropertyName = getPublishModel.Value.PropertyName,
+            CaseType = _woodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister,
+            GridReference = getPublishModel.Value.GridReference,
+            NearestTown = getPublishModel.Value.NearestTown,
+            LocalAuthority = getPublishModel.Value.LocalAuthority,
+            AdminRegion = getPublishModel.Value.AdminRegion,
+            PublicRegisterStart = timestamp,
+            Period = Convert.ToInt32(Math.Floor(period.TotalDays)),
+            TotalArea = getPublishModel.Value.TotalArea,
+            Compartments = getPublishModel.Value.Compartments
+        };
 
-            var republishResult = await _publicRegister.ReturnCaseToConsultationRegisterAsync(
-                getPublishModel.Value.ExistingEsriId.Value,
-                getPublishModel.Value.CaseReference,
-                timestamp,
-                Convert.ToInt32(Math.Floor(period.TotalDays)),
-                cancellationToken);
+        var publishResult = await _publicRegister.AddCaseToConsultationRegisterAsync(
+            publishModel,
+            cancellationToken);
 
-            if (republishResult.IsFailure)
-            {
-                _logger.LogError("Failed to republish application to public register with error {Error}", republishResult.Error);
-                await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, "Public Register", republishResult.Error, cancellationToken);
-                await AuditPublicRegisterFailureEvent(applicationId, user, republishResult.Error, cancellationToken);
-                return Result.Failure("Republishing application to consultation public register failed.");
-            }
-
-
-        }
-        else
+        if (publishResult.IsFailure)
         {
-            var publishResult = await _publicRegister.AddCaseToConsultationRegisterAsync(
-                getPublishModel.Value.CaseReference,
-                getPublishModel.Value.PropertyName,
-                _woodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister,
-                getPublishModel.Value.GridReference,
-                getPublishModel.Value.NearestTown,
-                getPublishModel.Value.LocalAuthority,
-                getPublishModel.Value.AdminRegion,
-                timestamp,
-                Convert.ToInt32(Math.Floor(period.TotalDays)),
-                getPublishModel.Value.BroadleafArea,
-                getPublishModel.Value.ConiferousArea,
-                getPublishModel.Value.OpenGroundArea,
-                getPublishModel.Value.TotalArea,
-                getPublishModel.Value.Compartments,
-                cancellationToken);
-
-            if (publishResult.IsFailure)
-            {
-                _logger.LogError("Failed to publish application to public register with error {Error}", publishResult.Error);
-                await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, "Public Register", publishResult.Error, cancellationToken);
-                await AuditPublicRegisterFailureEvent(applicationId, user, publishResult.Error, cancellationToken);
-                return Result.Failure("Publishing application to consultation public register failed.");
-            }
-
-            esriId = publishResult.Value;
+            _logger.LogError("Failed to publish application to public register with error {Error}", publishResult.Error);
+            await AuditWoodlandOfficerReviewFailureEvent(applicationId, user, "Public Register", publishResult.Error, cancellationToken);
+            await AuditPublicRegisterFailureEvent(applicationId, user, publishResult.Error, cancellationToken);
+            return Result.Failure("Publishing application to consultation public register failed.");
         }
 
         var updateResult = await _updateWoodlandOfficerReviewService.PublishedToPublicRegisterAsync(
             applicationId,
             user.UserAccountId.Value,
-            esriId.Value,
+            publishResult.Value,
             timestamp,
             period,
             cancellationToken);
@@ -279,7 +256,7 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase, IPubl
                     applicationId,
                     user.UserAccountId,
                     _requestContext,
-                    new { PublicationDate = timestamp, EsriId = esriId.Value }),
+                    new { PublicationDate = timestamp, EsriId = publishResult.Value }),
                 cancellationToken);
 
             var adminHubAddress = await GetConfiguredFcAreasService.TryGetAdminHubAddress(getPublishModel.Value.AdminRegion, cancellationToken);
@@ -382,7 +359,8 @@ public class PublicRegisterUseCase : FellingLicenceApplicationUseCaseBase, IPubl
             FellingLicenceApplicationSummary = publicRegisterDetailsResult.Value.FellingLicenceApplicationSummary,
             Breadcrumbs = publicRegisterDetailsResult.Value.Breadcrumbs,
             ApplicationId = publicRegisterDetailsResult.Value.ApplicationId,
-            Comment = commentResult.Value
+            Comment = commentResult.Value,
+            CommentDeepLink = _woodlandOfficerReviewOptions.PublicRegisterApplicationUrl
         };
         return Result.Success(viewModel);
     }

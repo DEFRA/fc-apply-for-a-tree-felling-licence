@@ -15,4 +15,5 @@ public class ConfirmedCompartmentDetailReportEntry
     public double? NumberOfTrees { get; set; }
     public string? ConfirmedFellingReference { get; set; }
     public double? RestockingDensity { get; set; }
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 }

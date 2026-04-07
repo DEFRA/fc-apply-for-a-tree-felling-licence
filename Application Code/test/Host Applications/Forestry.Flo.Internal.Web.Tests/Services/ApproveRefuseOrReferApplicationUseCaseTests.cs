@@ -7,11 +7,16 @@ using Forestry.Flo.Services.Applicants.Models;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.Gis.Models.Internal.Request;
 using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
@@ -21,12 +26,10 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using Newtonsoft.Json;
 using NodaTime;
 using System.Text.Json;
-using Forestry.Flo.Services.Common.Models;
-using Newtonsoft.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 
@@ -46,6 +49,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
     private readonly Mock<IAuditService<ApproveRefuseOrReferApplicationUseCase>> _auditMock;
     private readonly Mock<IForesterServices> _agolMock; 
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreasMock;
+    private readonly Mock<IGetWoodlandOfficerReviewService> _getWoodlandOfficerReviewServiceMock;
 
     private static readonly Fixture FixtureInstance = new();
     private const string ExternalUrl = "externalUrl";
@@ -67,6 +71,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _auditMock = new Mock<IAuditService<ApproveRefuseOrReferApplicationUseCase>>();
         _agolMock = new Mock<IForesterServices>();
         _getConfiguredFcAreasMock = new Mock<IGetConfiguredFcAreas>();
+        _getWoodlandOfficerReviewServiceMock = new();
 
         var fieldManager = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
             FixtureInstance.Create<string>(),
@@ -90,6 +95,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant, 
         string localAuthorityName,
+        ApplicationDetailsForPublicRegisterModel publishModel,
+        int esriId,
         UserAccount approver)
     {
         var pr = FixtureInstance.Build<PublicRegister>()
@@ -115,11 +122,20 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
+
+        _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
+                It.IsAny<AddToDecisionPublicRegisterModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(esriId));
 
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -154,10 +170,19 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         Assert.Empty(result.SubProcessFailures);
         
         _publicRegister.Verify(x=>x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId.Value, 
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
+            It.Is<AddToDecisionPublicRegisterModel>(m =>
+                m.CaseReference == publishModel.CaseReference
+                && m.PropertyName == publishModel.PropertyName
+                && m.CaseType == "02"
+                && m.GridReference == publishModel.GridReference
+                && m.NearestTown == publishModel.NearestTown
+                && m.LocalAuthority == publishModel.LocalAuthority
+                && m.AdminRegion == publishModel.AdminRegion
+                && m.PublicRegisterStart == now
+                && m.TotalArea == publishModel.TotalArea
+                && m.Compartments == publishModel.Compartments
+                && m.CaseApprovalDate == now
+                && m.FellingLicenceOutcome == FellingLicenceStatus.Approved.ToString()),
             It.IsAny<CancellationToken>()),
             Times.Once());
 
@@ -165,13 +190,14 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant && y.Role != AssignedUserRole.Author && y.TimestampUnassigned == null)
                     .Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Exactly(2));
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, now, It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now, It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a => 
             a.ApplicationReference == application.ApplicationReference
@@ -233,6 +259,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         UserAccountModel applicant, 
         UserAccount approver,
         string localAuthorityName,
+        ApplicationDetailsForPublicRegisterModel publishModel,
+        int esriId,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -249,7 +277,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -258,6 +286,15 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fcStaff);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
+
+        _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
+                It.IsAny<AddToDecisionPublicRegisterModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(esriId));
 
         _internalAccountServiceMock
             .Setup(s => s.GetUserAccountAsync(_fieldManager.UserAccountId.Value, It.IsAny<CancellationToken>()))
@@ -294,7 +331,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Exactly(2));
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Refused, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, now,It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now,It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationRefusalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -311,6 +348,25 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                                                 && fcStaff.All(fc => a.Any(app => app.Address == fc.Email))),
             null, null,
             CancellationToken.None), Times.Once);
+
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
+
+        _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Refused.ToString()),
+                It.IsAny<CancellationToken>()),
+            Times.Once());
 
         foreach (var staff in fcStaff)
         {
@@ -356,6 +412,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant,
         UserAccount approver,
+        ApplicationDetailsForPublicRegisterModel publishModel,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -371,11 +428,15 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -394,11 +455,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -410,23 +468,33 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         Assert.Equal(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister, result.SubProcessFailures.Single());
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>()),
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Approved.ToString()),
+                It.IsAny<CancellationToken>()),
             Times.Once());
 
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -464,7 +532,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         WoodlandOwnerModel woodlandOwnerModel,
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant, 
-        UserAccount approver, 
+        UserAccount approver,
+        ApplicationDetailsForPublicRegisterModel publishModel,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -480,7 +549,11 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.Is<NotificationType>(n => n == NotificationType.InformApplicantOfApplicationApproval), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
+            .ReturnsAsync(Result.Failure<Guid>("error"));
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -503,11 +576,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -523,23 +593,33 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>()),
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Approved.ToString()),
+                It.IsAny<CancellationToken>()),
             Times.Once());
 
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -578,6 +658,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
          List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
          UserAccountModel applicant,
          UserAccount approver,
+         ApplicationDetailsForPublicRegisterModel publishModel,
          ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -593,7 +674,11 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.Is<NotificationType>(n => n == NotificationType.InformApplicantOfApplicationApproval), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -616,11 +701,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -634,23 +716,138 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>()),
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Approved.ToString()),
+                It.IsAny<CancellationToken>()),
             Times.Once());
 
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+
+        _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a =>
+            a.ApplicationReference == application.ApplicationReference
+            && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationSummary?applicationId={application.Id}"
+            && a.AdminHubFooter == AdminHubFooter
+            && a.Name == applicant.FullName),
+            NotificationType.InformApplicantOfApplicationApproval,
+            It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
+            It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 &&
+                                                a.Any(x => x.Address == woodlandOwnerModel.ContactEmail && x.Name == woodlandOwnerModel.ContactName)
+                                                && fcStaff.All(fc => a.Any(app => app.Address == fc.Email))),
+            null, null,
+            CancellationToken.None), Times.Once);
+
+
+        _auditMock.Verify(v =>
+            v.PublishAuditEventAsync(It.Is<AuditEvent>(
+                    e => e.EventName == AuditEvents.ApplicationApproved
+                         && JsonSerializer.Serialize(e.AuditData, _options) ==
+                         JsonSerializer.Serialize(new
+                         {
+                             application.WoodlandOwnerId,
+                             ApplicationAuthorId = application.CreatedById,
+                             NotificationSent = true,
+                             ApprovedByName = _fieldManager.FullName,
+                             DecisionPublicRegisterOutcome = SendToDecisionPublicRegisterOutcome.Failure
+                         }, _options)),
+                CancellationToken.None), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ApplicationSetToApproved_IsSuccess_But_FailsToRetrieveDataToSendToDecisionPublicRegister(
+        FellingLicenceApplication application,
+        WoodlandOwnerModel woodlandOwnerModel,
+        List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
+        UserAccountModel applicant,
+        UserAccount approver,
+        ApproverReviewModel approverReview)
+    {
+        approverReview.PublicRegisterPublish = true;
+        application = PopulateStatusAndAssigneeHistory(application);
+        var now = DateTime.UtcNow;
+        _clockMock.Setup(s => s.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(now));
+
+        var sut = CreateSut();
+
+        _getFLAMock.Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
+                It.Is<NotificationType>(n => n == NotificationType.InformApplicantOfApplicationApproval), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
+                It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<ApplicationDetailsForPublicRegisterModel>("error"));
+
+        _woodlandOwnerServiceMock
+            .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _internalAccountServiceMock
+            .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fcStaff);
+
+        _internalAccountServiceMock
+            .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(approver.AsMaybe());
+
+        _externalAccountServiceMock
+            .Setup(s => s.RetrieveUserAccountByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(applicant);
+
+        _approverReviewServiceMock
+            .Setup(r => r.GetApproverReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(approverReview);
+
+        var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
+            _fieldManager,
+            application.Id,
+            FellingLicenceStatus.Approved,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.SubProcessFailures);
+        Assert.Contains(FinaliseFellingLicenceApplicationProcessOutcomes.CouldNotPublishToDecisionPublicRegister,
+            result.SubProcessFailures);
+
+        _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
+                It.IsAny<AddToDecisionPublicRegisterModel>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never());
+
+        _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
+
+        _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
+        _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
+        _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
+            a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
+            CancellationToken.None), Times.Once);
+        _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -687,7 +884,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
        WoodlandOwnerModel woodlandOwnerModel,
        List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
        UserAccountModel applicant, 
-       UserAccount approver, 
+       UserAccount approver,
+       ApplicationDetailsForPublicRegisterModel publishModel,
+       int esriId,
        ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -703,7 +902,11 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.Is<NotificationType>(n => n == NotificationType.InformApplicantOfApplicationApproval), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+        
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -726,15 +929,12 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success);
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success(esriId));
 
         _updateFLAMock
             .Setup(
-                x => x.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(),
+                x => x.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(),
                     It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure("oops"));
 
@@ -750,16 +950,26 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>()),
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Approved.ToString()),
+                It.IsAny<CancellationToken>()),
             Times.Once());
 
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
             a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
@@ -768,6 +978,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(
             application.Id, 
+            esriId,
             now, 
             now.AddDays(28), CancellationToken.None), Times.Once);
 
@@ -807,7 +1018,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         WoodlandOwnerModel woodlandOwnerModel,
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant, 
-        UserAccount approver, 
+        UserAccount approver,
+        ApplicationDetailsForPublicRegisterModel publishModel,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -824,12 +1036,16 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.Is<NotificationType>(n => n == NotificationType.InformApplicantOfApplicationRefusal), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
+            .ReturnsAsync(Result.Failure<Guid>("error"));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
-
+       
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
+        
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fcStaff);
@@ -847,11 +1063,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Refused.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -872,8 +1085,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Refused, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationRefusalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -890,6 +1104,23 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                                                 && fcStaff.All(fc => a.Any(app => app.Address == fc.Email))),
             null, null,
             CancellationToken.None), Times.Once);
+        
+        _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Refused.ToString()),
+                It.IsAny<CancellationToken>()),
+            Times.Once());
 
         _auditMock.Verify(v =>
             v.PublishAuditEventAsync(It.Is<AuditEvent>(
@@ -913,6 +1144,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant,
         UserAccount approver,
+        ApplicationDetailsForPublicRegisterModel publishModel,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -929,7 +1161,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.Is<NotificationType>(n => n == NotificationType.InformApplicantOfApplicationRefusal), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -938,6 +1170,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fcStaff);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _internalAccountServiceMock
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -952,11 +1188,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Refused.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -975,8 +1208,26 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Refused, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+
+        _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Refused.ToString()),
+                It.IsAny<CancellationToken>()),
+            Times.Once());
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationRefusalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -1013,6 +1264,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant, 
         UserAccount approver,
+        ApplicationDetailsForPublicRegisterModel publishModel,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -1028,7 +1280,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
+            .ReturnsAsync(Result.Failure<Guid>("error"));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -1037,6 +1289,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fcStaff);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _internalAccountServiceMock
             .Setup(s => s.GetUserAccountAsync(_fieldManager.UserAccountId.Value, It.IsAny<CancellationToken>()))
@@ -1051,11 +1307,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -1071,15 +1324,25 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Approved.ToString(),
-            now,
-            It.IsAny<CancellationToken>()),
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Approved.ToString()),
+                It.IsAny<CancellationToken>()),
             Times.Once());
 
         _clockMock.Verify(x => x.GetCurrentInstant(), Times.Once);
 
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
@@ -1087,7 +1350,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Once);
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -1140,7 +1403,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -1172,10 +1435,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         Assert.Empty(result.SubProcessFailures);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-           It.IsAny<int>(),
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            It.IsAny<DateTime>(),
+           It.IsAny<AddToDecisionPublicRegisterModel>(),
             It.IsAny<CancellationToken>()),
             Times.Never);
 
@@ -1223,7 +1483,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         WoodlandOwnerModel woodlandOwnerModel,
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant, 
-        UserAccount approver, 
+        UserAccount approver,
+        ApplicationDetailsForPublicRegisterModel publishModel,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -1239,11 +1500,15 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(woodlandOwnerModel);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -1262,11 +1527,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Refused.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -1280,6 +1542,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             result.SubProcessFailures);
         
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
@@ -1287,7 +1550,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Refused, CancellationToken.None), Times.Once);
 
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationRefusalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -1306,10 +1569,19 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Once);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-                application.PublicRegister!.EsriId!.Value,
-                application.ApplicationReference,
-                It.Is<string>(a => a == "Refused"),
-                now,
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Refused.ToString()),
                 It.IsAny<CancellationToken>()),
             Times.Once());
 
@@ -1335,6 +1607,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         List<Flo.Services.InternalUsers.Models.UserAccountModel> fcStaff,
         UserAccountModel applicant, 
         UserAccount approver,
+        ApplicationDetailsForPublicRegisterModel publishModel,
         ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -1350,7 +1623,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("err"));
+            .ReturnsAsync(Result.Failure<Guid>("err"));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -1359,6 +1632,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fcStaff);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
 
         _internalAccountServiceMock
             .Setup(s => s.GetUserAccountAsync(_fieldManager.UserAccountId.Value, It.IsAny<CancellationToken>()))
@@ -1373,11 +1650,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             .ReturnsAsync(approverReview);
 
         _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
-            application.PublicRegister!.EsriId!.Value,
-            application.ApplicationReference,
-            FellingLicenceStatus.Refused.ToString(),
-            now,
-            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("Some error"));
+            It.IsAny<AddToDecisionPublicRegisterModel>(),
+            It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure<int>("Some error"));
 
         var result = await sut.ApproveOrRefuseOrReferApplicationAsync(
             _fieldManager,
@@ -1394,12 +1668,13 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
 
         _getFLAMock.Verify(v => v.GetApplicationByIdAsync(application.Id, CancellationToken.None), Times.Once);
         _woodlandOwnerServiceMock.Verify(v => v.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, It.IsAny<UserAccessModel>(), CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _internalAccountServiceMock.Verify(v => v.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(a =>
                 a.TrueForAll(x => application.AssigneeHistories.Where(y => y.Role != AssignedUserRole.Applicant).Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Once);
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Refused, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), CancellationToken.None), Times.Never);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationRefusalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -1418,10 +1693,19 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Once);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-                application.PublicRegister!.EsriId!.Value,
-                application.ApplicationReference,
-                FellingLicenceStatus.Refused.ToString(),
-                now,
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.Refused.ToString()),
                 It.IsAny<CancellationToken>()),
             Times.Once());
 
@@ -1462,7 +1746,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -1518,10 +1802,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Once);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
+                It.IsAny<AddToDecisionPublicRegisterModel>(),
                 It.IsAny<CancellationToken>()),
             Times.Never);
 
@@ -1548,6 +1829,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
       UserAccountModel applicant, 
       UserAccount approver,
       string localAuthorityName,
+      ApplicationDetailsForPublicRegisterModel publishModel,
+      int esriId,
       ApproverReviewModel approverReview)
     {
         approverReview.PublicRegisterPublish = true;
@@ -1570,7 +1853,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _notificationsMock.Setup(s => s.SendNotificationAsync(It.IsAny<object>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _woodlandOwnerServiceMock
             .Setup(s => s.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
@@ -1579,6 +1862,15 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _internalAccountServiceMock
             .Setup(s => s.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fcStaff);
+
+        _getWoodlandOfficerReviewServiceMock
+            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(publishModel));
+
+        _publicRegister.Setup(x => x.AddCaseToDecisionRegisterAsync(
+                It.IsAny<AddToDecisionPublicRegisterModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(esriId));
 
         _internalAccountServiceMock
             .Setup(s => s.GetUserAccountAsync(_fieldManager.UserAccountId.Value, It.IsAny<CancellationToken>()))
@@ -1615,18 +1907,29 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     .Select(y => y.AssignedUserId).Contains(x))),
             CancellationToken.None), Times.Exactly(2));
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
+        _getWoodlandOfficerReviewServiceMock.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(application.Id, It.IsAny<CancellationToken>()), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.ReferredToLocalAuthority, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(
             application.Id, 
+            esriId,
             now, 
             now.AddDays(28), 
             CancellationToken.None), Times.Once);
 
         _publicRegister.Verify(x => x.AddCaseToDecisionRegisterAsync(
-                application.PublicRegister!.EsriId.Value,
-                application.ApplicationReference,
-                FellingLicenceStatus.ReferredToLocalAuthority.ToString(),
-                now,
+                It.Is<AddToDecisionPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == "02"
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == now
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments
+                    && m.CaseApprovalDate == now
+                    && m.FellingLicenceOutcome == FellingLicenceStatus.ReferredToLocalAuthority.ToString()),
                 It.IsAny<CancellationToken>()),
             Times.Once());
 
@@ -1830,6 +2133,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         _updateFLAMock.Reset();
         _approverReviewServiceMock.Reset();
         _getConfiguredFcAreasMock.Reset();
+        _getWoodlandOfficerReviewServiceMock.Reset();
 
         _externalSiteOptionsMock.Setup(s => s.Value).Returns(new ExternalApplicantSiteOptions{BaseUrl = ExternalUrl});
         _getConfiguredFcAreasMock.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -1850,6 +2154,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             new RequestContext("test", new RequestUserModel(_fieldManager.Principal)),
             _approverReviewServiceMock.Object,
             _getConfiguredFcAreasMock.Object,
+            _getWoodlandOfficerReviewServiceMock.Object,
+            new OptionsWrapper<WoodlandOfficerReviewOptions>(new WoodlandOfficerReviewOptions()),
             _agolMock.Object
         );
     }

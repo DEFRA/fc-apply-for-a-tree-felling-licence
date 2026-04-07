@@ -38,9 +38,38 @@ public partial class PublicRegisterTests
 
 
     [Fact]
+    public async Task RemoveCaseFromApprovalsRegisterAsync_NotFoundOnPr_ReturnsSuccess()
+    {
+        _mockHttpHandler.Reset();
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/Boundaries/query")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successQuery).Verifiable();
+        
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/tokens/")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
+        
+        _mockHttpClientFactory.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient(_mockHttpHandler.Object));
+
+        var sut = CreateSUT();
+
+        var response = await sut.RemoveCaseFromDecisionRegisterAsync(3, "case", CancellationToken.None);
+
+        _mockHttpHandler.VerifyAll();
+
+        Assert.True(response.IsSuccess);
+    }
+
+    [Fact]
     public async Task RemoveCaseFromApprovalsRegisterAsync_UpdateServer_Fails_checkReturn()
     {
         _mockHttpHandler.Reset();
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/Boundaries/query")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successQuery).Verifiable();
+
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/tokens/")),
                 ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
@@ -54,7 +83,7 @@ public partial class PublicRegisterTests
 
         var sut = CreateSUT();
 
-        var response = await sut.RemoveCaseFromDecisionRegisterAsync(3, "case", CancellationToken.None);
+        var response = await sut.RemoveCaseFromDecisionRegisterAsync(1, "case", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
 
@@ -66,6 +95,11 @@ public partial class PublicRegisterTests
     public async Task RemoveCaseFromApprovalsRegisterAsync_QueryServerFails_checkReturn()
     {
         _mockHttpHandler.Reset();
+        
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/Boundaries/query")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successQuery).Verifiable();
+
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/tokens/")),
                 ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
@@ -83,7 +117,7 @@ public partial class PublicRegisterTests
 
         var sut = CreateSUT();
 
-        var response = await sut.RemoveCaseFromDecisionRegisterAsync(3, "case", CancellationToken.None);
+        var response = await sut.RemoveCaseFromDecisionRegisterAsync(1, "case", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
 
@@ -95,7 +129,11 @@ public partial class PublicRegisterTests
     public async Task RemoveCaseFromApprovalsRegisterAsync_UpdateCompartmentserverEmptyMessage()
     {
         _mockHttpHandler.Reset();
-
+        
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/Boundaries/query")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successQuery).Verifiable();
+        
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/tokens/")),
                 ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
@@ -117,7 +155,7 @@ public partial class PublicRegisterTests
 
         var sut = CreateSUT();
 
-        var response = await sut.RemoveCaseFromDecisionRegisterAsync(3, "case", CancellationToken.None);
+        var response = await sut.RemoveCaseFromDecisionRegisterAsync(1, "case", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
 
@@ -126,7 +164,7 @@ public partial class PublicRegisterTests
     }
 
     [Fact]
-    public async Task RemoveCaseFromApprovalsRegisterAsync_UpdateCompartmentserverNullUpdates()
+    public async Task RemoveCaseFromApprovalsRegisterAsync_UpdateCompartmentServerNullUpdates()
     {
         var message = new HttpResponseMessage {
             StatusCode = HttpStatusCode.OK,
@@ -136,6 +174,10 @@ public partial class PublicRegisterTests
         message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
         _mockHttpHandler.Reset();
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/Boundaries/query")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successQuery).Verifiable();
 
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/tokens/")),
@@ -158,7 +200,7 @@ public partial class PublicRegisterTests
 
         var sut = CreateSUT();
 
-        var response = await sut.RemoveCaseFromDecisionRegisterAsync(3, "case", CancellationToken.None);
+        var response = await sut.RemoveCaseFromDecisionRegisterAsync(1, "case", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
 
@@ -170,6 +212,10 @@ public partial class PublicRegisterTests
     public async Task RemoveCaseFromApprovalsRegisterAsync_UpdateCompartmentsServer_Fails_checkReturn()
     {
         _mockHttpHandler.Reset();
+
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/Boundaries/query")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successQuery).Verifiable();
 
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/tokens/")),
@@ -192,7 +238,7 @@ public partial class PublicRegisterTests
 
         var sut = CreateSUT();
 
-        var response = await sut.RemoveCaseFromDecisionRegisterAsync(3, "case", CancellationToken.None);
+        var response = await sut.RemoveCaseFromDecisionRegisterAsync(1, "case", CancellationToken.None);
 
         _mockHttpHandler.VerifyAll();
 
@@ -205,6 +251,11 @@ public partial class PublicRegisterTests
     public async Task RemoveCaseFromApprovalsRegisterAsync_Success()
     {
         _mockHttpHandler.Reset();
+        
+        _mockHttpHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/Boundaries/query")),
+                ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successQuery).Verifiable();
+
         _mockHttpHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://www.forester_gis.com/geostore/tokens/")),
                 ItExpr.IsAny<CancellationToken>()).ReturnsAsync(_successTokenRMessage).Verifiable();
@@ -225,7 +276,7 @@ public partial class PublicRegisterTests
 
         var sut = CreateSUT();
 
-        var response = await sut.RemoveCaseFromDecisionRegisterAsync(3, "case", CancellationToken.None);
+        var response = await sut.RemoveCaseFromDecisionRegisterAsync(1, "case", CancellationToken.None);
 
         Assert.True(response.IsSuccess);
     }

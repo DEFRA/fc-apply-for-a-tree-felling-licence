@@ -20,6 +20,7 @@ public class DeleteFeatureParameter : CommonParameters
             new KeyValuePair<string, string>("features", string.Join(", ", IDs )),
             new KeyValuePair<string, string>("rollbackOnFailure", RollbackOnError.ToString()),
             new KeyValuePair<string, string>("gdbVersion", ""),
+            new KeyValuePair<string, string>("where", "1=1"),
             new KeyValuePair<string, string>("f", RequestFormat)
         };
         if (TokenString.HasValue)

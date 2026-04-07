@@ -55,4 +55,10 @@ public class ConditionsToApplicantDataModel : IApplicationNotification
     /// Gets and sets the name & address of the admin hub that the application is managed by.
     /// </summary>
     public string AdminHubFooter { get; set; }
+
+    /// <summary>
+    /// Gets and sets a flag indicating that a conditions notification has already been sent for this
+    /// application, and that this notification supersedes the previous one.
+    /// </summary>
+    public bool SupersedesPreviousNotification { get; set; }
 }

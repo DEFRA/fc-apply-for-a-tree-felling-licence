@@ -15,11 +15,9 @@ public partial class LandInformationSearchTests
             .Verify("SendAsync", Times.Never(), ItExpr.Is<HttpRequestMessage>(t => t!.RequestUri!.Equals("https://example.com/token")),
                 ItExpr.IsAny<CancellationToken>());
 
-        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), [], CancellationToken.None));
+        var result = await sut.AddFellingLicenceGeometriesAsync(Guid.NewGuid(), [], CancellationToken.None);
 
-        Assert.Contains("Required input polygons was empty", ex.Message);
-        Assert.Equal("polygons", ex.ParamName);
+        Assert.Contains("No compartments provided", result.Error);
     }
 
     [Fact]

@@ -40,9 +40,9 @@
     <script>
         document.body.className += ' js-enabled' + ('noModule' in HTMLScriptElement.prototype ? ' govuk-frontend-supported' : '');
     </script>
-    <a href="#main-content" class="govuk-skip-link" data-module="govuk-skip-link">Skip to main content</a>
+    <a href="#main-content" class="govuk-skip-link no-print" data-module="govuk-skip-link">Skip to main content</a>
 
-    <header class="rebranded-cross-service-header" data-module="one-login-header" aria-label="GOV UK Header" role="region">
+    <header class="rebranded-cross-service-header no-print" data-module="one-login-header" aria-label="GOV UK Header" role="region">
         <div class="rebranded-one-login-header" data-one-login-header-nav>
             <div class="rebranded-one-login-header__container govuk-width-container">
                 <div class="rebranded-one-login-header__logo">
@@ -179,7 +179,7 @@
             </div>
         </div>
         <logged-in>
-            <hr class="govuk-section-break govuk-section-break--visible">
+            <hr class="govuk-section-break govuk-section-break--visible no-print">
         </logged-in>
 
         @await RenderSectionAsync("breadcrumbs", required: false)

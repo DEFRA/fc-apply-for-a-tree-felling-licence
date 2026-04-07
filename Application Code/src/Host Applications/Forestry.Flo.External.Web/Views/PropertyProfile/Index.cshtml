@@ -26,9 +26,11 @@
                         <input type="hidden" id="@item.Id" value="@item.GISData" data-label="@item.DisplayName" data-group="compartments_GIS"/>
                     }
                     <arcgis-map id="viewDiv" class="profileMap">
-                        <arcgis-expand slot="top-right">
+                        <arcgis-expand slot="top-right"  collapse-tooltip="Press to collapse the base map selection tool"
+                                       expand-tooltip="Press to expand the control to show the available base map selection options">
                             <arcgis-basemap-gallery></arcgis-basemap-gallery>
                         </arcgis-expand>
+                        <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
                     </arcgis-map>
                 </div>
             </div>

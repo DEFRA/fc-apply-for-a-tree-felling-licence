@@ -114,9 +114,17 @@ public class ExternalConsulteeInviteController : Controller
     public async Task<IActionResult> InviteNewConsultee(
         ExternalConsulteeInviteFormModel model,
         [FromServices] IExternalConsulteeInviteUseCase useCase,
+        [FromServices] IPublicRegisterUseCase publicRegisterUseCase,
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
+
+        if (!model.PublicRegisterAlreadyCompleted
+            && model.ExemptFromConsultationPublicRegister is true 
+            && string.IsNullOrWhiteSpace(model.ExemptFromConsultationPublicRegisterReason))
+        {
+            ModelState.AddModelError(nameof(model.ExemptFromConsultationPublicRegisterReason), "A reason must be provided when the application is exempt from the public register");
+        }
 
         if (!ModelState.IsValid)
         {
@@ -134,9 +142,28 @@ public class ExternalConsulteeInviteController : Controller
             reloadModel.Value.AreaOfFocus = model.AreaOfFocus;
             reloadModel.Value.SelectedDocumentIds = model.SelectedDocumentIds;
             reloadModel.Value.ExemptFromConsultationPublicRegister = model.ExemptFromConsultationPublicRegister;
+            reloadModel.Value.ExemptFromConsultationPublicRegisterReason = model.ExemptFromConsultationPublicRegisterReason;
             reloadModel.Value.Breadcrumbs = CreateBreadcrumbs(reloadModel.Value.FellingLicenceApplicationSummary!);
 
             return View(reloadModel.Value);
+        }
+
+        if (!model.PublicRegisterAlreadyCompleted)
+        {
+            var updatePrResult = await publicRegisterUseCase.StorePublicRegisterExemptionAsync(
+                model.ApplicationId,
+                model.ExemptFromConsultationPublicRegister is true,
+                model.ExemptFromConsultationPublicRegister is true
+                    ? model.ExemptFromConsultationPublicRegisterReason
+                    : null,
+                user,
+                cancellationToken);
+
+            if (updatePrResult.IsFailure)
+            {
+                this.AddErrorMessage("Something went wrong saving the public register exemption, please try again");
+                return RedirectToAction("Index", new { id = model.ApplicationId });
+            }
         }
 
         var accessCode = Guid.NewGuid();
@@ -158,12 +185,39 @@ public class ExternalConsulteeInviteController : Controller
 
         if (result.IsSuccess)
         {
-            this.AddConfirmationMessage("Consultee invite sent");
-            return RedirectToAction("Index", new { id = model.ApplicationId });
+            return RedirectToAction("GetReceivedComments", new { id = model.ApplicationId, accessCode });
         }
 
-        return RedirectToAction("Error", "Home");
+        this.AddErrorMessage("Something went wrong sending the consultee invite notification, please try again");
+        return RedirectToAction("Index", new { id = model.ApplicationId });
     }
+
+    public async Task<IActionResult> SendReminder(
+        Guid id,
+        Guid accessCode,
+        string email,
+        [FromServices] IExternalConsulteeInviteUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new InternalUser(User);
+        var accessLink =
+            $"{GetExternalConsulteeInviteLink()}?applicationId={id}&accessCode={accessCode}&emailAddress={HttpUtility.HtmlEncode(email)}";
+
+        var result = await useCase.SendReminderToConsulteeAsync(id, accessCode, accessLink, user, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            this.AddConfirmationMessage("Consultee reminder notification sent");
+        }
+        else
+        {
+            this.AddErrorMessage("Something went wrong sending the reminder notification, please try again");
+        }
+
+        return RedirectToAction("Index", new { id });
+
+    }
+
 
     [HttpGet]
     public async Task<IActionResult> GetReceivedComments(

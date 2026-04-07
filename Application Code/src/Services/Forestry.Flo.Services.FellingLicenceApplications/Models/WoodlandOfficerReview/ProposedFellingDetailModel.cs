@@ -23,11 +23,6 @@ public class ProposedFellingDetailModel
     public List<ProposedRestockingDetailModel> ProposedRestockingDetails { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets compartment total hectares.
-    /// </summary>
-    public double? CompartmentTotalHectares { get; set; }
-
-    /// <summary>
     /// Gets or sets the area to be felled.
     /// </summary>
     public double AreaToBeFelled { get; set; }

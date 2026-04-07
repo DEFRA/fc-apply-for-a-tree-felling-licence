@@ -23,8 +23,9 @@ namespace Forestry.Flo.External.Web.Tests.ApiControllers
             _factory.FellingLicenceApplicationInternalRepositoryMock.Reset();
             _factory.FellingLicenceApplicationRepositoryMock.Reset();
             _factory.FileStorageServiceMock.Reset();
-            _factory.UnitOfWorkMock = new Mock<IUnitOfWork>();
             _factory.RetrieveUserAccountsServiceMock.Reset();
+
+            _factory.UnitOfWorkMock = new Mock<IUnitOfWork>();
             _factory.FellingLicenceApplicationRepositoryMock.SetupGet(r => r.UnitOfWork).Returns(_factory.UnitOfWorkMock.Object);
             _factory.FileStorageServiceMock.Setup(f => f.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
                     It.IsAny<bool>(), It.IsAny<FileUploadReason>(), It.IsAny<CancellationToken>()))

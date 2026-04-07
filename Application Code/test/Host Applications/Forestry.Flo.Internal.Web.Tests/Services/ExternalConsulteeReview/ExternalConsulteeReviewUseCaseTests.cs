@@ -29,6 +29,12 @@ using NodaTime;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using Forestry.Flo.Services.Common.Extensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+using Forestry.Flo.Services.Notifications.Entities;
+using Forestry.Flo.Services.Notifications.Models;
+using Forestry.Flo.Services.Notifications.Services;
+using UserAccountModel = Forestry.Flo.Services.InternalUsers.Models.UserAccountModel;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.ExternalConsulteeReview;
 
@@ -47,6 +53,7 @@ public class ExternalConsulteeReviewUseCaseTests
     private readonly Mock<IClock> _mockClock = new();
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreas = new();
     private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
+    private readonly Mock<ISendNotifications> _mockSendNotificationsService = new();
     private const string AdminHubAddress = "admin hub address";
     private readonly string _requestContextCorrelationId = Guid.NewGuid().ToString();
     private readonly JsonSerializerOptions _serializerOptions = new()
@@ -102,6 +109,7 @@ public class ExternalConsulteeReviewUseCaseTests
     [Theory, AutoData]
     public async Task AddConsulteeComment_WhenUnableToAddAttachments(
         AddConsulteeCommentModel model,
+        string viewApplicationUrl,
         string error)
     {
         var sut = CreateSut();
@@ -116,7 +124,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .Setup(x => x.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(addDocumentsResult);
 
-        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, CancellationToken.None);
+        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, viewApplicationUrl, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
@@ -131,6 +139,8 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockAddDocumentService.VerifyNoOtherCalls();
 
         _mockRemoveDocumentService.VerifyNoOtherCalls();
+
+        _mockSendNotificationsService.VerifyNoOtherCalls();
 
         _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                 a.EventName == AuditEvents.AddConsulteeCommentFailure
@@ -152,7 +162,11 @@ public class ExternalConsulteeReviewUseCaseTests
 
     [Theory, AutoData]
     public async Task AddConsulteeComment_WhenSuccessful_WithoutDocuments(
-        AddConsulteeCommentModel model)
+        AddConsulteeCommentModel model,
+        ConsulteeCommentNotificationModel serviceResponse,
+        string viewApplicationUrl,
+        List<UserAccountModel> staffForNotification,
+        string adminHub)
     {
         var sut = CreateSut();
 
@@ -161,9 +175,24 @@ public class ExternalConsulteeReviewUseCaseTests
 
         _mockExternalConsulteeReviewService
             .Setup(x => x.AddCommentAsync(It.IsAny<ConsulteeCommentModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(serviceResponse));
 
-        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, CancellationToken.None);
+        _mockInternalUserAccountService
+            .Setup(x => x.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(staffForNotification));
+
+        _mockSendNotificationsService
+            .Setup(x => x.SendNotificationAsync(It.IsAny<InformFcStaffOfConsulteeCommentDataModel>(),
+                It.IsAny<NotificationType>(),
+                It.IsAny<NotificationRecipient[]>(), It.IsAny<NotificationRecipient[]>(),
+                It.IsAny<NotificationAttachment[]>(),
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        _getConfiguredFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHub);
+
+        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, viewApplicationUrl, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         _mockExternalConsulteeReviewService.Verify(x => x.AddCommentAsync(It.Is<ConsulteeCommentModel>(c =>
@@ -176,8 +205,32 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AccessCode == model.AccessCode),
             It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
-        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Exactly(2));
         _mockClock.VerifyNoOtherCalls();
+
+        _mockInternalUserAccountService.Verify(x => x.RetrieveUserAccountsByIdsAsync(
+            It.Is<List<Guid>>(s => serviceResponse.AssignedFcStaff.Length == s.Count && serviceResponse.AssignedFcStaff.All(s.Contains)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _mockInternalUserAccountService.VerifyNoOtherCalls();
+
+        _getConfiguredFcAreas.Verify(x => x.TryGetAdminHubAddress(serviceResponse.AdminHub, It.IsAny<CancellationToken>()), Times.Once);
+        _getConfiguredFcAreas.VerifyNoOtherCalls();
+
+        _mockSendNotificationsService.Verify(x => x.SendNotificationAsync(
+            It.Is<InformFcStaffOfConsulteeCommentDataModel>(m => m.ApplicationId == model.ApplicationId
+            && m.AdminHubFooter == adminHub
+            && m.ApplicationReference == serviceResponse.ApplicationReference
+            && m.CommentReceivedDate == createdTimestamp.ToDateTimeUtc().CreateFormattedDate()
+            && m.ConsulteeFullName == model.AuthorName
+            && m.ConsulteeJobRole == model.AuthorJobRole
+            && m.ConsulteeOrganisation == model.AuthorOrganisation
+            && m.PropertyName == serviceResponse.PropertyName
+            && m.ViewApplicationURL == viewApplicationUrl
+            && m.CommentText == model.Comment
+            ), NotificationType.InformFcStaffOfConsulteeCommentReceived,
+            It.Is<NotificationRecipient[]>(r => staffForNotification.All(sn => r.Any(rsn => rsn.Name == sn.FullName && rsn.Address == sn.Email))),
+            null, null, null, It.IsAny<CancellationToken>()), Times.Once);
+        _mockSendNotificationsService.VerifyNoOtherCalls();
 
         _mockAddDocumentService.VerifyNoOtherCalls();
 
@@ -203,7 +256,11 @@ public class ExternalConsulteeReviewUseCaseTests
     [Theory, AutoData]
     public async Task AddConsulteeComment_WhenSuccessful_WithDocuments(
         AddConsulteeCommentModel model,
-        AddDocumentsSuccessResult addDocumentsResult)
+        AddDocumentsSuccessResult addDocumentsResult,
+        ConsulteeCommentNotificationModel serviceResponse,
+        string viewApplicationUrl,
+        List<UserAccountModel> staffForNotification,
+        string adminHub)
     {
         var sut = CreateSut();
 
@@ -214,13 +271,28 @@ public class ExternalConsulteeReviewUseCaseTests
 
         _mockExternalConsulteeReviewService
             .Setup(x => x.AddCommentAsync(It.IsAny<ConsulteeCommentModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(serviceResponse));
 
         _mockAddDocumentService
             .Setup(x => x.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(addDocumentsResult);
+        
+        _mockInternalUserAccountService
+            .Setup(x => x.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(staffForNotification));
 
-        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, CancellationToken.None);
+        _mockSendNotificationsService
+            .Setup(x => x.SendNotificationAsync(It.IsAny<InformFcStaffOfConsulteeCommentDataModel>(),
+                It.IsAny<NotificationType>(),
+                It.IsAny<NotificationRecipient[]>(), It.IsAny<NotificationRecipient[]>(),
+                It.IsAny<NotificationAttachment[]>(),
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        _getConfiguredFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHub);
+        
+        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, viewApplicationUrl, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         _mockExternalConsulteeReviewService.Verify(x => x.AddCommentAsync(It.Is<ConsulteeCommentModel>(c =>
@@ -234,7 +306,7 @@ public class ExternalConsulteeReviewUseCaseTests
                 && c.AccessCode == model.AccessCode), 
             It.IsAny<CancellationToken>()), Times.Once);
         _mockExternalConsulteeReviewService.VerifyNoOtherCalls();
-        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Exactly(2));
         _mockClock.VerifyNoOtherCalls();
 
         _mockAddDocumentService.Verify(x => x.AddDocumentsAsInternalUserAsync(It.Is<AddDocumentsRequest>(a => 
@@ -245,6 +317,30 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockAddDocumentService.VerifyNoOtherCalls();
 
         _mockRemoveDocumentService.VerifyNoOtherCalls();
+
+        _mockInternalUserAccountService.Verify(x => x.RetrieveUserAccountsByIdsAsync(
+            It.Is<List<Guid>>(s => serviceResponse.AssignedFcStaff.Length == s.Count && serviceResponse.AssignedFcStaff.All(s.Contains)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _mockInternalUserAccountService.VerifyNoOtherCalls();
+
+        _getConfiguredFcAreas.Verify(x => x.TryGetAdminHubAddress(serviceResponse.AdminHub, It.IsAny<CancellationToken>()), Times.Once);
+        _getConfiguredFcAreas.VerifyNoOtherCalls();
+
+        _mockSendNotificationsService.Verify(x => x.SendNotificationAsync(
+            It.Is<InformFcStaffOfConsulteeCommentDataModel>(m => m.ApplicationId == model.ApplicationId
+                                                                 && m.AdminHubFooter == adminHub
+                                                                 && m.ApplicationReference == serviceResponse.ApplicationReference
+                                                                 && m.CommentReceivedDate == createdTimestamp.ToDateTimeUtc().CreateFormattedDate()
+                                                                 && m.ConsulteeFullName == model.AuthorName
+                                                                 && m.ConsulteeJobRole == model.AuthorJobRole
+                                                                 && m.ConsulteeOrganisation == model.AuthorOrganisation
+                                                                 && m.PropertyName == serviceResponse.PropertyName
+                                                                 && m.ViewApplicationURL == viewApplicationUrl
+                                                                 && m.CommentText == model.Comment
+            ), NotificationType.InformFcStaffOfConsulteeCommentReceived,
+            It.Is<NotificationRecipient[]>(r => staffForNotification.All(sn => r.Any(rsn => rsn.Name == sn.FullName && rsn.Address == sn.Email))),
+            null, null, null, It.IsAny<CancellationToken>()), Times.Once);
+        _mockSendNotificationsService.VerifyNoOtherCalls();
 
         _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                 a.EventName == AuditEvents.AddConsulteeComment
@@ -266,6 +362,7 @@ public class ExternalConsulteeReviewUseCaseTests
     [Theory, AutoData]
     public async Task AddConsulteeComment_WhenUnsuccessful_RemovesAttachmentsAgain(
         AddConsulteeCommentModel model,
+        string viewApplicationUrl,
         string error)
     {
         var sut = CreateSut();
@@ -278,7 +375,7 @@ public class ExternalConsulteeReviewUseCaseTests
 
         _mockExternalConsulteeReviewService
             .Setup(x => x.AddCommentAsync(It.IsAny<ConsulteeCommentModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
+            .ReturnsAsync(Result.Failure<ConsulteeCommentNotificationModel>(error));
 
         _mockAddDocumentService
             .Setup(x => x.AddDocumentsAsInternalUserAsync(It.IsAny<AddDocumentsRequest>(), It.IsAny<CancellationToken>()))
@@ -288,7 +385,7 @@ public class ExternalConsulteeReviewUseCaseTests
             .Setup(x => x.PermanentlyRemoveDocumentAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, CancellationToken.None);
+        var result = await sut.AddConsulteeCommentAsync(model, _formFileCollection, viewApplicationUrl, CancellationToken.None);
 
         Assert.True(result.IsFailure);
         _mockExternalConsulteeReviewService.Verify(x => x.AddCommentAsync(It.Is<ConsulteeCommentModel>(c =>
@@ -314,6 +411,8 @@ public class ExternalConsulteeReviewUseCaseTests
             x.PermanentlyRemoveDocumentAsync(model.ApplicationId, addDocumentsResult.DocumentIds.Single(), It.IsAny<CancellationToken>()), 
             Times.Once);
         _mockRemoveDocumentService.VerifyNoOtherCalls();
+
+        _mockSendNotificationsService.VerifyNoOtherCalls();
 
         _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                 a.EventName == AuditEvents.AddConsulteeCommentFailure
@@ -688,6 +787,7 @@ public class ExternalConsulteeReviewUseCaseTests
         _mockGetDocumentService.Reset();
         _mockAddDocumentService.Reset();
         _mockRemoveDocumentService.Reset();
+        _mockSendNotificationsService.Reset();
         _formFileCollection = new();
 
         return new ExternalConsulteeReviewUseCase(
@@ -703,6 +803,7 @@ public class ExternalConsulteeReviewUseCaseTests
             _mockAddDocumentService.Object,
             _mockRemoveDocumentService.Object,
             _woodlandOfficerReviewSubStatusService.Object,
+            _mockSendNotificationsService.Object,
             new NullLogger<ExternalConsulteeReviewUseCase>(),
             new RequestContext(_requestContextCorrelationId, new RequestUserModel(UserFactory.CreateUnauthenticatedUser())),
             _mockClock.Object);

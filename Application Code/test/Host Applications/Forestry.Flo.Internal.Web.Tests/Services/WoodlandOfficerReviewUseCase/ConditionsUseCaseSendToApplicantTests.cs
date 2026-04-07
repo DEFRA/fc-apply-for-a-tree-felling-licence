@@ -4,7 +4,6 @@ using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
 using Forestry.Flo.Services.Applicants.Models;
-using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -247,7 +246,7 @@ public class ConditionsUseCaseSendToApplicantTests
 
         _notificationsService
             .Setup(x => x.SendNotificationAsync(It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(), It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
+            .ReturnsAsync(Result.Failure<Guid>(error));
 
         _getConfiguredFcAreas
             .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -280,6 +279,7 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.PropertyName == applicationDetails.PropertyName
                  && m.SenderEmail == user.EmailAddress
                  && m.AdminHubFooter == adminHubFooter
+                 && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
                  //&& m.SenderName == user.FullName
                  ),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
@@ -338,10 +338,10 @@ public class ConditionsUseCaseSendToApplicantTests
 
         _notificationsService
             .Setup(x => x.SendNotificationAsync(It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(), It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _updateWoodlandOfficerReviewService
-            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Failure(error));
 
         _getConfiguredFcAreas
@@ -374,13 +374,14 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.ViewApplicationURL == expectedUrl
                  && m.PropertyName == applicationDetails.PropertyName
                  && m.SenderEmail == user.EmailAddress
+                 && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
                  && m.SenderName == user.FullName
                  && m.AdminHubFooter == adminHubFooter),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
         _notificationsService.VerifyNoOtherCalls();
 
-        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate == Now.ToDateTimeUtc()), user.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate == Now.ToDateTimeUtc()), user.UserAccountId!.Value, It.IsAny<CancellationToken>(), false), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         _auditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -432,10 +433,10 @@ public class ConditionsUseCaseSendToApplicantTests
 
         _notificationsService
             .Setup(x => x.SendNotificationAsync(It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(), It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _updateWoodlandOfficerReviewService
-            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
 
         _getConfiguredFcAreas
@@ -469,12 +470,13 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.PropertyName == applicationDetails.PropertyName
                  && m.SenderEmail == user.EmailAddress
                  && m.SenderName == user.FullName
+                 && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
                  && m.AdminHubFooter == adminHubFooter),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
         _notificationsService.VerifyNoOtherCalls();
 
-        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate == Now.ToDateTimeUtc()), user.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate == Now.ToDateTimeUtc()), user.UserAccountId!.Value, It.IsAny<CancellationToken>(), false), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         _auditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -526,10 +528,10 @@ public class ConditionsUseCaseSendToApplicantTests
 
         _notificationsService
             .Setup(x => x.SendNotificationAsync(It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(), It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _updateWoodlandOfficerReviewService
-            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
 
         _getConfiguredFcAreas
@@ -568,12 +570,13 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.PropertyName == applicationDetails.PropertyName
                  && m.SenderEmail == user.EmailAddress
                  && m.SenderName == user.FullName
+                 && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
                  && m.AdminHubFooter == adminHubFooter),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
         _notificationsService.VerifyNoOtherCalls();
 
-        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate == Now.ToDateTimeUtc()), user.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.Once);
+        _updateWoodlandOfficerReviewService.Verify(x => x.UpdateConditionalStatusAsync(applicationId, It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate == Now.ToDateTimeUtc()), user.UserAccountId!.Value, It.IsAny<CancellationToken>(), false), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         _auditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>

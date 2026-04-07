@@ -152,7 +152,7 @@ public class InviteWoodlandOwnerToOrganisationUseCaseTests
         _sendNotifications.Setup(s => s.SendNotificationAsync(It.IsAny<InviteWoodlandOwnerToOrganisationDataModel>(),
             It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
               It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
+            .ReturnsAsync(Result.Failure<Guid>(error));
         _sut = CreateSut();
 
         //act

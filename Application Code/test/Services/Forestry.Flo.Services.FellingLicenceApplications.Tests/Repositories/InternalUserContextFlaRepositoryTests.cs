@@ -1072,7 +1072,7 @@ public class InternalUserContextFlaRepositoryTests
     }
 
     [Theory, AutoMoqData]
-    public async Task AddDecisionPublicRegisterDetails_Success(FellingLicenceApplication application)
+    public async Task AddDecisionPublicRegisterDetails_Success(FellingLicenceApplication application, int esriId)
     {
         //Arrange
         var publishedDate = DateTime.UtcNow;
@@ -1081,28 +1081,36 @@ public class InternalUserContextFlaRepositoryTests
         await _fellingLicenceApplicationsContext.SaveEntitiesAsync();
 
         // Act
-        var result = await _sut.AddDecisionPublicRegisterDetailsAsync(application.Id, publishedDate, expiryDate, default);
+        var result = await _sut.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, publishedDate, expiryDate, default);
 
         //Assert
         Assert.True(result.IsSuccess);
-        Assert.True(application.PublicRegister!.DecisionPublicRegisterPublicationTimestamp == publishedDate);
-        Assert.True(application.PublicRegister!.DecisionPublicRegisterExpiryTimestamp == expiryDate);
+        Assert.Equal(publishedDate, application.PublicRegister!.DecisionPublicRegisterPublicationTimestamp);
+        Assert.Equal(expiryDate, application.PublicRegister!.DecisionPublicRegisterExpiryTimestamp);
+        Assert.Equal(esriId, application.PublicRegister!.EsriId);
     }
 
     [Theory, AutoMoqData]
-    public async Task AddDecisionPublicRegisterDetails_ReturnsFailureWhenNoPublicRegisterEntity(FellingLicenceApplication application)
+    public async Task AddDecisionPublicRegisterDetails_SuccessWhenNoPublicRegisterEntity(FellingLicenceApplication application, int esriId)
     {
         //Arrange
+        var publishedDate = DateTime.UtcNow;
+        var expiryDate = publishedDate.AddDays(27);
         application.PublicRegister = null;
         _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
         await _fellingLicenceApplicationsContext.SaveEntitiesAsync();
 
         // Act
-        var result = await _sut.AddDecisionPublicRegisterDetailsAsync(application.Id, DateTime.UtcNow, DateTime.UtcNow, default);
+        var result = await _sut.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, publishedDate, expiryDate, default);
 
         //Assert
-        Assert.True(result.IsFailure);
-        Assert.True(result.Error == UserDbErrorReason.NotFound);
+        Assert.True(result.IsSuccess);
+
+        var entity = _fellingLicenceApplicationsContext.PublicRegister.Single();
+        Assert.Equal(publishedDate, entity.DecisionPublicRegisterPublicationTimestamp);
+        Assert.Equal(expiryDate, entity.DecisionPublicRegisterExpiryTimestamp);
+        Assert.Equal(esriId, entity.EsriId);
+
     }
 
     [Theory, AutoMoqData]

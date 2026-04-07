@@ -4,24 +4,79 @@
 @using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 
 @functions {
-    public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
+    public string GetValueAndMeasure(object? value, string? measure)
     {
         var hasValue = value != null && !string.IsNullOrWhiteSpace(value.ToString());
-        var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
         var hasMeasure = !string.IsNullOrEmpty(measure);
+
+        if (!hasValue)
+        {
+            return string.Empty;
+        }
+
+        if (!hasMeasure)
+        {
+            return value.ToString();
+        }
+
+        var separator = measure is "%" or "m³" ? string.Empty : " ";
+
+        return $"{value.ToString().Trim()}{separator}{measure.Trim()}";
+    }
+
+    public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
+    {
+        var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
 
         if (!hasOldValue)
         {
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">@key</dt>
                 <dd class="govuk-summary-list__value">
-                    @if (hasValue)
+                    @GetValueAndMeasure(value, measure)
+                </dd>
+            </div>
+        }
+        else
+        {
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">@key</dt>
+                <dd class="govuk-summary-list__value">
+                    @GetValueAndMeasure(oldValue, measure)
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row" style="background:#fff3bf;">
+                <dt class="govuk-summary-list__key">
+                    <span aria-hidden="true" style="margin-right: 4px;">↳</span>
+                    @key (amended)
+                </dt>
+                <dd class="govuk-summary-list__value">
+                    @GetValueAndMeasure(value, measure)
+                </dd>
+            </div>
+        }
+    }
+
+    public void RenderSummaryRowWithWarning(string key, string? measure, object? value, object? oldValue = null,
+        bool warningCondition = false, string? warningText = null)
+    {
+        var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
+
+        if (!hasOldValue)
+        {
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">@key</dt>
+                <dd class="govuk-summary-list__value">
+                    @GetValueAndMeasure(value, measure)
+                    @if (warningCondition && !string.IsNullOrWhiteSpace(warningText))
                     {
-                        @value
-                        @if (hasMeasure)
-                        {
-                            @(" " + measure)
-                        }
+                        <div class="govuk-warning-text">
+                            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                            <strong class="govuk-warning-text__text">
+                                <span class="govuk-visually-hidden">Warning</span>
+                                @warningText
+                            </strong>
+                        </div>
                     }
                 </dd>
             </div>
@@ -31,11 +86,7 @@
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">@key</dt>
                 <dd class="govuk-summary-list__value">
-                    @oldValue
-                    @if (hasMeasure)
-                    {
-                        @(" " + measure)
-                    }
+                    @GetValueAndMeasure(oldValue, measure)
                 </dd>
             </div>
             <div class="govuk-summary-list__row" style="background:#fff3bf;">
@@ -44,10 +95,16 @@
                     @key (amended)
                 </dt>
                 <dd class="govuk-summary-list__value">
-                    @value
-                    @if (hasMeasure)
+                    @GetValueAndMeasure(value, measure)
+                    @if (warningCondition && !string.IsNullOrWhiteSpace(warningText))
                     {
-                        @(" " + measure)
+                        <div class="govuk-warning-text">
+                            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                            <strong class="govuk-warning-text__text">
+                                <span class="govuk-visually-hidden">Warning</span>
+                                @warningText
+                            </strong>
+                        </div>
                     }
                 </dd>
             </div>
@@ -103,7 +160,15 @@
             </dd>
         </div>
         @{
-            RenderSummaryRow("Area to be felled", "Ha", Model.AreaToBeFelled, Model.OldValue(nameof(Model.AreaToBeFelled)));
+            var confirmedWarning = Model is { AreaToBeFelled: not null, TotalConfirmedRestockingArea: not null }
+                                   && Math.Abs(Model.AreaToBeFelled.Value - Model.TotalConfirmedRestockingArea.Value) > 0.1;
+            var confirmedWarningText = Model.TotalConfirmedRestockingArea.HasValue
+                ? "The total restocking area is " + Math.Round(Model.TotalConfirmedRestockingArea.Value, 2) + " ha"
+                : null;
+
+            RenderSummaryRowWithWarning(
+                "Area to be felled", "Ha", Model.AreaToBeFelled, Model.OldValue(nameof(Model.AreaToBeFelled)),
+                confirmedWarning, confirmedWarningText);
         }
 
         <div class="govuk-summary-list__row">

@@ -1699,7 +1699,7 @@ FellingLicenceApplication applicationEntity)
                 It.IsAny<NotificationRecipient>(),
                 null, null, null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var result = await sut.SendAmendmentsToApplicant(applicationId, internalUser, "reason", CancellationToken.None);
 
@@ -1818,7 +1818,7 @@ FellingLicenceApplication applicationEntity)
                 It.IsAny<NotificationRecipient>(),
                 null, null, null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("email fail"));
+            .ReturnsAsync(Result.Failure<Guid>("email fail"));
 
         var result = await sut.SendAmendmentsToApplicant(applicationId, internalUser, null, CancellationToken.None);
 

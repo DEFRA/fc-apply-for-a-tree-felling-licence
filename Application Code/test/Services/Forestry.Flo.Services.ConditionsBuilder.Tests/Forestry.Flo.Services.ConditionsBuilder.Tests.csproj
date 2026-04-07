@@ -21,9 +21,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Services\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\..\src\Services\Forestry.Flo.Services.ConditionsBuilder\Forestry.Flo.Services.ConditionsBuilder.csproj" />
     <ProjectReference Include="..\..\Forestry.Flo.Tests.Common\Forestry.Flo.Tests.Common.csproj" />
   </ItemGroup>

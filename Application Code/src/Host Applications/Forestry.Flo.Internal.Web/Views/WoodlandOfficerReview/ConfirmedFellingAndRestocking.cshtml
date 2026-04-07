@@ -28,60 +28,36 @@
     {
         <input type="hidden" id="@item.SubmittedCompartmentId" value="@item.GisData" data-label="@item.Label" data-group="compartments_GIS" name="@item.SubmittedCompartmentId" />
     }
+    
+    @if (Model.AreaWarnings.Any())
+    {
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-visually-hidden">Warning</span>
+                @foreach (var warning in Model.AreaWarnings)
+                {
+                    var compartment = Model.Compartments.Single(x => x.CompartmentId == warning.CompartmentId);
 
-    @functions {
-        public void RenderSummaryRow(string key, string? measure, object? value, object? oldValue = null)
-        {
-            var hasValue = value != null && !string.IsNullOrWhiteSpace(value.ToString());
-            var hasOldValue = oldValue != null && !string.IsNullOrWhiteSpace(oldValue.ToString());
-            var hasMeasure = !string.IsNullOrEmpty(measure);
+                    if (warning.WarningType == ConfirmedFellingAndRestockingWarningType.FellingAreasExceedCompartmentArea)
+                    {
+                        <div>The total felling area for compartment @compartment.CompartmentName exceeds the total area of the compartment.</div>
+                    }
+                    else
+                    {
+                        var fellingDetails = compartment.ConfirmedFellingDetails.Single(x => x.ConfirmedFellingDetailsId == warning.ConfirmedFellingDetailsId);
 
-            if (!hasOldValue || value == oldValue)
-            {
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">@key</dt>
-                    <dd class="govuk-summary-list__value">
-                        @if (hasValue)
-                        {
-                            @value
-                            @if (hasMeasure)
-                            {
-                                @(" " + measure)
-                            }
-                        }
-                    </dd>
-                </div>
-            }
-            else
-            {
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">@key</dt>
-                    <dd class="govuk-summary-list__value">
-                        @oldValue
-                        @if (hasMeasure)
-                        {
-                            @(" " + measure)
-                        }
-                    </dd>
-                </div>
-                <div class="govuk-summary-list__row" style="background:#fff3bf;">
-                    <dt class="govuk-summary-list__key">
-                        <span aria-hidden="true" style="margin-right: 4px;">↳</span>
-                        @key (amended)
-                    </dt>
-                    <dd class="govuk-summary-list__value">
-                        @value
-                        @if (hasMeasure)
-                        {
-                            @(" " + measure)
-                        }
-                    </dd>
-                </div>
-            }
-        }
+                        <div>
+                            <a class="govuk-link govuk-link--no-visited-state" href="#felling-operation-card-@fellingDetails.ConfirmedFellingDetailsId">For @fellingDetails.OperationType.GetDisplayName().ToLower() in compartment @compartment.CompartmentName</a>,
+                            the area to be felled does not match the total restock area.
+                        </div>
+                    }
+                }
+            </strong>
+        </div>
     }
 
-	<form method="post">
+	<form method="post" id="main-form">
 		@for (var i = 0; i < Model.Compartments.Length; i++)
         {
             var compartment = Model.Compartments[i];
@@ -137,7 +113,7 @@
                        id='@($"{viewDivId}-filters")' 
                        value="@(string.Join(",", relevantCompartmentIds.Select(x => x.ToString())))"/>
 
-                <div class="govuk-summary-card" id="felling-operation-card">
+                <div class="govuk-summary-card" id="felling-operation-card-@confirmedFellingDetail.ConfirmedFellingDetailsId">
                     <div class="govuk-summary-card__title-wrapper">
                         <div>
                             <span class="govuk-summary-card__title" style="font-size: 1.1rem;">

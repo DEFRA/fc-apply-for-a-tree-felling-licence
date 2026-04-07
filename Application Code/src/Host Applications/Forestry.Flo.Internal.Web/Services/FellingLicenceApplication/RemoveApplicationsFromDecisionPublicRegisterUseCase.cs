@@ -220,13 +220,15 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
                     ApplicationId = dataModel.PublicRegister.FellingLicenceApplicationId
                 };
 
-            var notificationResult =
-                await _sendNotifications.SendNotificationAsync(
-                        notificationModel,
-                        NotificationType.InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure,
-                        recipient,
-                        cancellationToken: cancellationToken)
-                    .Map(() => notificationsSent++);
+            var notificationResult = await _sendNotifications.SendNotificationAsync(
+                notificationModel,
+                NotificationType.InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure,
+                recipient,
+                cancellationToken: cancellationToken);
+            if (notificationResult.IsSuccess)
+            {
+                notificationsSent++;
+            }
 
             if (notificationResult.IsFailure)
             {

@@ -20,4 +20,9 @@ public class ConditionsBuilderOptions
     /// Gets and sets the conditions options for condition Coppice Regrowth.
     /// </summary>
     public ConditionOptions CoppiceRegrowthOptions { get; set; }
+
+    /// <summary>
+    /// Gets and sets the conditions options for CBW applications.
+    /// </summary>
+    public ConditionOptions CBWOptions { get; set; }
 }

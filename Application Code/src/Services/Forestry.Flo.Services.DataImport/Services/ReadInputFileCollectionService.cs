@@ -9,6 +9,7 @@ using Forestry.Flo.Services.FileStorage.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
+using CsvHelper.Configuration;
 
 namespace Forestry.Flo.Services.DataImport.Services;
 
@@ -102,8 +103,13 @@ public class ReadInputFileCollectionService : IReadImportFileCollections
         {
             result = [];
             using var reader = new StreamReader(file.OpenReadStream());
-            using var csv = new CsvReader(reader, CultureInfo.CurrentUICulture);
-            csv.Context.TypeConverterOptionsCache.AddOptions<DateTime>(_britishDateConverterOptions);
+            var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                PrepareHeaderForMatch = args => args.Header.ToLower().Trim()
+            };
+            using var csv = new CsvReader(reader, csvConfig);
+            csv.Context.TypeConverterOptionsCache.AddOptions<DateOnly>(_britishDateConverterOptions);
+            csv.Context.TypeConverterOptionsCache.AddOptions<DateOnly?>(_britishDateConverterOptions);
             result.AddRange(csv.GetRecords<T>());
 
             return true;

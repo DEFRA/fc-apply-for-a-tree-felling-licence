@@ -11,6 +11,7 @@ using NodaTime;
 using Notify.Client;
 using Notify.Exceptions;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Notify.Interfaces;
 using Newtonsoft.Json;
 
@@ -63,6 +64,7 @@ public class SendNotificationsByGovUkNotify : SendNotificationsBase
 
         var allRecipients = recipients.Concat(copyToRecipients ?? [])
             .Select(r => r.Address)
+            .Distinct()
             .ToArray();
 
         try
@@ -75,18 +77,21 @@ public class SendNotificationsByGovUkNotify : SendNotificationsBase
 
             var personalisation = GetPersonalisation(model, attachments, false);
             var replyToId = string.IsNullOrWhiteSpace(_options.ReplyToId) ? null : _options.ReplyToId;
+            var content = string.Empty;
 
             foreach (var recipientAddress in allRecipients)
             {
-                await _client.SendEmailAsync(
+                var response = await _client.SendEmailAsync(
                     recipientAddress,
                     templateId,
                     personalisation,
                     emailReplyToId: replyToId)
                     .ConfigureAwait(false);
+
+                content = response.content.body;
             }
 
-            return Result.Success(JsonConvert.SerializeObject(model));
+            return Result.Success(content);
         }
         catch (NotifyClientException e)
         {

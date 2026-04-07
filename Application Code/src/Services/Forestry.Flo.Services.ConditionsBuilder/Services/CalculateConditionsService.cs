@@ -20,6 +20,7 @@ public class CalculateConditionsService : ICalculateConditions
     private readonly IConditionsBuilderRepository _repository;
     private readonly IEnumerable<IBuildCondition> _conditions;
     private readonly RequestContext _requestContext;
+    private readonly IBuildCBWCondition _cbwConditionBuilder;
     private readonly ILogger<CalculateConditionsService> _logger;
 
     /// <summary>
@@ -27,12 +28,14 @@ public class CalculateConditionsService : ICalculateConditions
     /// </summary>
     /// <param name="repository">An <see cref="IConditionsBuilderRepository"/> implementation to store calculated conditions.</param>
     /// <param name="conditions">A set of <see cref="IBuildCondition"/> implementations that build the conditions.</param>
+    /// <param name="cbwConditionBuilder">A <see cref="IBuildCBWCondition"/> implementation for specific CBW applications.</param>
     /// <param name="auditService">An <see cref="IAuditService{T}"/> implementation to audit operation outcomes.</param>
     /// <param name="requestContext">The request context for the operation.</param>
     /// <param name="logger">An <see cref="ILogger"/> implementation to log out messages.</param>
     public CalculateConditionsService(
         IConditionsBuilderRepository repository,
         IEnumerable<IBuildCondition> conditions,
+        IBuildCBWCondition cbwConditionBuilder,
         IAuditService<CalculateConditionsService> auditService,
         RequestContext requestContext,
         ILogger<CalculateConditionsService> logger)
@@ -41,6 +44,7 @@ public class CalculateConditionsService : ICalculateConditions
         _auditService = Guard.Against.Null(auditService);
         _conditions = Guard.Against.Null(conditions);
         _requestContext = Guard.Against.Null(requestContext);
+        _cbwConditionBuilder = Guard.Against.Null(cbwConditionBuilder);
         _logger = logger;
     }
 
@@ -48,47 +52,55 @@ public class CalculateConditionsService : ICalculateConditions
     public async Task<Result<ConditionsResponse>> CalculateConditionsAsync(
         CalculateConditionsRequest request, 
         Guid performingUserId,
+        bool isForCBWApplication,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Request received to calculate conditions for {RestockingCount} restocking operations", request.RestockingOperations.Count);
 
         var calculatedConditions = new List<CalculatedCondition>();
-        foreach (var buildCondition in _conditions)
+
+        if (isForCBWApplication)
         {
-            var operations = request.RestockingOperations
-                .Where(x => buildCondition.AppliesToOperation(x))
-                .ToList();
-
-            if (operations.NotAny())
+            var conditionResult = _cbwConditionBuilder.CalculateCBWCondition(request.RestockingOperations);
+            if (conditionResult.IsFailure)
             {
-                _logger.LogDebug("No restocking operations applicable for condition {ConditionName}", buildCondition.GetType().FullName);
-                continue;
-            }
-
-            _logger.LogDebug("Condition {ConditionName} processing {Count} applicable restocking operations", buildCondition.GetType().FullName, operations.Count);
-            var (_, isFailure, nextConditions, error) = buildCondition.CalculateCondition(operations);
-
-            if (isFailure)
-            {
-                _logger.LogError("Calculating conditions for condition {ConditionName} failed with error {Error}", buildCondition.GetType().FullName, error);
+                _logger.LogError("Calculating conditions for CBW application failed with error {Error}", conditionResult.Error);
                 await RaiseAuditAsync(
                     AuditEvents.ConditionsBuiltForApplicationFailure,
                     request.FellingLicenceApplicationId,
-                    performingUserId, 
+                    performingUserId,
                     new
                     {
                         IsDraft = request.IsDraft,
-                        Error = error
+                        Error = conditionResult.Error
                     });
-                return Result.Failure<ConditionsResponse>(error);
+                return Result.Failure<ConditionsResponse>(conditionResult.Error);
             }
-
-            calculatedConditions.AddRange(nextConditions);
+            calculatedConditions.Add(conditionResult.Value);
+        }
+        else
+        {
+            var conditionResult = CalculateStandardConditions(request);
+            if (conditionResult.IsFailure)
+            {
+                _logger.LogError("Calculating conditions for standard application failed with error {Error}", conditionResult.Error);
+                await RaiseAuditAsync(
+                    AuditEvents.ConditionsBuiltForApplicationFailure,
+                    request.FellingLicenceApplicationId,
+                    performingUserId,
+                    new
+                    {
+                        IsDraft = request.IsDraft,
+                        Error = conditionResult.Error
+                    });
+                return Result.Failure<ConditionsResponse>(conditionResult.Error);
+            }
+            calculatedConditions.AddRange(conditionResult.Value);
         }
 
-        if (request.IsDraft is false)
+        if (!request.IsDraft)
         {
-            _logger.LogDebug("Saving {Count} calculated conditions for application with id {ApplicationId}", 
+            _logger.LogDebug("Saving {Count} calculated conditions for application with id {ApplicationId}",
                 calculatedConditions.Count, request.FellingLicenceApplicationId);
             var saveResult = await SaveConditionsAsync(
                 request.FellingLicenceApplicationId,
@@ -162,6 +174,36 @@ public class CalculateConditionsService : ICalculateConditions
         {
             Conditions = calculatedConditions.ToList()
         };
+    }
+
+    private Result<List<CalculatedCondition>> CalculateStandardConditions(CalculateConditionsRequest request)
+    {
+        var calculatedConditions = new List<CalculatedCondition>();
+        foreach (var buildCondition in _conditions)
+        {
+            var operations = request.RestockingOperations
+                .Where(x => buildCondition.AppliesToOperation(x))
+                .ToList();
+
+            if (operations.NotAny())
+            {
+                _logger.LogDebug("No restocking operations applicable for condition {ConditionName}", buildCondition.GetType().FullName);
+                continue;
+            }
+
+            _logger.LogDebug("Condition {ConditionName} processing {Count} applicable restocking operations", buildCondition.GetType().FullName, operations.Count);
+            var (_, isFailure, nextConditions, error) = buildCondition.CalculateCondition(operations);
+
+            if (isFailure)
+            {
+                _logger.LogError("Calculating conditions for condition {ConditionName} failed with error {Error}", buildCondition.GetType().FullName, error);
+                return Result.Failure<List<CalculatedCondition>>(error);
+            }
+
+            calculatedConditions.AddRange(nextConditions);
+        }
+
+        return Result.Success(calculatedConditions);
     }
 
     private async Task<Result> SaveConditionsAsync(

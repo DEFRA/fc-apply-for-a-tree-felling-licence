@@ -55,6 +55,13 @@ public class ExternalConsulteeInviteFormModel: FellingLicenceApplicationPageView
     public bool? ExemptFromConsultationPublicRegister { get; set; }
 
     /// <summary>
+    /// Gets and sets the reason this application is exempt from the consultation public register,
+    /// if relevant.
+    /// </summary>
+    [DisplayName("Reason for exemption")]
+    public string? ExemptFromConsultationPublicRegisterReason { get; set; }
+
+    /// <summary>
     /// Gets and sets a flag indicating whether the woodland officer has already completed the
     /// public register stage for this application i.e. decided it is exempt, or published it.
     /// </summary>

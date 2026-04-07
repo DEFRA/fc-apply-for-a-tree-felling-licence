@@ -85,29 +85,38 @@ public class ConfirmedRestockingDetailValidator : AbstractValidator<ConfirmedRes
             .WithMessage(x => $"Compartment {compartment.CompartmentName} - No restocking species should be listed with a restocking proposal of {x.RestockingProposal!.GetDisplayName()}")
             .When(m => m.RestockingProposal is TypeOfProposal.None or TypeOfProposal.DoNotIntendToRestock);
 
-                // check percent open space is a valid percentage when it has been entered (0 is a valid percentage in this case)
-                RuleFor(m => m.PercentOpenSpace)
-                    .Must(m => m is >= 0 and <= 100)
-                    .WithMessage(x => $"Compartment {compartment.CompartmentName} - Open space must be between zero and 100%")
-                    .When(m => m.PercentOpenSpace is not null);
+        // check percent open space is a valid percentage when it has been entered (0 is a valid percentage in this case)
+        RuleFor(m => m.PercentOpenSpace)
+            .Must(m => m is >= 0 and <= 100)
+            .WithMessage(x => $"Compartment {compartment.CompartmentName} - Open space must be between zero and 100%")
+            .When(m => m.PercentOpenSpace is not null);
 
-                // check percent natural regeneration is a valid percentage when it has been entered (0 is a valid percentage in this case)
-                RuleFor(m => m.PercentNaturalRegeneration)
-                    .Must(m => m is >= 0 and <= 100)
-                    .WithMessage(x => $"Compartment {compartment.CompartmentName} - Natural regeneration must be between zero and 100%")
-                    .When(m => m.PercentNaturalRegeneration is not null);
+        // check percent natural regeneration is a valid percentage when it has been entered (0 is a valid percentage in this case)
+        RuleFor(m => m.PercentNaturalRegeneration)
+            .Must(m => m is >= 0 and <= 100)
+            .WithMessage(x => $"Compartment {compartment.CompartmentName} - Natural regeneration must be between zero and 100%")
+            .When(m => m.PercentNaturalRegeneration is not null);
 
-                // When TPO is selected the TPO reference must be added
-                RuleFor(m => confirmedFellingDetail.TreePreservationOrderReference)
-                    .Must(m => !string.IsNullOrEmpty(m))
-                    .WithMessage(x => $"Compartment {compartment.CompartmentName} - Tree Preservation Order Reference must be provided.")
-                    .When(m => confirmedFellingDetail.IsPartOfTreePreservationOrder is true);
+        // When TPO is selected the TPO reference must be added
+        RuleFor(m => confirmedFellingDetail.TreePreservationOrderReference)
+            .Must(m => !string.IsNullOrEmpty(m))
+            .WithMessage(x => $"Compartment {compartment.CompartmentName} - Tree Preservation Order Reference must be provided.")
+            .When(m => confirmedFellingDetail.IsPartOfTreePreservationOrder is true);
 
-                // When CA is selected the CA reference must be added
-                RuleFor(m => confirmedFellingDetail.ConservationAreaReference)
-                    .Must(m => !string.IsNullOrEmpty(m))
-                    .WithMessage(x => $"Compartment {compartment.CompartmentName} - Conservation Area Reference must be provided.")
-                    .When(m => confirmedFellingDetail.IsWithinConservationArea is true);
+        // When CA is selected the CA reference must be added
+        RuleFor(m => confirmedFellingDetail.ConservationAreaReference)
+            .Must(m => !string.IsNullOrEmpty(m))
+            .WithMessage(x => $"Compartment {compartment.CompartmentName} - Conservation Area Reference must be provided.")
+            .When(m => confirmedFellingDetail.IsWithinConservationArea is true);
 
+        RuleFor(m => m.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .NotNull()
+            .When(m => m.RestockingProposal.HasValue && m.RestockingProposal.Value.IsCoppiceOrNaturalRegen())
+            .WithMessage($"Compartment {compartment.CompartmentName} - Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration");
+
+        RuleFor(m => m.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .Must(m => m is > 0 and <= 100)
+            .When(m => m.RestockingProposal.HasValue &&m.RestockingProposal.Value.IsCoppiceOrNaturalRegen() && m.PercentageEstablishedByCoppiceOrNaturalRegen.HasValue)
+            .WithMessage($"Compartment {compartment.CompartmentName} - Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration between 0 and 100");
     }
 }

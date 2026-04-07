@@ -773,8 +773,8 @@
                     <dd class="govuk-summary-list__value">
                         @{
                             var supportingDocs = Model.Application.SupportingDocumentation.Documents
-                                                    .Where(x => x.DocumentPurpose is not (DocumentPurpose.WmpDocument or DocumentPurpose.EiaAttachment or DocumentPurpose.TreeHealthAttachment))
-                                                    .ToList();
+                                .Where(x => x.DocumentPurpose is not (DocumentPurpose.WmpDocument or DocumentPurpose.EiaAttachment or DocumentPurpose.TreeHealthAttachment or DocumentPurpose.ConsultationAttachment))
+                                .ToList();
                         }
 
                         @if (supportingDocs.Any())
@@ -798,6 +798,32 @@
                             <div>
                                 No documents uploaded
                             </div>
+                        }
+                    </dd>
+                </div>
+                <div class="govuk-summary-list__row" condition="@Model.Application.SupportingDocumentation.Documents.Any(x => x.DocumentPurpose == DocumentPurpose.ConsultationAttachment)">
+                    <dt class="govuk-summary-list__key">
+                        Consultation documents
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @{
+                            var consultationDocs = Model.Application.SupportingDocumentation.Documents
+                                .Where(x => x.DocumentPurpose is DocumentPurpose.ConsultationAttachment)
+                                .ToList();
+                        }
+
+                        @foreach (var document in consultationDocs)
+                        {
+                            <div>
+                                <a class="hidden-download-supporting-document"
+                                   asp-controller="FellingLicenceApplication"
+                                   asp-action="DownloadSupportingDocument"
+                                   asp-route-applicationId="@Model.Application.ApplicationId"
+                                   asp-route-documentIdentifier="@document.Id">
+                                    @document.FileName
+                                </a>
+                            </div>
+                            <br/>
                         }
                     </dd>
                 </div>
@@ -835,52 +861,58 @@
             </dl>
         </div>
     </div>
+    
+    <div class="govuk-body">
 
-    <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link"
-       Condition="Model.Application.FlaTermsAndConditionsViewModel.AllowEditing">Return to your application</a>
-    <br>
-
-    @{
-        var enabledStatuses = new[]
-        {
-            FellingLicenceStatus.Draft,
-            FellingLicenceStatus.WithApplicant,
-            FellingLicenceStatus.ReturnedToApplicant
-        };
-
-        var finalStatuses = new[]
-        {
-            FellingLicenceStatus.Approved,
-            FellingLicenceStatus.Refused,
-            FellingLicenceStatus.ReferredToLocalAuthority,
-            FellingLicenceStatus.Withdrawn
-        };
-
-        if (enabledStatuses.Contains(Model.Application.ApplicationSummary.Status))
-        {
-            if (Model.Application.IsComplete)
+        @{
+            var enabledStatuses = new[]
             {
-                <a class="govuk-button" data-module="govuk-button" asp-action="ConfirmSubmitFellingLicenceApplication" asp-route-applicationId="@Model.Application.ApplicationId"> Submit application</a>
+                FellingLicenceStatus.Draft,
+                FellingLicenceStatus.WithApplicant,
+                FellingLicenceStatus.ReturnedToApplicant
+            };
+
+            var finalStatuses = new[]
+            {
+                FellingLicenceStatus.Approved,
+                FellingLicenceStatus.Refused,
+                FellingLicenceStatus.ReferredToLocalAuthority,
+                FellingLicenceStatus.Withdrawn
+            };
+
+            if (enabledStatuses.Contains(Model.Application.ApplicationSummary.Status))
+            {
+                <div class="govuk-button-group">
+
+                    @if (Model.Application.IsComplete)
+                    {
+                        <a class="govuk-button" data-module="govuk-button" asp-action="ConfirmSubmitFellingLicenceApplication" asp-route-applicationId="@Model.Application.ApplicationId"> Submit application</a>
+                    }
+                    else
+                    {
+                        <button class="govuk-button" data-module="govuk-button" disabled="disabled">Submit application</button>
+                    }
+                    <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link">Return to your application</a>
+
+                </div>
+            }
+            else if (finalStatuses.Contains(Model.Application.ApplicationSummary.Status))
+            {
+                var text = Model.Application.ApplicationSummary.Status == FellingLicenceStatus.ReferredToLocalAuthority
+                    ? "is in consultation with your local authority."
+                    : $"has been {Model.Application.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
+
+                <p class="govuk-body">This application @text</p>
+                <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link">Return to your application</a>
             }
             else
             {
-                <button class="govuk-button" data-module="govuk-button" disabled="disabled">Submit application</button>
+                <p class="govuk-body">This application has been submitted.</p>
+                <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.Application.ApplicationId" class="govuk-link">Return to your application</a>
             }
         }
-        else if (finalStatuses.Contains(Model.Application.ApplicationSummary.Status))
-        {
-            var text = Model.Application.ApplicationSummary.Status == FellingLicenceStatus.ReferredToLocalAuthority
-                ? "is in consultation with your local authority."
-                : $"has been {Model.Application.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant).ToLower()}.";
 
-            <p class="govuk-body">This application @text</p>
-        }
-        else
-        {
-            <p class="govuk-body">This application has been submitted.</p>
-        }
-    }
-
+    </div>
 </div>
 
 @section Css {

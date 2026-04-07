@@ -393,7 +393,10 @@ public class ImportApplicationsService : IImportApplications
             NumberOfTrees = proposal.IsNumberOfTreesRestockingType()
                 ? restocking.NumberOfTrees
                 : null,
-            RestockingSpecies = restockingSpecies
+            RestockingSpecies = restockingSpecies,
+            PercentageEstablishedByCoppiceOrNaturalRegen = proposal.IsCoppiceOrNaturalRegen()
+                ? restocking.PercentageEstablishedByCoppiceOrNaturalRegen
+                : null
         };
     }
 }

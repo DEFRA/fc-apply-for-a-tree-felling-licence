@@ -1,16 +1,13 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Infrastructure;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FileStorage.Model;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using FlaEntities = Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
@@ -53,8 +50,8 @@ public class AddDocumentFromExternalSystemUseCase
     /// <param name="contentType">The content-type of the document which has been sent</param>
     /// <param name="documentPurpose">The DocumentPurpose</param>
     /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task<IActionResult> AddLisConstraintReportAsync(
+    /// <returns>The ID of the stored document if successful, otherwise a failure result.</returns>
+    public async Task<Result<Guid>> AddLisConstraintReportAsync(
         Guid applicationId, 
         byte[] fileBytes,
         string fileName,
@@ -67,7 +64,7 @@ public class AddDocumentFromExternalSystemUseCase
         if (isFailure)
         {
             await AuditApiLisFailureAsync(applicationId, error, cancellationToken);
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            return Result.Failure<Guid>("Application not in a state to receive LIS report");
         }
 
         var fileModel = new FileToStoreModel { ContentType = contentType, FileBytes = fileBytes, FileName = fileName };
@@ -75,7 +72,7 @@ public class AddDocumentFromExternalSystemUseCase
         var addDocumentRequest = new AddDocumentsRequest
         {
             ActorType = ActorType.System,
-            ApplicationDocumentCount = fellingApplication.Documents!.Count(x => x.DeletionTimestamp is null),
+            ApplicationDocumentCount = 0,  // don't check docs count for LIS documents
             DocumentPurpose = documentPurpose,
             FellingApplicationId = fellingApplication.Id,
             FileToStoreModels = new List<FileToStoreModel> { fileModel },
@@ -96,7 +93,7 @@ public class AddDocumentFromExternalSystemUseCase
                 _logger.LogWarning("Unable to add document due to error - {error}.", errorMsg);
             }
             await AuditApiLisFailureAsync(applicationId, string.Join(",", addDocResult.Error.UserFacingFailureMessages), cancellationToken);
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            return Result.Failure<Guid>("Failed to store received LIS document");
         }
 
         _logger.LogDebug("Document named {filename}, having type of {type}, size of {size} bytes and purpose of {documentPurpose} was " +
@@ -104,7 +101,7 @@ public class AddDocumentFromExternalSystemUseCase
             ,fileModel.FileName, fileModel.ContentType, fileModel.FileBytes.Length, documentPurpose, fellingApplication.Id, fellingApplication.ApplicationReference);
         
         await AuditApiLisSuccessAsync(fellingApplication.Id, fileModel, documentPurpose, cancellationToken);
-        return new StatusCodeResult(StatusCodes.Status201Created);
+        return Result.Success(addDocResult.Value.DocumentIds.Single());
     }
 
     /// <summary>
@@ -117,10 +114,7 @@ public class AddDocumentFromExternalSystemUseCase
         CancellationToken cancellationToken)
     {
         // can "impersonate" an FC user as this is a system-triggered use case
-        var userAccessModel = new UserAccessModel
-        {
-            IsFcUser = true
-        };
+        var userAccessModel = UserAccessModel.SystemUserAccessModel;
 
         var fellingLicenceApplication = await _fellingLicenceApplicationService.GetApplicationByIdAsync(applicationId, userAccessModel, cancellationToken);
 

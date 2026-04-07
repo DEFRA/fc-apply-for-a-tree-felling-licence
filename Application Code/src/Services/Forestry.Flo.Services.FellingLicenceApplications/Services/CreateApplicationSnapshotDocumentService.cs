@@ -35,13 +35,6 @@ public class CreateApplicationSnapshotDocumentService : ICreateApplicationSnapsh
     {
         try
         {
-            var fla = await _fellingLicenceApplicationInternalRepository.GetAsync(applicationId, cancellationToken);
-            if (fla.HasNoValue)
-            {
-                _logger.LogError("Could not retrieve application with id {ApplicationId}", applicationId);
-                return Result.Failure<byte[]>($"Could not retrieve application with id {applicationId}");
-            }
-
             _logger.LogDebug("Attempting to send request for pdf of application with id {ApplicationId}", applicationId);
 
             var request = new HttpRequestMessage(HttpMethod.Post, _options.BaseUrl);

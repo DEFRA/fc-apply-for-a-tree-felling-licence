@@ -42,6 +42,13 @@ namespace Forestry.Flo.Services.Gis.Models.Esri.Responses.PublicRegister
         public string EmailAddress { get; set; } = null!;
 
         /// <summary>
+        /// The organisation of the person making the comment
+        /// </summary>
+        [JsonProperty("organisation")]
+        [MaxLength(50)]
+        public string Organisation { get; set; } = null!;
+
+        /// <summary>
         /// The comments on the visit
         /// </summary>
         [JsonProperty("comment")]

@@ -35,7 +35,7 @@
         <div class="govuk-form-group">
             <fieldset class="govuk-fieldset">
                 <legend>
-                    <h1 class="govuk-heading-m">Leave a comment (optional)</h1>
+                    <h1 class="govuk-heading-m">Leave a comment</h1>
                 </legend>
 
                 <div class="govuk-hint">
@@ -47,22 +47,29 @@
                     <validation asp-for="AuthorName"/>
                     <input class="govuk-input" asp-for="AuthorName"/>
                 </govuk-form-group>
-
+                <govuk-form-group asp-for="AuthorOrganisation">
+                    <label class="govuk-label" asp-for="AuthorOrganisation"></label>
+                    <validation asp-for="AuthorOrganisation" />
+                    <input class="govuk-input" asp-for="AuthorOrganisation" />
+                </govuk-form-group>
+                <govuk-form-group asp-for="AuthorJobRole">
+                    <label class="govuk-label" asp-for="AuthorJobRole"></label>
+                    <validation asp-for="AuthorJobRole" />
+                    <input class="govuk-input" asp-for="AuthorJobRole" />
+                </govuk-form-group>
                 <govuk-form-group asp-for="Comment">
                     <label class="govuk-label" asp-for="Comment"></label>
                     <validation asp-for="Comment"/>
-                    <textarea id="Comment" class="govuk-textarea govuk-js-character-count" rows="4" asp-for="Comment"></textarea>
-                    <div class="govuk-hint govuk-character-count__message">
-                        You can enter up to @DataValueConstants.ConsulteeCommentMaxLength characters
-                    </div>
+                    <textarea id="Comment" class="govuk-textarea" rows="4" asp-for="Comment"></textarea>
                 </govuk-form-group>
 
                 <div class="govuk-form-group" id="file-select-group">
-                    <label for="supporting-documentation-files" class="govuk-label">Upload a file</label>
+                    <label for="supporting-documentation-files" class="govuk-label govuk-label--m">Upload additional information</label>
                     <p id="supporting-documentation-files-error" class="govuk-error-message govuk-visually-hidden" aria-hidden="true">
                         <span class="govuk-visually-hidden">Error:</span><span id="file-upload-error-text"></span>
                     </p>
-                    <input type="file" multiple class="custom-file-input govuk-file-upload" id="supporting-documentation-files" name="consulteeAttachmentFiles" runat="server"/>
+                    <div id="file-upload-hint" class="govuk-hint">Add any additional information as part of your response.</div>
+                    <input type="file" multiple class="custom-file-input govuk-file-upload" id="supporting-documentation-files" name="consulteeAttachmentFiles" runat="server" aria-describedby="file-upload-hint"/>
                 </div>
 
                 <div class="govuk-grid-row">

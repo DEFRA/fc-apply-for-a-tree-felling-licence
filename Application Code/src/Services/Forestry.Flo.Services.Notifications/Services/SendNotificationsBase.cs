@@ -38,7 +38,7 @@ public abstract class SendNotificationsBase : ISendNotifications
     }
 
     /// <inheritdoc />
-    public Task<Result> SendNotificationAsync<T>(
+    public Task<Result<Guid>> SendNotificationAsync<T>(
         T model,
         NotificationType notificationType,
         NotificationRecipient recipient,
@@ -59,7 +59,7 @@ public abstract class SendNotificationsBase : ISendNotifications
     }
 
     /// <inheritdoc />
-    public Task<Result> SendNotificationAsync<T>(
+    public Task<Result<Guid>> SendNotificationAsync<T>(
         T model,
         NotificationType notificationType,
         NotificationRecipient[] recipients,
@@ -139,7 +139,7 @@ public abstract class SendNotificationsBase : ISendNotifications
         bool forPreview = false,
         CancellationToken cancellationToken = default);
 
-    private async Task<Result> SendAndLogNotificationAsync<T>(
+    private async Task<Result<Guid>> SendAndLogNotificationAsync<T>(
         [DisallowNull]T model,
         NotificationType notificationType,
         NotificationRecipient[] recipients,
@@ -154,7 +154,7 @@ public abstract class SendNotificationsBase : ISendNotifications
 
         if (result.IsFailure)
         {
-            return result.ConvertFailure();
+            return result.ConvertFailure<Guid>();
         }
 
         return await AddToNotificationHistoryAsync(
@@ -187,7 +187,7 @@ public abstract class SendNotificationsBase : ISendNotifications
         return applicationModel?.ApplicationId;
     }
 
-    private async Task<Result> AddToNotificationHistoryAsync<T>(
+    private async Task<Result<Guid>> AddToNotificationHistoryAsync<T>(
         [DisallowNull] T model,
         NotificationType notificationType,
         NotificationRecipient[] recipients,
@@ -196,7 +196,7 @@ public abstract class SendNotificationsBase : ISendNotifications
         string? content,
         CancellationToken cancellationToken)
     {
-        _notificationHistoryRepository.Add(new NotificationHistory
+        var entity = new NotificationHistory
         {
             Recipients = GetRecipients(recipients, copyToRecipients),
             Source = senderName,
@@ -205,13 +205,16 @@ public abstract class SendNotificationsBase : ISendNotifications
             NotificationType = notificationType,
             ApplicationReference = GetApplicationReference(model),
             ApplicationId = GetApplicationId(model)
-        });
+        };
+
+        _notificationHistoryRepository.Add(entity);
 
         await _notificationHistoryRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken)
             .OnFailure(e => _logger.LogError(
                 "Email send history not saved for the recipients: {Recipients}",
                 string.Join(", ", recipients.Select(x => x.Address))))
             .ConfigureAwait(false);
-        return Result.Success();
+
+        return Result.Success(entity.Id);
     }
 }

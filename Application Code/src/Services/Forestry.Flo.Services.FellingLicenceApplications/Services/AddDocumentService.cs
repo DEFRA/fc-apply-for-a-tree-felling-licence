@@ -145,7 +145,7 @@ public class AddDocumentService : IAddDocumentService
         {
             var exceedsMaximumDocumentsPerUser =
                 addDocumentsRequest.ApplicationDocumentCount + addDocumentsRequest.FileToStoreModels.Count > _userFileUploadOptions.MaxNumberDocuments
-                && addDocumentsRequest.DocumentPurpose != DocumentPurpose.WmpDocument;  // only EIA/supporting docs are limited; WMP docs are not
+                && DocumentConstants.ExternalDocumentTypesWithCountLimitation.Contains(addDocumentsRequest.DocumentPurpose);
 
             if (!exceedsMaximumDocumentsPerUser)
             {

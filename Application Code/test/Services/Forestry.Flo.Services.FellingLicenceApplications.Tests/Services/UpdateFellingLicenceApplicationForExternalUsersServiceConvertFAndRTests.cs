@@ -126,6 +126,8 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceConvertFAndRT
 
                     Assert.Equal(proposedRestock.Area, confirmedRestock.Area);
                     Assert.Equal(proposedRestock.PercentageOfRestockArea, confirmedRestock.PercentageOfRestockArea);
+                    Assert.Equal(proposedRestock.PercentageOfFellingArea, confirmedRestock.PercentageOfFellingArea);
+                    Assert.Equal(proposedRestock.PercentageEstablishedByCoppiceOrNaturalRegen, confirmedRestock.PercentageEstablishedByCoppiceOrNaturalRegen);
                     Assert.Equal(proposedRestock.RestockingDensity, confirmedRestock.RestockingDensity);
                     Assert.Equal(proposedRestock.RestockingProposal, confirmedRestock.RestockingProposal);
                     Assert.Equal(proposedRestock.PropertyProfileCompartmentId, submitedCompartment.CompartmentId);
@@ -275,6 +277,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceConvertFAndRT
                 RestockingProposal = TypeOfProposal.ReplantTheFelledArea,
                 PropertyProfileCompartmentId = compartmentId1,
                 PercentageOfRestockArea = 40,
+                PercentageOfFellingArea = 50,
                 RestockingDensity = 56
             }
         };
@@ -331,6 +334,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersServiceConvertFAndRT
                 Area = 66,
                 RestockingProposal = TypeOfProposal.CreateDesignedOpenGround,
                 PercentageOfRestockArea = 12,
+                PercentageOfFellingArea = 24,
                 RestockingDensity = 89,
                 SubmittedFlaPropertyCompartmentId = submittedFlaCompartmentId1,
                 ConfirmedRestockingSpecies = { confirmedRestockingSpecie }

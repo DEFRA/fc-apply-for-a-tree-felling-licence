@@ -17,4 +17,5 @@ public class ProposedCompartmentDetailReportEntry
     public string? NoRestockingReason { get; set; }
     public string? ProposedFellingReference { get; set; }
     public double? RestockingDensity { get; set; }
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 }

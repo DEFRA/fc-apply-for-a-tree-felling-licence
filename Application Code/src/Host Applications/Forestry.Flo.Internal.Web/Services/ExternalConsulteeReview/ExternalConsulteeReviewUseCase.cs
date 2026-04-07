@@ -14,10 +14,14 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Services.Notifications.Entities;
+using Forestry.Flo.Services.Notifications.Models;
+using Forestry.Flo.Services.Notifications.Services;
 using Microsoft.AspNetCore.Mvc;
 using NodaTime;
 
@@ -25,6 +29,9 @@ namespace Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 
 public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBase, IExternalConsulteeReviewUseCase
 {
+    private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
+    private readonly IUserAccountService _internalUserAccountService;
+    private readonly ISendNotifications _sendNotifications;
     private readonly IAddDocumentService _addDocumentService;
     private readonly IRemoveDocumentService _removeDocumentService;
     private readonly IGetDocumentServiceInternal _getDocumentService;
@@ -47,6 +54,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         IAddDocumentService addDocumentService,
         IRemoveDocumentService removeDocumentService,
         IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
+        ISendNotifications sendNotifications,
         ILogger<ExternalConsulteeReviewUseCase> logger,
         RequestContext requestContext,
         IClock clock) : base(
@@ -58,6 +66,9 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         getConfiguredFcAreasService,
         woodlandOfficerReviewSubStatusService)
     {
+        _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
+        _internalUserAccountService = Guard.Against.Null(internalUserAccountService);
+        _sendNotifications = Guard.Against.Null(sendNotifications);
         _addDocumentService = Guard.Against.Null(addDocumentService);
         _removeDocumentService = Guard.Against.Null(removeDocumentService);
         _getDocumentService = Guard.Against.Null(getDocumentService);
@@ -169,7 +180,13 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
                 LinkExpiryDateTime = externalInviteLink.ExpiresTimeStamp,
                 AccessCode = accessCode
             },
-            ActivityFeed = feed
+            ActivityFeed = feed,
+            PublicRegister = new PublicRegisterModel
+            {
+                // we only need these two fields for the external consultee review page, so we can populate a simplified model here rather than mapping the full public register model
+                WoodlandOfficerSetAsExemptFromConsultationPublicRegister = fla.PublicRegister?.WoodlandOfficerSetAsExemptFromConsultationPublicRegister is true,
+                WoodlandOfficerConsultationPublicRegisterExemptionReason = fla.PublicRegister?.WoodlandOfficerConsultationPublicRegisterExemptionReason
+            }
         };
 
         return Result.Success(result);
@@ -178,6 +195,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
     public async Task<Result> AddConsulteeCommentAsync(
         AddConsulteeCommentModel model,
         FormFileCollection consulteeAttachmentFiles,
+        string viewApplicationUrl,
         CancellationToken cancellationToken)
     {
         Guard.Against.Null(model);
@@ -268,6 +286,11 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             return Result.Failure(addCommentResult.Error);
         }
 
+        if (addCommentResult.Value.AssignedFcStaff.Length > 0)
+        {
+            await SendInternalNotification(model, addCommentResult.Value, viewApplicationUrl, cancellationToken);
+        }
+
         await _auditService.PublishAuditEventAsync(new AuditEvent(
             AuditEvents.AddConsulteeComment,
             model.ApplicationId,
@@ -345,5 +368,52 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         }
 
         return result;
+    }
+
+    private async Task SendInternalNotification(
+        AddConsulteeCommentModel commentModel,
+        ConsulteeCommentNotificationModel applicationValues,
+        string viewApplicationUrl,
+        CancellationToken cancellationToken)
+    {
+        var staff = await _internalUserAccountService.RetrieveUserAccountsByIdsAsync(applicationValues.AssignedFcStaff.ToList(), cancellationToken);
+
+        if (staff.IsFailure)
+        {
+            _logger.LogError("Unable to retrieve internal users for application {ApplicationId} to send consultee comment notification, error: {Error}", 
+                commentModel.ApplicationId, staff.Error);
+            return;
+        }
+
+        var staffRecipients = staff.Value
+            .Select(s => new NotificationRecipient(s.Email, s.FullName));
+        var adminHub =
+            await _getConfiguredFcAreasService.TryGetAdminHubAddress(applicationValues.AdminHub, cancellationToken);
+
+        var notificationDataModel = new InformFcStaffOfConsulteeCommentDataModel
+        {
+            ApplicationId = commentModel.ApplicationId,
+            AdminHubFooter = adminHub,
+            ApplicationReference = applicationValues.ApplicationReference,
+            CommentReceivedDate = _clock.GetCurrentInstant().ToDateTimeUtc().CreateFormattedDate(),
+            ConsulteeFullName = commentModel.AuthorName,
+            ConsulteeJobRole = commentModel.AuthorJobRole,
+            ConsulteeOrganisation = commentModel.AuthorOrganisation,
+            PropertyName = applicationValues.PropertyName,
+            ViewApplicationURL = viewApplicationUrl,
+            CommentText = commentModel.Comment
+        };
+
+        var sendResult = await _sendNotifications.SendNotificationAsync(
+            notificationDataModel,
+            NotificationType.InformFcStaffOfConsulteeCommentReceived,
+            staffRecipients.ToArray(),
+            cancellationToken: cancellationToken);
+
+        if (sendResult.IsFailure)
+        {
+            _logger.LogError("Failed to send notifications for new consultee comment on application with id {ApplicationId}, error: {Error}",
+                commentModel.ApplicationId, sendResult.Error);
+        }
     }
 }

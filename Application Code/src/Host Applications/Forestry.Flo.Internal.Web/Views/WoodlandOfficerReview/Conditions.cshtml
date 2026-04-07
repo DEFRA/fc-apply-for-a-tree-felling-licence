@@ -21,7 +21,8 @@
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
             <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
-            The felling and restocking details are not yet confirmed. Conditions should be regenerated once the felling and restocking is confirmed.
+            The felling and restocking details are not yet confirmed. Conditions should be generated/regenerated and sent to the applicant once 
+            the felling and restocking is confirmed.
         </strong>
     </div>
     
@@ -37,9 +38,19 @@
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
             <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
-            Conditions from a previous version of the felling and restocking (before further amendments were made, or the application was returned to the applicant) 
-            were sent to the applicant on @(Model.ConditionsStatus.OldConditionsToApplicantDate!.Value.ToLocalTime().ToString("F")).
-            You must regenerate and resend the conditions to the applicant.
+            Conditions from a previous version of the felling and restocking (before further amendments were made, or the application 
+            was returned to the applicant) were sent to the applicant on 
+            @(Model.ConditionsStatus.OldConditionsToApplicantDate!.Value.ToLocalTime().ToString("F")).
+            You must regenerate the conditions and send them to the applicant again.
+        </strong>
+    </div>
+    
+    <div class="govuk-warning-text" condition="@(Model.ConditionsStatus.ConditionsToApplicantDate.HasNoValue() && Model.ConditionsStatus.IsConditional is true && Model.ConditionsStatus.OldConditionsToApplicantDate.HasNoValue() && Model.Conditions.Any())">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
+            These conditions are pending - they have not been sent to the applicant yet. You must send the final conditions to the 
+            applicant to complete this task.
         </strong>
     </div>
 

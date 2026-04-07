@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
+using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.External.Web.Services.ExternalApi;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -18,8 +19,7 @@ public class LandInformationSearchApiController : ControllerBase
     const string LisReportContentType = "application/pdf";
     private const string LisReportFileName = "LisReport.pdf";
 
-    public LandInformationSearchApiController(
-        ILogger<LandInformationSearchApiController> logger)
+    public LandInformationSearchApiController(ILogger<LandInformationSearchApiController> logger)
     {
         _logger = logger;
     }
@@ -29,6 +29,8 @@ public class LandInformationSearchApiController : ControllerBase
     public async Task<IActionResult> StoreDocument(
         [FromRoute] string applicationId,
         [FromServices] AddDocumentFromExternalSystemUseCase useCase,
+        [FromServices] ConstraintsCheckUseCase constraintsCheckUseCase,
+        [FromServices] RemoveSupportingDocumentUseCase removeSupportingDocumentUseCase,
         CancellationToken cancellationToken)
     {
         var (_, isFailure, value, error) = await GetAsUseCaseRequestAsync(applicationId, Request, cancellationToken);
@@ -36,13 +38,41 @@ public class LandInformationSearchApiController : ControllerBase
         if (isFailure)
             return error;
         
-        return await useCase.AddLisConstraintReportAsync(
+        var storeDocResult = await useCase.AddLisConstraintReportAsync(
             value.applicationGuid, 
             value.fileBytes,
             LisReportFileName,
             LisReportContentType,
             DocumentPurpose.ExternalLisConstraintReport,
             cancellationToken);
+
+        if (storeDocResult.IsFailure)
+        {
+            _logger.LogError("Failed to store received LIS report for application id {ApplicationId}, error: {Error}",
+                value.applicationGuid, storeDocResult.Error);
+
+            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+        }
+
+        var updateApplicationResult = await constraintsCheckUseCase
+            .RecordReceivedLisReportAsync(value.applicationGuid, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (updateApplicationResult.IsSuccess)
+        {
+            return new StatusCodeResult(StatusCodes.Status201Created);
+        }
+
+        // error handling - attempt to remove the stored document if the application update fails, log the error regardless of the
+        // outcome of the delete attempt
+        _logger.LogError("Failed to record receipt of LIS report for application id {ApplicationId}, error: {Error}",
+            value.applicationGuid, updateApplicationResult.Error);
+
+        await removeSupportingDocumentUseCase.RemoveSupportingDocumentBySystemAsync(
+                value.applicationGuid, storeDocResult.Value, cancellationToken)
+            .ConfigureAwait(false);
+
+        return new StatusCodeResult(StatusCodes.Status500InternalServerError);
     }
 
     private async Task<Result<(Guid applicationGuid, byte[] fileBytes), IActionResult>> GetAsUseCaseRequestAsync(

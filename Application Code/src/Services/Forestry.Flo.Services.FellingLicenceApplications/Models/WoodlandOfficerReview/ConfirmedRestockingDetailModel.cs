@@ -38,9 +38,14 @@ public class ConfirmedRestockingDetailModel
     public int? PercentNaturalRegeneration { get; set; }
 
     /// <summary>
-    /// Gets and sets the percentage of restock area.
+    /// Gets or sets the restock area as a percentage of compartment size.
     /// </summary>
     public double? PercentageOfRestockArea { get; set; }
+
+    /// <summary>
+    /// Gets and sets the restock area as a percentage of felling operation area.
+    /// </summary>
+    public double? PercentageOfFellingArea { get; set; }
 
     /// <summary>
     /// Gets and sets the restocking density.
@@ -48,6 +53,8 @@ public class ConfirmedRestockingDetailModel
     public double? RestockingDensity { get; set; }
 
     public int? NumberOfTrees { get; set; }
+
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 
     /// <summary>
     /// Gets and sets the total hectares for the restocking compartment.

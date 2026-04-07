@@ -343,6 +343,7 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
     /// <inheritdoc />
     public async Task<Result> AddDecisionPublicRegisterDetailsAsync(
         Guid applicationId, 
+        int esriId,
         DateTime publishedDateTime, 
         DateTime expiryDateTime,
         CancellationToken cancellationToken)
@@ -369,7 +370,9 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
             return Result.Failure("Incorrect application current state found");
         }
 
-        var result = await _fellingLicenceApplicationInternalRepository.AddDecisionPublicRegisterDetailsAsync(applicationId,
+        var result = await _fellingLicenceApplicationInternalRepository.AddDecisionPublicRegisterDetailsAsync(
+            applicationId,
+            esriId,
             publishedDateTime,
             expiryDateTime,
             cancellationToken);

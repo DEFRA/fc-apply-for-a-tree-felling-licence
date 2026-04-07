@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
@@ -43,7 +44,7 @@ public class PublicRegisterCommentsUseCase : IPublicRegisterCommentsUseCase
         {
             var applications = await _getFellingLicenceApplicationService.RetrieveApplicationsOnTheConsultationPublicRegisterAsync(cancellationToken);
             int retrievedCount = 0;
-            var today = LocalDate.FromDateTime(_clock.GetCurrentInstant().ToDateTimeUtc());
+            var today = _clock.GetCurrentInstant().ToDateTimeUtc();
             var notificationModels = new List<Flo.Services.Notifications.Models.NotificationHistoryModel>();
 
             foreach (var app in applications)
@@ -51,21 +52,45 @@ public class PublicRegisterCommentsUseCase : IPublicRegisterCommentsUseCase
                 if (string.IsNullOrWhiteSpace(app.ApplicationReference))
                     continue;
 
+                var existingRecordIds = new List<Guid>();
+
+                var existingComments = await _notificationHistoryService.RetrieveNotificationHistoryAsync(
+                    app.ApplicationId, [NotificationType.PublicRegisterComment], cancellationToken);
+                if (existingComments.IsSuccess)
+                {
+                    existingRecordIds = existingComments.Value
+                        .Where(x => x.ExternalId.HasValue)
+                        .Select(x => (Guid)x.ExternalId!).ToList();
+                }
+                else
+                {
+                    _logger.LogDebug("Unable to retrieve existing notification history for application {ApplicationId}", app.ApplicationId);
+                }
+
                 var commentsResult = await _publicRegister.GetCaseCommentsByCaseReferenceAsync(app.ApplicationReference, cancellationToken);
                 if (commentsResult.IsSuccess && commentsResult.Value != null && commentsResult.Value.Count > 0)
                 {
                     retrievedCount += commentsResult.Value.Count;
                     foreach (var comment in commentsResult.Value)
                     {
+                        if (comment.GlobalIDOne.HasValue && existingRecordIds.Contains(comment.GlobalIDOne.Value))
+                        {
+                            _logger.LogInformation("Skipping comment with GlobalIDOne {GlobalIDOne} for application {ApplicationReference} as it already exists in the notification history", 
+                            comment.GlobalIDOne, app.ApplicationReference);
+                            continue;
+                        }
+
+                        var source = JsonSerializer.Serialize(comment);
+
                         notificationModels.Add(new Flo.Services.Notifications.Models.NotificationHistoryModel
                         {
                             Text = comment.CaseNote,
-                            Source = $"{comment.Firstname} {comment.Surname}",
+                            Source = source,
                             Type = NotificationType.PublicRegisterComment,
                             ApplicationReference = app.ApplicationReference,
                             ApplicationId = app.PublicRegister.FellingLicenceApplicationId,
-                            CreatedTimestamp = comment.CreatedDate,
-                            ExternalId = comment.GlobalID
+                            CreatedTimestamp = today,
+                            ExternalId = comment.GlobalIDOne
                         });
                     }
                 }

@@ -70,5 +70,5 @@ public class RestockingOperationDetails
     /// <summary>
     /// Gets and sets the percent of restocking left to natural regeneration.
     /// </summary>
-    public int PercentNaturalRegeneration { get; set; }
+    public double? PercentNaturalRegeneration { get; set; }
 }

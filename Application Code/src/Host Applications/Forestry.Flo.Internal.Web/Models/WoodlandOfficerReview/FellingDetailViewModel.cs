@@ -77,6 +77,11 @@ public class FellingDetailViewModel : CompartmentConfirmedFellingRestockingDetai
     public string? NoRestockingReason { get; set; }
 
     /// <summary>
+    /// Gets and sets the total confirmed restocking area, in hectares. Used to indicate a mismatch against the felling area.
+    /// </summary>
+    public double? TotalConfirmedRestockingArea { get; set; }
+
+    /// <summary>
     /// Gets or sets a dictionary containing amended property values, keyed by property name.
     /// The value represents the previous value of the property before amendment, or null if not amended.
     /// </summary>
@@ -119,6 +124,9 @@ public class FellingDetailViewModel : CompartmentConfirmedFellingRestockingDetai
         SubCompartmentName = compartment.SubCompartmentName;
         TotalHectares = compartment.TotalHectares;
         AmendedProperties = model.AmendedProperties;
+        TotalConfirmedRestockingArea = model.ConfirmedRestockingDetails
+            .Where(x => x.RestockArea.HasValue)
+            .Sum(x => x.RestockArea!.Value);
     }
 
     /// <summary>

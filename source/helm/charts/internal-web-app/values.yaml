@@ -181,6 +181,7 @@ config:
   woodlandOfficerReview:
     # -- flag to enable the new confirmed f&r UI
     useNewConfirmedFellingRestocking: false
+    publicRegisterApplicationUrl:
   cronJobs:
     # -- API Key for the cron job endpoints
     apiKey:
@@ -288,6 +289,10 @@ config:
       ExternalConsulteeInvite:
       # -- External formal consultation with stakeholders - Email to consultees
       ExternalConsulteeInviteWithPublicRegisterInfo:
+      # -- External formal consultation with stakeholders - Notification to internal staff on comment received
+      InformFcStaffOfConsulteeCommentReceived:
+      # -- External formal consultation with stakeholders - reminder email
+      ExternalConsulteeInviteReminder:
       # -- Application Approved Notification - Email to Applicant
       InformApplicantOfApplicationApproval:
       # -- Application Referred to Local Authority Notification - Email to Applicant

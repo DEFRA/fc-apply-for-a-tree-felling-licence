@@ -95,33 +95,35 @@ public ForesterServicesTests()
                 LayerServices =
                 [
                     new FeatureLayerConfig()
-                        {
-                            Name = "Country_Boundaries_Generalised", ServiceURI = "https://www.AGOL.com/Boundary",
-                            Fields = [], NeedsToken = true
-                        },
-
-                        new FeatureLayerConfig()
-                        {
-                            Name = "Woodland_Officers", ServiceURI = "https://www.AGOL.com/WoodlandOfficer",
-                            Fields = [], NeedsToken = true
-                        },
-
-                        new FeatureLayerConfig()
-                        {
-                            Name = "LocalAuthority_Areas", ServiceURI = "https://www.AGOL.com/LA",
-                            Fields = [], NeedsToken = true
-                        },
-
-                        new FeatureLayerConfig()
-                        {
-                            Name = "SiteVisitCompartments", ServiceURI = "https://www.AGOL.com/SiteVisitCompartments",
-                            Fields = [], NeedsToken = true
-                        },
-                        new FeatureLayerConfig()
-                        {
-                            Name = "Phytophthora_Ramorum_Risk_Zones", ServiceURI = "https://www.AGOL.com/Risk",
-                            Fields = [], NeedsToken = true
-                        },
+                    {
+                        Name = "Country_Boundaries_Generalised", ServiceURI = "https://www.AGOL.com/Boundary",
+                        Fields = [], NeedsToken = true
+                    },
+                    new FeatureLayerConfig()
+                    {
+                        Name = "Woodland_Officers", ServiceURI = "https://www.AGOL.com/WoodlandOfficer",
+                        Fields = [], NeedsToken = true
+                    },
+                    new FeatureLayerConfig()
+                    {
+                        Name = "LocalAuthority_Areas", ServiceURI = "https://www.AGOL.com/LA",
+                        Fields = [], NeedsToken = true
+                    },
+                    new FeatureLayerConfig()
+                    {
+                        Name = "AdminBoundary_Areas", ServiceURI = "https://www.AGOL.com/LA",
+                        Fields = [], NeedsToken = true
+                    },
+                    new FeatureLayerConfig()
+                    {
+                        Name = "SiteVisitCompartments", ServiceURI = "https://www.AGOL.com/SiteVisitCompartments",
+                        Fields = [], NeedsToken = true
+                    },
+                    new FeatureLayerConfig()
+                    {
+                        Name = "Phytophthora_Ramorum_Risk_Zones", ServiceURI = "https://www.AGOL.com/Risk",
+                        Fields = [], NeedsToken = true
+                    },
                     new FeatureLayerConfig()
                     {
                         Name = "Ancient_Woodland", ServiceURI = "https://www.AGOL.com/AW",
@@ -131,10 +133,11 @@ public ForesterServicesTests()
                     {
                         Name = "Ancient_Woodlands_Revised", ServiceURI = "https://www.AGOL.com/AWR",
                         Fields = [], NeedsToken = true
-                        }, new FeatureLayerConfig()
+                    }, 
+                    new FeatureLayerConfig()
                     {
                         Name = "ExternalFLA", ServiceURI = "https://www.AGOL.com/ExternalFLA",
-                    Fields = [], NeedsToken = true
+                        Fields = [], NeedsToken = true
                     }
                 ]
             },

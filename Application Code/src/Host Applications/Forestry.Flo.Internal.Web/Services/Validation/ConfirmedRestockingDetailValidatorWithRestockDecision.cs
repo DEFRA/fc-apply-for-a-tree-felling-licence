@@ -68,7 +68,15 @@ public class ConfirmedRestockingDetailValidatorWithRestockDecision : AbstractVal
                 TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees or
                 TypeOfProposal.CreateDesignedOpenGround));
 
+        RuleFor(m => m.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .NotNull()
+            .When(m => m.RestockingProposal.HasValue &&  m.RestockingProposal.Value.IsCoppiceOrNaturalRegen())
+            .WithMessage("Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration");
 
+        RuleFor(m => m.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .Must(m => m is > 0 and <= 100)
+            .When(m => m.RestockingProposal.HasValue && m.RestockingProposal.Value.IsCoppiceOrNaturalRegen() && m.PercentageEstablishedByCoppiceOrNaturalRegen.HasValue)
+            .WithMessage("Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration between 0 and 100");
 
         // check percent open space is a valid percentage when it has been entered (0 is a valid percentage in this case)
         //RuleFor(m => m.PercentOpenSpace)

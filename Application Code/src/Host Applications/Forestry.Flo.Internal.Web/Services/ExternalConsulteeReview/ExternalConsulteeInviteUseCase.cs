@@ -23,6 +23,8 @@ namespace Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 
 public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBase, IExternalConsulteeInviteUseCase
 {
+    private readonly INotificationHistoryService _notificationHistoryService;
+    private readonly IUserAccountService _internalUserAccountService;
     private readonly IExternalConsulteeReviewService _externalConsulteeReviewService;
     private readonly IUpdateWoodlandOfficerReviewService _updateWoodlandOfficerReviewService;
     private readonly ISendNotifications _notificationService;
@@ -39,6 +41,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         IFellingLicenceApplicationInternalRepository fellingLicenceApplicationInternalRepository,
         IRetrieveWoodlandOwners woodlandOwnerService,
         ISendNotifications notificationService,
+        INotificationHistoryService notificationHistoryService,
         IAuditService<ExternalConsulteeInviteUseCase> auditService,
         IAgentAuthorityService agentAuthorityService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
@@ -57,6 +60,8 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         getConfiguredFcAreasService,
         woodlandOfficerReviewSubStatusService)
     {
+        _notificationHistoryService = Guard.Against.Null(notificationHistoryService);
+        _internalUserAccountService = Guard.Against.Null(internalUserAccountService);
         _externalConsulteeReviewService = Guard.Against.Null(externalConsulteeReviewService);
         _updateWoodlandOfficerReviewService = Guard.Against.Null(updateWoodlandOfficerReviewService);
         _notificationService = Guard.Against.Null(notificationService);
@@ -128,8 +133,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
         {
             var prCompleted =
                 fla.PublicRegister != null
-                && (fla.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister
-                    || fla.PublicRegister.ConsultationPublicRegisterPublicationTimestamp.HasValue);
+                && (fla.PublicRegister.ConsultationPublicRegisterPublicationTimestamp.HasValue);
             var prExempt = fla.PublicRegister?.WoodlandOfficerSetAsExemptFromConsultationPublicRegister;
 
             var documentModels = ModelMapping
@@ -147,6 +151,7 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
                         FellingLicenceApplicationSummary = applicationSummary,
                         ApplicationId = applicationId,
                         ExemptFromConsultationPublicRegister = prExempt,
+                        ExemptFromConsultationPublicRegisterReason = prExempt is true ? fla.PublicRegister?.WoodlandOfficerConsultationPublicRegisterExemptionReason : null,
                         PublicRegisterAlreadyCompleted = prCompleted,
                         SelectedDocumentIds = documentModels.Select(d => (Guid?)d.Id).ToList(),
                         ConsulteeDocuments = documentModels
@@ -209,23 +214,213 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
             ? NotificationType.ExternalConsulteeInvite
             : NotificationType.ExternalConsulteeInviteWithPublicRegisterInfo;
 
-        return await FellingLicenceRepository.AddExternalAccessLinkAsync(accessLink, cancellationToken)
-            .MapError(e => $"External access link creation error, {ExtractDatabaseError(e)}, applicationId: {accessLink.FellingLicenceApplicationId}")
-            .Ensure(async () => await _updateWoodlandOfficerReviewService.UpdateConsultationsStatusAsync(
-                applicationId, user.UserAccountId!.Value, true, false, cancellationToken))
-            .Ensure(async () => await _notificationService.SendNotificationAsync(
-                externalConsulteeInvite,
-                notificationType,
-                new NotificationRecipient(externalConsulteeInviteModel.Email, externalConsulteeInviteModel.ConsulteeName),
-                cancellationToken: cancellationToken))
-            .Tap(async () => await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationSent, user, cancellationToken))
-            .OnFailure(async e =>
+
+        var addAccessLinkResult = await FellingLicenceRepository.AddExternalAccessLinkAsync(accessLink, cancellationToken);
+
+        if (addAccessLinkResult.IsFailure)
+        {
+            _logger.LogError(
+                "Error occurred adding external access link to application {ApplicationId}, error: {Error}",
+                applicationId, addAccessLinkResult.Error);
+            await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationFailure, user, cancellationToken, addAccessLinkResult.Error.ToString());
+
+            return Result.Failure("Failed to add external access link");
+        }
+
+        var updateConsultationStatusResult = await _updateWoodlandOfficerReviewService.UpdateConsultationsStatusAsync(
+            applicationId, user.UserAccountId!.Value, true, false, cancellationToken);
+
+        if (updateConsultationStatusResult.IsFailure)
+        {
+            _logger.LogError(
+                "Error occurred updating consultation status for application {ApplicationId} after adding external access link, error: {Error}",
+                applicationId, updateConsultationStatusResult.Error);
+
+            await FellingLicenceRepository.DeleteExternalAccessLinkAsync(accessLink, cancellationToken);
+
+            await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationFailure, user, cancellationToken, updateConsultationStatusResult.Error);
+
+            return Result.Failure("Failed to update consultations status");
+        }
+
+        // only send to consultee first, in case a copy to internal staff fails, because then the consultee will still receive their invite
+        // but we'll have rolled back the access link save to the database so the link won't work
+        var sendNotificationResult = await _notificationService.SendNotificationAsync(
+            externalConsulteeInvite,
+            notificationType,
+            new NotificationRecipient(externalConsulteeInviteModel.Email, externalConsulteeInviteModel.ConsulteeName),
+            cancellationToken: cancellationToken);
+
+        if (sendNotificationResult.IsFailure)
+        {
+            _logger.LogError("Error occurred sending consultee invite notification for application {ApplicationId} to email {Email}",
+                applicationId, externalConsulteeInviteModel.Email);
+
+            await FellingLicenceRepository.DeleteExternalAccessLinkAsync(accessLink, cancellationToken);
+            
+            await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationFailure, user, cancellationToken, sendNotificationResult.Error);
+
+            return Result.Failure("Failed to send consultee invite notification");
+        }
+
+        accessLink.NotificationHistoryId = sendNotificationResult.Value;
+        await FellingLicenceRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+        await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationSent, user, cancellationToken);
+
+        // now copy email to the internal staff
+        var internalStaffIds = fla.AssigneeHistories
+            .Where(x => x.TimestampUnassigned.HasNoValue() 
+                        && x.Role is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer or AssignedUserRole.FieldManager)
+            .Select(x => x.AssignedUserId)
+            .Distinct()
+            .ToList(); 
+        
+        var internalStaff =
+            await _internalUserAccountService.RetrieveUserAccountsByIdsAsync(internalStaffIds, cancellationToken);
+
+        if (internalStaff.IsFailure)
+        {
+            _logger.LogError("Unable to retrieve internal users for application {ApplicationId} to send consultee invite notification, error: {Error}",
+                applicationId, internalStaff.Error);
+
+            await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationCopyToStaffFailure, user, cancellationToken, 
+                "Failed to retrieve internal staff to copy consultee invite email to, error: " + internalStaff.Error);
+        }
+        else
+        {
+            var staffRecipients = internalStaff.Value
+                .Select(s => new NotificationRecipient(s.Email, s.FullName))
+                .ToList();
+
+            var copiesSuccessful = true;
+            foreach (var staffRecipient in staffRecipients)
             {
-                _logger.LogError(
-                    "Error occurred adding external access link to application {ApplicationId}, error: {Error}",
-                    applicationId, e);
-                await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationFailure, user, cancellationToken, e);
-            });
+                var copyResult = await _notificationService.SendNotificationAsync(
+                    externalConsulteeInvite,
+                    notificationType,
+                    staffRecipient,
+                    cancellationToken: cancellationToken);
+
+                if (copyResult.IsFailure)
+                {
+                    _logger.LogError("Failed to copy consultee invitation email to staff member {StaffEmail} for application {ApplicationId}, error: {Error}",
+                        staffRecipient.Address, applicationId, copyResult.Error);
+                    copiesSuccessful = false;
+                }
+            }
+
+            if (!copiesSuccessful)
+            {
+                await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeInvitationCopyToStaffFailure, user, cancellationToken, "Failed to copy invite email to one or more internal staff members");
+            }
+            else
+            {
+                await _auditService.PublishAuditEventAsync(
+                    new AuditEvent(
+                        AuditEvents.ExternalConsulteeInvitationCopyToStaff,
+                        accessLink.FellingLicenceApplicationId,
+                        user.UserAccountId,
+                        _requestContext,
+                        new
+                        {
+                            InvitedByUserId = user.UserAccountId,
+                            ConsulteeName = accessLink.Name,
+                            ConsulteeEmailAddress = accessLink.ContactEmail,
+                            ApplicationId = accessLink.FellingLicenceApplicationId,
+                            InviteExpiryDateTime = accessLink.ExpiresTimeStamp,
+                            Staff = staffRecipients.Select(x => x.Address).ToList()
+                        }),
+                    cancellationToken);
+            }
+        }
+
+        return Result.Success();
+    }
+
+    /// <inheritdoc />
+    public async Task<Result> SendReminderToConsulteeAsync(
+        Guid applicationId,
+        Guid accessCode,
+        string externalAccessLink,
+        InternalUser user,
+        CancellationToken cancellationToken)
+    {
+        var (hasValue, fla) = await FellingLicenceRepository.GetAsync(applicationId, cancellationToken);
+
+        if (!hasValue)
+        {
+            _logger.LogError(ApplicationNotFoundError);
+            return Result.Failure(ApplicationNotFoundError);
+        }
+
+        var adminHubFooter = await GetAdminHubAddressDetailsAsync(fla.AdministrativeRegion, cancellationToken)
+            .ConfigureAwait(false);
+
+        var accessLink = fla.ExternalAccessLinks.SingleOrDefault(x => x.AccessCode == accessCode);
+
+        if (accessLink == null)
+        {
+            _logger.LogError("Could not locate external access link with code {AccessCode} for application {ApplicationId}",
+                accessCode, applicationId);
+            await PublishAuditErrorEvent(applicationId, AuditEvents.ExternalConsulteeReminderFailure, user,
+                cancellationToken, "Could not find access link");
+            return Result.Failure("Could not locate external access link");
+        }
+
+        var internalStaffIds = fla.AssigneeHistories
+            .Where(x =>
+                x.TimestampUnassigned.HasNoValue()
+                && x.Role is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer or AssignedUserRole.FieldManager)
+            .Select(x => x.AssignedUserId)
+            .Distinct()
+            .ToList();
+
+        var internalStaff =
+            await _internalUserAccountService.RetrieveUserAccountsByIdsAsync(internalStaffIds, cancellationToken);
+
+        if (internalStaff.IsFailure)
+        {
+            _logger.LogError("Unable to retrieve internal users for application {ApplicationId} to send consultee reminder notification, error: {Error}",
+                applicationId, internalStaff.Error);
+
+            await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeReminderFailure, user, cancellationToken, internalStaff.Error);
+
+            return Result.Failure("Unable to load internal staff assigned to the application to copy consultee invite reminder to");
+        }
+
+        var staffRecipients = internalStaff.Value
+            .Select(s => new NotificationRecipient(s.Email, s.FullName));
+
+        var reminderModel = new ExternalConsulteeInviteReminderDataModel
+        {
+            ApplicationId = applicationId,
+            AdminHubFooter = adminHubFooter,
+            ApplicationReference = fla.ApplicationReference,
+            PropertyName = fla.SubmittedFlaPropertyDetail?.Name,
+            ConsultationEndDate = DateTimeDisplay.GetDateDisplayString(accessLink.ExpiresTimeStamp),
+            ViewApplicationURL = externalAccessLink
+        };
+
+        var sendNotificationResult = await _notificationService.SendNotificationAsync(
+            reminderModel,
+            NotificationType.ExternalConsulteeInviteReminder,
+            new NotificationRecipient(accessLink.ContactEmail, accessLink.Name),
+            copyToRecipients: staffRecipients.ToArray(),
+            cancellationToken: cancellationToken);
+
+        if (sendNotificationResult.IsFailure)
+        {
+            _logger.LogError("Error occurred sending consultee invite reminder notification for application {ApplicationId} to email {Email}",
+                applicationId, accessLink.ContactEmail);
+
+            await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeReminderFailure, user, cancellationToken, sendNotificationResult.Error);
+
+            return Result.Failure("Failed to send consultee invite notification");
+        }
+
+        await PublishAuditEvent(accessLink, AuditEvents.ExternalConsulteeReminderSent, user, cancellationToken);
+        return Result.Success();
     }
 
     /// <inheritdoc />
@@ -270,13 +465,45 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
                 Attachments = GetAttachments(x.ConsulteeAttachmentIds.ToList(), fla.Documents)
             });
 
+        var inviteNotificationContent = "Unable to load invite notification content";
+
+        var accessLink = fla.ExternalAccessLinks.SingleOrDefault(x => x.AccessCode == accessCode);
+        var notificationHistoryId = accessLink?.NotificationHistoryId;
+
+        if (notificationHistoryId.HasValue)
+        {
+            var notification =
+                await _notificationHistoryService.GetNotificationHistoryByIdAsync(notificationHistoryId.Value, cancellationToken);
+
+            if (notification.IsSuccess)
+            {
+                inviteNotificationContent = notification.Value.Text;
+            }
+            else
+            {
+                _logger.LogError("Unable to load notification history with id {NotificationHistoryId}, error: {Error}",
+                    notificationHistoryId, notification.Error);
+            }
+        }
+
         var result = new ReceivedConsulteeCommentsViewModel
         {
             ApplicationId = applicationId,
-            ConsulteeName = fla.ExternalAccessLinks?.FirstOrDefault(x => x.AccessCode == accessCode)?.Name,
-            Email = fla.ExternalAccessLinks?.FirstOrDefault(x => x.AccessCode == accessCode)?.ContactEmail,
+            ConsulteeName = accessLink?.Name ?? "Unable to locate consultee invitation",
+            Email = accessLink?.ContactEmail ?? "Unable to locate consultee invitation",
             FellingLicenceApplicationSummary = flaModel,
-            ReceivedComments = items.ToList()
+            ReceivedComments = items.ToList(),
+            PublicRegisterExempt = fla.PublicRegister?.WoodlandOfficerSetAsExemptFromConsultationPublicRegister is true,
+            PublicRegisterExemptionReason = fla.PublicRegister?.WoodlandOfficerConsultationPublicRegisterExemptionReason,
+            InviteContent = inviteNotificationContent,
+            SharedDocuments = ModelMapping.ToDocumentModelList((fla.Documents ?? [])
+                .Where(x => x.VisibleToConsultee
+                            && x.DeletionTimestamp.HasNoValue()
+                            && (accessLink?.SharedSupportingDocuments.Any(s => s == x.Id) ?? false))
+                .OrderByDescending(x => x.CreatedTimestamp)
+                .ToList()).ToList(),
+            InvitationPurpose = accessLink?.Purpose ?? "Unable to locate consultee invitation",
+            InvitationDate = accessLink?.CreatedTimeStamp
         };
 
         return Result.Success(result);
@@ -298,6 +525,24 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
                     ConsulteeEmailAddress = accessLink.ContactEmail,
                     ApplicationId = accessLink.FellingLicenceApplicationId,
                     InviteExpiryDateTime = accessLink.ExpiresTimeStamp,
+                    Error = error
+                }),
+            cancellationToken);
+
+    private Task PublishAuditErrorEvent(
+        Guid applicationId,
+        string eventName, 
+        InternalUser user,
+        CancellationToken cancellationToken,
+        string? error = null) =>
+        _auditService.PublishAuditEventAsync(
+            new AuditEvent(
+                eventName,
+                applicationId,
+                user.UserAccountId,
+                _requestContext,
+                new
+                {
                     Error = error
                 }),
             cancellationToken);

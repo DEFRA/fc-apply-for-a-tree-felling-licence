@@ -95,12 +95,23 @@ public partial class GetWoodlandOfficerReviewServiceTests
         application.AssigneeHistories.ForEach(x => x.TimestampUnassigned = null);
         application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ForEach(c => c.GISData = JsonConvert.SerializeObject(gisData));
 
-        var expectedTotalArea =
-            application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments?.Sum(x => x.TotalHectares) ?? 0;
+        for (int i = 0; i < application.LinkedPropertyProfile.ProposedFellingDetails.Count; i++)
+        {
+            application.LinkedPropertyProfile.ProposedFellingDetails[i].PropertyProfileCompartmentId = application
+                .SubmittedFlaPropertyDetail
+                .SubmittedFlaPropertyCompartments[i % application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.Count]
+                .CompartmentId;
+        }
 
-        double expectedCompartmentArea = 0;
-        application.LinkedPropertyProfile.ProposedFellingDetails
-            .ForEach(x => expectedCompartmentArea += x.AreaToBeFelled);
+        double expectedTotalFellArea = 0;
+        application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
+            .ForEach(x =>
+            {
+                var cptTotalFell = application.LinkedPropertyProfile.ProposedFellingDetails
+                    .Where(c => c.PropertyProfileCompartmentId == x.CompartmentId)
+                    .Sum(c => c.AreaToBeFelled);
+                expectedTotalFellArea += cptTotalFell;
+            });
 
         var expectedCompartmentDetails = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
             .Select(x => x.ToInternalCompartmentDetails())
@@ -129,8 +140,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         Assert.Equal(application.SubmittedFlaPropertyDetail.NearestTown, result.Value.NearestTown);
         Assert.Equal(authority.Name, result.Value.LocalAuthority);
         Assert.Equal(application.AdministrativeRegion, result.Value.AdminRegion);
-        Assert.Equal(expectedTotalArea, result.Value.TotalArea);
-        Assert.Equal(expectedTotalArea - expectedCompartmentArea, result.Value.OpenGroundArea);
+        Assert.Equal(expectedTotalFellArea, result.Value.TotalArea);
         Assert.Equivalent(centrePoint, result.Value.CentrePoint);
         Assert.Equivalent(expectedCompartmentDetails, result.Value.Compartments);
         Assert.Equivalent(expectedAssignedInternalUserIds, result.Value.AssignedInternalUserIds);
@@ -156,12 +166,23 @@ public partial class GetWoodlandOfficerReviewServiceTests
         application.AssigneeHistories.ForEach(x => x.TimestampUnassigned = null);
         application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ForEach(c => c.GISData = JsonConvert.SerializeObject(gisData));
 
-        var expectedTotalArea =
-            application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments?.Sum(x => x.TotalHectares) ?? 0;
+        for (int i = 0; i < application.LinkedPropertyProfile.ProposedFellingDetails.Count; i++)
+        {
+            application.LinkedPropertyProfile.ProposedFellingDetails[i].PropertyProfileCompartmentId = application
+                .SubmittedFlaPropertyDetail
+                .SubmittedFlaPropertyCompartments[i % application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.Count]
+                .CompartmentId;
+        }
 
-        double expectedCompartmentArea = 0;
-        application.LinkedPropertyProfile.ProposedFellingDetails
-            .ForEach(x => expectedCompartmentArea += x.AreaToBeFelled);
+        double expectedTotalFellArea = 0;
+        application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
+            .ForEach(x =>
+            {
+                var cptTotalFell = application.LinkedPropertyProfile.ProposedFellingDetails
+                    .Where(c => c.PropertyProfileCompartmentId == x.CompartmentId)
+                    .Sum(c => c.AreaToBeFelled);
+                expectedTotalFellArea += cptTotalFell;
+            });
 
         var expectedCompartmentDetails = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
             .Select(x => x.ToInternalCompartmentDetails())
@@ -190,8 +211,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         Assert.Equal(application.SubmittedFlaPropertyDetail.NearestTown, result.Value.NearestTown);
         Assert.Equal(string.Empty, result.Value.LocalAuthority);
         Assert.Equal(application.AdministrativeRegion, result.Value.AdminRegion);
-        Assert.Equal(expectedTotalArea, result.Value.TotalArea);
-        Assert.Equal(expectedTotalArea - expectedCompartmentArea, result.Value.OpenGroundArea);
+        Assert.Equal(expectedTotalFellArea, result.Value.TotalArea);
         Assert.Equivalent(centrePoint, result.Value.CentrePoint);
         Assert.Equivalent(expectedCompartmentDetails, result.Value.Compartments);
         Assert.Equivalent(expectedAssignedInternalUserIds, result.Value.AssignedInternalUserIds);
@@ -217,12 +237,23 @@ public partial class GetWoodlandOfficerReviewServiceTests
         application.AssigneeHistories.ForEach(x => x.TimestampUnassigned = null);
         application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ForEach(c => c.GISData = JsonConvert.SerializeObject(gisData));
 
-        var expectedTotalArea =
-            application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments?.Sum(x => x.TotalHectares) ?? 0;
+        for (int i = 0; i < application.LinkedPropertyProfile.ProposedFellingDetails.Count; i++)
+        {
+            application.LinkedPropertyProfile.ProposedFellingDetails[i].PropertyProfileCompartmentId = application
+                .SubmittedFlaPropertyDetail
+                .SubmittedFlaPropertyCompartments[i % application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.Count]
+                .CompartmentId;
+        }
 
-        double expectedCompartmentArea = 0;
-        application.LinkedPropertyProfile.ProposedFellingDetails
-            .ForEach(x => expectedCompartmentArea += x.AreaToBeFelled);
+        double expectedTotalFellArea = 0;
+        application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
+            .ForEach(x =>
+            {
+                var cptTotalFell = application.LinkedPropertyProfile.ProposedFellingDetails
+                    .Where(c => c.PropertyProfileCompartmentId == x.CompartmentId)
+                    .Sum(c => c.AreaToBeFelled);
+                expectedTotalFellArea += cptTotalFell;
+            });
 
         var expectedCompartmentDetails = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
             .Select(x => x.ToInternalCompartmentDetails())
@@ -251,8 +282,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         Assert.Equal(application.SubmittedFlaPropertyDetail.NearestTown, result.Value.NearestTown);
         Assert.Equal(string.Empty, result.Value.LocalAuthority);
         Assert.Equal(application.AdministrativeRegion, result.Value.AdminRegion);
-        Assert.Equal(expectedTotalArea, result.Value.TotalArea);
-        Assert.Equal(expectedTotalArea - expectedCompartmentArea, result.Value.OpenGroundArea);
+        Assert.Equal(expectedTotalFellArea, result.Value.TotalArea);
         Assert.Equivalent(centrePoint, result.Value.CentrePoint);
         Assert.Equivalent(expectedCompartmentDetails, result.Value.Compartments);
         Assert.Equivalent(expectedAssignedInternalUserIds, result.Value.AssignedInternalUserIds);
@@ -278,12 +308,23 @@ public partial class GetWoodlandOfficerReviewServiceTests
         application.AssigneeHistories.ForEach(x => x.TimestampUnassigned = null);
         application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ForEach(c => c.GISData = JsonConvert.SerializeObject(gisData));
 
-        var expectedTotalArea =
-            application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments?.Sum(x => x.TotalHectares) ?? 0;
+        for (int i = 0; i < application.LinkedPropertyProfile.ProposedFellingDetails.Count; i++)
+        {
+            application.LinkedPropertyProfile.ProposedFellingDetails[i].PropertyProfileCompartmentId = application
+                .SubmittedFlaPropertyDetail
+                .SubmittedFlaPropertyCompartments[i % application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.Count]
+                .CompartmentId;
+        }
 
-        double expectedCompartmentArea = 0;
-        application.LinkedPropertyProfile.ProposedFellingDetails
-            .ForEach(x => expectedCompartmentArea += x.AreaToBeFelled);
+        double expectedTotalFellArea = 0;
+        application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
+            .ForEach(x =>
+            {
+                var cptTotalFell = application.LinkedPropertyProfile.ProposedFellingDetails
+                    .Where(c => c.PropertyProfileCompartmentId == x.CompartmentId)
+                    .Sum(c => c.AreaToBeFelled);
+                expectedTotalFellArea += cptTotalFell;
+            });
 
         var expectedCompartmentDetails = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
             .Select(x => x.ToInternalCompartmentDetails())
@@ -309,8 +350,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         Assert.Equal(application.SubmittedFlaPropertyDetail.NearestTown, result.Value.NearestTown);
         Assert.Equal(string.Empty, result.Value.LocalAuthority);
         Assert.Equal(application.AdministrativeRegion, result.Value.AdminRegion);
-        Assert.Equal(expectedTotalArea, result.Value.TotalArea);
-        Assert.Equal(expectedTotalArea - expectedCompartmentArea, result.Value.OpenGroundArea);
+        Assert.Equal(expectedTotalFellArea, result.Value.TotalArea);
         Assert.Null(result.Value.CentrePoint);
         Assert.Equivalent(expectedCompartmentDetails, result.Value.Compartments);
         Assert.Equivalent(expectedAssignedInternalUserIds, result.Value.AssignedInternalUserIds);
@@ -333,15 +373,16 @@ public partial class GetWoodlandOfficerReviewServiceTests
         application.WoodlandOfficerReview!.ConfirmedFellingAndRestockingComplete = true;
         application.CentrePoint = JsonConvert.SerializeObject(centrePoint);
         application.AssigneeHistories.ForEach(x => x.TimestampUnassigned = null);
-        application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments.ForEach(c => c.GISData = JsonConvert.SerializeObject(gisData));
+        application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments
+            .ForEach(c => c.GISData = JsonConvert.SerializeObject(gisData));
 
-        var expectedTotalArea =
-            application.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments?.Sum(x => x.TotalHectares) ?? 0;
-
-        double expectedCompartmentArea = 0;
+        double expectedTotalFellArea = 0;
         application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
-            .SelectMany(x => x.ConfirmedFellingDetails)
-            .ForEach(x => expectedCompartmentArea += x.AreaToBeFelled);
+            .ForEach(x =>
+            {
+                var cptTotalFell = x.ConfirmedFellingDetails.Sum(y => y.AreaToBeFelled);
+                expectedTotalFellArea += cptTotalFell;
+            });
 
         var expectedCompartmentDetails = application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments?
             .Select(x => x.ToInternalCompartmentDetails())
@@ -370,8 +411,7 @@ public partial class GetWoodlandOfficerReviewServiceTests
         Assert.Equal(application.SubmittedFlaPropertyDetail.NearestTown, result.Value.NearestTown);
         Assert.Equal(authority.Name, result.Value.LocalAuthority);
         Assert.Equal(application.AdministrativeRegion, result.Value.AdminRegion);
-        Assert.Equal(expectedTotalArea, result.Value.TotalArea);
-        Assert.Equal(expectedTotalArea - expectedCompartmentArea, result.Value.OpenGroundArea);
+        Assert.Equal(expectedTotalFellArea, result.Value.TotalArea);
         Assert.Equivalent(centrePoint, result.Value.CentrePoint);
         Assert.Equivalent(expectedCompartmentDetails, result.Value.Compartments);
         Assert.Equivalent(expectedAssignedInternalUserIds, result.Value.AssignedInternalUserIds);

@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBuildCondition, RestockByPlantingConditionBuilder>();
         services.AddScoped<IBuildCondition, NaturalRegenerationConditionBuilder>();
         services.AddScoped<IBuildCondition, CoppiceRegrowthConditionBuilder>();
+        services.AddScoped<IBuildCBWCondition, CBWConditionBuilder>();
 
         services.AddScoped<IConditionsBuilderRepository, ConditionsBuilderRepository>();
         services.AddScoped<ICalculateConditions, CalculateConditionsService>();

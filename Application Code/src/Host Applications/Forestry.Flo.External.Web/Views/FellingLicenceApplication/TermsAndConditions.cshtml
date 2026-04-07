@@ -125,48 +125,62 @@
         {
             <h2 class="govuk-heading-l">Cricket bat willow conditions</h2>
             <p class="govuk-body">
-                These conditions apply to the licensed felling at the site shown on the map and form part of the agreement between the Forestry Commission and the landowner.
+                In these conditions, ‘licence holder’ can mean the landowner, tenant, trust or
+                any other person with the legal right to fell trees. They apply to the felling 
+                licence once it has been granted.
             </p>
             <p class="govuk-body">
-                I understand that I must meet these conditions as part of my felling licence
+                I confirm that the licence holder will be @Model.LicenceHolderName.
             </p>
             <p class="govuk-body">
-                Failure to comply may result in:
+                I understand that these conditions apply to the licence holder and form part 
+                of the agreement between the Forestry Commission and the licence holder as 
+                part of the felling licence once it has been granted.
+            </p>
+            <p class="govuk-body">
+                The licence holder must meet these conditions as part of the felling licence.
+            </p>
+            <p class="govuk-body">
+                Failure to comply with these conditions may result in:
             </p>
             <ul class="govuk-list govuk-list--bullet">
                 <li>
                     an Enforcement Notice under section 24 of the Forestry Act 1967
                 </li>
                 <li>
-                    prosecution and a fine with no upper limit
+                    prosecution and an unlimited fine
                 </li>
                 <li>
-                    the Forestry Commission carrying out the work and recovering costs from me
+                    the Forestry Commission carrying out the work and recovering costs from the licence holder
                 </li>
             </ul>
+            
             <p class="govuk-body">
-                Before the compliance date, I will ensure the land where felling took place is:
+                Within two years after felling completion, the licence holder will ensure that the land where felling took place has been:
             </p>
             <ul class="govuk-list govuk-list--bullet">
                 <li>
-                    prepared for tree planting
+                    prepared for planting
                 </li>
-                <li>
-                    planted with cricket bat willow, with at least 100 plants per hectare, evenly spread across the site.  This equates to at least @Model.TotalNumberOfTreesRestocking trees at this site.
+                <li condition="@Model.IsAllRestockingIndividualTrees">
+                    planted with cricket bat willow, with @Model.TotalNumberOfTreesRestocking in total equivalent to at least 100 plants per hectare, evenly spread across the site
+                </li>
+                <li condition="@(!Model.IsAllRestockingIndividualTrees)">
+                    planted with cricket bat willow, to at least 100 plants per hectare, evenly spread across the site
                 </li>
             </ul>
             <p class="govuk-body">
-                For 10 years from planting, I will:
+                For 10 years after planting, the licence holder will:
             </p>
             <ul class="govuk-list govuk-list--bullet">
                 <li>
-                    protect the trees from damage and keep them weed-free
+                    protect the trees from damage and keep them adequately weeded
                 </li>
                 <li>
-                    replace any trees that fail to meet the required stocking level
+                    replace any tree failures or losses to ensure the required stocking level is met
                 </li>
                 <li>
-                    maintain the trees following good forestry practice
+                    maintain the trees to support good forestry practice
                 </li>
             </ul>
             <p class="govuk-body">

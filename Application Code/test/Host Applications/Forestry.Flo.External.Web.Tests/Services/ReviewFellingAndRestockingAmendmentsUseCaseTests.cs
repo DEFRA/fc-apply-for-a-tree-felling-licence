@@ -589,7 +589,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
                 It.IsAny<NotificationRecipient>(),
                 It.IsAny<NotificationRecipient[]>(),
                 null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("Notification failed"));
+            .ReturnsAsync(Result.Failure<Guid>("Notification failed"));
 
 
         var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
@@ -669,7 +669,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
                 It.IsAny<NotificationRecipient>(),
                 It.IsAny<NotificationRecipient[]>(),
                 null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
 
@@ -756,7 +756,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCaseTests
                 It.IsAny<NotificationRecipient>(),
                 It.IsAny<NotificationRecipient[]>(),
                 null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var result = await sut.CompleteAmendmentReviewAsync(record, userId, CancellationToken.None);
 

@@ -9,6 +9,7 @@
     var user = new InternalUser(User);
     var rd = Model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails;
     var initialTotalHectares = rd.RestockingCompartmentTotalHectares ?? Model.ConfirmedFellingRestockingDetails.TotalHectares ?? 0;
+    var fellingArea = Model.ConfirmedFellingArea is > 0 ? Model.ConfirmedFellingArea.Value : 0;
 
     // Build a dictionary of CompartmentId and TotalHectares
     var compartmentHectaresDict = Model.SubmittedFlaPropertyCompartments
@@ -58,6 +59,7 @@
 
 	<form method="post">
         <input aria-hidden="True" type="hidden" asp-for="ApplicationId" />
+        <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingArea" />
         <input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.CompartmentId" />
 		<input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.CompartmentNumber" />
 		<input aria-hidden="True" type="hidden" asp-for="ConfirmedFellingRestockingDetails.TotalHectares" />
@@ -121,22 +123,54 @@
 					<div class="govuk-input__suffix" aria-hidden="true">ha</div>
 				</div>
 			</govuk-form-group>
-            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace" id="@nameof(rd.PercentOpenSpace)">
-                <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace">
-                    Estimated percentage of the area that will be restocked
+
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfRestockArea" id="@nameof(rd.PercentageOfRestockArea)">
+                <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfRestockArea">
+                    Estimated percentage of the compartment area that will be restocked
                 </label>
-                <div id="percent-area-to-be-restocked-hint" class="govuk-hint">
-                </div>
-                <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace"></validation>
+                <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfRestockArea"></validation>
                 <div class="govuk-input__wrapper">
-					<input class="govuk-input govuk-input--width-5 input-readonly" disabled="disabled" aria-readonly="true"
-                           asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace"
+                    <input class="govuk-input govuk-input--width-5 input-readonly" disabled="disabled" aria-readonly="true"
+                           asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfRestockArea"
                            type="number" step="0.01"
-                           aria-describedby="percent-area-to-be-restocked-hint"
-                           value="@(initialTotalHectares>0 ? Math.Round((rd.RestockArea ?? 0) / initialTotalHectares * 100, 2) : string.Empty)">
+                           value="@(initialTotalHectares > 0 ? Math.Round((rd.RestockArea ?? 0) / initialTotalHectares * 100, 2) : string.Empty)">
                     <div class="govuk-input__suffix" aria-hidden="true">%</div>
                 </div>
             </govuk-form-group>
+
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfFellingArea" id="@nameof(rd.PercentageOfFellingArea)">
+                <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfFellingArea">
+                    Estimated percentage of the felling area that will be restocked
+                </label>
+                <div id="percent-of-fell-area-hint" class="govuk-hint">
+                    The applicant proposed @fellingArea Ha for the felling operation.
+                </div>
+                <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfFellingArea"></validation>
+                <div class="govuk-input__wrapper">
+                    <input class="govuk-input govuk-input--width-5 input-readonly" disabled="disabled" aria-readonly="true"
+                           aria-describedby="percent-of-fell-area-hint"
+                           asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageOfFellingArea"
+                           type="number" step="0.01"
+                           value="@(fellingArea > 0 ? Math.Round((rd.RestockArea ?? 0) / fellingArea * 100, 2) : string.Empty)">
+                    <div class="govuk-input__suffix" aria-hidden="true">%</div>
+                </div>
+            </govuk-form-group>
+
+
+
+            @*                 <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace" id="@nameof(rd.PercentOpenSpace)">
+                    <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace">
+                        Estimated percentage of the area that will be restocked
+                    </label>
+                    <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace"></validation>
+                    <div class="govuk-input__wrapper">
+                        <input class="govuk-input govuk-input--width-5 input-readonly" disabled="disabled" aria-readonly="true"
+                               asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace"
+                               type="number" step="0.01"
+                               value="@(initialTotalHectares > 0 ? Math.Round((rd.RestockArea ?? 0) / initialTotalHectares * 100, 2) : string.Empty)">
+                        <div class="govuk-input__suffix" aria-hidden="true">%</div>
+                    </div>
+                </govuk-form-group> *@
 
             <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingDensity" id="restocking-density-group">
                 <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.RestockingDensity">
@@ -198,6 +232,19 @@
                 </div>
                 <validation id="restocking-tree-species-error" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies"></validation>
                 <partial name="Partials/_TreeSpeciesSelection" model="@Model.Species" view-data="viewData" />
+            </govuk-form-group>
+            
+            <govuk-form-group asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen" id="established-coppice-group">
+                <label class="govuk-heading-m" asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen">
+                    Percentage to be established by coppice regrowth or natural regeneration
+                </label>
+                <validation asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen"></validation>
+                <div class="govuk-input__wrapper">
+                    <input class="govuk-input govuk-input--width-10"
+                           asp-for="ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen"
+                           type="number">
+                    <div class="govuk-input__suffix" aria-hidden="true">%</div>
+                </div>
             </govuk-form-group>
 
             <div class="govuk-button-group">

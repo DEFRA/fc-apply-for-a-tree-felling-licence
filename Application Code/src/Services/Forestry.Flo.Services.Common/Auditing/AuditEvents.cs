@@ -136,8 +136,12 @@ public static class AuditEvents
     //Consultee comments audit events
     public const string ExternalConsulteeInvitationSent = "External Consultee Invitation Sent";
     public const string ExternalConsulteeInvitationFailure = "External Consultee Invitation Failure";
+    public const string ExternalConsulteeInvitationCopyToStaff = "External Consultee Invitation Copy To Staff";
+    public const string ExternalConsulteeInvitationCopyToStaffFailure = "External Consultee Invitation Copy To Staff Failure";
     public const string AddConsulteeComment = "Add Consultee Comment";
     public const string AddConsulteeCommentFailure = "Add Consultee Comment Failure";
+    public const string ExternalConsulteeReminderSent = "External Consultee Reminder Sent";
+    public const string ExternalConsulteeReminderFailure = "External Consultee Reminder Failure";
 
     //Felling restocking internal audit events
     public const string ImportFellingRestockingDetails = "Import Proposed Felling/Restocking Details";
@@ -381,8 +385,12 @@ public static class AuditEvents
 
             ExternalConsulteeInvitationSent => SourceEntityType.FellingLicenceApplication,
             ExternalConsulteeInvitationFailure => SourceEntityType.FellingLicenceApplication,
+            ExternalConsulteeInvitationCopyToStaff => SourceEntityType.FellingLicenceApplication,
+            ExternalConsulteeInvitationCopyToStaffFailure => SourceEntityType.FellingLicenceApplication,
             AddConsulteeComment => SourceEntityType.FellingLicenceApplication,
             AddConsulteeCommentFailure => SourceEntityType.FellingLicenceApplication,
+            ExternalConsulteeReminderSent => SourceEntityType.FellingLicenceApplication,
+            ExternalConsulteeReminderFailure => SourceEntityType.FellingLicenceApplication,
 
             UpdateWoodlandOfficerReview => SourceEntityType.FellingLicenceApplication,
             UpdateWoodlandOfficerReviewFailure => SourceEntityType.FellingLicenceApplication,

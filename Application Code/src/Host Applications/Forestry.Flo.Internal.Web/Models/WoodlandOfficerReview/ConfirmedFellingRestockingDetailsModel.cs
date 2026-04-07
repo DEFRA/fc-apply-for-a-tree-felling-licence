@@ -25,6 +25,11 @@ public class ConfirmedFellingRestockingDetailsModel : WoodlandOfficerReviewModel
     public CompartmentConfirmedFellingRestockingDetailsModel[] Compartments { get; set; } = [];
 
     /// <summary>
+    /// Gets and sets a collection of warnings related to felling and restocking areas in the confirmed details.
+    /// </summary>
+    public ConfirmedFellingAndRestockingWarning[] AreaWarnings { get; set; } = [];
+
+    /// <summary>
     /// Gets or sets the collection of proposed felling details for each compartment.
     /// Each item contains the proposed felling operations and associated restocking information
     /// as originally submitted in the application, prior to woodland officer review.

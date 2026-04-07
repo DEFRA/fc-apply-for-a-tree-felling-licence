@@ -159,6 +159,7 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
                                                     RestockingProposal = r.RestockingProposal,
                                                     RestockingDensity = r.RestockingDensity,
                                                     NumberOfTrees = r.NumberOfTrees,
+                                                    PercentageEstablishedByCoppiceOrNaturalRegen = r.PercentageEstablishedByCoppiceOrNaturalRegen,
                                                     PercentNaturalRegeneration = r.PercentNaturalRegeneration,
                                                     RestockingCompartmentId = r.CompartmentId,
                                                     RestockingCompartmentNumber = r.CompartmentNumber,
@@ -228,7 +229,9 @@ public class ReviewFellingAndRestockingAmendmentsUseCase(
                                                 OperationType = f.OperationType,
                                                 Area = r.Area,
                                                 CompartmentTotalHectares = r.CompartmentTotalHectares,
-                                                PercentageOfRestockArea = r.PercentageOfRestockArea
+                                                PercentageOfRestockArea = r.PercentageOfRestockArea,
+                                                PercentageOfFellingArea = r.PercentageOfFellingArea,
+                                                PercentageEstablishedByCoppiceOrNaturalRegen = r.PercentageEstablishedByCoppiceOrNaturalRegen
                                             })
                                         .ToList(),
                                 })

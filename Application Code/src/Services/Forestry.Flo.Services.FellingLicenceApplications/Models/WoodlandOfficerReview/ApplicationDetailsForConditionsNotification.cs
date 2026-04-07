@@ -29,4 +29,11 @@ public record ApplicationDetailsForConditionsNotification
     /// Gets and sets the administrative region for the application.
     /// </summary>
     public string? AdministrativeRegion { get; set; }
+
+    /// <summary>
+    /// Gets and sets a flag indicating that conditions have already been sent to the applicant for this
+    /// application, in order to indicate within the new notification that these conditions supersede the
+    /// previously-sent conditions.
+    /// </summary>
+    public bool ConditionsNotificationAlreadySent { get; set; }
 }

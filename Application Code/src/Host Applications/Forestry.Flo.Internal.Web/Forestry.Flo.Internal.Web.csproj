@@ -14,7 +14,7 @@
     <EmbeddedResource Include="Infrastructure\Fakes\Resources\Preview_Felling_Licence_0179612021.pdf" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="AutoMapper" Version="16.1.1" />
     <PackageReference Include="CSharpFunctionalExtensions" Version="2.34.0" />
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />

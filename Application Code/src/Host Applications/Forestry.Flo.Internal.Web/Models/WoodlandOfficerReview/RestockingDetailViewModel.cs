@@ -19,6 +19,16 @@ public class RestockingDetailViewModel : CompartmentConfirmedFellingRestockingDe
     public int? PercentOpenSpace { get; set; }
 
     /// <summary>
+    /// Gets or sets the restock area as a percentage of compartment size.
+    /// </summary>
+    public double? PercentageOfRestockArea { get; set; }
+
+    /// <summary>
+    /// Gets and sets the restock area as a percentage of felling operation area.
+    /// </summary>
+    public double? PercentageOfFellingArea { get; set; }
+
+    /// <summary>
     /// Gets or sets the type of restocking proposal.
     /// </summary>
     public TypeOfProposal? RestockingProposal { get; set; }
@@ -42,6 +52,11 @@ public class RestockingDetailViewModel : CompartmentConfirmedFellingRestockingDe
     /// Gets or sets the percentage of restocking achieved through natural regeneration.
     /// </summary>
     public int? PercentNaturalRegeneration { get; set; }
+
+    /// <summary>
+    /// Gets or sets the percentage established by coppice regrowth or natural regeneration.
+    /// </summary>
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 
     /// <summary>
     /// Gets or sets a dictionary of amended property names and their previous values.
@@ -72,12 +87,16 @@ public class RestockingDetailViewModel : CompartmentConfirmedFellingRestockingDe
         TotalHectares = model.RestockingCompartmentTotalHectares;
         RestockArea = model.RestockArea;
         PercentOpenSpace = model.PercentOpenSpace;
+        PercentageOfRestockArea = model.PercentageOfRestockArea;
+        PercentageOfFellingArea = model.PercentageOfFellingArea;
         RestockingProposal = model.RestockingProposal;
         ConfirmedRestockingSpecies = model.ListRestockingSpecies();
         RestockingDensity = model.RestockingDensity;
         NumberOfTrees = model.NumberOfTrees;
         PercentNaturalRegeneration = model.PercentNaturalRegeneration;
+        PercentageEstablishedByCoppiceOrNaturalRegen = model.PercentageEstablishedByCoppiceOrNaturalRegen;
         AmendedProperties = model.AmendedProperties;
+
     }
 
     /// <summary>
@@ -92,9 +111,12 @@ public class RestockingDetailViewModel : CompartmentConfirmedFellingRestockingDe
         TotalHectares = model.CompartmentTotalHectares;
         RestockArea = model.Area;
         RestockingProposal = model.RestockingProposal;
+        PercentageOfRestockArea = model.PercentageOfRestockArea;
+        PercentageOfFellingArea = model.PercentageOfFellingArea;
         ConfirmedRestockingSpecies = model.ListRestockingSpecies();
         RestockingDensity = model.RestockingDensity;
         NumberOfTrees = model.NumberOfTrees;
+        PercentageEstablishedByCoppiceOrNaturalRegen = model.PercentageEstablishedByCoppiceOrNaturalRegen;
         AmendedProperties = [];
     }
 }

@@ -64,7 +64,7 @@ public class ForesterServices : BaseServices, IForesterServices
 
             Guard.Against.Null(_config.LayerServices);
 
-            var layer = GetLayerDetails("LocalAuthority_Areas");
+            var layer = GetLayerDetails("AdminBoundary_Areas");
             if (layer.HasNoValue)
             {
                 _logger.LogError("Layer LocalAuthority_Areas has not been set");
@@ -724,7 +724,7 @@ public class ForesterServices : BaseServices, IForesterServices
             if (layer.HasNoValue)
             {
                 _logger.LogError("Layer LocalAuthority_Areas has not been set");
-                return Result.Failure<LocalAuthority>("Unable to find layer details");
+                return Result.Failure("Unable to find layer details");
             }
 
             var geometryResult = ShapeHelper.MakeMultiPart(compartments.Select(c => c.ShapeGeometry).ToList());
@@ -819,14 +819,14 @@ public class ForesterServices : BaseServices, IForesterServices
             {
                 _logger.LogError("No compartments set for application having reference {ApplicationReference}",
                     applicationRef);
-                return Result.Failure<int>("No compartments Set");
+                return Result.Failure("No compartments Set");
             }
 
             var layer = GetLayerDetails("ExternalFLA");
             if (layer.HasNoValue)
             {
                 _logger.LogError("Layer LocalAuthority_Areas has not been set");
-                return Result.Failure<LocalAuthority>("Unable to find layer details");
+                return Result.Failure("Unable to find layer details");
             }
 
             var geometryResult = ShapeHelper.MakeMultiPart(compartments.Select(c => c.ShapeGeometry).ToList());
@@ -835,7 +835,7 @@ public class ForesterServices : BaseServices, IForesterServices
                 _logger.LogError(
                     "Unable to create a multipart geometry for the compartments for application having reference {ApplicationReference} with error {Error}",
                     applicationRef, geometryResult.Error);
-                return Result.Failure<int>(geometryResult.Error);
+                return Result.Failure(geometryResult.Error);
             }
 
             var bodyObj = new BaseFeatureWithGeometryObject<Polygon, ExternalFellingLicenceApplication<int>>
@@ -860,13 +860,13 @@ public class ForesterServices : BaseServices, IForesterServices
             if (result.IsFailure)
             {
                 _logger.LogError("Attempting to add application reference {ApplicationReference} to {Layer} failed with error {Error}", layer.Value.Name, applicationRef, result.Error);
-                return Result.Failure<int>(result.Error);
+                return Result.Failure(result.Error);
             }
 
             if (result.Value.AddResults == null)
             {
                 _logger.LogError("Attempting to add application reference {ApplicationReference}  to {Layer}  returned no results", layer.Value.Name, applicationRef);
-                return Result.Failure<int>("No Results");
+                return Result.Failure("No Results");
             }
 
             var errorResults = result.Value.AddResults.Where(r => r.ErrorDetails != null).Select(e => e.ErrorDetails).ToList();
@@ -875,7 +875,7 @@ public class ForesterServices : BaseServices, IForesterServices
                 return Result.Success();
             }
             _logger.LogError("Attempting to add application reference {ApplicationReference} to {Layer}  returned errors: {Errors}", layer.Value.Name, applicationRef, string.Join(", ", errorResults.Select(r => r!.Details)));
-            return Result.Failure<int>(string.Join(", ", errorResults.Select(r => r!.Details)));
+            return Result.Failure(string.Join(", ", errorResults.Select(r => r!.Details)));
 
         }
     }

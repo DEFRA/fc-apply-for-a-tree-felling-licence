@@ -12,16 +12,23 @@ public class AddConsulteeCommentModel
     [HiddenInput]
     public Guid AccessCode { get; set; }
 
-    [DisplayName("Your name or organisation name")]
-    [Required(ErrorMessage = "Enter your name or organisation name")]
+    [DisplayName("Name")]
+    [Required(ErrorMessage = "Enter your full name")]
     public string AuthorName { get; set; }
+
+    [DisplayName("Job role")]
+    [Required(ErrorMessage = "Enter your job role")]
+    public string AuthorJobRole { get; set; }
+
+    [DisplayName("Organisation")]
+    [Required(ErrorMessage = "Enter your organisation's name")]
+    public string AuthorOrganisation { get; set; }
 
     [HiddenInput]
     public string AuthorContactEmail { get; set; }
 
     [DisplayName("Your comments")]
     [Required(ErrorMessage = "Enter your comments on the application")]
-    [MaxLength(DataValueConstants.ConsulteeCommentMaxLength)]
     public string Comment { get; set; } = null!;
 
     [HiddenInput]

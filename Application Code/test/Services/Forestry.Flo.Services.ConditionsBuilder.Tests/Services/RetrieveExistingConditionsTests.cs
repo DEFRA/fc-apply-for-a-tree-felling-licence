@@ -73,6 +73,7 @@ public class RetrieveExistingConditionsTests
         return new CalculateConditionsService(
             _mockRepository.Object,
             Array.Empty<IBuildCondition>(),
+            new Mock<IBuildCBWCondition>().Object,
             new Mock<IAuditService<CalculateConditionsService>>().Object,
             new RequestContext(Guid.NewGuid().ToString(), new RequestUserModel(user)),
             new NullLogger<CalculateConditionsService>());

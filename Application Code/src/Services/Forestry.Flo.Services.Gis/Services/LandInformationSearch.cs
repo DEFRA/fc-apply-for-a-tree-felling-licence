@@ -44,31 +44,28 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
                    ["FellingLicenceId"] = fellingLicenceId
                }))
         {
+            if(compartments.Count == 0)
+            {
+                _logger.LogWarning("No compartments provided for application: {ApplicationId}", fellingLicenceId);
+                return Result.Failure<CreateUpdateDeleteResponse<int>>("No compartments provided");
+            }
+
             _logger.LogInformation("AddFellingLicenceGeometriesAsync called for application: {ApplicationId}", fellingLicenceId);
 
             var path = $"{_landInformationSearchOptions.BaseUrl}{_landInformationSearchOptions.FeaturePath}/addFeatures";
 
             _logger.LogDebug("About to send geometries for application [{ApplicationId}] to feature service at [{FeaturePath}]",
                 fellingLicenceId, path);
+            
 
-            var geometryResult = ShapeHelper.MakeMultiPart(compartments.Select(c => c.ShapeGeometry).ToList());
-
-            if (geometryResult.IsFailure)
+            var model =compartments.Select(p =>  new BaseFeatureWithGeometryObject<Polygon, LandInformationSearchCompartmentAttributeModel<int>>
             {
-                _logger.LogError("Unable to convert compartment geometries to MultiPart Polygon for application {ApplicationId}: {Error}",
-                    fellingLicenceId, geometryResult.Error);
-
-                return Result.Failure<CreateUpdateDeleteResponse<int>>(geometryResult.Error);
-            }
-
-            var model = new BaseFeatureWithGeometryObject<Polygon, LandInformationSearchCompartmentAttributeModel<int>>
-            {
-                GeometryObject = geometryResult.Value,
+                GeometryObject = p.ShapeGeometry,
                 Attributes = new LandInformationSearchCompartmentAttributeModel<int>
                 {
                     CaseReference = fellingLicenceId.ToString()
                 }
-            };
+            });
 
             var compartmentData = JsonConvert.SerializeObject(model);
 

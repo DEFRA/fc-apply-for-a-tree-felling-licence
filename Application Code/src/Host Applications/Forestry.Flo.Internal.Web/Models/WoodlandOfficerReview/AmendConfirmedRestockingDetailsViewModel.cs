@@ -20,6 +20,12 @@ public class AmendConfirmedRestockingDetailsViewModel : WoodlandOfficerReviewMod
     public required IndividualConfirmedRestockingDetailModel ConfirmedFellingRestockingDetails { get; set; }
 
     /// <summary>
+    /// Gets and sets the confirmed felling area of the related felling operation, which is required for validating
+    /// total of restocking areas against felling area and for displaying the confirmed felling area in the view.
+    /// </summary>
+    public required double? ConfirmedFellingArea { get; set; }
+
+    /// <summary>
     /// Gets or sets a collection of submitted felling licence application property compartments.
     /// </summary>
     /// <remarks>

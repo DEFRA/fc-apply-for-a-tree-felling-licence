@@ -167,7 +167,7 @@
 
                     <div class="govuk-radios" data-module="govuk-radios">
                         <div class="govuk-radios__item">
-                            <input class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Approved" asp-for="ApproverReview.RequestedStatus" />
+                            <input class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Approved" asp-for="ApproverReview.RequestedStatus" data-aria-controls="conditional-reason">
                             <label class="govuk-label govuk-radios__label" asp-for="ApproverReview.RequestedStatus">Approve</label>
                             <div class="govuk-hint govuk-radios__hint">
                                 You approve the woodland officer review and confirm that a licence
@@ -175,33 +175,32 @@
                             </div>
                         </div>
 
-					    <div id="conditional-reason">
-                            <div class="govuk-radios__conditional">
-                                <govuk-form-group asp-for="ApproverReview.ApprovedLicenceDuration">
-                                    <label class="govuk-label" asp-for="ApproverReview.ApprovedLicenceDuration">Licence duration.</label>
-                                    <div class="govuk-hint" id="duration-hint">
-                                        You can change the licence duration, the licence end date will be
-                                        automatically generated based on this selection. If you approve this
-                                        application today a [years] licence will expire [D/MM/YYYY].
+                        <div class="govuk-radios__conditional" id="conditional-reason">
+                            <govuk-form-group asp-for="ApproverReview.ApprovedLicenceDuration">
+                                <label class="govuk-label" asp-for="ApproverReview.ApprovedLicenceDuration">Licence duration.</label>
+                                <div class="govuk-hint" id="duration-hint">
+                                    You can change the licence duration, the licence end date will be
+                                    automatically generated based on this selection. If you approve this
+                                    application today a [years] licence will expire [D/MM/YYYY].
+                                </div>
+                                <validation asp-for="ApproverReview.ApprovedLicenceDuration"></validation>
+                                <select class="govuk-select" asp-for="ApproverReview.ApprovedLicenceDuration" asp-items="@Model.RecommendedLicenceDurations"></select>
+                            </govuk-form-group>
+                            
+                            <govuk-form-group asp-for="ApproverReview.DurationChangeReason">
+                                <div class="govuk-character-count" data-module="govuk-character-count" data-maxlength="150">
+                                    <label class="govuk-label" asp-for="ApproverReview.DurationChangeReason">
+                                        Give your reasons if you have changed the recommended licence duration.
+                                    </label>
+                                    <validation asp-for="ApproverReview.DurationChangeReason"></validation>
+                                    <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="ApproverReview.DurationChangeReason" aria-describedby="ApproverReview_DurationChangeReason-info"></textarea>
+                                    <div id="ApproverReview_DurationChangeReason-info" class="govuk-hint govuk-character-count__message">
+                                        You can enter up to 150 characters 
                                     </div>
-                                    <validation asp-for="ApproverReview.ApprovedLicenceDuration"></validation>
-                                    <select class="govuk-select" asp-for="ApproverReview.ApprovedLicenceDuration" asp-items="@Model.RecommendedLicenceDurations"></select>
-                                </govuk-form-group>
-                                
-                                <govuk-form-group asp-for="ApproverReview.DurationChangeReason">
-                                    <div class="govuk-character-count" data-module="govuk-character-count" data-maxlength="150">
-                                        <label class="govuk-label" asp-for="ApproverReview.DurationChangeReason">
-                                            Give your reasons if you have changed the recommended licence duration.
-                                        </label>
-                                        <validation asp-for="ApproverReview.DurationChangeReason"></validation>
-                                        <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="ApproverReview.DurationChangeReason" aria-describedby="ApproverReview_DurationChangeReason-info"></textarea>
-                                        <div id="ApproverReview_DurationChangeReason-info" class="govuk-hint govuk-character-count__message">
-                                            You can enter up to 150 characters 
-                                        </div>
-                                    </div>
-                                </govuk-form-group>
-                            </div>
+                                </div>
+                            </govuk-form-group>
                         </div>
+
                         <div class="govuk-radios__item">
                             <input id="status-refer" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.ReferredToLocalAuthority" asp-for="ApproverReview.RequestedStatus" />
                             <label class="govuk-label govuk-radios__label" for="status-refer">Refer to the local authority</label>

@@ -100,6 +100,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
                 Assert.Equal(proposedRestock.PercentageOfRestockArea, confirmedRestock.PercentageOfRestockArea);
                 Assert.Equal(proposedRestock.RestockingDensity, confirmedRestock.RestockingDensity);
                 Assert.Equal(proposedRestock.NumberOfTrees, confirmedRestock.NumberOfTrees);
+                Assert.Equal(proposedRestock.PercentageEstablishedByCoppiceOrNaturalRegen, confirmedRestock.PercentageEstablishedByCoppiceOrNaturalRegen);
                 Assert.Equal(proposedRestock.RestockingProposal, confirmedRestock.RestockingProposal);
 
                 // Restocking species
@@ -245,6 +246,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
                 Assert.Equal(proposedRestock.Area, confirmedRestock.Area);
                 Assert.Equal(proposedRestock.PercentageOfRestockArea, confirmedRestock.PercentageOfRestockArea);
                 Assert.Equal(proposedRestock.RestockingDensity, confirmedRestock.RestockingDensity);
+                Assert.Equal(proposedRestock.PercentageEstablishedByCoppiceOrNaturalRegen, confirmedRestock.PercentageEstablishedByCoppiceOrNaturalRegen);
                 Assert.Equal(proposedRestock.NumberOfTrees, confirmedRestock.NumberOfTrees);
                 Assert.Equal(proposedRestock.RestockingProposal, confirmedRestock.RestockingProposal);
                 Assert.Equivalent(proposedRestock.RestockingSpecies?.Select(s => s.Species) ?? Enumerable.Empty<string>(),

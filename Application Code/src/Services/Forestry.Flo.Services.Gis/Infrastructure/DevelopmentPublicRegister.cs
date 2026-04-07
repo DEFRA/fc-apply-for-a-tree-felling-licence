@@ -1,8 +1,7 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses.PublicRegister;
-using Forestry.Flo.Services.Gis.Models.Internal;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.Gis.Models.Internal.Request;
 using Microsoft.Extensions.Logging;
 
 namespace Forestry.Flo.Services.Gis.Infrastructure;
@@ -45,38 +44,22 @@ public class DevelopmentPublicRegister(ILogger<DevelopmentPublicRegister> logger
     }
 
     public async Task<Result<int>> AddCaseToConsultationRegisterAsync(
-        string caseRef,
-        string propertyName,
-        string caseType,
-        string gridRef,
-        string nearestTown,
-        string localAdminArea,
-        string adminRegion,
-        DateTime publicRegisterStart,
-        int period,
-        double? broadLeafArea,
-        double? coniferousArea,
-        double? openGroundArea,
-        double? totalArea,
-        List<InternalCompartmentDetails<Polygon>> compartments,
+        AddToPublicRegisterModel dataModel,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Development public register : received request to put application case reference {CaseReference} onto the public register", caseRef);
-        logger.LogDebug("Property name: {PropertyName}", propertyName);
-        logger.LogDebug("Case type: {CaseType}", caseType);
-        logger.LogDebug("Grid ref: {gridRef}", gridRef);
-        logger.LogDebug("Nearest town: {NearestTown}", nearestTown);
-        logger.LogDebug("Local authority: {LocalAuthority}", localAdminArea);
-        logger.LogDebug("Admin region: {AdminRegion}", adminRegion);
-        logger.LogDebug("Public register start date: {StartDate}", publicRegisterStart);
-        logger.LogDebug("Period: {Period}", period);
-        logger.LogDebug("Broadleaf area: {BroadleafArea}", broadLeafArea);
-        logger.LogDebug("Conifer area: {ConiferArea}", coniferousArea);
-        logger.LogDebug("Open ground area: {OpenGroundArea}", openGroundArea);
-        logger.LogDebug("Total area: {TotalArea}", totalArea);
-        logger.LogDebug("Count of compartments: {CountOfCompartments}", compartments.Count);
+        logger.LogInformation("Development public register : received request to put application case reference {CaseReference} onto the public register", dataModel.CaseReference);
+        logger.LogDebug("Property name: {PropertyName}", dataModel.PropertyName);
+        logger.LogDebug("Case type: {CaseType}", dataModel.CaseType);
+        logger.LogDebug("Grid ref: {gridRef}", dataModel.GridReference);
+        logger.LogDebug("Nearest town: {NearestTown}", dataModel.NearestTown);
+        logger.LogDebug("Local authority: {LocalAuthority}", dataModel.LocalAuthority);
+        logger.LogDebug("Admin region: {AdminRegion}", dataModel.AdminRegion);
+        logger.LogDebug("Public register start date: {StartDate}", dataModel.PublicRegisterStart);
+        logger.LogDebug("Period: {Period}", dataModel.Period);
+        logger.LogDebug("Total area: {TotalArea}", dataModel.TotalArea);
+        logger.LogDebug("Count of compartments: {CountOfCompartments}", dataModel.Compartments.Count);
 
-        var esriId = int.TryParse(caseRef.Split('/')[0], out var result) ? result : 1;
+        var esriId = int.TryParse(dataModel.CaseReference.Split('/')[0], out var result) ? result : 1;
         logger.LogInformation("Returning ESRI Id {EsriId}", esriId);
 
         return Result.Success(esriId);
@@ -89,22 +72,16 @@ public class DevelopmentPublicRegister(ILogger<DevelopmentPublicRegister> logger
         return Result.Success();
     }
 
-    public async Task<Result> ReturnCaseToConsultationRegisterAsync(
-        int objectId, string caseReference, DateTime newPublicRegisterStart, int period, CancellationToken cancellationToken)
-    {
-        logger.LogInformation("Development public register : received request to return application with ESRI id {EsriId} back onto the public register", objectId);
-        return Result.Success();
-    }
-
-    public async Task<Result> AddCaseToDecisionRegisterAsync(
-        int objectId,
-        string caseReference,
-        string fellingLicenceOutcome,
-        DateTime caseApprovalDateTime,
+    public async Task<Result<int>> AddCaseToDecisionRegisterAsync(
+        AddToDecisionPublicRegisterModel dataModel,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Development public register : received request to add application with ESRI id {EsriId} to the approval public register", objectId);
-        return Result.Success();
+        logger.LogInformation("Development public register : received request to add application with ESRI id {EsriId} to the approval public register", dataModel.ExistingEsriId);
+
+        var esriId = int.TryParse(dataModel.CaseReference.Split('/')[0], out var result) ? result : 1;
+        logger.LogInformation("Returning ESRI Id {EsriId}", esriId);
+
+        return Result.Success(esriId);
     }
 
     public async Task<Result> RemoveCaseFromDecisionRegisterAsync(int objectId, string caseReference, CancellationToken cancellationToken)

@@ -104,7 +104,7 @@ public class ConditionsUseCaseGenerateConditionsTests
                 [],
                 false)));
         _conditionsService
-            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ConditionsResponse>(error));
 
         var expectedRestockingOperations = new List<RestockingOperationDetails>();
@@ -129,7 +129,7 @@ public class ConditionsUseCaseGenerateConditionsTests
                     RestockingSubcompartmentName = restocking.SubCompartmentName,
                     RestockingProposalType = restocking.RestockingProposal.ToConditionsRestockingType(),
 
-                    PercentNaturalRegeneration = restocking.PercentNaturalRegeneration ?? 0,
+                    PercentNaturalRegeneration = restocking.PercentageEstablishedByCoppiceOrNaturalRegen ?? 0,
                     PercentOpenSpace = restocking.PercentOpenSpace ?? 0,
                     RestockingDensity = restocking.RestockingDensity,
                     TotalRestockingArea = restocking.Area ?? 0,
@@ -167,7 +167,7 @@ public class ConditionsUseCaseGenerateConditionsTests
                         zr.SpeciesCode == r.SpeciesCode
                         && zr.SpeciesName == r.SpeciesName
                         && zr.Percentage == r.Percentage))
-            ))), userId, It.IsAny<CancellationToken>()), Times.Once);
+            ))), userId, false, It.IsAny<CancellationToken>()), Times.Once);
         _conditionsService.VerifyNoOtherCalls();
 
         _auditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
@@ -206,7 +206,7 @@ public class ConditionsUseCaseGenerateConditionsTests
                 [],
                 false)));
         _conditionsService
-            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<bool>(),It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(response));
         
         var expectedRestockingOperations = new List<RestockingOperationDetails>();
@@ -230,7 +230,7 @@ public class ConditionsUseCaseGenerateConditionsTests
                     RestockingSubcompartmentName = restocking.SubCompartmentName,
                     RestockingProposalType = restocking.RestockingProposal.ToConditionsRestockingType(),
 
-                    PercentNaturalRegeneration = restocking.PercentNaturalRegeneration ?? 0,
+                    PercentNaturalRegeneration = restocking.PercentageEstablishedByCoppiceOrNaturalRegen ?? 0,
                     PercentOpenSpace = restocking.PercentOpenSpace ?? 0,
                     RestockingDensity = restocking.RestockingDensity,
                     TotalRestockingArea = restocking.Area ?? 0,
@@ -268,7 +268,7 @@ public class ConditionsUseCaseGenerateConditionsTests
                         zr.SpeciesCode == r.SpeciesCode
                         && zr.SpeciesName == r.SpeciesName
                         && zr.Percentage == r.Percentage))
-            ))), userId, It.IsAny<CancellationToken>()), Times.Once);
+            ))), userId, false, It.IsAny<CancellationToken>()), Times.Once);
         _conditionsService.VerifyNoOtherCalls();
 
         _auditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
