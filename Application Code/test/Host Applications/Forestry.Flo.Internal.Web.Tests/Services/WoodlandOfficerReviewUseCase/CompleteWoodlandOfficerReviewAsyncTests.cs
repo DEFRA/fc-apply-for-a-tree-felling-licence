@@ -348,7 +348,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
+            .ReturnsAsync(Result.Failure<Guid>(error));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
             applicationId,
@@ -456,7 +456,7 @@ public class CompleteWoodlandOfficerReviewAsyncTests : WoodlandOfficerReviewUseC
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var result = await sut.CompleteWoodlandOfficerReviewAsync(
             applicationId,

@@ -160,9 +160,7 @@ namespace Forestry.Flo.External.Web.Tests.Services.Api
                 new CancellationToken());
 
             //assert
-            var sc = result as StatusCodeResult;
-            Assert.NotNull(sc);
-            Assert.Equal(StatusCodes.Status201Created, sc.StatusCode );
+            Assert.True(result.IsSuccess);
 
             _mockAddDocumentFromExternalSystemUseCaseAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                     y.EventName == AuditEvents.LISConstraintReportConsumedOk
@@ -227,12 +225,8 @@ namespace Forestry.Flo.External.Web.Tests.Services.Api
                 DocumentPurpose.ExternalLisConstraintReport, 
                 new CancellationToken());
 
-            var sc = result as StatusCodeResult;
-
             //assert
-
-            Assert.NotNull(sc);
-            Assert.Equal(sc.StatusCode, StatusCodes.Status500InternalServerError);
+            Assert.True(result.IsFailure);
 
             _mockAddDocumentFromExternalSystemUseCaseAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                     y.EventName == AuditEvents.LISConstraintReportConsumedFailure
@@ -295,12 +289,9 @@ namespace Forestry.Flo.External.Web.Tests.Services.Api
                 DocumentPurpose.ExternalLisConstraintReport, 
                 new CancellationToken());
 
-            var sc = result as StatusCodeResult;
-
             //assert
 
-            Assert.NotNull(sc);
-            Assert.Equal(sc.StatusCode, StatusCodes.Status500InternalServerError);
+            Assert.True(result.IsFailure);
 
             _mockAddDocumentFromExternalSystemUseCaseAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                     y.EventName == AuditEvents.LISConstraintReportConsumedFailure

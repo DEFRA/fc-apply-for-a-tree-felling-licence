@@ -447,6 +447,96 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
     }
 
     [Theory, AutoData]
+    public async Task WhenRestockingOperationIsCoppiceAndPercentEstablishedIsNull(Guid woodlandOwnerId)
+    {
+        var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);
+
+        var fellingCpt = Properties.Single(x => x.Name == input.ApplicationSourceRecords.Single().Flov2PropertyName)
+            .CompartmentIds.Single(x => x.CompartmentName == input.ProposedFellingSourceRecords.Single().Flov2CompartmentName);
+
+        var restockingToAlter = input.ProposedRestockingSourceRecords!.Single();
+        var fellingToAlter = input.ProposedFellingSourceRecords!.Single();
+
+        //make it coppice, but no percent established
+        fellingToAlter.OperationType = FellingOperationType.ClearFelling;
+        restockingToAlter.RestockingProposal = TypeOfProposal.RestockWithCoppiceRegrowth;
+        restockingToAlter.RestockingDensity = 1500;
+        restockingToAlter.PercentageEstablishedByCoppiceOrNaturalRegen = null;
+        restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
+        restockingToAlter.Flov2CompartmentName = null;
+        restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Single(result.Error);
+
+        Assert.Equal($"Percentage established by coppice or natural regeneration must be provided for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+    }
+
+    [Theory, AutoData]
+    public async Task WhenRestockingOperationIsCoppiceAndPercentEstablishedIsLessThan0(Guid woodlandOwnerId)
+    {
+        var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);
+
+        var fellingCpt = Properties.Single(x => x.Name == input.ApplicationSourceRecords.Single().Flov2PropertyName)
+            .CompartmentIds.Single(x => x.CompartmentName == input.ProposedFellingSourceRecords.Single().Flov2CompartmentName);
+
+        var restockingToAlter = input.ProposedRestockingSourceRecords!.Single();
+        var fellingToAlter = input.ProposedFellingSourceRecords!.Single();
+
+        //make it coppice, but no percent established
+        fellingToAlter.OperationType = FellingOperationType.ClearFelling;
+        restockingToAlter.RestockingProposal = TypeOfProposal.RestockWithCoppiceRegrowth;
+        restockingToAlter.RestockingDensity = 1500;
+        restockingToAlter.PercentageEstablishedByCoppiceOrNaturalRegen = -5;
+        restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
+        restockingToAlter.Flov2CompartmentName = null;
+        restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Single(result.Error);
+
+        Assert.Equal($"Percentage established by coppice or natural regeneration must be greater than 0 and less than or equal to 100 for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+    }
+
+    [Theory, AutoData]
+    public async Task WhenRestockingOperationIsCoppiceAndPercentEstablishedIsGreaterThan100(Guid woodlandOwnerId)
+    {
+        var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);
+
+        var fellingCpt = Properties.Single(x => x.Name == input.ApplicationSourceRecords.Single().Flov2PropertyName)
+            .CompartmentIds.Single(x => x.CompartmentName == input.ProposedFellingSourceRecords.Single().Flov2CompartmentName);
+
+        var restockingToAlter = input.ProposedRestockingSourceRecords!.Single();
+        var fellingToAlter = input.ProposedFellingSourceRecords!.Single();
+
+        //make it coppice, but no percent established
+        fellingToAlter.OperationType = FellingOperationType.ClearFelling;
+        restockingToAlter.RestockingProposal = TypeOfProposal.RestockWithCoppiceRegrowth;
+        restockingToAlter.RestockingDensity = 1500;
+        restockingToAlter.PercentageEstablishedByCoppiceOrNaturalRegen = 105;
+        restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
+        restockingToAlter.Flov2CompartmentName = null;
+        restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Single(result.Error);
+
+        Assert.Equal($"Percentage established by coppice or natural regeneration must be greater than 0 and less than or equal to 100 for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+    }
+
+    [Theory, AutoData]
     public async Task WhenRestockingOperationIsIndividualTreesAndNumberOfTreesIsNull(Guid woodlandOwnerId)
     {
         var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);

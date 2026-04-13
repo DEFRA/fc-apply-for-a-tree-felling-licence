@@ -1,6 +1,8 @@
 ﻿@using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.Common.Extensions
+@using NodaTime
 @model Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite.ExternalConsulteeIndexViewModel
+@inject IClock clock
 
 @{
     ViewData["Title"] = "Invite someone to comment on the application";
@@ -13,7 +15,7 @@
 
     var disableRadios = Model.Editable(user) == false || Model.InviteLinks.Any();
 
-    var disableButton = latestExpiry.HasValue && latestExpiry.Value > Model.CurrentDateTimeUtc;
+    var currentDateTime = clock.GetCurrentInstant().ToDateTimeUtc();
 }
 <partial name="Partials/_FellingLicenceApplicationSummary" model="@Model.FellingLicenceApplicationSummary"/>
 
@@ -49,7 +51,7 @@
             </fieldset>
         </govuk-form-group>
 
-        @if (latestExpiry.HasValue && latestExpiry.Value > Model.CurrentDateTimeUtc)
+        @if (latestExpiry.HasValue && latestExpiry.Value > Model.CurrentDateTimeUtc && !Model.ConsultationsComplete)
         {
             <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
                 <div class="govuk-notification-banner__header">
@@ -62,7 +64,7 @@
                         There are active consultations on this application
                     </p>
                     <p class="govuk-body">
-                        You  cannot complete this task earlier than @DateTimeDisplay.GetDateTimeDisplayString(latestExpiry.Value) based on the last invited consultee.
+                        You can complete this task, however consultees may still reply until @DateTimeDisplay.GetDateTimeDisplayString(latestExpiry.Value) based on the last invited consultee.
                     </p>
                 </div>
             </div>
@@ -91,26 +93,28 @@
                             <th scope="col" class="govuk-table__header">Date invited</th>
                             <th scope="col" class="govuk-table__header">Invitation expires</th>
                             <th scope="col" class="govuk-table__header">Consultation response received</th>
+                            <th scope="col" class="govuk-table__header">Actions</th>
                         </tr>
                         </thead>
                         <tbody class="govuk-table__body">
                         @foreach (var t in Model.InviteLinks)
                         {
                             <tr class="govuk-table__row" data-id="@t.Id">
-                                <td class="govuk-table__cell">
-                                    @if (t.HasResponded)
-                                    {
-                                            <a class="govuk-link" asp-action="GetReceivedComments" asp-route-id="@Model.ApplicationId" asp-route-accessCode="@t.AccessCode">@t.Name</a>
-                                    }
-                                    else
-                                    {
-                                        @t.Name
-                                    }
-                                </td>
+                                <td class="govuk-table__cell">@t.Name</td>
                                 <td class="govuk-table__cell">@t.Purpose</td>
                                 <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(t.CreatedTimeStamp)</td>
                                 <td class="govuk-table__cell">@DateTimeDisplay.GetDateTimeDisplayString(t.ExpiresTimeStamp)</td>
                                 <td class="govuk-table__cell">@(t.HasResponded ? "Yes" : "No")</td>
+                                <td class="govuk-table__cell">
+                                    <a class="govuk-link" asp-action="GetReceivedComments" asp-route-id="@Model.ApplicationId" asp-route-accessCode="@t.AccessCode">View</a>
+                                    @if (t.HasResponded == false && t.ExpiresTimeStamp > currentDateTime)
+                                    {
+                                        <br/>
+                                        <a class="govuk-link" asp-action="SendReminder" asp-route-id="@Model.ApplicationId" asp-route-accessCode="@t.AccessCode" asp-route-email="@t.ContactEmail" title="Send reminder to @t.Name">
+                                            Send reminder
+                                        </a>
+                                    }
+                                </td>
                             </tr>
                         }
                         </tbody>
@@ -121,22 +125,26 @@
             </div>
         </div>
         
-        @if (latestExpiry.HasValue && latestExpiry.Value <= Model.CurrentDateTimeUtc && Model.Editable(user))
+        @if (latestExpiry.HasValue && Model.Editable(user))
         {
             <h2 class="govuk-heading-l">
                 Have you finished inviting and reviewing?
             </h2>
-            <div class="govuk-hint">
-                You can mark this as complete once the last consultation period has ended and you've reviewed all comments.
+            <div class="govuk-hint" condition="@(Model.ConsultationsComplete == false)">
+                You can mark this task as complete, however any consultees with unexpired invitations will still be able to respond.
+            </div>
+            <div class="govuk-hint" condition="@(Model.ConsultationsComplete && Model.ApplicationNeedsConsultations is true)">
+                This task is complete, however any consultees with unexpired invitations will still be able to respond.
             </div>
             <div class="govuk-inset-text">
-                Any consultees you add later will begin a new consultation period.
+                Any consultees you add later will re-open this task.
             </div>
         }
         
         <div class="govuk-form-group">
             <div class="govuk-button-group">
-                <button id="submit-button" condition-disabled="@disableButton" condition="@Model.Editable(user)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">Continue</button>
+                <button id="submit-button" condition="@(Model.Editable(user) && Model.ConsultationsComplete == false)" class="govuk-button" data-prevent-double-click="true" data-module="govuk-button" type="submit">Continue</button>
+                <button id="hidden-submit-button" aria-hidden="True" condition="@Model.Editable(user) && Model.ConsultationsComplete && Model.InviteLinks.NotAny()" class="govuk-button govuk-visually-hidden" data-prevent-double-click="true" data-module="govuk-button" type="submit">Save and continue</button>
                 <a asp-controller="WoodlandOfficerReview" asp-action="Index" asp-route-id="@Model.ApplicationId" class="govuk-link">Back to woodland officer review</a>
             </div>
         </div>

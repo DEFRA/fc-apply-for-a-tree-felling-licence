@@ -89,7 +89,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
             It.IsAny<NotificationAttachment[]?>(),
             It.IsAny<string?>(),
             It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var result = await sut.AssignWoodlandOfficerAsync(message, CancellationToken.None);
 
@@ -154,7 +154,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
             It.IsAny<NotificationAttachment[]?>(),
             It.IsAny<string?>(),
             It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("test no notification sent"));
+            .ReturnsAsync(Result.Failure<Guid>("test no notification sent"));
 
         var result = await sut.AssignWoodlandOfficerAsync(message, CancellationToken.None);
 

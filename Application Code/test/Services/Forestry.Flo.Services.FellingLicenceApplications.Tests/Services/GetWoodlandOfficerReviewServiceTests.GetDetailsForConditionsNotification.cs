@@ -46,11 +46,13 @@ public partial class GetWoodlandOfficerReviewServiceTests
     }
 
     [Theory, AutoMoqData]
-    public async Task GetDetailsForConditionsNotification_WhenApplicationFound(
+    public async Task GetDetailsForConditionsNotification_WhenApplicationFound_WithPreviouslySentConditions(
         Guid applicationId,
         FellingLicenceApplication application)
     {
         var sut = CreateSut();
+
+        application.WoodlandOfficerReview.OldConditionsSentToApplicantDate = DateTime.Today;
 
         _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
@@ -61,9 +63,34 @@ public partial class GetWoodlandOfficerReviewServiceTests
 
         Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
         Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
+        Assert.True(result.Value.ConditionsNotificationAlreadySent);
 
         _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
     }
 
+    [Theory, AutoMoqData]
+    public async Task GetDetailsForConditionsNotification_WhenApplicationFound_WithoutPreviouslySentConditions(
+        Guid applicationId,
+        FellingLicenceApplication application)
+    {
+        var sut = CreateSut();
+
+        application.WoodlandOfficerReview.OldConditionsSentToApplicantDate = null;
+        application.WoodlandOfficerReview.ConditionsToApplicantDate = null;
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<FellingLicenceApplication>.From(application));
+
+        var result = await sut.GetDetailsForConditionsNotificationAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
+        Assert.False(result.Value.ConditionsNotificationAlreadySent);
+
+        _fellingLicenceApplicationRepository.Verify(x => x.GetAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
 }

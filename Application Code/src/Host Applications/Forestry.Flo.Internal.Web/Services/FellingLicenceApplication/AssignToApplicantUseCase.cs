@@ -242,6 +242,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
             PawsCheckComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.PawsAndIawp, out var ticked6) && ticked6 ? false : null,
             HabitatRestorationComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.HabitatRestoration, out var ticked7) && ticked7 ? false : null,
             TreeHealthComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.TreeHealthIssues, out var ticked8) && ticked8 ? false : null,
+            EnvironmentalImpactAssessmentComplete = amendmentSections.TryGetValue(FellingLicenceApplicationSection.EnvironmentalImpactAssessment, out var ticked9) && ticked9 ? false : null
         };
 
         var consultationPr = await _getFellingLicenceApplicationService
@@ -558,13 +559,16 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
                     ApplicationId = prModel.PublicRegister.FellingLicenceApplicationId
                 };
 
-            var notificationResult =
-                await _notificationsService.SendNotificationAsync(
-                        notificationModel,
-                        NotificationType.InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure,
-                        recipient,
-                        cancellationToken: cancellationToken)
-                    .Map(() => notificationsSent++);
+            var notificationResult = await _notificationsService.SendNotificationAsync(
+                notificationModel,
+                NotificationType.InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure,
+                recipient,
+                cancellationToken: cancellationToken);
+            
+            if (notificationResult.IsSuccess)
+            {
+                notificationsSent++;
+            }
 
             if (notificationResult.IsFailure)
             {

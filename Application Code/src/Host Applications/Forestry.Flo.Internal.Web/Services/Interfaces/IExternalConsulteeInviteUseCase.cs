@@ -77,4 +77,20 @@ public interface IExternalConsulteeInviteUseCase
         Guid applicationId,
         Guid accessCode,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sends a reminder notification to the invited consultee associated with the given application id and access code.
+    /// </summary>
+    /// <param name="applicationId">The id of the application to send the reminder for.</param>
+    /// <param name="accessCode">The access code of the consultee to send the reminder to.</param>
+    /// <param name="externalAccessLink">The URL for the consultee to access the email.</param>
+    /// <param name="user">The user triggering the reminder email.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns></returns>
+    Task<Result> SendReminderToConsulteeAsync(
+        Guid applicationId,
+        Guid accessCode,
+        string externalAccessLink,
+        InternalUser user,
+        CancellationToken cancellationToken);
 }

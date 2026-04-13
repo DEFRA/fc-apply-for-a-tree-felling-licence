@@ -63,11 +63,13 @@ public interface IUpdateFellingLicenceApplication
     /// Adds the required decision public register details to the application.
     /// </summary>
     /// <param name="applicationId">The id of the application add the details to.</param>
+    /// <param name="esriId">The id of this case on the public register.</param>
     /// <param name="publishedDateTime">The point in time that the application was published to the decision public register</param>
     /// <param name="expiryDateTime">The point in time that the application expires on the decision public register, and so would need to be removed.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     Task<Result> AddDecisionPublicRegisterDetailsAsync(
         Guid applicationId,
+        int esriId,
         DateTime publishedDateTime,
         DateTime expiryDateTime,
         CancellationToken cancellationToken);

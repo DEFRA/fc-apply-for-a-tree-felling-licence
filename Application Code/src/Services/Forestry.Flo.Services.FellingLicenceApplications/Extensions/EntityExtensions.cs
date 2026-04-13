@@ -3,6 +3,7 @@ using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 
@@ -153,6 +154,11 @@ public static class EntityExtensions
     public static bool IsNumberOfTreesRestockingType(this TypeOfProposal typeOfProposal)
     {
         return typeOfProposal is TypeOfProposal.RestockWithIndividualTrees or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees;
+    }
+
+    public static bool IsCoppiceOrNaturalRegen(this TypeOfProposal typeOfProposal)
+    {
+        return typeOfProposal is TypeOfProposal.RestockWithCoppiceRegrowth or TypeOfProposal.RestockByNaturalRegeneration;
     }
 
     /// <summary>
@@ -309,6 +315,65 @@ public static class EntityExtensions
             .Where(c => c.IsRestocking is false || HasAlternativeCompartmentRestocking(c))
             .Select(c => c.PropertyProfileCompartmentId)
             .ToList();
+    }
+
+    public static bool IsCBWApplication(this FellingLicenceApplication application)
+    {
+        if (application.WoodlandOfficerReview?.ConfirmedFellingAndRestockingComplete is true)
+        {
+            var allCSpecies = application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                .SelectMany(x => x.ConfirmedFellingDetails)
+                .SelectMany(f => f.ConfirmedFellingSpecies?.Select(s => s.Species) ?? [])
+                .Union(application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                    .SelectMany(x => x.ConfirmedFellingDetails)
+                    .SelectMany(x => x.ConfirmedRestockingDetails)
+                    .SelectMany(x => x.ConfirmedRestockingSpecies?.Select(rs => rs.Species) ?? []) ?? []);
+
+            var allCSpeciesCbw = allCSpecies?.All(x => CricketBatWillowConstants.CricketBatWillowSpecies.Contains(x)) ?? false;
+
+            var allCFellingTypesCbw = application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                .SelectMany(x => x.ConfirmedFellingDetails)
+                .All(f => CricketBatWillowConstants.CricketBatWillowFellingTypes.Contains(f.OperationType)) ?? false;
+
+            var allCRestockingTypesCbw = application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments ?
+                .SelectMany(x => x.ConfirmedFellingDetails)
+                .Where(x => x.ConfirmedRestockingDetails?.Any() ?? false)
+                .SelectMany(x => x.ConfirmedRestockingDetails!)
+                .All(r => CricketBatWillowConstants.CricketBatWillowRestockingTypes.Contains(r.RestockingProposal)) ?? false;
+
+            var allCTreeCountsMatching = application.SubmittedFlaPropertyDetail?.SubmittedFlaPropertyCompartments?
+                .SelectMany(x => x.ConfirmedFellingDetails)
+                .Where(x => x.OperationType == FellingOperationType.FellingIndividualTrees)
+                .All(f => (f.NumberOfTrees ?? 0) == f.ConfirmedRestockingDetails?
+                    .Where(r => r.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees)
+                    .Sum(r => r.NumberOfTrees ?? 0)) ?? false;
+
+            return allCSpeciesCbw && allCFellingTypesCbw && allCRestockingTypesCbw && allCTreeCountsMatching;
+        }
+
+        var allSpecies = application.LinkedPropertyProfile?.ProposedFellingDetails?
+            .SelectMany(f => f.FellingSpecies?.Select(s => s.Species) ?? [])
+            .Union(application.LinkedPropertyProfile?.ProposedFellingDetails
+                .Where(x => x.ProposedRestockingDetails?.Any() ?? false)
+                .SelectMany(x => x.ProposedRestockingDetails!)
+                .SelectMany(x => x.RestockingSpecies?.Select(rs => rs.Species) ?? []) ?? []);
+        var allSpeciesCbw = allSpecies?.All(x => CricketBatWillowConstants.CricketBatWillowSpecies.Contains(x)) ?? false;
+
+        var allFellingTypesCbw = application.LinkedPropertyProfile?.ProposedFellingDetails
+            ?.All(f => CricketBatWillowConstants.CricketBatWillowFellingTypes.Contains(f.OperationType)) ?? false;
+
+        var allRestockingTypesCbw = application.LinkedPropertyProfile?.ProposedFellingDetails?
+            .Where(x => x.ProposedRestockingDetails?.Any() ?? false)
+            .SelectMany(x => x.ProposedRestockingDetails!)
+            .All(r => CricketBatWillowConstants.CricketBatWillowRestockingTypes.Contains(r.RestockingProposal)) ?? false;
+
+        var allTreeCountsMatching = application.LinkedPropertyProfile?.ProposedFellingDetails
+            .Where(x => x.OperationType == FellingOperationType.FellingIndividualTrees)
+            .All(f => (f.NumberOfTrees ?? 0) == f.ProposedRestockingDetails?
+                .Where(r => r.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees)
+                .Sum(r => r.NumberOfTrees ?? 0)) ?? false;
+
+        return allSpeciesCbw && allFellingTypesCbw && allRestockingTypesCbw && allTreeCountsMatching;
     }
 }
 

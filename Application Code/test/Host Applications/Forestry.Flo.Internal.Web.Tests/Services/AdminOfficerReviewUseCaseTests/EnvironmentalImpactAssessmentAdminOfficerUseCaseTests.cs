@@ -275,7 +275,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
 
         _sendNotifications.Setup(x => x.SendNotificationAsync(
                 It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), null, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("failure"));
+            .ReturnsAsync(Result.Failure<Guid>("failure"));
 
         _updateAdminOfficerReviewService.Setup(x => x.AddEnvironmentalImpactAssessmentRequestHistoryAsync(
                 It.IsAny<EnvironmentalImpactAssessmentRequestHistoryRecord>(), It.IsAny<CancellationToken>()))
@@ -566,7 +566,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
 
         _sendNotifications.Setup(x => x.SendNotificationAsync(
                 It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), null, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _updateAdminOfficerReviewService.Setup(x => x.AddEnvironmentalImpactAssessmentRequestHistoryAsync(
                 It.IsAny<EnvironmentalImpactAssessmentRequestHistoryRecord>(), It.IsAny<CancellationToken>()))
@@ -643,7 +643,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
 
         _sendNotifications.Setup(x => x.SendNotificationAsync(
                 It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), null, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _updateAdminOfficerReviewService.Setup(x => x.AddEnvironmentalImpactAssessmentRequestHistoryAsync(
                 It.IsAny<EnvironmentalImpactAssessmentRequestHistoryRecord>(), It.IsAny<CancellationToken>()))
@@ -849,7 +849,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
 
         _sendNotifications.Setup(x => x.SendNotificationAsync(
                 It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), null, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("failure"));
+            .ReturnsAsync(Result.Failure<Guid>("failure"));
 
         _updateAdminOfficerReviewService.Setup(x => x.AddEnvironmentalImpactAssessmentRequestHistoryAsync(
                 It.IsAny<EnvironmentalImpactAssessmentRequestHistoryRecord>(), It.IsAny<CancellationToken>()))
@@ -932,7 +932,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
 
         _sendNotifications.Setup(x => x.SendNotificationAsync(
                 It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), null, null, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _updateAdminOfficerReviewService.Setup(x => x.AddEnvironmentalImpactAssessmentRequestHistoryAsync(
                 It.IsAny<EnvironmentalImpactAssessmentRequestHistoryRecord>(), It.IsAny<CancellationToken>()))

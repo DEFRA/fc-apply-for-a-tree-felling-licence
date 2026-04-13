@@ -50,8 +50,8 @@ define(["/js/mapping/CheckResults.js"], function (ResultType) {
             return graphics;
         }
 
-        var filtered = graphics.filter(function (g) {
-            return !g.symbol || !g.symbol.type || g.symbol.type !== "text";
+        const filtered = graphics.filter(function (g) {
+            return !g.symbol?.type || g.symbol.type !== "text";
         });
 
         if (filtered.length === 0) {
@@ -59,7 +59,7 @@ define(["/js/mapping/CheckResults.js"], function (ResultType) {
         }
 
         return filtered[0];
-    }
+    };
 
     /*
      * Validates the geometry of a graphic and its relationship to other graphics.
@@ -76,15 +76,17 @@ define(["/js/mapping/CheckResults.js"], function (ResultType) {
             return ResultType.Notchecked;
         }
 
-        // Legacy check! 
         if (g.geometry.type !== "polygon") {
             return ResultType.Passed;
         }
-        const simplified = simplifyOperator.execute(g.geometry);
-        if (!simplifyOperator.isSimple(simplified)) {
+
+        if (!simplifyOperator.isSimple(g.geometry)) {
             return ResultType.IsSelfIntersecting;
         }
-
+        const area = this._geometryEngine.planarArea(g.geometry, "hectares");
+        if (Math.abs(area) < 0.01) {
+            return ResultType.TooSmall; 
+        }
         if (!this._geometryEngine.contains(this._defaultMapExtentForEngland, g.geometry)) {
             return ResultType.OutOfBounds;
         }
@@ -92,11 +94,9 @@ define(["/js/mapping/CheckResults.js"], function (ResultType) {
         if (Array.isArray(g.geometry.rings)) {
             let clockwiseCount = 0;
             for (const ring of g.geometry.rings) {
-
                 if (this.isClockwise(ring)) {
                     clockwiseCount++;
                 }
-
             }
             if (clockwiseCount > 1) {
                 return ResultType.TooManyRings;
@@ -115,11 +115,11 @@ define(["/js/mapping/CheckResults.js"], function (ResultType) {
             const overlaps = this._geometryEngine.overlaps(otherGraphic.geometry, g.geometry);
             const contained = this._geometryEngine.contains(otherGraphic.geometry, g.geometry);
             const within = this._geometryEngine.within(otherGraphic.geometry, g.geometry);
+
             if (overlaps || contained || within) {
                 return ResultType.OverlappingFeatures;
             }
         }
-
 
         return ResultType.Passed;
     };

@@ -5,7 +5,14 @@
 @using Forestry.Flo.Services.Common.Infrastructure
 @using Forestry.Flo.Services.Common.Models
 @using Forestry.Flo.Services.Common.User
+@using Forestry.Flo.Services.Gis.Models.Esri.Responses.PublicRegister
+@using Newtonsoft.Json
+@using JsonSerializer = System.Text.Json.JsonSerializer
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.ActivityFeedModel;
+
+@{
+    string sourceName = null;
+}
 
 <div class="govuk-form-group" id="activity-feed">
 
@@ -58,19 +65,19 @@
             switch (activityFeedItemCategory)
             {
                 case ActivityFeedItemCategory.CaseNote:
-                    <div class="moj-timeline__item flo-timeline_item-casenote" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
+                    <div class="moj-timeline__item flo-timeline_item-casenote govuk-!-margin-bottom-0" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
 
-                        <div class="moj-timeline__header">
-                            <img class="activity-avatar" data-forename="@activityFeedItem.CreatedByUser?.FirstName" data-surname="@activityFeedItem.CreatedByUser?.LastName" data-role="@activityFeedItem.CreatedByUser?.AccountType" alt="Avatar" hidden="true" aria-hidden="true">
+                        <div class="moj-timeline__header govuk-!-margin-bottom-0">
+                            <img class="activity-avatar govuk-!-margin-bottom-0" data-forename="@activityFeedItem.CreatedByUser?.FirstName" data-surname="@activityFeedItem.CreatedByUser?.LastName" data-role="@activityFeedItem.CreatedByUser?.AccountType" alt="Avatar" hidden="true" aria-hidden="true">
                             <h2 class="moj-timeline__title">@activityFeedItem.ActivityFeedItemType.GetDisplayName()</h2>
                             <p class="moj-timeline__byline">by @activityFeedItem.CreatedByUser?.FullName</p>
                         </div>
 
-                        <p class="moj-timeline__date">
+                        <p class="moj-timeline__date govuk-!-margin-bottom-0">
                             @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
                         </p>
 
-                        <div class="moj-timeline__description">
+                        <div class="moj-timeline__description govuk-!-margin-bottom-0">
                             <p class="show-line-breaks wrapped-text word-break">@activityFeedItem.Text</p>
                             <p>
                                 This case note is visible to:
@@ -104,26 +111,46 @@
                         @*consultee comment formatted same as public register comment*@
                         case ActivityFeedItemType.ConsulteeComment:
                         case ActivityFeedItemType.PublicRegisterComment:
-                            <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
 
-                                <div class="moj-timeline__header">
+                            @if (activityFeedItem.ActivityFeedItemType == ActivityFeedItemType.PublicRegisterComment)
+                            {
+                                try
+                                {
+                                    var deserialized = JsonSerializer.Deserialize<EsriCaseComments>(activityFeedItem.Source);
+                                    sourceName = $"{deserialized.Firstname} {deserialized.Surname} {(string.IsNullOrWhiteSpace(deserialized.Organisation) ? "" : "(" + deserialized.Organisation + ")")}";
+                                    sourceName = string.IsNullOrWhiteSpace(sourceName) ? "Name not provided" : sourceName;
+                                }
+                                catch
+                                {
+                                    sourceName = activityFeedItem.Source ?? "Name not provided";
+                                }
+                            }
+                            else
+                            {
+                                sourceName = activityFeedItem.Source ?? "Name not provided";
+                            }
+
+
+                            <div class="moj-timeline__item govuk-!-margin-bottom-0" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
+
+                                <div class="moj-timeline__header govuk-!-margin-bottom-0">
                                     <h2 class="moj-timeline__title">@activityFeedItem.ActivityFeedItemType.GetDisplayName()</h2>
 
-                                    <p class="moj-timeline__byline"> from @activityFeedItem.Source</p>
+                                    <p class="moj-timeline__byline"> from @sourceName</p>
 
                                 </div>
 
-                                <p class="moj-timeline__date">
+                                <p class="moj-timeline__date govuk-!-margin-bottom-0">
                                     @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
                                 </p>
 
-                                <div class="moj-timeline__description">
+                                <div class="moj-timeline__description govuk-!-margin-bottom-0">
                                     <p class="show-line-breaks wrapped-text word-break">@activityFeedItem.Text</p>
                                 </div>
 
                                 @if (activityFeedItem.Attachments?.Any() ?? false)
                                 {
-                                    <div>
+                                    <div class=" govuk-!-margin-bottom-0">
                                         <h3 class="govuk-heading-s">Attachments</h3>
                                         <ul class="govuk-list--bullet">
                                             @foreach (var attachment in activityFeedItem.Attachments)
@@ -150,14 +177,14 @@
                             </div>
                             break;
                         default:
-                            <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
+                            <div class="moj-timeline__item govuk-!-margin-bottom-0" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
 
-                                <div class="moj-timeline__header">
+                                <div class="moj-timeline__header govuk-!-margin-bottom-0">
                                     <h2 class="moj-timeline__title">@activityFeedItem.Text</h2>
                                     <p class="moj-timeline__byline">by System</p>
                                 </div>
 
-                                <p class="moj-timeline__date">
+                                <p class="moj-timeline__date govuk-!-margin-bottom-0">
                                     @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
                                 </p>
 
@@ -168,9 +195,9 @@
                     break;
 
                 case ActivityFeedItemCategory.OutgoingNotification:
-                    <div class="moj-timeline__item" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category = "@activityFeedItemCategory">
+                    <div class="moj-timeline__item govuk-!-margin-bottom-0" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
 
-                        <div class="moj-timeline__header">
+                        <div class="moj-timeline__header govuk-!-margin-bottom-0">
                             <h2 class="moj-timeline__title">@activityFeedItem.Text</h2>
 
 
@@ -182,7 +209,7 @@
                             }
                         </div>
 
-                        <p class="moj-timeline__date">
+                        <p class="moj-timeline__date govuk-!-margin-bottom-0">
                             @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
                         </p>
 
@@ -190,19 +217,19 @@
                 break;
 
                 case ActivityFeedItemCategory.AmendmentReviews:
-                    <div class="moj-timeline__item flo-timeline_item-casenote" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
+                    <div class="moj-timeline__item flo-timeline_item-casenote govuk-!-margin-bottom-0" data-type="@activityFeedItem.ActivityFeedItemType.ToString()" data-category="@activityFeedItemCategory">
 
-                        <div class="moj-timeline__header">
+                        <div class="moj-timeline__header govuk-!-margin-bottom-0">
                             <img class="activity-avatar" data-forename="@activityFeedItem.CreatedByUser?.FirstName" data-surname="@activityFeedItem.CreatedByUser?.LastName" data-role="@activityFeedItem.CreatedByUser?.AccountType" alt="Avatar" hidden="true" aria-hidden="true">
                             <h2 class="moj-timeline__title">@activityFeedItem.ActivityFeedItemType.GetDisplayName()</h2>
                             <p class="moj-timeline__byline">by @activityFeedItem.CreatedByUser?.FullName</p>
                         </div>
 
-                        <p class="moj-timeline__date">
+                        <p class="moj-timeline__date govuk-!-margin-bottom-0">
                             @DateTimeDisplay.GetDateTimeDisplayString(activityFeedItem.CreatedTimestamp)
                         </p>
 
-                        <div class="moj-timeline__description">
+                        <div class="moj-timeline__description govuk-!-margin-bottom-0">
                             <p class="show-line-breaks wrapped-text word-break">@activityFeedItem.Text</p>
                             <p>
                                 This case note is visible to:

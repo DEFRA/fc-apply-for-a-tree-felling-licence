@@ -6,6 +6,7 @@
         TooManyRings: 3,
         OutOfBounds: 4,
         OverlappingFeatures: 5,
-        NotInEngland: 6
+        NotInEngland: 6,
+        TooSmall: 7
     };
 })

@@ -1077,9 +1077,6 @@ define([
                     (evt.toolEventInfo.type === "move-stop" ||
                         evt.toolEventInfo.type === "reshape-stop")) {
                     if (checkingResult === CheckingResult.Passed) {
-                        if (this.sketchViewModel) {
-                            this.sketchViewModel.complete();
-                        }
                         this.updateFormGisData();
                     }
                     else {

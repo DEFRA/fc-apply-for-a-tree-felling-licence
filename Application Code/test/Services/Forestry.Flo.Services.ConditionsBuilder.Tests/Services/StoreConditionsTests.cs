@@ -198,6 +198,7 @@ public class StoreConditionsTests
         return new CalculateConditionsService(
             _mockRepository.Object,
             Array.Empty<IBuildCondition>(),
+            new Mock<IBuildCBWCondition>().Object,
             _mockAudits.Object,
             requestContext,
             new NullLogger<CalculateConditionsService>());

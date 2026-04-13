@@ -175,7 +175,8 @@ public class ReportQueryService : IReportQueryService
                                                 CompartmentName = GetConfirmedCompartmentName(confirmedRestockingDetail.SubmittedFlaPropertyCompartmentId, application, application.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments),
                                                 ConfirmedFellingReference = $"{submittedCompartment.DisplayName} / {confirmedFellingDetail.OperationType}",
                                                 RestockingDensity = confirmedRestockingDetail.RestockingDensity,
-                                                NumberOfTrees = confirmedRestockingDetail.NumberOfTrees
+                                                NumberOfTrees = confirmedRestockingDetail.NumberOfTrees,
+                                                PercentageEstablishedByCoppiceOrNaturalRegen = confirmedRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen
                                             });
                                     }
                                     else
@@ -193,7 +194,8 @@ public class ReportQueryService : IReportQueryService
                                                     Species = speciesDictionary[confirmedRestockingSpecies.Species].Name,
                                                     ConfirmedFellingReference = $"{submittedCompartment.DisplayName} / {confirmedFellingDetail.OperationType}",
                                                     RestockingDensity = confirmedRestockingDetail.RestockingDensity,
-                                                    NumberOfTrees = confirmedRestockingDetail.NumberOfTrees
+                                                    NumberOfTrees = confirmedRestockingDetail.NumberOfTrees,
+                                                    PercentageEstablishedByCoppiceOrNaturalRegen = confirmedRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen
                                                 });
                                         }
                                     }
@@ -247,7 +249,8 @@ public class ReportQueryService : IReportQueryService
                                             Species = string.Empty,
                                             ProposedFellingReference = $"{GetProposedCompartmentName(proposedFellingDetail.PropertyProfileCompartmentId, application, propertyCompartments)} / {proposedFellingDetail.OperationType}",
                                             RestockingDensity = proposedRestockingDetail.RestockingDensity,
-                                            NumberOfTrees = proposedRestockingDetail.NumberOfTrees
+                                            NumberOfTrees = proposedRestockingDetail.NumberOfTrees,
+                                            PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen
                                         });
                                 }
                                 else
@@ -266,7 +269,8 @@ public class ReportQueryService : IReportQueryService
                                                 Species = speciesDictionary[proposedRestockingSpecies.Species].Name,
                                                 ProposedFellingReference = $"{GetProposedCompartmentName(proposedFellingDetail.PropertyProfileCompartmentId, application, propertyCompartments)} / {proposedFellingDetail.OperationType}",
                                                 RestockingDensity = proposedRestockingDetail.RestockingDensity,
-                                                NumberOfTrees = proposedRestockingDetail.NumberOfTrees
+                                                NumberOfTrees = proposedRestockingDetail.NumberOfTrees,
+                                                PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen
                                             });
                                     }
                                 }

@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
+using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -40,8 +41,10 @@ public interface IExternalConsulteeReviewService
     /// </summary>
     /// <param name="model">A populated <see cref="ConsulteeCommentModel"/>.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
-    Task<Result> AddCommentAsync(
+    /// <returns>A <see cref="Result"/> indicating the success or failure of the operation,
+    /// alongside a <see cref="ConsulteeCommentNotificationModel"/> containing the required application
+    /// data to send a notification of the consultee comment being received to assigned internal users.</returns>
+    Task<Result<ConsulteeCommentNotificationModel>> AddCommentAsync(
         ConsulteeCommentModel model,
         CancellationToken cancellationToken);
 }

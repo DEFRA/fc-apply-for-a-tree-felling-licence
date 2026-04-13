@@ -83,8 +83,8 @@ public class ConstraintCheckerService
                 if (constraintCheckRequest.IsInternalUser)
                 {
                     
-                    internalCompartments = MapSubmittedFlaCompartmentsToGisInternalCompartments(fellingLicenceApplication
-                        .SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!);
+                    internalCompartments = MapSubmittedFlaCompartmentsToGisInternalCompartments(
+                        fellingLicenceApplication.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!);
                 }
                 else
                 {
@@ -98,8 +98,14 @@ public class ConstraintCheckerService
                     if (isSuccess)
                     {
                         var allPropertyCompartments = propertyProfile.Compartments;
-                        var compartmentsIncludedInPreSubmittedApplication = fellingLicenceApplication.LinkedPropertyProfile.ProposedFellingDetails!
-                            .Select(pfd => allPropertyCompartments.Single(x => x.Id == pfd.PropertyProfileCompartmentId))
+
+                        var fellingAndRestockingCptIds = (fellingLicenceApplication.LinkedPropertyProfile.ProposedFellingDetails?.Select(x => x.PropertyProfileCompartmentId) ?? [])
+                            .Union(fellingLicenceApplication.LinkedPropertyProfile.ProposedFellingDetails?.SelectMany(x => x.ProposedRestockingDetails ?? []).Select(x => x.PropertyProfileCompartmentId) ?? [])
+                            .Distinct()
+                            .ToHashSet();
+
+                        var compartmentsIncludedInPreSubmittedApplication = allPropertyCompartments
+                            .Where(c => fellingAndRestockingCptIds.Contains(c.Id))
                             .ToList();
                         internalCompartments = MapPreSubmittedFlaCompartmentsToGisInternalCompartments(compartmentsIncludedInPreSubmittedApplication);
                     }

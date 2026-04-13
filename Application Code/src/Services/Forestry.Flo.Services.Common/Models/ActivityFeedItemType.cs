@@ -77,6 +77,12 @@ public enum ActivityFeedItemType
     [Display(Name = "External consultee invite"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
     ExternalConsulteeInviteWithPublicRegisterInfo,
 
+    [Display(Name = "External consultee invite reminder"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
+    ExternalConsulteeInviteReminder,
+
+    [Display(Name = "Inform FC staff of consultee comment received"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
+    InformFcStaffOfConsulteeCommentReceived,
+
     [Display(Name = "Application conditions sent to applicant"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
     ConditionsToApplicant,
 

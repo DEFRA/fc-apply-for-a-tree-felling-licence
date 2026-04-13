@@ -38,9 +38,26 @@ public class ProposedRestockingDetailModel : ApplicationStepBase, IApplicationWi
     public double? CompartmentTotalHectares { get; set; }
 
     /// <summary>
-    /// Gets or sets the percentage of restock area.
+    /// Gets and sets the area of the felling operation that this restocking operation is linked to,
+    /// in hectares.
+    /// </summary>
+    public double FellingOperationArea { get; set; }
+
+    /// <summary>
+    /// Gets and sets the total area of all restocking operations linked to the same felling operation
+    /// as this restocking operation, in hectares.
+    /// </summary>
+    public double TotalRestockingOperationsArea { get; set; }
+
+    /// <summary>
+    /// Gets or sets the restock area as a percentage of compartment size.
     /// </summary>
     public double? PercentageOfRestockArea { get; set; }
+
+    /// <summary>
+    /// Gets and sets the restock area as a percentage of felling operation area.
+    /// </summary>
+    public double? PercentageOfFellingArea { get; set; }
 
     /// <summary>
     /// Gets or sets the restocking density.
@@ -52,6 +69,14 @@ public class ProposedRestockingDetailModel : ApplicationStepBase, IApplicationWi
     /// </summary>
     public int? NumberOfTrees { get; set; }
 
+    /// <summary>
+    /// Gets or sets the percentage established by coppice regrowth or natural regeneration.
+    /// </summary>
+    /// <remarks>
+    /// Only applicable if the restocking proposal is either coppice regrowth or natural regeneration.
+    /// This field should be null for other restocking proposals.
+    /// </remarks>
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 
     /// <summary>
     /// Gets or sets the restocking species.

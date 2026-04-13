@@ -1,9 +1,7 @@
-﻿@using Forestry.Flo.Internal.Web.Infrastructure
+﻿@using Forestry.Flo.Services.Common
 @using Forestry.Flo.Services.Common.Extensions
 @using Forestry.Flo.Services.FellingLicenceApplications.Configuration
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Microsoft.Extensions.Options
-@using NodaTime
 
 @{
     ViewData["Title"] = "Consultation public register";
@@ -214,7 +212,7 @@
                             @foreach (var notification in Model.ReceivedPublicRegisterComments.OrderByDescending(x => x.CreatedTimestamp))
                             {
                                 <tr class="govuk-table__row">
-										<td class="govuk-table__cell">@notification.CreatedTimestamp.ToString("g")</td>
+                                        <td class="govuk-table__cell">@DateTimeDisplay.GetDateDisplayString(notification.CreatedTimestamp)</td>
                                         <td class="govuk-table__cell">@notification.Text</td>
                                         <td class="govuk-table__cell">@notification.Status</td>
                                         <td class="govuk-table__cell">

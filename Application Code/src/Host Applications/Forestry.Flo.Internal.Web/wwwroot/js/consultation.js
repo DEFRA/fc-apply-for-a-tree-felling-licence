@@ -2,11 +2,17 @@
     const $neededYesRadio = $("#ApplicationNeedsConsultations");
     const $neededNoRadio = $("#consultation-needed-no");
     const $submitButton = $("#submit-button");
+    const $hiddenSubmitButton = $("#hidden-submit-button");
 
     function handleNeededChangeYes(checked) {
         if (checked === true) {
             $("#invite-section").removeClass("govuk-visually-hidden");
             $("#invite-section").removeAttr("aria-hidden");
+
+            if ($hiddenSubmitButton !== null) {
+                $hiddenSubmitButton.addClass("govuk-visually-hidden");
+                $hiddenSubmitButton.attr("aria-hidden", "true");
+            }
 
             if ($submitButton === null) {  // If the submit button is not found, exit early
                 return;
@@ -20,6 +26,11 @@
         if (checked === true) {
             $("#invite-section").addClass("govuk-visually-hidden");
             $("#invite-section").attr("aria-hidden", "true");
+
+            if ($hiddenSubmitButton !== null) {
+                $hiddenSubmitButton.removeClass("govuk-visually-hidden");
+                $hiddenSubmitButton.removeAttr("aria-hidden");
+            }
 
             if ($submitButton === null) {  // If the submit button is not found, exit early
                 return;

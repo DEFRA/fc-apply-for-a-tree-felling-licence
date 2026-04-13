@@ -693,7 +693,8 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
     [Theory, AutoMoqData]
     public async Task AddsDecisionPublicRegisterDetails_WhenValidApplicationWithCorrectDetailsWasApproved(
-        FellingLicenceApplication fellingLicenceApplication)
+        FellingLicenceApplication fellingLicenceApplication,
+        int esriId)
     {
         foreach (var assigneeHistory in fellingLicenceApplication.AssigneeHistories)
         {
@@ -757,11 +758,12 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
         _internalFlaRepository
             .Setup(x => x.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(),
-                It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.AddDecisionPublicRegisterDetailsAsync(
             fellingLicenceApplication.Id, 
+            esriId,
             publishedDate, 
             expiryDate, 
             CancellationToken.None);
@@ -777,6 +779,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository
             .Verify(x => x.AddDecisionPublicRegisterDetailsAsync(
                     fellingLicenceApplication.Id,
+                    esriId,
                     publishedDate,
                     expiryDate,
                     It.IsAny<CancellationToken>()),
@@ -787,7 +790,8 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
     [Theory, AutoMoqData]
     public async Task AddsDecisionPublicRegisterDetails_WhenValidApplicationWithCorrectDetailsWasRefused(
-      FellingLicenceApplication fellingLicenceApplication)
+      FellingLicenceApplication fellingLicenceApplication,
+      int esriId)
     {
         foreach (var assigneeHistory in fellingLicenceApplication.AssigneeHistories)
         {
@@ -851,11 +855,12 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
         _internalFlaRepository
             .Setup(x => x.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(),
-                It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.AddDecisionPublicRegisterDetailsAsync(
             fellingLicenceApplication.Id,
+            esriId,
             publishedDate,
             expiryDate,
             CancellationToken.None);
@@ -871,6 +876,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository
             .Verify(x => x.AddDecisionPublicRegisterDetailsAsync(
                     fellingLicenceApplication.Id,
+                    esriId,
                     publishedDate,
                     expiryDate,
                     It.IsAny<CancellationToken>()),
@@ -881,7 +887,8 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
     [Theory, AutoMoqData]
     public async Task AddsDecisionPublicRegisterDetails_WhenValidApplicationWithCorrectDetailsWasReferredToLocalAuthority(
-    FellingLicenceApplication fellingLicenceApplication)
+        FellingLicenceApplication fellingLicenceApplication,
+        int esriId)
     {
         foreach (var assigneeHistory in fellingLicenceApplication.AssigneeHistories)
         {
@@ -945,11 +952,12 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
         _internalFlaRepository
             .Setup(x => x.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(),
-                It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.AddDecisionPublicRegisterDetailsAsync(
             fellingLicenceApplication.Id,
+            esriId,
             publishedDate,
             expiryDate,
             CancellationToken.None);
@@ -965,6 +973,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository
             .Verify(x => x.AddDecisionPublicRegisterDetailsAsync(
                     fellingLicenceApplication.Id,
+                    esriId,
                     publishedDate,
                     expiryDate,
                     It.IsAny<CancellationToken>()),
@@ -976,7 +985,8 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
     [Theory, AutoMoqData]
     public async Task AddsDecisionPublicRegisterDetails_DoesNotAddIfRequiredStatusIsNotTheCurrentStatus(
-       FellingLicenceApplication fellingLicenceApplication)
+       FellingLicenceApplication fellingLicenceApplication,
+       int esriId)
     {
         foreach (var assigneeHistory in fellingLicenceApplication.AssigneeHistories)
         {
@@ -1041,6 +1051,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
         var result = await sut.AddDecisionPublicRegisterDetailsAsync(
             fellingLicenceApplication.Id,
+            esriId,
             publishedDate,
             expiryDate,
             CancellationToken.None);
@@ -1056,6 +1067,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository
             .Verify(x => x.AddDecisionPublicRegisterDetailsAsync(
                     It.IsAny<Guid>(),
+                    It.IsAny<int>(),
                     It.IsAny<DateTime>(),
                     It.IsAny<DateTime>(),
                     It.IsAny<CancellationToken>()),
@@ -1066,7 +1078,8 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
     [Theory, AutoMoqData]
     public async Task AddsDecisionPublicRegisterDetails_WhenRepositoryAddCallFails(
-      FellingLicenceApplication fellingLicenceApplication)
+      FellingLicenceApplication fellingLicenceApplication,
+      int esriId)
     {
         foreach (var assigneeHistory in fellingLicenceApplication.AssigneeHistories)
         {
@@ -1130,11 +1143,12 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
 
         _internalFlaRepository
             .Setup(x => x.AddDecisionPublicRegisterDetailsAsync(It.IsAny<Guid>(),
-                It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.NotFound));
 
         var result = await sut.AddDecisionPublicRegisterDetailsAsync(
             fellingLicenceApplication.Id,
+            esriId,
             publishedDate,
             expiryDate,
             CancellationToken.None);
@@ -1150,6 +1164,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository
             .Verify(x => x.AddDecisionPublicRegisterDetailsAsync(
                     fellingLicenceApplication.Id,
+                    esriId,
                     publishedDate,
                     expiryDate,
                     It.IsAny<CancellationToken>()),
@@ -1170,6 +1185,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
     [InlineData(FellingLicenceStatus.Withdrawn)]
     public async Task Cannot_AddDecisionPublicRegisterDetails_WhenInvalidCurrentStatus(FellingLicenceStatus invalidStatus)
     {
+        int esriId = 2;
         FixtureInstance.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
             .ForEach(b => FixtureInstance.Behaviors.Remove(b));
         FixtureInstance.Behaviors.Add(new OmitOnRecursionBehavior());
@@ -1231,6 +1247,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         
         var result = await sut.AddDecisionPublicRegisterDetailsAsync(
             fellingLicenceApplication.Id,
+            esriId,
             publishedDate,
             expiryDate,
             CancellationToken.None);
@@ -1246,6 +1263,7 @@ public class UpdateFellingLicenceApplicationServiceReturnToApplicantTests
         _internalFlaRepository
             .Verify(x => x.AddDecisionPublicRegisterDetailsAsync(
                     It.IsAny<Guid>(),
+                    It.IsAny<int>(),
                     It.IsAny<DateTime>(),
                     It.IsAny<DateTime>(),
                     It.IsAny<CancellationToken>()),

@@ -43,6 +43,11 @@ public class RestockingDetailViewModel : CompartmentConfirmedFellingRestockingDe
     public int? PercentNaturalRegeneration { get; set; }
 
     /// <summary>
+    /// Gets or sets the percentage established by coppice regrowth or natural regeneration.
+    /// </summary>
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
+
+    /// <summary>
     /// Gets or sets a dictionary of amended property names and their previous values.
     /// </summary>
     public Dictionary<string, string> AmendedProperties { get; set; }
@@ -76,6 +81,7 @@ public class RestockingDetailViewModel : CompartmentConfirmedFellingRestockingDe
         RestockingDensity = model.RestockingDensity;
         NumberOfTrees = model.NumberOfTrees;
         PercentNaturalRegeneration = model.PercentNaturalRegeneration;
+        PercentageEstablishedByCoppiceOrNaturalRegen = model.PercentageEstablishedByCoppiceOrNaturalRegen;
         AmendedProperties = model.AmendedProperties;
     }
 

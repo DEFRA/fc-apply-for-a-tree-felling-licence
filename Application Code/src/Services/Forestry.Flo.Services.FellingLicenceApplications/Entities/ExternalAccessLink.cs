@@ -68,4 +68,9 @@ public class ExternalAccessLink
     /// external access link.
     /// </summary>
     public List<Guid> SharedSupportingDocuments { get; set; } = new();
+
+    /// <summary>
+    /// Gets and sets the id of the notification history record associated with this external access link, if any.
+    /// </summary>
+    public Guid? NotificationHistoryId { get; set; }
 }

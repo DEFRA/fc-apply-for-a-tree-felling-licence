@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.PropertyProfiles.Services;
@@ -46,6 +47,15 @@ namespace Forestry.Flo.External.Web.Services
             _logger = Guard.Against.Null(logger);
         }
 
+        /// <summary>
+        /// Soft deletes a supporting document from a felling licence application, ensuring the user has access to the application and
+        /// that the application is in an editable state. Audits the action and any failures that occur.
+        /// </summary>
+        /// <param name="user">The user requesting the document removal.</param>
+        /// <param name="applicationId">The id of the application to remove the document from.</param>
+        /// <param name="documentIdentifier">The id of the document to remove.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A <see cref="Result"/> indicating the outcome.</returns>
         public async Task<Result> RemoveSupportingDocumentAsync(
             ExternalApplicant user,
             Guid applicationId, 
@@ -109,7 +119,16 @@ namespace Forestry.Flo.External.Web.Services
             return Result.Success();
         }
 
-        public async Task<Result> RemoveFellingLicenceDocument(ExternalApplicant user, Guid applicationId, Guid documentIdentifier, CancellationToken cancellationToken)
+        /// <summary>
+        /// Permanently removes a supporting document from a felling licence application, ensuring the user has access to the application and
+        /// that the application is in an editable state. Audits the action and any failures that occur.
+        /// </summary>
+        /// <param name="user">The user requesting the document removal.</param>
+        /// <param name="applicationId">The id of the application to remove the document from.</param>
+        /// <param name="documentIdentifier">The id of the document to remove.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A <see cref="Result"/> indicating the outcome.</returns>
+        public async Task<Result> RemoveFellingLicenceDocumentAsync(ExternalApplicant user, Guid applicationId, Guid documentIdentifier, CancellationToken cancellationToken)
         {
             _logger.LogDebug("Attempting to remove Licence.");
 
@@ -144,6 +163,66 @@ namespace Forestry.Flo.External.Web.Services
                     ApplicationId = applicationId,
                     user.UserAccountId,
                     Section = "Supporting Documentation"
+                }), cancellationToken);
+
+            return Result.Success();
+        }
+
+        /// <summary>
+        /// Permanently removes a supporting document from a felling licence application without a user context, ensuring that the
+        /// application is in an editable state. Audits the action and any failures that occur.
+        /// </summary>
+        /// <param name="applicationId">The id of the application to remove the document from.</param>
+        /// <param name="documentIdentifier">The id of the document to remove.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A <see cref="Result"/> indicating the outcome.</returns>
+        public async Task<Result> RemoveSupportingDocumentBySystemAsync(Guid applicationId, Guid documentIdentifier, CancellationToken cancellationToken)
+        {
+            _logger.LogDebug("Attempting to remove supporting document {DocumentId} for application {ApplicationId}", documentIdentifier, applicationId);
+
+            var isEditable = await GetFellingLicenceApplicationServiceForExternalUsers.GetIsEditable(
+                applicationId,
+                UserAccessModel.SystemUserAccessModel,
+                cancellationToken);
+
+            if (isEditable.IsFailure || !isEditable.Value)
+            {
+                // Backend protection against updating submitted FLAs in case UI protections fail.
+                return Result.Failure($"Attempt to update a Felling Licence Application with a non editable status is not allowed. ID: {applicationId}");
+            }
+
+            var result = await _removeDocumentService.PermanentlyRemoveDocumentAsync(
+                applicationId,
+                documentIdentifier,
+                cancellationToken);
+
+            if (result.IsFailure)
+            {
+                _logger.LogError("Unable to permanently remove document {DocumentId} from application {ApplicationId}, error: {Error}", documentIdentifier, applicationId, result.Error);
+
+                await _auditService.PublishAuditEventAsync(new AuditEvent(
+                        AuditEvents.RemoveFellingLicenceAttachmentFailureEvent, applicationId, null, _requestContext,
+                        new
+                        {
+                            ApplicationId = applicationId,
+                            Section = "Supporting Documentation",
+                            DocumentId = documentIdentifier,
+                            result.Error
+                        }),
+                    cancellationToken);
+
+                return result;
+            }
+
+            _logger.LogDebug("Document successfully permanently removed from application by system user, application {ApplicationId}, document {DocumentId}", applicationId, documentIdentifier);
+
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                AuditEvents.RemoveFellingLicenceAttachmentEvent, applicationId, null, _requestContext,
+                new
+                {
+                    ApplicationId = applicationId,
+                    Section = "Supporting Documentation",
+                    DocumentId = documentIdentifier
                 }), cancellationToken);
 
             return Result.Success();

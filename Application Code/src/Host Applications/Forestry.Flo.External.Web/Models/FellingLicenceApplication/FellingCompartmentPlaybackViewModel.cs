@@ -14,9 +14,9 @@ namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication
         {
             get
             {
-                if (FellingDetails != null && FellingDetails.Any())
+                if (FellingDetails?.Any() is true)
                 {
-                    return string.Join(",", FellingDetails.Select(fd => fd.FellingDetail.OperationType.GetDisplayName()));
+                    return string.Join(", ", FellingDetails.Select(fd => fd.FellingDetail.OperationType.GetDisplayName()));
                 }
 
                 return string.Empty;

@@ -113,10 +113,21 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// <summary>
     /// Adds an external access link for an invited external consultee.
     /// </summary>
-    /// <param name="accessLink">The access link details</param>
-    /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns>A result of the operation with optional error details</returns>
-    Task<UnitResult<UserDbErrorReason>> AddExternalAccessLinkAsync(ExternalAccessLink accessLink,
+    /// <param name="accessLink">The access link details.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result of the operation with optional error details.</returns>
+    Task<UnitResult<UserDbErrorReason>> AddExternalAccessLinkAsync(
+        ExternalAccessLink accessLink,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Removes an existing external access link from the database, for use when sending the notification has failed.
+    /// </summary>
+    /// <param name="accessLink">The access link to remove.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A result of the operation with optional error details.</returns>
+    Task<UnitResult<UserDbErrorReason>> DeleteExternalAccessLinkAsync(
+        ExternalAccessLink accessLink, 
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -225,11 +236,13 @@ public interface IFellingLicenceApplicationInternalRepository : IFellingLicenceA
     /// Adds the required decision public register details to the public register entity in the repository for the application.
     /// </summary>
     /// <param name="applicationId">The id of the application to which the public register details belong to.</param>
+    /// <param name="esriId">The id of this application on the public register application.</param>
     /// <param name="publishedDateTime">The point in time that the application was published to the decision public register</param>
     /// <param name="expiryDateTime">The point in time that the application expires on the decision public register, and so would need to be removed.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     Task<UnitResult<UserDbErrorReason>> AddDecisionPublicRegisterDetailsAsync(
         Guid applicationId,
+        int esriId,
         DateTime publishedDateTime,
         DateTime expiryDateTime,
         CancellationToken cancellationToken);

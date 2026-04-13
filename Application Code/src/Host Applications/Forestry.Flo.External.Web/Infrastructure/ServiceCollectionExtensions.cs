@@ -478,6 +478,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ListWoodlandOwnerUsersUseCase>();
         services.AddScoped<FcAgentCreatesWoodlandOwnerUseCase>();
         services.AddScoped<GeneratePdfApplicationUseCase>();
+        services.AddScoped<ConstraintsCheckUseCase>();
         services.AddScoped<DataImportUseCase>();
         services.AddScoped<ManageWoodlandOwnerDetailsUseCase>();
         services.AddScoped<AmendExternalUserUseCase>();

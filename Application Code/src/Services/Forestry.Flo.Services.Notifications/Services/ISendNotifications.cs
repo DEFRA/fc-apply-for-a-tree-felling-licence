@@ -21,12 +21,13 @@ public interface ISendNotifications
     /// <param name="attachments">An optional array of <see cref="NotificationAttachment"/> to attach to the notification.</param>
     /// <param name="senderName">An optional name of the person sending the notification.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the outcome of the operation.</returns>
+    /// <returns>A <see cref="Result"/> indicating the outcome of the operation with the id of the notification history item
+    /// created, if successful.</returns>
     /// <remarks>The generic model for this method allows the use of any type to be passed into the method to
     /// act as the source of values to merge into the notification content.  Data models for some notifications can be
     /// defined within this project where simply passing in a relevant entity or viewmodel from the UI does not provide
     /// all the required values for a notification.</remarks>
-    Task<Result> SendNotificationAsync<T>(
+    Task<Result<Guid>> SendNotificationAsync<T>(
         T model, 
         NotificationType notificationType, 
         NotificationRecipient recipient,
@@ -46,12 +47,13 @@ public interface ISendNotifications
     /// <param name="attachments">An optional array of <see cref="NotificationAttachment"/> to attach to the notification.</param>
     /// <param name="senderName">An optional name of the person sending the notification.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating the outcome of the operation.</returns>
+    /// <returns>A <see cref="Result"/> indicating the outcome of the operation with the id of the notification history item
+    /// created, if successful.</returns>
     /// <remarks>The generic model for this method allows the use of any type to be passed into the method to
     /// act as the source of values to merge into the notification content.  Data models for some notifications can be
     /// defined within this project where simply passing in a relevant entity or viewmodel from the UI does not provide
     /// all the required values for a notification.</remarks>
-    Task<Result> SendNotificationAsync<T>(
+    Task<Result<Guid>> SendNotificationAsync<T>(
         T model,
         NotificationType notificationType,
         NotificationRecipient[] recipients,

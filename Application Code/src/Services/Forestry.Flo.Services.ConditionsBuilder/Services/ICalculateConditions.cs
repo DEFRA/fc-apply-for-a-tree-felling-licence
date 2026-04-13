@@ -13,12 +13,14 @@ public interface ICalculateConditions
     /// </summary>
     /// <param name="request">A populated <see cref="CalculateConditionsRequest"/> request model.</param>
     /// <param name="performingUserId">The id of the performing user.</param>
+    /// <param name="isForCBWApplication">A flag to indicate this is a CBW application, requiring special handling.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A populated <see cref="ConditionsResponse"/> with the calculated conditions,
     /// or <see cref="Result.Failure"/> with a populated error message.</returns>
     Task<Result<ConditionsResponse>> CalculateConditionsAsync(
         CalculateConditionsRequest request,
         Guid performingUserId,
+        bool isForCBWApplication,
         CancellationToken cancellationToken);
 
     /// <summary>

@@ -53,10 +53,16 @@ public class ConfirmedRestockingDetail
     public int? PercentNaturalRegeneration { get; set; }
 
     /// <summary>
-    /// Gets and sets the percentage of restock area.
+    /// Gets and sets the restock area as a percentage of compartment size.
     /// </summary>
     [Column(TypeName = "decimal(5,2)")]
     public double? PercentageOfRestockArea { get; set; }
+
+    /// <summary>
+    /// Gets and sets the restock area as a percentage of felling operation area.
+    /// </summary>
+    [Column(TypeName = "decimal(5,2)")]
+    public double? PercentageOfFellingArea { get; set; }
 
     /// <summary>
     /// Gets and sets the restocking density.
@@ -72,6 +78,15 @@ public class ConfirmedRestockingDetail
     /// Gets and sets the confirmed restocking species.
     /// </summary>
     public IList<ConfirmedRestockingSpecies> ConfirmedRestockingSpecies { get; set; } = new List<ConfirmedRestockingSpecies>();
+
+    /// <summary>
+    /// Gets or sets the percentage established by coppice regrowth or natural regeneration.
+    /// </summary>
+    /// <remarks>
+    /// Only applicable if the restocking proposal is either coppice regrowth or natural regeneration.
+    /// This field should be null for other restocking proposals.
+    /// </remarks>
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 
     /// <summary>
     /// Gets and sets the identifier for the proposed restocking detail linked to this confirmed restocking detail.

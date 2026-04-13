@@ -311,7 +311,7 @@
                 reactiveUtils.watch(
                     () => this.view.map.basemap,
                     (newBasemap) => {
-                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== mapSettings.baseMapForUK;
+                        watermarkLayer.visible = !newBasemap.portalItem || newBasemap.portalItem.id !== fcconfig.baseMapForUK;
                     }
                 );
                 return Promise.resolve();

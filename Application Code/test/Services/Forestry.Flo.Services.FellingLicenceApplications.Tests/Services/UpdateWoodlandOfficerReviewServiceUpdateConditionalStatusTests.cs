@@ -72,6 +72,44 @@ public class UpdateWoodlandOfficerReviewServiceUpdateConditionalStatusTests
     }
 
     [Fact]
+    public async Task UpdateConditionalStatusAsync_Succeeds_UpdatesFields_WhenSkippingForCbw()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+        fla.StatusHistories.Single().Status = FellingLicenceStatus.AdminOfficerReview;
+        fla.AssigneeHistories.Single().Role = AssignedUserRole.AdminOfficer;
+
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new ConditionsStatusModel
+        {
+            IsConditional = true,
+            ConditionsToApplicantDate = DateTime.UtcNow.AddDays(-1)
+        };
+
+        var result = await sut.UpdateConditionalStatusAsync(
+            fla.Id,
+            model,
+            woodlandOfficerId,
+            CancellationToken.None,
+            true);
+
+        Assert.True(result.IsSuccess);
+
+        var updatedFla = _context.FellingLicenceApplications
+            .Include(x => x.WoodlandOfficerReview!)
+            .First(x => x.Id == fla.Id);
+
+        Assert.NotNull(updatedFla.WoodlandOfficerReview);
+        Assert.Equal(model.IsConditional, updatedFla.WoodlandOfficerReview.IsConditional);
+        Assert.Equal(model.ConditionsToApplicantDate, updatedFla.WoodlandOfficerReview.ConditionsToApplicantDate);
+        Assert.Equal(woodlandOfficerId, updatedFla.WoodlandOfficerReview.LastUpdatedById);
+        Assert.InRange(updatedFla.WoodlandOfficerReview.LastUpdatedDate, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow.AddMinutes(1));
+    }
+
+    [Fact]
     public async Task UpdateConditionalStatusAsync_Fails_WhenApplicationNotInState()
     {
         var sut = CreateSut();
@@ -96,6 +134,36 @@ public class UpdateWoodlandOfficerReviewServiceUpdateConditionalStatusTests
             model,
             woodlandOfficerId,
             CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task UpdateConditionalStatusAsync_Fails_WhenApplicationNotInState_WhenSkippingForCbw()
+    {
+        var sut = CreateSut();
+        var woodlandOfficerId = Guid.NewGuid();
+        var fla = CreateFellingLicenceApplication(woodlandOfficerId);
+
+        // Change status to Draft to fail state check
+        fla.StatusHistories.Clear();
+        fla.StatusHistories.Add(new StatusHistory
+        {
+            Created = DateTime.UtcNow.AddDays(-1),
+            Status = FellingLicenceStatus.Draft
+        });
+
+        _context.FellingLicenceApplications.Add(fla);
+        await _context.SaveChangesAsync();
+
+        var model = new ConditionsStatusModel { IsConditional = false };
+
+        var result = await sut.UpdateConditionalStatusAsync(
+            fla.Id,
+            model,
+            woodlandOfficerId,
+            CancellationToken.None,
+            true);
 
         Assert.False(result.IsSuccess);
     }
@@ -185,6 +253,8 @@ public class UpdateWoodlandOfficerReviewServiceUpdateConditionalStatusTests
             .With(x => x.Created, now.AddDays(-1))
             .With(x => x.Status, FellingLicenceStatus.WoodlandOfficerReview)
             .Create());
+
+        fla.AssigneeHistories.Clear();
 
         fla.AssigneeHistories.Add(_fixture.Build<AssigneeHistory>()
             .Without(x => x.FellingLicenceApplicationId)

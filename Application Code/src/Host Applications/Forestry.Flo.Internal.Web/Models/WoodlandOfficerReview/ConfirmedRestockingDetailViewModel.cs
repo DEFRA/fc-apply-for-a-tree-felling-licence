@@ -12,6 +12,16 @@ public class NewConfirmedRestockingDetailViewModel
 
     public int? PercentOpenSpace { get; set; }
 
+    /// <summary>
+    /// Gets or sets the restock area as a percentage of compartment size.
+    /// </summary>
+    public double? PercentageOfRestockArea { get; set; }
+
+    /// <summary>
+    /// Gets and sets the restock area as a percentage of felling operation area.
+    /// </summary>
+    public double? PercentageOfFellingArea { get; set; }
+
     public TypeOfProposal? RestockingProposal { get; set; }
 
     public ConfirmedRestockingSpeciesModel[] ConfirmedRestockingSpecies { get; set; } =
@@ -22,6 +32,8 @@ public class NewConfirmedRestockingDetailViewModel
     public int? NumberOfTrees { get; set; }
 
     public int? PercentNaturalRegeneration { get; set; }
+
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 
     public Guid RestockingCompartmentId { get; set; }
 

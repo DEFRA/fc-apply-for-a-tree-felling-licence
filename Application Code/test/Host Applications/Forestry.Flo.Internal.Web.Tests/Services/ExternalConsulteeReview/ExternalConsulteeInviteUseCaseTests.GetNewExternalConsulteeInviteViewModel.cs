@@ -232,6 +232,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
 
         Assert.Equal(applicationId, model.ApplicationId);
         Assert.Null(model.ExemptFromConsultationPublicRegister);
+        Assert.Null(model.ExemptFromConsultationPublicRegisterReason);
         Assert.False(model.PublicRegisterAlreadyCompleted);
         Assert.Equivalent(expectedDocuments, model.ConsulteeDocuments);
         Assert.Equivalent(expectedDocuments.Select(x => (Guid?)x.Id), model.SelectedDocumentIds);
@@ -254,7 +255,8 @@ public partial class ExternalConsulteeInviteUseCaseTests
     public async Task WhenApplicationHasSupportingDocumentsAndIsExemptFromPublicRegister(
         Guid applicationId,
         FellingLicenceApplication application,
-        WoodlandOwnerModel woodlandOwner)
+        WoodlandOwnerModel woodlandOwner,
+        string exemptionReason)
     {
         application.Documents.ForEach(x =>
         {
@@ -262,6 +264,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
             x.DeletionTimestamp = null;
         });
         application.PublicRegister.WoodlandOfficerSetAsExemptFromConsultationPublicRegister = true;
+        application.PublicRegister.WoodlandOfficerConsultationPublicRegisterExemptionReason = exemptionReason;
         application.PublicRegister.ConsultationPublicRegisterPublicationTimestamp = null;
         application.AssigneeHistories = [];
         application.LinkedPropertyProfile.ProposedFellingDetails = [];
@@ -289,7 +292,8 @@ public partial class ExternalConsulteeInviteUseCaseTests
 
         Assert.Equal(applicationId, model.ApplicationId);
         Assert.True(model.ExemptFromConsultationPublicRegister);
-        Assert.True(model.PublicRegisterAlreadyCompleted);
+        Assert.Equal(exemptionReason, model.ExemptFromConsultationPublicRegisterReason);
+        Assert.False(model.PublicRegisterAlreadyCompleted);
         Assert.Equivalent(expectedDocuments, model.ConsulteeDocuments);
         Assert.Equivalent(expectedDocuments.Select(x => (Guid?)x.Id), model.SelectedDocumentIds);
 
@@ -346,6 +350,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
 
         Assert.Equal(applicationId, model.ApplicationId);
         Assert.False(model.ExemptFromConsultationPublicRegister);
+        Assert.Null(model.ExemptFromConsultationPublicRegisterReason);
         Assert.True(model.PublicRegisterAlreadyCompleted);
         Assert.Equivalent(expectedDocuments, model.ConsulteeDocuments);
         Assert.Equivalent(expectedDocuments.Select(x => (Guid?)x.Id), model.SelectedDocumentIds);

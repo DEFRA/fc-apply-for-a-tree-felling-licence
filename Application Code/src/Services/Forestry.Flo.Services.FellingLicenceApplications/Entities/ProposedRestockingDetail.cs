@@ -44,10 +44,16 @@ public class ProposedRestockingDetail
     public double? Area { get; set; }
 
     /// <summary>
-    /// Gets or sets the percentage of restock area.
+    /// Gets or sets the restock area as a percentage of compartment size.
     /// </summary>
     [Column(TypeName = "decimal(5,2)")]
     public double? PercentageOfRestockArea { get; set; }
+
+    /// <summary>
+    /// Gets and sets the restock area as a percentage of felling operation area.
+    /// </summary>
+    [Column(TypeName = "decimal(5,2)")]
+    public double? PercentageOfFellingArea { get; set; }
 
     /// <summary>
     /// Gets or sets the restocking density.
@@ -63,6 +69,15 @@ public class ProposedRestockingDetail
     /// Gets or sets the restocking species.
     /// </summary>
     public IList<RestockingSpecies>? RestockingSpecies{ get; set; }
+
+    /// <summary>
+    /// Gets or sets the percentage established by coppice regrowth or natural regeneration.
+    /// </summary>
+    /// <remarks>
+    /// Only applicable if the restocking proposal is either coppice regrowth or natural regeneration.
+    /// This field should be null for other restocking proposals.
+    /// </remarks>
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
 
     /// <summary>
     /// Gets or sets the restocking outcomes.

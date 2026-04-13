@@ -19,10 +19,13 @@
         <input asp-for="ApplicationId" />
 
         <govuk-form-group asp-for="IsTreeHealthReasonToExpedite">
-            <fieldset class="govuk-fieldset" role="group" aria-describedby="is-prioritised-hint">
+            <fieldset class="govuk-fieldset" role="group" aria-describedby="contact-applicant-hint">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                    Is there a tree health or public safety reason that means the application needs to be expedited (consultation PR exempt)?
+                    Is there a tree health or public safety reason that means the application needs to be expedited (Consultation PR exempt)?
                 </legend>
+                <div id="contact-applicant-hint" class="govuk-hint">
+                    If you disagree with the applicant's response, or have additional context about the tree health situation, record this in a case note once you have completed this task and ensure it is visible to the applicant.
+                </div>
                 <validation asp-for="IsTreeHealthReasonToExpedite"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
@@ -32,13 +35,10 @@
                         </label>
                     </div>
                     <div class="govuk-radios__item">
-                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="IsTreeHealthReasonToExpedite" id="confirmed-no" type="radio" value="@false" aria-describedby="expedited-no-hint" />
+                        <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="IsTreeHealthReasonToExpedite" id="confirmed-no" type="radio" value="@false" />
                         <label class="govuk-label govuk-radios__label" for="confirmed-no">
                             No
                         </label>
-                        <div id="expedited-no-hint" class="govuk-hint govuk-radios__hint">
-                            Add the reason in a case note in the woodland officer review page, make sure to set the case note visible to Applicant
-                        </div>
                     </div>
                 </div>
             </fieldset>

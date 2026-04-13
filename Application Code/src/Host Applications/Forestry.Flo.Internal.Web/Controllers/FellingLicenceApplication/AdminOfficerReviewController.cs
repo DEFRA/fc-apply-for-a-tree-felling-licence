@@ -77,10 +77,10 @@ public partial class AdminOfficerReviewController : Controller
         CancellationToken cancellationToken)
     {
         var user = new InternalUser(User);
-
         if (string.IsNullOrWhiteSpace(model.AssignedWoodlandOfficer))
         {
-            this.AddErrorMessage("A Woodland Officer must be assigned before completing the review");
+
+            this.AddErrorMessage($"{(model.RequireWOReview ? "A woodland officer" : "An approver")} must be assigned before completing the review");
             return RedirectToAction("Index", new { id = model.ApplicationId });
         }
 

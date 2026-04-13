@@ -228,11 +228,14 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                                                     ConfirmedRestockingDetailsId = r.ConfirmedRestockingDetailsId,
                                                     ProposedRestockingDetailsId = r.ProposedRestockingDetailsId,
                                                     RestockArea = r.Area,
+                                                    PercentageOfRestockArea = r.PercentageOfRestockArea,
+                                                    PercentageOfFellingArea = r.PercentageOfFellingArea,
                                                     PercentOpenSpace = r.PercentOpenSpace,
                                                     RestockingProposal = r.RestockingProposal,
                                                     RestockingDensity = r.RestockingDensity,
                                                     NumberOfTrees = r.NumberOfTrees,
                                                     PercentNaturalRegeneration = r.PercentNaturalRegeneration,
+                                                    PercentageEstablishedByCoppiceOrNaturalRegen = r.PercentageEstablishedByCoppiceOrNaturalRegen,
                                                     RestockingCompartmentId = r.CompartmentId,
                                                     RestockingCompartmentNumber = r.CompartmentNumber,
                                                     RestockingCompartmentTotalHectares = r.RestockingCompartmentTotalHectares,
@@ -301,7 +304,9 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                                                 OperationType = f.OperationType,
                                                 Area = r.Area,
                                                 CompartmentTotalHectares = r.CompartmentTotalHectares,
-                                                PercentageOfRestockArea = r.PercentageOfRestockArea
+                                                PercentageOfRestockArea = r.PercentageOfRestockArea,
+                                                PercentageOfFellingArea = r.PercentageOfFellingArea,
+                                                PercentageEstablishedByCoppiceOrNaturalRegen = r.PercentageEstablishedByCoppiceOrNaturalRegen
                                             })
                                         .ToList(),
                                 })
@@ -312,6 +317,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 .ToArray(),
             ConfirmedFellingAndRestockingComplete = retrievalResult.ConfirmedFellingAndRestockingComplete,
         };
+
+        result.AreaWarnings = GetConfirmedFellingAndRestockingWarnings(result.Compartments);
 
         SetBreadcrumbs(result, pageName);
 
@@ -901,6 +908,14 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
             compartmentId = model.ConfirmedFellingRestockingDetails.SubmittedFlaPropertyCompartmentId!.Value;
         }
 
+        var compartmentArea = model.ConfirmedFellingRestockingDetails.TotalHectares;
+        double? percentageOfRestockArea = compartmentArea.HasValue && compartmentArea.Value > 0 && restockingDetails.RestockArea.HasValue
+            ? Math.Round(restockingDetails.RestockArea.Value / compartmentArea.Value * 100, 2)
+            : null;
+        double? percentageOfFellingArea = model.ConfirmedFellingArea.HasValue && model.ConfirmedFellingArea.Value > 0 && restockingDetails.RestockArea.HasValue
+            ? Math.Round(restockingDetails.RestockArea.Value / model.ConfirmedFellingArea.Value * 100, 2)
+            : null;
+
         return new IndividualRestockingDetailModel
         {
             SubmittedFlaPropertyCompartmentId = compartmentId,
@@ -909,9 +924,12 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
             ConfirmedRestockingDetailModel = new ConfirmedRestockingDetailModel
             {
                 Area = restockingDetails.RestockArea ?? 0,
+                PercentageOfRestockArea = percentageOfRestockArea,
+                PercentageOfFellingArea = percentageOfFellingArea,
                 RestockingDensity = restockingDetails.RestockingDensity,
                 ConfirmedFellingDetailsId = restockingDetails.ConfirmedFellingDetailsId,
                 NumberOfTrees = restockingDetails.NumberOfTrees,
+                PercentageEstablishedByCoppiceOrNaturalRegen = restockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen,
                 RestockingProposal = restockingDetails.RestockingProposal ?? TypeOfProposal.None,
                 ConfirmedRestockingSpecies = restockingDetails.ConfirmedRestockingSpecies.Select(s => new ConfirmedRestockingSpecies
                 {
@@ -921,6 +939,8 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 }).ToList(),
                 ConfirmedRestockingDetailsId = restockingDetails.ConfirmedRestockingDetailsId,
                 CompartmentId = compartmentId,
+                PercentNaturalRegeneration = restockingDetails.PercentNaturalRegeneration,
+                PercentOpenSpace = restockingDetails.PercentOpenSpace
             }
         };
     }
@@ -952,6 +972,42 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                     Species = s.Species ?? string.Empty
                 }).ToList()
             });
+    }
+
+    private static ConfirmedFellingAndRestockingWarning[] GetConfirmedFellingAndRestockingWarnings(
+        CompartmentConfirmedFellingRestockingDetailsModel[] compartmentModels)
+    {
+        var warnings = new List<ConfirmedFellingAndRestockingWarning>();
+        foreach (var compartment in compartmentModels)
+        {
+            var totalFellArea = compartment.ConfirmedFellingDetails.Sum(x => x.AreaToBeFelled ?? 0);
+            if (compartment.TotalHectares.HasValue && totalFellArea > compartment.TotalHectares.Value)
+            {
+                warnings.Add(new ConfirmedFellingAndRestockingWarning
+                {
+                    CompartmentId = compartment.CompartmentId!.Value,
+                    WarningType = ConfirmedFellingAndRestockingWarningType.FellingAreasExceedCompartmentArea
+                });
+            }
+
+            foreach (var felling in compartment.ConfirmedFellingDetails.Where(x => x.ConfirmedRestockingDetails.Any()))
+            {
+                var fellingArea = felling.AreaToBeFelled ?? 0;
+                var restockArea = felling.ConfirmedRestockingDetails.Sum(x => x.RestockArea ?? 0);
+
+                if (Math.Abs(Math.Round(restockArea, 2) - Math.Round(fellingArea, 2)) > 0.1)
+                {
+                    warnings.Add(new ConfirmedFellingAndRestockingWarning
+                    {
+                        CompartmentId = compartment.CompartmentId!.Value,
+                        ConfirmedFellingDetailsId = felling.ConfirmedFellingDetailsId,
+                        WarningType = ConfirmedFellingAndRestockingWarningType.RestockingAreasDoNotMatchFellingArea
+                    });
+                }
+            }
+        }
+
+        return warnings.ToArray();
     }
 
     private void SetBreadcrumbs(FellingLicenceApplicationPageViewModel model, string? pageName)

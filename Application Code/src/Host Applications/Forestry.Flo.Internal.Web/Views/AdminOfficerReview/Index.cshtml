@@ -22,6 +22,7 @@
 
         <input asp-for="ApplicationId" />
         <input type="hidden" asp-for="AssignedWoodlandOfficer"/>
+        <input type="hidden" asp-for="RequireWOReview"/>
         <input type="hidden" condition="@(!Model.Editable || Model.ApplicationSource == FellingLicenceApplicationSource.ApplicantUser)" asp-for="DateReceived.Day"/>
         <input type="hidden" condition="@(!Model.Editable || Model.ApplicationSource == FellingLicenceApplicationSource.ApplicantUser)" asp-for="DateReceived.Month" />
         <input type="hidden" condition="@(!Model.Editable || Model.ApplicationSource == FellingLicenceApplicationSource.ApplicantUser)" asp-for="DateReceived.Year" />

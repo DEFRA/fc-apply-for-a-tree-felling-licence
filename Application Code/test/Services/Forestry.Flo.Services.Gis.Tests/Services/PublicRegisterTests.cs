@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System;
 using System.Net;
 using System.Net.Http.Headers;
+using AutoFixture;
 using Castle.Components.DictionaryAdapter;
 using Forestry.Flo.Services.Gis.Models.MapObjects;
 
@@ -34,6 +35,8 @@ public partial class PublicRegisterTests
     private readonly HttpResponseMessage _emptyMessage;
 
     private List<InternalCompartmentDetails<Polygon>> _compartments;
+
+    protected readonly Fixture Fixture = new();
 
     public PublicRegisterTests()
     {
@@ -111,7 +114,7 @@ public partial class PublicRegisterTests
         _successQuery = new HttpResponseMessage {
             StatusCode = HttpStatusCode.OK,
             Content = new StringContent(
-                "{\"objectIdFieldName\": \"objectid\", \"globalIdFieldName\": \"globalid_1\", \"features\": []}")
+                "{\"objectIdFieldName\": \"objectid\", \"globalIdFieldName\": \"globalid_1\", \"features\": [ { \"attributes\": { \"objectId\": 1} } ]}")
         };
 
         _successQuery.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");

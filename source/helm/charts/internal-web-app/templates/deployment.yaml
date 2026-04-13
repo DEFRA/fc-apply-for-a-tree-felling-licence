@@ -395,6 +395,11 @@ spec:
             - name: AdminOfficerReview__CitizensCharterDateLength
               value: {{ .Values.config.adminOfficerReview.citizensCharterDateLength }}
             {{- end }}
+            # ------------------- woodland Officer Review start -------------------
+            {{- if .Values.config.woodlandOfficerReview.publicRegisterApplicationUrl }}
+            - name: WoodlandOfficerReview__PublicRegisterApplicationUrl
+              value: {{ .Values.config.woodlandOfficerReview.publicRegisterApplicationUrl }}
+            {{- end }}
             # ------------------- public register expiry start -------------------
             {{- if .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
             - name: PublicRegisterExpiry__ThresholdBeforePublicRegisterPeriodEnd
@@ -564,6 +569,10 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ExternalConsulteeInvite }}
             - name: GovUkNotifyOptions__TemplateIds__ExternalConsulteeInviteWithPublicRegisterInfo
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ExternalConsulteeInviteWithPublicRegisterInfo }}
+            - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfConsulteeCommentReceived
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfConsulteeCommentReceived }}
+            - name: GovUkNotifyOptions__TemplateIds__ExternalConsulteeInviteReminder
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ExternalConsulteeInviteReminder }}
             - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationApproval
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationApproval }}
             - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationReferredToLocalAuthority

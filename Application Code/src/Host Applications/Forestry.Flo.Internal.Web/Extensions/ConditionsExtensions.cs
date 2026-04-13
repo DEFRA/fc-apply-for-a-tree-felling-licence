@@ -52,7 +52,7 @@ public static class ConditionsExtensions
                     RestockingCompartmentNumber = restocking.CompartmentNumber,
                     RestockingSubcompartmentName = restocking.SubCompartmentName,
                     RestockingProposalType = restocking.RestockingProposal.ToConditionsRestockingType(),
-                    PercentNaturalRegeneration = restocking.PercentNaturalRegeneration ?? 0,
+                    PercentNaturalRegeneration = restocking.PercentageEstablishedByCoppiceOrNaturalRegen,
                     PercentOpenSpace = restocking.PercentOpenSpace ?? 0,
                     RestockingDensity = restocking.RestockingDensity,
                     NumberOfTrees = restocking.NumberOfTrees,
@@ -79,9 +79,13 @@ public static class ConditionsExtensions
     private static string GetInput(int conditionIndex, int parameterIndex, string value, string hint)
     {
         var inputClass = "govuk-input inline";
-        if (!string.IsNullOrWhiteSpace(value) && value.Length > 45)
+        if (!string.IsNullOrWhiteSpace(value) && value.Length > 15)
         {
             inputClass = "govuk-input inline2";
+        }
+        if (!string.IsNullOrWhiteSpace(value) && value.Length > 45)
+        {
+            inputClass = "govuk-input inline3";
         }
 
         var tagStart = "<input class=\"" + inputClass + "\" type=\"text\" value=\"" + value + "\"";

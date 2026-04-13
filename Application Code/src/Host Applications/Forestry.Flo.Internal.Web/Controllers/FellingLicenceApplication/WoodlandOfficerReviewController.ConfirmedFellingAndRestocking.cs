@@ -1,10 +1,8 @@
 ﻿using CSharpFunctionalExtensions;
 using FluentValidation;
 using Forestry.Flo.Internal.Web.Infrastructure;
-using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
@@ -605,6 +603,7 @@ public partial class WoodlandOfficerReviewController
                 FellingLicenceApplicationSummary = confirmedFellingRestockingDetailsModel.FellingLicenceApplicationSummary,
                 ApplicationId = confirmedFellingRestockingDetailsModel.ApplicationId,
                 SubmittedFlaPropertyCompartments = confirmedFellingRestockingDetailsModel.SubmittedFlaPropertyCompartments,
+                ConfirmedFellingArea = specificFellingDetail.ConfirmedFellingDetails.Single(x => x.ConfirmedFellingDetailsId == fellingDetailsId).AreaToBeFelled,
                 ConfirmedFellingRestockingDetails =
                     new IndividualConfirmedRestockingDetailModel
                     {
@@ -637,6 +636,7 @@ public partial class WoodlandOfficerReviewController
                 FellingLicenceApplicationSummary = confirmedFellingRestockingDetailsModel.FellingLicenceApplicationSummary,
                 ApplicationId = confirmedFellingRestockingDetailsModel.ApplicationId,
                 SubmittedFlaPropertyCompartments = confirmedFellingRestockingDetailsModel.SubmittedFlaPropertyCompartments,
+                ConfirmedFellingArea = specificFellingDetail.ConfirmedFellingDetails.Single(x => x.ConfirmedFellingDetailsId == fellingDetailsId).AreaToBeFelled,
                 ConfirmedFellingRestockingDetails =
                     new IndividualConfirmedRestockingDetailModel
                     {
@@ -644,6 +644,7 @@ public partial class WoodlandOfficerReviewController
                         CompartmentNumber = specificFellingDetail.CompartmentNumber,
                         SubCompartmentName = specificFellingDetail.SubCompartmentName,
                         SubmittedFlaPropertyCompartmentId = specificFellingDetail.SubmittedFlaPropertyCompartmentId,
+                        TotalHectares = specificFellingDetail.TotalHectares,
                         ConfirmedRestockingDetails =
                             specificFellingDetail.ConfirmedFellingDetails.First(x =>
                                 x.ConfirmedFellingDetailsId == fellingDetailsId).ConfirmedRestockingDetails.First(x =>
@@ -690,7 +691,7 @@ public partial class WoodlandOfficerReviewController
             model.Species.Clear();
         }
 
-        if (rd.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees || rd.RestockingProposal == TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
+        if (rd.RestockingProposal is TypeOfProposal.RestockWithIndividualTrees or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)
         {
             rd.RestockingDensity = null;
         }

@@ -247,6 +247,10 @@ config:
       ExternalConsulteeInvite:
       # -- External formal consultation with stakeholders - Email to consultees
       ExternalConsulteeInviteWithPublicRegisterInfo:
+      # -- External formal consultation with stakeholders - Notification to internal staff on comment received
+      InformFcStaffOfConsulteeCommentReceived:
+      # -- External formal consultation with stakeholders - reminder email
+      ExternalConsulteeInviteReminder:
       # -- Application Approved Notification - Email to Applicant
       InformApplicantOfApplicationApproval:
       # -- Application Referred to Local Authority Notification - Email to Applicant

@@ -2,6 +2,7 @@
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 
 namespace Forestry.Flo.External.Web.Services.Validation;
 
@@ -64,5 +65,16 @@ public class ProposedRestockingDetailModelValidator : AbstractValidator<Proposed
             .When(m => m.RestockingProposal != TypeOfProposal.None 
                        && m.RestockingProposal != TypeOfProposal.DoNotIntendToRestock
                        && m.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround);
+
+        RuleFor(m => m.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .NotNull()
+            .When(m => m.RestockingProposal.IsCoppiceOrNaturalRegen())
+            .WithMessage("Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration");
+
+        RuleFor(m => m.PercentageEstablishedByCoppiceOrNaturalRegen)
+            .Must(m => m is >0 and <= 100)
+            .When(m => m.RestockingProposal.IsCoppiceOrNaturalRegen() && m.PercentageEstablishedByCoppiceOrNaturalRegen.HasValue)
+            .WithMessage("Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration between 0 and 100");
+
     }
 }

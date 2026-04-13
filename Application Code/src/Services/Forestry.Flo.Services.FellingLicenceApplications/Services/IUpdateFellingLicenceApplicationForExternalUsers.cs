@@ -23,6 +23,7 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
     Task<Result<SubmitFellingLicenceApplicationResponse>> SubmitFellingLicenceApplicationAsync(
         Guid applicationId,
         UserAccessModel userAccessModel,
+        SubmittedFlaPropertyDetail propertyDetail,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -71,18 +72,6 @@ public interface IUpdateFellingLicenceApplicationForExternalUsers
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A <see cref="Result"/> indicating whether the call was successful.</returns>
     Task<Result> ConvertProposedFellingAndRestockingToConfirmedAsync(
-        Guid applicationId,
-        UserAccessModel userAccessModel,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Converts the proposed compartment designations for the application with the given id to submitted designations.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to update.</param>
-    /// <param name="userAccessModel">A <see cref="UserAccessModel"/> representing the user performing the process.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> indicating whether the call was successful.</returns>
-    Task<Result> ConvertProposedCompartmentDesignationsToSubmittedAsync(
         Guid applicationId,
         UserAccessModel userAccessModel,
         CancellationToken cancellationToken);

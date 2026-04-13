@@ -22,6 +22,7 @@ using StatusHistoryModel = Forestry.Flo.Internal.Web.Models.FellingLicenceApplic
 using ServiceWoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
 using WoodlandOwnerModel = Forestry.Flo.Internal.Web.Models.UserAccount.WoodlandOwnerModel;
 using Forestry.Flo.Services.Common.Extensions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Forestry.Flo.Internal.Web.Services;
 
@@ -84,7 +85,7 @@ public static class ModelMapping
 
             cfg.CreateMap<Flo.Services.Applicants.Entities.UserAccount.UserAccount,
                 ExternalUserAccountModel>();
-        });
+        }, new NullLoggerFactory());
 
         Mapper = config.CreateMapper();
     }
@@ -310,11 +311,13 @@ public static class ModelMapping
                     Area = pr.Area,
                     NumberOfTrees = pr.NumberOfTrees,
                     PercentageOfRestockArea = pr.PercentageOfRestockArea,
+                    PercentageOfFellingArea = pr.PercentageOfFellingArea,
                     Id = pr.Id,
                     GISData = compartmentsDictionary[pr.PropertyProfileCompartmentId].GISData,
                     Species = ModelMapping.MapRestockingSpecies(pr),
                     RestockingCompartmentId = pr.PropertyProfileCompartmentId,
-                    RestockingCompartmentName = compartmentsDictionary[pr.PropertyProfileCompartmentId].DisplayName
+                    RestockingCompartmentName = compartmentsDictionary[pr.PropertyProfileCompartmentId].DisplayName,
+                    PercentageEstablishedByCoppiceOrNaturalRegen = pr.PercentageEstablishedByCoppiceOrNaturalRegen
                 });
 
             results.Add(new FellingAndRestockingDetail

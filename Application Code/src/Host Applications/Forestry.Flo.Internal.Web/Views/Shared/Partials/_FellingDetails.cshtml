@@ -88,6 +88,7 @@
                 <th scope="col" class="govuk-table__header">% of restock area</th>
                 <th scope="col" class="govuk-table__header">Species</th>
                 <th scope="col" class="govuk-table__header">% of restock species</th>
+                <th scope="col" class="govuk-table__header">% established by coppice/natural regen</th>
             </tr>
             </thead>
             <tbody class="govuk-table__body">
@@ -122,6 +123,7 @@
                         <td class="govuk-table__cell">
                             @Html.Raw(outputPercentage)
                         </td>
+                        <td class="govuk-table__cell">@restockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen</td>
                     </tr>
                 }
             }

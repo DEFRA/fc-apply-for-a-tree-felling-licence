@@ -43,11 +43,13 @@ public interface IExternalConsulteeReviewUseCase
     /// </summary>
     /// <param name="model">The model containing comment details.</param>
     /// <param name="consulteeAttachmentFiles">The collection of attachment files.</param>
+    /// <param name="viewApplicationUrl">A URL for the application on the internal interface, for notifications.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A result indicating success or failure.</returns>
     Task<Result> AddConsulteeCommentAsync(
         AddConsulteeCommentModel model,
         FormFileCollection consulteeAttachmentFiles,
+        string viewApplicationUrl,
         CancellationToken cancellationToken);
 
     /// <summary>

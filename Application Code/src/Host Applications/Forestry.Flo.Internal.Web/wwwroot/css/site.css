@@ -208,12 +208,17 @@ body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
 
 .inline {
     display: inline;
-    width: 16em;
+    width: 8em;
 }
 
 .inline2 {
     display: inline;
-    width: 42em;
+    width: 17em;
+}
+
+.inline3 {
+    display: inline;
+    width: 40em;
 }
 
 .long-link {

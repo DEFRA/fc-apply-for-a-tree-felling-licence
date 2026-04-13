@@ -80,7 +80,7 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
                 null,
                 null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         _lateService.Setup(s => s.UpdateReminderNotificationTimeStampAsync(model.ApplicationId, model.AmendmentReviewId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
@@ -128,7 +128,7 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
                 null,
                 null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("fail"));
+            .ReturnsAsync(Result.Failure<Guid>("fail"));
 
         var transactionMock = new Mock<IDbContextTransaction>();
         _flaRepo.Setup(r => r.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(transactionMock.Object);
@@ -172,7 +172,7 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
                 null,
                 null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var sut = CreateSut();
         var result = await sut.NotifyApplicantAsync(model, CancellationToken.None);

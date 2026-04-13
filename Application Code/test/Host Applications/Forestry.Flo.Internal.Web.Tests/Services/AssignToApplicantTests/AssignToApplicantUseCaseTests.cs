@@ -386,7 +386,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformApplicantOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
+            .ReturnsAsync(Result.Failure<Guid>(error));
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<PublicRegisterPeriodEndModel>.None);
@@ -496,7 +496,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformApplicantOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<InternalUserAccount>.None);
@@ -612,7 +612,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformApplicantOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(internalUser.AsMaybe);
@@ -620,7 +620,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformFCStaffOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
+            .ReturnsAsync(Result.Failure<Guid>(error));
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<PublicRegisterPeriodEndModel>.None);
@@ -717,7 +717,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var amendmentSections = new Dictionary<FellingLicenceApplicationSection, bool>
         {
             { FellingLicenceApplicationSection.OperationDetails, true },
-            { FellingLicenceApplicationSection.FellingAndRestockingDetails, true }
+            { FellingLicenceApplicationSection.FellingAndRestockingDetails, true },
+            { FellingLicenceApplicationSection.EnvironmentalImpactAssessment, true }
         };
         var amendmentCompartments = new Dictionary<Guid, bool>
         {
@@ -742,7 +743,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformApplicantOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(internalUser.AsMaybe);
@@ -750,7 +751,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformFCStaffOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -777,6 +778,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 && r.PerformingUserId == performingUserId
                 && r.ApplicantToReturnTo == userAccessModel
                 && r.SectionsRequiringAttention.OperationDetailsComplete == false
+                && r.SectionsRequiringAttention.EnvironmentalImpactAssessmentComplete == false
                 && r.SectionsRequiringAttention.FellingAndRestockingDetailsComplete.Single().CompartmentId == amendmentCompartments.Single().Key),
             It.IsAny<CancellationToken>()), Times.Once);
         MockGetFellingLicenceApplication.Verify(x =>
@@ -884,7 +886,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformApplicantOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(internalUser.AsMaybe);
@@ -892,7 +894,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformFCStaffOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -1050,13 +1052,13 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformApplicantOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         MockSendNotifications
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformFCStaffOfDecisionPublicRegisterAutomaticRemovalOnExpiryDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -1065,7 +1067,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.SendNotificationAsync(It.IsAny<InformFCStaffOfReturnedApplicationDataModel>(),
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -1212,7 +1214,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 null,
                 null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         // Act  
         var result = await sut.NotifyApplicantOfLarchSplitAsync(
@@ -1276,7 +1278,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 null,
                 null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         // Act
         var result = await sut.NotifyApplicantOfLarchSplitAsync(
@@ -1340,7 +1342,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 null,
                 null,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         // Act
         var result = await sut.NotifyApplicantOfLarchSplitAsync(

@@ -2,6 +2,7 @@
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
@@ -211,26 +212,7 @@ public class FellingLicenceApplicationSummaryModel
     /// <summary>
     /// Gets whether the application can be considered a Cricket Bat Willow (CBW) application.
     /// </summary>
-    public bool IsCBWapplication
-    {
-        get
-        {
-            bool areAllSpeciesCBW = DetailsList
-                .All(detail =>
-                    detail.FellingDetail.Species.All(specie => specie.Key == "CBW") &&
-                    detail.RestockingDetail.All(r => r.Species.All(specie => specie.Key == "CBW"))
-                );
-
-            bool areAllFellingIndividualTrees = DetailsList
-                .All(detail => detail.FellingDetail.OperationType == FellingOperationType.FellingIndividualTrees);
-
-            bool areAllRestockingIndividualTrees = DetailsList.SelectMany(x => x.RestockingDetail)
-                .All(detail => detail.RestockingProposal == TypeOfProposal.RestockWithIndividualTrees);
-
-            return areAllSpeciesCBW && areAllFellingIndividualTrees && areAllRestockingIndividualTrees;
-        }
-    }
-
+    public bool IsCBWApplication { get; set; }
 
     /// <summary>
     /// Gets the previous status of the felling licence application based on the status history.

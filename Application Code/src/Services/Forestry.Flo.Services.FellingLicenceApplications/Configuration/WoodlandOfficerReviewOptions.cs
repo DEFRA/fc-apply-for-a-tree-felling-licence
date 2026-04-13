@@ -14,6 +14,11 @@ public class WoodlandOfficerReviewOptions : DevelopmentConfigOptions
     public TimeSpan PublicRegisterPeriod { get; set; }
 
     /// <summary>
+    /// Gets and sets the URL of the public register application - used to link from the internal system to the public register interface.
+    /// </summary>
+    public string PublicRegisterApplicationUrl { get; set; }
+
+    /// <summary>
     /// The default case type code to provide to the ESRI API when publishing a case to the
     /// consultation public register.
     /// </summary>

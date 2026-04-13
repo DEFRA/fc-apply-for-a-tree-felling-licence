@@ -16,6 +16,7 @@ define(["require",
     "esri/widgets/CoordinateConversion/support/Format",
     "esri/widgets/CoordinateConversion/support/Conversion",
     "esri/core/reactiveUtils",
+    "esri/geometry/Polygon",
     "/js/mapping/gthelper/proj4.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-wgs84.js?v=" + Date.now(),
     "/js/mapping/gthelper/gt-math.js?v=" + Date.now(),
@@ -43,6 +44,7 @@ define(["require",
         Format,
         Conversion,
         reactiveUtils,
+        Polygon,
         Proj4js,
         GT_WGS84,
         GT_Math,
@@ -121,15 +123,15 @@ define(["require",
                                             .then((data) => ({ status: r.status, body: data }));
                                     }
                                 })
-                                .then((obj) => {
-                                    if (obj.status !== 200) {
-                                        that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
-                                        document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
-                                        that.clearImportWidget();
-                                        return;
-                                    }
-                                    that.processResult(obj.body);
-                                })
+                                    .then((obj) => {
+                                        if (obj.status !== 200) {
+                                            that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                            document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                            that.clearImportWidget();
+                                            return;
+                                        }
+                                        that.processResult(obj.body);
+                                    })
                             }
                             return;
                         }
@@ -158,22 +160,22 @@ define(["require",
                                             that.getfileNamePartsArray(filePath)
                                         ),
                                     })
-                                    .then((r) => {
-                                        if (r.status != 200) {
-                                            return r.text().then((data) => ({ status: r.status, body: data }));
-                                        } else {
-                                            return r.json().then((data) => ({ status: r.status, body: data }));
-                                        }
-                                    })
-                                    .then((obj) => {
-                                        if (obj.status !== 200) {
-                                            that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
-                                            document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
-                                            that.clearImportWidget();
-                                            return;
-                                        }
-                                        that.processResult(obj.body);
-                                    });
+                                        .then((r) => {
+                                            if (r.status != 200) {
+                                                return r.text().then((data) => ({ status: r.status, body: data }));
+                                            } else {
+                                                return r.json().then((data) => ({ status: r.status, body: data }));
+                                            }
+                                        })
+                                        .then((obj) => {
+                                            if (obj.status !== 200) {
+                                                that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                                document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                                that.clearImportWidget();
+                                                return;
+                                            }
+                                            that.processResult(obj.body);
+                                        });
                                 } catch (error) {
                                     console.error("Error processing KMZ file:", error);
                                     that.ShowMessage("error", "Failed to process KMZ file.");
@@ -200,15 +202,15 @@ define(["require",
                                             .then((data) => ({ status: r.status, body: data }));
                                     }
                                 })
-                                .then((obj) => {
-                                    if (obj.status !== 200) {
-                                        that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
-                                        document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
-                                        that.clearImportWidget();
-                                        return;
-                                    }
-                                    that.processResult(obj.body);
-                                })
+                                    .then((obj) => {
+                                        if (obj.status !== 200) {
+                                            that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                            document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                            that.clearImportWidget();
+                                            return;
+                                        }
+                                        that.processResult(obj.body);
+                                    })
                             }
                             return;
                         }
@@ -217,23 +219,23 @@ define(["require",
                             method: "POST",
                             body: that.getFormData(that.getfileNamePartsArray(filePath), e.target.files[0]),
                         })
-                        .then((r) => {
-                            if (r.status != 200) {
-                                return r.text().then((data) => ({ status: r.status, body: data }));
-                            } else {
-                                return r.json().then((data) => ({ status: r.status, body: data }));
-                            }
-                        })
-                        .then((obj) => {
-                            if (obj.status !== 200) {
-                                that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
-                                document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
-                                that.clearImportWidget();
-                                return;
-                            }
+                            .then((r) => {
+                                if (r.status != 200) {
+                                    return r.text().then((data) => ({ status: r.status, body: data }));
+                                } else {
+                                    return r.json().then((data) => ({ status: r.status, body: data }));
+                                }
+                            })
+                            .then((obj) => {
+                                if (obj.status !== 200) {
+                                    that.ShowMessage("error", `Unable to load shape data, error: ${obj.body}`);
+                                    document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                                    that.clearImportWidget();
+                                    return;
+                                }
 
-                            that.processResult(obj.body);
-                        });
+                                that.processResult(obj.body);
+                            });
                     });
                 }
 
@@ -367,19 +369,29 @@ define(["require",
                         }
                         const graphic = results[0].graphic;
 
-                        if (that._validateShapeUseCase.Execute(graphic, [], this.simplifyOperator) !== CheckingResult.Passed) {
-                            that.ShowMessage("error", "This shape is invalid and importing it has been canceled");
+                        if (graphic.attributes.selectable !== true) {
                             return;
                         }
 
+                        if (!graphic.attributes.isSelected) {
 
-                        const intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
+                            if (that._validateShapeUseCase.Execute(graphic, [], this.simplifyOperator) !== CheckingResult.Passed) {
+                                that.ShowMessage("error", "This shape is invalid and importing it has been canceled");
+                                return;
+                            }
 
-                        if (intersects) {
-                            that.ShowMessage("error", "This shape intersects with another shape in the map.");
-                            return;
+
+                            let intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
+                            if (!intersects) {
+                                intersects = await this.checkIntersectionsWithDrawingLayer(graphic.geometry);
+                            }
+
+                            if (intersects) {
+                                that.ShowMessage("error", "This shape intersects with another shape in the map.");
+                                return;
+                            }
+
                         }
-
                         const isInDrawingLayer = that._drawingLayer.graphics.items.includes(graphic);
                         if (isInDrawingLayer && graphic.attributes) {
                             graphic.attributes.isSelected = !graphic.attributes.isSelected;
@@ -431,7 +443,7 @@ define(["require",
                                 var shapeName = item.attributes[that.fieldControl.options[that.fieldControl.selectedIndex].value];
                                 const existingTextNode = li.querySelector("label");
                                 if (existingTextNode) {
-                                    existingTextNode.textContent = shapeName;
+                                    existingTextNode.textContent = item.attributes.selectable ? shapeName : `${shapeName} (${item.attributes.ErrorText})`;
                                 } else {
                                     var labelDiv = document.createElement("div");
                                     var label = document.createElement("label");
@@ -487,7 +499,7 @@ define(["require",
 
                 basemapGallery.view = this.view;
                 document.querySelector("arcgis-coordinate-conversion").view = this.view;
-       
+
                 const newFormat = new Format({
                     name: "OS Grid",
                     conversionInfo: {
@@ -651,6 +663,39 @@ define(["require",
 
             };
 
+            bulkImportMap.prototype.disableSelectAllIfInvalidOrOverlapping = function (messages) {
+                const graphics = this._drawingLayer.graphics.items.filter(g => g.attributes);
+                let hasOverlap = false;
+                for (let i = 0; i < graphics.length; i++) {
+                    for (let j = i + 1; j < graphics.length; j++) {
+                        if (
+                            graphics[i].geometry.type === "polygon" &&
+                            graphics[j].geometry.type === "polygon" &&
+                            geometryEngine.intersects(graphics[i].geometry, graphics[j].geometry)
+                        ) {
+                            hasOverlap = true;
+                            break;
+                        }
+                    }
+                    if (hasOverlap) {
+                        break;
+                    }
+                }
+
+                if (hasOverlap) {
+                    messages.push("Uploaded compartments have possible overlaps");
+                }
+
+                if (messages.length > 0) {
+                    const checkAll = document.getElementById("check-all");
+                    if (checkAll) {
+                        checkAll.disabled = true;
+                    }
+
+                    this.ShowMessages("warning", messages);
+                }
+            }
+
             /**
            * Opens a pop up window at the path
            *  @param {string} value Stringfied GIS JSON object
@@ -703,7 +748,7 @@ define(["require",
                     });
             }
 
-            bulkImportMap.prototype.ShowMessage = function (style, message, override) {
+            bulkImportMap.prototype.ShowMessage = function (style, message) {
 
 
                 const ms = document.getElementById("alert");
@@ -719,37 +764,36 @@ define(["require",
                     return;
                 }
 
-                if (override === undefined) {
-                    ms.innerHTML = "";
+                ms.innerHTML = "";
 
-                    let iconValue = "";
-                    let titleString = "Error";
-                    let kind = "danger";
-                    switch (style) {
-                        case "success":
-                            iconValue = "check-square";
-                            titleString = "Success";
-                            kind = "success";
-                            break;
-                        case "info":
-                            iconValue = "add-in";
-                            titleString = "Information";
-                            kind = "info";
-                            break;
-                        case "warning":
-                            iconValue = "accessibility";
-                            titleString = "Warning";
-                            kind = "warning";
-                            break;
-                    }
-
-                    ms.setAttribute("icon", iconValue);
-                    ms.setAttribute("kind", kind);
-                    const title = document.createElement("div");
-                    title.setAttribute("slot", "title");
-                    title.innerText = titleString;
-                    ms.appendChild(title);
+                let iconValue = "";
+                let titleString = "Error";
+                let kind = "danger";
+                switch (style) {
+                    case "success":
+                        iconValue = "check-square";
+                        titleString = "Success";
+                        kind = "success";
+                        break;
+                    case "info":
+                        iconValue = "add-in";
+                        titleString = "Information";
+                        kind = "info";
+                        break;
+                    case "warning":
+                        iconValue = "accessibility";
+                        titleString = "Warning";
+                        kind = "warning";
+                        break;
                 }
+
+                ms.setAttribute("icon", iconValue);
+                ms.setAttribute("kind", kind);
+                const title = document.createElement("div");
+                title.setAttribute("slot", "title");
+                title.innerText = titleString;
+                ms.appendChild(title);
+
 
                 const content = document.createElement("div");
                 content.setAttribute("slot", "title");
@@ -760,6 +804,79 @@ define(["require",
 
                 ms.setAttribute("open", "");
             }
+
+            bulkImportMap.prototype.ShowMessages = function (style, messages) {
+
+
+                const ms = document.getElementById("alert");
+
+
+                style = style === "" ? "error" : style;
+
+                if (!ms) {
+                    return;
+                }
+
+                ms.innerHTML = "";
+
+                let iconValue = "";
+                let titleString = "Error";
+                let kind = "danger";
+                switch (style) {
+                    case "success":
+                        iconValue = "check-square";
+                        titleString = "Success";
+                        kind = "success";
+                        break;
+                    case "info":
+                        iconValue = "add-in";
+                        titleString = "Information";
+                        kind = "info";
+                        break;
+                    case "warning":
+                        iconValue = "accessibility";
+                        titleString = "Warning";
+                        kind = "warning";
+                        break;
+                }
+
+                ms.setAttribute("icon", iconValue);
+                ms.setAttribute("kind", kind);
+                const title = document.createElement("div");
+                title.setAttribute("slot", "title");
+                title.innerText = titleString;
+                ms.appendChild(title);
+
+                const header = document.createElement("div");
+                header.setAttribute("slot", "title");
+                header.innerText = "There is a problem with the file imported:";
+                ms.appendChild(header);
+
+                messages.forEach((message, idx) => {
+                    const content = document.createElement("div");
+                    content.setAttribute("slot", "title");
+                    content.innerText = (idx < messages.length - 1) ? message + "," : message + ".";
+                    ms.appendChild(content);
+                });
+
+
+                const selectAll = document.createElement("div");
+                selectAll.setAttribute("slot", "title");
+                selectAll.innerText = "'Select All' option has been disabled.";
+                ms.appendChild(selectAll);
+
+
+                const footer = document.createElement("div");
+                footer.setAttribute("slot", "title");
+                footer.innerText = "If you wish to import the invalid compartments please fix these issues before uploading again.";
+                ms.appendChild(footer);
+
+ 
+                this._lastMessage = ""
+
+                ms.setAttribute("open", "");
+            }
+
 
             /**
             * Draws all other woodland compartments shapes to the relevant layers.
@@ -852,6 +969,24 @@ define(["require",
                     }
                 }
             };
+
+            bulkImportMap.prototype.checkIntersectionsWithDrawingLayer = async function (geometry) {
+                const graphics = this._drawingLayer.graphics.items;
+                let hasIntersect = false
+                for (let i = 0; i < graphics.length; i++) {
+                    const g = graphics[i];
+                    if (g.attributes === null) {
+                        continue;
+                    }
+                    if (g.geometry && geometryEngine.intersects(g.geometry, geometry)) {
+                        if (g.attributes.isSelected === true) {
+                            hasIntersect = true;
+                            break;
+                        }
+                    }
+                }
+                return hasIntersect; // true if an intersecting selected graphic was found
+            }
 
             bulkImportMap.prototype.checkIntersectionsWithFeatureLayer = async function (geometry) {
                 try {
@@ -1122,6 +1257,9 @@ define(["require",
             }
 
             bulkImportMap.prototype.processResult = function (data) {
+
+                let invalidItems = [];
+
                 if (data.featureCollection.layers[0].layerDefinition.geometryType !== "esriGeometryPolygon") {
                     this.ShowMessage("error", "Only Polygons are supported");
                     return;
@@ -1155,23 +1293,123 @@ define(["require",
                 data.featureCollection.layers[0].featureSet.features[0].attributes
                 this.setCommonKeys(data.featureCollection);
 
+                const otherGraphics = this.ocLayer_Polygon && this.ocLayer_Polygon.source
+                    ? this.ocLayer_Polygon.source.items.filter(g => g.geometry && g.geometry.type === "polygon")
+                    : [];
+
+                let notchecked = 0;
+                let lelfIntersecting = 0; 
+                let tooManyRings = 0;
+                let outOfBounds = 0;
+                let selfIntersecting = 0;
+                let overlappingFeatures = 0;
+                let notInEngland = 0;
+                let tooSmall = 0;
+
+                const validSymbol = {
+                    type: "simple-fill",
+                    color: [0, 0, 255, 0.5],
+                    outline: {
+                        color: [0, 0, 255],
+                        width: 1
+                    }
+                };
+
+                const invalidSymbol = {
+                    type: "simple-fill",
+                    color: [255, 0, 0, 0.3],// semi-transparent red
+                    outline: {
+                        color: [255, 0, 0],
+                        width: 2
+                    },
+                    style: "cross"
+                };
+
                 const possibleItems = data.featureCollection.layers[0].featureSet.features.map((f) => {
+               
                     f.attributes["ImportKey"] = this.generateGuid();
                     f.attributes.isSelected = false;
                     f.geometry.type = "polygon";
+
+                    const result = that._validateShapeUseCase.Execute(
+                        { geometry: this.ensureArcGISPolygon(f.geometry), attributes: f.attributes },
+                        otherGraphics,
+                        that.simplifyOperator
+                    );
+
+                    switch (result) {
+                        case CheckingResult.Notchecked:
+                            notchecked = notchecked + 1;
+                            f.attributes.ErrorText = "Not Checked"; 
+                            f.attributes.selectable = false;
+                            break;
+                        case CheckingResult.Passed:
+                            f.attributes.selectable = true;
+                            break;
+                        case CheckingResult.IsSelfIntersecting:
+                            selfIntersecting = selfIntersecting + 1;
+                            f.attributes.ErrorText = "Self Intersecting";
+                            f.attributes.selectable = false;
+                            break;
+                        case CheckingResult.TooManyRings:
+                            tooManyRings = tooManyRings + 1;
+                            f.attributes.ErrorText = "Too Many Rings";
+                            f.attributes.selectable = false;
+                            break;
+                        case CheckingResult.OutOfBounds:
+                            outOfBounds = outOfBounds + 1;
+                            f.attributes.ErrorText = "Out of Bounds";
+                            f.attributes.selectable = false;
+                            break;
+                        case CheckingResult.OverlappingFeatures:
+                            overlappingFeatures = overlappingFeatures + 1;
+                            f.attributes.ErrorText = "Over lapping features";
+                            f.attributes.selectable = false;
+                            break;
+                        case CheckingResult.NotInEngland:
+                            notInEngland = notInEngland + 1;
+                            f.attributes.ErrorText = "Not in England"
+                            f.attributes.selectable = false;
+                            break;
+                        case CheckingResult.TooSmall:
+                            tooSmall = tooSmall + 1;
+                            f.attributes.ErrorText = "Too small";
+                            f.attributes.selectable = false;
+                            break;
+                    }
+
                     return new Graphic({
                         geometry: f.geometry,
                         attributes: f.attributes,
-                        symbol: {
-                            type: "simple-fill",
-                            color: [0, 0, 255, 0.5],
-                            outline: {
-                                color: [0, 0, 255],
-                                width: 1
-                            }
-                        }
+                        symbol: f.attributes.selectable ? validSymbol : invalidSymbol
                     });
                 });
+
+                if (notchecked > 0) {
+                    invalidItems.push(`${notchecked} compartments couldn't be checked for validity and cannot be imported`);
+                }
+                if (selfIntersecting > 0) {
+                    invalidItems.push(`${selfIntersecting} compartments are self-intersecting and cannot be imported`);
+                }
+
+                if (tooManyRings > 0) {
+                    invalidItems.push(`${tooManyRings} compartments have too many rings and cannot be imported`);
+                }
+
+                if (outOfBounds > 0) {
+                    invalidItems.push(`${outOfBounds} compartments are out of bounds and cannot be imported`);
+                }
+
+                if (overlappingFeatures > 0) {
+                    invalidItems.push(`${overlappingFeatures} compartments are overlapping with existing shapes and cannot be imported`);
+                }
+
+                if (notInEngland > 0) {
+                    invalidItems.push(`${notInEngland} compartments are not in England, and cannot be imported`);
+                }
+                if (tooSmall > 0) {
+                    invalidItems.push(`${tooSmall} compartments are too small, and cannot be imported`);
+                }
 
                 this._drawingLayer.removeAll();
                 this._drawingLayer.addMany(possibleItems);
@@ -1199,12 +1437,13 @@ define(["require",
                     checkbox.setAttribute("id", "check" + item.attributes.ImportKey);
                     checkbox.setAttribute("data-CptName", shapeName);
                     checkbox.type = "checkbox";
+                    checkbox.disabled = !item.attributes.selectable;
                     li.appendChild(checkbox);
                     li.setAttribute("data-ImportKey", item.attributes.ImportKey);
                     var labelDiv = document.createElement("div");
                     var label = document.createElement("label");
                     label.setAttribute("for", "check" + item.attributes.ImportKey);
-                    label.textContent = shapeName;
+                    label.textContent = item.attributes.selectable ? shapeName : `${shapeName} (${item.attributes.ErrorText})`
                     labelDiv.appendChild(label);
                     li.appendChild(labelDiv);
 
@@ -1243,13 +1482,12 @@ define(["require",
                             outline: mapSettings.importShapeSelected.outline
                         };
 
+                        if (!gotoItem.attributes.selectable) {
+                            gotoItem.symbol.style = "cross";
+                        }
                         this.currentHighlight = {
                             remove: () => {
-                                gotoItem.symbol = {
-                                    type: "simple-fill",
-                                    color: gotoItem.symbol.color,
-                                    outline: mapSettings.importShape.outline
-                                };
+                                gotoItem.symbol = gotoItem.attributes.selectable ? validSymbol : invalidSymbol;
                             }
                         };
 
@@ -1272,13 +1510,13 @@ define(["require",
                     li.addEventListener("click", async (e) => {
                         e.stopPropagation();
 
+
                         let checkbox;
                         let key = e.target.getAttribute("data-ImportKey");
                         if (e.target.type === "checkbox") {
                             checkbox = e.target;
                         }
-
-                        const gotoItem = this._drawingLayer.graphics.items.find((pi) => pi.attributes && pi.attributes["ImportKey"] === key);
+                        const gotoItem = possibleItems.find((pi) => pi.attributes && pi.attributes["ImportKey"] === key);
 
                         if (!gotoItem) {
                             console.warn("Graphic not found for key:", key);
@@ -1293,8 +1531,10 @@ define(["require",
                                     return;
                                 }
 
-                                const intersects = await this.checkIntersectionsWithFeatureLayer(gotoItem.geometry);
-
+                                let intersects = await this.checkIntersectionsWithFeatureLayer(gotoItem.geometry);
+                                if (!intersects) {
+                                    intersects = await this.checkIntersectionsWithDrawingLayer(gotoItem.geometry);
+                                }
                                 if (intersects) {
                                     that.ShowMessage("error", "This shape intersects with another shape in the map.");
                                     checkbox.checked = false;
@@ -1330,6 +1570,7 @@ define(["require",
 
                             }
 
+                            document.getElementById("submit").disabled = noneChecked;
                         }
                     });
                     li.id = item.attributes["ImportKey"];
@@ -1342,6 +1583,9 @@ define(["require",
                 all.appendChild(checkbox);
                 all.addEventListener("click", async (e) => {
                     e.stopPropagation();
+                    if (checkbox.disabled) {
+                        return;
+                    }
                     let checkbox;
                     if (e.target.type === "checkbox") {
                         checkbox = e.target;
@@ -1362,7 +1606,10 @@ define(["require",
                             // Validate shape before selecting
                             if (that._validateShapeUseCase.Execute(graphic, [], this.simplifyOperator) === CheckingResult.Passed) {
                                 // Optionally check for intersection here as well
-                                const intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
+                                let intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
+                                if (!intersects) {
+                                    intersects = await this.checkIntersectionsWithDrawingLayer(graphic.geometry);
+                                }
                                 if (!intersects) {
                                     childCheckbox.checked = true;
                                     graphic.attributes.isSelected = true;
@@ -1376,7 +1623,7 @@ define(["require",
                                 childCheckbox.checked = false;
                                 graphic.attributes.isSelected = false;
                                 var shapeName = childCheckbox.getAttribute("data-CptName") || graphic.attributes.compartmentName;
-                                that.ShowMessage("error", `Shape ${shapeName} is invalid and was not selected.`, true);
+                                that.ShowMessage("error", `Shape ${shapeName} is invalid and was not selected.`);
                                 checkbox.checked = false;
                             }
                         }
@@ -1394,6 +1641,7 @@ define(["require",
                     that._drawingLayer.removeMany(items);
                     that._drawingLayer.addMany(items);
                 });
+
                 var label = document.createElement("label");
                 label.textContent = "All";
                 label.setAttribute("for", "check-all");
@@ -1402,6 +1650,7 @@ define(["require",
                 list.appendChild(all);
 
                 document.querySelector('[data-panel-id="importer"]').removeAttribute("loading");
+                this.disableSelectAllIfInvalidOrOverlapping(invalidItems)
             }
 
             bulkImportMap.prototype.setCommonKeys = function (featureCollection) {
@@ -1501,6 +1750,16 @@ define(["require",
                     button.disabled = !hasSelectedItems;
                 });
             };
+
+            bulkImportMap.prototype.ensureArcGISPolygon = function (geometry) {
+                if (geometry && geometry.type === "polygon" && typeof geometry.toJSON === "function") {
+                    return geometry;
+                }
+                return new Polygon({
+                    rings: geometry.rings,
+                    spatialReference: geometry.spatialReference || { wkid: 27700 }
+                });
+            }
 
             return bulkImportMap;
         }());

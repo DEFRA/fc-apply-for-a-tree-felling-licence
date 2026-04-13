@@ -30,6 +30,7 @@ using Moq;
 using NodaTime;
 using System.Text.Json;
 using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AdminOfficerReviewUseCaseTests;
@@ -190,7 +191,7 @@ public class AdminOfficerReviewUseCaseTests
                 It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), 
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         //act
         var result =
@@ -363,7 +364,7 @@ public class AdminOfficerReviewUseCaseTests
         _sendNotifications.Setup(x => x.SendNotificationAsync(It.IsAny<object>(), It.IsAny<NotificationType>(),
                 It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
+            .ReturnsAsync(Result.Failure<Guid>(error));
         
         //act
         var result =
@@ -525,6 +526,59 @@ public class AdminOfficerReviewUseCaseTests
     }
 
     [Theory, AutoMoqData]
+    public async Task ShouldFailConfirmingReview_WhenUpdateConditionsStatusFails(
+        FellingLicenceApplication fellingLicenceApplication,
+        UserAccount adminOfficer,
+        string internalLinkToApplication,
+        string error,
+        DateTime dateReceived)
+    {
+        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(
+            localAccountId: adminOfficer.Id,
+            accountTypeInternal: AccountTypeInternal.AdminOfficer);
+        var user = new InternalUser(userPrincipal);
+
+        // Arrange: CBWrequireWOReview = false
+        _getAdminOfficerReview
+            .Setup(x => x.GetCBWReviewStatusAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Setup HandleConfirmedFellingAndRestockingChangesAsync to succeed
+        _updateWoodlandOfficerReviewService
+            .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), user.UserAccountId!.Value, It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Success());
+
+        //Setup set conditions status to fail
+        _updateWoodlandOfficerReviewService
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(),
+                It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Failure(error));
+
+        var now = new Instant();
+        _clock.Setup(x => x.GetCurrentInstant()).Returns(now);
+
+        // Act
+        var result = await _sut.ConfirmAdminOfficerReview(fellingLicenceApplication.Id, user, internalLinkToApplication, dateReceived, false, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Contains(error, result.Error);
+
+        _updateConfirmedFellingAndRestockingDetailsService.VerifyNoOtherCalls();
+        _calculateConditionsService.VerifyNoOtherCalls();
+        _updateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(
+            fellingLicenceApplication.Id, user.UserAccountId!.Value, true, It.IsAny<CancellationToken>(), It.IsAny<bool>()), Times.Once);
+        _updateWoodlandOfficerReviewService
+            .Verify(x => x.UpdateConditionalStatusAsync(
+                fellingLicenceApplication.Id,
+                It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate.HasNoValue() && c.OldConditionsToApplicantDate.HasNoValue()),
+                user.UserAccountId!.Value,
+                It.IsAny<CancellationToken>(),
+                true), Times.Once);
+        _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
     public async Task ShouldFailConfirmingReview_WhenGenerateConditionsFails(
         FellingLicenceApplication fellingLicenceApplication,
         UserAccount adminOfficer,
@@ -552,9 +606,15 @@ public class AdminOfficerReviewUseCaseTests
             .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), user.UserAccountId!.Value, It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
 
+        //Setup set conditions status
+        _updateWoodlandOfficerReviewService
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(),
+                It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Success());
+
         // Setup CalculateConditionsAsync to fail
         _calculateConditionsService
-            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, It.IsAny<CancellationToken>()))
+            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<ConditionsResponse>(error));
 
         var now = new Instant();
@@ -570,9 +630,16 @@ public class AdminOfficerReviewUseCaseTests
         _updateConfirmedFellingAndRestockingDetailsService.Verify(x =>
             x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()), Times.Once);
         _calculateConditionsService.Verify(x =>
-            x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.Once);
+            x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, true, It.IsAny<CancellationToken>()), Times.Once);
         _updateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(
             fellingLicenceApplication.Id, user.UserAccountId!.Value, true, It.IsAny<CancellationToken>(), It.IsAny<bool>()), Times.Once);
+        _updateWoodlandOfficerReviewService
+            .Verify(x => x.UpdateConditionalStatusAsync(
+                fellingLicenceApplication.Id,
+                It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate.HasNoValue() && c.OldConditionsToApplicantDate.HasNoValue()),
+                user.UserAccountId!.Value,
+                It.IsAny<CancellationToken>(),
+                true), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
     }
 
@@ -597,7 +664,13 @@ public class AdminOfficerReviewUseCaseTests
         _updateConfirmedFellingAndRestockingDetailsService
             .Setup(x => x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<CombinedConfirmedFellingAndRestockingDetailRecord>(error));
-        
+
+        //Setup set conditions status
+        _updateWoodlandOfficerReviewService
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(),
+                It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Success());
+
         // Setup HandleConfirmedFellingAndRestockingChangesAsync to succeed
         _updateWoodlandOfficerReviewService
             .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), user.UserAccountId!.Value, It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
@@ -618,6 +691,13 @@ public class AdminOfficerReviewUseCaseTests
         _calculateConditionsService.VerifyNoOtherCalls();
         _updateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(
             fellingLicenceApplication.Id, user.UserAccountId!.Value, true, It.IsAny<CancellationToken>(), It.IsAny<bool>()), Times.Once);
+        _updateWoodlandOfficerReviewService
+            .Verify(x => x.UpdateConditionalStatusAsync(
+                fellingLicenceApplication.Id,
+                It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate.HasNoValue() && c.OldConditionsToApplicantDate.HasNoValue()),
+                user.UserAccountId!.Value,
+                It.IsAny<CancellationToken>(),
+                true), Times.Once);
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
     }
 
@@ -653,9 +733,20 @@ public class AdminOfficerReviewUseCaseTests
             .Setup(x => x.HandleConfirmedFellingAndRestockingChangesAsync(It.IsAny<Guid>(), user.UserAccountId!.Value, It.IsAny<bool>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success());
 
+        _updateWoodlandOfficerReviewService
+            .Setup(x => x.SetPublicRegisterExemptAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(),
+                It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Success(true));
+
+        //Setup set conditions status
+        _updateWoodlandOfficerReviewService
+            .Setup(x => x.UpdateConditionalStatusAsync(It.IsAny<Guid>(), It.IsAny<ConditionsStatusModel>(),
+                It.IsAny<Guid>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
+            .ReturnsAsync(Result.Success());
+
         // Setup CalculateConditionsAsync to succeed
         _calculateConditionsService
-            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, It.IsAny<CancellationToken>()))
+            .Setup(x => x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ConditionsResponse
             {
                 Conditions = calculatedConditions
@@ -681,7 +772,7 @@ public class AdminOfficerReviewUseCaseTests
                 It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         //act
         var result =
@@ -756,10 +847,21 @@ public class AdminOfficerReviewUseCaseTests
             x.RetrieveConfirmedFellingAndRestockingDetailModelAsync(fellingLicenceApplication.Id, It.IsAny<CancellationToken>()), Times.Once);
 
         _calculateConditionsService.Verify(x =>
-            x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, It.IsAny<CancellationToken>()), Times.Once);
+            x.CalculateConditionsAsync(It.IsAny<CalculateConditionsRequest>(), user.UserAccountId!.Value, true, It.IsAny<CancellationToken>()), Times.Once);
         
         _updateWoodlandOfficerReviewService.Verify(x => x.HandleConfirmedFellingAndRestockingChangesAsync(
             fellingLicenceApplication.Id, user.UserAccountId!.Value, true, It.IsAny<CancellationToken>(), It.IsAny<bool>()), Times.Once);
+
+        _updateWoodlandOfficerReviewService.Verify(x => x.SetPublicRegisterExemptAsync(fellingLicenceApplication.Id, user.UserAccountId!.Value, true, "Cricket bat willow expedited application", It.IsAny<CancellationToken>(), true), Times.Once);
+
+        _updateWoodlandOfficerReviewService
+            .Verify(x => x.UpdateConditionalStatusAsync(
+                fellingLicenceApplication.Id, 
+                It.Is<ConditionsStatusModel>(c => c.IsConditional == true && c.ConditionsToApplicantDate.HasNoValue() && c.OldConditionsToApplicantDate.HasNoValue()),
+                user.UserAccountId!.Value,
+                It.IsAny<CancellationToken>(),
+                true), Times.Once);
+
         _updateWoodlandOfficerReviewService.VerifyNoOtherCalls();
         //assert
         Assert.True(result.IsSuccess);

@@ -1,4 +1,5 @@
 ﻿using AutoFixture;
+using AutoFixture.Xunit2;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.ExternalConsulteeInvite;
@@ -34,7 +35,7 @@ public class ExternalConsulteeReviewControllerTests
         _useCaseMock.Setup(x => x.ValidateAccessCodeAsync(_applicationId, _accessCode, _emailAddress, _cancellationToken))
             .ReturnsAsync(Result.Failure<ExternalInviteLink>("fail"));
 
-        var result = await _controller.Index(_applicationId, _accessCode, _emailAddress, _useCaseMock.Object, _cancellationToken);
+        var result = await _controller.Index(_applicationId, _accessCode, _emailAddress, null, null, _useCaseMock.Object, _cancellationToken);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("LinkExpired", redirect.ActionName);
@@ -48,26 +49,44 @@ public class ExternalConsulteeReviewControllerTests
         _useCaseMock.Setup(x => x.GetApplicationSummaryForConsulteeReviewAsync(_applicationId, It.IsAny<ExternalInviteLink>(), _accessCode, _cancellationToken))
             .ReturnsAsync(Result.Failure<ExternalConsulteeReviewViewModel>("fail"));
 
-        var result = await _controller.Index(_applicationId, _accessCode, _emailAddress, _useCaseMock.Object, _cancellationToken);
+        var result = await _controller.Index(_applicationId, _accessCode, _emailAddress, null, null, _useCaseMock.Object, _cancellationToken);
 
         var redirect = Assert.IsType<RedirectToActionResult>(result);
         Assert.Equal("Error", redirect.ActionName);
         Assert.Equal("Home", redirect.ControllerName);
     }
 
-    [Fact]
-    public async Task Index_Get_ReturnsView_WhenSuccess()
+    [Theory, AutoData]
+    public async Task Index_Get_ReturnsView_WhenSuccess(ExternalConsulteeReviewViewModel summaryModel)
     {
-        var summaryModel = new ExternalConsulteeReviewViewModel();
         _useCaseMock.Setup(x => x.ValidateAccessCodeAsync(_applicationId, _accessCode, _emailAddress, _cancellationToken))
             .ReturnsAsync(Result.Success(_fixture.Create<ExternalInviteLink>()));
         _useCaseMock.Setup(x => x.GetApplicationSummaryForConsulteeReviewAsync(_applicationId, It.IsAny<ExternalInviteLink>(), _accessCode, _cancellationToken))
             .ReturnsAsync(Result.Success(summaryModel));
 
-        var result = await _controller.Index(_applicationId, _accessCode, _emailAddress, _useCaseMock.Object, _cancellationToken);
+        var result = await _controller.Index(_applicationId, _accessCode, _emailAddress, null, null, _useCaseMock.Object, _cancellationToken);
 
         var viewResult = Assert.IsType<ViewResult>(result);
         Assert.Equal(summaryModel, viewResult.Model);
+    }
+
+    [Theory, AutoData]
+    public async Task Index_Get_ReturnsView_WhenSuccess_WithExtraFields(
+        ExternalConsulteeReviewViewModel summaryModel,
+        string org,
+        string jobRole)
+    {
+        _useCaseMock.Setup(x => x.ValidateAccessCodeAsync(_applicationId, _accessCode, _emailAddress, _cancellationToken))
+            .ReturnsAsync(Result.Success(_fixture.Create<ExternalInviteLink>()));
+        _useCaseMock.Setup(x => x.GetApplicationSummaryForConsulteeReviewAsync(_applicationId, It.IsAny<ExternalInviteLink>(), _accessCode, _cancellationToken))
+            .ReturnsAsync(Result.Success(summaryModel));
+
+        var result = await _controller.Index(_applicationId, _accessCode, _emailAddress, org, jobRole, _useCaseMock.Object, _cancellationToken);
+
+        var viewResult = Assert.IsType<ViewResult>(result);
+        Assert.Equal(summaryModel, viewResult.Model);
+        Assert.Equal(org, (viewResult.Model as ExternalConsulteeReviewViewModel)?.AddConsulteeComment.AuthorOrganisation);
+        Assert.Equal(jobRole, (viewResult.Model as ExternalConsulteeReviewViewModel)?.AddConsulteeComment.AuthorJobRole);
     }
 
     [Fact]
@@ -152,7 +171,7 @@ public class ExternalConsulteeReviewControllerTests
         };
         var files = new FormFileCollection();
 
-        _useCaseMock.Setup(x => x.AddConsulteeCommentAsync(commentModel, files, _cancellationToken))
+        _useCaseMock.Setup(x => x.AddConsulteeCommentAsync(commentModel, files, It.IsAny<string>(), _cancellationToken))
             .ReturnsAsync(Result.Failure<bool>("fail"));
 
         var result = await _controller.Index(commentModel, files, _useCaseMock.Object, _cancellationToken);
@@ -173,7 +192,7 @@ public class ExternalConsulteeReviewControllerTests
         };
         var files = new FormFileCollection();
 
-        _useCaseMock.Setup(x => x.AddConsulteeCommentAsync(commentModel, files, _cancellationToken))
+        _useCaseMock.Setup(x => x.AddConsulteeCommentAsync(commentModel, files, It.IsAny<string>(), _cancellationToken))
             .ReturnsAsync(Result.Success(true));
 
         var result = await _controller.Index(commentModel, files, _useCaseMock.Object, _cancellationToken);

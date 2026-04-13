@@ -526,6 +526,10 @@ public class ImportApplicationsServiceTests
                 ? FixtureInstance.Create<int>()
                 : null;
 
+            double? percentageCoppiceNaturalRegen = operation.IsCoppiceOrNaturalRegen()
+                ? FixtureInstance.Create<double>()
+                : null;
+
             string[] speciesList = [
                 FixtureInstance.Create<string>(),
                 FixtureInstance.Create<int>().ToString(),
@@ -543,6 +547,7 @@ public class ImportApplicationsServiceTests
                 .With(x => x.SpeciesAndPercentages, species)
                 .With(x => x.RestockingDensity, density)
                 .With(x => x.NumberOfTrees, numberOfTrees)
+                .With(x => x.PercentageEstablishedByCoppiceOrNaturalRegen, percentageCoppiceNaturalRegen)
                 .Create();
 
             results.Add(restocking);
@@ -644,11 +649,13 @@ public class ImportApplicationsServiceTests
                         Assert.Null(restockingEntity.NumberOfTrees);
                         Assert.Null(restockingEntity.RestockingDensity);
                         Assert.Empty(restockingEntity.RestockingSpecies);
+                        Assert.Null(restockingEntity.PercentageEstablishedByCoppiceOrNaturalRegen);
                     }
                     else
                     {
                         Assert.Equal(restocking.RestockingDensity, restockingEntity.RestockingDensity);
                         Assert.Equal(restocking.NumberOfTrees, restockingEntity.NumberOfTrees);
+                        Assert.Equal(restocking.PercentageEstablishedByCoppiceOrNaturalRegen, restockingEntity.PercentageEstablishedByCoppiceOrNaturalRegen);
                         Assert.NotNull(restockingEntity.RestockingSpecies);
                         var expectedSpecies = restocking.SpeciesAndPercentages.Split(',');
                         var i = 0;
@@ -659,6 +666,15 @@ public class ImportApplicationsServiceTests
                             i += 2;
                             Assert.Contains(restockingEntity.RestockingSpecies,
                                 x => x.Species == species && x.Percentage == percentage);
+                        }
+
+                        if (restocking.RestockingProposal.IsCoppiceOrNaturalRegen())
+                        {
+                            Assert.Equal(restocking.PercentageEstablishedByCoppiceOrNaturalRegen, restockingEntity.PercentageEstablishedByCoppiceOrNaturalRegen);
+                        }
+                        else
+                        {
+                            Assert.Null(restockingEntity.PercentageEstablishedByCoppiceOrNaturalRegen);
                         }
                     }
 

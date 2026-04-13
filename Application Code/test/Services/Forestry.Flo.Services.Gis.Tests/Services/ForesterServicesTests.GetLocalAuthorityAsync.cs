@@ -64,7 +64,7 @@ public partial class ForesterServicesTests
 
         var returnMessage = new HttpResponseMessage {
             StatusCode = HttpStatusCode.OK,
-            Content = new StringContent("{\"objectIdFieldName\": \"OBJECTID\",\"uniqueIdField\": {\"name\": \"OBJECTID\",\"isSystemMaintained\": true},\"globalIdFieldName\": \"GlobalID\",\"serverGens\": {\"minServerGen\": 7547713,\"serverGen\": 8462309},\"geometryType\": \"esriGeometryPolygon\",\"spatialReference\": {\"wkid\": 27700,\"latestWkid\": 27700},\"fields\": [{\"name\": \"OBJECTID\",\"type\": \"esriFieldTypeOID\",\"alias\": \"OBJECTID\",\"sqlType\": \"sqlTypeOther\",\"domain\": null,\"defaultValue\": null},{\"name\": \"LAD21CD\",\"type\": \"esriFieldTypeString\",\"alias\": \"LAD21CD\",\"sqlType\": \"sqlTypeOther\",\"length\": 9,\"domain\": null,\"defaultValue\": null},{\"name\": \"admin_hub\",\"type\": \"esriFieldTypeString\",\"alias\": \"LAD21NM\",\"sqlType\": \"sqlTypeOther\",\"length\": 36,\"domain\": null,\"defaultValue\": null}],\"features\": [{\"attributes\": {\"OBJECTID\": 342,\"area_code\": \"W06000001\",\"admin_hub\": \"Isle of Anglesey\"}}]\r\n}")
+            Content = new StringContent("{\"objectIdFieldName\": \"OBJECTID\",\"uniqueIdField\": {\"name\": \"OBJECTID\",\"isSystemMaintained\": true},\"globalIdFieldName\": \"GlobalID\",\"serverGens\": {\"minServerGen\": 7547713,\"serverGen\": 8462309},\"geometryType\": \"esriGeometryPolygon\",\"spatialReference\": {\"wkid\": 27700,\"latestWkid\": 27700},\"fields\": [{\"name\": \"OBJECTID\",\"type\": \"esriFieldTypeOID\",\"alias\": \"OBJECTID\",\"sqlType\": \"sqlTypeOther\",\"domain\": null,\"defaultValue\": null},{\"name\": \"LAD21CD\",\"type\": \"esriFieldTypeString\",\"alias\": \"LAD21CD\",\"sqlType\": \"sqlTypeOther\",\"length\": 9,\"domain\": null,\"defaultValue\": null},{\"name\": \"admin_hub\",\"type\": \"esriFieldTypeString\",\"alias\": \"LAD21NM\",\"sqlType\": \"sqlTypeOther\",\"length\": 36,\"domain\": null,\"defaultValue\": null}],\"features\": [{\"attributes\": {\"OBJECTID\": 342,\"name\": \"Isle of Anglesey\"}}]\r\n}")
         };
         returnMessage.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
@@ -85,6 +85,5 @@ public partial class ForesterServicesTests
 
         Assert.True(response.IsSuccess);
         Assert.Equal("Isle of Anglesey", response.Value.Name);
-        Assert.Equal("W06000001", response.Value.Code);
     }
 }

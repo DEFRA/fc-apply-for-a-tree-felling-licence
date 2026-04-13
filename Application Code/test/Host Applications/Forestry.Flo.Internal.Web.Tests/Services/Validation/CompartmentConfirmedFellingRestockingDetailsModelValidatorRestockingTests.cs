@@ -227,4 +227,92 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
             }
         }
     }
+
+    [Theory]
+    [InlineData(-10)]
+    [InlineData(102)]
+
+    public void ShouldNotValidate_WhenPercentageEstablishedCoppiceIsOutsideOfRange(int percentage)
+    {
+        var model = CreateValidModel(FellingOperationType.ClearFelling, TypeOfProposal.RestockWithCoppiceRegrowth);
+
+        foreach (var confirmedFellingDetail in model.ConfirmedFellingDetails)
+        {
+            foreach (var confirmedRestockingDetails in confirmedFellingDetail.ConfirmedRestockingDetails)
+            {
+                confirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen = percentage;
+
+                var result = _sut.TestValidate(model);
+
+                result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].PercentageEstablishedByCoppiceOrNaturalRegen");
+                Assert.Contains($"Compartment {model.CompartmentName} - Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration between 0 and 100",
+                    result.Errors.Select(x => x.ErrorMessage));
+            }
+        }
+    }
+
+    [Fact]
+
+    public void ShouldNotValidate_WhenPercentageEstablishedCoppiceIsNull()
+    {
+        var model = CreateValidModel(FellingOperationType.ClearFelling, TypeOfProposal.RestockWithCoppiceRegrowth);
+
+        foreach (var confirmedFellingDetail in model.ConfirmedFellingDetails)
+        {
+            foreach (var confirmedRestockingDetails in confirmedFellingDetail.ConfirmedRestockingDetails)
+            {
+                confirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen = null;
+
+                var result = _sut.TestValidate(model);
+
+                result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].PercentageEstablishedByCoppiceOrNaturalRegen");
+                Assert.Contains($"Compartment {model.CompartmentName} - Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration",
+                    result.Errors.Select(x => x.ErrorMessage));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(-10)]
+    [InlineData(102)]
+
+    public void ShouldNotValidate_WhenPercentageEstablishedNaturalRegenIsOutsideOfRange(int percentage)
+    {
+        var model = CreateValidModel(FellingOperationType.ClearFelling, TypeOfProposal.RestockByNaturalRegeneration);
+
+        foreach (var confirmedFellingDetail in model.ConfirmedFellingDetails)
+        {
+            foreach (var confirmedRestockingDetails in confirmedFellingDetail.ConfirmedRestockingDetails)
+            {
+                confirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen = percentage;
+
+                var result = _sut.TestValidate(model);
+
+                result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].PercentageEstablishedByCoppiceOrNaturalRegen");
+                Assert.Contains($"Compartment {model.CompartmentName} - Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration between 0 and 100",
+                    result.Errors.Select(x => x.ErrorMessage));
+            }
+        }
+    }
+
+    [Fact]
+
+    public void ShouldNotValidate_WhenPercentageEstablishedNaturalRegenIsNull()
+    {
+        var model = CreateValidModel(FellingOperationType.ClearFelling, TypeOfProposal.RestockByNaturalRegeneration);
+
+        foreach (var confirmedFellingDetail in model.ConfirmedFellingDetails)
+        {
+            foreach (var confirmedRestockingDetails in confirmedFellingDetail.ConfirmedRestockingDetails)
+            {
+                confirmedRestockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen = null;
+
+                var result = _sut.TestValidate(model);
+
+                result.ShouldHaveValidationErrorFor("ConfirmedFellingDetails[0].ConfirmedRestockingDetails[0].PercentageEstablishedByCoppiceOrNaturalRegen");
+                Assert.Contains($"Compartment {model.CompartmentName} - Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration",
+                    result.Errors.Select(x => x.ErrorMessage));
+            }
+        }
+    }
 }

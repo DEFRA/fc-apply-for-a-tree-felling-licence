@@ -550,6 +550,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<int?>("PercentOpenSpace")
                         .HasColumnType("integer");
 
+                    b.Property<double?>("PercentageEstablishedByCoppiceOrNaturalRegen")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PercentageOfFellingArea")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<double?>("PercentageOfRestockArea")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
@@ -796,6 +803,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("NotificationHistoryId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
@@ -1305,6 +1315,13 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
                     b.Property<int?>("NumberOfTrees")
                         .HasColumnType("integer");
+
+                    b.Property<double?>("PercentageEstablishedByCoppiceOrNaturalRegen")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PercentageOfFellingArea")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<double?>("PercentageOfRestockArea")
                         .HasPrecision(5, 2)

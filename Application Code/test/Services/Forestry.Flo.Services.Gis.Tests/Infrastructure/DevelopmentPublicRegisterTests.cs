@@ -1,8 +1,7 @@
 ﻿using AutoFixture.Xunit2;
 using Forestry.Flo.Services.Gis.Infrastructure;
 using Forestry.Flo.Services.Gis.Interfaces;
-using Forestry.Flo.Services.Gis.Models.Internal;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.Gis.Models.Internal.Request;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Forestry.Flo.Services.Gis.Tests.Infrastructure;
@@ -42,28 +41,20 @@ public class DevelopmentPublicRegisterTests
     }
 
     [Theory, AutoData]
-    public async Task CanFakeAddingToPublicRegisterWithValidRef(string propertyName, string caseType, string gridRef, string nearestTown,
-        string localAdminArea, string adminRegion, DateTime publicRegisterStart, int period, double? broadLeafArea,
-        double? coniferousArea, double? openGroundArea, double? totalArea)
+    public async Task CanFakeAddingToPublicRegisterWithValidRef(AddToPublicRegisterModel model)
     {
-        var caseRef = "012/1234/2345/Test";
+        model.CaseReference = "012/1234/2345/Test";
         var sut = CreateSut();
-        var result = await sut.AddCaseToConsultationRegisterAsync(caseRef, propertyName, caseType, gridRef, nearestTown,
-            localAdminArea, adminRegion, publicRegisterStart, period, broadLeafArea, coniferousArea,
-            openGroundArea, totalArea, new List<InternalCompartmentDetails<Polygon>>(), CancellationToken.None);
+        var result = await sut.AddCaseToConsultationRegisterAsync(model, CancellationToken.None);
         Assert.True(result.IsSuccess);
         Assert.Equal(12, result.Value);
     }
 
     [Theory, AutoData]
-    public async Task CanFakeAddingToPublicRegisterWithInvalidRef(string caseRef, string propertyName, string caseType, string gridRef, string nearestTown,
-        string localAdminArea, string adminRegion, DateTime publicRegisterStart, int period, double? broadLeafArea,
-        double? coniferousArea, double? openGroundArea, double? totalArea)
+    public async Task CanFakeAddingToPublicRegisterWithInvalidRef(AddToPublicRegisterModel model)
     {
         var sut = CreateSut();
-        var result = await sut.AddCaseToConsultationRegisterAsync(caseRef, propertyName, caseType, gridRef, nearestTown,
-            localAdminArea, adminRegion, publicRegisterStart, period, broadLeafArea, coniferousArea,
-            openGroundArea, totalArea, new List<InternalCompartmentDetails<Polygon>>(), CancellationToken.None);
+        var result = await sut.AddCaseToConsultationRegisterAsync(model, CancellationToken.None);
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Value);
     }
@@ -79,12 +70,11 @@ public class DevelopmentPublicRegisterTests
     }
 
     [Theory, AutoData]
-    public async Task CanFakeAddingToDecisionPublicRegister(int objectId, string caseReference,
-        string fellingLicenceOutcome, DateTime caseApprovalDateTime)
+    public async Task CanFakeAddingToDecisionPublicRegister(AddToDecisionPublicRegisterModel model)
     {
         var sut = CreateSut();
 
-        var result = await sut.AddCaseToDecisionRegisterAsync(objectId, caseReference, fellingLicenceOutcome, caseApprovalDateTime, CancellationToken.None);
+        var result = await sut.AddCaseToDecisionRegisterAsync(model, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
     }

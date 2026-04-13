@@ -88,7 +88,9 @@ namespace Forestry.Flo.External.Web.Services
             var addDocumentRequest = new AddDocumentsExternalRequest
             {
                 ActorType = ActorType.ExternalApplicant,
-                ApplicationDocumentCount = applicationResult.Value.Documents!.Count(x => x.DeletionTimestamp.HasNoValue() && x.Purpose == DocumentPurpose.Attachment),
+                ApplicationDocumentCount = applicationResult.Value.Documents!
+                    .Count(x => x.DeletionTimestamp.HasNoValue() 
+                                && DocumentConstants.ExternalDocumentTypesWithCountLimitation.Contains(x.Purpose)),
                 DocumentPurpose = addSupportingDocumentModel.Purpose,
                 FellingApplicationId = addSupportingDocumentModel.FellingLicenceApplicationId,
                 FileToStoreModels = filesModel,

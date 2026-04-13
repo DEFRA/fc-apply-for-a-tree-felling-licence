@@ -292,6 +292,15 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     }
 
     /// <inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> DeleteExternalAccessLinkAsync(
+        ExternalAccessLink accessLink,
+        CancellationToken cancellationToken)
+    {
+        Context.ExternalAccessLinks.Remove(accessLink);
+        return await Context.SaveEntitiesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<IList<ExternalAccessLink>> GetUserExternalAccessLinksByApplicationIdAndPurposeAsync(
         Guid applicationId,
         ExternalAccessLinkType purpose,
@@ -452,19 +461,31 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
     /// <inheritdoc />
     public async Task<UnitResult<UserDbErrorReason>> AddDecisionPublicRegisterDetailsAsync(
         Guid applicationId,
+        int esriId,
         DateTime publishedDateTime,
         DateTime expiryDateTime,
         CancellationToken cancellationToken)
     {
-        var publicRegister = await GetPublicRegisterAsync(applicationId, cancellationToken);
+        var existingPrEntity = await GetPublicRegisterAsync(applicationId, cancellationToken);
 
-        if (publicRegister.HasNoValue)
+        if (existingPrEntity.HasNoValue)
         {
-            return UnitResult.Failure(UserDbErrorReason.NotFound);
-        }
+            var entity = new PublicRegister
+            {
+                FellingLicenceApplicationId = applicationId,
+                EsriId = esriId,
+                DecisionPublicRegisterPublicationTimestamp = publishedDateTime,
+                DecisionPublicRegisterExpiryTimestamp = expiryDateTime
+            };
 
-        publicRegister.Value.DecisionPublicRegisterExpiryTimestamp = expiryDateTime;
-        publicRegister.Value.DecisionPublicRegisterPublicationTimestamp = publishedDateTime;
+            await AddPublicRegisterAsync(entity, cancellationToken);
+        }
+        else
+        {
+            existingPrEntity.Value.EsriId = esriId;
+            existingPrEntity.Value.DecisionPublicRegisterExpiryTimestamp = expiryDateTime;
+            existingPrEntity.Value.DecisionPublicRegisterPublicationTimestamp = publishedDateTime;
+        }
 
         return await Context.SaveEntitiesAsync(cancellationToken);
     }

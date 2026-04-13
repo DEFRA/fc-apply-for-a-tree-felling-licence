@@ -8,8 +8,8 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
-using Forestry.Flo.Services.Gis.Models.Internal;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.Gis.Models.Internal.Request;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Tests.Common;
@@ -39,11 +39,7 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
             .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(publishModel));
         PublicRegisterService.Setup(x => x.AddCaseToConsultationRegisterAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<double?>(),
-                It.IsAny<double?>(), It.IsAny<double?>(), It.IsAny<double?>(),
-                It.IsAny<List<InternalCompartmentDetails<Polygon>>>(), It.IsAny<CancellationToken>()))
+                It.IsAny<AddToPublicRegisterModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(esriId));
         UpdateWoodlandOfficerReviewService
             .Setup(x => x.PublishedToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
@@ -59,7 +55,7 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
                 It.IsAny<NotificationAttachment[]?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var result = await sut.PublishToConsultationPublicRegisterAsync(applicationId, TimeSpan.FromDays(period), user, CancellationToken.None);
 
@@ -68,19 +64,19 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
         WoodlandOfficerReviewService.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         WoodlandOfficerReviewService.VerifyNoOtherCalls();
 
-        PublicRegisterService.Verify(x => x.AddCaseToConsultationRegisterAsync(publishModel.CaseReference, publishModel.PropertyName,
-            WoodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister, 
-            publishModel.GridReference, 
-            publishModel.NearestTown,
-            publishModel.LocalAuthority,
-            publishModel.AdminRegion, 
-            Now.ToDateTimeUtc(), 
-            period, 
-            publishModel.BroadleafArea, 
-            publishModel.ConiferousArea,
-            publishModel.OpenGroundArea, 
-            publishModel.TotalArea, 
-            publishModel.Compartments, 
+        PublicRegisterService.Verify(x => x.AddCaseToConsultationRegisterAsync(
+            It.Is<AddToPublicRegisterModel>(m =>
+                m.CaseReference == publishModel.CaseReference
+                && m.PropertyName == publishModel.PropertyName
+                && m.CaseType == WoodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister
+                && m.GridReference == publishModel.GridReference
+                && m.NearestTown == publishModel.NearestTown
+                && m.LocalAuthority == publishModel.LocalAuthority
+                && m.AdminRegion == publishModel.AdminRegion
+                && m.PublicRegisterStart == Now.ToDateTimeUtc()
+                && m.Period == period
+                && m.TotalArea == publishModel.TotalArea
+                && m.Compartments == publishModel.Compartments), 
             It.IsAny<CancellationToken>()), Times.Once);
         PublicRegisterService.VerifyNoOtherCalls();
 
@@ -112,104 +108,6 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
                     {
                         publicationDate = Now.ToDateTimeUtc(),
                         esriId = esriId
-                    }, SerializerOptions)),
-            It.IsAny<CancellationToken>()), Times.Once);
-        AuditingService.VerifyNoOtherCalls();
-
-        NotificationService.Verify(x => x.SendNotificationAsync(
-            It.Is<InformFcStaffOfApplicationAddedToPublicRegisterDataModel>(m =>
-                m.PropertyName == publishModel.PropertyName
-                && m.ApplicationReference == publishModel.CaseReference
-                && m.PublishedDate == DateTimeDisplay.GetDateDisplayString(Now.ToDateTimeUtc())
-                && m.ExpiryDate == DateTimeDisplay.GetDateDisplayString(Now.ToDateTimeUtc().AddDays(period))
-                && m.AdminHubFooter == AdminHubAddress
-                && m.Name == assignedUser.FullName),
-            NotificationType.InformFcStaffOfApplicationAddedToConsultationPublicRegister,
-            It.Is<NotificationRecipient>(r => r.Name == assignedUser.FullName && r.Address == assignedUser.Email),
-            null,
-            null,
-            null,
-            It.IsAny<CancellationToken>()), Times.Once);
-        NotificationService.VerifyNoOtherCalls();
-    }
-
-    [Theory, AutoData]
-    public async Task OnSuccessfulRepublish(
-        Guid applicationId,
-        ApplicationDetailsForPublicRegisterModel publishModel,
-        int period,
-        Flo.Services.InternalUsers.Models.UserAccountModel assignedUser)
-    {
-        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
-        var user = new InternalUser(userPrincipal);
-        var sut = CreateSut();
-
-        WoodlandOfficerReviewService
-            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(publishModel));
-        PublicRegisterService.Setup(x => x.ReturnCaseToConsultationRegisterAsync(
-                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
-        UpdateWoodlandOfficerReviewService
-            .Setup(x => x.PublishedToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
-        InternalUserAccountService.Setup(x =>
-                x.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(new List<Flo.Services.InternalUsers.Models.UserAccountModel> { assignedUser }));
-        NotificationService.Setup(x => x.SendNotificationAsync(
-                It.IsAny<InformFcStaffOfApplicationAddedToPublicRegisterDataModel>(),
-                It.IsAny<NotificationType>(),
-                It.IsAny<NotificationRecipient>(),
-                It.IsAny<NotificationRecipient[]?>(),
-                It.IsAny<NotificationAttachment[]?>(),
-                It.IsAny<string?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
-
-        var result = await sut.PublishToConsultationPublicRegisterAsync(applicationId, TimeSpan.FromDays(period), user, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-
-        WoodlandOfficerReviewService.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        WoodlandOfficerReviewService.VerifyNoOtherCalls();
-
-        PublicRegisterService.Verify(x => x.ReturnCaseToConsultationRegisterAsync(
-            publishModel.ExistingEsriId.Value,
-            publishModel.CaseReference,
-            Now.ToDateTimeUtc(),
-            period,
-            It.IsAny<CancellationToken>()), Times.Once);
-        PublicRegisterService.VerifyNoOtherCalls();
-
-        UpdateWoodlandOfficerReviewService.Verify(x => x.PublishedToPublicRegisterAsync(applicationId, RequestContextUserId, publishModel.ExistingEsriId.Value, Now.ToDateTimeUtc(), TimeSpan.FromDays(period), It.IsAny<CancellationToken>()), Times.Once);
-        UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
-
-        AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.EventName == AuditEvents.UpdateWoodlandOfficerReview
-                && a.ActorType == ActorType.InternalUser
-                && a.UserId == RequestContextUserId
-                && a.SourceEntityId == applicationId
-                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
-                && a.CorrelationId == RequestContextCorrelationId
-                && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
-                JsonSerializer.Serialize(new
-                {
-                    section = "Public Register",
-                }, SerializerOptions)),
-            It.IsAny<CancellationToken>()), Times.Once);
-        AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.EventName == AuditEvents.AddToConsultationPublicRegisterSuccess
-                && a.ActorType == ActorType.InternalUser
-                && a.UserId == RequestContextUserId
-                && a.SourceEntityId == applicationId
-                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
-                && a.CorrelationId == RequestContextCorrelationId
-                && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
-                    JsonSerializer.Serialize(new
-                    {
-                        publicationDate = Now.ToDateTimeUtc(),
-                        esriId = publishModel.ExistingEsriId.Value
                     }, SerializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
         AuditingService.VerifyNoOtherCalls();
@@ -303,11 +201,7 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
             .ReturnsAsync(Result.Success(publishModel));
         PublicRegisterService
             .Setup(x => x.AddCaseToConsultationRegisterAsync(
-                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<double?>(),
-                It.IsAny<double?>(), It.IsAny<double?>(), It.IsAny<double?>(),
-                It.IsAny<List<InternalCompartmentDetails<Polygon>>>(), It.IsAny<CancellationToken>()))
+                 It.IsAny<AddToPublicRegisterModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<int>(error));
 
         var result = await sut.PublishToConsultationPublicRegisterAsync(applicationId, TimeSpan.FromDays(period), user, CancellationToken.None);
@@ -318,89 +212,20 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
         WoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         PublicRegisterService.Verify(x => x.AddCaseToConsultationRegisterAsync(
-            publishModel.CaseReference, 
-            publishModel.PropertyName,
-            WoodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister, 
-            publishModel.GridReference, 
-            publishModel.NearestTown,
-            publishModel.LocalAuthority,
-            publishModel.AdminRegion, 
-            Now.ToDateTimeUtc(),
-            period, 
-            publishModel.BroadleafArea, 
-            publishModel.ConiferousArea,
-            publishModel.OpenGroundArea, 
-            publishModel.TotalArea, 
-            publishModel.Compartments, 
+            It.Is<AddToPublicRegisterModel>(m =>
+                m.CaseReference == publishModel.CaseReference
+                && m.PropertyName == publishModel.PropertyName
+                && m.CaseType == WoodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister
+                && m.GridReference == publishModel.GridReference
+                && m.NearestTown == publishModel.NearestTown
+                && m.LocalAuthority == publishModel.LocalAuthority
+                && m.AdminRegion == publishModel.AdminRegion
+                && m.PublicRegisterStart == Now.ToDateTimeUtc()
+                && m.Period == period
+                && m.TotalArea == publishModel.TotalArea
+                && m.Compartments == publishModel.Compartments),
             It.IsAny<CancellationToken>()), 
             Times.Once);
-        PublicRegisterService.VerifyNoOtherCalls();
-
-        UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
-
-        AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.EventName == AuditEvents.UpdateWoodlandOfficerReviewFailure
-                && a.ActorType == ActorType.InternalUser
-                && a.UserId == RequestContextUserId
-                && a.SourceEntityId == applicationId
-                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
-                && a.CorrelationId == RequestContextCorrelationId
-                && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
-                JsonSerializer.Serialize(new
-                {
-                    section = "Public Register",
-                    error = error
-                }, SerializerOptions)),
-            It.IsAny<CancellationToken>()), Times.Once);
-        AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.EventName == AuditEvents.AddToConsultationPublicRegisterFailure
-                && a.ActorType == ActorType.InternalUser
-                && a.UserId == RequestContextUserId
-                && a.SourceEntityId == applicationId
-                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
-                && a.CorrelationId == RequestContextCorrelationId
-                && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
-                JsonSerializer.Serialize(new
-                {
-                    error = error
-                }, SerializerOptions)),
-            It.IsAny<CancellationToken>()), Times.Once);
-        AuditingService.VerifyNoOtherCalls();
-    }
-
-    [Theory, AutoData]
-    public async Task OnUnsuccessfulRepublishToPublicRegister(
-        Guid applicationId,
-        ApplicationDetailsForPublicRegisterModel publishModel,
-        int period,
-        string error)
-    {
-        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
-        var user = new InternalUser(userPrincipal);
-        var sut = CreateSut();
-
-        WoodlandOfficerReviewService
-            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(publishModel));
-        PublicRegisterService
-            .Setup(x => x.ReturnCaseToConsultationRegisterAsync(
-                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<int>(),
- It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
-
-        var result = await sut.PublishToConsultationPublicRegisterAsync(applicationId, TimeSpan.FromDays(period), user, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-
-        WoodlandOfficerReviewService.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        WoodlandOfficerReviewService.VerifyNoOtherCalls();
-
-        PublicRegisterService.Verify(x => x.ReturnCaseToConsultationRegisterAsync(
-            publishModel.ExistingEsriId.Value,
-            publishModel.CaseReference,
-            Now.ToDateTimeUtc(),
-            period,
-            It.IsAny<CancellationToken>()), Times.Once);
         PublicRegisterService.VerifyNoOtherCalls();
 
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
@@ -449,18 +274,14 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
         var sut = CreateSut();
 
         _foresterServices.Setup(x => x.GetLocalAuthorityAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<LocalAuthority>(new LocalAuthority(){Code = "LACODE",Name = "LANAME"} ));
+            .ReturnsAsync(Result.Success<LocalAuthority>(new LocalAuthority(){Name = "LANAME"} ));
 
         WoodlandOfficerReviewService
             .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(),  It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(publishModel));
 
         PublicRegisterService.Setup(x => x.AddCaseToConsultationRegisterAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<double?>(),
-                It.IsAny<double?>(), It.IsAny<double?>(), It.IsAny<double?>(),
-                It.IsAny<List<InternalCompartmentDetails<Polygon>>>(), It.IsAny<CancellationToken>()))
+                It.IsAny<AddToPublicRegisterModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(esriId));
         
         UpdateWoodlandOfficerReviewService
@@ -475,101 +296,23 @@ public class PublishToConsultationPublicRegisterAsyncTests : WoodlandOfficerRevi
         WoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         PublicRegisterService.Verify(x => x.AddCaseToConsultationRegisterAsync(
-            publishModel.CaseReference,
-            publishModel.PropertyName,
-            WoodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister,
-            publishModel.GridReference,
-            publishModel.NearestTown,
-            publishModel.LocalAuthority,
-            publishModel.AdminRegion, 
-            Now.ToDateTimeUtc(),
-            period, 
-            publishModel.BroadleafArea, 
-            publishModel.ConiferousArea,
-            publishModel.OpenGroundArea, 
-            publishModel.TotalArea, 
-            publishModel.Compartments, 
+                It.Is<AddToPublicRegisterModel>(m =>
+                    m.CaseReference == publishModel.CaseReference
+                    && m.PropertyName == publishModel.PropertyName
+                    && m.CaseType == WoodlandOfficerReviewOptions.DefaultCaseTypeOnPublishToPublicRegister
+                    && m.GridReference == publishModel.GridReference
+                    && m.NearestTown == publishModel.NearestTown
+                    && m.LocalAuthority == publishModel.LocalAuthority
+                    && m.AdminRegion == publishModel.AdminRegion
+                    && m.PublicRegisterStart == Now.ToDateTimeUtc()
+                    && m.Period == period
+                    && m.TotalArea == publishModel.TotalArea
+                    && m.Compartments == publishModel.Compartments), 
             It.IsAny<CancellationToken>()),
             Times.Once);
         PublicRegisterService.VerifyNoOtherCalls();
 
         UpdateWoodlandOfficerReviewService.Verify(x => x.PublishedToPublicRegisterAsync(applicationId, RequestContextUserId, esriId, Now.ToDateTimeUtc(), TimeSpan.FromDays(period), It.IsAny<CancellationToken>()), Times.Once);
-        UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
-
-        AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.EventName == AuditEvents.UpdateWoodlandOfficerReviewFailure
-                && a.ActorType == ActorType.InternalUser
-                && a.UserId == RequestContextUserId
-                && a.SourceEntityId == applicationId
-                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
-                && a.CorrelationId == RequestContextCorrelationId
-                && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
-                JsonSerializer.Serialize(new
-                {
-                    section = "Public Register",
-                    error = error
-                }, SerializerOptions)),
-            It.IsAny<CancellationToken>()), Times.Once);
-        AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
-                a.EventName == AuditEvents.AddToConsultationPublicRegisterFailure
-                && a.ActorType == ActorType.InternalUser
-                && a.UserId == RequestContextUserId
-                && a.SourceEntityId == applicationId
-                && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
-                && a.CorrelationId == RequestContextCorrelationId
-                && JsonSerializer.Serialize(a.AuditData, SerializerOptions) ==
-                JsonSerializer.Serialize(new
-                {
-                    error = error
-                }, SerializerOptions)),
-            It.IsAny<CancellationToken>()), Times.Once);
-
-        AuditingService.VerifyNoOtherCalls();
-    }
-
-    [Theory, AutoData]
-    public async Task OnUnsuccessfulDatabaseUpdateForRepublish(
-        Guid applicationId,
-        ApplicationDetailsForPublicRegisterModel publishModel,
-        int period,
-        string error)
-    {
-        var userPrincipal = UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: RequestContextUserId);
-        var user = new InternalUser(userPrincipal);
-        var sut = CreateSut();
-
-        _foresterServices.Setup(x => x.GetLocalAuthorityAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<LocalAuthority>(new LocalAuthority() { Code = "LACODE", Name = "LANAME" }));
-
-        WoodlandOfficerReviewService
-            .Setup(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(publishModel));
-
-        PublicRegisterService.Setup(x => x.ReturnCaseToConsultationRegisterAsync(
-               It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<int>(),
-It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
-
-        UpdateWoodlandOfficerReviewService
-            .Setup(x => x.PublishedToPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure(error));
-
-        var result = await sut.PublishToConsultationPublicRegisterAsync(applicationId, TimeSpan.FromDays(period), user, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-
-        WoodlandOfficerReviewService.Verify(x => x.GetApplicationDetailsToSendToPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
-        WoodlandOfficerReviewService.VerifyNoOtherCalls();
-
-        PublicRegisterService.Verify(x => x.ReturnCaseToConsultationRegisterAsync(
-            publishModel.ExistingEsriId.Value,
-            publishModel.CaseReference,
-            Now.ToDateTimeUtc(),
-            period,
-            It.IsAny<CancellationToken>()), Times.Once);
-        PublicRegisterService.VerifyNoOtherCalls();
-
-        UpdateWoodlandOfficerReviewService.Verify(x => x.PublishedToPublicRegisterAsync(applicationId, RequestContextUserId, publishModel.ExistingEsriId.Value, Now.ToDateTimeUtc(), TimeSpan.FromDays(period), It.IsAny<CancellationToken>()), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>

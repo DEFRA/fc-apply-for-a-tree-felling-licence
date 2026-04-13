@@ -37,5 +37,15 @@ public class FlaTermsAndConditionsViewModel : ApplicationStepBase, IApplicationW
     /// <summary>
     /// Gets and sets the total number of trees being restocking in this application
     /// </summary>
-    public int TotalNumberOfTreesRestocking { get; set; }
+    public int? TotalNumberOfTreesRestocking { get; set; }
+
+    /// <summary>
+    /// Gets and sets if all restocking options in this application are individual trees.
+    /// </summary>
+    public bool IsAllRestockingIndividualTrees { get; set; }
+
+    /// <summary>
+    /// Gets and sets the name of the licence holder for displaying in the CBW conditions.
+    /// </summary>
+    public string? LicenceHolderName { get; set; }
 }

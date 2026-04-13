@@ -72,9 +72,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             // verify
 
-            _fellingLicenceApplicationInternalRepositoryMock.Verify(v => v
-                    .GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
-
             _client.Verify(v=>v.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
         }
@@ -105,9 +102,6 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
             Assert.True(result.IsFailure);
 
             // verify
-
-            _fellingLicenceApplicationInternalRepositoryMock.Verify(v => v
-                .GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
 
             _client.Verify(v => v.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Once);
 
@@ -140,37 +134,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services
 
             // verify
 
-            _fellingLicenceApplicationInternalRepositoryMock.Verify(v => v
-                .GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
-
             _client.Verify(v => v.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Once);
-
-        }
-
-        [Theory, AutoMoqData]
-        public async Task shouldReturnFailure_WhenNoFlaExists(
-            Guid applicationId,
-            PDFGeneratorRequest pdfGeneratorRequest)
-        {
-            // setup
-            var sut = CreateSut();
-
-            _fellingLicenceApplicationInternalRepositoryMock
-                .Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Maybe.None);
-
-            var result = await sut.CreateApplicationSnapshotAsync(applicationId, pdfGeneratorRequest, CancellationToken.None);
-
-            // assert
-
-            Assert.True(result.IsFailure);
-
-            // verify
-
-            _fellingLicenceApplicationInternalRepositoryMock.Verify(v => v
-                .GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
-
-            _client.Verify(v => v.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Never);
 
         }
 

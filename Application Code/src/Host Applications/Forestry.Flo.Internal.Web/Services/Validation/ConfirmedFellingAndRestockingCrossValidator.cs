@@ -22,7 +22,7 @@ public class ConfirmedFellingAndRestockingCrossValidator : AbstractValidator<Con
             .SelectMany(cpt => cpt.ConfirmedFellingDetails ?? Array.Empty<ConfirmedFellingDetailViewModel>())
             .ToList();
 
-        if (allFellingDetails == null || !allFellingDetails.Any(x => x.OperationType != FellingOperationType.None))
+        if (allFellingDetails == null || allFellingDetails.All(x => x.OperationType == FellingOperationType.None))
         {
             baseResult.Errors.Add(new ValidationFailure(
                 "#delete-amendments-visible",
@@ -31,7 +31,7 @@ public class ConfirmedFellingAndRestockingCrossValidator : AbstractValidator<Con
             {
                 FormattedMessagePlaceholderValues = new Dictionary<string, object?>
                 {
-                    { "PropertyName", "felling-operation-card" }
+                    { "PropertyName", "main-form" }
                 }
             });
         }

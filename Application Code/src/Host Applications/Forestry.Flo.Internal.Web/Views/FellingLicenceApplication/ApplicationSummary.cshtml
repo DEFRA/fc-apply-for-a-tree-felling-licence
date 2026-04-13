@@ -116,6 +116,7 @@
                                 <calcite-action icon="x" text="close" slot="header-actions-end" id="close-basemap-button" scale="s"></calcite-action>
                                 <div id="basemaps-container">
                                     <arcgis-basemap-gallery></arcgis-basemap-gallery>
+                                
                                 </div>
                             </calcite-panel>
 
@@ -123,7 +124,8 @@
                         <arcgis-map id="viewDivMain" class="profileMap">
                             <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
                             <arcgis-zoom slot="top-right"></arcgis-zoom>
-                            <arcgis-compass slot="top-right"></arcgis-compass>
+                            <arcgis-compass slot="top-right"></arcgis-compass>  
+                            <arcgis-fullscreen slot="top-right" element="shell"></arcgis-fullscreen>
                         </arcgis-map>
 
                     </calcite-shell>
@@ -339,6 +341,7 @@
                 <arcgis-scale-bar slot="bottom-right" unit="dual"></arcgis-scale-bar>
                 <arcgis-zoom slot="top-right"></arcgis-zoom>
                 <arcgis-compass slot="top-right"></arcgis-compass>
+                <arcgis-fullscreen slot="top-right" element="printer-shell"></arcgis-fullscreen>
             </arcgis-map>
         </calcite-shell>
 

@@ -138,6 +138,10 @@ public abstract class ApplicationFileSetTestsBase
                         ? FixtureInstance.Create<int>()
                         : null;
 
+                    double? percentEstablishedCoppiceOrNaturalRegen = operation.IsCoppiceOrNaturalRegen()
+                        ? 50
+                        : null;
+
                     string? restockingSpecies = null;
                     if (operation != TypeOfProposal.CreateDesignedOpenGround)
                     {
@@ -155,6 +159,7 @@ public abstract class ApplicationFileSetTestsBase
                         .With(x => x.NumberOfTrees, numberOfTrees)
                         .With(x => x.AreaToBeRestocked, restockingCompartment?.Area ?? fellingCompartment.Area)
                         .With(x => x.RestockingProposal, operation)
+                        .With(x => x.PercentageEstablishedByCoppiceOrNaturalRegen, percentEstablishedCoppiceOrNaturalRegen)
                         .With(x => x.SpeciesAndPercentages, restockingSpecies)
                         .Create();
                     proposedRestocking.Add(nextRestocking);

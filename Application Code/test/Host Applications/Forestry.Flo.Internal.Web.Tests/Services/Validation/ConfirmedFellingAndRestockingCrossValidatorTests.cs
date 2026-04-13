@@ -782,6 +782,6 @@ public class ConfirmedFellingAndRestockingCrossValidatorTests
 
         // Assert
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, x => x.ErrorMessage == "At least one felling operation must be present in the application." && x.FormattedMessagePlaceholderValues["PropertyName"].ToString() == "felling-operation-card");
+        Assert.Contains(result.Errors, x => x.ErrorMessage == "At least one felling operation must be present in the application." && x.FormattedMessagePlaceholderValues["PropertyName"].ToString() == "main-form");
     }
 }

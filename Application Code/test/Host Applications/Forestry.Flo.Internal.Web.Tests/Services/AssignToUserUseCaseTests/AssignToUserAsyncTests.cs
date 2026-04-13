@@ -524,7 +524,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
+            .ReturnsAsync(Result.Failure<Guid>("error"));
 
         var result = await sut.AssignToUserAsync(applicationId, assignToUserId, selectedRole, fcAreaCode, _testUser,
             linkToApplication, caseNote, adminHubName, CancellationToken.None);
@@ -624,7 +624,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
                 It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
         var result = await sut.AssignToUserAsync(applicationId, assignToUserId, selectedRole, fcAreaCode, _testUser,
             linkToApplication, caseNote, adminHubName, CancellationToken.None);

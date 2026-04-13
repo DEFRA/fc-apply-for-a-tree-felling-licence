@@ -1,6 +1,7 @@
 ﻿using Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.Validation;
@@ -65,6 +66,9 @@ public abstract class CompartmentConfirmedFellingRestockingDetailsModelValidator
                             RestockingProposal = restockingProposal,
                             RestockingDensity = restockingRequired ? 1020d : null,
                             PercentNaturalRegeneration = restockingRequired ? 30 : null,
+                            PercentageEstablishedByCoppiceOrNaturalRegen = restockingProposal.IsCoppiceOrNaturalRegen()
+                                ? 55
+                                : null,
                             ConfirmedRestockingSpecies = restockingRequired ? new[]
                             {
                                 new ConfirmedRestockingSpeciesModel

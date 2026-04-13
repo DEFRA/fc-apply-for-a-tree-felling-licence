@@ -1,13 +1,32 @@
-﻿@using Forestry.Flo.Internal.Web.Infrastructure
-@using Forestry.Flo.Services.Common.Extensions
-@using Forestry.Flo.Services.FellingLicenceApplications.Configuration
-@using Microsoft.AspNetCore.Mvc.TagHelpers
-@using Microsoft.Extensions.Options
-@using NodaTime
+﻿@using System.Text.Json
 @using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Gis.Models.Esri.Responses.PublicRegister
 
 @{
     ViewData["Title"] = "Comment received";
+
+    var name = Model.Comment?.Source ?? "Name not provided";
+    string? organisation = null;
+    string? email = null;
+
+    try
+    {
+        var esriComment = JsonSerializer.Deserialize<EsriCaseComments>(Model.Comment.Source);
+
+        name = $"{esriComment?.Firstname} {esriComment?.Surname}".Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = "Name not provided";
+        }
+        
+        organisation = string.IsNullOrWhiteSpace(esriComment?.Organisation) ? null : esriComment.Organisation;
+        email = string.IsNullOrWhiteSpace(esriComment?.EmailAddress) ? null : esriComment.EmailAddress;
+    }
+    catch
+    {
+        // no-op - if the source isn't in the expected format, we'll just display the source as a string
+    }
+    
 }
 
 @model Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.ReviewCommentModel
@@ -33,11 +52,16 @@
             <fieldset class="govuk-fieldset" aria-describedby="exempt-hint">
                 <div class="govuk-form-group">
                     <p class="govuk-body">
-                        @DateTimeDisplay.GetDateTimeDisplayString(Model.Comment.CreatedTimestamp, " at ") <br />
-                        <a class="govuk-link" href="@Model.CommentDeepLink">
-                            View all comments on the consultation public register
+                        @DateTimeDisplay.GetDateDisplayString(Model.Comment.CreatedTimestamp) <br />
+                        <a class="govuk-link" href="@Model.CommentDeepLink" target="_blank" rel="noreferrer noopener">
+                            View all comments on the consultation public register (opens in new tab)
                         </a>
                     </p>
+                    
+                    <p class="govuk-body">Comment from: @name</p>
+                    <p class="govuk-body" condition="@(!string.IsNullOrWhiteSpace(organisation))">Organisation: @organisation</p>
+                    <p class="govuk-body" condition="@(!string.IsNullOrWhiteSpace(email))">Email: @email</p>
+                    <br/>
 
                     <p class="govuk-body">
                         @Model.Comment.Text

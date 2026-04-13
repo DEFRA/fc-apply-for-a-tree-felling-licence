@@ -26,14 +26,14 @@ public class StorePublicRegisterExemptionAsyncTests : WoodlandOfficerReviewUseCa
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetPublicRegisterExemptAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SetPublicRegisterExemptAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success(true));
 
         var result = await sut.StorePublicRegisterExemptionAsync(applicationId, isExempt, exemptionReason, user, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.SetPublicRegisterExemptAsync(applicationId, RequestContextUserId, isExempt, exemptionReason, It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.SetPublicRegisterExemptAsync(applicationId, RequestContextUserId, isExempt, exemptionReason, It.IsAny<CancellationToken>(), false), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a => 
@@ -77,14 +77,14 @@ public class StorePublicRegisterExemptionAsyncTests : WoodlandOfficerReviewUseCa
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetPublicRegisterExemptAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SetPublicRegisterExemptAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Success(false));
 
         var result = await sut.StorePublicRegisterExemptionAsync(applicationId, isExempt, exemptionReason, user, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.SetPublicRegisterExemptAsync(applicationId, RequestContextUserId, isExempt, exemptionReason, It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.SetPublicRegisterExemptAsync(applicationId, RequestContextUserId, isExempt, exemptionReason, It.IsAny<CancellationToken>(), false), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.VerifyNoOtherCalls();
@@ -102,14 +102,14 @@ public class StorePublicRegisterExemptionAsyncTests : WoodlandOfficerReviewUseCa
         var sut = CreateSut();
 
         UpdateWoodlandOfficerReviewService
-            .Setup(x => x.SetPublicRegisterExemptAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SetPublicRegisterExemptAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<CancellationToken>(), It.IsAny<bool>()))
             .ReturnsAsync(Result.Failure<bool>(error));
 
         var result = await sut.StorePublicRegisterExemptionAsync(applicationId, isExempt, exemptionReason, user, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
-        UpdateWoodlandOfficerReviewService.Verify(x => x.SetPublicRegisterExemptAsync(applicationId, RequestContextUserId, isExempt, exemptionReason, It.IsAny<CancellationToken>()), Times.Once);
+        UpdateWoodlandOfficerReviewService.Verify(x => x.SetPublicRegisterExemptAsync(applicationId, RequestContextUserId, isExempt, exemptionReason, It.IsAny<CancellationToken>(), false), Times.Once);
         UpdateWoodlandOfficerReviewService.VerifyNoOtherCalls();
 
         AuditingService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>

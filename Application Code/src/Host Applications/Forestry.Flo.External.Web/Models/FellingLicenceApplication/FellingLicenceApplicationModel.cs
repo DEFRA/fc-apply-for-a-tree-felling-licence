@@ -3,8 +3,10 @@ using Forestry.Flo.External.Web.Models.FellingLicenceApplication.PawsDesignation
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TenYearLicenceApplications;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TreeHealth;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.HabitatRestoration;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication;
@@ -133,43 +135,34 @@ public class FellingLicenceApplicationModel
     /// </summary>
     public FellingAndRestockingAmendmentReviewModel? CurrentReviewModel { get; set; }
 
-    public bool IsCBWapplication
-    {
-        get
-        {
-            bool areAllSpeciesCBW = FellingAndRestockingDetails.DetailsList
-                .All(detail =>
-                    detail.FellingDetails.All(fellingDetail =>
-                        fellingDetail.Species.All(species => species.Key == "CBW")
-                    ) &&
-                    detail.FellingDetails.All(fellingDetail =>
-                        fellingDetail.ProposedRestockingDetails.All(restockingDetail =>
-                            restockingDetail.Species.All(species => species.Key == "CBW")
-                        )
-                    )
-                );
+    public bool IsCBWApplication { get; set; }
 
-            bool areAllFellingIndividualTrees = FellingAndRestockingDetails.DetailsList
-                .All(detail => detail.FellingDetails
-                    .All(fellingDetail => fellingDetail.OperationType == Flo.Services.FellingLicenceApplications.Entities.FellingOperationType.FellingIndividualTrees));
-
-            bool areAllRestockingIndividualTrees = FellingAndRestockingDetails.DetailsList
-                .All(detail => detail.FellingDetails
-                    .All(fellingDetail => fellingDetail.ProposedRestockingDetails
-                        .All(restockingDetail => restockingDetail.RestockingProposal == Flo.Services.FellingLicenceApplications.Entities.TypeOfProposal.RestockWithIndividualTrees)));
-
-            return areAllSpeciesCBW && areAllFellingIndividualTrees && areAllRestockingIndividualTrees;
-        }
-    }
-
-    public int TotalNumberOfTreesRestocking
+    /// <summary>
+    /// Gets the total number of trees being restocked across all restocking operations where the number is specified (which
+    /// will be where the restocking operation is "restock with individual trees", or "plant an alternative area with individual trees").
+    /// </summary>
+    public int? TotalNumberOfTreesRestocking
     {
         get
         {
             return FellingAndRestockingDetails.DetailsList?
                 .Sum(detail => detail.FellingDetails
                     .Sum(fellingDetail => fellingDetail.ProposedRestockingDetails
-                        .Sum(restockingDetail => restockingDetail.NumberOfTrees))) ?? 0;
+                        .Sum(restockingDetail => restockingDetail.NumberOfTrees ?? 0)));
+        }
+    }
+
+    /// <summary>
+    /// Gets if all the restocking operations in the application are proposing restocking with individual trees.
+    /// </summary>
+    public bool IsAllRestockingIndividualTrees
+    {
+        get
+        {
+            return FellingAndRestockingDetails.DetailsList?.SelectMany(x => x.FellingDetails)
+                .All(fellingDetail => fellingDetail.ProposedRestockingDetails
+                    .All(restockingDetail => 
+                        restockingDetail.RestockingProposal is TypeOfProposal.RestockWithIndividualTrees or TypeOfProposal.PlantAnAlternativeAreaWithIndividualTrees)) ?? false;
         }
     }
 }

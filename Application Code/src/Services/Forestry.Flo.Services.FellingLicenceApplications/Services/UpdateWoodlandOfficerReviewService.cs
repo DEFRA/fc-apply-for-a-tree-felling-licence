@@ -42,15 +42,26 @@ public class UpdateWoodlandOfficerReviewService(
         Guid userId,
         bool isExempt,
         string? exemptReason,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool isSkippingWoReviewForCbw = false)
     {
         logger.LogDebug("Attempting to update the Public Register entity for an application with id {ApplicationId} to set to Exempt from PR", applicationId);
 
         try
         {
-            if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+            if (isSkippingWoReviewForCbw)
             {
-                return Result.Failure<bool>("Application woodland officer review unable to be updated");
+                if (await AssertCBWApplication(applicationId, userId, cancellationToken) == false)
+                {
+                    return Result.Failure<bool>("Application woodland officer review unable to be updated");
+                }
+            }
+            else
+            {
+                if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+                {
+                    return Result.Failure<bool>("Application woodland officer review unable to be updated");
+                }
             }
 
             var maybeExistingPr = await _internalFlaRepository.GetPublicRegisterAsync(applicationId, cancellationToken);
@@ -531,16 +542,27 @@ public class UpdateWoodlandOfficerReviewService(
         Guid applicationId,
         ConditionsStatusModel model,
         Guid userId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool isSkippingWoReviewForCbw = false)
     {
         Guard.Against.Null(model);
         logger.LogDebug("Attempting to update the conditional status for application with id {ApplicationId}", applicationId);
 
         try
         {
-            if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+            if (isSkippingWoReviewForCbw)
             {
-                return Result.Failure("Application woodland officer review unable to be updated");
+                if (await AssertCBWApplication(applicationId, userId, cancellationToken) == false)
+                {
+                    return Result.Failure("Application woodland officer review unable to be updated");
+                }
+            }
+            else
+            {
+                if (await AssertApplication(applicationId, userId, cancellationToken) == false)
+                {
+                    return Result.Failure("Application woodland officer review unable to be updated");
+                }
             }
 
             var entity = new WoodlandOfficerReview

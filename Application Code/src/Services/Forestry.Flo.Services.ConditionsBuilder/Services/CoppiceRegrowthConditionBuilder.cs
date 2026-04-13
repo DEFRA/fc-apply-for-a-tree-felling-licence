@@ -37,5 +37,5 @@ public class CoppiceRegrowthConditionBuilder : ConditionBuilderBase, IBuildCondi
     }
 
     /// <inheritdoc />
-    protected override bool MustMatchOnNaturalRegenPercentage => false;
+    protected override bool MustMatchOnNaturalRegenPercentage => true;
 }

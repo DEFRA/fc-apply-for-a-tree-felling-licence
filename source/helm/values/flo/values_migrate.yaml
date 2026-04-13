@@ -114,6 +114,8 @@ external-web-app:
         ConditionsToApplicant: "ffca47bd-b297-4c3d-886f-c3aa1794a264"
         ExternalConsulteeInvite: "07d0265f-0b56-4416-a6f7-4becf7ec4128"
         ExternalConsulteeInviteWithPublicRegisterInfo: "5c458c72-1d67-4384-9040-e5207c1960b8"
+        InformFcStaffOfConsulteeCommentReceived: "8061f7ce-dc84-41e0-81b9-a71184d8ace1"
+        ExternalConsulteeInviteReminder: "769cceb1-b4fa-4f54-ac12-0559d6ac8a5b"
         InformApplicantOfApplicationApproval: "ad8d8bf2-44a3-4c92-a4f6-0ec6abe36355"
         InformApplicantOfApplicationReferredToLocalAuthority: "2605f6d2-f927-4771-bc01-e7d9ddf98740"
         InformApplicantOfApplicationRefusal: "1719c876-ed1b-4cf2-8d6d-165c81344d8d"
@@ -237,10 +239,14 @@ external-web-app:
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true
             Fields: [ "featname" , "area_code"]
-          - Name: "LocalAuthority_Areas"
+          - Name: "AdminBoundary_Areas"
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true
-            Fields: [ "area_code" , "admin_hub"]
+            Fields: [ "area_code", "admin_hub" ]
+          - Name: "LocalAuthority_Areas"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/535"
+            NeedsToken: true
+            Fields: [ "name"]
           - Name: "Phytophthora_Ramorum_Risk_Zones"
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true
@@ -386,6 +392,7 @@ internal-web-app:
       baseUrl: "https://private-beta-pre-prod.tree-felling.forestrycommission.gov.uk/"
     woodlandOfficerReview:
       useDevPublicRegister: false
+      publicRegisterApplicationUrl: "https://experience.arcgis.com/experience/d7b0fd8800164bc3af7e50983517d191/page/Page-1"
     apiSecurityOptions:
       authenticationHeaderKey: "X-Api-Key"
       authenticationHeaderValue:
@@ -480,6 +487,8 @@ internal-web-app:
         ConditionsToApplicant: "ffca47bd-b297-4c3d-886f-c3aa1794a264"
         ExternalConsulteeInvite: "07d0265f-0b56-4416-a6f7-4becf7ec4128"
         ExternalConsulteeInviteWithPublicRegisterInfo: "5c458c72-1d67-4384-9040-e5207c1960b8"
+        InformFcStaffOfConsulteeCommentReceived: "8061f7ce-dc84-41e0-81b9-a71184d8ace1"
+        ExternalConsulteeInviteReminder: "769cceb1-b4fa-4f54-ac12-0559d6ac8a5b"
         InformApplicantOfApplicationApproval: "ad8d8bf2-44a3-4c92-a4f6-0ec6abe36355"
         InformApplicantOfApplicationReferredToLocalAuthority: "2605f6d2-f927-4771-bc01-e7d9ddf98740"
         InformApplicantOfApplicationRefusal: "1719c876-ed1b-4cf2-8d6d-165c81344d8d"
@@ -598,10 +607,14 @@ internal-web-app:
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true
             Fields: [ "featname" , "area_code"]
-          - Name: "LocalAuthority_Areas"
+          - Name: "AdminBoundary_Areas"
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true
-            Fields: [ "area_code" , "admin_hub"]
+            Fields: [ "area_code", "admin_hub" ]
+          - Name: "LocalAuthority_Areas"
+            ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/535"
+            NeedsToken: true
+            Fields: [ "name"]
           - Name: "Phytophthora_Ramorum_Risk_Zones"
             ServiceURI: "https://www.forestergis.com/geostore/rest/services/Secure_FSE/E_SECURE_EXTERNAL_MAP_BROWSER_DEV/MapServer/515"
             NeedsToken: true

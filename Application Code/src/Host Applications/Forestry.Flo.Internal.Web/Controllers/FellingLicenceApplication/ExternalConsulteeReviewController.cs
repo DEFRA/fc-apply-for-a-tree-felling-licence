@@ -12,6 +12,8 @@ public class ExternalConsulteeReviewController : Controller
         [FromQuery] Guid applicationId, 
         [FromQuery] Guid accessCode,
         [FromQuery] string emailAddress,
+        [FromQuery] string? consulteeOrganisation,
+        [FromQuery] string? consulteeJobRole,
         [FromServices] IExternalConsulteeReviewUseCase externalConsulteeReviewUseCase,
         CancellationToken cancellationToken)
     {
@@ -27,6 +29,9 @@ public class ExternalConsulteeReviewController : Controller
         {
             return RedirectToAction("Error", "Home");
         }
+
+        model.Value.AddConsulteeComment.AuthorOrganisation = consulteeOrganisation ?? string.Empty;
+        model.Value.AddConsulteeComment.AuthorJobRole = consulteeJobRole ?? string.Empty;
 
         return View(model.Value);
     }
@@ -58,19 +63,24 @@ public class ExternalConsulteeReviewController : Controller
             return View(reloadModel.Value);
         }
 
+        var viewApplicationUrl = Url.Action(nameof(FellingLicenceApplicationController.ApplicationSummary), "FellingLicenceApplication", new { id = commentModel.ApplicationId }, this.Request.Scheme);
         var result = await externalConsulteeReviewUseCase.AddConsulteeCommentAsync(
-            commentModel, consulteeAttachmentFiles, cancellationToken);
+            commentModel, consulteeAttachmentFiles, viewApplicationUrl, cancellationToken);
 
         if (result.IsFailure)
         {
             return RedirectToAction("Error", "Home");
         }
 
+        this.AddConfirmationMessage("Your comment has been added to this application, you can add further comments or close this tab");
+
         return RedirectToAction("Index", new
         {
             applicationId = commentModel.ApplicationId, 
             accessCode = commentModel.AccessCode,
-            emailAddress = commentModel.AuthorContactEmail
+            emailAddress = commentModel.AuthorContactEmail,
+            consulteeOrganisation = commentModel.AuthorOrganisation,
+            consulteeJobRole = commentModel.AuthorJobRole
         });
     }
 

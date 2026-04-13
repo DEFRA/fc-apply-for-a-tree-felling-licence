@@ -75,7 +75,7 @@
                 You can expand the box to see more content. <br/>
                 Copy and paste the consultation type from the guidance document and add any additional information if it’s needed.
             </div>
-            <textarea class="govuk-textarea" rows="4" aria-describedby="focus-hint" asp-for="AreaOfFocus"></textarea>
+            <textarea class="govuk-textarea" rows="25" aria-describedby="focus-hint" asp-for="AreaOfFocus"></textarea>
         </govuk-form-group>
         
         <div class="govuk-form-group">
@@ -113,22 +113,41 @@
         </div>
         
         <govuk-form-group asp-for="ExemptFromConsultationPublicRegister">
-            <label class="govuk-label" asp-for="ExemptFromConsultationPublicRegister"></label>
-            <validation asp-for="ExemptFromConsultationPublicRegister"></validation>
-            <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
-                <div class="govuk-radios__item">
-                    <input class="govuk-radios__input" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="true">
-                    <label class="govuk-label govuk-radios__label" asp-for="ExemptFromConsultationPublicRegister">
-                        Yes
-                    </label>
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                    <h2 class="govuk-fieldset__heading">
+                        Is the application exempt from the consultation public register?
+                    </h2>
+                </legend>
+                <validation asp-for="ExemptFromConsultationPublicRegister"></validation>
+                
+                <input type="hidden" asp-for="ExemptFromConsultationPublicRegister" condition="@Model.PublicRegisterAlreadyCompleted"/>
+
+                <div class="govuk-radios" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="true" data-aria-controls="conditional-reason" condition-disabled="@Model.PublicRegisterAlreadyCompleted">
+                        <label class="govuk-label govuk-radios__label" asp-for="ExemptFromConsultationPublicRegister">
+                            Yes
+                        </label>
+                    </div>
+                    @{
+                        var conditionalClass = $"govuk-radios__conditional {(Model.ExemptFromConsultationPublicRegister is true ? "" : "govuk-radios__conditional--hidden")}";
+                    }
+                    <div class="@conditionalClass" id="conditional-reason">
+                        <govuk-form-group asp-for="ExemptFromConsultationPublicRegisterReason">
+                            <label class="govuk-hint" asp-for="ExemptFromConsultationPublicRegisterReason"></label>
+                            <validation asp-for="ExemptFromConsultationPublicRegisterReason"></validation>
+                            <textarea class="govuk-textarea" rows="4" asp-for="ExemptFromConsultationPublicRegisterReason" condition-disabled="@Model.PublicRegisterAlreadyCompleted"></textarea>
+                        </govuk-form-group>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input class="govuk-radios__input" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="false" id="exempt-no" condition-disabled="@Model.PublicRegisterAlreadyCompleted">
+                        <label class="govuk-label govuk-radios__label" for="exempt-no">
+                            No
+                        </label>
+                    </div>
                 </div>
-                <div class="govuk-radios__item">
-                    <input class="govuk-radios__input" asp-for="ExemptFromConsultationPublicRegister" type="radio" value="false" id="exempt-no">
-                    <label class="govuk-label govuk-radios__label" for="exempt-no">
-                        No
-                    </label>
-                </div>
-            </div>
+            </fieldset>
         </govuk-form-group>
 
         <div class="govuk-form-group">

@@ -1,5 +1,4 @@
 ﻿using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
@@ -18,16 +17,15 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
 {
     private readonly IFellingLicenceApplicationExternalRepository _fellingLicenceApplicationRepository;
     private readonly IClock _clock;
-    private readonly RequestContext _requestContext;
     private readonly FellingLicenceApplicationOptions _fellingLicenceApplicationOptions;
     private readonly ILogger<UpdateFellingLicenceApplicationForExternalUsersService> _logger;
 
-    private static readonly List<FellingLicenceStatus> _statusesToSubmitFrom = new List<FellingLicenceStatus>
-    {
+    private static readonly List<FellingLicenceStatus> StatusesToSubmitFrom =
+    [
         FellingLicenceStatus.Draft,
         FellingLicenceStatus.ReturnedToApplicant,
         FellingLicenceStatus.WithApplicant
-    };
+    ];
 
     public UpdateFellingLicenceApplicationForExternalUsersService(
         IFellingLicenceApplicationExternalRepository fellingLicenceApplicationRepository,
@@ -49,6 +47,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
     public async Task<Result<SubmitFellingLicenceApplicationResponse>> SubmitFellingLicenceApplicationAsync(
         Guid applicationId,
         UserAccessModel userAccessModel,
+        SubmittedFlaPropertyDetail submittedFlaPropertyDetail,
         CancellationToken cancellationToken)
     {
         //get current time
@@ -86,10 +85,45 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
         // get current status, check we can submit from it
         var currentStatus = application.Value.StatusHistories.MaxBy(x => x.Created)?.Status;
 
-        if (currentStatus == null || _statusesToSubmitFrom.Contains(currentStatus.Value) == false)
+        if (currentStatus == null || StatusesToSubmitFrom.Contains(currentStatus.Value) == false)
         {
             _logger.LogWarning("Cannot submit application with id {ApplicationId} as it is currently in state {Status}",
                 applicationId, currentStatus);
+            return Result.Failure<SubmitFellingLicenceApplicationResponse>("Could not submit the application");
+        }
+
+        // clear down any existing SubmittedFlaPropertyDetails - then replace with the new one
+        var deleteExistingResult = await _fellingLicenceApplicationRepository
+            .DeleteSubmittedFlaPropertyDetailForApplicationAsync(applicationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (deleteExistingResult.IsFailure)
+        {
+            _logger.LogWarning("Failed to delete existing SubmittedFlaPropertyDetail for application with id {ApplicationId}",
+                applicationId);
+            return Result.Failure<SubmitFellingLicenceApplicationResponse>("Could not submit the application");
+        }
+
+        // ensure references in the new submittedFlaPropertyDetail are set up correctly
+        submittedFlaPropertyDetail.FellingLicenceApplicationId = applicationId;
+        submittedFlaPropertyDetail.FellingLicenceApplication = application.Value;
+
+        // ensure each compartment points back to this detail
+        if (submittedFlaPropertyDetail.SubmittedFlaPropertyCompartments != null)
+        {
+            foreach (var compartment in submittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
+            {
+                compartment.SubmittedFlaPropertyDetail = submittedFlaPropertyDetail;
+            }
+        }
+
+        // attach the new submittedFlaPropertyDetail to the application
+        application.Value.SubmittedFlaPropertyDetail = submittedFlaPropertyDetail;
+
+        // save changes to ensure the property details are persisted, and we have the necessary ids generated for the compartments
+        var savePropertyResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+        if (savePropertyResult.IsFailure)
+        {
+            _logger.LogWarning("Could not save submitted property for application with id {ApplicationId}, error: {Error}", applicationId, savePropertyResult.Error);
             return Result.Failure<SubmitFellingLicenceApplicationResponse>("Could not submit the application");
         }
 
@@ -146,6 +180,45 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
             .Select(x => x.AssignedUserId)
             .ToList();
 
+        // convert proposed f&r to confirmed
+        var fellingResult = ConvertProposedFellingDetailsToConfirmedAsync(application.Value);
+
+        if (fellingResult.IsFailure)
+        {
+            _logger.LogError(
+                "Error {Error} encountered in ConvertProposedFellingAndRestockingToConfirmedAsync, application id {ApplicationId}",
+                fellingResult.Error, applicationId);
+            return fellingResult.ConvertFailure<SubmitFellingLicenceApplicationResponse>();
+        }
+
+        // convert proposed designations to submitted
+        var designations = application.Value.LinkedPropertyProfile?.ProposedCompartmentDesignations ?? [];
+
+        // add designations to each submitted compartment
+        foreach (var submittedCompartment in application.Value.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments ?? [])
+        {
+            var designation = designations
+                .FirstOrDefault(x => x.PropertyProfileCompartmentId == submittedCompartment.CompartmentId);
+
+            if (designation == null)
+            {
+                // no proposed designations so don't need to create a submitted record
+                continue;
+            }
+
+            var submittedDesignation = new SubmittedCompartmentDesignations
+            {
+                ProposedCompartmentDesignationsId = designation?.Id,
+                Paws = designation?.CrossesPawsZones.Any() ?? false,
+                ProportionBeforeFelling = designation.ProportionBeforeFelling,
+                ProportionAfterFelling = designation.ProportionAfterFelling,
+                SubmittedFlaPropertyCompartment = submittedCompartment,
+                SubmittedFlaPropertyCompartmentId = submittedCompartment.Id
+            };
+
+            submittedCompartment.SubmittedCompartmentDesignations = submittedDesignation;
+        }
+
         // save changes to application
         var saveResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
         if (saveResult.IsFailure)
@@ -161,11 +234,6 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
                 .DeleteAdminOfficerReviewForApplicationAsync(applicationId, cancellationToken)
                 .ConfigureAwait(false);
         }
-
-        // clear down any existing SubmittedFlaPropertyDetails - the usecase code calling this method must then generate the new version!
-        await _fellingLicenceApplicationRepository
-            .DeleteSubmittedFlaPropertyDetailForApplicationAsync(applicationId, cancellationToken)
-            .ConfigureAwait(false);
 
         // clear down woodland officer review task flags for tasks that will need to be redone/checked again due to resubmission
         if (currentStatus != FellingLicenceStatus.Draft)
@@ -313,94 +381,6 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception caught in ConvertProposedFellingAndRestockingToConfirmedAsync");
-            return Result.Failure(ex.Message);
-        }
-    }
-
-    /// <inheritdoc />
-    public async Task<Result> ConvertProposedCompartmentDesignationsToSubmittedAsync(
-        Guid applicationId,
-        UserAccessModel userAccessModel,
-        CancellationToken cancellationToken)
-    {
-        // get entity
-        var application = await _fellingLicenceApplicationRepository
-            .GetAsync(applicationId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (application.HasNoValue)
-        {
-            _logger.LogWarning("Could not locate application with id {ApplicationId} in the repository", applicationId);
-            return Result.Failure("Could not convert proposed designations to submitted designations for the application");
-        }
-
-        if (application.Value.SubmittedFlaPropertyDetail == null)
-        {
-            _logger.LogWarning("Application with id {ApplicationId} has no submitted FLA property detail to convert designations into", applicationId);
-            return Result.Failure("Could not convert proposed designations to submitted designations for the application");
-        }
-
-        // verify user access to the application
-        var applicationWoodlandOwnerId = application.Value.WoodlandOwnerId;
-        if (userAccessModel.CanManageWoodlandOwner(applicationWoodlandOwnerId) == false)
-        {
-            _logger.LogWarning(
-                "User with id {UserId} does not have access to woodland owner with id {WoodlandOwnerId} and so cannot convert the compartment designation details for the application with id {ApplicationId}",
-                userAccessModel.UserAccountId, application.Value.WoodlandOwnerId, applicationId);
-            return Result.Failure("Could not convert proposed designations to submitted designations for the application");
-        }
-
-        var designations = application.Value.LinkedPropertyProfile?.ProposedCompartmentDesignations ?? [];
-
-        // add designations to each submitted compartment
-        foreach (var submittedCompartment in application.Value.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments ?? [])
-        {
-            var designation = designations
-                .FirstOrDefault(x => x.PropertyProfileCompartmentId == submittedCompartment.CompartmentId);
-
-            if (designation == null)
-            {
-                _logger.LogWarning(
-                    "No proposed compartment designations found for compartment id {CompartmentId} on application {ApplicationId}",
-                    submittedCompartment.CompartmentId,
-                    applicationId);
-
-                continue;
-            }
-
-            var submittedDesignation = new SubmittedCompartmentDesignations
-            {
-                ProposedCompartmentDesignationsId = designation?.Id,
-                Paws = designation?.CrossesPawsZones.Any() ?? false,
-                ProportionBeforeFelling = designation.ProportionBeforeFelling,
-                ProportionAfterFelling = designation.ProportionAfterFelling,
-                SubmittedFlaPropertyCompartment = submittedCompartment,
-                SubmittedFlaPropertyCompartmentId = submittedCompartment.Id
-            };
-
-            submittedCompartment.SubmittedCompartmentDesignations = submittedDesignation;
-        }
-
-        //_fellingLicenceApplicationRepository.Update(application.Value);
-
-        try
-        {
-            var dbResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
-
-            if (dbResult.IsFailure)
-            {
-                _logger.LogError(
-                    "Error {Error} encountered in ConvertProposedCompartmentDesignationsToSubmittedAsync, application id {ApplicationId}",
-                    dbResult.Error, applicationId);
-                return Result.Failure(dbResult.Error + $" in ConvertProposedCompartmentDesignationsToSubmittedAsync, application id {applicationId}");
-            }
-
-            _logger.LogDebug("Successfully converted proposed compartment designations to submitted for application with id {ApplicationId}", applicationId);
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Exception caught in ConvertProposedCompartmentDesignationsToSubmittedAsync");
             return Result.Failure(ex.Message);
         }
     }
@@ -808,8 +788,10 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
                         Area = proposedRestockingDetail.Area,
                         SubmittedFlaPropertyCompartmentId = restockSubmittedFlaPropertyCompartment?.Id ?? submittedFlaPropertyCompartment.Id,
                         PercentageOfRestockArea = proposedRestockingDetail.PercentageOfRestockArea,
+                        PercentageOfFellingArea = proposedRestockingDetail.PercentageOfFellingArea,
                         RestockingDensity = proposedRestockingDetail.RestockingDensity,
                         NumberOfTrees = proposedRestockingDetail.NumberOfTrees,
+                        PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen,
                         RestockingProposal = proposedRestockingDetail.RestockingProposal,
                         ConfirmedFellingDetail = confirmedFellingDetail,
                         ConfirmedFellingDetailId = confirmedFellingDetail.Id,

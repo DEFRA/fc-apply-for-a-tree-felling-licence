@@ -216,6 +216,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
                 PercentNaturalRegeneration = 10,
                 PercentageOfRestockArea = 100,
                 RestockingDensity = 200,
+                PercentageEstablishedByCoppiceOrNaturalRegen = 95,
                 ConfirmedRestockingSpecies = restockingSpecies
             }
         };
@@ -253,6 +254,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
         Assert.Equal(10, storedRestockingDetail.PercentNaturalRegeneration);
         Assert.Equal(100, storedRestockingDetail.PercentageOfRestockArea);
         Assert.Equal(200, storedRestockingDetail.RestockingDensity);
+        Assert.Equal(95, storedRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen);
         Assert.Equal(2, storedRestockingDetail.ConfirmedRestockingSpecies.Count);
         Assert.Contains(storedRestockingDetail.ConfirmedRestockingSpecies, x => x.Species == "speciesA" && x.Percentage == 50);
         Assert.Contains(storedRestockingDetail.ConfirmedRestockingSpecies, x => x.Species == "speciesB" && x.Percentage == 50);
@@ -292,6 +294,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
                 PercentNaturalRegeneration = 10,
                 PercentageOfRestockArea = 100,
                 RestockingDensity = 200,
+                PercentageEstablishedByCoppiceOrNaturalRegen = 95,
                 ConfirmedRestockingSpecies = restockingSpecies
             }
         };
@@ -329,6 +332,7 @@ public partial class UpdateConfirmedFellingAndRestockingDetailsServiceTests
         Assert.Equal(10, storedNewRestockingDetail.PercentNaturalRegeneration);
         Assert.Equal(100, storedNewRestockingDetail.PercentageOfRestockArea);
         Assert.Equal(200, storedNewRestockingDetail.RestockingDensity);
+        Assert.Equal(95, storedNewRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen);
         Assert.Equal(2, storedNewRestockingDetail.ConfirmedRestockingSpecies.Count);
         Assert.Contains(storedNewRestockingDetail.ConfirmedRestockingSpecies, x => x.Species == "speciesA" && x.Percentage == 50);
         Assert.Contains(storedNewRestockingDetail.ConfirmedRestockingSpecies, x => x.Species == "speciesB" && x.Percentage == 50);

@@ -43,9 +43,30 @@ public class UpdateWoodlandOfficerReviewServiceSetPublicRegisterExemptTests: Upd
 
         FellingLicenceApplicationRepository
             .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<StatusHistory>(0));
+            .ReturnsAsync(new List<StatusHistory> { new StatusHistory { Created = DateTime.UtcNow, Status = FellingLicenceStatus.AdminOfficerReview } });
 
         var result = await sut.SetPublicRegisterExemptAsync(applicationId, userId, true, reason, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        FellingLicenceApplicationRepository.Verify(x => x.GetStatusHistoryForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.VerifyNoOtherCalls();
+        UnitOfWork.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task ReturnsFailureWhenNotInCorrectStateAndSkippingWoReviewForCbw(
+        Guid applicationId,
+        Guid userId,
+        string reason)
+    {
+        var sut = CreateSut();
+
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<StatusHistory> { new StatusHistory { Created = DateTime.UtcNow, Status = FellingLicenceStatus.WoodlandOfficerReview } });
+
+        var result = await sut.SetPublicRegisterExemptAsync(applicationId, userId, true, reason, CancellationToken.None, true);
 
         Assert.True(result.IsFailure);
 
@@ -166,6 +187,39 @@ public class UpdateWoodlandOfficerReviewServiceSetPublicRegisterExemptTests: Upd
 
         FellingLicenceApplicationRepository.Verify(x => x.GetStatusHistoryForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         FellingLicenceApplicationRepository.Verify(x => x.GetAssigneeHistoryForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.GetPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.AddPublicRegisterAsync(It.Is<PublicRegister>(x => x.WoodlandOfficerSetAsExemptFromConsultationPublicRegister == true && x.WoodlandOfficerConsultationPublicRegisterExemptionReason == reason && x.FellingLicenceApplicationId == applicationId), It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        FellingLicenceApplicationRepository.Verify(x => x.AddWoodlandOfficerReviewAsync(It.Is<WoodlandOfficerReview>(x => x.FellingLicenceApplicationId == applicationId && x.LastUpdatedById == userId && x.LastUpdatedDate == Now.ToDateTimeUtc()), It.IsAny<CancellationToken>()), Times.Once);
+        UnitOfWork.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        FellingLicenceApplicationRepository.VerifyNoOtherCalls();
+        UnitOfWork.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoData]
+    public async Task CanSaveExemptionWhenSkippingForCbw(
+        Guid applicationId,
+        Guid userId,
+        string reason)
+    {
+        var sut = CreateSut();
+
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<StatusHistory> { new StatusHistory { Created = DateTime.UtcNow, Status = FellingLicenceStatus.AdminOfficerReview } });
+        FellingLicenceApplicationRepository
+            .Setup(x => x.GetPublicRegisterAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<PublicRegister>.None);
+        FellingLicenceApplicationRepository.Setup(x => x.GetWoodlandOfficerReviewAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<WoodlandOfficerReview>.None);
+
+        var result = await sut.SetPublicRegisterExemptAsync(applicationId, userId, true, reason, CancellationToken.None, true);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value);
+
+        FellingLicenceApplicationRepository.Verify(x => x.GetStatusHistoryForApplicationAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         FellingLicenceApplicationRepository.Verify(x => x.GetPublicRegisterAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
         FellingLicenceApplicationRepository.Verify(x => x.AddPublicRegisterAsync(It.Is<PublicRegister>(x => x.WoodlandOfficerSetAsExemptFromConsultationPublicRegister == true && x.WoodlandOfficerConsultationPublicRegisterExemptionReason == reason && x.FellingLicenceApplicationId == applicationId), It.IsAny<CancellationToken>()), Times.Once);
         FellingLicenceApplicationRepository.Verify(x => x.GetWoodlandOfficerReviewAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);

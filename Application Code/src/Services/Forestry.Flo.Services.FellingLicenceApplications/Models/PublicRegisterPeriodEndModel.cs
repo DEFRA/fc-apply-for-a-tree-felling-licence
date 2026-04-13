@@ -5,6 +5,11 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Models;
 public class PublicRegisterPeriodEndModel
 {
     /// <summary>
+    /// Gets and sets the ID of the application this model represents.
+    /// </summary>
+    public Guid ApplicationId { get; set; }
+
+    /// <summary>
     /// Gets and sets the public register entity for the application.
     /// </summary>
     public PublicRegister? PublicRegister { get; set; }

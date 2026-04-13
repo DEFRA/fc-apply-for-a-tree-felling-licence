@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
@@ -21,10 +22,12 @@ public class PublicRegisterCommentsUseCaseTests
     private readonly Mock<IClock> _clock = new();
     private readonly Mock<ILogger<PublicRegisterCommentsUseCase>> _logger = new();
     private readonly Mock<INotificationHistoryService> _notificationHistoryService = new();
+    private DateTime _runTime;
 
     private PublicRegisterCommentsUseCase CreateSut()
     {
-        _clock.Setup(x => x.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.UtcNow));
+        _runTime = DateTime.UtcNow;
+        _clock.Setup(x => x.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(_runTime));
         return new PublicRegisterCommentsUseCase(
             _applicationService.Object,
             _publicRegister.Object,
@@ -57,7 +60,8 @@ public class PublicRegisterCommentsUseCaseTests
     {
         // Arrange
         var appRef = "APP-789";
-        var app = new PublicRegisterPeriodEndModel { ApplicationReference = appRef };
+        var appId = Guid.NewGuid();
+        var app = new PublicRegisterPeriodEndModel { ApplicationId = appId, ApplicationReference = appRef };
         var ct = CancellationToken.None;
 
         // Use a fixed instant to avoid time-based flakiness (not strictly needed with non-date API)
@@ -70,6 +74,10 @@ public class PublicRegisterCommentsUseCaseTests
         _publicRegister
             .Setup(x => x.GetCaseCommentsByCaseReferenceAsync(appRef, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(new List<EsriCaseComments>()));
+        
+        _notificationHistoryService.Setup(x =>
+                x.RetrieveNotificationHistoryAsync(It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<List<NotificationHistoryModel>>([]));
 
         var sut = CreateSut();
 
@@ -91,12 +99,16 @@ public class PublicRegisterCommentsUseCaseTests
     public async Task LogsError_WhenCommentsResultIsFailure()
     {
         var appRef = "APP-999";
-        var app = new PublicRegisterPeriodEndModel { ApplicationReference = appRef };
+        var appId = Guid.NewGuid();
+        var app = new PublicRegisterPeriodEndModel { ApplicationId = appId, ApplicationReference = appRef };
         _applicationService.Setup(x => x.RetrieveApplicationsOnTheConsultationPublicRegisterAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<PublicRegisterPeriodEndModel> { app });
         _publicRegister
             .Setup(x => x.GetCaseCommentsByCaseReferenceAsync(appRef, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<List<EsriCaseComments>>("Error"));
+        _notificationHistoryService.Setup(x =>
+                x.RetrieveNotificationHistoryAsync(It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<List<NotificationHistoryModel>>([]));
 
         var sut = CreateSut();
         var result = await sut.GetNewCommentsFromPublicRegisterAsync(CancellationToken.None);
@@ -119,6 +131,7 @@ public class PublicRegisterCommentsUseCaseTests
         var appId = Guid.NewGuid();
         var app = new PublicRegisterPeriodEndModel
         {
+            ApplicationId = appId,
             ApplicationReference = appRef,
             PublicRegister = new PublicRegister
             {
@@ -131,18 +144,21 @@ public class PublicRegisterCommentsUseCaseTests
             CaseReference = appRef,
             Firstname = "Alice",
             Surname = "Smith",
+            Organisation = "Burbles Corp",
+            EmailAddress = "asmith@burbles.com",
             CaseNote = "First comment",
             CreatedDate = new DateTime(2025, 1, 10, 9, 30, 0, DateTimeKind.Utc),
-            GlobalID = Guid.NewGuid()
+            GlobalIDOne = Guid.NewGuid()
         };
         var comment2 = new EsriCaseComments
         {
             CaseReference = appRef,
             Firstname = "Bob",
             Surname = "Jones",
+            Organisation = "Mediatek",
             CaseNote = "Second comment",
             CreatedDate = new DateTime(2025, 1, 10, 10, 45, 0, DateTimeKind.Utc),
-            GlobalID = Guid.NewGuid()
+            GlobalIDOne = Guid.NewGuid()
         };
 
         _applicationService
@@ -152,6 +168,10 @@ public class PublicRegisterCommentsUseCaseTests
         _publicRegister
             .Setup(x => x.GetCaseCommentsByCaseReferenceAsync(appRef, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(new List<EsriCaseComments> { comment1, comment2 }));
+
+        _notificationHistoryService.Setup(x =>
+                x.RetrieveNotificationHistoryAsync(It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<List<NotificationHistoryModel>>([]));
 
         // Capture the models passed to AddNotificationHistoryListAsync
         IEnumerable<NotificationHistoryModel> capturedModels = null!;
@@ -172,6 +192,7 @@ public class PublicRegisterCommentsUseCaseTests
         _publicRegister.Verify(x => x.GetCaseCommentsByCaseReferenceAsync(
             appRef, It.Is<CancellationToken>(t => t == ct)), Times.Once);
 
+        _notificationHistoryService.Verify(x => x.RetrieveNotificationHistoryAsync(appId, It.Is<NotificationType[]?>(n => n.Single() == NotificationType.PublicRegisterComment), It.IsAny<CancellationToken>()), Times.Once);
         // Verify AddNotificationHistoryListAsync is called once with expected token and models
         _notificationHistoryService.Verify(x => x.AddNotificationHistoryListAsync(
             It.IsAny<IEnumerable<NotificationHistoryModel>>(),
@@ -184,21 +205,126 @@ public class PublicRegisterCommentsUseCaseTests
         // Validate each mapped model
         var m1 = list[0];
         Assert.Equal(NotificationType.PublicRegisterComment, m1.Type);
-        Assert.Equal("Alice Smith", m1.Source);
+        Assert.Equal(JsonSerializer.Serialize(comment1), m1.Source);
         Assert.Equal("First comment", m1.Text);
         Assert.Equal(appRef, m1.ApplicationReference);
         Assert.Equal(appId, m1.ApplicationId);
-        Assert.Equal(comment1.CreatedDate, m1.CreatedTimestamp);
-        Assert.Equal(comment1.GlobalID, m1.ExternalId);
+        Assert.Equal(_runTime, m1.CreatedTimestamp);
+        Assert.Equal(comment1.GlobalIDOne, m1.ExternalId);
 
         var m2 = list[1];
         Assert.Equal(NotificationType.PublicRegisterComment, m2.Type);
-        Assert.Equal("Bob Jones", m2.Source);
+        Assert.Equal(JsonSerializer.Serialize(comment2), m2.Source);
         Assert.Equal("Second comment", m2.Text);
         Assert.Equal(appRef, m2.ApplicationReference);
         Assert.Equal(appId, m2.ApplicationId);
-        Assert.Equal(comment2.CreatedDate, m2.CreatedTimestamp);
-        Assert.Equal(comment2.GlobalID, m2.ExternalId);
+        Assert.Equal(_runTime, m2.CreatedTimestamp);
+        Assert.Equal(comment2.GlobalIDOne, m2.ExternalId);
+    }
+
+    [Fact]
+    public async Task CallsAddNotificationHistoryListAsync_WithExpectedModels_AndReturnsCounts_WhenCommentAlreadyInNotificationHistory_OnSuccess()
+    {
+        // Arrange
+        var ct = CancellationToken.None;
+        var appRef = "APP-123";
+        var appId = Guid.NewGuid();
+        var app = new PublicRegisterPeriodEndModel
+        {
+            ApplicationId = appId,
+            ApplicationReference = appRef,
+            PublicRegister = new PublicRegister
+            {
+                FellingLicenceApplicationId = appId
+            }
+        };
+
+        var comment1 = new EsriCaseComments
+        {
+            CaseReference = appRef,
+            Firstname = "Alice",
+            Surname = "Smith",
+            Organisation = "Burbles Corp",
+            EmailAddress = "asmith@burbles.com",
+            CaseNote = "First comment",
+            CreatedDate = new DateTime(2025, 1, 10, 9, 30, 0, DateTimeKind.Utc),
+            GlobalIDOne = Guid.NewGuid()
+        };
+        var comment2 = new EsriCaseComments
+        {
+            CaseReference = appRef,
+            Firstname = "Bob",
+            Surname = "Jones",
+            Organisation = "Mediatek",
+            CaseNote = "Second comment",
+            CreatedDate = new DateTime(2025, 1, 10, 10, 45, 0, DateTimeKind.Utc),
+            GlobalIDOne = Guid.NewGuid()
+        };
+
+        var comment1NotificationHistory = new NotificationHistoryModel
+        {
+            ApplicationId = appId,
+            ApplicationReference = appRef,
+            CreatedTimestamp = DateTime.Today.ToUniversalTime(),
+            ExternalId = comment1.GlobalIDOne,
+            Id = Guid.NewGuid(),
+            Reviewed = false,
+            Source = JsonSerializer.Serialize(comment1),
+            Status = NotificationStatus.New,
+            Text = comment1.CaseNote,
+            Type = NotificationType.PublicRegisterComment
+        };
+
+        _applicationService
+            .Setup(x => x.RetrieveApplicationsOnTheConsultationPublicRegisterAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<PublicRegisterPeriodEndModel> { app });
+
+        _publicRegister
+            .Setup(x => x.GetCaseCommentsByCaseReferenceAsync(appRef, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<EsriCaseComments> { comment1, comment2 }));
+
+        _notificationHistoryService.Setup(x =>
+                x.RetrieveNotificationHistoryAsync(It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<List<NotificationHistoryModel>>([comment1NotificationHistory]));
+
+        // Capture the models passed to AddNotificationHistoryListAsync
+        IEnumerable<NotificationHistoryModel> capturedModels = null!;
+        _notificationHistoryService
+            .Setup(x => x.AddNotificationHistoryListAsync(It.IsAny<IEnumerable<NotificationHistoryModel>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<NotificationHistoryModel>, CancellationToken>((models, token) => capturedModels = models.ToList())
+            .ReturnsAsync(Result.Success());
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.GetNewCommentsFromPublicRegisterAsync(ct);
+
+        // Assert message reflects retrieved (2) and imported (1)
+        Assert.Equal("Total comments retrieved: 2, total comments imported: 1", result);
+
+        // Verify PR called once with correct reference and token
+        _publicRegister.Verify(x => x.GetCaseCommentsByCaseReferenceAsync(
+            appRef, It.Is<CancellationToken>(t => t == ct)), Times.Once);
+
+        _notificationHistoryService.Verify(x => x.RetrieveNotificationHistoryAsync(appId, It.Is<NotificationType[]?>(n => n.Single() == NotificationType.PublicRegisterComment), It.IsAny<CancellationToken>()), Times.Once);
+        // Verify AddNotificationHistoryListAsync is called once with expected token and models
+        _notificationHistoryService.Verify(x => x.AddNotificationHistoryListAsync(
+            It.IsAny<IEnumerable<NotificationHistoryModel>>(),
+            It.Is<CancellationToken>(t => t == ct)), Times.Once);
+
+        Assert.NotNull(capturedModels);
+        var list = capturedModels.ToList();
+        Assert.Single(list);
+
+        // Validate each mapped model
+        var m2 = list[0];
+        Assert.Equal(NotificationType.PublicRegisterComment, m2.Type);
+        Assert.Equal(JsonSerializer.Serialize(comment2), m2.Source);
+        Assert.Equal("Second comment", m2.Text);
+        Assert.Equal(appRef, m2.ApplicationReference);
+        Assert.Equal(appId, m2.ApplicationId);
+        Assert.Equal(_runTime, m2.CreatedTimestamp);
+        Assert.Equal(comment2.GlobalIDOne, m2.ExternalId);
     }
 
     [Fact]
@@ -210,6 +336,7 @@ public class PublicRegisterCommentsUseCaseTests
         var appId = Guid.NewGuid();
         var app = new PublicRegisterPeriodEndModel
         {
+            ApplicationId = appId,
             ApplicationReference = appRef,
             PublicRegister = new PublicRegister
             {
@@ -235,6 +362,10 @@ public class PublicRegisterCommentsUseCaseTests
             .Setup(x => x.GetCaseCommentsByCaseReferenceAsync(appRef, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(new List<EsriCaseComments> { comment }));
 
+        _notificationHistoryService.Setup(x =>
+                x.RetrieveNotificationHistoryAsync(It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<List<NotificationHistoryModel>>([]));
+
         // Simulate failure so the overall use case returns a failure Result<string>
         _notificationHistoryService
             .Setup(x => x.AddNotificationHistoryListAsync(It.IsAny<IEnumerable<NotificationHistoryModel>>(), It.IsAny<CancellationToken>()))
@@ -259,6 +390,7 @@ public class PublicRegisterCommentsUseCaseTests
         var appId = Guid.NewGuid();
         var app = new PublicRegisterPeriodEndModel
         {
+            ApplicationId = appId,
             ApplicationReference = appRef,
             PublicRegister = new PublicRegister
             {
@@ -284,6 +416,10 @@ public class PublicRegisterCommentsUseCaseTests
                     GlobalID = Guid.NewGuid()
                 }
             }));
+
+        _notificationHistoryService.Setup(x =>
+                x.RetrieveNotificationHistoryAsync(It.IsAny<Guid>(), It.IsAny<NotificationType[]?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<List<NotificationHistoryModel>>([]));
 
         _notificationHistoryService
             .Setup(x => x.AddNotificationHistoryListAsync(It.IsAny<IEnumerable<NotificationHistoryModel>>(), It.IsAny<CancellationToken>()))

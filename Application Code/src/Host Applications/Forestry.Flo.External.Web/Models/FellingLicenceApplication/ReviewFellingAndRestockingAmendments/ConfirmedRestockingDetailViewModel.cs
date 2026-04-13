@@ -30,6 +30,8 @@ public class NewConfirmedRestockingDetailViewModel
 
     public FellingOperationType OperationType { get; set; }
 
+    public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
+
     /// <summary>
     /// Gets and sets the unique identifier for the proposed restocking associated with this confirmed restocking detail.
     /// </summary>

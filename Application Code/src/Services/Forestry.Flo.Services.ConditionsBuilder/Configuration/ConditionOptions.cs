@@ -6,9 +6,12 @@ public class ConditionOptions
 {
     public const string SpeciesParameter = "{SPECIES}";
     public const string DensityParameter = "{DENSITY}";
+    public const string DensityCoppiceParameter = "{DENSITYCOPPICE}";
     public const string CompartmentsParameter = "{COMPARTMENTS}";
     public const string FellingCompartmentsParameter = "{FELLINGCOMPARTMENTS}";
     public const string RegenerationParameter = "{REGEN}";
+    public const string LessThan100PercentRegenerationParameter = "{LESSTHAN100PERCENTREGEN}";
+    public const string RestockingNumberParameter = "{RESTOCKINGNUMBER}";
 
     /// <summary>
     /// Gets and sets the lines of text that make up the particular condition output.
@@ -20,7 +23,7 @@ public class ConditionOptions
     /// Gets and sets configuration for the parameters within the condition text.
     /// </summary>
     [Required]
-    public ConditionParameterOptions[] ConditionParameters { get; set; }
+    public ConditionParameterOptions[] ConditionParameters { get; set; } = [];
 }
 
 /// <summary>

@@ -2,7 +2,6 @@
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
-using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -21,13 +20,16 @@ public interface IUpdateWoodlandOfficerReviewService
     /// <param name="isExempt">A flag indicating whether or not the application is exempt from the public register.</param>
     /// <param name="exemptReason">The given reason for why it is exempt from the PR.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="isSkippingWoReviewForCbw">A flag to indicate whether this process is being run when skipping the WO
+    /// review as a CBW application.</param>
     /// <returns>A boolean flag indicating whether an update was made.</returns>
     Task<Result<bool>> SetPublicRegisterExemptAsync(
         Guid applicationId, 
         Guid userId, 
         bool isExempt,
         string? exemptReason, 
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool isSkippingWoReviewForCbw = false);
 
     /// <summary>
     /// Updates the <see cref="PublicRegister"/> entity for an application with the published
@@ -141,12 +143,14 @@ public interface IUpdateWoodlandOfficerReviewService
     /// <param name="model">A populated <see cref="ConditionsStatusModel"/> containing the new values.</param>
     /// <param name="userId">The id of the user making the update.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="isSkippingWoReviewForCbw">A flag to indicate whether this process is being run when skipping the WO</param>
     /// <returns>A <see cref="Result"/> indicating the success or failure of the operation.</returns>
     Task<Result> UpdateConditionalStatusAsync(
         Guid applicationId,
         ConditionsStatusModel model,
         Guid userId,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool isSkippingWoReviewForCbw = false);
 
     /// <summary>
     /// Updates the stored values for the conditional status for an application after
@@ -168,6 +172,8 @@ public interface IUpdateWoodlandOfficerReviewService
     /// <param name="userId">The id of the user updating the confirmed felling and restocking details.</param>
     /// <param name="complete">A flag indicating whether the confirmed felling and restocking details are finalised.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="isSkippingWoReviewForCbw">A flag to indicate whether this process is being run when skipping the WO
+    /// review as a CBW application.</param>
     Task<Result> HandleConfirmedFellingAndRestockingChangesAsync(
         Guid applicationId,
         Guid userId,

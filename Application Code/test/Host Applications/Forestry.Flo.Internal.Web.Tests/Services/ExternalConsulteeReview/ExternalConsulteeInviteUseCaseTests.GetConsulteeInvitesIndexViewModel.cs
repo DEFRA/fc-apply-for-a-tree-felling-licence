@@ -34,8 +34,10 @@ public partial class ExternalConsulteeInviteUseCaseTests
     private readonly Mock<IUserAccountService> _internalUserAccountService;
     private readonly Mock<IRetrieveUserAccountsService> _externalUserAccountService;
     private readonly Mock<IFellingLicenceApplicationInternalRepository> _internalUserContextFlaRepository;
+    private readonly Mock<IUnitOfWork> _internalUserContextUnitOfWork;
     private readonly Mock<IRetrieveWoodlandOwners> _woodlandOwnerService;
     private readonly Mock<ISendNotifications> _emailService;
+    private readonly Mock<INotificationHistoryService> _notificationHistoryService;
     private readonly Mock<IAuditService<ExternalConsulteeInviteUseCase>> _auditService;
     private readonly Mock<IAgentAuthorityService> _mockAgentAuthorityService;
     private readonly IClock _fakeClock;
@@ -61,6 +63,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
         _testUser = new InternalUser(userPrincipal);
 
          _emailService = new Mock<ISendNotifications>();
+         _notificationHistoryService = new Mock<INotificationHistoryService>();
          _auditService = new Mock<IAuditService<ExternalConsulteeInviteUseCase>>();
          _fakeClock = new FakeClock(Instant.FromDateTimeUtc(DateTime.UtcNow));
          
@@ -73,6 +76,7 @@ public partial class ExternalConsulteeInviteUseCaseTests
          _externalUserAccountService = new Mock<IRetrieveUserAccountsService>();
          _woodlandOwnerService = new Mock<IRetrieveWoodlandOwners>();
          _internalUserContextFlaRepository = new Mock<IFellingLicenceApplicationInternalRepository>();
+         _internalUserContextUnitOfWork = new();
          _mockAgentAuthorityService = new();
 
         _mockUpdateWoodlandOfficerReviewService = new Mock<IUpdateWoodlandOfficerReviewService>();
@@ -89,12 +93,15 @@ public partial class ExternalConsulteeInviteUseCaseTests
         _internalUserAccountService.Setup(s => s.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<Flo.Services.InternalUsers.Entities.UserAccount.UserAccount>.From(_fixture.Create<Flo.Services.InternalUsers.Entities.UserAccount.UserAccount>()));
 
+        _internalUserContextFlaRepository.SetupGet(x => x.UnitOfWork).Returns(_internalUserContextUnitOfWork.Object);
+
         return new ExternalConsulteeInviteUseCase(
             _internalUserAccountService.Object,
             _externalUserAccountService.Object,
             _internalUserContextFlaRepository.Object,
             _woodlandOwnerService.Object,
             _emailService.Object,
+            _notificationHistoryService.Object,
             _auditService.Object,
             _mockAgentAuthorityService.Object,
             _getConfiguredFcAreas.Object,
