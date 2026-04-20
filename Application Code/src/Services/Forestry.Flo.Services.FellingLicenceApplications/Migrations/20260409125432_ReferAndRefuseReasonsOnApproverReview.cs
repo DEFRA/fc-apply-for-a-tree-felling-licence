@@ -1,29 +1,27 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
-using System.Diagnostics.CodeAnalysis;
 
 #nullable disable
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 {
-    [ExcludeFromCodeCoverage]
     /// <inheritdoc />
-    public partial class FLOV22396HabitatRestorationTasklist : Migration
+    public partial class ReferAndRefuseReasonsOnApproverReview : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "HabitatRestorationStatus",
+            migrationBuilder.AddColumn<string>(
+                name: "ApplicationRefusedReason",
                 schema: "FellingLicenceApplications",
-                table: "FellingLicenceApplicationStepStatus",
-                type: "boolean",
+                table: "ApproverReview",
+                type: "text",
                 nullable: true);
 
-            migrationBuilder.AddColumn<bool>(
-                name: "IsPriorityOpenHabitat",
+            migrationBuilder.AddColumn<string>(
+                name: "ReferToLocalAuthorityReason",
                 schema: "FellingLicenceApplications",
-                table: "FellingLicenceApplication",
-                type: "boolean",
+                table: "ApproverReview",
+                type: "text",
                 nullable: true);
         }
 
@@ -31,14 +29,14 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "HabitatRestorationStatus",
+                name: "ApplicationRefusedReason",
                 schema: "FellingLicenceApplications",
-                table: "FellingLicenceApplicationStepStatus");
+                table: "ApproverReview");
 
             migrationBuilder.DropColumn(
-                name: "IsPriorityOpenHabitat",
+                name: "ReferToLocalAuthorityReason",
                 schema: "FellingLicenceApplications",
-                table: "FellingLicenceApplication");
+                table: "ApproverReview");
         }
     }
 }

@@ -38,6 +38,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 using RestockingSpecies = Forestry.Flo.Services.FellingLicenceApplications.Entities.RestockingSpecies;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
 using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services
 {
@@ -102,6 +103,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             Version = "0.0"
         };
 
+        private static readonly LocalAuthority _defaultLA = new() { Name = "Local authority name" };
+
         public GeneratePdfApplicationUseCaseTests()
         {
             _fellingLicenceApplicationRepositoryMock = new Mock<IFellingLicenceApplicationInternalRepository>();
@@ -133,6 +136,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
 
             _licencePdfGeneratorApiOptions.Reset();
             _licencePdfGeneratorApiOptions.Setup(x => x.Value).Returns(PDFGeneratorAPIOptions);
+
+            
 
             _fileStorageService.Setup(f => f.StoreFileAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<string>(),
                     It.IsAny<bool>(), It.IsAny<FileUploadReason>(), It.IsAny<CancellationToken>()))
@@ -171,6 +176,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             var sut = CreateSut();
 
             fla.LinkedPropertyProfile!.ProposedFellingDetails = new List<ProposedFellingDetail>();
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!)
             {
@@ -285,6 +291,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             // setup
 
             var sut = CreateSut();
+
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             foreach (var felling in fla.LinkedPropertyProfile?.ProposedFellingDetails)
             {
@@ -410,6 +418,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             // setup
             var sut = CreateSut();
 
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
+
             foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
             {
                 compartment.CompartmentId = propertyProfile.Compartments.FirstOrDefault().Id;
@@ -528,6 +538,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             // setup
             var sut = CreateSut();
 
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
+
             var compartment1 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
             var compartment2 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Skip(1).First();
 
@@ -619,6 +631,7 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             var sut = CreateSut();
 
             fla.LinkedPropertyProfile.ProposedFellingDetails = new List<ProposedFellingDetail>();
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!)
             {
@@ -736,6 +749,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             // Arrange
             var sut = CreateSut();
 
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
+
             // Set up compartments and confirmed felling details
             foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
             {
@@ -813,6 +828,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
         {
             // Arrange
             var sut = CreateSut();
+
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             // Set up proposed felling details
             var proposedFelling = new ProposedFellingDetail
@@ -936,6 +953,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             // Arrange
             var sut = CreateSut();
 
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
+
             // Set up the felling licence application with supplementary points on WO review
             fla.WoodlandOfficerReview.SupplementaryPoints = expectedSupplementaryPoints;
             fla.ApprovedInError = null; // No approved in error
@@ -1014,6 +1033,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
         {
             // Arrange
             var sut = CreateSut();
+
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             // Set up the felling licence application with supplementary points on both WO review and approved in error
             fla.WoodlandOfficerReview.SupplementaryPoints = woSupplementaryPoints;
@@ -1098,6 +1119,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             // Arrange
             var sut = CreateSut();
 
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
+
             // Set supplementary points to null on both entities
             fla.WoodlandOfficerReview.SupplementaryPoints = string.Empty;
             woodlandOfficerReviewStatus.SupplementaryPoints = string.Empty;
@@ -1176,6 +1199,8 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
         {
             // Arrange
             var sut = CreateSut();
+
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             // Set supplementary points to null on both entities
             fla.WoodlandOfficerReview.SupplementaryPoints = null;
@@ -1320,6 +1345,9 @@ namespace Forestry.Flo.Internal.Web.Tests.Services
             _mockGetFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(
                     "Bullers Hill\nKennford\nExeter\nEX6 7XR\nPhone: 0300 067 4960\nEmail: adminhub.bullershill@forestrycommission.gov.uk");
+
+            _foresterAccessMock.Setup(x => x.GetLocalAuthorityAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success(_defaultLA));
 
             return new GeneratePdfApplicationUseCase(
                 _generatePdfApplicationAuditServiceMock.Object,

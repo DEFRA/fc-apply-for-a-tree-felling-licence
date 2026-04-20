@@ -1463,7 +1463,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     DocumentPurpose.ExternalLisConstraintReport),
                 SelectCompartmentStep = application.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus,
                 ExternalLisAccessedTimestamp = application.Value.ExternalLisAccessedTimestamp,
-                NotRunningExternalLisReport = application.Value.NotRunningExternalLisReport
+                NotRunningExternalLisReport = application.Value.NotRunningExternalLisReport,
+                ExternalLisReportRun = application.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus
             },
             EnvironmentalImpactAssessment = new EnvironmentalImpactAssessmentViewModel
             {

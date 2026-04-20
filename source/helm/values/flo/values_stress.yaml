@@ -270,7 +270,7 @@ external-web-app:
             BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
             BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
             TextOverrides:
-              Copyright: "© Crown copyright and database rights 2021"
+              Copyright: "© Crown copyright and database rights 2026"
               FellingTitle: "Felling"
               RestockingTitle: "Restocking"
           JobStatusService:
@@ -405,6 +405,7 @@ internal-web-app:
           enabled: true
           schedule: "0 0 * * *"
     publicRegisterExpiry:
+      decisionPublicRegisterPeriod: 28
       thresholdBeforePublicRegisterPeriodEnd: "14.00:00:00"
     voluntaryWithdrawApplication:
       thresholdAfterWithApplicantStatusDate: "21.00:00:00"
@@ -608,7 +609,7 @@ internal-web-app:
             BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
             BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
             TextOverrides:
-              Copyright: "© Crown copyright and database rights 2021"
+              Copyright: "© Crown copyright and database rights 2026"
               FellingTitle: "Felling"
               RestockingTitle: "Restocking"
           JobStatusService:

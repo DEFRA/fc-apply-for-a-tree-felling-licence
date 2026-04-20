@@ -186,6 +186,8 @@ config:
     # -- API Key for the cron job endpoints
     apiKey:
   publicRegisterExpiry:
+    # -- the default DPR period, in days
+    decisionPublicRegisterPeriod:
     # -- Threshold before public register period expiry to notify assigned users
     thresholdBeforePublicRegisterPeriodEnd:
   voluntaryWithdrawApplication:

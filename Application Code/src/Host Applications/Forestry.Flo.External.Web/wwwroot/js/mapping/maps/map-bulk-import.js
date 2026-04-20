@@ -1583,14 +1583,22 @@ define(["require",
                 all.appendChild(checkbox);
                 all.addEventListener("click", async (e) => {
                     e.stopPropagation();
-                    if (checkbox.disabled) {
-                        return;
-                    }
+
                     let checkbox;
                     if (e.target.type === "checkbox") {
                         checkbox = e.target;
+
+                        if (checkbox.disabled) {
+                            return;
+                        }
+
                     } else {
                         checkbox = e.target.querySelector("input[type='checkbox']");
+
+                        if (checkbox.disabled) {
+                            return;
+                        }
+
                         checkbox.checked = !checkbox.checked;
                     }
 
@@ -1600,12 +1608,19 @@ define(["require",
                     if (checkbox.checked) {
                         for (let i = 0; i < childCheckboxes.length; i++) {
                             const childCheckbox = childCheckboxes[i];
+
+                            // if checkbox is already checked then move on to next one
+                            if (childCheckbox.checked) {
+                                continue;
+                            }
+
                             const key = childCheckbox.getAttribute("data-ImportKey");
                             const graphic = this._drawingLayer.graphics.items.find((g) => g.attributes && g.attributes["ImportKey"] === key);
 
                             // Validate shape before selecting
                             if (that._validateShapeUseCase.Execute(graphic, [], this.simplifyOperator) === CheckingResult.Passed) {
-                                // Optionally check for intersection here as well
+
+                                // optionally check for intersection here as well
                                 let intersects = await this.checkIntersectionsWithFeatureLayer(graphic.geometry);
                                 if (!intersects) {
                                     intersects = await this.checkIntersectionsWithDrawingLayer(graphic.geometry);

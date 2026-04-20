@@ -401,6 +401,10 @@ spec:
               value: {{ .Values.config.woodlandOfficerReview.publicRegisterApplicationUrl }}
             {{- end }}
             # ------------------- public register expiry start -------------------
+            {{- if .Values.config.publicRegisterExpiry.decisionPublicRegisterPeriod }}
+            - name: PublicRegisterExpiry__DecisionPublicRegisterPeriod
+              value: {{ .Values.config.publicRegisterExpiry.decisionPublicRegisterPeriod | quote }}
+            {{- end }}
             {{- if .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
             - name: PublicRegisterExpiry__ThresholdBeforePublicRegisterPeriodEnd
               value: {{ .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
