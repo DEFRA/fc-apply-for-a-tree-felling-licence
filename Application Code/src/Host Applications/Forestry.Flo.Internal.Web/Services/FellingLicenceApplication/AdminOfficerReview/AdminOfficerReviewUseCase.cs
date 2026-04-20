@@ -10,6 +10,7 @@ using Forestry.Flo.Internal.Web.Services.MassTransit.Messages;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.MassTransit.Messages;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
@@ -258,17 +259,22 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
             return Result.Failure("Unable to update date received for application");
         }
 
+        var hasExtendedFad = false;
+        var skippedWoForCbw = false;
+
+        // if larch in zone 1 and not being returned to applicant, need to update FAD and notify applicant of extension due to larch
         var larchCheckDetails = await _larchCheckService.GetLarchCheckDetailsAsync(applicationId, cancellationToken);
         if (larchCheckDetails.HasValue &&
             larchCheckDetails.Value.RecommendSplitApplicationDue == (int)RecommendSplitApplicationEnum.DontReturnApplication
             && larchCheckDetails.Value.Zone1)
         {
-            var notifyApplicantLarchResult = await LarchFadExtensionUpdateAsync(
-                    applicationId, larchCheckDetails.Value, _larchOptions, cancellationToken)
+            _logger.LogDebug("Application {ApplicationId} requires a Larch FAD extension", applicationId);
+            var notifyApplicantLarchResult = await LarchFadExtensionUpdateAsync(applicationId, cancellationToken)
                 .ConfigureAwait(false);
+            
             if (notifyApplicantLarchResult.IsFailure)
             {
-                _logger.LogError("Could not send notification to applicant");
+                _logger.LogError("Could not update application FAD/send notification to applicant for Larch");
                 await AppendAuditFailure(
                     applicationId,
                     user.UserAccountId!.Value,
@@ -276,8 +282,14 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                     {
                         notifyApplicantLarchResult.Error
                     }, cancellationToken);
-                return Result.Failure("Could not send notification to applicant");
+                return Result.Failure("Could not update application FAD/send notification to applicant for Larch");
             }
+
+            hasExtendedFad = true;
+        }
+        else
+        {
+            _logger.LogDebug("Application {ApplicationId} does not require a Larch FAD extension", applicationId);
         }
 
         // CBWChecked - Complete CFR and Conditions to be able to Approve directly
@@ -339,6 +351,8 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
             // set as CPR exempt due to being a CBW application in a non-sensitive area, so no need to show on public register
             await _updateWoodlandOfficerReviewService.SetPublicRegisterExemptAsync(
                     applicationId, user.UserAccountId!.Value, true, "Cricket bat willow expedited application", cancellationToken, true);
+
+            skippedWoForCbw = true;
         }
 
         var updateResult = await UpdateAdminOfficerReviewService.CompleteAdminOfficerReviewAsync(
@@ -357,6 +371,8 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 user.UserAccountId.Value,
                 new
                 {
+                    hasExtendedFad,
+                    skippedWoForCbw,
                     updateResult.Error
                 }, cancellationToken);
             return Result.Failure("Unable to update application");
@@ -378,6 +394,8 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 user.UserAccountId.Value,
                 new
                 {
+                    hasExtendedFad,
+                    skippedWoForCbw,
                     Error = applicant.Error
                 }, cancellationToken);
             return Result.Failure("Unable to determine applicant for notification");
@@ -392,6 +410,8 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 user.UserAccountId.Value,
                 new
                 {
+                    hasExtendedFad,
+                    skippedWoForCbw,
                     Error = "Unable to find woodland officer to notify"
                 }, cancellationToken);
             return Result.Failure("Unable to find woodland officer to notify");
@@ -406,6 +426,8 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 user.UserAccountId.Value,
                 new
                 {
+                    hasExtendedFad,
+                    skippedWoForCbw,
                     Error = "Unable to find admin officer to notify"
                 }, cancellationToken);
             return Result.Failure("Unable to find admin officer to notify");
@@ -421,7 +443,12 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                     AuditEvents.ConfirmAdminOfficerReview,
                     applicationId,
                     user.UserAccountId.Value,
-                    RequestContext),
+                    RequestContext,
+                    new
+                    {
+                        hasExtendedFad,
+                        skippedWoForCbw
+                    }),
                 cancellationToken);
         }
 
@@ -549,16 +576,17 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
 
     private async Task<Result> LarchFadExtensionUpdateAsync(
         Guid applicationId,
-        LarchCheckDetailsModel larchDetails,
-        LarchOptions larchOptions,
         CancellationToken cancellationToken)
     {
+        _logger.LogDebug("Updating application FAD for larch and notifying applicant");
+
         var externalViewURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
 
         var fellingLicenceApplicationResult = await GetFellingLicenceApplication.GetApplicationByIdAsync(applicationId, cancellationToken);
         if (fellingLicenceApplicationResult.IsFailure)
         {
-            return Result.Failure("Could not retrieve felling licence application");
+            _logger.LogError("Could not retrieve application {ApplicationId} to extend FAD for larch", applicationId);
+            return Result.Failure("Could not retrieve felling licence application to update FAD for larch");
         }
         var fellingLicence = fellingLicenceApplicationResult.Value;
 
@@ -566,25 +594,44 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
 
         if (applicationSummary.IsFailure)
         {
-            return Result.Failure<LarchCheckModel>("Unable to retrieve application summary");
+            _logger.LogError("Unable to retrieve application summary for application {ApplicationId} in order to calculate new FAD for larch, error: {Error}",
+                applicationId, applicationSummary.Error);
+            return Result.Failure("Unable to retrieve application summary to update FAD for larch");
         }
 
-        var submissionDate = applicationSummary.Value.DateReceived;
-        if (!submissionDate.HasValue)
+        var initialFadDate = applicationSummary.Value.FinalActionDate;
+
+        var newFadResult = applicationSummary.Value.FadLarchExtension(_larchOptions);
+
+        if (newFadResult.IsFailure)
         {
-            return Result.Failure("Submission date is not available");
+            _logger.LogError("Could not calculate new FAD date for Larch application {ApplicationId} as it is missing a submitted date", applicationId);
+            return Result.Failure("Could not calculate new FAD date for Larch application as it is missing a submitted date");
         }
 
-        DateTime newFAD = applicationSummary.Value.FadLarchExtension(_larchOptions);
-
-        if (applicationSummary.Value.FinalActionDate.HasValue && applicationSummary.Value.FinalActionDate.Value < newFAD)
+        if (initialFadDate.HasNoValue() || (initialFadDate.HasValue && initialFadDate.Value < newFadResult.Value))
         {
+            _logger.LogDebug("Application with id {ApplicationId} existing FAD ({ExistingFAD}) is missing or earlier than new FAD for larch ({NewFAD})",
+                applicationId, initialFadDate, newFadResult.Value);
 
             var updateFADResult = await _updateFellingLicenceApplication.UpdateFinalActionDateAsync(
                 applicationId,
-                newFAD,
+                newFadResult.Value,
                 cancellationToken);
+
+            if (updateFADResult.IsFailure)
+            {
+                _logger.LogError("Failed to update FAD for application {ApplicationId}, error: {Error}", applicationId, updateFADResult.Error);
+                return Result.Failure("Failed to update application FAD value");
+            }
+
             var applicant = await ExternalUserAccountService.RetrieveUserAccountEntityByIdAsync(applicationSummary.Value.CreatedById, cancellationToken);
+            if (applicant.IsFailure)
+            {
+                _logger.LogError("Could not retrieve applicant details for application {ApplicationId} in order to send notification about larch FAD extension, error: {Error}",
+                    applicationId, applicant.Error);
+                return Result.Failure("Could not retrieve applicant details for application in order to send notification about larch FAD extension");
+            }
 
             var adminHubFooter = await GetConfiguredFcAreasService.TryGetAdminHubAddress(fellingLicence.AdministrativeRegion, cancellationToken);
 
@@ -600,7 +647,9 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
                 ViewApplicationURL = externalViewURL,
                 AdminHubFooter = adminHubFooter,
                 Name = $"{applicant.Value.FirstName} {applicant.Value.LastName}".Trim().Replace("  ", " "),
-                ApplicationId = applicationId
+                ApplicationId = applicationId,
+                InitialFinalActionDate = initialFadDate.HasValue ? initialFadDate.Value.ToString("dd/MM/yyyy") : string.Empty,
+                FinalActionDate = newFadResult.Value.ToString("dd/MM/yyyy")
             };
 
             var applicantResult = await _emailService.SendNotificationAsync(
@@ -611,10 +660,15 @@ public class AdminOfficerReviewUseCase : AdminOfficerReviewUseCaseBase, IAdminOf
 
             if (applicantResult.IsFailure)
             {
-                return Result.Failure("Could not send notification to applicant");
+                _logger.LogError("Failed to send notification to applicant about larch FAD extension for application {ApplicationId}, error: {Error}", applicationId, applicantResult.Error);
+                return Result.Failure("Could not send notification to applicant for larch FAD extension");
             }
         }
-
+        else
+        {
+            _logger.LogDebug("Application with id {ApplicationId} existing FAD ({ExistingFAD}) is not earlier than calculated FAD for larch ({NewFAD}), no changes/notification is required",
+                applicationId, initialFadDate!.Value, newFadResult.Value);
+        }
 
         return Result.Success();
     }

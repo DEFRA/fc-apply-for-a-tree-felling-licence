@@ -472,7 +472,7 @@ public class ForesterServices : BaseServices, IForesterServices
                 URL = _config.UtilitiesService.ExportService.BaseMap,
                 Token = _config.ApiKey,
                 Opacity = 1,
-                MaxScale = 250,
+                MaxScale = 0,
                 MinScale = 500000000,
                 LayerType = "ArcGISTiledMapServiceLayer"
             });
@@ -616,7 +616,7 @@ public class ForesterServices : BaseServices, IForesterServices
                 URL = _config.UtilitiesService.ExportService.BaseMap,
                 Token = _config.ApiKey,
                 Opacity = 1,
-                MaxScale = 250,
+                MaxScale = 0,
                 MinScale = 500000000,
                 LayerType = "ArcGISTiledMapServiceLayer"
             });

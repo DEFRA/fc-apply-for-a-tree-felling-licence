@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -190,22 +191,27 @@ public class FellingLicenceApplicationSummaryModel
     /// <summary>
     /// Calculates the Final Action Date (Fad) extension for larch based on the submission date and the provided larch options.
     /// </summary>
-    /// <param name="o"></param>
-    /// <returns></returns>
-    public DateTime FadLarchExtension(LarchOptions o)
+    /// <param name="larchOptions">Options class for Larch parameters</param>
+    /// <returns>The new Final Action Date for the application, based on the submission date and the larch options.</returns>
+    public Result<DateTime> FadLarchExtension(LarchOptions larchOptions)
     {
-        DateTime FlyoverPeriodStartDate = new DateTime(DateTime.UtcNow.Year, o.FlyoverPeriodStartMonth, o.FlyoverPeriodStartDay, 0, 0, 0, DateTimeKind.Utc);
-        DateTime FlyoverPeriodEndDate = new DateTime(DateTime.UtcNow.Year, o.FlyoverPeriodEndMonth, o.FlyoverPeriodEndDay, 0, 0, 0, DateTimeKind.Utc);
-        DateTime EarlyFad = new DateTime(DateTime.UtcNow.Year, o.EarlyFadMonth, o.EarlyFadDay, 0, 0, 0, DateTimeKind.Utc);
-        DateTime LateFad = new DateTime(DateTime.UtcNow.Year, o.LateFadMonth, o.LateFadDay, 0, 0, 0, DateTimeKind.Utc);
+        DateTime FlyoverPeriodStartDate = new DateTime(DateTime.UtcNow.Year, larchOptions.FlyoverPeriodStartMonth, larchOptions.FlyoverPeriodStartDay, 0, 0, 0, DateTimeKind.Utc);
+        DateTime FlyoverPeriodEndDate = new DateTime(DateTime.UtcNow.Year, larchOptions.FlyoverPeriodEndMonth, larchOptions.FlyoverPeriodEndDay, 0, 0, 0, DateTimeKind.Utc);
+        DateTime EarlyFad = new DateTime(DateTime.UtcNow.Year, larchOptions.EarlyFadMonth, larchOptions.EarlyFadDay, 0, 0, 0, DateTimeKind.Utc);
+        DateTime LateFad = new DateTime(DateTime.UtcNow.Year, larchOptions.LateFadMonth, larchOptions.LateFadDay, 0, 0, 0, DateTimeKind.Utc);
 
-        var submissionDate = DateReceived!.Value;
+        var submissionDate = LatestSubmissionDate;
 
-        return (submissionDate >= FlyoverPeriodStartDate && submissionDate <= FlyoverPeriodEndDate)
-            ? LateFad                                                                               // inside Moratorium - Late FAD
-            : submissionDate < FlyoverPeriodStartDate
-                ? EarlyFad                                                                          // before Moratorium - Early FAD
-                : EarlyFad.AddYears(1);                                                             // after  Moratorium - Next year Early FAD
+        if (submissionDate.HasNoValue())
+        {
+            return Result.Failure<DateTime>("Application has no submitted date");
+        }
+
+        return (submissionDate!.Value >= FlyoverPeriodStartDate && submissionDate.Value <= FlyoverPeriodEndDate)
+            ? LateFad                                                        // inside Moratorium - Late FAD
+            : submissionDate.Value < FlyoverPeriodStartDate
+                ? EarlyFad                                                   // before Moratorium - Early FAD
+                : EarlyFad.AddYears(1);                                      // after  Moratorium - Next year Early FAD
 
     }
 
@@ -246,4 +252,12 @@ public class FellingLicenceApplicationSummaryModel
     public bool CanBeReturnedToApplicant => Status is FellingLicenceStatus.Submitted
         or FellingLicenceStatus.AdminOfficerReview
         or FellingLicenceStatus.WoodlandOfficerReview;
+
+    /// <summary>
+    /// Gets the most recent submission date for the application based on the status history.
+    /// </summary>
+    public DateTime? LatestSubmissionDate => StatusHistories
+        .Where(x => x.Status == FellingLicenceStatus.Submitted)
+        .OrderByDescending(x => x.Created)
+        .FirstOrDefault()?.Created;
 }

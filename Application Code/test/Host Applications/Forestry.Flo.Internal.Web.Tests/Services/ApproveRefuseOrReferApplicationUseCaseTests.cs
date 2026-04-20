@@ -179,6 +179,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                 && m.LocalAuthority == publishModel.LocalAuthority
                 && m.AdminRegion == publishModel.AdminRegion
                 && m.PublicRegisterStart == now
+                && m.Period == 28
                 && m.TotalArea == publishModel.TotalArea
                 && m.Compartments == publishModel.Compartments
                 && m.CaseApprovalDate == now
@@ -197,7 +198,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Exactly(2));
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now, It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now, now.AddDays(28), CancellationToken.None), Times.Once);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a => 
             a.ApplicationReference == application.ApplicationReference
@@ -331,7 +332,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Exactly(2));
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Refused, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now,It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now, now.AddDays(28), CancellationToken.None), Times.Once);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationRefusalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -361,6 +362,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -477,6 +479,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -602,6 +605,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -725,6 +729,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -959,6 +964,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1115,6 +1121,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1222,6 +1229,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1333,6 +1341,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1578,6 +1587,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1702,6 +1712,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1926,6 +1937,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -2156,6 +2168,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             _getConfiguredFcAreasMock.Object,
             _getWoodlandOfficerReviewServiceMock.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(new WoodlandOfficerReviewOptions()),
+            new OptionsWrapper<PublicRegisterExpiryOptions>(new PublicRegisterExpiryOptions{DecisionPublicRegisterPeriod = 28}),
             _agolMock.Object
         );
     }
