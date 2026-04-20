@@ -53,6 +53,16 @@ public class ApproverReviewModel
     public string? DurationChangeReason { get; set; }
 
     /// <summary>
+    /// Gets and sets the reason for referring the application to the local authority, if applicable.
+    /// </summary>
+    public string? ReferToLocalAuthorityReason { get; set; }
+
+    /// <summary>
+    /// Gets and sets the reason for refusing the application, if applicable.
+    /// </summary>
+    public string? ApplicationRefusedReason { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether the application should be published in the public register.
     /// </summary>
     public bool? PublicRegisterPublish { get; set; }
@@ -78,6 +88,8 @@ public static class ApproverReviewExtensions
             InformedApplicant = entity.InformedApplicant,
             ApprovedLicenceDuration = entity.ApprovedLicenceDuration,
             DurationChangeReason = entity.DurationChangeReason,
+            ReferToLocalAuthorityReason = entity.ReferToLocalAuthorityReason,
+            ApplicationRefusedReason = entity.ApplicationRefusedReason,
             PublicRegisterPublish = entity.PublicRegisterPublish,
             PublicRegisterExemptionReason = entity.PublicRegisterExemptionReason
         };
@@ -96,6 +108,8 @@ public static class ApproverReviewExtensions
             InformedApplicant = model.InformedApplicant,
             ApprovedLicenceDuration = model.ApprovedLicenceDuration,
             DurationChangeReason = model.DurationChangeReason,
+            ReferToLocalAuthorityReason = model.ReferToLocalAuthorityReason,
+            ApplicationRefusedReason = model.ApplicationRefusedReason,
             PublicRegisterPublish = model.PublicRegisterPublish,
             PublicRegisterExemptionReason = model.PublicRegisterExemptionReason
         };
@@ -114,6 +128,8 @@ public static class ApproverReviewExtensions
         entity.InformedApplicant = approverReview.InformedApplicant;
         entity.ApprovedLicenceDuration = approverReview.ApprovedLicenceDuration;
         entity.DurationChangeReason = approverReview.DurationChangeReason;
+        entity.ReferToLocalAuthorityReason = approverReview.ReferToLocalAuthorityReason;
+        entity.ApplicationRefusedReason = approverReview.ApplicationRefusedReason;
         entity.PublicRegisterPublish = approverReview.PublicRegisterPublish;
         entity.PublicRegisterExemptionReason = approverReview.PublicRegisterExemptionReason;
 

@@ -611,13 +611,31 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
             return allSpeciesWithLarchFirst.ConvertFailure();
         }
 
+        var submissionDate = applicationSummary.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .OrderByDescending(x => x.Created)
+            .FirstOrDefault()
+            ?.Created;
+        if (submissionDate.HasNoValue())
+        {
+            _logger.LogError("Application {ApplicationId} has no submission date", applicationId);
+            return Result.Failure("Application has no submission date");
+        }
+
+        var fadExtensionDate = applicationSummary.FadLarchExtension(_larchOptions);
+        if (fadExtensionDate.IsFailure)
+        {
+            _logger.LogError("Unable to calculate FAD extension for larch for application {ApplicationId}", applicationId);
+            return Result.Failure("Unable to calculate FAD extension for larch");
+        }
+
         var informApplicantModel = new InformApplicantOfReturnedLarchApplicationDataModel
         {
             ApplicationReference = applicationDetails.ApplicationReference,
             PropertyName = applicationDetails.PropertyName,
 			AdminHubFooter = adminHubFooter,
-            SubmissionDate = applicationSummary.DateReceived!.Value.ToString("dd/MM/yyyy"),
-            FinalActionDate = applicationSummary.FadLarchExtension(_larchOptions).ToString("dd/MM/yyyy"),
+            SubmissionDate = submissionDate!.Value.ToString("dd/MM/yyyy"),
+            FinalActionDate = fadExtensionDate.Value.ToString("dd/MM/yyyy"),
             InitialFinalActionDate = applicationSummary.FinalActionDate!.Value.ToString("dd/MM/yyyy"),
             MoratoriumDates = MoratoriumDatesToString(_larchOptions),
             IdentifiedSpeciesList = allSpeciesWithLarchFirst.Value.Select(x => x.Name).ToList(),

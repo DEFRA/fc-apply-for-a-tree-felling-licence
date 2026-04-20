@@ -189,6 +189,22 @@ public abstract class GeneratePdfApplicationUseCaseBase
         HashSet<Guid> restockingCompartments = [];
         HashSet<Guid> fellingCompartments = [];
 
+        string? localAuthorityName = null;
+        var centrePoint = !string.IsNullOrEmpty(application.CentrePoint)
+            ? JsonConvert.DeserializeObject<Point>(application.CentrePoint)
+            : null;
+
+        if (centrePoint != null)
+        {
+            var localAuthorityResult = await _iForesterServices.GetLocalAuthorityAsync(centrePoint, cancellationToken);
+            if (localAuthorityResult.IsSuccess)
+            {
+                localAuthorityName = localAuthorityResult.Value.Name;
+            }
+        }
+
+        
+
         // For retrieving species names
         var speciesDictionary = TreeSpeciesFactory.SpeciesDictionary;
 
@@ -404,7 +420,7 @@ public abstract class GeneratePdfApplicationUseCaseBase
                 expiryDate = licenceExpiryDate?.CreateFormattedDate() ?? "To be confirmed",
                 approverName = approverName,
                 propertyName = propertyProfile.Value.Name,
-                localAuthority = propertyProfile.Value.NearestTown,
+                localAuthority = localAuthorityName ?? propertyProfile.Value.NearestTown,
                 approvedFellingDetails = fellingDetails.OrderBy(x => x.fellingSiteSubcompartment).ToList(),
                 restockingConditions = restockingConditions,
                 operationsMaps = operationsMaps,

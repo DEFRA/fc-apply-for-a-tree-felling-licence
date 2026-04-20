@@ -287,7 +287,7 @@ public class ApproverReviewController : Controller
         }
 
         if (model.ApproverReview!.RequestedStatus == FellingLicenceStatus.Approved && model.ApproverReview!.ApprovedLicenceDuration != model.RecommendedLicenceDuration
-            && string.IsNullOrEmpty(model.ApproverReview.DurationChangeReason))
+            && string.IsNullOrWhiteSpace(model.ApproverReview.DurationChangeReason))
         {
             _logger.LogWarning("Duration change reason is required for application with ID {ApplicationId} when duration differs from recommendation", model.Id);
             errors.Add(
@@ -295,6 +295,24 @@ public class ApproverReviewController : Controller
                 model.IsWOReviewed
                     ? "A reason for changing the duration must be provided if it differs from the Woodland Officer recommendation"
                     : "A reason for changing the duration must be provided if it differs from the default");
+        }
+
+        if (model.ApproverReview!.RequestedStatus == FellingLicenceStatus.ReferredToLocalAuthority &&
+            string.IsNullOrWhiteSpace(model.ApproverReview.ReferToLocalAuthorityReason))
+        {
+            _logger.LogWarning("Refer to LA reason is required for application with ID {ApplicationId} when Refer to LA outcome is selected", model.Id);
+            errors.Add(
+                "ApproverReview.ReferToLocalAuthorityReason",
+                "A reason for referring to the local authority must be provided when the application decision is Refer to the local authority");
+        }
+
+        if (model.ApproverReview!.RequestedStatus == FellingLicenceStatus.Refused &&
+            string.IsNullOrWhiteSpace(model.ApproverReview.ApplicationRefusedReason))
+        {
+            _logger.LogWarning("Reason for refusal is required for application with ID {ApplicationId} when Refuse outcome is selected", model.Id);
+            errors.Add(
+                "ApproverReview.ApplicationRefusedReason",
+                "A reason for refusing the application must be provided when the application decision is Refuse");
         }
 
         if (model.ApproverReview!.PublicRegisterPublish != true
