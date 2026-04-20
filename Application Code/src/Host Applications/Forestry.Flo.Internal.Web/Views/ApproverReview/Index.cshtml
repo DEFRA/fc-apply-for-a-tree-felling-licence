@@ -117,13 +117,13 @@
                 <validation asp-for="Decision"></validation>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" id="decision-yes" type="radio" value="true" data-aria-controls="conditional-decision-yes" asp-for="Decision" />
+                        <input class="govuk-radios__input" id="decision-yes" type="radio" value="true" asp-for="Decision" />
                         <label class="govuk-label govuk-radios__label" for="decision-yes">
                             Yes
                         </label>
                     </div>
                     <div class="govuk-radios__item">
-                        <input class="govuk-radios__input" id="decision-no" type="radio" value="false" data-aria-controls="conditional-decision-no" asp-for="Decision" />
+                        <input class="govuk-radios__input" id="decision-no" type="radio" value="false" asp-for="Decision" />
                         <label class="govuk-label govuk-radios__label" for="decision-no">
                             No (it needs to be returned to an AO or WO for further work)
                         </label>
@@ -144,15 +144,8 @@
                     data-prevent-double-click="true">
                     Return this application
                 </button>
-				<a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary!.Id" title="Abandon changes and go to the previous page">Cancel</a>
             </div>
         </div>
-
-		<div id="conditional-decision-empty">
-			<div class="govuk-button-group">
-				<a class="govuk-link" asp-controller="FellingLicenceApplication" asp-action="ApplicationSummary" asp-route-id="@Model.FellingLicenceApplicationSummary!.Id" title="Abandon changes and go to the previous page">Cancel</a>
-			</div>
-		</div>
 
 		<div id="conditional-decision-yes" aria-hidden="true">
 
@@ -186,32 +179,46 @@
                                 <validation asp-for="ApproverReview.ApprovedLicenceDuration"></validation>
                                 <select class="govuk-select" asp-for="ApproverReview.ApprovedLicenceDuration" asp-items="@Model.RecommendedLicenceDurations"></select>
                             </govuk-form-group>
-                            
+                    
                             <govuk-form-group asp-for="ApproverReview.DurationChangeReason">
-                                <div class="govuk-character-count" data-module="govuk-character-count" data-maxlength="150">
-                                    <label class="govuk-label" asp-for="ApproverReview.DurationChangeReason">
-                                        Give your reasons if you have changed the recommended licence duration.
-                                    </label>
-                                    <validation asp-for="ApproverReview.DurationChangeReason"></validation>
-                                    <textarea class="govuk-textarea govuk-js-character-count" rows="4" asp-for="ApproverReview.DurationChangeReason" aria-describedby="ApproverReview_DurationChangeReason-info"></textarea>
-                                    <div id="ApproverReview_DurationChangeReason-info" class="govuk-hint govuk-character-count__message">
-                                        You can enter up to 150 characters 
-                                    </div>
-                                </div>
+                                <label class="govuk-label" asp-for="ApproverReview.DurationChangeReason">
+                                    Give your reasons if you have changed the recommended licence duration.
+                                </label>
+                                <validation asp-for="ApproverReview.DurationChangeReason"></validation>
+                                <textarea class="govuk-textarea" rows="4" asp-for="ApproverReview.DurationChangeReason"></textarea>
+                            </govuk-form-group>
+                        </div>
+
+
+
+                        <div class="govuk-radios__item">
+                            <input id="status-refer" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.ReferredToLocalAuthority" asp-for="ApproverReview.RequestedStatus" data-aria-controls="conditional-referred" />
+                            <label class="govuk-label govuk-radios__label" for="status-refer">Refer to the local authority</label>
+                        </div>
+                        <div class="govuk-radios__conditional" id="conditional-referred">
+                            <govuk-form-group asp-for="ApproverReview.ReferToLocalAuthorityReason">
+                                <label class="govuk-label" asp-for="ApproverReview.ReferToLocalAuthorityReason">
+                                    Give your reasons for referring this application to the local authority.
+                                </label>
+                                <validation asp-for="ApproverReview.ReferToLocalAuthorityReason"></validation>
+                                <textarea class="govuk-textarea" rows="4" asp-for="ApproverReview.ReferToLocalAuthorityReason"></textarea>
                             </govuk-form-group>
                         </div>
 
                         <div class="govuk-radios__item">
-                            <input id="status-refer" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.ReferredToLocalAuthority" asp-for="ApproverReview.RequestedStatus" />
-                            <label class="govuk-label govuk-radios__label" for="status-refer">Refer to the local authority</label>
-
-                        </div>
-                        <div class="govuk-radios__divider"></div>
-                        <div class="govuk-radios__item">
-                            <input id="status-refuse" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Refused" asp-for="ApproverReview.RequestedStatus" />
+                            <input id="status-refuse" class="govuk-radios__input" type="radio" value="@FellingLicenceStatus.Refused" asp-for="ApproverReview.RequestedStatus" data-aria-controls="conditional-refused" />
                             <label class="govuk-label govuk-radios__label" for="status-refuse">Refuse</label>
-
                         </div>
+                        <div class="govuk-radios__conditional" id="conditional-refused">
+                            <govuk-form-group asp-for="ApproverReview.ApplicationRefusedReason">
+                                <label class="govuk-label" asp-for="ApproverReview.ApplicationRefusedReason">
+                                    Give your reasons for refusing this application.
+                                </label>
+                                <validation asp-for="ApproverReview.ApplicationRefusedReason"></validation>
+                                <textarea class="govuk-textarea" rows="4" asp-for="ApproverReview.ApplicationRefusedReason"></textarea>
+                            </govuk-form-group>
+                        </div>
+
                     </div>
                 </fieldset>
             </govuk-form-group>

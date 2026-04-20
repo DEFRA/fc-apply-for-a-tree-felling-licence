@@ -46,6 +46,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     IGetConfiguredFcAreas getConfiguredFcAreasService,
     IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
     IOptions<WoodlandOfficerReviewOptions> woodlandOfficerReviewOptions,
+    IOptions<PublicRegisterExpiryOptions> publicRegisterExpiryOptions,
     IForesterServices agolServices) : IApproveRefuseOrReferApplicationUseCase
 {
     private readonly WoodlandOfficerReviewOptions _woodlandOfficerReviewOptions = Guard.Against.Null(woodlandOfficerReviewOptions.Value);
@@ -67,6 +68,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     private readonly IForesterServices _agolServices = Guard.Against.Null(agolServices);
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
+    private readonly PublicRegisterExpiryOptions _publicRegisterExpiryOptions = Guard.Against.Null(publicRegisterExpiryOptions).Value;
 
     /// <summary>
     /// Approves, refuses or refers an application that has been sent for approval.
@@ -276,6 +278,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
             return SendToDecisionPublicRegisterOutcome.Failure;
         }
 
+        var dprPeriod = _publicRegisterExpiryOptions.DecisionPublicRegisterPeriod;
+
         var publishModel = new AddToDecisionPublicRegisterModel
         {
             ExistingEsriId = getPublishModel.Value.ExistingEsriId,
@@ -287,6 +291,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
             LocalAuthority = getPublishModel.Value.LocalAuthority,
             AdminRegion = getPublishModel.Value.AdminRegion,
             PublicRegisterStart = now,
+            Period = dprPeriod,
             TotalArea = getPublishModel.Value.TotalArea,
             Compartments = getPublishModel.Value.Compartments,
             CaseApprovalDate = now,
@@ -304,9 +309,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
 
             return SendToDecisionPublicRegisterOutcome.Failure;
         }
-
-        //todo this will need to come from the approver's recommendation, or the configured default duration etc.
-        var expiresAt = now.AddDays(28);
+        
+        var expiresAt = now.AddDays(dprPeriod);
         
         var saveDetailsResult = await _updateFellingLicenceService.AddDecisionPublicRegisterDetailsAsync(
             application.Id,
@@ -470,7 +474,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
 
                 var localAuthorityName = await GetLocalAuthorityForFellingLicenceApplicationAsync(application, cancellationToken);
 
-                    var referredToLocalAuthorityModel = new InformApplicantOfApplicationReferredToLocalAuthorityDataModel
+                var referredToLocalAuthorityModel = new InformApplicantOfApplicationReferredToLocalAuthorityDataModel
                 {
                     ApplicationReference = application.ApplicationReference,
                     Name = applicantUser.FullName,

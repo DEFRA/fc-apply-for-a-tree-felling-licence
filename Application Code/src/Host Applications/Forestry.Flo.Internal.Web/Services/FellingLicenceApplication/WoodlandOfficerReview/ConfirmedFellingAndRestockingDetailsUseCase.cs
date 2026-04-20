@@ -990,12 +990,13 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 });
             }
 
-            foreach (var felling in compartment.ConfirmedFellingDetails.Where(x => x.ConfirmedRestockingDetails.Any()))
+            foreach (var felling in compartment.ConfirmedFellingDetails
+                         .Where(x => x.OperationType.HasValue && x.OperationType.Value.AllowedRestockingForFellingType(false).Length > 0))
             {
                 var fellingArea = felling.AreaToBeFelled ?? 0;
                 var restockArea = felling.ConfirmedRestockingDetails.Sum(x => x.RestockArea ?? 0);
 
-                if (Math.Abs(Math.Round(restockArea, 2) - Math.Round(fellingArea, 2)) > 0.1)
+                if (Math.Round(Math.Abs(Math.Round(restockArea, 2) - Math.Round(fellingArea, 2)), 2) >= 0.01)
                 {
                     warnings.Add(new ConfirmedFellingAndRestockingWarning
                     {

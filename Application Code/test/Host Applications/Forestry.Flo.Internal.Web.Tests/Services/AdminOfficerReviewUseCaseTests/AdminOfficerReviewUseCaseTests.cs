@@ -231,7 +231,12 @@ public class AdminOfficerReviewUseCaseTests
                 && a.SourceEntityId == fellingLicenceApplication.Id
                 && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
                 && a.CorrelationId == _requestContextCorrelationId
-                && a.AuditData == null),
+                && JsonSerializer.Serialize(a.AuditData, _serializerOptions) ==
+                JsonSerializer.Serialize(new
+                {
+                    hasExtendedFad = false,
+                    skippedWoForCbw = false
+                }, _serializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
         _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                 a.EventName == AuditEvents.ConfirmAdminOfficerReviewNotificationSent
@@ -318,7 +323,9 @@ public class AdminOfficerReviewUseCaseTests
                 && JsonSerializer.Serialize(a.AuditData, _serializerOptions) ==
                 JsonSerializer.Serialize(new
                 {
-                    error = error
+                    hasExtendedFad = false,
+                    skippedWoForCbw = false,
+                    error
                 }, _serializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
         _mockAuditService.VerifyNoOtherCalls();
@@ -811,7 +818,12 @@ public class AdminOfficerReviewUseCaseTests
                 && a.SourceEntityId == fellingLicenceApplication.Id
                 && a.SourceEntityType == SourceEntityType.FellingLicenceApplication
                 && a.CorrelationId == _requestContextCorrelationId
-                && a.AuditData == null),
+                && JsonSerializer.Serialize(a.AuditData, _serializerOptions) ==
+                JsonSerializer.Serialize(new
+                {
+                    hasExtendedFad = false,
+                    skippedWoForCbw = true
+                }, _serializerOptions)),
             It.IsAny<CancellationToken>()), Times.Once);
         _mockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(a =>
                 a.EventName == AuditEvents.ConfirmAdminOfficerReviewNotificationSent

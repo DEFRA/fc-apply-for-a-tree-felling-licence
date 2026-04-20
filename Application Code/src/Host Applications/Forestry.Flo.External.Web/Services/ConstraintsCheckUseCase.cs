@@ -134,6 +134,7 @@ public class ConstraintsCheckUseCase(
 
         application.NotRunningExternalLisReport = false;
         application.FellingLicenceApplicationStepStatus.ConstraintCheckStatus = true;
+        application.ExternalLisAccessedTimestamp ??= _clock.GetCurrentInstant().ToDateTimeUtc();
 
         _fellingLicenceApplicationRepository.Update(application);
         var result = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);

@@ -249,6 +249,12 @@ public class LarchCheckUseCaseTests
         {
             new()
             {
+                Created = DateTime.UtcNow.AddDays(-1),
+                CreatedById = Guid.NewGuid(),
+                Status = FellingLicenceStatus.Submitted
+            },
+            new()
+            {
                 Created = DateTime.UtcNow,
                 CreatedById = Guid.NewGuid(),
                 Status = currentStatus
