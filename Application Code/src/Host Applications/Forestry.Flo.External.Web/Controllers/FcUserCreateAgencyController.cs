@@ -28,11 +28,29 @@ public class FcUserCreateAgencyController : Controller
     }
 
     [HttpGet]
-    public IActionResult AgentTypeSelection()
+    public IActionResult AgentTypeSelection(bool clearModel = true)
     {
+        if (clearModel)
+        {
+            ClearModels();
+        }
+
+        var viewModel = new AgentTypeViewModel();
+
+        var existingModel = GetModel();
+
+        if (existingModel.HasValue)
+        {
+            viewModel.OrganisationStatus = existingModel.Value.IsOrganisation
+                ? OrganisationStatus.Organisation
+                : OrganisationStatus.Individual;
+
+            StoreModel(existingModel.Value);
+        }
+
         var user = new ExternalApplicant(User);
         _logger.LogDebug("Received request to create a new agency from user having account Id {userId}", user.UserAccountId);
-        return View();
+        return View(viewModel);
     }
 
     [HttpPost]
@@ -43,13 +61,23 @@ public class FcUserCreateAgencyController : Controller
             return View(model);
         }
 
-        var agencyModel = new FcUserAgencyCreationModel
+        var existingModel = GetModel();
+        if (existingModel.HasValue)
         {
-            IsOrganisation = model.OrganisationStatus is OrganisationStatus.Organisation,
-            OrganisationStatus = model.OrganisationStatus
-        };
+            existingModel.Value.IsOrganisation = model.OrganisationStatus is OrganisationStatus.Organisation;
+            existingModel.Value.OrganisationStatus = model.OrganisationStatus;
+            StoreModel(existingModel.Value);
+        }
+        else
+        {
+            var agencyModel = new FcUserAgencyCreationModel
+            {
+                IsOrganisation = model.OrganisationStatus is OrganisationStatus.Organisation,
+                OrganisationStatus = model.OrganisationStatus
+            };
 
-        StoreModel(agencyModel);
+            StoreModel(agencyModel);
+        }
 
         return RedirectToAction(nameof(RegisterAgencyDetails));
     }
@@ -70,12 +98,21 @@ public class FcUserCreateAgencyController : Controller
             model.Value.OrganisationName = null;
         }
 
+        StoreModel(model.Value);
+
         return View(model.Value);
     }
 
     [HttpPost]
     public IActionResult RegisterAgencyDetails(FcUserAgencyCreationModel model)
     {
+        var existingModel = GetModel();
+
+        if (existingModel.HasValue)
+        {
+            model.AgencyId = existingModel.Value.AgencyId;
+        }
+
         if (!model.IsOrganisation && ModelState.ContainsKey(nameof(model.OrganisationName)))
         {
             ModelState.Remove(nameof(model.OrganisationName));
@@ -88,6 +125,26 @@ public class FcUserCreateAgencyController : Controller
 
         StoreModel(model);
 
+        return RedirectToAction(nameof(FcCreateAgencySummary));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> FcEditExistingAgency(
+        Guid agencyId,
+        [FromServices] FcUserCreateAgencyUseCase useCase,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        var existingAgency = await useCase.GetExistingAgencyDetailsForEditAsync(user, agencyId, cancellationToken);
+
+        if (existingAgency.IsFailure)
+        {
+            this.AddErrorMessage("Could not retrieve existing agent/agency details");
+            return RedirectToAction(nameof(AgentTypeSelection));
+        }
+
+        StoreModel(existingAgency.Value);
         return RedirectToAction(nameof(FcCreateAgencySummary));
     }
 
@@ -126,16 +183,29 @@ public class FcUserCreateAgencyController : Controller
 
         if (createResult.IsFailure)
         {
-            _logger.LogWarning("Unable to create new agency requested by Fc user having account id {userId}",
-                user.UserAccountId);
+            if (model.Value.AgencyId.HasValue)
+            {
+                _logger.LogWarning("Unable to update agency {AgencyId} requested by Fc user having account id {userId}",
+                    model.Value.AgencyId.Value,
+                    user.UserAccountId);
 
-            this.AddErrorMessage(
-                "Agency could not be added, try again. Contact support if this issue persists.");
+                this.AddErrorMessage(
+                    "Agency could not be updated, try again. Contact support if this issue persists.");
+
+            }
+            else
+            {
+                _logger.LogWarning("Unable to create new agency requested by Fc user having account id {userId}",
+                    user.UserAccountId);
+
+                this.AddErrorMessage(
+                    "Agency could not be added, try again. Contact support if this issue persists.");
+            }
         }
         else
         {
             ClearModels();
-            this.AddConfirmationMessage("Agency details added successfully.");
+            this.AddConfirmationMessage($"Agency details {(model.Value.AgencyId.HasValue ? "updated" : "added")} successfully.");
         }
 
         return RedirectToAction("Index", "AgentAuthorityForm", new {agencyId = createResult.Value.AgencyId});

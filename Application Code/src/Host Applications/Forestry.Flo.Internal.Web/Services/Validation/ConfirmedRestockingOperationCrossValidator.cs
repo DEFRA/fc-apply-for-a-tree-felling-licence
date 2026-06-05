@@ -58,5 +58,13 @@ public class ConfirmedRestockingOperationCrossValidator : AbstractValidator<Conf
             .Must(s => fellingOperation.AllowedRestockingForFellingType(false).Any(r => r == s))
             .WithMessage(s => $"{s.RestockingProposal.GetDisplayName()} restocking is not allowed for the {fellingOperation.GetDisplayName()} felling operation in compartment {fellingCompartmentName}")
             .WithName(s => $"amend-link-restocking-{s.ConfirmedRestockingDetailsId}");
+
+        // Validate that Create Designed Open Ground restocking is not combined with other restocking proposals for the same felling operation
+        RuleFor(x => x.RestockingProposal)
+            .Must(r => !otherRestockingForSameFellingOperation.Any())
+            .When(s => s.RestockingProposal!.Value == TypeOfProposal.CreateDesignedOpenGround)
+            .WithMessage(s => $"{TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()} restocking cannot be combined with any other restocking proposal for the {fellingOperation.GetDisplayName()} felling operation in compartment {fellingCompartmentName}")
+            .WithName(s => $"amend-link-restocking-{s.ConfirmedRestockingDetailsId}");
+
     }
 }

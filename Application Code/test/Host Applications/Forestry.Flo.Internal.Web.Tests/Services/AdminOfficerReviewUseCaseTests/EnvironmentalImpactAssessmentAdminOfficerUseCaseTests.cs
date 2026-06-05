@@ -683,7 +683,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
                         y.ContactNumber == _eiaOptionsValue.EiaContactPhone &&
                         y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri &&
                         y.AdminHubFooter == _adminHubFooter &&
-                        y.ViewApplicationURL == $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{fla.Id}"),
+                        y.ViewApplicationURL == $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={fla.Id}"),
                     NotificationType.EiaReminderMissingDocuments,
                     It.IsAny<NotificationRecipient>(),
                     null, null, null,
@@ -970,7 +970,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCaseTests
                         y.ContactNumber == _eiaOptionsValue.EiaContactPhone &&
                         y.ApplicationFormUri == _eiaOptionsValue.EiaApplicationExternalUri &&
                         y.AdminHubFooter == _adminHubFooter &&
-                        y.ViewApplicationURL == $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{fla.Id}"),
+                        y.ViewApplicationURL == $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={fla.Id}"),
                     NotificationType.EiaReminderToSendDocuments,
                     It.IsAny<NotificationRecipient>(),
                     null, null, null,

@@ -3,6 +3,7 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
+using LinqKit;
 using Microsoft.EntityFrameworkCore;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -63,6 +64,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         .Include(a => a.StatusHistories)
         .Include(a => a.LinkedPropertyProfile)
         .Include(a => a.ApprovedInError)
+        .Include(a => a.SubmittedFlaPropertyDetail)
         .Where(a => a.WoodlandOwnerId == woodlandOwnerId)
         .ToListAsync(cancellationToken);
 
@@ -87,6 +89,7 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
             .Include(x => x.EnvironmentalImpactAssessment)
             .Include(x => x.SubmittedFlaPropertyDetail)
             .ThenInclude(x => x.SubmittedFlaPropertyCompartments)
+            .Include(x => x.ApprovedInError)
             .Where(a => a.Id == applicationId)
             .FirstOrDefaultAsync(cancellationToken);
         return application is null ? Maybe<FellingLicenceApplication>.None : Maybe<FellingLicenceApplication>.From(application);
@@ -355,6 +358,57 @@ public class ExternalUserContextFlaRepository : FellingLicenceApplicationReposit
         {
             return UnitResult.Failure(UserDbErrorReason.General);
         }
+    }
+
+    ///<inheritdoc />
+    public async Task<UnitResult<UserDbErrorReason>> WithdrawApplicationAsync(
+        Guid applicationId, 
+        Guid? userId,
+        DateTime currentDateTime,
+        List<WithdrawalReason> withdrawalReasons, 
+        string? withdrawalReasonsOtherDetails,
+        CancellationToken cancellationToken)
+    {
+        var application = await GetAsync(applicationId, cancellationToken).ConfigureAwait(false);
+
+        if (application.HasNoValue)
+        {
+            return UnitResult.Failure(UserDbErrorReason.NotFound);
+        }
+
+        application.Value.StatusHistories.Add(new StatusHistory
+        {
+            Created = currentDateTime,
+            Status = FellingLicenceStatus.Withdrawn,
+            CreatedById = userId,
+            FellingLicenceApplicationId = applicationId
+        });
+
+        application.Value.WithdrawalReasons = withdrawalReasons;
+        application.Value.WithdrawalReasonOtherDetails = withdrawalReasonsOtherDetails;
+        application.Value.WithdrawnByUserId = userId;
+
+        var assignedInternalUsers = application.Value.AssigneeHistories
+            .Where(x =>
+                x.TimestampUnassigned is null &&
+                x.Role is not (AssignedUserRole.Author or AssignedUserRole.Applicant))
+            .ToList();
+
+        foreach (var userIdToUnassign in assignedInternalUsers)
+        {
+            userIdToUnassign.TimestampUnassigned = currentDateTime;
+        }
+
+        var woodlandOfficerReview = await Context.WoodlandOfficerReviews
+            .Include(x => x.FellingAndRestockingAmendmentReviews)
+            .SingleOrDefaultAsync(x => x.FellingLicenceApplicationId == applicationId, cancellationToken)
+            .ConfigureAwait(false);
+
+        woodlandOfficerReview?.FellingAndRestockingAmendmentReviews
+            .Where(x => x.AmendmentReviewCompleted is not true)
+            .ForEach(x => x.AmendmentReviewCompleted = true);
+
+        return await Context.SaveEntitiesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     ///<inheritdoc />

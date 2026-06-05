@@ -30,7 +30,7 @@ public class ConfirmedRestockingDetailModel
     /// <summary>
     /// Gets and sets the percentage of open space.
     /// </summary>
-    public int? PercentOpenSpace { get; set; }
+    public double? PercentOpenSpace { get; set; }
 
     /// <summary>
     /// Gets and sets the percentage of natural regeneration.

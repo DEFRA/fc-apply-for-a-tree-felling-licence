@@ -22,13 +22,19 @@ using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Forestry.Flo.Services.PropertyProfiles.Services;
 using Microsoft.AspNetCore.Mvc;
 using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 
+/// <summary>
+/// Usecase for handling external consultee reviews and comments, including validating access, retrieving
+/// information to display on the consultee review page, and storing new consultee comments and attachments.
+/// </summary>
 public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBase, IExternalConsulteeReviewUseCase
 {
+    private readonly IGetPropertyProfiles _getPropertyProfilesService;
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
     private readonly IUserAccountService _internalUserAccountService;
     private readonly ISendNotifications _sendNotifications;
@@ -41,6 +47,26 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
     private readonly ILogger<ExternalConsulteeReviewUseCase> _logger;
     private readonly IClock _clock;
 
+    /// <summary>
+    /// Creates a new instance of the <see cref="ExternalConsulteeReviewUseCase"/> class, with the specified dependencies.
+    /// </summary>
+    /// <param name="internalUserAccountService">A service to retrieve internal user account details.</param>
+    /// <param name="externalUserAccountService">A service to retrieve external user account details.</param>
+    /// <param name="fellingLicenceApplicationInternalRepository">A repository of felling licence applications.</param>
+    /// <param name="woodlandOwnerService">A service to retrieve woodland owner details.</param>
+    /// <param name="auditService">An auditing service.</param>
+    /// <param name="agentAuthorityService">A service to retrieve agent authority details.</param>
+    /// <param name="externalConsulteeReviewService">A service dealing with external consultee data, validating access, retrieving and storing comments. </param>
+    /// <param name="getConfiguredFcAreasService">A service to retrieve admin hub details to go in notifications.</param>
+    /// <param name="getDocumentService">A service to retrieve existing stored documents.</param>
+    /// <param name="addDocumentService">A service to store new uploaded documents.</param>
+    /// <param name="removeDocumentService">A service to remove existing stored documents.</param>
+    /// <param name="woodlandOfficerReviewSubStatusService">A service to calculate substatus codes for an application in woodland officer review state.</param>
+    /// <param name="sendNotifications">A service to send notifications.</param>
+    /// <param name="getPropertyProfilesService">A service to retrieve property profile details.</param>
+    /// <param name="logger">A logging instance.</param>
+    /// <param name="requestContext">The current request context.</param>
+    /// <param name="clock">A clock to retrieve the current date and time.</param>
     public ExternalConsulteeReviewUseCase(
         IUserAccountService internalUserAccountService,
         IRetrieveUserAccountsService externalUserAccountService,
@@ -55,6 +81,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         IRemoveDocumentService removeDocumentService,
         IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ISendNotifications sendNotifications,
+        IGetPropertyProfiles getPropertyProfilesService,
         ILogger<ExternalConsulteeReviewUseCase> logger,
         RequestContext requestContext,
         IClock clock) : base(
@@ -66,6 +93,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
         getConfiguredFcAreasService,
         woodlandOfficerReviewSubStatusService)
     {
+        _getPropertyProfilesService = Guard.Against.Null(getPropertyProfilesService);
         _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
         _internalUserAccountService = Guard.Against.Null(internalUserAccountService);
         _sendNotifications = Guard.Against.Null(sendNotifications);
@@ -221,8 +249,9 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
                 ReceivedByApi = false
             };
 
-            var addDocsResult = await _addDocumentService.AddDocumentsAsInternalUserAsync(
-                addDocumentsRequest, cancellationToken);
+            var addDocsResult = await _addDocumentService
+                .AddDocumentsAsInternalUserAsync(addDocumentsRequest, cancellationToken)
+                .ConfigureAwait(false);
 
             if (addDocsResult.IsFailure)
             {
@@ -237,7 +266,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
                         Error = "Failed to attach consultee documents: " + string.Join(", ", addDocsResult.Error.UserFacingFailureMessages),
                         model.AuthorName,
                         model.AuthorContactEmail
-                    }), cancellationToken);
+                    }), cancellationToken).ConfigureAwait(false);
                 return Result.Failure("Failed to store consultee attachments");
             }
 
@@ -254,8 +283,9 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             ConsulteeAttachmentIds = attachmentIds,
             AccessCode = model.AccessCode
         };
-        var addCommentResult = await _externalConsulteeReviewService.AddCommentAsync(
-            consulteeCommentModel, cancellationToken);
+        var addCommentResult = await _externalConsulteeReviewService
+            .AddCommentAsync(consulteeCommentModel, cancellationToken)
+            .ConfigureAwait(false);
 
         if (addCommentResult.IsFailure)
         {
@@ -271,11 +301,14 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
                     Error = "Failed to save consultee comment: " + addCommentResult.Error,
                     model.AuthorName,
                     model.AuthorContactEmail
-                }), cancellationToken);
+                }), cancellationToken).ConfigureAwait(false);
 
             foreach (var attachmentId in attachmentIds)
             {
-                var cleanupResult = await _removeDocumentService.PermanentlyRemoveDocumentAsync(model.ApplicationId, attachmentId, cancellationToken);
+                var cleanupResult = await _removeDocumentService
+                    .PermanentlyRemoveDocumentAsync(model.ApplicationId, attachmentId, cancellationToken)
+                    .ConfigureAwait(false);
+
                 if (cleanupResult.IsFailure)
                 {
                     _logger.LogError("Failed to clean up consultee attachment with id {AttachmentId} after failed comment save: {Error}",
@@ -286,9 +319,32 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             return Result.Failure(addCommentResult.Error);
         }
 
+        var propertyName = addCommentResult.Value.PropertyName;
+        if (addCommentResult.Value.LinkedPropertyProfileId.HasValue && string.IsNullOrWhiteSpace(propertyName))
+        {
+            var property = await _getPropertyProfilesService
+                .GetPropertyByIdAsync(addCommentResult.Value.LinkedPropertyProfileId.Value, UserAccessModel.SystemUserAccessModel, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (property.IsFailure)
+            {
+                _logger.LogError("Could not retrieve property profile {PropertyProfileId} for application {ApplicationId}",
+                    addCommentResult.Value.LinkedPropertyProfileId.Value, model.ApplicationId);
+            }
+            else
+            {
+                propertyName = property.Value.Name;
+            }
+        }
+
+        await SendConfirmationNotification(
+            model, addCommentResult.Value, propertyName, consulteeAttachmentFiles?.Select(x => x.Name).ToList() ?? [], cancellationToken)
+            .ConfigureAwait(false);
+
         if (addCommentResult.Value.AssignedFcStaff.Length > 0)
         {
-            await SendInternalNotification(model, addCommentResult.Value, viewApplicationUrl, cancellationToken);
+            await SendInternalNotification(model, addCommentResult.Value, propertyName, viewApplicationUrl, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         await _auditService.PublishAuditEventAsync(new AuditEvent(
@@ -300,7 +356,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             {
                 model.AuthorName,
                 model.AuthorContactEmail
-            }), cancellationToken);
+            }), cancellationToken).ConfigureAwait(false);
 
         return Result.Success();
     }
@@ -373,10 +429,13 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
     private async Task SendInternalNotification(
         AddConsulteeCommentModel commentModel,
         ConsulteeCommentNotificationModel applicationValues,
+        string? propertyName,
         string viewApplicationUrl,
         CancellationToken cancellationToken)
     {
-        var staff = await _internalUserAccountService.RetrieveUserAccountsByIdsAsync(applicationValues.AssignedFcStaff.ToList(), cancellationToken);
+        var staff = await _internalUserAccountService
+            .RetrieveUserAccountsByIdsAsync(applicationValues.AssignedFcStaff.ToList(), cancellationToken)
+            .ConfigureAwait(false);
 
         if (staff.IsFailure)
         {
@@ -387,8 +446,9 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
 
         var staffRecipients = staff.Value
             .Select(s => new NotificationRecipient(s.Email, s.FullName));
-        var adminHub =
-            await _getConfiguredFcAreasService.TryGetAdminHubAddress(applicationValues.AdminHub, cancellationToken);
+        var adminHub = await _getConfiguredFcAreasService
+            .TryGetAdminHubAddress(applicationValues.AdminHub, cancellationToken)
+            .ConfigureAwait(false);
 
         var notificationDataModel = new InformFcStaffOfConsulteeCommentDataModel
         {
@@ -399,7 +459,7 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             ConsulteeFullName = commentModel.AuthorName,
             ConsulteeJobRole = commentModel.AuthorJobRole,
             ConsulteeOrganisation = commentModel.AuthorOrganisation,
-            PropertyName = applicationValues.PropertyName,
+            PropertyName = propertyName,
             ViewApplicationURL = viewApplicationUrl,
             CommentText = commentModel.Comment
         };
@@ -408,11 +468,49 @@ public class ExternalConsulteeReviewUseCase: FellingLicenceApplicationUseCaseBas
             notificationDataModel,
             NotificationType.InformFcStaffOfConsulteeCommentReceived,
             staffRecipients.ToArray(),
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
 
         if (sendResult.IsFailure)
         {
             _logger.LogError("Failed to send notifications for new consultee comment on application with id {ApplicationId}, error: {Error}",
+                commentModel.ApplicationId, sendResult.Error);
+        }
+    }
+
+    private async Task SendConfirmationNotification(
+        AddConsulteeCommentModel commentModel,
+        ConsulteeCommentNotificationModel applicationValues,
+        string? propertyName,
+        List<string> attachedFileNames,
+        CancellationToken cancellationToken)
+    {
+        var adminHub = await _getConfiguredFcAreasService
+            .TryGetAdminHubAddress(applicationValues.AdminHub, cancellationToken)
+            .ConfigureAwait(false);
+
+        var confirmationDataModel = new ExternalConsulteeCommentConfirmationDataModel
+        {
+            Name = commentModel.AuthorName,
+            ApplicationId = commentModel.ApplicationId,
+            ApplicationReference = applicationValues.ApplicationReference,
+            CommentReceivedDate = _clock.GetCurrentInstant().ToDateTimeUtc().CreateFormattedDate(),
+            PropertyName = propertyName,
+            AdminHubFooter = adminHub,
+            CommentText = commentModel.Comment,
+            CommentAttachments = attachedFileNames
+        };
+
+        var sendResult = await _sendNotifications.SendNotificationAsync(
+            confirmationDataModel,
+            NotificationType.ExternalConsulteeCommentConfirmation,
+            new NotificationRecipient(commentModel.AuthorContactEmail, commentModel.AuthorName),
+            cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        if (sendResult.IsFailure)
+        {
+            _logger.LogError("Failed to send confirmation notification for new consultee comment on application with id {ApplicationId}, error: {Error}",
                 commentModel.ApplicationId, sendResult.Error);
         }
     }

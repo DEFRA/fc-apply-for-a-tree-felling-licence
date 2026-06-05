@@ -44,6 +44,12 @@ public class ProposedRestockingDetail
     public double? Area { get; set; }
 
     /// <summary>
+    /// Gets and sets the percentage of open space.
+    /// </summary>
+    [Column(TypeName = "decimal(5,2)")]
+    public double? PercentOpenSpace { get; set; }
+
+    /// <summary>
     /// Gets or sets the restock area as a percentage of compartment size.
     /// </summary>
     [Column(TypeName = "decimal(5,2)")]

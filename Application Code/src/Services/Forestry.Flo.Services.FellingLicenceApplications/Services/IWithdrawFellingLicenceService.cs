@@ -1,24 +1,6 @@
-﻿using Ardalis.GuardClauses;
-using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Common;
-using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Extensions;
-using Forestry.Flo.Services.FellingLicenceApplications.Entities;
-using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
-using Forestry.Flo.Services.Gis.Interfaces;
-using Forestry.Flo.Services.InternalUsers.Repositories;
-using Forestry.Flo.Services.Notifications.Entities;
-using Forestry.Flo.Services.Notifications.Models;
-using Forestry.Flo.Services.Notifications.Services;
-using Microsoft.Extensions.Logging;
-using NodaTime;
-using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
-using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
-using Newtonsoft.Json;
-using System.Threading;
-using Forestry.Flo.Services.FellingLicenceApplications.Models;
-using CSharpFunctionalExtensions.ValueTasks;
+﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
@@ -32,28 +14,20 @@ public interface IWithdrawFellingLicenceService
     /// </summary>
     /// <param name="applicationId">The id of the application to withdraw.</param>
     /// <param name="userAccessModel">The user access model used to check permission to the felling licence application.</param>
+    /// <param name="withdrawalReasons">The provided selection of reasons for withdrawing the application.</param>
+    /// <param name="withdrawalReasonsOtherDetails">The details provided if <see cref="WithdrawalReason.Other"/> was selected.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> containing a list of Guid representing the users assigned to the application.</returns>
-    Task<Result<IList<Guid>>> WithdrawApplication(
+    /// <returns>A <see cref="Result"/> struct indicating the outcome and providing a list of user ids of internal
+    /// users that were assigned to the application that will need to be notified.</returns>
+    Task<Result<List<Guid>>> WithdrawApplicationAsync(
         Guid applicationId, 
         UserAccessModel userAccessModel, 
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonsOtherDetails,
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Removes the assignment of woodland officers of an application using the felling licence application id to identify the fla and the IList of users to be removed form their assignment.
-    /// </summary>
-    /// <param name="applicationId">The id of the application to identify the correct application.</param>
-    /// <param name="internalUsers">The ids of users to remove assignment from the application.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A <see cref="Result"/> for the outcome of removing the assignment of the internal user to the application</returns>
-    Task<Result> RemoveAssignedWoodlandOfficerAsync(
-        Guid applicationId,
-        IList<Guid> internalUsers,
-        CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Updates the <see cref="PublicRegister"/> entity for an application with the removed
-    /// timestamp.
+    /// Updates the <see cref="PublicRegister"/> entity for an application with the removed timestamp.
     /// </summary>
     /// <param name="applicationId">The id of the application to update.</param>
     /// <param name="userId">The optional id of the user making the update.</param>

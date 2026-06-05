@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Models.FcUser;
+using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
 
 namespace Forestry.Flo.External.Web.Services.FcUser;
@@ -9,73 +10,65 @@ namespace Forestry.Flo.External.Web.Services.FcUser;
 /// Coordinates the calls to retrieve required data to build the
 /// view model necessary to display the FC user homepage. 
 /// </summary>
-public class GetDataForFcUserHomepageUseCase
+public class GetDataForFcUserHomepageUseCase(
+    IApplicantRepository applicantRepository,
+    ILogger<GetDataForFcUserHomepageUseCase> logger)
 {
-    private readonly IRetrieveWoodlandOwners _retrieveWoodlandOwnersService;
-    private readonly IRetrieveAgencies _retrieveAgenciesService;
-    private readonly ILogger<GetDataForFcUserHomepageUseCase> _logger;
-
-    public GetDataForFcUserHomepageUseCase(
-        IRetrieveWoodlandOwners retrieveWoodlandOwnersService,
-        IRetrieveAgencies retrieveAgenciesService,
-        ILogger<GetDataForFcUserHomepageUseCase> logger)
-    {
-        _retrieveWoodlandOwnersService = Guard.Against.Null(retrieveWoodlandOwnersService);
-        _retrieveAgenciesService = Guard.Against.Null(retrieveAgenciesService);
-        _logger = logger;
-    }
+    private readonly IApplicantRepository _applicantRepository = Guard.Against.Null(applicantRepository);
+    private readonly ILogger<GetDataForFcUserHomepageUseCase> _logger = logger;
 
     /// <summary>
     /// Executes the use case.
     /// </summary>
     /// <param name="user">The User requesting the execution of this use case</param>
+    /// <param name="searchAndSortModel">A model of the searching, sorting and paging parameters to retrieve applicants with.</param>
     /// <param name="cancellationToken">A cancellation token</param>
-    /// <returns></returns>
+    /// <returns>A view model for the FC user home page.</returns>
     public async Task<Result<FcUserHomePageViewModel>> ExecuteAsync(
         ExternalApplicant user,
+        FcUserHomePageSearchAndSortModel searchAndSortModel,
         CancellationToken cancellationToken)
     {
         if (user == null) throw new ArgumentNullException(nameof(user));
 
-        var getAllWoodlandOwnersForFcResult = await _retrieveWoodlandOwnersService.GetAllWoodlandOwnersForFcAsync(user.UserAccountId!.Value, cancellationToken);
-
-        if (getAllWoodlandOwnersForFcResult.IsFailure)
+        if (!user.IsFcUser)
         {
-            _logger.LogError("Unable to retrieve All woodland owners in system for Fc user Dashboard, error : {error}", getAllWoodlandOwnersForFcResult.Error);
-            return Result.Failure<FcUserHomePageViewModel>(getAllWoodlandOwnersForFcResult.Error);
+            _logger.LogError("Current user {UserId} is not an FC User in GetDataForFcUserHomepageUseCase", user.UserAccountId!.Value);
+            return Result.Failure<FcUserHomePageViewModel>("Current user does not have permission to retrieve all applicants");
         }
 
-        var getAllAgenciesForFcResult = await _retrieveAgenciesService.GetAllAgenciesForFcAsync(user.UserAccountId.Value, cancellationToken);
-
-        if (getAllAgenciesForFcResult.IsFailure)
+        try
         {
-            _logger.LogError("Unable to retrieve All agencies in system for Fc user Dashboard, error : {error}", getAllAgenciesForFcResult.Error);
-            return Result.Failure<FcUserHomePageViewModel>(getAllAgenciesForFcResult.Error);
+            var count = await _applicantRepository.GetApplicantsCountAsync(searchAndSortModel.SearchTerm, cancellationToken);
+            _logger.LogDebug("{Count} applicants found for search term {SearchTerm}", count, searchAndSortModel.SearchTerm);
+
+            var results = _applicantRepository.GetApplicants(
+                searchAndSortModel.SearchTerm,
+                searchAndSortModel.SortColumn,
+                searchAndSortModel.SortAscending,
+                searchAndSortModel.PageNumber,
+                searchAndSortModel.PageSize);
+            
+            _logger.LogDebug("Successfully retrieved applicants for search term {SearchTerm}, sorting by {SortColumn} {SortAscending}, page {PageNumber} with page size {PageSize}",
+                searchAndSortModel.SearchTerm,
+                searchAndSortModel.SortColumn,
+                searchAndSortModel.SortAscending ? "ascending" : "descending",
+                searchAndSortModel.PageNumber,
+                searchAndSortModel.PageSize);
+
+            var result = new FcUserHomePageViewModel()
+            {
+                Applicants = results.ToList().AsReadOnly(),
+                TotalApplicants = count,
+                SearchAndSortModel = searchAndSortModel
+            };
+
+            return Result.Success(result);
         }
-        
-        var viewModel = new FcUserHomePageViewModel
+        catch (Exception ex)
         {
-            AllWoodlandOwnersManagedByFc = getAllWoodlandOwnersForFcResult.Value
-                .Where(x=>x.HasActiveUserAccounts == false)
-                .ToList()
-                .AsReadOnly(), 
-
-            AllAgenciesManagedByFc = getAllAgenciesForFcResult.Value
-                .Where(x => x.HasActiveUserAccounts == false)
-                .ToList()
-                .AsReadOnly(),
-            
-            AllExternalAgencies = getAllAgenciesForFcResult.Value
-                .Where(x => x.HasActiveUserAccounts)
-                .ToList()
-                .AsReadOnly(),
-            
-            AllExternalWoodlandOwners = getAllWoodlandOwnersForFcResult.Value
-                .Where(x => x.HasActiveUserAccounts)
-                .ToList()
-                .AsReadOnly()
-        };
-
-        return Result.Success(viewModel);
+            _logger.LogError(ex, "Exception caught in GetDataForFcUserHomepageUseCase");
+            return Result.Failure<FcUserHomePageViewModel>("Failed to retrieve applicants");
+        }
     }
 }

@@ -245,4 +245,24 @@ public interface IFellingLicenceApplicationExternalRepository : IFellingLicenceA
         Guid applicationId,
         DateTime updatedDate,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Updates the application with the given Id to set the withdrawn details, and moves the application to the withdrawn state.
+    /// Also unassigns any existing assigned internal users from the application, and sets any existing outstanding amendment
+    /// reviews to complete.
+    /// </summary>
+    /// <param name="applicationId">The ID of the application being withdrawn.</param>
+    /// <param name="userId">The ID of the user withdrawing the application, if it is a user doing the withdrawal.</param>
+    /// <param name="currentDateTime">The current date and time.</param>
+    /// <param name="withdrawalReasons">The provided reasons for withdrawing.</param>
+    /// <param name="withdrawalReasonsOtherDetails">The details provided if <see cref="WithdrawalReason.Other"/> was selected.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A <see cref="UnitResult"/> struct indicating if the operation fails.</returns>
+    Task<UnitResult<UserDbErrorReason>> WithdrawApplicationAsync(
+        Guid applicationId,
+        Guid? userId,
+        DateTime currentDateTime,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonsOtherDetails,
+        CancellationToken cancellationToken);
 }

@@ -144,6 +144,9 @@ external-web-app:
         AmendmentsSentToApplicant: "caddb6c9-195a-4502-9792-105f0e4dc86b"
         ReminderForApplicantToRespondToAmendments: "339009f8-8bc5-45e8-aba5-c4ea7743b95c"
         InformFcStaffOfApplicationApprovedInError: "ce4ca4f2-8352-4544-ba3d-22d6e91e5ce1"
+        ExternalConsulteeCommentConfirmation: "b8272df4-2e6b-4201-98ca-1d8b0bcc104e"
+        InformApplicantOfApplicationReopened: "f492bdc7-eaa9-4a45-8899-db82d7e8aa82"
+        InformApplicantOfApplicationReferenceChange: "d3b0de64-cd57-403a-a9d9-179e59069ff7"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
@@ -270,7 +273,7 @@ external-web-app:
             BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
             BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
             TextOverrides:
-              Copyright: "© Crown copyright and database rights 2021"
+              Copyright: "© Crown copyright and database rights 2026"
               FellingTitle: "Felling"
               RestockingTitle: "Restocking"
           JobStatusService:
@@ -404,7 +407,18 @@ internal-web-app:
           path: /api/PublicRegisterComments/PullNewComments
           enabled: true
           schedule: "0 0 * * *"
+        send-late-amendment-response-reminders:
+          name: send-late-amendment-response-reminders
+          path: /api/amendmentresponse/sendlateamendmentresponsereminders
+          enabled: true
+          schedule: "0 0 * * *"
+        withdraw-late-amendment-applications:
+          name: withdraw-late-amendment-applications
+          path: /api/amendmentresponse/withdrawlateamendmentapplications
+          enabled: true
+          schedule: "0 0 * * *"
     publicRegisterExpiry:
+      decisionPublicRegisterPeriod: 28
       thresholdBeforePublicRegisterPeriodEnd: "14.00:00:00"
     voluntaryWithdrawApplication:
       thresholdAfterWithApplicantStatusDate: "21.00:00:00"
@@ -412,6 +426,7 @@ internal-web-app:
     applicationExtension:
       thresholdBeforeFinalActionDate: "14.00:00:00"
       extensionLength: "90.00:00:00"
+      deemedAcceptanceTimeSpan: "14.00:00:00"
     pdfGeneratorApi:
       baseUrl: "http://stress-flo-pdf-generation-service:8080/api/v1/generate-pdf"
       templateName: "FellingLicence.html"
@@ -497,6 +512,9 @@ internal-web-app:
         AmendmentsSentToApplicant: "caddb6c9-195a-4502-9792-105f0e4dc86b"
         ReminderForApplicantToRespondToAmendments: "339009f8-8bc5-45e8-aba5-c4ea7743b95c"
         InformFcStaffOfApplicationApprovedInError: "ce4ca4f2-8352-4544-ba3d-22d6e91e5ce1"
+        ExternalConsulteeCommentConfirmation: "b8272df4-2e6b-4201-98ca-1d8b0bcc104e"
+        InformApplicantOfApplicationReopened: "f492bdc7-eaa9-4a45-8899-db82d7e8aa82"
+        InformApplicantOfApplicationReferenceChange: "d3b0de64-cd57-403a-a9d9-179e59069ff7"
     PermittedRegisteredUser:
       enabled: true
       PermittedEmailDomainsForRegisteredUser:
@@ -608,7 +626,7 @@ internal-web-app:
             BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
             BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
             TextOverrides:
-              Copyright: "© Crown copyright and database rights 2021"
+              Copyright: "© Crown copyright and database rights 2026"
               FellingTitle: "Felling"
               RestockingTitle: "Restocking"
           JobStatusService:

@@ -114,8 +114,10 @@ public interface IUpdateFellingLicenceApplication
     /// <param name="performingUserId">The id of the user reverting the application.</param>
     /// <param name="applicationId">The id of the application to be reverted.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>A result indicating whether the application was successfully reverted, or an error if unsuccessful.</returns>
-    Task<Result> TryRevertApplicationFromWithdrawnAsync(
+    /// <returns>A result indicating whether the application was successfully reverted, or an error if unsuccessful.
+    /// If successful, a populated <see cref="ReopenApplicationResultModel"/> is returned with necessary data items
+    /// needed for further processing in the usecase (notifications etc).</returns>
+    Task<Result<ReopenApplicationResultModel>> TryRevertApplicationFromWithdrawnAsync(
         Guid performingUserId,
         Guid applicationId,
         CancellationToken cancellationToken);

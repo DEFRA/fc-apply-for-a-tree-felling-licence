@@ -10,7 +10,7 @@ public class NewConfirmedRestockingDetailViewModel
     public Guid ConfirmedFellingDetailsId { get; set; }
     public double? RestockArea { get; set; }
 
-    public int? PercentOpenSpace { get; set; }
+    public double? PercentOpenSpace { get; set; }
 
     public TypeOfProposal? RestockingProposal { get; set; }
 

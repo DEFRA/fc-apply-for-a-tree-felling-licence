@@ -27,6 +27,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
 using System.Reflection;
+using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Services.PropertyProfiles.Services;
+using Microsoft.Extensions.Options;
 using FellingLicenceStatus = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingLicenceStatus;
 using UserAccount = Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount;
 
@@ -47,10 +50,16 @@ public abstract class AssignToUserUseCaseTestsBase
     protected readonly Mock<IUpdateFellingLicenceApplication> MockUpdateFellingLicenceApplication = new();
     protected readonly Mock<IAgentAuthorityService> MockAgentAuthorityService = new();
     protected readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
+    protected readonly Mock<IGetPropertyProfiles> MockPropertyProfilesService = new();
 
     protected readonly InternalUser _testUser;
     protected readonly List<string> _validAreaCodes;
     protected readonly string AdminHubAddress = "admin hub address";
+
+    protected readonly ExternalApplicantSiteOptions ExternalApplicantSiteOptions = new ExternalApplicantSiteOptions
+    {
+        BaseUrl = "https://externalapplicantsitebaseurl.com"
+    };
 
     protected AssignToUserUseCaseTestsBase()
     {
@@ -75,6 +84,7 @@ public abstract class AssignToUserUseCaseTestsBase
         MockGetFellingLicenceApplication.Reset();
         MockUpdateFellingLicenceApplication.Reset();
         MockAgentAuthorityService.Reset();
+        MockPropertyProfilesService.Reset();
 
         MockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(
             Result.Success(
@@ -99,6 +109,8 @@ public abstract class AssignToUserUseCaseTestsBase
             MockUpdateFellingLicenceApplication.Object,
             MockAgentAuthorityService.Object,
             _woodlandOfficerReviewSubStatusService.Object,
+            MockPropertyProfilesService.Object,
+            new OptionsWrapper<ExternalApplicantSiteOptions>(ExternalApplicantSiteOptions),
             new NullLogger<AssignToUserUseCase>());
 
     }

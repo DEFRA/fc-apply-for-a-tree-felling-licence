@@ -4,6 +4,8 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Services;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
+using Forestry.Flo.Services.AdminHubs.Model;
 using Forestry.Flo.Services.Applicants.Entities.WoodlandOwner;
 using Forestry.Flo.Services.Applicants.Repositories;
 using Forestry.Flo.Services.Applicants.Services;
@@ -24,6 +26,10 @@ using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
+using Forestry.Flo.Services.InternalUsers.Entities.UserAccount;
+using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Services.Notifications.Entities;
+using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
 using Forestry.Flo.Services.PropertyProfiles;
 using Forestry.Flo.Services.PropertyProfiles.Entities;
@@ -40,7 +46,6 @@ using NodaTime.Testing;
 using FellingOperationType = Forestry.Flo.Services.FellingLicenceApplications.Entities.FellingOperationType;
 using IUserAccountRepository = Forestry.Flo.Services.InternalUsers.Repositories.IUserAccountRepository;
 using RestockingSpecies = Forestry.Flo.Services.FellingLicenceApplications.Entities.RestockingSpecies;
-using UserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 
@@ -187,7 +192,6 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             new RequestContext("test", new RequestUserModel(_externalApplicant.Principal)),
             _activityFeedService.Object,
             _fellingLicenceApplicationOptionsMock.Object,
-            _withdrawFellingLicenceService.Object,
             _deleteFellingLicenceService.Object,
             _woodlandOwnerRepository.Object,
             _mockRetreiveWoodlandOwnersService.Object,
@@ -197,8 +201,7 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             _mockBus.Object,
             _foresterServices.Object,
             _applicationReferenceHelper.Object,
-            _publicRegisterService.Object,
-            _mockEiaOptions.Object,
+             _mockEiaOptions.Object,
             _getWoodlandOfficerReviewService.Object,
             _mockInternalSiteOptions.Object,
             _getConfiguredFcAreas.Object,
@@ -274,15 +277,29 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         //assert
         Assert.True(result.IsSuccess);
         Assert.Equal(licenceApplications.Count, result.Value.Count());
-        Assert.Equal(licenceApplications.First().StatusHistories.OrderByDescending(s => s.Created).First().Status,
-                result.Value.First().Status);
-        Assert.Equal(propertyProfiles[0].Name, result.Value.First().PropertyName);
 
-        // Assert PreviousReference for the first application (with ApprovedInError)
-        Assert.Equal(previousReferenceForApprovedInError, result.Value.First().PreviousReference);
+        foreach (var application in licenceApplications)
+        {
+            var status = application.StatusHistories.OrderByDescending(s => s.Created).First().Status;
 
-        // Assert PreviousReference is null for other applications (without ApprovedInError)
-        Assert.All(result.Value.Skip(1), app => Assert.Null(app.PreviousReference));
+            var match = result.Value.FirstOrDefault(x => x.Id == application.Id);
+            Assert.NotNull(match);
+
+            Assert.Equal(status, match.Status);
+
+            var propertyName = FellingLicenceStatusConstants.SubmitStatuses.Contains(status)
+                ? propertyProfiles.Single(x => x.Id == match.PropertyProfileId).Name
+                : application.SubmittedFlaPropertyDetail.Name;
+
+            Assert.Equal(propertyName, match.PropertyName);
+
+            Assert.Equal(application.ApprovedInError?.PreviousReference, match.PreviousReference);
+
+            var submitDate = application.StatusHistories.Where(x => x.Status == FellingLicenceStatus.Submitted)
+                .OrderByDescending(x => x.Created).FirstOrDefault()?.Created;
+
+            Assert.Equal(submitDate, match.SubmittedDate);
+        }
     }
 
     [Theory, AutoMoqData]
@@ -836,7 +853,8 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
     [Theory, AutoMoqData]
     public async Task ShouldUpdateApplicationRestockingDetails_GivenProposedRestockingDetailsModel(
         FellingLicenceApplication application,
-        ProposedRestockingDetailModel proposedRestockingDetail)
+        ProposedRestockingDetailModel proposedRestockingDetail,
+        double openSpacePercent)
     {
         //arrange
         var firstFellingId = application.LinkedPropertyProfile!.ProposedFellingDetails!.First().Id;
@@ -845,6 +863,8 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         proposedRestockingDetail.Id =
             application.LinkedPropertyProfile!.ProposedFellingDetails!.First().ProposedRestockingDetails!.First().Id;
         proposedRestockingDetail.StepComplete = true;
+
+        proposedRestockingDetail.Species.Add(SpeciesModel.OpenSpace, SpeciesModel.OpenSpaceSpecies(openSpacePercent));
 
         application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses =
             new List<CompartmentFellingRestockingStatus>()
@@ -903,6 +923,8 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             proposedRestockingDetail.Id
             && app.LinkedPropertyProfile!.ProposedFellingDetails!.First().ProposedRestockingDetails!.First()
                 .RestockingProposal == proposedRestockingDetail.RestockingProposal
+            && app.LinkedPropertyProfile!.ProposedFellingDetails!.First().ProposedRestockingDetails!.First()
+                .PercentOpenSpace == openSpacePercent
             && app.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.First().FellingStatuses
                 .First().RestockingCompartmentStatuses.First().RestockingStatuses.First().Status == true
         )), Times.Once);
@@ -1275,6 +1297,85 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
     }
 
     [Theory, AutoMoqData]
+    public async Task ShouldSendConfirmationNotificationToApplicant_OnFlaSubmission(
+        Guid applicationId,
+        SubmitFellingLicenceApplicationResponse submitResponse,
+        UserAccessModel userAccessModel)
+    {
+        // Arrange
+
+        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _fixture.Create<Guid>(),
+            AccountTypeExternal.WoodlandOwnerAdministrator);
+        var externalApplicant = new ExternalApplicant(user);
+
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus), FellingLicenceStatus.Draft);
+
+        // Create dummy dependencies
+
+        var propertyProfile = new PropertyProfile(
+            "Test",
+            "Test",
+            "Test",
+            "Test",
+            false,
+            "Test",
+            false,
+            "Test",
+            Guid.NewGuid(),
+            new List<Compartment>());
+
+        var linkedPropertyProfile = new LinkedPropertyProfile();
+
+        _mockRetrieveUserAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccessModel));
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(propertyProfile);
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetLinkedPropertyProfileAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(linkedPropertyProfile);
+
+        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_woodlandOwner);
+
+        _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<UserAccessModel>(),
+            It.IsAny<SubmittedFlaPropertyDetail>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submitResponse));
+
+        _updateFellingLicenceService
+            .Setup(x => x.ConvertProposedFellingAndRestockingToConfirmedAsync(
+                It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        await _sut.SubmitFellingLicenceApplicationAsync(applicationId, externalApplicant, "link",
+            CancellationToken.None);
+
+        // Assert
+
+        _sendNotifications.Verify(x => x.SendNotificationAsync(It.Is<ApplicationSubmissionConfirmationDataModel>(m =>
+            m.ApplicationReference == submitResponse.ApplicationReference
+            && m.Name == externalApplicant.FullName
+            && m.PropertyName == propertyProfile.Name
+            && m.SubmittedDate == DateTimeDisplay.GetDateDisplayString(_fixedTimeClock.GetCurrentInstant().ToDateTimeUtc())),
+            NotificationType.ApplicationSubmissionConfirmation,
+            It.Is<NotificationRecipient>(r => r.Name == externalApplicant.FullName && r.Address == externalApplicant.EmailAddress),
+            It.IsAny<NotificationRecipient[]?>(),
+            null,
+            null,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
     public async Task ShouldClearDownConditions_OnFlaResubmission(
         Guid applicationId,
         SubmitFellingLicenceApplicationResponse submitResponse,
@@ -1344,6 +1445,96 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
                 It.Is<StoreConditionsRequest>(r => r.FellingLicenceApplicationId == applicationId && r.Conditions.IsNullOrEmpty()),
                 externalApplicant.UserAccountId.Value,
                 It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ShouldSendResubmissionConfirmation_OnFlaResubmission(
+        Guid applicationId,
+        SubmitFellingLicenceApplicationResponse submitResponse,
+        UserAccessModel userAccessModel,
+        UserAccount assignedInternalUser,
+        WoodlandOfficer woodlandDetails)
+    {
+        // Arrange
+
+        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _fixture.Create<Guid>(),
+            AccountTypeExternal.WoodlandOwnerAdministrator);
+        var externalApplicant = new ExternalApplicant(user);
+
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus), FellingLicenceStatus.WoodlandOfficerReview);
+
+        // Create dummy dependencies
+
+        var propertyProfile = new PropertyProfile(
+            "Test",
+            "Test",
+            "Test",
+            "Test",
+            false,
+            "Test",
+            false,
+            "Test",
+            Guid.NewGuid(),
+            new List<Compartment>());
+
+        var linkedPropertyProfile = new LinkedPropertyProfile();
+
+        _mockRetrieveUserAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccessModel));
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(propertyProfile);
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetLinkedPropertyProfileAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(linkedPropertyProfile);
+
+        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_woodlandOwner);
+
+        _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<UserAccessModel>(),
+            It.IsAny<SubmittedFlaPropertyDetail>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submitResponse));
+
+        _calculateConditionsService
+            .Setup(x => x.StoreConditionsAsync(It.IsAny<StoreConditionsRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _internalUserAccountRepository
+            .Setup(x => x.GetUsersWithIdsInAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<IList<UserAccount>, UserDbErrorReason>(new List<UserAccount> { assignedInternalUser }));
+
+        _foresterServices.Setup(x => x.GetWoodlandOfficerAsync(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandDetails);
+
+
+
+        await _sut.SubmitFellingLicenceApplicationAsync(applicationId, externalApplicant, "link",
+            CancellationToken.None);
+
+        // Assert
+
+        _sendNotifications.Verify(x => x.SendNotificationAsync(
+            It.Is<ApplicationResubmittedDataModel>(m => m.ApplicationReference == submitResponse.ApplicationReference
+            && m.Name == assignedInternalUser.FullName(false)
+            && m.PropertyName == propertyProfile.Name
+            && m.ApplicationId == applicationId
+            && m.SubmittedDate == DateTimeDisplay.GetDateDisplayString(_fixedTimeClock.GetCurrentInstant().ToDateTimeUtc())),
+            NotificationType.ApplicationResubmitted,
+            It.Is<NotificationRecipient>(r => r.Name == assignedInternalUser.FullName(false) && r.Address == assignedInternalUser.Email),
+            null,
+            null,
+            externalApplicant.FullName,
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -1465,6 +1656,11 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             {
                 Code = "010", OfficerName = ""
             }));
+
+        _getConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<ConfiguredFcArea>()));
+        
+        
         // Act
 
         var result =
@@ -1492,10 +1688,12 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
     }
 
     [Theory, AutoMoqData]
-    public async Task ShouldCreateStatusHistoryWithdrawn_OnFlaWithdraw(
+    public async Task ShouldUpdateAppReferenceAndRegionCodes_OnFlaSubmission(
         FellingLicenceApplication application,
-        OperationDetailsModel operationDetailsModel,
-        PropertyProfile property)
+        UserAccessModel userAccessModel,
+        SubmitFellingLicenceApplicationResponse submitResponse,
+        string areaCode,
+        string adminRegion)
     {
         // Arrange
 
@@ -1506,475 +1704,129 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
             _fixture.Create<Guid>(),
             AccountTypeExternal.WoodlandOwnerAdministrator);
         var externalApplicant = new ExternalApplicant(user);
-        application.PublicRegister = null;
 
-        // Create Setup
-        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_woodlandOwner);
+        application.AreaCode = null;
+        application.ApplicationReference = "---/1/2023";
 
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), CancellationToken.None))
-            .ReturnsAsync(Maybe.From(application));
+        TestUtils.SetProtectedProperty(submitResponse, nameof(submitResponse.PreviousStatus), FellingLicenceStatus.Draft);
 
-        _internalUserAccountRepository
-            .Setup(x => x.GetUsersWithIdsInAsync(It.IsAny<IList<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(new List<UserAccount>());
+        _mockRetrieveUserAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(userAccessModel));
 
-        _withdrawFellingLicenceService.Setup(r =>
-                r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Guid>
-            {
-                new Guid("d7494cb4-d3ba-4e52-a524-338d8724f1b4")
-            });
+        // Create dummy dependencies
 
-        _withdrawFellingLicenceService.Setup(c =>
-                c.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(Result.Success());
+        var propertyProfile = new PropertyProfile(
+            "Test_Name",
+            "Test_osGridReference",
+            "Test_NearestTown",
+            "Test_NameOfWood",
+            true,
+            "Test_WoodlandManagementPlanReference",
+            false,
+            "Test_WoodlandCertificationSchemeReference",
+            Guid.NewGuid(),
+            new List<Compartment>());
 
-        _getPropertyProfilesService.Setup(x =>
-                x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(property));
-
-        // Act
-        var finalResult =
-            await _sut.WithdrawFellingLicenceApplicationAsync(application.Id, externalApplicant, "link",
-                CancellationToken.None);
-
-        // Assert
-        Assert.True(finalResult.IsSuccess);
-
-        _transactionMock.Verify(i => i.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _withdrawFellingLicenceService.Verify(
-            r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
-            Times.Once);
-        _withdrawFellingLicenceService.Verify(
-            r => r.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None),
-            Times.Once);
-        _auditService.Verify(s =>
-            s.PublishAuditEventAsync(
-                It.Is<AuditEvent>(e => e.EventName == AuditEvents.WithdrawFellingLicenceApplication),
-                It.IsAny<CancellationToken>()));
-        _auditService.Verify(s =>
-            s.PublishAuditEventAsync(
-                It.Is<AuditEvent>(e => e.EventName == AuditEvents.FellingLicenceApplicationWithdrawComplete),
-                It.IsAny<CancellationToken>()));
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldFailWithdrawnApplicationWhenNotFoundApplication_OnFlaWithdraw(
-        FellingLicenceApplication application,
-        OperationDetailsModel operationDetailsModel,
-        PropertyProfile property)
-    {
-        // Arrange
-
-        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
-            _fixture.Create<string>(),
-            _fixture.Create<string>(),
-            _fixture.Create<Guid>(),
-            _fixture.Create<Guid>(),
-            AccountTypeExternal.WoodlandOwnerAdministrator);
-        var externalApplicant = new ExternalApplicant(user);
-        application.PublicRegister = null;
-
-        // Setup
-        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_woodlandOwner);
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), CancellationToken.None))
-            .ReturnsAsync(Maybe.None);
-
-        _internalUserAccountRepository
-            .Setup(x => x.GetUsersWithIdsInAsync(It.IsAny<IList<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(new List<UserAccount>());
-
-        _withdrawFellingLicenceService.Setup(r =>
-                r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<IList<Guid>>($"Failed to get {nameof(FellingLicenceApplication)}"));
-
-        _getPropertyProfilesService.Setup(x =>
-                x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(property));
-
-        // Act
-        var finalResult =
-            await _sut.WithdrawFellingLicenceApplicationAsync(Guid.Empty, externalApplicant, "link",
-                CancellationToken.None);
-
-        // Assert
-        Assert.True(finalResult.IsFailure);
-        Assert.Equal($"Could not withdraw the {nameof(FellingLicenceApplication)}", finalResult.Error);
-
-        _withdrawFellingLicenceService.Verify(
-            r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
-            Times.Once);
-        _internalUserAccountRepository.Verify(
-            r => r.GetUsersWithIdsInAsync(It.IsAny<IList<Guid>>(), CancellationToken.None), Times.Never);
-        _withdrawFellingLicenceService.Verify(
-            r => r.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None),
-            Times.Never);
-        _auditService.Verify(s =>
-            s.PublishAuditEventAsync(
-                It.Is<AuditEvent>(e => e.EventName == AuditEvents.WithdrawFellingLicenceApplicationFailure),
-                It.IsAny<CancellationToken>()));
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldFailCreateStatusHistoryWithdrawn_OnFlaWithdraw(
-        FellingLicenceApplication application,
-        OperationDetailsModel operationDetailsModel)
-    {
-        // Arrange
-
-        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
-            _fixture.Create<string>(),
-            _fixture.Create<string>(),
-            _fixture.Create<Guid>(),
-            _fixture.Create<Guid>(),
-            AccountTypeExternal.WoodlandOwnerAdministrator);
-        var externalApplicant = new ExternalApplicant(user);
-        application.PublicRegister = null;
-
-        // Setup
-        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_woodlandOwner);
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), CancellationToken.None))
-            .ReturnsAsync(Maybe.From(application));
-
-        _internalUserAccountRepository
-            .Setup(x => x.GetUsersWithIdsInAsync(It.IsAny<IList<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(new List<UserAccount>());
-
-        _withdrawFellingLicenceService.Setup(r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<IList<Guid>>($"Could not withdraw the {nameof(FellingLicenceApplication)}"));
-
-        // Act
-        var result =
-            await _sut.WithdrawFellingLicenceApplicationAsync(application.Id, externalApplicant, "link",
-                CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-
-        _withdrawFellingLicenceService.Verify(
-            r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
-            Times.Once);
-        _withdrawFellingLicenceService.Verify(
-            r => r.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None),
-            Times.Never);
-        _auditService.Verify(s =>
-            s.PublishAuditEventAsync(
-                It.Is<AuditEvent>(e => e.EventName == AuditEvents.WithdrawFellingLicenceApplicationFailure),
-                It.IsAny<CancellationToken>()));
-    }
-
-    // Act
-    [Theory, AutoMoqData]
-    public async Task ShouldRemoveApplicationFromPublicRegister_WhenApplicationShouldBeRemoved(
-        FellingLicenceApplication application,
-        PropertyProfile property)
-    {
-        // Arrange
-
-        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
-            _fixture.Create<string>(),
-            _fixture.Create<string>(),
-            _fixture.Create<Guid>(),
-            _fixture.Create<Guid>(),
-            AccountTypeExternal.WoodlandOwnerAdministrator);
-        var externalApplicant = new ExternalApplicant(user);
-        var publicRegister = _fixture
-            .Build<PublicRegister>()
-            .Without(x => x.ConsultationPublicRegisterRemovedTimestamp)
+        var cpt1 = _fixture.Build<Compartment>()
+            .With(x => x.PropertyProfile, propertyProfile)
+            .With(x => x.PropertyProfileId, propertyProfile.Id)
+            .With(x => x.GISData, JsonConvert.SerializeObject(new Polygon()))
             .Create();
-        application.PublicRegister = publicRegister;
+        var cpt2 = _fixture.Build<Compartment>()
+            .With(x => x.PropertyProfile, propertyProfile)
+            .With(x => x.PropertyProfileId, propertyProfile.Id)
+            .With(x => x.GISData, JsonConvert.SerializeObject(new Polygon()))
+            .Create();
+        propertyProfile.Compartments.Add(cpt1);
+        propertyProfile.Compartments.Add(cpt2);
 
-        // Create Setup
+        var felling = _fixture.Build<ProposedFellingDetail>()
+            .Without(x => x.LinkedPropertyProfile)
+            .Without(x => x.LinkedPropertyProfile)
+            .With(x => x.PropertyProfileCompartmentId, cpt1.Id)
+            .Create();
+
+        var restocking = _fixture.Build<ProposedRestockingDetail>()
+            .With(x => x.PropertyProfileCompartmentId, cpt2.Id)
+            .With(x => x.ProposedFellingDetail, felling)
+            .With(x => x.ProposedFellingDetailsId, felling.Id)
+            .Create();
+
+        felling.ProposedRestockingDetails = new List<ProposedRestockingDetail> { restocking };
+
+        var linkedPropertyProfile = new LinkedPropertyProfile
+        {
+            FellingLicenceApplication = application,
+            FellingLicenceApplicationId = application.Id,
+            PropertyProfileId = propertyProfile.Id,
+            ProposedFellingDetails = new List<ProposedFellingDetail> { felling }
+        };
+
+        application.LinkedPropertyProfile = linkedPropertyProfile;
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(propertyProfile);
+
+        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.AsMaybe);
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetLinkedPropertyProfileAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(linkedPropertyProfile);
+
+        _fellingLicenceApplicationRepository.Setup(r => r.AddSubmittedFlaPropertyDetailAsync(
+                It.IsAny<SubmittedFlaPropertyDetail>(),
+                It.IsAny<CancellationToken>()))
+            .Verifiable();
+
+        // Capture the submitted compartment
+        _updateFellingLicenceService.Setup(r => r.SubmitFellingLicenceApplicationAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<SubmittedFlaPropertyDetail>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submitResponse));
+
         _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(_woodlandOwner);
 
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), CancellationToken.None))
-            .ReturnsAsync(Maybe.From(application));
+        _foresterServices.Setup(x =>
+                x.GetPhytophthoraRamorumRiskZonesAsync(It.IsAny<BaseShape>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<PhytophthoraRamorumRiskZone>(0)));
 
-        _internalUserAccountRepository
-            .Setup(x => x.GetUsersWithIdsInAsync(It.IsAny<IList<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(new List<UserAccount>());
-
-        _withdrawFellingLicenceService.Setup(r =>
-                r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Guid>
+        _foresterServices.Setup(x =>
+                x.GetWoodlandOfficerAsync(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new WoodlandOfficer
             {
-                new Guid("d7494cb4-d3ba-4e52-a524-338d8724f1b4")
-            });
+                Code = areaCode,
+                OfficerName = ""
+            }));
 
-        _withdrawFellingLicenceService.Setup(c =>
-                c.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(Result.Success());
+        _getConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<ConfiguredFcArea>{ new ConfiguredFcArea(
+                new AreaModel(), areaCode, adminRegion)}));
 
-        _getPropertyProfilesService.Setup(x =>
-                x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(property));
-
-        _publicRegisterService
-            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success());
-
-        _withdrawFellingLicenceService
-            .Setup(x => x.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<Guid>>(new List<Guid>()));
-
-        _withdrawFellingLicenceService.Setup(x =>
-                x.UpdatePublicRegisterEntityToRemovedAsync(application.Id,
-                    externalApplicant.UserAccountId,
-                    It.IsAny<DateTime>(),
-                    It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
+        _applicationReferenceHelper.Setup(x => x.UpdateReferenceNumber(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns($"{areaCode}/1/2023");
 
         // Act
+
         var result =
-            await _sut.WithdrawFellingLicenceApplicationAsync(application.Id, externalApplicant, "link",
+            await _sut.SubmitFellingLicenceApplicationAsync(application.Id, externalApplicant, "link",
                 CancellationToken.None);
 
         // Assert
+
         Assert.True(result.IsSuccess);
-        _publicRegisterService.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
-            publicRegister.EsriId!.Value,
-            application.ApplicationReference,
-            It.IsAny<DateTime>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-    }
 
-    [Theory, AutoMoqData]
-    public async Task ShouldRollbackTransaction_WhenPublicRegisterRemovalFails(
-        FellingLicenceApplication application,
-        PropertyProfile property)
-    {
-        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
-            _fixture.Create<string>(),
-            _fixture.Create<string>(),
-            _fixture.Create<Guid>(),
-            _fixture.Create<Guid>(),
-            AccountTypeExternal.WoodlandOwnerAdministrator);
-        var externalApplicant = new ExternalApplicant(user);
-        var publicRegister = _fixture
-            .Build<PublicRegister>()
-            .Without(x => x.ConsultationPublicRegisterRemovedTimestamp)
-            .Create();
-        application.PublicRegister = publicRegister;
-
-        // Create Setup
-        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_woodlandOwner);
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), CancellationToken.None))
-            .ReturnsAsync(Maybe.From(application));
-
-        _internalUserAccountRepository
-            .Setup(x => x.GetUsersWithIdsInAsync(It.IsAny<IList<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(new List<UserAccount>());
-
-        _withdrawFellingLicenceService.Setup(r =>
-                r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Guid>
-            {
-                new Guid("d7494cb4-d3ba-4e52-a524-338d8724f1b4")
-            });
-
-        _withdrawFellingLicenceService.Setup(c =>
-                c.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(Result.Success());
-
-        _getPropertyProfilesService.Setup(x =>
-                x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(property));
-
-        _publicRegisterService
-            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
-
-        _withdrawFellingLicenceService
-            .Setup(x => x.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<Guid>>(new List<Guid>()));
-
-        // Arrange
-        application.PublicRegister = publicRegister;
-        application.LinkedPropertyProfile = new LinkedPropertyProfile
-        {
-            PropertyProfileId = Guid.NewGuid()
-        };
-
-        _fellingLicenceApplicationRepository
-            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe.From(application));
-
-        _publicRegisterService
-            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("Failed to remove from public register"));
-
-        _withdrawFellingLicenceService
-            .Setup(x => x.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<Guid>>(new List<Guid>()));
-
-        // Act
-        var result =
-            await _sut.WithdrawFellingLicenceApplicationAsync(application.Id, externalApplicant, "link",
-                CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal("Could not remove the FellingLicenceApplication from the public register", result.Error);
-
-        _transactionMock.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _publicRegisterService.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
-            publicRegister.EsriId!.Value,
-            application.ApplicationReference,
-            It.IsAny<DateTime>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-
-        _withdrawFellingLicenceService.Verify(
-            r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
-            Times.Once);
-        _withdrawFellingLicenceService.Verify(
-            r => r.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None),
-            Times.Never);
-        _auditService.Verify(s =>
-            s.PublishAuditEventAsync(
-                It.Is<AuditEvent>(e => e.EventName == AuditEvents.WithdrawFellingLicenceApplicationFailure),
-                It.IsAny<CancellationToken>()));
-    }
-
-    [Theory, AutoMoqData]
-    public async Task ShouldRollbackTransaction_WhenUnableToUpdatePublicRegisterEntity(
-        FellingLicenceApplication application,
-        PropertyProfile property)
-    {
-        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
-            _fixture.Create<string>(),
-            _fixture.Create<string>(),
-            _fixture.Create<Guid>(),
-            _fixture.Create<Guid>(),
-            AccountTypeExternal.WoodlandOwnerAdministrator);
-        var externalApplicant = new ExternalApplicant(user);
-        var publicRegister = _fixture
-            .Build<PublicRegister>()
-            .Without(x => x.ConsultationPublicRegisterRemovedTimestamp)
-            .Create();
-        application.PublicRegister = publicRegister;
-
-        // Create Setup
-        _woodlandOwnerRepository.Setup(r => r.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_woodlandOwner);
-
-        _fellingLicenceApplicationRepository.Setup(x => x.GetAsync(It.IsAny<Guid>(), CancellationToken.None))
-            .ReturnsAsync(Maybe.From(application));
-
-        _internalUserAccountRepository
-            .Setup(x => x.GetUsersWithIdsInAsync(It.IsAny<IList<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(new List<UserAccount>());
-
-        _withdrawFellingLicenceService.Setup(r =>
-                r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Guid>
-            {
-                new Guid("d7494cb4-d3ba-4e52-a524-338d8724f1b4")
-            });
-
-        _withdrawFellingLicenceService.Setup(c =>
-                c.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None))
-            .ReturnsAsync(Result.Success());
-
-        _getPropertyProfilesService.Setup(x =>
-                x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(property));
-
-        _publicRegisterService
-            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
-
-        _withdrawFellingLicenceService
-            .Setup(x => x.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<Guid>>(new List<Guid>()));
-
-        _withdrawFellingLicenceService.Setup(x =>
-                x.UpdatePublicRegisterEntityToRemovedAsync(application.Id,
-                    externalApplicant.UserAccountId,
-                    It.IsAny<DateTime>(),
-                    It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure("error"));
-
-        // Arrange
-        application.PublicRegister = publicRegister;
-        application.LinkedPropertyProfile = new LinkedPropertyProfile
-        {
-            PropertyProfileId = Guid.NewGuid()
-        };
-
-        _fellingLicenceApplicationRepository
-            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Maybe.From(application));
-
-        _publicRegisterService
-            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success);
-
-        _withdrawFellingLicenceService
-            .Setup(x => x.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<Guid>>(new List<Guid>()));
-
-        // Act
-        var result =
-            await _sut.WithdrawFellingLicenceApplicationAsync(application.Id, externalApplicant, "link",
-                CancellationToken.None);
-
-        // Assert
-        Assert.True(result.IsFailure);
-        Assert.Equal("Could not update the FellingLicenceApplication public register data", result.Error);
-
-        _transactionMock.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _publicRegisterService.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
-            publicRegister.EsriId!.Value,
-            application.ApplicationReference,
-            It.IsAny<DateTime>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-
-        _withdrawFellingLicenceService.Verify(
-            r => r.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), CancellationToken.None),
-            Times.Once);
-        _withdrawFellingLicenceService.Verify(
-            r => r.RemoveAssignedWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<List<Guid>>(), CancellationToken.None),
-            Times.Never);
-        _auditService.Verify(s =>
-            s.PublishAuditEventAsync(
-                It.Is<AuditEvent>(e => e.EventName == AuditEvents.WithdrawFellingLicenceApplicationFailure),
-                It.IsAny<CancellationToken>()));
-        _withdrawFellingLicenceService.Verify(r => r.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
-            It.IsAny<DateTime>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        _updateFellingLicenceService.Verify(r => r.SubmitFellingLicenceApplicationAsync(
+            application.Id, userAccessModel, It.IsAny<SubmittedFlaPropertyDetail>(), It.IsAny<CancellationToken>()), Times.Once);
+        
+        _fellingLicenceApplicationRepository.Verify(r => r.Update(
+            It.Is<FellingLicenceApplication>(x => x.AdministrativeRegion == adminRegion 
+                                                  && x.AreaCode == areaCode
+                                                  && x.ApplicationReference == $"{areaCode}/1/2023")), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -2988,6 +2840,399 @@ public partial class CreateFellingLicenceApplicationUseCaseTests
         // Assert
         Assert.True(result.HasValue);
         Assert.False(result.Value.IsComplete);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RetrieveFellingLicenceApplication_ShouldSetIsCompleteFalse_WhenTenYearRequired(
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
+        IList<ActivityFeedItemModel> activityFeedItems)
+    {
+        // Arrange
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+        application.WoodlandOwnerId = _woodlandOwner.Id;
+        application.Documents = new List<Document>();
+
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory { Status = FellingLicenceStatus.WoodlandOfficerReview, Created = DateTime.UtcNow }
+        };
+
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails!.Take(1).ToList();
+
+        application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails!.Take(1).ToList();
+
+        application.FellingLicenceApplicationStepStatus = new FellingLicenceApplicationStepStatus
+        {
+            CompartmentFellingRestockingStatuses = [],
+            SelectCompartmentsStatus = true,
+            OperationsStatus = true,
+            SupportingDocumentationStatus = true,
+            TermsAndConditionsStatus = true,
+            ConstraintCheckStatus = true,
+            EnvironmentalImpactAssessmentStatus = true,
+            TenYearLicenceStepStatus = null,
+            TreeHealthIssuesStatus = true
+        };
+
+        for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)
+        {
+            var felling = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
+            felling.FellingSpecies = new List<FellingSpecies>();
+            felling.OperationType = FellingOperationType.FellingIndividualTrees;
+            felling.IsRestocking = true;
+            felling.NoRestockingReason = null;
+
+            var stepStatus = new CompartmentFellingRestockingStatus
+            {
+                CompartmentId = felling.PropertyProfileCompartmentId,
+                Status = true,
+                FellingStatuses =
+                [
+                    new FellingStatus
+                    {
+                        Id = felling.Id,
+                        Status = true,
+                        RestockingCompartmentStatuses = [ new RestockingCompartmentStatus
+                            {
+                                CompartmentId = felling.PropertyProfileCompartmentId,
+                                Status = true,
+                                RestockingStatuses = []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            foreach (var proposedRestockingDetail in application.LinkedPropertyProfile!.ProposedFellingDetails[i]
+                         .ProposedRestockingDetails)
+            {
+                proposedRestockingDetail.PropertyProfileCompartmentId = application.LinkedPropertyProfile!
+                    .ProposedFellingDetails[i].PropertyProfileCompartmentId;
+                proposedRestockingDetail.RestockingSpecies = new List<RestockingSpecies>();
+                proposedRestockingDetail.RestockingProposal = TypeOfProposal.DoNotIntendToRestock;
+
+                stepStatus.FellingStatuses.First().RestockingCompartmentStatuses.First().RestockingStatuses.Add(new RestockingStatus
+                {
+                    Id = proposedRestockingDetail.Id,
+                    Status = true,
+                });
+            }
+            application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Add(stepStatus);
+        }
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _activityFeedService
+            .Setup(x => x.RetrieveAllRelevantActivityFeedItemsAsync(
+                It.IsAny<ActivityFeedItemProviderModel>(),
+                It.IsAny<ActorType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(activityFeedItems));
+
+        _getPropertyProfilesService.Setup(r => r.GetPropertyByIdAsync(
+                propertyProfile.Id,
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _mockRetreiveWoodlandOwnersService.Setup(x =>
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _mockRetrieveUserAccountsService.Setup(x =>
+                x.IsUserAccountLinkedToFcAgencyAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
+
+        _compartmentRepository
+            .Setup(r => r.ListAsync(propertyProfile.Id, Guid.NewGuid(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
+                new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
+
+        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _woodlandOwner.Id,
+            AccountTypeExternal.FcUser,
+            isFcUser: true);
+        var externalApplicant = new ExternalApplicant(user);
+
+        // Act
+        var result = await _sut.RetrieveFellingLicenceApplication(externalApplicant, application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasValue);
+
+        Assert.True(result.Value.TenYearLicence.StepRequiredForApplication);
+        Assert.Null(result.Value.TenYearLicence.StepComplete);
+        Assert.False(result.Value.IsComplete);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RetrieveFellingLicenceApplication_ShouldSetTenYearRequiredFalse_WhenAuthorWasNotFc(
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
+        IList<ActivityFeedItemModel> activityFeedItems)
+    {
+        // Arrange
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+        application.WoodlandOwnerId = _woodlandOwner.Id;
+        application.Documents = new List<Document>();
+
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory { Status = FellingLicenceStatus.WoodlandOfficerReview, Created = DateTime.UtcNow }
+        };
+
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails!.Take(1).ToList();
+
+        application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails!.Take(1).ToList();
+
+        application.FellingLicenceApplicationStepStatus = new FellingLicenceApplicationStepStatus
+        {
+            CompartmentFellingRestockingStatuses = [],
+            SelectCompartmentsStatus = true,
+            OperationsStatus = true,
+            SupportingDocumentationStatus = true,
+            TermsAndConditionsStatus = true,
+            ConstraintCheckStatus = true,
+            EnvironmentalImpactAssessmentStatus = true,
+            TenYearLicenceStepStatus = null,
+            TreeHealthIssuesStatus = true
+        };
+
+        for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)
+        {
+            var felling = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
+            felling.FellingSpecies = new List<FellingSpecies>();
+            felling.OperationType = FellingOperationType.FellingIndividualTrees;
+            felling.IsRestocking = true;
+            felling.NoRestockingReason = null;
+
+            var stepStatus = new CompartmentFellingRestockingStatus
+            {
+                CompartmentId = felling.PropertyProfileCompartmentId,
+                Status = true,
+                FellingStatuses =
+                [
+                    new FellingStatus
+                    {
+                        Id = felling.Id,
+                        Status = true,
+                        RestockingCompartmentStatuses = [ new RestockingCompartmentStatus
+                            {
+                                CompartmentId = felling.PropertyProfileCompartmentId,
+                                Status = true,
+                                RestockingStatuses = []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            foreach (var proposedRestockingDetail in application.LinkedPropertyProfile!.ProposedFellingDetails[i]
+                         .ProposedRestockingDetails)
+            {
+                proposedRestockingDetail.PropertyProfileCompartmentId = application.LinkedPropertyProfile!
+                    .ProposedFellingDetails[i].PropertyProfileCompartmentId;
+                proposedRestockingDetail.RestockingSpecies = new List<RestockingSpecies>();
+                proposedRestockingDetail.RestockingProposal = TypeOfProposal.DoNotIntendToRestock;
+
+                stepStatus.FellingStatuses.First().RestockingCompartmentStatuses.First().RestockingStatuses.Add(new RestockingStatus
+                {
+                    Id = proposedRestockingDetail.Id,
+                    Status = true,
+                });
+            }
+            application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Add(stepStatus);
+        }
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _activityFeedService
+            .Setup(x => x.RetrieveAllRelevantActivityFeedItemsAsync(
+                It.IsAny<ActivityFeedItemProviderModel>(),
+                It.IsAny<ActorType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(activityFeedItems));
+
+        _getPropertyProfilesService.Setup(r => r.GetPropertyByIdAsync(
+                propertyProfile.Id,
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _mockRetreiveWoodlandOwnersService.Setup(x =>
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _mockRetrieveUserAccountsService.Setup(x =>
+                x.IsUserAccountLinkedToFcAgencyAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(false));
+
+        _compartmentRepository
+            .Setup(r => r.ListAsync(propertyProfile.Id, Guid.NewGuid(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
+                new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
+
+        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
+            _fixture.Create<string>(),
+            _fixture.Create<string>(),
+            _fixture.Create<Guid>(),
+            _woodlandOwner.Id,
+            AccountTypeExternal.FcUser,
+            isFcUser: true);
+        var externalApplicant = new ExternalApplicant(user);
+
+        // Act
+        var result = await _sut.RetrieveFellingLicenceApplication(externalApplicant, application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasValue);
+
+        Assert.False(result.Value.TenYearLicence.StepRequiredForApplication);
+        Assert.Null(result.Value.TenYearLicence.StepComplete);
+        Assert.True(result.Value.IsComplete);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RetrieveFellingLicenceApplication_ShouldSetTenYearRequiredFalse_WhenCurrentUserNotFc(
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        Flo.Services.Applicants.Models.WoodlandOwnerModel woodlandOwnerModel,
+        IList<ActivityFeedItemModel> activityFeedItems)
+    {
+        // Arrange
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+        application.WoodlandOwnerId = _woodlandOwner.Id;
+        application.Documents = new List<Document>();
+
+        application.StatusHistories = new List<StatusHistory>
+        {
+            new StatusHistory { Status = FellingLicenceStatus.WoodlandOfficerReview, Created = DateTime.UtcNow }
+        };
+
+        application.LinkedPropertyProfile!.PropertyProfileId = propertyProfile.Id;
+
+        application.LinkedPropertyProfile.ProposedFellingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails!.Take(1).ToList();
+
+        application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails =
+            application.LinkedPropertyProfile.ProposedFellingDetails.First().ProposedRestockingDetails!.Take(1).ToList();
+
+        application.FellingLicenceApplicationStepStatus = new FellingLicenceApplicationStepStatus
+        {
+            CompartmentFellingRestockingStatuses = [],
+            SelectCompartmentsStatus = true,
+            OperationsStatus = true,
+            SupportingDocumentationStatus = true,
+            TermsAndConditionsStatus = true,
+            ConstraintCheckStatus = true,
+            EnvironmentalImpactAssessmentStatus = true,
+            TenYearLicenceStepStatus = null,
+            TreeHealthIssuesStatus = true
+        };
+
+        for (var i = 0; i < application.LinkedPropertyProfile!.ProposedFellingDetails!.Count; i++)
+        {
+            var felling = application.LinkedPropertyProfile!.ProposedFellingDetails[i];
+            felling.FellingSpecies = new List<FellingSpecies>();
+            felling.OperationType = FellingOperationType.FellingIndividualTrees;
+            felling.IsRestocking = true;
+            felling.NoRestockingReason = null;
+
+            var stepStatus = new CompartmentFellingRestockingStatus
+            {
+                CompartmentId = felling.PropertyProfileCompartmentId,
+                Status = true,
+                FellingStatuses =
+                [
+                    new FellingStatus
+                    {
+                        Id = felling.Id,
+                        Status = true,
+                        RestockingCompartmentStatuses = [ new RestockingCompartmentStatus
+                            {
+                                CompartmentId = felling.PropertyProfileCompartmentId,
+                                Status = true,
+                                RestockingStatuses = []
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            foreach (var proposedRestockingDetail in application.LinkedPropertyProfile!.ProposedFellingDetails[i]
+                         .ProposedRestockingDetails)
+            {
+                proposedRestockingDetail.PropertyProfileCompartmentId = application.LinkedPropertyProfile!
+                    .ProposedFellingDetails[i].PropertyProfileCompartmentId;
+                proposedRestockingDetail.RestockingSpecies = new List<RestockingSpecies>();
+                proposedRestockingDetail.RestockingProposal = TypeOfProposal.DoNotIntendToRestock;
+
+                stepStatus.FellingStatuses.First().RestockingCompartmentStatuses.First().RestockingStatuses.Add(new RestockingStatus
+                {
+                    Id = proposedRestockingDetail.Id,
+                    Status = true,
+                });
+            }
+            application.FellingLicenceApplicationStepStatus.CompartmentFellingRestockingStatuses.Add(stepStatus);
+        }
+
+        _fellingLicenceApplicationRepository
+            .Setup(r => r.GetAsync(It.Is<Guid>(a => a == application.Id), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _activityFeedService
+            .Setup(x => x.RetrieveAllRelevantActivityFeedItemsAsync(
+                It.IsAny<ActivityFeedItemProviderModel>(),
+                It.IsAny<ActorType>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(activityFeedItems));
+
+        _getPropertyProfilesService.Setup(r => r.GetPropertyByIdAsync(
+                propertyProfile.Id,
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _mockRetreiveWoodlandOwnersService.Setup(x =>
+                x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(woodlandOwnerModel);
+
+        _mockRetrieveUserAccountsService.Setup(x =>
+                x.IsUserAccountLinkedToFcAgencyAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
+
+        _compartmentRepository
+            .Setup(r => r.ListAsync(propertyProfile.Id, Guid.NewGuid(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application.LinkedPropertyProfile!.ProposedFellingDetails!.Select(d =>
+                new ModelMappingTests.TestCompartment(d.PropertyProfileCompartmentId)).ToList());
+
+        // Act
+        var result = await _sut.RetrieveFellingLicenceApplication(_externalApplicant, application.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasValue);
+
+        Assert.False(result.Value.TenYearLicence.StepRequiredForApplication);
+        Assert.Null(result.Value.TenYearLicence.StepComplete);
+        Assert.True(result.Value.IsComplete);
     }
 
     [Theory, AutoMoqData]

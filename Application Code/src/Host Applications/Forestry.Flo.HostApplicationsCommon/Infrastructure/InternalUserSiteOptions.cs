@@ -1,4 +1,4 @@
-﻿namespace Forestry.Flo.External.Web.Infrastructure;
+﻿namespace Forestry.Flo.HostApplicationsCommon.Infrastructure;
 
 /// <summary>
 /// Represents configuration options for the internal user site.

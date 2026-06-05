@@ -339,6 +339,11 @@ spec:
             - name: ExternalApplicantSite__BaseUrl
               value: {{ .Values.config.externalApplicantSite.baseUrl }}
             {{- end }}
+            # ------------------- Internal User Site Options -------------------
+            {{- if .Values.config.internalUserSite.baseUrl }}
+            - name: InternalUserSite__BaseUrl
+              value: {{ .Values.config.internalUserSite.baseUrl | quote }}
+            {{- end }}
             # ------------------- PDF Generator API start -------------------
             {{- if .Values.config.pdfGeneratorApi.templateName }}
             - name: PDFGeneratorAPI__TemplateName
@@ -401,6 +406,10 @@ spec:
               value: {{ .Values.config.woodlandOfficerReview.publicRegisterApplicationUrl }}
             {{- end }}
             # ------------------- public register expiry start -------------------
+            {{- if .Values.config.publicRegisterExpiry.decisionPublicRegisterPeriod }}
+            - name: PublicRegisterExpiry__DecisionPublicRegisterPeriod
+              value: {{ .Values.config.publicRegisterExpiry.decisionPublicRegisterPeriod | quote }}
+            {{- end }}
             {{- if .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
             - name: PublicRegisterExpiry__ThresholdBeforePublicRegisterPeriodEnd
               value: {{ .Values.config.publicRegisterExpiry.thresholdBeforePublicRegisterPeriodEnd }}
@@ -422,6 +431,10 @@ spec:
             {{- if .Values.config.applicationExtension.thresholdBeforeFinalActionDate }}
             - name: ApplicationExtension__ThresholdBeforeFinalActionDate
               value: {{ .Values.config.applicationExtension.thresholdBeforeFinalActionDate }}
+            {{- end }}
+            {{- if .Values.config.applicationExtension.deemedAcceptanceTimeSpan }}
+            - name: ApplicationExtension__DeemedAcceptanceTimeSpan
+              value: {{ .Values.config.applicationExtension.deemedAcceptanceTimeSpan }}
             {{- end }}
             # ------------------- PDF Generator API start -------------------
             {{- if .Values.config.pdfGeneratorApi.baseUrl }}
@@ -633,6 +646,12 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ReminderForApplicantToRespondToAmendments }}
             - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationApprovedInError
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfApplicationApprovedInError }}
+            - name: GovUkNotifyOptions__TemplateIds__ExternalConsulteeCommentConfirmation
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ExternalConsulteeCommentConfirmation }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationReopened
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationReopened }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationReferenceChange
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationReferenceChange }}
             {{- end }}
             # ------------------- ESRI Config start -------------------
             {{- if .Values.config.esriConfig.enabled }}
@@ -891,7 +910,7 @@ spec:
             # ------------------- ESRI PublicRegister - Comments -------------------
             {{- with .Comments }}
               {{- if .Path }}
-            - name: EsriConfig__PublicRegister__Comments_Path
+            - name: EsriConfig__PublicRegister__Comments__Path
               value: {{ .Path | quote }}
               {{- end }}
             {{- end }}

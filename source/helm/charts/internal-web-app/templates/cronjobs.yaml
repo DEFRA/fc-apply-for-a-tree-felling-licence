@@ -220,3 +220,91 @@ spec:
 
                   echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
 {{- end }}
+---
+{{- /* send-late-amendment-response-reminders */ -}}
+{{- $job = index $jobs "send-late-amendment-response-reminders" -}}
+{{- if and $job $job.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $job.name }}
+spec:
+  schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{ include "flo.cronjobScheduling" . | nindent 10 }}
+          containers:
+            - name: {{ $job.name }}
+              image: fsflo.azurecr.io/docker/qtools:1.2.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.secret_key_ref_name }}
+                      key:  {{ index .Values "config" "cronJobs" "apiKey" "secret_key" }}
+              command:
+                - bash
+                - -c
+                - |
+                  set -euo pipefail
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' starting"
+                  echo "[$(date)] Calling: http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  curl -sSf -k \
+                    -H "X-Api-Key: ${API_KEY}" \
+                    "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
+{{- end }}
+---
+{{- /* withdraw-late-amendment-applications */ -}}
+{{- $job = index $jobs "withdraw-late-amendment-applications" -}}
+{{- if and $job $job.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $job.name }}
+spec:
+  schedule: {{ $job.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{ include "flo.cronjobScheduling" . | nindent 10 }}
+          containers:
+            - name: {{ $job.name }}
+              image: fsflo.azurecr.io/docker/qtools:1.2.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.global.secret_key_ref_name }}
+                      key:  {{ index .Values "config" "cronJobs" "apiKey" "secret_key" }}
+              command:
+                - bash
+                - -c
+                - |
+                  set -euo pipefail
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' starting"
+                  echo "[$(date)] Calling: http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  curl -sSf -k \
+                    -H "X-Api-Key: ${API_KEY}" \
+                    "http://{{ include "internal-web-app.fullname" . }}:{{ .Values.service.port }}{{ $job.path }}"
+
+                  echo "[$(date)] CronJob '{{ $job.name }}' completed successfully"
+{{- end }}

@@ -2,11 +2,18 @@
 using Forestry.Flo.Services.Common.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.External.Web.Models.Agency;
 
 public class FcUserAgencyCreationModel : PageWithBreadcrumbsViewModel
 {
+    /// <summary>
+    /// Gets and sets the ID of the agency, if editing an existing agency. This is null when creating a new agency.
+    /// </summary>
+    [HiddenInput]
+    public Guid? AgencyId { get; set; }
+
     /// <summary>
     /// Gets and Sets the address of the Agency on the system.
     /// </summary>

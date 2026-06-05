@@ -1,4 +1,5 @@
 using Forestry.Flo.Internal.Web.Infrastructure;
+using Forestry.Flo.Internal.Web.Infrastructure.Display;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -34,12 +35,11 @@ public class AmendmentResponseController : ControllerBase
     [Route("WithdrawLateAmendmentApplications")]
     public async Task<IActionResult> WithdrawLateAmendmentApplications(
         [FromServices] ILateAmendmentResponseWithdrawalUseCase useCase,
-        [FromServices] IWithdrawFellingLicenceService withdrawFellingLicenceService,
         CancellationToken cancellationToken)
     {
-        var withdrawn = await useCase.WithdrawLateAmendmentApplicationsAsync(
-            withdrawFellingLicenceService,
-            cancellationToken);
+        var withdrawn = await useCase
+            .WithdrawLateAmendmentApplicationsAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         return Ok(new { withdrawn });
     }

@@ -98,7 +98,7 @@ public enum ActivityFeedItemType
     [Display(Name = "Application extended"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
     InformApplicantOfApplicationExtension,
 
-    [Display(Name = "Amendments sent to applicant"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
+    [Display(Name = "Application withdrawal action pending"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
     InformApplicantOfApplicationVoluntaryWithdrawOption,
 
     [Display(Name = "Application withdrawn"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
@@ -159,5 +159,14 @@ public enum ActivityFeedItemType
 
     [Display(Name = "Amendments sent to applicant"), ActivityFeedItemType(ActivityFeedItemCategory.AmendmentReviews)]
     AmendmentOfficerReason,
+
+    [Display(Name = "Confirmation of consultee comment received"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
+    ExternalConsulteeCommentConfirmation,
+
+    [Display(Name = "Inform applicant of application reopened"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
+    InformApplicantOfApplicationReopened,
+
+    [Display(Name = "Inform applicant of application reference change"), ActivityFeedItemType(ActivityFeedItemCategory.OutgoingNotification)]
+    InformApplicantOfApplicationReferenceChange
 
 }

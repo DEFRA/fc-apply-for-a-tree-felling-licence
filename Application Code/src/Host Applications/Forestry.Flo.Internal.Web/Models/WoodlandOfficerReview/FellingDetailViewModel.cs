@@ -1,4 +1,5 @@
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 
 namespace Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview;
@@ -124,9 +125,11 @@ public class FellingDetailViewModel : CompartmentConfirmedFellingRestockingDetai
         SubCompartmentName = compartment.SubCompartmentName;
         TotalHectares = compartment.TotalHectares;
         AmendedProperties = model.AmendedProperties;
-        TotalConfirmedRestockingArea = model.ConfirmedRestockingDetails
-            .Where(x => x.RestockArea.HasValue)
-            .Sum(x => x.RestockArea!.Value);
+        TotalConfirmedRestockingArea = model.OperationType.HasValue && model.OperationType.Value.AllowedRestockingForFellingType(false).Length > 0
+            ? model.ConfirmedRestockingDetails
+                .Where(x => x.RestockArea.HasValue)
+                .Sum(x => x.RestockArea!.Value)
+            : null;
     }
 
     /// <summary>

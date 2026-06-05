@@ -3,7 +3,7 @@
 @using Forestry.Flo.External.Web.Models.Compartment
 @{
     ViewData.ManuallySetBackLink(Model.ApplicationId is not null
-        ? Url.Action("SelectCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationId, agencyId = Model.AgencyId })
+        ? Url.Action("SelectCompartments", "FellingLicenceApplication", new { applicationId = Model.ApplicationId, agencyId = Model.AgencyId, fromCompartmentCreation = true })
         : Url.Action("Edit", "PropertyProfile", new { id = Model.PropertyProfileId, woodlandOwnerId = Model.WoodlandOwnerId, agencyId = Model.AgencyId })
     );
 

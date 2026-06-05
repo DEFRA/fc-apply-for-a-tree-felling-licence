@@ -181,6 +181,11 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
             .HasJsonConversion();
 
         modelBuilder
+            .Entity<FellingLicenceApplication>()
+            .Property(x => x.WithdrawalReasons)
+            .HasJsonConversion();
+
+        modelBuilder
             .Entity<StatusHistory>()
             .Property(x => x.Id)
             .HasColumnType("uuid")
@@ -430,6 +435,10 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
 
         modelBuilder.Entity<ProposedRestockingDetail>()
             .Property(e => e.PercentageOfRestockArea)
+            .HasPrecision(5, 2);
+
+        modelBuilder.Entity<ProposedRestockingDetail>()
+            .Property(e => e.PercentOpenSpace)
             .HasPrecision(5, 2);
 
         modelBuilder.Entity<ProposedRestockingDetail>()
@@ -704,6 +713,10 @@ public class FellingLicenceApplicationsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<ConfirmedRestockingDetail>()
             .Property(e => e.Area)
             .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ConfirmedRestockingDetail>()
+            .Property(e => e.PercentOpenSpace)
+            .HasPrecision(5, 2);
 
         modelBuilder.Entity<ConfirmedRestockingDetail>()
             .Property(e => e.PercentageOfRestockArea)

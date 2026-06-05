@@ -224,6 +224,11 @@ public class ApplicationUseCaseCommon
         return _retrieveWoodlandOwnersService.RetrieveWoodlandOwnerByIdAsync(woodlandOwnerId, userAccess, cancellationToken);
     }
 
+    protected Task<Result<bool>> GetIfApplicantAccountIsFcAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        return _retrieveUserAccountsService.IsUserAccountLinkedToFcAgencyAsync(userId, cancellationToken);
+    }
+
     protected async Task<Result<FellingLicenceApplicationSummary>> GetApplicationSummaryAsync(
         FellingLicenceApplication application,
         ExternalApplicant user,
@@ -291,7 +296,12 @@ public class ApplicationUseCaseCommon
             propertyNameOfWood,
             application.WoodlandOwnerId,
             woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
-            woodlandOwnerNameAndAgencyDetails.Value.AgencyName);
+            woodlandOwnerNameAndAgencyDetails.Value.AgencyName,
+            application.ApprovedInError?.PreviousReference,
+            application.StatusHistories
+                .Where(x => x.Status == FellingLicenceStatus.Submitted)
+                .OrderByDescending(y => y.Created)
+                .FirstOrDefault()?.Created);
 
     }
 

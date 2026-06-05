@@ -1,9 +1,6 @@
-﻿using Ardalis.GuardClauses;
-using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Common.Infrastructure;
+﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
-using Microsoft.Extensions.Logging;
 
 namespace Forestry.Flo.Services.Common.Services;
 

@@ -14,4 +14,6 @@ public enum ApplicationStepStatus
     Completed,
     [Description("Amendment Required")]
     AmendmentRequired,
+    [Description("Closed")]
+    Closed
 }

@@ -39,6 +39,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
     private readonly IPublicRegister _publicRegister;
     private readonly IClock _clock;
     private readonly LarchOptions _larchOptions;
+    private readonly VoluntaryWithdrawalNotificationOptions _voluntaryWithdrawalNotificationOptions;
 
     public AssignToApplicantUseCase(
         IUserAccountService internalUserAccountService,
@@ -58,6 +59,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         ILarchCheckService larchCheckService,
         IPublicRegister publicRegister,
         IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
+        IOptions<VoluntaryWithdrawalNotificationOptions> voluntaryWithdrawalNotificationOptions,
         IClock clock)
         : base(internalUserAccountService,
             retrieveUserAccountsService, 
@@ -77,6 +79,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(larchOptions);
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(voluntaryWithdrawalNotificationOptions);
 
         _auditService = auditService;
         _requestContext = requestContext;
@@ -89,6 +92,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         _publicRegister = publicRegister;
         _clock = clock;
         _larchOptions = larchOptions.Value;
+        _voluntaryWithdrawalNotificationOptions = voluntaryWithdrawalNotificationOptions.Value;
     }
 
     /// <inheritdoc />
@@ -439,6 +443,10 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
 
         var adminHubFooter = await GetAdminHubAddressDetailsAsync(applicationDetails.AdminHubName, cancellationToken);
 
+        var currentDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+        var resubmissionDeadline =
+            currentDate.Add(_voluntaryWithdrawalNotificationOptions.ThresholdAutomaticWithdrawal);
+
         var informApplicantModel = new InformApplicantOfReturnedApplicationDataModel
         {
             ApplicationReference = applicationDetails.ApplicationReference,
@@ -447,7 +455,9 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
             ViewApplicationURL = externalViewURL,
             Name = applicant.Value.FullName,
             AdminHubFooter = adminHubFooter,
-            ApplicationId = applicationId
+            ApplicationId = applicationId,
+            ReturnToApplicantDate = DateTimeDisplay.GetDateDisplayString(currentDate),
+            ResubmissionDeadline = DateTimeDisplay.GetDateDisplayString(resubmissionDeadline)
         };
 
         var applicantResult = await _notificationsService.SendNotificationAsync(
@@ -590,7 +600,7 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
         FellingLicenceApplicationSummaryModel applicationSummary,
         CancellationToken cancellationToken)
     {
-        var externalViewURL = $"{_settings.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var externalViewURL = $"{_settings.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         var applicant = await ExternalUserAccountService
             .RetrieveUserAccountByIdAsync(applicantId, cancellationToken)
@@ -611,13 +621,31 @@ public class AssignToApplicantUseCase : FellingLicenceApplicationUseCaseBase, IA
             return allSpeciesWithLarchFirst.ConvertFailure();
         }
 
+        var submissionDate = applicationSummary.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .OrderByDescending(x => x.Created)
+            .FirstOrDefault()
+            ?.Created;
+        if (submissionDate.HasNoValue())
+        {
+            _logger.LogError("Application {ApplicationId} has no submission date", applicationId);
+            return Result.Failure("Application has no submission date");
+        }
+
+        var fadExtensionDate = applicationSummary.FadLarchExtension(_larchOptions);
+        if (fadExtensionDate.IsFailure)
+        {
+            _logger.LogError("Unable to calculate FAD extension for larch for application {ApplicationId}", applicationId);
+            return Result.Failure("Unable to calculate FAD extension for larch");
+        }
+
         var informApplicantModel = new InformApplicantOfReturnedLarchApplicationDataModel
         {
             ApplicationReference = applicationDetails.ApplicationReference,
             PropertyName = applicationDetails.PropertyName,
 			AdminHubFooter = adminHubFooter,
-            SubmissionDate = applicationSummary.DateReceived!.Value.ToString("dd/MM/yyyy"),
-            FinalActionDate = applicationSummary.FadLarchExtension(_larchOptions).ToString("dd/MM/yyyy"),
+            SubmissionDate = submissionDate!.Value.ToString("dd/MM/yyyy"),
+            FinalActionDate = fadExtensionDate.Value.ToString("dd/MM/yyyy"),
             InitialFinalActionDate = applicationSummary.FinalActionDate!.Value.ToString("dd/MM/yyyy"),
             MoratoriumDates = MoratoriumDatesToString(_larchOptions),
             IdentifiedSpeciesList = allSpeciesWithLarchFirst.Value.Select(x => x.Name).ToList(),

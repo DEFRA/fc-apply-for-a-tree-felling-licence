@@ -15,7 +15,7 @@ public class InformApplicantOfAIEDataModel : IApplicationNotification
     /// </summary>
     public string? ApplicationReference { get; set; }
     public string? NewApplicationReference { get; set; }
-    public string? ApprovedInErrorReasons { get; set; }
+    public List<string> ApprovedInErrorReasons { get; set; }
     public string? ApprovedDate { get; set; }
 
     /// <summary>

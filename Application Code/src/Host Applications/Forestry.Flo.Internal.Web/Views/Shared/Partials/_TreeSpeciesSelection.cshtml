@@ -46,7 +46,7 @@
                         </td>
                     }
                     <td class="govuk-table__cell">
-                        <a class="govuk-link @formPrefix-remove-tree-species" href="#" title="Remove">Remove<span class="govuk-visually-hidden">&nbsp;@(Model[species].SpeciesName.ToLower())</span></a>
+                        <a condition="@(Model[species].IsOpenSpace == false)" class="govuk-link @formPrefix-remove-tree-species" href="#" title="Remove">Remove<span class="govuk-visually-hidden">&nbsp;@(Model[species].SpeciesName.ToLower())</span></a>
                     </td>
                     <input type="hidden" asp-for="@Model[species].Id" />
                 </tr>

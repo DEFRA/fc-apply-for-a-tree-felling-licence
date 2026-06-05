@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Microsoft.Extensions.Logging;
@@ -43,6 +44,9 @@ public class ExtendApplicationsService : IExtendApplications
 
         foreach (var application in relevantApplications)
         {
+            var currentStatus = application.GetCurrentStatus();
+            var withApplicant = FellingLicenceStatusConstants.SubmitStatuses.Contains(currentStatus);
+
             var applicationExtensionModel = new ApplicationExtensionModel
             {
                 ApplicationId = application.Id,
@@ -51,7 +55,9 @@ public class ExtendApplicationsService : IExtendApplications
                 CreatedById = application.CreatedById,
                 SubmissionDate = application.StatusHistories.MaxBy(y => y.Status is FellingLicenceStatus.Submitted)!.Created,
                 WoodlandOwnerId = application.WoodlandOwnerId,
-                AdminHubName = application.AdministrativeRegion
+                AdminHubName = application.AdministrativeRegion,
+                PropertyName = withApplicant ? null : application.SubmittedFlaPropertyDetail!.Name,
+                LinkedPropertyProfileId = withApplicant ? application.LinkedPropertyProfile!.PropertyProfileId : null
             };
 
             application.FinalActionDate = application.FinalActionDate!.Value.Add(extensionLength);

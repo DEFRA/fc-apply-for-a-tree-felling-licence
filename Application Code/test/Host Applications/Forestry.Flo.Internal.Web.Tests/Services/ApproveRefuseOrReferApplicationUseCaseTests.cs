@@ -179,6 +179,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                 && m.LocalAuthority == publishModel.LocalAuthority
                 && m.AdminRegion == publishModel.AdminRegion
                 && m.PublicRegisterStart == now
+                && m.Period == 28
                 && m.TotalArea == publishModel.TotalArea
                 && m.Compartments == publishModel.Compartments
                 && m.CaseApprovalDate == now
@@ -197,7 +198,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Exactly(2));
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Approved, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now, It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now, now.AddDays(28), CancellationToken.None), Times.Once);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationApprovalDataModel>(a => 
             a.ApplicationReference == application.ApplicationReference
@@ -266,6 +267,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         approverReview.PublicRegisterPublish = true;
         application = PopulateStatusAndAssigneeHistory(application);
 
+        var submittedDate = application.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .MaxBy(x => x.Created)?.Created;
+
         var sut = CreateSut();
 
         var now = DateTime.UtcNow;
@@ -331,7 +336,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             CancellationToken.None), Times.Exactly(2));
         _externalAccountServiceMock.Verify(v => v.RetrieveUserAccountByIdAsync(application.CreatedById, CancellationToken.None), Times.Once);
         _updateFLAMock.Verify(v => v.AddStatusHistoryAsync(It.IsAny<Guid>(), application.Id, FellingLicenceStatus.Refused, CancellationToken.None), Times.Once);
-        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now,It.IsAny<DateTime>(), CancellationToken.None), Times.Once);
+        _updateFLAMock.Verify(v => v.AddDecisionPublicRegisterDetailsAsync(application.Id, esriId, now, now.AddDays(28), CancellationToken.None), Times.Once);
 
         _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationRefusalDataModel>(a =>
             a.ApplicationReference == application.ApplicationReference
@@ -340,7 +345,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             && a.ApproverEmail == approver.Email
             && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
-            && a.Name == applicant.FullName),
+            && a.Name == applicant.FullName
+            && a.SubmittedDate == (submittedDate.HasValue ? DateTimeDisplay.GetDateDisplayString(submittedDate) : null)
+            && a.ApproverDecisionCaseNote == approverReview.ApplicationRefusedReason),
             NotificationType.InformApplicantOfApplicationRefusal,
             It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 
@@ -361,6 +368,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -477,6 +485,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -602,6 +611,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -725,6 +735,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -959,6 +970,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1024,6 +1036,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
     {
         approverReview.PublicRegisterPublish = true;
         application = PopulateStatusAndAssigneeHistory(application);
+
+        var submittedDate = application.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .MaxBy(x => x.Created)?.Created;
 
         var now = DateTime.UtcNow;
         _clockMock.Setup(s => s.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(now));
@@ -1096,7 +1112,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             && a.ApproverEmail == approver.Email
             && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
-            && a.Name == applicant.FullName),
+            && a.Name == applicant.FullName
+            && a.SubmittedDate == (submittedDate.HasValue ? DateTimeDisplay.GetDateDisplayString(submittedDate) : null)
+            && a.ApproverDecisionCaseNote == approverReview.ApplicationRefusedReason),
             NotificationType.InformApplicantOfApplicationRefusal,
             It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 
@@ -1115,6 +1133,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1150,6 +1169,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         approverReview.PublicRegisterPublish = true;
         application = PopulateStatusAndAssigneeHistory(application);
 
+        var submittedDate = application.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .MaxBy(x => x.Created)?.Created;
+        
         var now = DateTime.UtcNow;
         _clockMock.Setup(s => s.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(now));
 
@@ -1222,6 +1245,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1233,7 +1257,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             a.ApplicationReference == application.ApplicationReference
             && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
-            && a.Name == applicant.FullName),
+            && a.Name == applicant.FullName
+            && a.SubmittedDate == (submittedDate.HasValue ? DateTimeDisplay.GetDateDisplayString(submittedDate) : null)
+            && a.ApproverDecisionCaseNote == approverReview.ApplicationRefusedReason),
             NotificationType.InformApplicantOfApplicationRefusal,
             It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1
@@ -1333,6 +1359,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1492,6 +1519,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         var now = DateTime.UtcNow;
         _clockMock.Setup(s => s.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(now));
 
+        var submittedDate = application.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .MaxBy(x => x.Created)?.Created;
+
         var sut = CreateSut();
 
         _getFLAMock.Setup(s => s.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -1559,7 +1590,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             && a.ApproverEmail == approver.Email
             && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
-            && a.Name == applicant.FullName),
+            && a.Name == applicant.FullName
+            && a.SubmittedDate == (submittedDate.HasValue ? DateTimeDisplay.GetDateDisplayString(submittedDate) : null)
+            && a.ApproverDecisionCaseNote == approverReview.ApplicationRefusedReason),
             NotificationType.InformApplicantOfApplicationRefusal,
             It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 
@@ -1578,6 +1611,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1614,6 +1648,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         application = PopulateStatusAndAssigneeHistory(application);
         var now = DateTime.UtcNow;
         _clockMock.Setup(s => s.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(now));
+
+        var submittedDate = application.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .MaxBy(x => x.Created)?.Created;
 
         var sut = CreateSut();
 
@@ -1683,7 +1721,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             && a.ApproverEmail == approver.Email
             && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
-            && a.Name == applicant.FullName),
+            && a.Name == applicant.FullName
+            && a.SubmittedDate == (submittedDate.HasValue ? DateTimeDisplay.GetDateDisplayString(submittedDate) : null)
+            && a.ApproverDecisionCaseNote == approverReview.ApplicationRefusedReason),
             NotificationType.InformApplicantOfApplicationRefusal,
             It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 
@@ -1702,6 +1742,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1737,6 +1778,10 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
         application = PopulateStatusAndAssigneeHistory(application);
 
         application.PublicRegister!.WoodlandOfficerSetAsExemptFromConsultationPublicRegister = true;
+
+        var submittedDate = application.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .MaxBy(x => x.Created)?.Created;
 
         var sut = CreateSut();
 
@@ -1792,7 +1837,9 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             && a.ApproverEmail == approver.Email
             && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}"
             && a.AdminHubFooter == AdminHubFooter
-            && a.Name == applicant.FullName),
+            && a.Name == applicant.FullName
+            && a.SubmittedDate == (submittedDate.HasValue ? DateTimeDisplay.GetDateDisplayString(submittedDate) : null)
+            && a.ApproverDecisionCaseNote == approverReview.ApplicationRefusedReason),
             NotificationType.InformApplicantOfApplicationRefusal,
             It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 
@@ -1926,6 +1973,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
                     && m.LocalAuthority == publishModel.LocalAuthority
                     && m.AdminRegion == publishModel.AdminRegion
                     && m.PublicRegisterStart == now
+                    && m.Period == 28
                     && m.TotalArea == publishModel.TotalArea
                     && m.Compartments == publishModel.Compartments
                     && m.CaseApprovalDate == now
@@ -1941,7 +1989,8 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             && a.ViewApplicationURL == $"{ExternalUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}"
             && a.LocalAuthorityName == localAuthorityName
             && a.AdminHubFooter == AdminHubFooter
-            && a.Name == applicant.FullName),
+            && a.Name == applicant.FullName
+            && a.ReasonsForReferral == approverReview.ReferToLocalAuthorityReason),
             NotificationType.InformApplicantOfApplicationReferredToLocalAuthority,
             It.Is<NotificationRecipient>(a => a.Address == applicant.Email && a.Name == applicant.FullName),
             It.Is<NotificationRecipient[]>(a => a.Length == fcStaff.Count + 1 
@@ -2156,6 +2205,7 @@ public class ApproveRefuseOrReferApplicationUseCaseTests
             _getConfiguredFcAreasMock.Object,
             _getWoodlandOfficerReviewServiceMock.Object,
             new OptionsWrapper<WoodlandOfficerReviewOptions>(new WoodlandOfficerReviewOptions()),
+            new OptionsWrapper<PublicRegisterExpiryOptions>(new PublicRegisterExpiryOptions{DecisionPublicRegisterPeriod = 28}),
             _agolMock.Object
         );
     }

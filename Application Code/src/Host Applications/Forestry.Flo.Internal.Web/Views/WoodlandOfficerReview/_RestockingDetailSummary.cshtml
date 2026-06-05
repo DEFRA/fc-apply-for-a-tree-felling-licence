@@ -95,7 +95,7 @@
                     RenderSummaryRow("Estimate of the restocking density", "", Model.RestockingDensity, Model.OldValue((nameof(Model.RestockingDensity))));
                 }
                 RenderSummaryRow("Species and restocking percentage", "", Model.ConfirmedRestockingSpecies, Model.OldValue("RestockingSpecies"));
-
+                RenderSummaryRow("Area to be left as open space", "%", Model.PercentOpenSpace, Model.OldValue("PercentOpenSpace"));
                 if (Model.RestockingProposal.HasValue && Model.RestockingProposal.Value.IsCoppiceOrNaturalRegen())
                 {
                     RenderSummaryRow("Percentage to be established by coppice regrowth or natural regeneration", "%", Model.PercentageEstablishedByCoppiceOrNaturalRegen, Model.OldValue(nameof(Model.PercentageEstablishedByCoppiceOrNaturalRegen)));

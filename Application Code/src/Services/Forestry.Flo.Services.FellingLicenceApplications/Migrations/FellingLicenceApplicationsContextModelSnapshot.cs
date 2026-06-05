@@ -341,6 +341,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("uuid_generate_v4()");
 
+                    b.Property<string>("ApplicationRefusedReason")
+                        .HasColumnType("text");
+
                     b.Property<string>("ApprovedLicenceDuration")
                         .HasColumnType("text");
 
@@ -376,6 +379,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
                     b.Property<bool?>("PublicRegisterPublish")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("ReferToLocalAuthorityReason")
+                        .HasColumnType("text");
 
                     b.Property<int>("RequestedStatus")
                         .HasColumnType("integer");
@@ -547,8 +553,9 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<int?>("PercentNaturalRegeneration")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("PercentOpenSpace")
-                        .HasColumnType("integer");
+                    b.Property<double?>("PercentOpenSpace")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<double?>("PercentageEstablishedByCoppiceOrNaturalRegen")
                         .HasColumnType("double precision");
@@ -971,6 +978,16 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
                     b.Property<DateTime?>("VoluntaryWithdrawalNotificationTimeStamp")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("WithdrawalReasonOtherDetails")
+                        .HasColumnType("text");
+
+                    b.Property<string>("WithdrawalReasons")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("WithdrawnByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("WoodlandManagementPlanReference")
                         .HasColumnType("text");
 
@@ -1315,6 +1332,10 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Migrations
 
                     b.Property<int?>("NumberOfTrees")
                         .HasColumnType("integer");
+
+                    b.Property<double?>("PercentOpenSpace")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<double?>("PercentageEstablishedByCoppiceOrNaturalRegen")
                         .HasColumnType("double precision");

@@ -9,7 +9,7 @@
 
     <style>
         @page {
-            margin: 30px 50px 20px 50px;
+            margin: 30px 50px 60px 50px;
             size: A4 portrait;
 
             @bottom-center {
@@ -21,6 +21,13 @@
 
         @page tblpage {
             size: A4 landscape;
+            margin-bottom: 60px;
+
+            @bottom-center {
+                content: element(footer);
+                font-weight: normal;
+                font-family: 'Inter-Regular';
+            }
         }
 
         .new-page {
@@ -60,14 +67,21 @@
             -fs-font-subset: complete-font;
         }
 
+        b, strong {
+            font-family: 'Inter-Bold';
+            font-weight: normal;
+        }
+
+        i, em {
+            font-style: italic;
+        }
+
         h4 {
             page: tblpage;
         }
 
         #footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
+            position: running(footer);
             font-size: 13px;
             font-weight: normal;
             font-family: 'Inter-Regular';
@@ -80,59 +94,56 @@
             font-family: 'Inter-Regular';
         }
 
-        .footer-center {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            /* Center horizontally */
-            text-align: center;
-            width: 33%;
-            /* set a width to help with centering */
-            min-width: 180px;
-            max-width: 40%;
-            box-sizing: border-box;
-        }
-
-        .footer-pages {
-            position: absolute;
-            right: 0;
-            text-align: right;
-            width: 33%;
-            /* set a width to help with alignment */
-            min-width: 120px;
-            max-width: 40%;
-            box-sizing: border-box;
-        }
-
         hr.footer {
             margin: 0;
             padding: 0;
             width: 100%;
         }
 
-        span.footer {
-            font-weight: normal;
+        table.footer-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
             font-family: 'Inter-Regular';
-            padding-top: 0px;
-            margin-top: 0px;
+            font-size: 13px;
         }
 
-        span.footer-pages {
+        table.footer-table tr {
+            background-color: transparent;
+        }
+
+        table.footer-table td {
+            padding: 0;
+            border: none;
+            font-family: 'Inter-Regular';
+            font-weight: normal;
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        table.footer-table td.footer-left {
+            text-align: left;
+            width: 33%;
+        }
+
+        table.footer-table td.footer-center {
+            text-align: center;
+            width: 34%;
+        }
+
+        table.footer-table td.footer-right {
             text-align: right;
+            width: 33%;
         }
 
-
-        span.footer-pages:after {
+        table.footer-table td.footer-right:after {
             content: "Page " counter(page) " of " counter(pages);
-            font-weight: normal;
-            font-family: 'Inter-Regular';
-            padding-top: 0px;
-            margin-top: 0px;
         }
 
         body {
             max-width: 800px;
             margin: 0 auto;
+			padding-bottom: 10%
         }
 
         h1 {
@@ -196,6 +207,11 @@
             margin-top: 0;
             padding-top: 0;
             break-inside: avoid;
+        }
+
+        .introduction p {
+            orphans: 1;
+            widows: 1;
         }
 
         .introduction-cont {
@@ -328,6 +344,9 @@
             flex-direction: column;
             width: 100%;
             height: 100%;
+			break-after: page;
+			break-inside: auto;
+			page-break-inside: auto;
         }
 
         .restocking-conditions {
@@ -341,9 +360,8 @@
             box-sizing: border-box;
             margin-bottom: 0.5em;
             max-width: 100%;
-            max-height: 120mm;
-            overflow: auto;
-            flex: 1;
+			break-inside: auto;
+			page-break-inside: auto;
         }
 
         p.restocking-conditions {
@@ -355,23 +373,26 @@
             box-sizing: border-box;
             margin-bottom: 0.5em;
             max-width: 100%;
-            max-height: 120mm;
-            overflow: auto;
+			break-inside: auto;
+			page-break-inside: auto;
         }
 
         /* Restocking conditions page break fixes */
         .restocking-conditions-section {
             page-break-before: always;
             break-before: page;
+			break-inside: auto;
         }
 
-        #restocking-conditions-container {
-            break-inside: avoid;
-        }
-
-        .restocking-conditions {
+        .supplementary-points {
+            float: left;
+            font-family: 'Inter-Regular';
+            line-height: 1.25;
+            margin-top: 0;
+            padding-top: 0;
+            white-space: pre-wrap;
             break-inside: auto;
-            page-break-after: always;
+			page-break-inside: auto;
         }
 
         /*================================================
@@ -380,9 +401,15 @@
         @page map-landscape {
             size: A4 landscape;
             margin-left: 50px;
-            margin-right: 0px;
+            margin-right: 50px;
             margin-top: 0px;
-            margin-bottom: 0px;
+            margin-bottom: 60px;
+
+            @bottom-center {
+                content: element(footer);
+                font-weight: normal;
+                font-family: 'Inter-Regular';
+            }
         }
 
         /*================================================
@@ -390,12 +417,15 @@
         ================================================*/
         .map-page {
             page: map-landscape;
-            /* stretch to fill */
-            width: 297mm;
-            height: 210mm;
+            width: 270mm;
+            height: 193mm;
             position: relative;
             overflow: hidden;
             max-width: none;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            break-before: page;
+            page-break-before: always;
         }
 
         /* waterfall .map-page children */
@@ -442,6 +472,20 @@
 </head>
 
 <body>
+
+    <div class="footer" id="footer">
+        <hr class="footer" />
+        <table class="footer-table">
+            <tr>
+                <td class="footer-left" th:text="'Application ref: ' + ${data.get('applicationRef')}"></td>
+                <td class="footer-center">FC-FL-V1.1-13.04.2026</td>
+                <!-- <td class="footer-center"
+                    th:text="${'FC-FL-V' + data.get('version') + '-' + #strings.substring(data.get('date'), 8, 10) + '.' + #strings.substring(data.get('date'), 5, 7) + '.' + #strings.substring(data.get('date'), 0, 4)}">
+                </td> -->
+                <td class="footer-right"></td>
+            </tr>
+        </table>
+    </div>
 
     <div style="position: absolute;width:100%;height:100%">
         <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
@@ -502,8 +546,7 @@
             <p><u>Plant Health Regulations</u> (<a href="https://www.gov.uk/guidance/tree-health-legislation">see
                     GOV.UK</a>)<br />
                 The movement of wood, wood products or bark of certain tree species must be accompanied by plant
-                passports within
-                Great Britain, including:
+                passports within Great Britain, including:
             </p>
 
             <ul style="list-style-position: inside; padding-left: 0">
@@ -530,27 +573,26 @@
             <p>Where the Plant Health Regulations may override the conditions of this licence:</p>
 
             <ul style="list-style-position: inside; padding-left: 0">
-                <li>If a notifiable, regulated plant pest is found on your land (or land that you manage), you may be
+                <li>If a notifiable, regulated plant pest is found on your land or land that you manage, you may be
                     issued with a
-                    Statutory Plant Health Notice (SPHN) and must comply with SPHN conditions, including biosecurity
-                    measures.</li>
-                <li>If the felling licence area falls within an area demarcated for plant pest control, you must comply
-                    with the
-                    requirements of any demarcated area notice.</li>
+                    Statutory Plant Health Notice (SPHN) and you must comply with SPHN conditions, including any
+                    biosecurity measures required</li>
+                <li>If the felling licence area falls within an area which has been demarcated for the control of a
+                    plant pest you must comply with the
+                    requirements of any demarcated area notice</li>
             </ul>
 
-            <p>For spruce within the <i>Ips typographus</i> demarcated area (<a
+            <p><b>For spruce</b> within the <i>Ips typographus</i> demarcated area (<a
                     href="https://assets.publishing.service.gov.uk/media/665ed3bd16cf36f4d63ebda6/20240603_Demarcated_Area_Colour_June.pdf">see
-                    map</a>), <i>additional authorisation</i> from the Forestry Commission's Plant Health Forestry team
-                is required
-                for:</p>
+                    map</a>), additional authorisation from the Forestry Commission's Plant Health Forestry team
+                is for the following activities:</p>
 
             <ul style="list-style-position: inside; padding-left: 0">
-                <li>felling any trees of the genus <i>Picea A. Dietr.</i> (spruce) over three metres in height</li>
-                <li>stacking any wood of the genus <i>Picea A. Dietr.</i> (spruce) originating from the <i>Ips
+                <li>felling any trees of the genus <i>Picea</i> A. Dietr. (spruce) over three metres in height</li>
+                <li>stacking of any wood of the genus <i>Picea</i> A. Dietr. (spruce) originating from the <i>Ips
                         typographus</i> demarcated
                     area</li>
-                <li>movement of any wood of the genus <i>Picea A. Dietr.</i> (spruce) originating from the <i>Ips
+                <li>movement of any wood of the genus <i>Picea</i> A. Dietr. (spruce) originating from the <i>Ips
                         typographus</i>
                     demarcated area</li>
             </ul>
@@ -563,11 +605,11 @@
                 </a>
             </p>
 
-            <p>Within the <i>Ips typographus</i> demarcated area there is a prohibition on planting trees of the genus
-                <i>Picea A.
-                    Dietr.</i> (spruce). Exemptions apply for planting in certain situations, but prior authorisation is
+            <p>Within the <i>Ips typographus</i> demarcated area there is a prohibition on the planting of trees of the
+                genus <i>Picea</i> A. Dietr. (spruce). Exemptions apply for planting in certain situations, but prior authorisation is
                 required
-                from the Forestry Commission's Plant Health Forestry team. Further information is available on GOV.UK,
+                from the Forestry Commission's Plant Health Forestry team. Further information on how to apply for
+                planting of spruce within the <i>Ips typographus</i> demarcated area is available on GOV.UK,
                 here:
                 <a href="https://www.gov.uk/government/publications/applying-for-ips-typographus-authorisation">
                     Apply for <i>Ips typographus</i> authorisation to fell and process spruce trees - GOV.UK
@@ -636,7 +678,6 @@
             <p>For the Forestry Commission</p>
         </div>
 
-        <div style="clear: both"></div>
         <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
             style="width:100%;height:100%;position: absolute;" />
     </section>
@@ -663,21 +704,18 @@
             <p>Tree felling under this Licence has been approved by the Forestry Commission as being in accordance with
                 government policy for the sound management of a renewable resource, based on the application made.
                 The Licence issued is intended for use by the person with an interest in the land that enabled them to
-                apply
-                for the licence in the first instance.</p>
+                apply for the licence in the first instance.</p>
 
             <p style="font-family:Inter-Bold;"
                 th:text="'The felling permissions in this Licence expire on: ' + ${data.get('expiryDate')}"></p>
 
             <p>Prior to felling, all parties (agents, contractors, stakeholders) who are involved or affected by the
-                felling must be
-                made aware of this licence and provided with a copy of the Licence and map(s) on request. If you have
-                carried out
-                any felling under this licence, or if the licence permissions have not yet expired and you intend to
-                sell the land,
-                you should notify the solicitors / conveyancers / agents dealing with the sale and the proposed
-                purchaser about this
-                Licence as part of the sale process.</p>
+                felling must be made aware of this licence and provided with a copy of the Licence and map(s) on request. </p>
+                
+            
+            <p>If you have carried out any felling under this licence, or if the licence permissions have not yet expired and you intend to
+                sell the land, you should notify the solicitors / conveyancers / agents dealing with the sale and the proposed
+                purchaser about this Licence as part of the sale process.</p>
 
 
             <p>If a Tree Preservation Order (TPO) is placed on these trees after this Licence was applied for or issued,
@@ -703,26 +741,24 @@
                 <li>Ensuring timing of operations (such as in the bird nesting season) are in compliance with the
                     protection
                     of
-                    birds under the Wildlife and Countryside Act 1981.
+                    birds under the Wildlife and Countryside Act 1981
                 </li>
             </ul>
 
-            <p>Any felling operations for '<i>thinning</i>' approved by this Licence must be implemented evenly across
-                the felling
-                site(s) for thinning identified under Part 1 of this licence. The felling operation for thinning will
-                not exceed 30%
-                of the total number of trees or remove more than 30% of the original canopy cover per operation, unless
-                otherwise
-                agreed by the FC and confirmed in this licence. Note: tree felling operations for '<i>thinning</i>' that
-                occur at a
-                greater intensity than 30% of the number of trees or area of canopy (in all or part of an operational
-                area) may
-                constitute a breach of the Licence.</p>
+            <p>Any felling operations for '<i>thinning</i>' approved by this Licence must be implemented evenly across the felling
+                site(s) for thinning identified under Part 1 of this licence. The felling operation for thinning will not exceed 30%
+                of the total number of trees or remove more than 30% of the original canopy cover per operation, unless otherwise
+                agreed by the FC and confirmed in this licence. Note: tree felling operations for '<i>thinning</i>' that occur at a
+                greater intensity than 30% of the number of trees or area of canopy (in all or part of an operational area) may
+                constitute a breach of the Licence.
+                <a href="https://www.gov.uk/government/publications/definitions-of-felling-and-restocking-options/felling-and-restocking-definitions">
+                    Felling and restocking definitions - GOV.UK
+                </a>
+            </p>
 
             <p>Where conditions of the Licence state that restocking is by natural regeneration or by using coppice
                 regrowth, ground conditions must be maintained to facilitate and secure natural regeneration, and
-                coppiced
-                stumps must be retained in situ and be adequately protected to allow site native natural regeneration to
+                coppiced stumps must be retained in situ and be adequately protected to allow site native natural regeneration to
                 occur.</p>
         </div>
 
@@ -746,35 +782,35 @@
             <ul style="list-style-position: inside; padding-left: 0">
                 <li>If a notifiable, regulated plant pest is found on your land (or land that you manage), you may be
                     issued with a
-                    Statutory Plant Health Notice (SPHN) and must comply with SPHN conditions, including biosecurity
-                    measures.</li>
-                <li>If the felling licence area falls within an area demarcated for plant pest control, you must comply
-                    with the
-                    requirements of any demarcated area notice.</li>
+                    Statutory Plant Health Notice (SPHN) and must comply with SPHN conditions, including any
+                    biosecurity measures required</li>
+                <li>If the felling licence area falls within an area which has been demarcated for the control of a
+                    plant pest, you must comply with the
+                    requirements of any demarcated area notice</li>
             </ul>
 
-            <p>If larch (or other tree species susceptible to <i>Phytophthora ramorum</i>) display symptoms of this
+            <p><b>If larch</b> (or other tree species susceptible to <i>Phytophthora ramorum</i>) display symptoms of this
                 disease you must
-                not fell those trees until the FC has had the opportunity to assess their health. For more information,
-                refer to:
+                not fell those trees until the FC have had the opportunity to assess their health. For more information
+                regarding the felling of larch, please refer to Operations Note 23: 'processing felling operations
+                involving larch species'
                 <a
                     href="https://www.gov.uk/government/publications/processing-felling-applications-involving-larch-species-operations-note-23/processing-felling-applications-involving-larch-species-operations-note-23">
                     Processing felling applications involving larch species (operations note 23) - GOV.UK
                 </a>
             </p>
 
-            <p>For spruce within the <i>Ips typographus</i> demarcated area (<a
+            <p><b>For spruce</b> within the <i>Ips typographus</i> demarcated area (<a
                     href="https://assets.publishing.service.gov.uk/media/665ed3bd16cf36f4d63ebda6/20240603_Demarcated_Area_Colour_June.pdf">see
-                    map</a>), <i>additional authorisation</i> from the Forestry Commission's Plant Health Forestry team
-                is required
-                for the following activities:</p>
+                    map</a>), additional authorisation from the Forestry Commission's Plant Health Forestry team
+                is for the following activities:</p>
 
             <ul style="list-style-position: inside; padding-left: 0">
-                <li>felling any trees of the genus <i>Picea A. Dietr.</i> (spruce), over three metres in height</li>
-                <li>stacking any wood of the genus <i>Picea A. Dietr.</i> (spruce) originating from the <i>Ips
+                <li>felling any trees of the genus <i>Picea</i> A. Dietr. (spruce), over three metres in height</li>
+                <li>stacking of any wood of the genus <i>Picea</i> A. Dietr. (spruce) originating from the <i>Ips
                         typographus</i>
                     demarcated area</li>
-                <li>movement of any wood of the genus <i>Picea A. Dietr.</i> (spruce) originating from the <i>Ips
+                <li>movement of any wood of the genus <i>Picea</i> A. Dietr. (spruce) originating from the <i>Ips
                         typographus</i>
                     demarcated area</li>
             </ul>
@@ -788,11 +824,9 @@
             </p>
 
             <p>Within the <i>Ips typographus</i> demarcated area there is a prohibition on planting trees of the genus
-                <i>Picea A.
-                    Dietr.</i> (spruce). Exemptions apply for planting in certain situations, but prior authorisation is
-                required
-                from the Forestry Commission's Plant Health Forestry team. Further information is available on GOV.UK,
-                here:
+                <i>Picea</i> A. Dietr. (spruce). Exemptions apply for planting in certain situations, but prior authorisation is
+                required from the Forestry Commission's Plant Health Forestry team. Further information on how to apply for
+                planting of spruce within the <i>Ips typographus</i> demarcated area is available on GOV.UK, here:
                 <a href="https://www.gov.uk/government/publications/applying-for-ips-typographus-authorisation">
                     Apply for <i>Ips typographus</i> authorisation to fell and process spruce trees - GOV.UK
                 </a>
@@ -876,17 +910,13 @@
             <h3>Part 2 - Restocking Conditions</h3>
         </div>
 
-        <div id="restocking-conditions-container" style="break-inside: avoid-page;">
-            <div class="restocking-conditions" th:each="condition : ${data.get('restockingConditions')}"
-                style="break-inside: avoid-page;">
-                <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
-                    style="width:100%;height:100%;position: absolute;" />
-                <p class="restocking-conditions" th:utext="${condition}" style="break-inside: auto;"></p>
+        <div id="restocking-conditions-container">
+            <div class="restocking-conditions" th:each="condition : ${data.get('restockingConditions')}">
+                <p class="restocking-conditions" th:utext="${condition}"></p>
             </div>
         </div>
 
-        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf"
-            style="width:100%;height:100%;position: absolute;" />
+        <object type="pdf/background" pdfsrc="FellingLicenceWatermark.pdf" style="width:100%;height:100%;position: absolute;" />
     </section>
 
     <section class="new-page">
@@ -894,7 +924,7 @@
             <h3>Part 3 - Supplementary points</h3>
         </div>
         <div>
-            <p class="introduction" th:text="${data.get('restockingAdvisoryDetails')}"></p>
+            <p class="supplementary-points" th:text="${data.get('restockingAdvisoryDetails')}"></p>
         </div>
 
         <div style="clear: both"></div>
@@ -933,19 +963,5 @@
     </div>
 
 </body>
-
-<div class="footer" id="footer">
-    <hr class="footer" />
-
-    <!-- Left-aligned part: Application ref -->
-    <span class="footer" th:text="'Application ref: ' + ${data.get('applicationRef')}" />
-
-    <!-- Center-aligned part: FC-FL-V0.01: dd.MM.yy -->
-    <span class="footer-center"
-        th:text="'FC-FL-V1.0-16.02.2026'" /> <!-- + ${data.get('version')} + ': ' + ${#dates.format(data.get('date'), 'dd.MM.yyyy')}" /> -->
-
-    <!-- Right-aligned part: Footer pages -->
-    <span class="footer-pages" />
-</div>
 
 </html>

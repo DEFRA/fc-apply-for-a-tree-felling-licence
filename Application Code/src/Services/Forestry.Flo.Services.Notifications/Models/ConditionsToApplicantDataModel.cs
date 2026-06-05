@@ -61,4 +61,10 @@ public class ConditionsToApplicantDataModel : IApplicationNotification
     /// application, and that this notification supersedes the previous one.
     /// </summary>
     public bool SupersedesPreviousNotification { get; set; }
+
+    /// <summary>
+    /// Gets and sets a formatted string representing the date that the conditions are deemed to have been accepted
+    /// by the applicant, which is calculated as 28 days after the created date of the application. This is used for display purposes in the notification email, and is not intended to be used for any calculations or logic in the system.
+    /// </summary>
+    public string? DeemedAcceptanceDate { get; set; }
 }

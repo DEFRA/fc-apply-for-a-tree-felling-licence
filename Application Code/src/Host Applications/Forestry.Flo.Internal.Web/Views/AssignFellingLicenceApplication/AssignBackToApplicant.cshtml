@@ -2,12 +2,8 @@
     ViewData["Title"] = "Assign felling licence application";
 }
 
-@using Forestry.Flo.Internal.Web.Models.AdminOfficerReview
 @using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.Services.Common
-@using Forestry.Flo.Services.FellingLicenceApplications.Models
-@using Microsoft.AspNetCore.Mvc.ModelBinding
-@using Microsoft.AspNetCore.Mvc.TagHelpers
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.AssignBackToApplicantModel;
 @inject IUrlHelper UrlHelper
 
@@ -72,7 +68,7 @@
                         var firstOutput = true;
                     }
 
-                    @foreach (var applicationSection in Model.SectionsToReview.Keys)
+                    @foreach (var applicationSection in Model.SectionsToReview.Keys.OrderBy(x => x))
                     {
                         <div class="govuk-checkboxes__item">
                             @if (firstOutput)
@@ -153,16 +149,18 @@
                         var firstOutput = true;
                     }
 
-                    @foreach (var compartment in Model.FellingLicenceApplicationSummary.DetailsList)
+                    @foreach (var compartmentSelection in Model.CompartmentIdentifiersToReview)
                     {
+                        var cpt = Model.FellingLicenceApplicationSummary.DetailsList.First(x => x.CompartmentId == compartmentSelection.Key);
+                        
                         @if (firstOutput)
                         {
                             firstOutput = false;
 
                             <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="CompartmentIdentifiersToReview[compartment.CompartmentId]" type="checkbox" id="CompartmentIdentifiersToReview">
+                                <input class="govuk-checkboxes__input" asp-for="CompartmentIdentifiersToReview[compartmentSelection.Key]" type="checkbox" id="CompartmentIdentifiersToReview">
                                 <label class="govuk-label govuk-checkboxes__label" for="CompartmentIdentifiersToReview">
-                                    @compartment.CompartmentName
+                                    @cpt.CompartmentName
                                 </label>
                             </div>
 
@@ -170,9 +168,9 @@
                         else
                         {
                             <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="CompartmentIdentifiersToReview[compartment.CompartmentId]" type="checkbox">
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentIdentifiersToReview[compartment.CompartmentId]">
-                                    @compartment.CompartmentName
+                                <input class="govuk-checkboxes__input" asp-for="CompartmentIdentifiersToReview[compartmentSelection.Key]" type="checkbox">
+                                <label class="govuk-label govuk-checkboxes__label" asp-for="CompartmentIdentifiersToReview[compartmentSelection.Key]">
+                                    @cpt.CompartmentName
                                 </label>
                             </div>
                             

@@ -136,7 +136,7 @@ namespace Forestry.Flo.Services.Gis.Services
                         LocalAuthority = dataModel.LocalAuthority,
                         NearestTown = dataModel.NearestTown,
                         PropertyName = dataModel.PropertyName,
-                        TimeOnTheConsultationRegister = dataModel.Period,
+                        TimeOnThePublicRegister = dataModel.Period,
                         TotalArea = dataModel.TotalArea,
                         PRStartDate = dataModel.PublicRegisterStart,
                         PREndDate = dataModel.PublicRegisterStart.Add(TimeSpan.FromDays(dataModel.Period)),
@@ -293,6 +293,8 @@ namespace Forestry.Flo.Services.Gis.Services
                         PropertyName = dataModel.PropertyName,
                         TotalArea = dataModel.TotalArea,
                         PRStartDate = dataModel.PublicRegisterStart,
+                        PREndDate = dataModel.PublicRegisterStart.Add(TimeSpan.FromDays(dataModel.Period)),
+                        TimeOnThePublicRegister = dataModel.Period,
                         CaseStatus = caseStatus,
                         CaseApprovalDate = dataModel.CaseApprovalDate,
                         OnThePR = "1"

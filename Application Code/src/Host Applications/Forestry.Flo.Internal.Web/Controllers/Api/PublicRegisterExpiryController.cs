@@ -14,16 +14,12 @@ namespace Forestry.Flo.Internal.Web.Controllers.Api;
 [RequiresValidApiKey]
 public class PublicRegisterExpiryController : ControllerBase
 {
-    private string GetFellingLicenceUrlLink() => Url.AbsoluteAction("ApplicationSummary", "FellingLicenceApplication")!;
-
     [Route("PublicRegisterExpiryNotification")]
     public async Task<IActionResult> RemoveApplicationsFromConsultationPublicRegisterWhenEndDateReached(
         [FromServices] IPublicRegisterExpiryUseCase useCase,
         CancellationToken cancellationToken)
     {
-        await useCase.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(
-            GetFellingLicenceUrlLink(),
-            cancellationToken);
+        await useCase.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(cancellationToken);
 
         return Ok();
     }
@@ -34,9 +30,7 @@ public class PublicRegisterExpiryController : ControllerBase
         [FromServices] IRemoveApplicationsFromDecisionPublicRegisterUseCase useCase,
         CancellationToken cancellationToken)
     {
-        await useCase.ExecuteAsync(
-            GetFellingLicenceUrlLink(),
-            cancellationToken);
+        await useCase.ExecuteAsync(cancellationToken);
 
         return Ok();
     }

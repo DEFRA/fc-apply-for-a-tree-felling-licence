@@ -13,9 +13,9 @@ public class VoluntaryWithdrawalNotificationModel
     public string? ApplicationReference { get; set; }
 
     /// <summary>
-    /// Gets and sets the name of the property the application is for.
+    /// Gets and sets the id of the property the application is for.
     /// </summary>
-    public string? PropertyName { get; set; }
+    public Guid LinkedPropertyProfileId { get; set; }
 
     /// <summary>
     /// Gets and sets the application's created by ID.

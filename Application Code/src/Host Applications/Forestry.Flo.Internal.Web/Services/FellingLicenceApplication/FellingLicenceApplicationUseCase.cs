@@ -275,7 +275,7 @@ public class FellingLicenceApplicationUseCase : FellingLicenceApplicationUseCase
         }
         applicationReviewModel.FellingLicenceApplicationSummary = summary.Value;
 
-        var creator = await GetSubmittingUserAsync(application.Value.CreatedById, cancellationToken);
+        var creator = await GetExternalUserAccountAsync(application.Value.CreatedById, cancellationToken);
         if (creator.IsFailure)
         {
             _logger.LogError("Unable to retrieve the details of the external user who submitted the application, application id: {ApplicationId}, external user: {createdById} , error {Error}", application.Value.Id, application.Value.CreatedById, creator.Error);

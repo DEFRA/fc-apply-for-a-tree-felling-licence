@@ -8,10 +8,12 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Tests.Common;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -26,96 +28,51 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
     private readonly Mock<IAmendCaseNotes> _mockCaseNotes = new();
     private readonly Mock<IGetConfiguredFcAreas> _mockGetConfiguredFcAreas = new();
     private readonly Mock<IClock> _mockClock = new();
+    private readonly Mock<IDbContextTransaction> _mockTransaction = new();
+    private readonly Mock<IUnitOfWork> _mockUow = new();
 
     private static readonly Fixture FixtureInstance = new();
 
     [Theory, AutoMoqData]
-    public async Task WhenCannotRetrieveOriginalReference(AssignToUserRequest request, string error)
+    public async Task WhenCannotRetrieveApplication(AssignToUserRequest request)
     {
         var sut = CreateSut();
 
         _internalFlaRepository
-            .Setup(x => x.GetApplicationReferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<string>(error));
-
-        var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-        Assert.Equal(error, result.Error);
-
-        _internalFlaRepository
-            .Verify(x => x.GetApplicationReferenceAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                Times.Once);
-        _internalFlaRepository.VerifyNoOtherCalls();
-
-        _mockCaseNotes.VerifyNoOtherCalls();
-
-        _mockClock.VerifyNoOtherCalls();
-    }
-
-    [Theory]
-    [InlineData(AssignedUserRole.AdminOfficer)]
-    [InlineData(AssignedUserRole.WoodlandOfficer)]
-    public async Task WhenCannotUpdateAreaCode(AssignedUserRole validRoleForAreaCode)
-    {
-        var reference = FixtureInstance.Create<string>();
-        var request = new AssignToUserRequest(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            validRoleForAreaCode,
-            FixtureInstance.Create<string>(),
-            FixtureInstance.Create<string>());
-
-        var sut = CreateSut();
-
-        var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
-        var configuredAreas = FixtureInstance.CreateMany<ConfiguredFcArea>().ToList();
-
-        _mockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
-
-        _internalFlaRepository
-            .Setup(x => x.GetApplicationReferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(reference));
-        _internalFlaRepository
-            .Setup(x => x.UpdateAreaCodeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.NotFound));
-        if (validRoleForAreaCode == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<StatusHistory>(0));
-        }
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.None);
 
         var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
 
         Assert.True(result.IsFailure);
 
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.VerifyNoOtherCalls();
+
         _internalFlaRepository
-            .Verify(x => x.GetApplicationReferenceAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
                 Times.Once);
-        if (validRoleForAreaCode == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.GetStatusHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
         _internalFlaRepository
-            .Verify(x => x.UpdateAreaCodeAsync(request.ApplicationId, request.FcAreaCostCode, expectedConfiguredArea.AdminHubName, It.IsAny<CancellationToken>()),
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
                 Times.Once);
         _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+        _mockTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
 
         _mockCaseNotes.VerifyNoOtherCalls();
-
-        _mockClock.VerifyNoOtherCalls();
     }
 
     [Theory, AutoMoqData]
-    public async Task WhenCannotAddCaseNote(AssignToUserRequest request, string error)
+    public async Task WhenCannotAddCaseNote(
+        AssignToUserRequest request, 
+        FellingLicenceApplication application, 
+        string error)
     {
-        var reference = FixtureInstance.Create<string>();
-
+        application.ApplicationReference = "018/026/2026/Test";
         var sut = CreateSut();
 
         var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
@@ -125,20 +82,8 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
             .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
 
         _internalFlaRepository
-            .Setup(x => x.GetApplicationReferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(reference));
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<StatusHistory>(0));
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.UpdateAreaCodeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-        }
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
 
         _mockCaseNotes
             .Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -149,23 +94,23 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
         Assert.True(result.IsFailure);
         Assert.Equal(error, result.Error);
 
-        _internalFlaRepository
-            .Verify(x => x.GetApplicationReferenceAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                Times.Once);
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.GetStatusHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.UpdateAreaCodeAsync(request.ApplicationId, request.FcAreaCostCode,expectedConfiguredArea.AdminHubName, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.VerifyNoOtherCalls();
 
+        _internalFlaRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _internalFlaRepository
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+                Times.Once);
         _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+        _mockTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
 
         _mockCaseNotes
             .Verify(x => x.AddCaseNoteAsync(It.Is<AddCaseNoteRecord>(r => r.FellingLicenceApplicationId == request.ApplicationId
@@ -174,75 +119,59 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
                 && r.VisibleToApplicant == true
                 && r.VisibleToConsultee == false), request.PerformingUserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockCaseNotes.VerifyNoOtherCalls();
-
-        _mockClock.VerifyNoOtherCalls();
     }
 
     [Theory, AutoMoqData]
-    public async Task WhenCannotGetUpdatedReference(AssignToUserRequest request, string error)
+    public async Task WhenCannotSaveChanges(
+        AssignToUserRequest request,
+        FellingLicenceApplication application,
+        UserDbErrorReason error)
     {
-        var reference = FixtureInstance.Create<string>();
-        var referenceCalls = new Queue<Result<string>>(2);
-        referenceCalls.Enqueue(Result.Success(reference));
-        referenceCalls.Enqueue(Result.Failure<string>(error));
+        application.ApplicationReference = "018/026/2026/Test";
+        var sut = CreateSut();
 
         var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
         var configuredAreas = FixtureInstance.CreateMany<ConfiguredFcArea>().ToList();
-        var now = Instant.FromDateTimeUtc(DateTime.UtcNow);
-
-        var sut = CreateSut();
 
         _mockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
 
         _internalFlaRepository
-            .Setup(x => x.GetApplicationReferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => referenceCalls.Dequeue());
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<StatusHistory>(0));
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.UpdateAreaCodeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-        }
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
 
         _mockCaseNotes
             .Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        _mockClock.Setup(x => x.GetCurrentInstant()).Returns(now);
+        _mockUow
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Failure(error));
 
         var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal(error, result.Error);
+
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.VerifyNoOtherCalls();
 
         _internalFlaRepository
-            .Verify(x => x.GetApplicationReferenceAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                Times.Exactly(2));
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.GetStatusHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.UpdateAreaCodeAsync(request.ApplicationId, request.FcAreaCostCode, expectedConfiguredArea.AdminHubName, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
-        _internalFlaRepository
-            .Verify(x => x.AssignFellingLicenceApplicationToStaffMemberAsync(
-                request.ApplicationId, request.AssignToUserId, request.AssignedRole, now.ToDateTimeUtc(), It.IsAny<CancellationToken>()),
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
                 Times.Once);
+        _internalFlaRepository
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _mockUow.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()));
 
         _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+
+        _mockTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
 
         _mockCaseNotes
             .Verify(x => x.AddCaseNoteAsync(It.Is<AddCaseNoteRecord>(r => r.FellingLicenceApplicationId == request.ApplicationId
@@ -251,86 +180,80 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
                 && r.VisibleToApplicant == true
                 && r.VisibleToConsultee == false), request.PerformingUserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockCaseNotes.VerifyNoOtherCalls();
-
-        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
-        _mockClock.VerifyNoOtherCalls();
     }
 
     [Theory, AutoMoqData]
-    public async Task WhenAssignmentSuccessWithOtherUserUnassigned(AssignToUserRequest request, Guid unassignedUserId)
+    public async Task WhenSuccessfulWithNoExistingAssignmentAndSetsToAoReview(
+        FellingLicenceApplication application)
     {
-        var originalReference = FixtureInstance.Create<string>();
-        var newReference = FixtureInstance.Create<string>();
-        var referenceQueue = new Queue<Result<string>>();
-        referenceQueue.Enqueue(Result.Success(originalReference));
-        referenceQueue.Enqueue(Result.Success(newReference));
+        var request = FixtureInstance.Build<AssignToUserRequest>()
+            .With(x => x.AssignedRole, AssignedUserRole.AdminOfficer)
+            .Create();
+
+        application.ApplicationReference = "018/026/2026/Test";
+        application.StatusHistories = 
+        [
+            new StatusHistory
+            {
+                CreatedById = Guid.NewGuid(),
+                Created = DateTime.Today,
+                Status = FellingLicenceStatus.Submitted
+            }
+        ];
+        application.AssigneeHistories = [];
+
+        var sut = CreateSut();
 
         var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
         var configuredAreas = FixtureInstance.CreateMany<ConfiguredFcArea>().ToList();
-        var now = Instant.FromDateTimeUtc(DateTime.UtcNow);
-
-        var sut = CreateSut();
 
         _mockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
 
         _internalFlaRepository
-            .Setup(x => x.GetApplicationReferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => referenceQueue.Dequeue());
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<StatusHistory>(0));
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.UpdateAreaCodeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-        }
-
-        _internalFlaRepository
-            .Setup(x => x.AssignFellingLicenceApplicationToStaffMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<AssignedUserRole>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((false, Maybe<Guid>.From(unassignedUserId)));
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
 
         _mockCaseNotes
             .Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        _mockClock.Setup(x => x.GetCurrentInstant()).Returns(now);
+        _mockUow
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(originalReference, result.Value.OriginalApplicationReference);
-        Assert.Equal(newReference, result.Value.UpdatedApplicationReference);
-        Assert.True(result.Value.IdOfUnassignedUser.HasValue);
-        Assert.Equal(unassignedUserId, result.Value.IdOfUnassignedUser.Value);
+
+        Assert.Equal("018/026/2026/Test", result.Value.OriginalApplicationReference);
+        Assert.Equal($"{request.FcAreaCostCode}/026/2026/Test", result.Value.UpdatedApplicationReference);
         Assert.False(result.Value.ApplicationAlreadyAssignedToThisUser);
+        Assert.Null(result.Value.IdOfUnassignedUser);
+        Assert.Null(result.Value.LinkedPropertyProfileId);
+        Assert.Equal(application.SubmittedFlaPropertyDetail.Name, result.Value.PropertyName);
+        Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
+
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.VerifyNoOtherCalls();
 
         _internalFlaRepository
-            .Verify(x => x.GetApplicationReferenceAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                Times.Exactly(2));
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.GetStatusHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.UpdateAreaCodeAsync(request.ApplicationId, request.FcAreaCostCode, expectedConfiguredArea.AdminHubName, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
-        _internalFlaRepository
-            .Verify(x => x.AssignFellingLicenceApplicationToStaffMemberAsync(
-                request.ApplicationId, request.AssignToUserId, request.AssignedRole, now.ToDateTimeUtc(), It.IsAny<CancellationToken>()),
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
                 Times.Once);
+        _internalFlaRepository
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _mockUow.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()));
 
         _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+
+        _mockTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
 
         _mockCaseNotes
             .Verify(x => x.AddCaseNoteAsync(It.Is<AddCaseNoteRecord>(r => r.FellingLicenceApplicationId == request.ApplicationId
@@ -340,84 +263,96 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
                 && r.VisibleToConsultee == false), request.PerformingUserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockCaseNotes.VerifyNoOtherCalls();
 
-        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
-        _mockClock.VerifyNoOtherCalls();
+        //assert application changes
+        Assert.Equal(FellingLicenceStatus.AdminOfficerReview, application.GetCurrentStatus()); 
+        Assert.Contains(application.AssigneeHistories, x => x.Role == AssignedUserRole.AdminOfficer && x.AssignedUserId == request.AssignToUserId && x.TimestampUnassigned == null);
+        Assert.Equal($"{request.FcAreaCostCode}/026/2026/Test", application.ApplicationReference);
+
     }
 
     [Theory, AutoMoqData]
-    public async Task WhenAssignmentSuccessAlreadyAssignedToSameUser(AssignToUserRequest request)
+    public async Task WhenSuccessfulWithUserAlreadyAssigned(
+        FellingLicenceApplication application)
     {
-        var originalReference = FixtureInstance.Create<string>();
-        var newReference = FixtureInstance.Create<string>();
-        var referenceQueue = new Queue<Result<string>>();
-        referenceQueue.Enqueue(Result.Success(originalReference));
-        referenceQueue.Enqueue(Result.Success(newReference));
+        var request = FixtureInstance.Build<AssignToUserRequest>()
+            .With(x => x.AssignedRole, AssignedUserRole.AdminOfficer)
+            .With(x => x.FcAreaCostCode, "018")
+            .Create();
+
+        application.ApplicationReference = "018/026/2026/Test";
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                CreatedById = Guid.NewGuid(),
+                Created = DateTime.Today,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+        application.AssigneeHistories =
+        [
+            new AssigneeHistory
+            {
+                Role = AssignedUserRole.AdminOfficer,
+                AssignedUserId = request.AssignToUserId,
+                FellingLicenceApplication = application,
+                TimestampUnassigned = null,
+                TimestampAssigned = DateTime.Today
+            }
+        ];
+
+        var sut = CreateSut();
 
         var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
         var configuredAreas = FixtureInstance.CreateMany<ConfiguredFcArea>().ToList();
-        var now = Instant.FromDateTimeUtc(DateTime.UtcNow);
-
-        var sut = CreateSut();
 
         _mockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
 
         _internalFlaRepository
-            .Setup(x => x.GetApplicationReferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => referenceQueue.Dequeue());
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<StatusHistory>(0));
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.UpdateAreaCodeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-        }
-
-        _internalFlaRepository
-            .Setup(x => x.AssignFellingLicenceApplicationToStaffMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
-                It.IsAny<AssignedUserRole>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((true, Maybe<Guid>.None));
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
 
         _mockCaseNotes
             .Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        _mockClock.Setup(x => x.GetCurrentInstant()).Returns(now);
+        _mockUow
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(originalReference, result.Value.OriginalApplicationReference);
-        Assert.Equal(newReference, result.Value.UpdatedApplicationReference);
-        Assert.False(result.Value.IdOfUnassignedUser.HasValue);
+
+        Assert.Equal("018/026/2026/Test", result.Value.OriginalApplicationReference);
+        Assert.Equal("018/026/2026/Test", result.Value.UpdatedApplicationReference);
         Assert.True(result.Value.ApplicationAlreadyAssignedToThisUser);
+        Assert.Null(result.Value.IdOfUnassignedUser);
+        Assert.Null(result.Value.LinkedPropertyProfileId);
+        Assert.Equal(application.SubmittedFlaPropertyDetail.Name, result.Value.PropertyName);
+        Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
+
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.VerifyNoOtherCalls();
 
         _internalFlaRepository
-            .Verify(x => x.GetApplicationReferenceAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                Times.Exactly(2));
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.GetStatusHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Verify(x => x.UpdateAreaCodeAsync(request.ApplicationId, request.FcAreaCostCode, expectedConfiguredArea.AdminHubName, It.IsAny<CancellationToken>()),
-                    Times.Once);
-        }
-        _internalFlaRepository
-            .Verify(x => x.AssignFellingLicenceApplicationToStaffMemberAsync(
-                request.ApplicationId, request.AssignToUserId, request.AssignedRole, now.ToDateTimeUtc(), It.IsAny<CancellationToken>()),
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
                 Times.Once);
+        _internalFlaRepository
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _mockUow.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()));
 
         _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+
+        _mockTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
 
         _mockCaseNotes
             .Verify(x => x.AddCaseNoteAsync(It.Is<AddCaseNoteRecord>(r => r.FellingLicenceApplicationId == request.ApplicationId
@@ -427,79 +362,95 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
                 && r.VisibleToConsultee == false), request.PerformingUserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockCaseNotes.VerifyNoOtherCalls();
 
-        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
-        _mockClock.VerifyNoOtherCalls();
+        //assert application changes
+        Assert.Equal(1, application.StatusHistories.Count);  // no new history added
+        Assert.Equal(1, application.AssigneeHistories.Count);  // no new assignee history added
+        Assert.Equal("018/026/2026/Test", application.ApplicationReference);  // ref stayed same
     }
 
-    [Fact]
-    public async Task UpdatesStateIfAssigningSubmittedApplicationToAdminOfficer()
+    [Theory, AutoMoqData]
+    public async Task WhenSuccessfulWithUserAlreadyAssignedAndApplicationWithApplicant(
+    FellingLicenceApplication application)
     {
-        var request = new AssignToUserRequest(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            AssignedUserRole.AdminOfficer,
-            FixtureInstance.Create<string>(),
-            FixtureInstance.Create<string>(),
-            true,
-            false);
+        var request = FixtureInstance.Build<AssignToUserRequest>()
+            .With(x => x.AssignedRole, AssignedUserRole.AdminOfficer)
+            .With(x => x.FcAreaCostCode, "018")
+            .Create();
+
+        application.ApplicationReference = "018/026/2026/Test";
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                CreatedById = Guid.NewGuid(),
+                Created = DateTime.Today,
+                Status = FellingLicenceStatus.WithApplicant
+            }
+        ];
+        application.AssigneeHistories =
+        [
+            new AssigneeHistory
+            {
+                Role = AssignedUserRole.AdminOfficer,
+                AssignedUserId = request.AssignToUserId,
+                FellingLicenceApplication = application,
+                TimestampUnassigned = null,
+                TimestampAssigned = DateTime.Today
+            }
+        ];
+
+        var sut = CreateSut();
 
         var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
         var configuredAreas = FixtureInstance.CreateMany<ConfiguredFcArea>().ToList();
-
-        var reference = FixtureInstance.Create<string>();
-
-        var now = Instant.FromDateTimeUtc(DateTime.UtcNow);
-
-        var sut = CreateSut();
 
         _mockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
 
         _internalFlaRepository
-            .Setup(x => x.GetApplicationReferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(reference));
-        if (request.AssignedRole == AssignedUserRole.AdminOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.GetStatusHistoryForApplicationAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<StatusHistory> {new() {Status = FellingLicenceStatus.Submitted, Created = DateTime.Today.ToUniversalTime()}});
-        }
-        if (request.AssignedRole is AssignedUserRole.AdminOfficer or AssignedUserRole.WoodlandOfficer)
-        {
-            _internalFlaRepository
-                .Setup(x => x.UpdateAreaCodeAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-        }
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
 
         _mockCaseNotes
             .Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success());
 
-        _mockClock.Setup(x => x.GetCurrentInstant()).Returns(now);
+        _mockUow
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
 
         var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
 
+        Assert.Equal("018/026/2026/Test", result.Value.OriginalApplicationReference);
+        Assert.Equal("018/026/2026/Test", result.Value.UpdatedApplicationReference);
+        Assert.True(result.Value.ApplicationAlreadyAssignedToThisUser);
+        Assert.Null(result.Value.IdOfUnassignedUser);
+        Assert.Equal(application.LinkedPropertyProfile.PropertyProfileId, result.Value.LinkedPropertyProfileId);
+        Assert.Null(result.Value.PropertyName);
+        Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
+
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.VerifyNoOtherCalls();
+
         _internalFlaRepository
-            .Verify(x => x.GetApplicationReferenceAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
-                Times.Exactly(2));
-        _internalFlaRepository
-            .Verify(x => x.GetStatusHistoryForApplicationAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
                 Times.Once);
         _internalFlaRepository
-            .Verify(x => x.AddStatusHistory(request.PerformingUserId, request.ApplicationId, FellingLicenceStatus.AdminOfficerReview, It.IsAny<CancellationToken>()),
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
                 Times.Once);
-        _internalFlaRepository
-            .Verify(x => x.UpdateAreaCodeAsync(request.ApplicationId, request.FcAreaCostCode, expectedConfiguredArea.AdminHubName, It.IsAny<CancellationToken>()),
-                Times.Once);
-        _internalFlaRepository
-            .Verify(x => x.AssignFellingLicenceApplicationToStaffMemberAsync(
-                request.ApplicationId, request.AssignToUserId, request.AssignedRole, now.ToDateTimeUtc(), It.IsAny<CancellationToken>()),
-                Times.Once);
+        _mockUow.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()));
 
         _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+
+        _mockTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
 
         _mockCaseNotes
             .Verify(x => x.AddCaseNoteAsync(It.Is<AddCaseNoteRecord>(r => r.FellingLicenceApplicationId == request.ApplicationId
@@ -509,8 +460,204 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
                 && r.VisibleToConsultee == false), request.PerformingUserId, It.IsAny<CancellationToken>()), Times.Once);
         _mockCaseNotes.VerifyNoOtherCalls();
 
+        //assert application changes
+        Assert.Equal(1, application.StatusHistories.Count);  // no new history added
+        Assert.Equal(1, application.AssigneeHistories.Count);  // no new assignee history added
+        Assert.Equal("018/026/2026/Test", application.ApplicationReference);  // ref stayed same
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenSuccessfulWithUserAlreadyAssignedAndNoCaseNote(
+        FellingLicenceApplication application)
+    {
+        var request = FixtureInstance.Build<AssignToUserRequest>()
+            .With(x => x.AssignedRole, AssignedUserRole.AdminOfficer)
+            .With(x => x.FcAreaCostCode, "018")
+            .With(x => x.CaseNoteContent, string.Empty)
+            .Create();
+
+        application.ApplicationReference = "018/026/2026/Test";
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                CreatedById = Guid.NewGuid(),
+                Created = DateTime.Today,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+        application.AssigneeHistories =
+        [
+            new AssigneeHistory
+            {
+                Role = AssignedUserRole.AdminOfficer,
+                AssignedUserId = request.AssignToUserId,
+                FellingLicenceApplication = application,
+                TimestampUnassigned = null,
+                TimestampAssigned = DateTime.Today
+            }
+        ];
+
+        var sut = CreateSut();
+
+        var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
+        var configuredAreas = FixtureInstance.CreateMany<ConfiguredFcArea>().ToList();
+
+        _mockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
+
+        _internalFlaRepository
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
+
+        _mockUow
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+        var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        Assert.Equal("018/026/2026/Test", result.Value.OriginalApplicationReference);
+        Assert.Equal("018/026/2026/Test", result.Value.UpdatedApplicationReference);
+        Assert.True(result.Value.ApplicationAlreadyAssignedToThisUser);
+        Assert.Null(result.Value.IdOfUnassignedUser);
+        Assert.Null(result.Value.LinkedPropertyProfileId);
+        Assert.Equal(application.SubmittedFlaPropertyDetail.Name, result.Value.PropertyName);
+        Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
+
         _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
         _mockClock.VerifyNoOtherCalls();
+
+        _internalFlaRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _internalFlaRepository
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _mockUow.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()));
+
+        _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+
+        _mockTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
+
+        _mockCaseNotes.VerifyNoOtherCalls();
+
+        //assert application changes
+        Assert.Equal(1, application.StatusHistories.Count);  // no new history added
+        Assert.Equal(1, application.AssigneeHistories.Count);  // no new assignee history added
+        Assert.Equal("018/026/2026/Test", application.ApplicationReference);  // ref stayed same
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenSuccessfulWithExistingUserUnassigned(
+        FellingLicenceApplication application,
+        Guid unassignedUserId)
+    {
+        var request = FixtureInstance.Build<AssignToUserRequest>()
+            .With(x => x.AssignedRole, AssignedUserRole.AdminOfficer)
+            .With(x => x.FcAreaCostCode, "018")
+            .Create();
+
+        application.ApplicationReference = "018/026/2026/Test";
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                CreatedById = Guid.NewGuid(),
+                Created = DateTime.Today,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+        application.AssigneeHistories =
+        [
+            new AssigneeHistory
+            {
+                Role = AssignedUserRole.AdminOfficer,
+                AssignedUserId = unassignedUserId,
+                FellingLicenceApplication = application,
+                TimestampUnassigned = null,
+                TimestampAssigned = DateTime.Today
+            }
+        ];
+
+        var sut = CreateSut();
+
+        var expectedConfiguredArea = FixtureInstance.Build<ConfiguredFcArea>().With(x => x.AreaCostCode, request.FcAreaCostCode).Create();
+        var configuredAreas = FixtureInstance.CreateMany<ConfiguredFcArea>().ToList();
+
+        _mockGetConfiguredFcAreas.Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(configuredAreas.Append(expectedConfiguredArea).ToList());
+
+        _internalFlaRepository
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
+
+        _mockCaseNotes
+            .Setup(x => x.AddCaseNoteAsync(It.IsAny<AddCaseNoteRecord>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        _mockUow
+            .Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+        var result = await sut.AssignToInternalUserAsync(request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        Assert.Equal("018/026/2026/Test", result.Value.OriginalApplicationReference);
+        Assert.Equal("018/026/2026/Test", result.Value.UpdatedApplicationReference);
+        Assert.False(result.Value.ApplicationAlreadyAssignedToThisUser);
+        Assert.Equal(unassignedUserId, result.Value.IdOfUnassignedUser);
+        Assert.Null(result.Value.LinkedPropertyProfileId);
+        Assert.Equal(application.SubmittedFlaPropertyDetail.Name, result.Value.PropertyName);
+        Assert.Equal(application.CreatedById, result.Value.ApplicationAuthorId);
+
+        _mockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _mockClock.VerifyNoOtherCalls();
+
+        _internalFlaRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _internalFlaRepository
+            .Verify(x => x.GetAsync(request.ApplicationId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _mockUow.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()));
+
+        _internalFlaRepository.VerifyNoOtherCalls();
+        _mockUow.VerifyNoOtherCalls();
+
+        _mockTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _mockTransaction.VerifyNoOtherCalls();
+
+        _mockGetConfiguredFcAreas.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGetConfiguredFcAreas.VerifyNoOtherCalls();
+
+        _mockCaseNotes
+            .Verify(x => x.AddCaseNoteAsync(It.Is<AddCaseNoteRecord>(r => r.FellingLicenceApplicationId == request.ApplicationId
+                && r.Type == CaseNoteType.CaseNote
+                && r.Text == request.CaseNoteContent
+                && r.VisibleToApplicant == true
+                && r.VisibleToConsultee == false), request.PerformingUserId, It.IsAny<CancellationToken>()), Times.Once);
+        _mockCaseNotes.VerifyNoOtherCalls();
+
+        //assert application changes
+        Assert.Equal(1, application.StatusHistories.Count);  // no new history added
+        Assert.Equal(2, application.AssigneeHistories.Count);  // new assignee history added
+        Assert.Contains(application.AssigneeHistories,
+            x => x.AssignedUserId == request.AssignToUserId && x is
+                { Role: AssignedUserRole.AdminOfficer, TimestampUnassigned: null });
+        Assert.Contains(application.AssigneeHistories,
+            x => x.AssignedUserId == unassignedUserId && x is
+                { Role: AssignedUserRole.AdminOfficer, TimestampUnassigned: not null });
+        Assert.Equal("018/026/2026/Test", application.ApplicationReference);  // ref stayed same
     }
 
     private UpdateFellingLicenceApplicationService CreateSut()
@@ -519,6 +666,14 @@ public class UpdateFellingLicenceApplicationServiceAssignToInternalUserTests
         _mockCaseNotes.Reset();
         _mockClock.Reset();
         _mockGetConfiguredFcAreas.Reset();
+        _mockTransaction.Reset();
+        _mockUow.Reset();
+        _mockClock.Setup(x => x.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.Now.ToUniversalTime()));
+
+        _internalFlaRepository.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockTransaction.Object);
+        
+        _internalFlaRepository.SetupGet(x => x.UnitOfWork).Returns(_mockUow.Object);
 
         return new UpdateFellingLicenceApplicationService(
             _internalFlaRepository.Object,

@@ -16,6 +16,14 @@ public class UserAccessModel
     public bool IsFcUser { get; init; }
 
     /// <summary>
+    /// Gets and inits a flag indicating the user is a system user. System users are a special type of FC
+    /// users that are not associated with an actual user account, but still have full access to all
+    /// woodland owners. This is used for example for background services that need to access woodland
+    /// owner data but do not have a user account.
+    /// </summary>
+    public bool IsSystemUser { get; init; } = false;
+
+    /// <summary>
     /// Gets and inits a list of woodland owner ids that this user can access.
     /// </summary>
     /// <remarks>
@@ -43,6 +51,7 @@ public class UserAccessModel
     /// </summary>
     public static UserAccessModel SystemUserAccessModel => new UserAccessModel
     {
-        IsFcUser = true
+        IsFcUser = true,
+        IsSystemUser = true
     };
 }
