@@ -28,4 +28,9 @@ public class ExternalConsulteeInviteDataModel : IApplicationNotification
     /// Gets and sets the application id.
     /// </summary>
     public required Guid ApplicationId { get; set; }
+
+    /// <summary>
+    /// Gets and sets the name of the property for the felling licence application.
+    /// </summary>
+    public string? PropertyName { get; set; }
 }

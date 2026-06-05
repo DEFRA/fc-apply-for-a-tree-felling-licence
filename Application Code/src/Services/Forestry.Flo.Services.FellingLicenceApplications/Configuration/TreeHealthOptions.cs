@@ -17,8 +17,8 @@ public class TreeHealthOptions
     public List<string> TreeHealthIssues { get; set; } = new()
     {
         "Ash dieback (Hymenoscyphus fraxineus)",
-        "Ramorum dieback (Phytophora ramorum)",
-        "Phytophora pluvialis",
+        "Ramorum dieback (Phytophthora ramorum)",
+        "Phytophthora pluvialis",
         "European spruce bark beetle (Ips typographus)",
         "Windblow",
         "Wildfire"

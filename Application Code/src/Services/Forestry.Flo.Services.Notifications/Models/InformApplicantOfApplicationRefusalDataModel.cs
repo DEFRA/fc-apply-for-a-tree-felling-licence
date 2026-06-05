@@ -1,4 +1,5 @@
-﻿namespace Forestry.Flo.Services.Notifications.Models;
+﻿
+namespace Forestry.Flo.Services.Notifications.Models;
 
 /// <summary>
 /// Model class for data to merge into a InformApplicantOfApplicationRefusal notification.
@@ -44,4 +45,15 @@ public class InformApplicantOfApplicationRefusalDataModel : IApplicationNotifica
     /// Gets and sets the application id.
     /// </summary>
     public required Guid ApplicationId { get; set; }
+
+
+    /// <summary>
+    /// Gets and sets the reasons for refusal, as entered by the user that refused the application.
+    /// </summary>
+    public string? ApproverDecisionCaseNote { get; set; }
+
+    /// <summary>
+    /// Gets and sets the date the application was originally submitted.
+    /// </summary>
+    public string? SubmittedDate { get; set; }
 }

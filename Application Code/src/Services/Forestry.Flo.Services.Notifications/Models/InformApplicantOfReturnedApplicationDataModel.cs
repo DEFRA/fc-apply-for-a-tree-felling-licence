@@ -41,4 +41,14 @@ public class InformApplicantOfReturnedApplicationDataModel: IApplicationNotifica
     /// </summary>
     public required Guid ApplicationId { get; set; }
 
+    /// <summary>
+    /// Gets and sets a formatted date string of when the application was returned to the applicant.
+    /// </summary>
+    public string? ReturnToApplicantDate { get; set; }
+
+    /// <summary>
+    /// Gets and sets a formatted date string of the deadline for the applicant to resubmit their application by.
+    /// </summary>
+    public string? ResubmissionDeadline { get; set; }
+
 }

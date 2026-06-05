@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
@@ -91,10 +92,11 @@ public class ProposedRestockingSourceValidator : AbstractValidator<ProposedResto
                     .When(s => s.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)
                     .WithMessage(s => $"Species and percentages {s.SpeciesAndPercentages} contains invalid species codes for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}"))
             .DependentRules(() =>
-                RuleFor(s => s.SpeciesAndPercentages)
-                    .Must(ValidPercentages)
-                    .When(s => s.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)
-                    .WithMessage(s => $"Species and percentages {s.SpeciesAndPercentages} contains invalid percentage or percentages don't total 100% for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}"))
+                RuleFor(s => s)
+                    .Must(s => ValidPercentages(s.SpeciesAndPercentages, s.PercentageOpenSpace))
+                    .OverridePropertyName(nameof(ProposedRestockingSource.SpeciesAndPercentages))
+                    .When(s => s.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround && s.PercentageOpenSpace.HasValue)
+                    .WithMessage(s => $"Species and percentages {s.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}"))
             .DependentRules(() =>
                 RuleFor(s => s.SpeciesAndPercentages)
                     .Must(s => NoRepeatedSpecies(s, speciesCodes))
@@ -103,7 +105,7 @@ public class ProposedRestockingSourceValidator : AbstractValidator<ProposedResto
             .WithMessage(s => $"Species and percentages must be provided for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
 
         RuleFor(s => s.PercentageEstablishedByCoppiceOrNaturalRegen)
-            .NotEmpty()
+            .NotNull()
             .When(s => s.RestockingProposal.IsCoppiceOrNaturalRegen())
             .WithMessage(s =>
                 $"Percentage established by coppice or natural regeneration must be provided for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
@@ -113,10 +115,27 @@ public class ProposedRestockingSourceValidator : AbstractValidator<ProposedResto
             .When(s => s.RestockingProposal.IsCoppiceOrNaturalRegen() && s.PercentageEstablishedByCoppiceOrNaturalRegen.HasValue)
             .WithMessage(s =>
                 $"Percentage established by coppice or natural regeneration must be greater than 0 and less than or equal to 100 for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
+
+        RuleFor(s => s.PercentageOpenSpace)
+            .NotNull()
+            .When(s => s.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround)
+            .WithMessage(s =>
+                $"Percentage of open space must be provided for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
+
+        RuleFor(s => s.PercentageOpenSpace)
+            .Must(s => s is >= 0 and < 100)
+            .When(s => s.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround && s.PercentageOpenSpace.HasValue)
+            .WithMessage(s =>
+                $"Percentage of open space must be greater than or equal to 0 and less than 100 for proposed restocking {s.RestockingProposal} with proposed felling id {s.ProposedFellingId}");
     }
 
-    private bool ValidPercentages(string speciesAndPercentages)
+    private bool ValidPercentages(string? speciesAndPercentages, double? percentageOpenSpace)
     {
+        if (string.IsNullOrWhiteSpace(speciesAndPercentages) || percentageOpenSpace.HasNoValue())
+        {
+            return false;
+        }
+
         var split = speciesAndPercentages.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
         var percentages = split.Where((elem, idx) => idx % 2 != 0)
@@ -128,7 +147,7 @@ public class ProposedRestockingSourceValidator : AbstractValidator<ProposedResto
             return false;
         }
 
-        var totalPercentage = percentages.Select(int.Parse).Sum();
+        var totalPercentage = percentages.Select(int.Parse).Sum() + (int)Math.Round(percentageOpenSpace!.Value);
 
         return totalPercentage == 100;
     }

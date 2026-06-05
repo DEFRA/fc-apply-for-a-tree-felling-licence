@@ -44,7 +44,8 @@ public partial class AccountController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> RegisterAccountType([FromQuery] string? token, 
+    public async Task<IActionResult> RegisterAccountType(
+        [FromQuery] string? token, 
         [FromServices] RegisterUserAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -59,7 +60,7 @@ public partial class AccountController : Controller
         if (user.HasRegisteredLocalAccount)
         {
             var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-            model = GetUserAccountModel(existingAccount, "Account Type");
+            model = GetUserAccountModel(existingAccount, "Account Type", user);
             return View(model);
         }
 
@@ -97,7 +98,7 @@ public partial class AccountController : Controller
             }
         }
 
-        model = new UserAccountModel { PageIsDisabled = disableSignUp };
+        model = new UserAccountModel { PageIsDisabled = disableSignUp, AccountEmailAddress = user.EmailAddress! };
         SetBreadcrumbs(model, "Account Type");
         return View(model);
     }
@@ -131,7 +132,7 @@ public partial class AccountController : Controller
     {
         var user = new ExternalApplicant(User);
         var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-        var model = GetUserAccountModel(existingAccount, "Name");
+        var model = GetUserAccountModel(existingAccount, "Name", user);
 
         return View(model);
     }
@@ -166,7 +167,7 @@ public partial class AccountController : Controller
     {
         var user = new ExternalApplicant(User);
         var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-        var model = GetUserAccountModel(existingAccount, "Contact Details");
+        var model = GetUserAccountModel(existingAccount, "Contact Details", user);
 
         return View(model);
     }
@@ -299,12 +300,13 @@ public partial class AccountController : Controller
 
         var model = new UserAccountSummaryModel
         {
+            AccountEmailAddress = existingAccount.Value.Email,
             AccountTypeReadOnly = accountTypeReadOnly,
             OrganisationDetailsReadOnly = existingAccount.Value.AccountType != AccountTypeExternal.AgentAdministrator
                 && existingAccount.Value.AccountType != AccountTypeExternal.WoodlandOwnerAdministrator
         };
 
-        var accountModel = GetUserAccountModel(existingAccount, "Summary");
+        var accountModel = GetUserAccountModel(existingAccount, "Summary", user);
         model.Status = accountModel.Status;
         model.PersonName = accountModel.PersonName;
         model.PersonContactsDetails = accountModel.PersonContactsDetails;
@@ -340,7 +342,7 @@ public partial class AccountController : Controller
     {
         var user = new ExternalApplicant(User);
         var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-        var model = GetUserAccountModel(existingAccount, "Terms and conditions");
+        var model = GetUserAccountModel(existingAccount, "Terms and conditions", user);
         SetBreadcrumbs(model, "Terms and conditions");
 
         return View(model);
@@ -370,7 +372,7 @@ public partial class AccountController : Controller
         if (!ModelState.IsValid)
         {
             var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-            var reloadModel = GetUserAccountModel(existingAccount, "Terms and conditions");
+            var reloadModel = GetUserAccountModel(existingAccount, "Terms and conditions", user);
             reloadModel.AcceptsTermsAndConditions = model.AcceptsTermsAndConditions;
             SetBreadcrumbs(reloadModel, "Terms and conditions");
             return View(reloadModel);
@@ -624,11 +626,11 @@ public partial class AccountController : Controller
         }
     }
 
-    private UserAccountModel GetUserAccountModel(Maybe<UserAccount> existingAccount, string pageName)
+    private UserAccountModel GetUserAccountModel(Maybe<UserAccount> existingAccount, string pageName, ExternalApplicant user)
     {
         if (existingAccount.HasNoValue)
         {
-            var model = new UserAccountModel();
+            var model = new UserAccountModel { AccountEmailAddress = user.EmailAddress! };
             SetBreadcrumbs(model, pageName);
             return model;
         }
@@ -637,6 +639,7 @@ public partial class AccountController : Controller
 
         var result = new UserAccountModel
         {
+            AccountEmailAddress = existingAccount.Value.Email,
             AcceptsTermsAndConditions = new AccountTermsAndConditionsModel
             {
                 AcceptsTermsAndConditions = existingAccount.Value?.DateAcceptedTermsAndConditions.HasValue ?? false,

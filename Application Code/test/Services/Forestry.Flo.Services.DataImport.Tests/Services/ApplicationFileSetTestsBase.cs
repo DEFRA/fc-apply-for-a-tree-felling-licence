@@ -83,7 +83,9 @@ public abstract class ApplicationFileSetTestsBase
                 species.Add(SpeciesCodes.Where(x => !species.Contains(x)).RandomElement());
                 species.Add(SpeciesCodes.Where(x => !species.Contains(x)).RandomElement());
 
-                var validRestockingTypes = fellingOperation.AllowedRestockingForFellingType(false).ToList();
+                var validRestockingTypes = fellingOperation.AllowedRestockingForFellingType(false)
+                    .Where(x => x != TypeOfProposal.CreateDesignedOpenGround)
+                    .ToList();
                 validRestockingTypes.Remove(TypeOfProposal.DoNotIntendToRestock);
 
                 var restockingForThisFellingCount = int.Min(restockingPerFelling, validRestockingTypes.Count);
@@ -142,13 +144,17 @@ public abstract class ApplicationFileSetTestsBase
                         ? 50
                         : null;
 
+                    double? percentOpenSpace = operation == TypeOfProposal.CreateDesignedOpenGround
+                        ? null
+                        : 20;
+
                     string? restockingSpecies = null;
                     if (operation != TypeOfProposal.CreateDesignedOpenGround)
                     {
                         var speciesCode1 = SpeciesCodes.RandomElement();
-                        var speciesPercent1 = new Random().Next(1, 80);
+                        var speciesPercent1 = new Random().Next(1, 60);
                         var speciesCode2 = SpeciesCodes.Where(x => x != speciesCode1).RandomElement();
-                        var speciesPercent2 = 100 - speciesPercent1;
+                        var speciesPercent2 = 100 - (percentOpenSpace ?? 0) - speciesPercent1;
                         restockingSpecies = $"{speciesCode1},{speciesPercent1},{speciesCode2},{speciesPercent2}";
                     }
 
@@ -161,6 +167,7 @@ public abstract class ApplicationFileSetTestsBase
                         .With(x => x.RestockingProposal, operation)
                         .With(x => x.PercentageEstablishedByCoppiceOrNaturalRegen, percentEstablishedCoppiceOrNaturalRegen)
                         .With(x => x.SpeciesAndPercentages, restockingSpecies)
+                        .With(x => x.PercentageOpenSpace, percentOpenSpace)
                         .Create();
                     proposedRestocking.Add(nextRestocking);
                 }

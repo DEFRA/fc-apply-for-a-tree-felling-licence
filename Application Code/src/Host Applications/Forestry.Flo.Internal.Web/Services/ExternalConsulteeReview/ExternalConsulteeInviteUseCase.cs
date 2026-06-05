@@ -193,7 +193,8 @@ public class ExternalConsulteeInviteUseCase : FellingLicenceApplicationUseCaseBa
             CommentsEndDate = DateTimeDisplay.GetDateDisplayString(endDate),
             ViewApplicationURL = externalConsulteeInviteModel.ExternalAccessLink,
             AdminHubFooter = adminHubFooter,
-            ApplicationId = applicationId
+            ApplicationId = applicationId,
+            PropertyName = fla.SubmittedFlaPropertyDetail?.Name
         };
 
         var accessLink = new ExternalAccessLink

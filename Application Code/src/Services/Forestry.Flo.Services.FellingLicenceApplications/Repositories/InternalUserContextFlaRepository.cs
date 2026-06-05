@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.Reports;
 using Microsoft.EntityFrameworkCore;
@@ -208,6 +209,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
             query = query.Where(app =>
                 EF.Functions.ILike(app.ApplicationReference, pattern)
+                || EF.Functions.ILike(app.ApprovedInError.PreviousReference ?? string.Empty, pattern)
                 || EF.Functions.ILike(app.SubmittedFlaPropertyDetail!.Name ?? string.Empty, pattern)
                 || Context.AssigneeHistories
                     .Where(ah => ah.FellingLicenceApplicationId == app.Id && ah.TimestampUnassigned == null)
@@ -674,6 +676,8 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         var result = await Context.FellingLicenceApplications
             .Include(s => s.AssigneeHistories)
             .Include(s => s.StatusHistories)
+            .Include(x => x.SubmittedFlaPropertyDetail)
+            .Include(x => x.LinkedPropertyProfile)
             .Where(x =>
                 x.FinalActionDate <= currentTime.Add(thresholdBeforeDate)
                 && inReviewStatuses.Contains(x.StatusHistories.OrderByDescending(y => y.Created).FirstOrDefault()!.Status))
@@ -691,7 +695,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         var result = await Context.FellingLicenceApplications
             .Include(s => s.AssigneeHistories)
             .Include(s => s.StatusHistories)
-            .Include(s => s.SubmittedFlaPropertyDetail)
+            .Include(s => s.LinkedPropertyProfile)
             .Where(x =>
                 x.StatusHistories.OrderByDescending(a => a.Created).FirstOrDefault()!.Created <= currentTime.Subtract(thresholdAfterStatusCreatedDate)
                 && (x.StatusHistories.OrderByDescending(y => y.Created).FirstOrDefault()!.Status == FellingLicenceStatus.WithApplicant
@@ -711,7 +715,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         var result = await Context.FellingLicenceApplications
             .Include(s => s.AssigneeHistories)
             .Include(s => s.StatusHistories)
-            .Include(s => s.SubmittedFlaPropertyDetail)
+            .Include(s => s.LinkedPropertyProfile)
             .Where(x =>
                 x.StatusHistories.OrderByDescending(a => a.Created).FirstOrDefault()!.Created <= currentTime.Subtract(thresholdAfterStatusCreatedDate)
                 && (x.StatusHistories.OrderByDescending(y => y.Created).FirstOrDefault()!.Status == FellingLicenceStatus.WithApplicant
@@ -808,17 +812,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
         if (existingFla != null)
         {
-            var segments = existingFla.ApplicationReference.Split('/');
-            if (segments.Length < 3)
-            {
-                throw new ArgumentException("Invalid application reference format");
-            }
-            segments[0] = newAreaCode;
-            var applicationReferenceWithNewAreaCode = string.Join("/", segments);
-
-            existingFla.ApplicationReference = applicationReferenceWithNewAreaCode;
-            existingFla.AreaCode = newAreaCode;
-            existingFla.AdministrativeRegion = adminHubName;
+            existingFla.UpdateAreaCode(newAreaCode, adminHubName);
             return await Context.SaveEntitiesAsync(cancellationToken);
         }
 
@@ -930,6 +924,7 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
 
             baseQuery = baseQuery.Where(app =>
                 EF.Functions.ILike(app.ApplicationReference, pattern)
+                || EF.Functions.ILike(app.ApprovedInError.PreviousReference ?? string.Empty, pattern)
                 || EF.Functions.ILike(app.SubmittedFlaPropertyDetail!.Name ?? string.Empty, pattern)
                 || Context.AssigneeHistories
                     .Where(ah => ah.FellingLicenceApplicationId == app.Id && ah.TimestampUnassigned == null)
@@ -1226,17 +1221,14 @@ public class InternalUserContextFlaRepository : FellingLicenceApplicationReposit
         CancellationToken cancellationToken)
     {
         // Applications where: active amendment review exists AND response deadline has passed without completion
-        // AND application still WithApplicant / ReturnedToApplicant
         var result = await Context.FellingLicenceApplications
             .Include(x => x.WoodlandOfficerReview)
                 .ThenInclude(w => w!.FellingAndRestockingAmendmentReviews)
-            .Include(x => x.StatusHistories)
             .Where(x =>
                 x.WoodlandOfficerReview != null
                 && x.WoodlandOfficerReview.FellingAndRestockingAmendmentReviews.Any(r =>
                     r.AmendmentReviewCompleted != true
-                    && r.ResponseDeadline < currentTime) // response deadline passed
-                && (x.StatusHistories.OrderByDescending(y => y.Created).FirstOrDefault()!.Status == FellingLicenceStatus.WoodlandOfficerReview))
+                    && r.ResponseDeadline < currentTime)) // response deadline passed
             .ToListAsync(cancellationToken);
 
         return result;

@@ -34,7 +34,8 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
     private readonly IAuditService<ConditionsUseCase> _auditService;
     private readonly RequestContext _requestContext;
     private readonly IUpdateConfirmedFellingAndRestockingDetailsService _fellingAndRestockingService;
-    private readonly ExternalApplicantSiteOptions _settings;
+    private readonly ExternalApplicantSiteOptions _applicantSiteSettings;
+    private readonly ConditionsOptions _conditionsSettings;
     private readonly ISendNotifications _notificationsService;
     private readonly IClock _clock;
     private readonly ILogger<ConditionsUseCase> _logger;
@@ -54,7 +55,8 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
         IAgentAuthorityService agentAuthorityService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
         IClock clock,
-        IOptions<ExternalApplicantSiteOptions> settings,
+        IOptions<ExternalApplicantSiteOptions> applicantSiteSettings,
+        IOptions<ConditionsOptions> conditionsSettings,
         IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
         ILogger<ConditionsUseCase> logger)
         : base(internalUserAccountService,
@@ -71,7 +73,8 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
         _fellingAndRestockingService = Guard.Against.Null(fellingAndRestockingService);
-        _settings = Guard.Against.Null(settings.Value);
+        _applicantSiteSettings = Guard.Against.Null(applicantSiteSettings.Value);
+        _conditionsSettings = Guard.Against.Null(conditionsSettings).Value;
         _notificationsService = Guard.Against.Null(notificationsService);
         _clock = Guard.Against.Null(clock);
         _logger = logger;
@@ -301,10 +304,13 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
             conditionsText = ["No conditions apply to the application"];
         }
 
-        var externalViewURL = $"{_settings.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
+        var externalViewURL = $"{_applicantSiteSettings.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
         
         var adminHubFooter = await GetAdminHubAddressDetailsAsync(getDetails.Value.AdministrativeRegion, cancellationToken)
                 .ConfigureAwait(false);
+
+        var acceptanceDate = _clock.GetCurrentInstant().ToDateTimeUtc()
+            .Add(_conditionsSettings.ConditionsDeemedAcceptanceTimeSpan);
         
         var sendConditionsToApplicantNotificationModel = new ConditionsToApplicantDataModel
         {
@@ -318,7 +324,8 @@ public class ConditionsUseCase : FellingLicenceApplicationUseCaseBase, IConditio
             SenderEmail = user.EmailAddress,
             AdminHubFooter = adminHubFooter,
             ApplicationId = applicationId,
-            SupersedesPreviousNotification = getDetails.Value.ConditionsNotificationAlreadySent
+            SupersedesPreviousNotification = getDetails.Value.ConditionsNotificationAlreadySent,
+            DeemedAcceptanceDate = DateTimeDisplay.GetDateDisplayString(acceptanceDate)
         };
 
         var notificationResult = await _notificationsService.SendNotificationAsync(

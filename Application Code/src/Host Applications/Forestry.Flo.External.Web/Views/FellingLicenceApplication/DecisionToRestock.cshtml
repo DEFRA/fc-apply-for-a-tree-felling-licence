@@ -1,6 +1,8 @@
 ﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.DecisionToRestockViewModel
 @using Forestry.Flo.External.Web.Infrastructure
 @using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@using Forestry.Flo.Services.FellingLicenceApplications.Extensions
 
 @{
     ViewData.ManuallySetBackLink(Url.Action(
@@ -64,8 +66,6 @@
                             <input class="@GdsConstants.GdsInputCssClass" asp-for="Reason" tabindex="0" />
                         </govuk-form-group>
                     </div>
-
-
                 </div>
             </fieldset>
         </govuk-form-group>

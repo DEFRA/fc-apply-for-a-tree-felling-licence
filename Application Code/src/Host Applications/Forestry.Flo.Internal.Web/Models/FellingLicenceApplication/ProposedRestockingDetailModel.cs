@@ -26,6 +26,11 @@ public class ProposedRestockingDetailModel
     public double? Area { get; set; }
 
     /// <summary>
+    /// Gets and sets the percentage of open space.
+    /// </summary>
+    public double? PercentOpenSpace { get; set; }
+
+    /// <summary>
     /// Gets or sets the restock area as a percentage of compartment size.
     /// </summary>
     public double? PercentageOfRestockArea { get; set; }

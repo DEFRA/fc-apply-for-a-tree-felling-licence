@@ -51,6 +51,11 @@ public abstract class AssignToApplicantUseCaseTestsBase
     protected readonly Mock<IUpdateFellingLicenceApplication> MockUpdateFellingLicenceApplication;
     private readonly Mock<IWoodlandOfficerReviewSubStatusService> _woodlandOfficerReviewSubStatusService = new();
 
+    protected readonly VoluntaryWithdrawalNotificationOptions VoluntaryWithdrawalNotificationOptions = new()
+    {
+        ThresholdAutomaticWithdrawal = TimeSpan.FromDays(21)
+    };
+
 
     protected const string AdminHubFooter = "admin hub address";
     protected readonly Fixture Fixture;
@@ -134,6 +139,7 @@ public abstract class AssignToApplicantUseCaseTestsBase
             MockLarchCheckService.Object,
             MockPublicRegister.Object,
             _woodlandOfficerReviewSubStatusService.Object,
+            new OptionsWrapper<VoluntaryWithdrawalNotificationOptions>(VoluntaryWithdrawalNotificationOptions),
             MockClock.Object);
     }
 

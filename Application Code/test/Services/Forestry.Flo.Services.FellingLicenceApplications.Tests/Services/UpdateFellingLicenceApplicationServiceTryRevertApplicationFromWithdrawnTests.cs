@@ -1,10 +1,5 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using AutoFixture;
+﻿using AutoFixture;
 using AutoFixture.AutoMoq;
-using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
@@ -16,6 +11,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Xunit;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Tests.Services;
@@ -124,6 +124,17 @@ public class UpdateFellingLicenceApplicationServiceTryRevertApplicationFromWithd
             Status = previousStatus,
             Created = DateTime.UtcNow.AddDays(-1)
         });
+        if (previousStatus != FellingLicenceStatus.Submitted)
+        {
+            application.StatusHistories.Add(new StatusHistory
+            {
+                Status = FellingLicenceStatus.Submitted,
+                Created = DateTime.UtcNow.AddDays(-2)
+            });
+        }
+        var submittedDate = application.StatusHistories
+            .OrderByDescending(x => x.Created)
+            .First(x => x.Status == FellingLicenceStatus.Submitted).Created;
 
         _fellingLicenceApplicationsContext.FellingLicenceApplications.Add(application);
         await _fellingLicenceApplicationsContext.SaveChangesAsync();
@@ -137,6 +148,24 @@ public class UpdateFellingLicenceApplicationServiceTryRevertApplicationFromWithd
             .FirstAsync(x => x.Id == application.Id);
 
         Assert.Equal(previousStatus, updatedApplication.GetCurrentStatus());
+        Assert.Empty(updatedApplication.WithdrawalReasons);
+        Assert.Null(updatedApplication.WithdrawalReasonOtherDetails);
+        Assert.Null(updatedApplication.WithdrawnByUserId);
+
+        var propertyName = FellingLicenceStatusConstants.SubmitStatuses.Contains(previousStatus)
+            ? null
+            : application.SubmittedFlaPropertyDetail!.Name;
+        Guid? linkedPropertyProfileId = FellingLicenceStatusConstants.SubmitStatuses.Contains(previousStatus)
+            ? application.LinkedPropertyProfile!.PropertyProfileId
+            : null;
+
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(propertyName, result.Value.PropertyName);
+        Assert.Equal(linkedPropertyProfileId, result.Value.LinkedPropertyProfileId);
+        Assert.Equal(submittedDate, result.Value.SubmittedDate);
+        Assert.Equal(application.AdministrativeRegion, result.Value.AdminHubName);
+        Assert.Equal(application.CreatedById, result.Value.AuthorId);
     }
 
     [Theory, AutoMoqData]
@@ -158,6 +187,11 @@ public class UpdateFellingLicenceApplicationServiceTryRevertApplicationFromWithd
             Status = FellingLicenceStatus.ReturnedToApplicant,
             Created = DateTime.UtcNow.AddDays(-1)
         });
+        application.StatusHistories.Add(new StatusHistory
+        {
+            Status = FellingLicenceStatus.Submitted,
+            Created = DateTime.UtcNow.AddDays(-2)
+        });
 
         application.AdminOfficerReview = new Entities.AdminOfficerReview
         {
@@ -178,10 +212,27 @@ public class UpdateFellingLicenceApplicationServiceTryRevertApplicationFromWithd
             .FirstAsync(x => x.Id == application.Id);
 
         Assert.Equal(FellingLicenceStatus.ReturnedToApplicant, updatedApplication.GetCurrentStatus());
+        Assert.Empty(updatedApplication.WithdrawalReasons);
+        Assert.Null(updatedApplication.WithdrawalReasonOtherDetails);
+        Assert.Null(updatedApplication.WithdrawnByUserId);
         Assert.NotNull(updatedApplication.AdminOfficerReview);
         Assert.Equal(performingUserId, updatedApplication.AdminOfficerReview.LastUpdatedById);
         Assert.True(updatedApplication.AdminOfficerReview.LastUpdatedDate <= DateTime.UtcNow);
         Assert.False(application.AdminOfficerReview.AdminOfficerReviewComplete);
+
+
+        var submittedDate = application.StatusHistories
+            .OrderByDescending(x => x.Created)
+            .Single(x => x.Status == FellingLicenceStatus.Submitted).Created;
+        var linkedPropertyProfileId = application.LinkedPropertyProfile!.PropertyProfileId;
+
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Null(result.Value.PropertyName);
+        Assert.Equal(linkedPropertyProfileId, result.Value.LinkedPropertyProfileId);
+        Assert.Equal(submittedDate, result.Value.SubmittedDate);
+        Assert.Equal(application.AdministrativeRegion, result.Value.AdminHubName);
+        Assert.Equal(application.CreatedById, result.Value.AuthorId);
     }
 
     [Theory, CombinatorialData]
@@ -208,6 +259,18 @@ public class UpdateFellingLicenceApplicationServiceTryRevertApplicationFromWithd
             Status = previousStatus,
             Created = DateTime.UtcNow.AddDays(-1)
         });
+        if (previousStatus != FellingLicenceStatus.Submitted)
+        {
+            application.StatusHistories.Add(new StatusHistory
+            {
+                Status = FellingLicenceStatus.Submitted,
+                Created = DateTime.UtcNow.AddDays(-2)
+            });
+        }
+
+        var submittedDate = application.StatusHistories
+            .OrderByDescending(x => x.Created)
+            .First(x => x.Status == FellingLicenceStatus.Submitted).Created;
 
         application.AdminOfficerReview = new Entities.AdminOfficerReview
         {
@@ -228,9 +291,27 @@ public class UpdateFellingLicenceApplicationServiceTryRevertApplicationFromWithd
             .FirstAsync(x => x.Id == application.Id);
 
         Assert.Equal(previousStatus, updatedApplication.GetCurrentStatus());
+        Assert.Empty(updatedApplication.WithdrawalReasons);
+        Assert.Null(updatedApplication.WithdrawalReasonOtherDetails);
+        Assert.Null(updatedApplication.WithdrawnByUserId);
         Assert.NotNull(updatedApplication.AdminOfficerReview);
         Assert.True(updatedApplication.AdminOfficerReview.LastUpdatedDate <= DateTime.UtcNow);
         Assert.True(application.AdminOfficerReview.AdminOfficerReviewComplete);
+
+        var propertyName = FellingLicenceStatusConstants.SubmitStatuses.Contains(previousStatus)
+            ? null
+            : application.SubmittedFlaPropertyDetail!.Name;
+        Guid? linkedPropertyProfileId = FellingLicenceStatusConstants.SubmitStatuses.Contains(previousStatus)
+            ? application.LinkedPropertyProfile!.PropertyProfileId
+            : null;
+
+        Assert.Equal(application.Id, result.Value.ApplicationId);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(propertyName, result.Value.PropertyName);
+        Assert.Equal(linkedPropertyProfileId, result.Value.LinkedPropertyProfileId);
+        Assert.Equal(submittedDate, result.Value.SubmittedDate);
+        Assert.Equal(application.AdministrativeRegion, result.Value.AdminHubName);
+        Assert.Equal(application.CreatedById, result.Value.AuthorId);
     }
 
     private UpdateFellingLicenceApplicationService CreateSut()

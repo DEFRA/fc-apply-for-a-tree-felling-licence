@@ -29,6 +29,12 @@ public abstract class ConditionBuilderBase : IBuildCondition
     /// </summary>
     protected abstract bool MustMatchOnNaturalRegenPercentage { get; }
 
+    /// <summary>
+    /// Indicates whether the condition must match on the restock area. This is relevant for conditions where the area to be
+    /// restocked is output in the conditions text.
+    /// </summary>
+    protected abstract bool MustMatchOnRestockArea { get; }
+
     /// <inheritdoc />
     public Result<List<CalculatedCondition>> CalculateCondition(List<RestockingOperationDetails> restockingOperations)
     {
@@ -92,6 +98,11 @@ public abstract class ConditionBuilderBase : IBuildCondition
                 keyBuilder.Add($"{compartment.PercentNaturalRegeneration:0.00}");
             }
 
+            if (MustMatchOnRestockArea)
+            {
+                keyBuilder.Add($"{compartment.TotalRestockingArea:0.00}");
+            }
+
             var key = string.Join("|", keyBuilder);
 
             if (dictionary.ContainsKey(key))
@@ -115,7 +126,14 @@ public abstract class ConditionBuilderBase : IBuildCondition
             .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
 
-        return string.Join(", ", list);
+        var species = string.Join(", ", list);
+        if (restockingOperation.PercentOpenSpace.HasValue)
+        {
+            species +=
+                $"{(string.IsNullOrWhiteSpace(species) ? "" : " and ")}{restockingOperation.PercentOpenSpace.Value:0.00}% open space";
+        }
+
+        return species;
     }
 
     private static string GetDensityText(double? restockingDensity) => $"{restockingDensity} stems per Ha";
@@ -151,7 +169,8 @@ public abstract class ConditionBuilderBase : IBuildCondition
                 .Replace(ConditionOptions.CompartmentsParameter, restockingOperations.RestockingCompartmentNames())
                 .Replace(ConditionOptions.FellingCompartmentsParameter, restockingOperations.FellingCompartmentNames())
                 .Replace(ConditionOptions.RegenerationParameter, regen)
-                .Replace(ConditionOptions.LessThan100PercentRegenerationParameter, lessThan100PercentRegenText);
+                .Replace(ConditionOptions.LessThan100PercentRegenerationParameter, lessThan100PercentRegenText)
+                .Replace(ConditionOptions.AreaParameter, restockingOperation.TotalRestockingArea.ToString("0.00"));
 
             if (!string.IsNullOrWhiteSpace(nextLine))
             {

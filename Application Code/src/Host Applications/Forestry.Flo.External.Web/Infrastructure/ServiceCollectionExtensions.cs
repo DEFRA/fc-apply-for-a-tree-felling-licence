@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using System.Security.Claims;
+using FluentValidation;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.External.Web.Services.AccountAdministration;
 using Forestry.Flo.External.Web.Services.ExternalApi;
@@ -27,6 +28,7 @@ using MassTransit;
 using Forestry.Flo.External.Web.Services.AgentAuthority;
 using Forestry.Flo.External.Web.Services.FcUser;
 using Forestry.Flo.External.Web.Services.Interfaces;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Services.Common.Analytics;
 using Forestry.Flo.Services.ConditionsBuilder;
 using Forestry.Flo.Services.FellingLicenceApplications.Configuration;
@@ -34,6 +36,7 @@ using Forestry.Flo.Services.Gis.Infrastructure;
 using Forestry.Flo.Services.Gis.Interfaces;
 using Forestry.Flo.Services.Gis.Services;
 using GovUk.OneLogin.AspNetCore;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Forestry.Flo.External.Web.Infrastructure;
 
@@ -174,8 +177,8 @@ public static class ServiceCollectionExtensions
                     var principal = context.Principal;
                     var userSignIn = context.HttpContext.RequestServices.GetService<ISignInApplicant>();
 
-                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
-                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure))
+                    var newIdentity = new ClaimsIdentity([
+                        new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.Azure))
                     ]);
 
                     context.Principal!.AddIdentity(newIdentity);
@@ -271,6 +274,7 @@ public static class ServiceCollectionExtensions
                 options.Events.OnTokenValidated = context =>
                 {
                     var token = context.ProtocolMessage.State;
+                    var oidcToken = context.Properties?.GetTokenValue("id_token");
 
                     var newIdentity = new System.Security.Claims.ClaimsIdentity([
                         new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
@@ -280,6 +284,12 @@ public static class ServiceCollectionExtensions
                     {
                         newIdentity.AddClaim(new System.Security.Claims.Claim("token", context.ProtocolMessage.State));
                     }
+
+                    if (!string.IsNullOrEmpty(oidcToken))
+                    {
+                        newIdentity.AddClaim(new Claim(FloClaimTypes.AuthenticationIdTokenHint, oidcToken));
+                    }
+
                     context.Principal!.AddIdentity(newIdentity);
                     return Task.CompletedTask;
                 };
@@ -303,6 +313,17 @@ public static class ServiceCollectionExtensions
                         context.Response.Redirect("/Home/Error");
                         context.HandleResponse();
                     }
+                };
+
+                options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+                {
+                    var idToken = context.HttpContext.User.Claims.FirstOrDefault(x => x.Type == FloClaimTypes.AuthenticationIdTokenHint)?.Value;
+                    if (!string.IsNullOrEmpty(idToken))
+                    {
+                        context.ProtocolMessage.IdTokenHint = idToken;
+                    }
+
+                    return Task.CompletedTask;
                 };
             });
 
@@ -494,6 +515,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ReviewFellingAndRestockingAmendmentsUseCase>();
         services.AddScoped<TenYearLicenceUseCase>();
         services.AddScoped<ICollectTreeHealthIssuesUseCase, CollectTreeHealthIssuesUseCase>();
+        services.AddScoped<IWithdrawApplicationsUseCase, WithdrawApplicationUseCase>();
+        services.AddScoped<IWithdrawApplicationExternalUseCase, WithdrawApplicationExternalUseCase>();
         services.AddScoped<HabitatRestorationUseCase>();
     }
 }

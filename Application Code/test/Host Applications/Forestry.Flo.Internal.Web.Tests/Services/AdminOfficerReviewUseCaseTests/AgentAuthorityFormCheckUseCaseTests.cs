@@ -1,6 +1,5 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
@@ -179,7 +178,8 @@ public class AgentAuthorityFormCheckUseCaseTests
             ContactName = _applicantUser.Agency.ContactName,
             OrganisationName = _applicantUser.Agency.OrganisationName,
             AgencyId = _applicantUser.Agency.Id,
-            IsFcAgency = _applicantUser.Agency.IsFcAgency
+            IsFcAgency = _applicantUser.Agency.IsFcAgency,
+            IsOrganisation = _applicantUser.Agency.IsOrganisation
         }, result.Value.ApplicationOwner.Agency);
 
         Assert.Equivalent(new Models.UserAccount.WoodlandOwnerModel

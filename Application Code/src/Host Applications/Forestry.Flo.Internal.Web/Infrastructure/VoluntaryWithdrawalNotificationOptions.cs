@@ -8,7 +8,7 @@ public class VoluntaryWithdrawalNotificationOptions
     public TimeSpan ThresholdAfterWithApplicantStatusDate { get; set; }
 
     /// <summary>
-    /// The time after the created date for the 'with applicant' status that the Voluntary withdrawal notification should be sent to applicant.
+    /// The time after the created date for the 'with applicant' status that the application is automatically withdrawn.
     /// </summary>
     public TimeSpan ThresholdAutomaticWithdrawal { get; set; }
 }

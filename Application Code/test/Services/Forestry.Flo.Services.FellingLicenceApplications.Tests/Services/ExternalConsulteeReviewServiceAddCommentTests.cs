@@ -23,7 +23,7 @@ public class ExternalConsulteeReviewServiceAddCommentTests
     private readonly Mock<IFellingLicenceApplicationInternalRepository> MockRepository = new();
 
     [Theory, AutoMoqData]
-    public async Task WhenCommentStoredSuccessfully(
+    public async Task WhenCommentStoredSuccessfully_WithFc(
         ConsulteeCommentModel model,
         FellingLicenceApplication application)
     {
@@ -51,6 +51,17 @@ public class ExternalConsulteeReviewServiceAddCommentTests
         application.AssigneeHistories.Add(wo);
         application.AssigneeHistories.Add(approver);
 
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                CreatedById = Guid.NewGuid(),
+                Created = DateTime.Today.ToUniversalTime(),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.AdminOfficerReview
+            }
+        ];
+
         var sut = CreateSut();
 
         MockRepository
@@ -68,9 +79,81 @@ public class ExternalConsulteeReviewServiceAddCommentTests
         Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
         Assert.Equal(application.AdministrativeRegion, result.Value.AdminHub);
         Assert.Equivalent(new[] {ao.AssignedUserId, wo.AssignedUserId, approver.AssignedUserId}, result.Value.AssignedFcStaff);
-        Assert.Equal(application.SubmittedFlaPropertyDetail.Name, result.Value.PropertyName);
+        Assert.Equal(application.SubmittedFlaPropertyDetail!.Name, result.Value.PropertyName);
+        Assert.Null(result.Value.LinkedPropertyProfileId);
 
         MockRepository.Verify(x => x.AddConsulteeCommentAsync(It.Is<ConsulteeComment>(c => 
+            c.CreatedTimestamp == model.CreatedTimestamp
+            && c.AuthorContactEmail == model.AuthorContactEmail
+            && c.AuthorName == model.AuthorName
+            && c.Comment == model.Comment
+            && c.FellingLicenceApplicationId == model.FellingLicenceApplicationId), It.IsAny<CancellationToken>()),
+            Times.Once);
+        MockRepository.Verify(x => x.GetAsync(model.FellingLicenceApplicationId, It.IsAny<CancellationToken>()), Times.Once);
+        MockRepository.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenCommentStoredSuccessfully_WithApplicant(
+        ConsulteeCommentModel model,
+        FellingLicenceApplication application)
+    {
+        // ensure all existing assignees are unassigned so that only the current assignees are returned in the result
+        application.AssigneeHistories.ForEach(x => x.TimestampUnassigned = DateTime.UtcNow);
+        var ao = new AssigneeHistory
+        {
+            Role = AssignedUserRole.AdminOfficer,
+            AssignedUserId = Guid.NewGuid(),
+            TimestampAssigned = DateTime.Today
+        };
+        var wo = new AssigneeHistory
+        {
+            Role = AssignedUserRole.WoodlandOfficer,
+            AssignedUserId = Guid.NewGuid(),
+            TimestampAssigned = DateTime.Today
+        };
+        var approver = new AssigneeHistory
+        {
+            Role = AssignedUserRole.FieldManager,
+            AssignedUserId = Guid.NewGuid(),
+            TimestampAssigned = DateTime.Today
+        };
+        application.AssigneeHistories.Add(ao);
+        application.AssigneeHistories.Add(wo);
+        application.AssigneeHistories.Add(approver);
+
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                CreatedById = Guid.NewGuid(),
+                Created = DateTime.Today.ToUniversalTime(),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.WithApplicant
+            }
+        ];
+
+        var sut = CreateSut();
+
+        MockRepository
+            .Setup(x => x.AddConsulteeCommentAsync(It.IsAny<ConsulteeComment>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+        MockRepository
+            .Setup(x => x.GetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe.From(application));
+
+        var result = await sut.AddCommentAsync(model, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.Equal(application.ApplicationReference, result.Value.ApplicationReference);
+        Assert.Equal(application.AdministrativeRegion, result.Value.AdminHub);
+        Assert.Equivalent(new[] { ao.AssignedUserId, wo.AssignedUserId, approver.AssignedUserId }, result.Value.AssignedFcStaff);
+        Assert.Null(result.Value.PropertyName);
+        Assert.Equal(application.LinkedPropertyProfile!.PropertyProfileId, result.Value.LinkedPropertyProfileId);
+
+        MockRepository.Verify(x => x.AddConsulteeCommentAsync(It.Is<ConsulteeComment>(c =>
             c.CreatedTimestamp == model.CreatedTimestamp
             && c.AuthorContactEmail == model.AuthorContactEmail
             && c.AuthorName == model.AuthorName

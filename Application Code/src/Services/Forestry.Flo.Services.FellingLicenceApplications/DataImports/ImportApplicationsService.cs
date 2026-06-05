@@ -396,7 +396,10 @@ public class ImportApplicationsService : IImportApplications
             RestockingSpecies = restockingSpecies,
             PercentageEstablishedByCoppiceOrNaturalRegen = proposal.IsCoppiceOrNaturalRegen()
                 ? restocking.PercentageEstablishedByCoppiceOrNaturalRegen
-                : null
+                : null,
+            PercentOpenSpace = proposal == TypeOfProposal.CreateDesignedOpenGround
+                ? null
+                : restocking.PercentageOpenSpace
         };
     }
 }

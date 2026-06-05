@@ -127,6 +127,7 @@ config:
     nonceCookieName:
     # The vectors of trust for GOV.UK One Login authentication.
     vectorsOfTrust:
+      - "Cl"
   authenticationOptions:
     # The identity provider to use for authentication (eg., OneLogin, Azure)
     provider:
@@ -311,6 +312,12 @@ config:
       ReminderForApplicantToRespondToAmendments:
       # -- Inform internal users of application approved in error process started
       InformFcStaffOfApplicationApprovedInError:
+      # -- Confirm to consultees when a comment is received
+      ExternalConsulteeCommentConfirmation:
+      # -- Notification to applicant when an application is reopened
+      InformApplicantOfApplicationReopened:
+      # -- Notification to applicant when an application reference number has changed
+      InformApplicantOfApplicationReferenceChange:
   # -- Allowed Email Domains for FC Agency Account
   FcAgency:
     enabled: false

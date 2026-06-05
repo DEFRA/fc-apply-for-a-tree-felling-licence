@@ -280,6 +280,7 @@ public class SendNotificationsByGovUkNotifyTests
             { "WoodlandOwnerName", model.WoodlandOwnerName },
             { "AdminHubFooter", model.AdminHubFooter },
             { "SupersedesPreviousNotification", model.SupersedesPreviousNotification },
+            { "DeemedAcceptanceDate", model.DeemedAcceptanceDate },
             { "HasAttachments", false },
             { "Attachment1", string.Empty },
             { "Attachment2", string.Empty },

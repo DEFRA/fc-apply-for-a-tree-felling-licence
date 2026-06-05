@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
@@ -11,6 +12,7 @@ using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Microsoft.Extensions.Options;
 using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
@@ -31,6 +33,7 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
     private readonly ISendNotifications _sendNotifications;
     private readonly IAuditService<RemoveApplicationsFromDecisionPublicRegisterUseCase> _auditService;
     private readonly RequestContext _requestContext;
+    private readonly InternalUserSiteOptions _internalUserSiteOptions;
     private readonly ILogger<RemoveApplicationsFromDecisionPublicRegisterUseCase> _logger;
 
     public RemoveApplicationsFromDecisionPublicRegisterUseCase(
@@ -43,6 +46,7 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
         IAuditService<RemoveApplicationsFromDecisionPublicRegisterUseCase> auditService,
         RequestContext requestContext,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IOptions<InternalUserSiteOptions> internalUserSiteOptions,
         ILogger<RemoveApplicationsFromDecisionPublicRegisterUseCase> logger)
     {
         _getFellingLicenceApplicationService = Guard.Against.Null(getFellingLicenceApplicationService);
@@ -53,21 +57,15 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
         _sendNotifications = Guard.Against.Null(sendNotifications);
         _auditService = Guard.Against.Null(auditService);
         _requestContext = Guard.Against.Null(requestContext);
+        _internalUserSiteOptions = Guard.Against.Null(internalUserSiteOptions).Value;
         _logger = logger;
        
         _updateFellingLicenceApplicationService = Guard.Against.Null(updateFellingLicenceApplicationService);
         _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
     }
 
-    /// <summary>
-    /// Removes Felling Licence Applications from the Decision Public Register when their expiry/end date is reached.
-    /// </summary>
-    /// <param name="viewApplicationBaseUrl">The base URL for viewing an application summary on the internal app.</param>
-    /// <param name="cancellationToken">A cancellation Token</param>
-    /// <returns></returns>
-    public async Task ExecuteAsync(
-        string viewApplicationBaseUrl,
-        CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         var relevantApplications = await _getFellingLicenceApplicationService.
             RetrieveFinalisedApplicationsHavingExpiredOnTheDecisionPublicRegisterAsync(
@@ -110,7 +108,6 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
                         relevantApplication, 
                         retrievedUsers,
                         timestamp,
-                        viewApplicationBaseUrl, 
                         cancellationToken);
                 }
                 else
@@ -132,7 +129,6 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
         PublicRegisterPeriodEndModel modelData,
         List<UserAccountModel>? retrievedUsers,
         DateTime timestamp,
-        string viewApplicationBaseUrl,
         CancellationToken cancellationToken)
     {
         Result? updateFlaResult = null;
@@ -165,7 +161,7 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
                              "from the Decision Public Register, Error was {Error}",
                 modelData.ApplicationReference, gisResult.Error);
 
-            await SendNotificationsAsync(modelData, retrievedUsers, viewApplicationBaseUrl, cancellationToken);
+            await SendNotificationsAsync(modelData, retrievedUsers, cancellationToken);
         }
 
         await AuditResultAsync(gisResult, updateFlaResult, modelData, cancellationToken);
@@ -174,7 +170,6 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
     private async Task SendNotificationsAsync(
         PublicRegisterPeriodEndModel dataModel,
         List<UserAccountModel>? retrievedUsers,
-        string viewApplicationBaseUrl,
         CancellationToken cancellationToken)
     {
         var notificationsSent = 0;
@@ -211,7 +206,7 @@ public class RemoveApplicationsFromDecisionPublicRegisterUseCase : IRemoveApplic
                         DateTimeDisplay.GetDateDisplayString(
                             dataModel.PublicRegister!.DecisionPublicRegisterExpiryTimestamp!.Value),
                     ViewApplicationURL =
-                        $"{viewApplicationBaseUrl}/{dataModel.PublicRegister!.FellingLicenceApplicationId}",
+                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{dataModel.PublicRegister!.FellingLicenceApplicationId}",
                     PropertyName = dataModel.PropertyName,
                     AdminHubFooter = adminHubFooter,
                     PublishDate = DateTimeDisplay.GetDateDisplayString(

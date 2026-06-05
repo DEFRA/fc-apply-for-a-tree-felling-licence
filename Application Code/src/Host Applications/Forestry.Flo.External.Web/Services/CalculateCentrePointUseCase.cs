@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.MassTransit.Messages;

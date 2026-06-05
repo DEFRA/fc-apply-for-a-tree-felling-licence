@@ -63,7 +63,8 @@ public class LandInformationSearch : BaseServices, ILandInformationSearch
                 GeometryObject = p.ShapeGeometry,
                 Attributes = new LandInformationSearchCompartmentAttributeModel<int>
                 {
-                    CaseReference = fellingLicenceId.ToString()
+                    CaseReference = fellingLicenceId.ToString(),
+                    CompartmentLabel   = p.CompartmentLabel
                 }
             });
 

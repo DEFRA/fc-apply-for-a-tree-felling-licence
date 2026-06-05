@@ -41,8 +41,37 @@
     <h1 class="govuk-heading-xl">Your application</h1>
 
     <partial name="_ApplicationSummaryNotes" model="@Model.ApplicationSummary" />
+    
+    @if (Model.ApplicationSummary.Status == FellingLicenceStatus.Withdrawn)
+    {
+        <div class="govuk-!-margin-bottom-8">
 
-	@if (Model.HasCaseNotes)
+            <div class="govuk-inset-text">
+                Your application was withdrawn
+                <text condition="@Model.WithdrawalDateTime.HasValue"> on @DateTimeDisplay.GetDateDisplayString(Model.WithdrawalDateTime!.Value)</text>
+                <text condition="@(!string.IsNullOrWhiteSpace(Model.WithdrawnByName))"> by @Model.WithdrawnByName</text>
+                <br/><br/>
+                If you believe this application was withdrawn in error or wish to re-open it, contact us at <a class="govuk-link long-link" href="mailto:fellinglicenceonline@forestrycommission.gov.uk">fellinglicenceonline@forestrycommission.gov.uk</a>
+            </div>
+
+            <h2 class="govuk-heading-s">Reasons for withdrawal</h2>
+            <p class="govuk-body">This application has been withdrawn because:</p>
+            <ul class="govuk-list govuk-list--bullet">
+                @foreach (var reason in Model.WithdrawalReasons.Where(x => x != WithdrawalReason.Other))
+                {
+                    <li>@reason.GetDisplayName()?.ToLower()</li>
+                }
+                @if (Model.WithdrawalReasons.Contains(WithdrawalReason.Other) && !string.IsNullOrWhiteSpace(Model.WithdrawalReasonOtherDetails))
+                {
+                    <li>@WithdrawalReason.Other.GetDisplayName()?.ToLower() - @Model.WithdrawalReasonOtherDetails</li>
+                }
+            </ul>
+
+        </div>
+
+    }
+
+    @if (Model.HasCaseNotes)
 	{
 		<div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
 			<div class="govuk-notification-banner__content">
@@ -374,10 +403,15 @@
         <div condition="@(Model.CurrentReviewModel is not null)" class="govuk-body">
             
             @{
-                var status = Model.CurrentReviewModel.ResponseReceivedDate is not null 
-                             || (Model.CurrentReviewModel.AmendmentReviewCompleted ?? false) // completed by case officer
-                    ? ApplicationStepStatus.Completed
-                    : ApplicationStepStatus.NotStarted;
+                var status = ApplicationStepStatus.NotStarted;
+                if (Model.CurrentReviewModel?.ResponseReceivedDate.HasValue ?? false)
+                {
+                    status = ApplicationStepStatus.Completed;
+                }
+                else if (Model.CurrentReviewModel?.AmendmentReviewCompleted is true)
+                {
+                    status = ApplicationStepStatus.Closed;
+                }
             }
             
             <h2 class="govuk-heading-m">Review and confirm amendments</h2>
@@ -403,14 +437,14 @@
                         <a class="govuk-link govuk-task-list__link"
                            href="@Url.Action(nameof(FellingLicenceApplicationController.ReviewAmendments), "FellingLicenceApplication", new { applicationId = Model.ApplicationSummary.Id })"
                            aria-describedby="review-amendments-status">
-                            Review amendments
+                            Felling and restocking amendments
                         </a>
                     </div>
                     
 
 
                     <div class="govuk-task-list__status" id="review-amendments-status">
-                        @if (status == ApplicationStepStatus.Completed)
+                        @if (status is ApplicationStepStatus.Completed or ApplicationStepStatus.Closed)
                         {
                             @status.GetDescription()
                         }

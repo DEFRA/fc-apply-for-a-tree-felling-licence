@@ -77,18 +77,5 @@ public class ConfirmedRestockingDetailValidatorWithRestockDecision : AbstractVal
             .Must(m => m is > 0 and <= 100)
             .When(m => m.RestockingProposal.HasValue && m.RestockingProposal.Value.IsCoppiceOrNaturalRegen() && m.PercentageEstablishedByCoppiceOrNaturalRegen.HasValue)
             .WithMessage("Enter the percentage of restocking that will be established with coppice regrowth or natural regeneration between 0 and 100");
-
-        // check percent open space is a valid percentage when it has been entered (0 is a valid percentage in this case)
-        //RuleFor(m => m.PercentOpenSpace)
-        //    .Must(m => m is >= 0 and <= 100)
-        //    .WithMessage(x => $"Compartment {compartment.CompartmentName} - Open space must be between zero and 100%")
-        //    .When(m => m.PercentOpenSpace is not null);
-
-        // check percent natural regeneration is a valid percentage when it has been entered (0 is a valid percentage in this case)
-        //RuleFor(m => m.PercentNaturalRegeneration)
-        //    .Must(m => m is >= 0 and <= 100)
-        //    .WithMessage(x => $"Compartment {compartment.CompartmentName} - Natural regeneration must be between zero and 100%")
-        //    .When(m => m.PercentNaturalRegeneration is not null);
-
     }
 }

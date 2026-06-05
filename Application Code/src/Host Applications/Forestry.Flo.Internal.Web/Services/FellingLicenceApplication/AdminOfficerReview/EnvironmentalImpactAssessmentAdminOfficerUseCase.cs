@@ -339,7 +339,7 @@ public class EnvironmentalImpactAssessmentAdminOfficerUseCase(
             return Result.Failure<EnvironmentalImpactAssessmentReminderDataModel>("Unable to retrieve felling licence application");
         }
 
-        var externalViewUrl = $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList/{applicationId}";
+        var externalViewUrl = $"{_externalSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
 
         var applicantId = application.AssigneeHistories
             .First(x => x.Role is AssignedUserRole.Author)

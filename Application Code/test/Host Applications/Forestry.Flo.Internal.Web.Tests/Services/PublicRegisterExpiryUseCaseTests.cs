@@ -13,11 +13,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using UserAccountModel = Forestry.Flo.Services.InternalUsers.Models.UserAccountModel;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
+using Microsoft.Extensions.Options;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services;
 
@@ -35,8 +37,10 @@ public class PublicRegisterExpiryUseCaseTests
     private readonly Fixture _fixtureInstance;
 
     private readonly string _requestContextCorrelationId = Guid.NewGuid().ToString();
-    private const string InternalBaseUrl = "baseUrl";
+    private const string InternalBaseUrl = "https://baseUrl/";
     private const string AdminHubAddress = "admin hub address";
+
+    private readonly InternalUserSiteOptions _internalUserSiteOptions = new InternalUserSiteOptions { BaseUrl = InternalBaseUrl };
 
     public PublicRegisterExpiryUseCaseTests()
     {
@@ -65,7 +69,7 @@ public class PublicRegisterExpiryUseCaseTests
                 s.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<PublicRegisterPeriodEndModel>());
 
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
 
@@ -93,7 +97,7 @@ public class PublicRegisterExpiryUseCaseTests
             .ReturnsAsync(Result.Success(users));
 
         // act
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         // assert
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
@@ -133,7 +137,7 @@ public class PublicRegisterExpiryUseCaseTests
             .ReturnsAsync(Result.Success(users));
 
         // act
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         // assert
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
@@ -169,7 +173,7 @@ public class PublicRegisterExpiryUseCaseTests
             .ReturnsAsync(Result.Success());
 
         // act
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         // assert 
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
@@ -219,7 +223,7 @@ public class PublicRegisterExpiryUseCaseTests
             .ReturnsAsync(Result.Failure("Error"));
 
         // act
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         // assert 
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
@@ -280,7 +284,7 @@ public class PublicRegisterExpiryUseCaseTests
             It.IsAny<Guid>(), _now.ToDateTimeUtc(), It.IsAny<CancellationToken>())).ReturnsAsync(Result.Failure("error"));
 
         // act
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         // assert 
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
@@ -328,7 +332,7 @@ public class PublicRegisterExpiryUseCaseTests
             .ReturnsAsync(Result.Success());
 
         // act
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         // assert 
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
@@ -377,7 +381,7 @@ public class PublicRegisterExpiryUseCaseTests
             .ReturnsAsync(Result.Success);
 
         // act
-        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(InternalBaseUrl, CancellationToken.None);
+        await sut.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken.None);
 
         // assert 
         _getFellingLicenceService.Verify(v => v.RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(CancellationToken.None), Times.Once);
@@ -442,6 +446,7 @@ public class PublicRegisterExpiryUseCaseTests
                 new RequestUserModel(UserFactory.CreateUnauthenticatedUser())),
             _auditMock.Object,
             _getConfiguredFcAreasMock.Object,
+            new OptionsWrapper<InternalUserSiteOptions>(_internalUserSiteOptions),
             _clockMock.Object
         );
     }
@@ -502,7 +507,8 @@ public class PublicRegisterExpiryUseCaseTests
                      && x.Name == internalUser.FullName
                      && x.AdminHubFooter == AdminHubAddress
                      && x.DecisionPublicRegisterExpiryDate == DateTimeDisplay.GetDateDisplayString(model.PublicRegister!.ConsultationPublicRegisterExpiryTimestamp)
-                     && x.RegisterName == "Consultation"),
+                     && x.RegisterName == "Consultation"
+                     && x.ViewApplicationURL == $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{model.PublicRegister!.FellingLicenceApplicationId}"),
             NotificationType.InformFcStaffOfApplicationRemovedFromDecisionPublicRegisterFailure,
             It.Is<NotificationRecipient>(x => x.Name == internalUser.FullName && x.Address == internalUser.Email),
             null, null, null, CancellationToken.None), Times.Once);

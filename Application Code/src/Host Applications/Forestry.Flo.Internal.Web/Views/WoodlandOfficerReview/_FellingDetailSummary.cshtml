@@ -160,8 +160,9 @@
             </dd>
         </div>
         @{
-            var confirmedWarning = Model is { AreaToBeFelled: not null, TotalConfirmedRestockingArea: not null }
-                                   && Math.Abs(Model.AreaToBeFelled.Value - Model.TotalConfirmedRestockingArea.Value) > 0.1;
+            var confirmedWarning = Model is { AreaToBeFelled: not null, TotalConfirmedRestockingArea: not null, OperationType: not null }
+                                   && Math.Round(Math.Abs(Math.Round(Model.AreaToBeFelled.Value, 2) - Math.Round(Model.TotalConfirmedRestockingArea.Value, 2)), 2) >= 0.01
+                                   && Model.OperationType.Value.AllowedRestockingForFellingType(false).Length > 0;
             var confirmedWarningText = Model.TotalConfirmedRestockingArea.HasValue
                 ? "The total restocking area is " + Math.Round(Model.TotalConfirmedRestockingArea.Value, 2) + " ha"
                 : null;

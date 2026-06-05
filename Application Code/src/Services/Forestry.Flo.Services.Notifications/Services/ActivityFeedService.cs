@@ -117,7 +117,10 @@ public class ActivityFeedService : IActivityFeedService
             ActivityFeedItemType.InformApplicantOfAIENewLicenceRequired,
             ActivityFeedItemType.InformApplicantOfAIENewLicenceApproved,
             ActivityFeedItemType.InformFcStaffOfConsulteeCommentReceived,
-            ActivityFeedItemType.ExternalConsulteeInviteReminder
+            ActivityFeedItemType.ExternalConsulteeInviteReminder,
+            ActivityFeedItemType.ExternalConsulteeCommentConfirmation,
+            ActivityFeedItemType.InformApplicantOfApplicationReopened,
+            ActivityFeedItemType.InformApplicantOfApplicationReferenceChange
         };
     }
 }

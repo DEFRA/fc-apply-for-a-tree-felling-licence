@@ -46,7 +46,7 @@ public class WithdrawalNotificationService : IWithdrawalNotificationService
             {
                 ApplicationId = application.Id,
                 ApplicationReference = application.ApplicationReference,
-                PropertyName = application.SubmittedFlaPropertyDetail?.Name,
+                LinkedPropertyProfileId = application.LinkedPropertyProfile!.PropertyProfileId,
                 CreatedById = application.CreatedById,
                 WithApplicantDate = application.StatusHistories
                     .Where(x => x.Status is FellingLicenceStatus.WithApplicant or FellingLicenceStatus.ReturnedToApplicant)

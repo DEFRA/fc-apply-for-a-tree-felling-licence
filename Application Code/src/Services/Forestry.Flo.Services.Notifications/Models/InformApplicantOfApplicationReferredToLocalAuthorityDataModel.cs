@@ -49,4 +49,10 @@ public class InformApplicantOfApplicationReferredToLocalAuthorityDataModel : IAp
     /// Gets and sets the application id.
     /// </summary>
     public required Guid ApplicationId { get; set; }
+
+    /// <summary>
+    /// Gets and sets the reasons for referral to the local authority, as entered by the user that
+    /// referred the application.
+    /// </summary>
+    public string? ReasonsForReferral { get; set; }
 }

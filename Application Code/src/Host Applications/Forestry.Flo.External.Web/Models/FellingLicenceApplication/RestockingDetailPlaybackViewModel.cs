@@ -23,6 +23,15 @@ namespace Forestry.Flo.External.Web.Models.FellingLicenceApplication
                 if (RestockingDetail.RestockingSpecies != null && RestockingDetail.RestockingSpecies.Any())
                 {
                     display = string.Join(", ", RestockingDetail.RestockingSpecies.Select(rs => $"{TreeSpeciesFactory.SpeciesDictionary[rs.Species].Name}: {rs.Percentage}%"));
+
+                    if (RestockingDetail.PercentOpenSpace.HasValue)
+                    {
+                        display += $", Area to be left as open space: {RestockingDetail.PercentOpenSpace}%";
+                    }
+                }
+                else if (RestockingDetail.PercentOpenSpace.HasValue)
+                {
+                    display = $"Area to be left as open space: {RestockingDetail.PercentOpenSpace}%";
                 }
 
                 return display;

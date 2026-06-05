@@ -1,11 +1,12 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
+using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common; // RequestContext, UserDbErrorReason
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Models; // UserAccessModel
 using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services; // IWithdrawFellingLicenceService
@@ -19,6 +20,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
+using System.Text.Json;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using ApplicantsUserAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccountModel;
 using InternalUserAccountModel = Forestry.Flo.Services.InternalUsers.Models.UserAccountModel;
 
@@ -35,23 +38,37 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
     private readonly Mock<IFellingLicenceApplicationInternalRepository> _flaRepo = new();
     private readonly Mock<IUserAccountService> _internalUserAccounts = new();
     private readonly Mock<IOptions<ExternalApplicantSiteOptions>> _extSiteOptions = new();
+    private readonly Mock<IWithdrawApplicationInternalUseCase> _withdrawApplicationInternalUseCase = new();
+    private readonly RequestContext _requestContext = new(Guid.NewGuid().ToString(), new RequestUserModel(UserFactory.CreateUnauthenticatedUser()));
+    private readonly InternalUserSiteOptions _internalUserSiteOptions = new() { BaseUrl = "https://internal/" };
+
+    private readonly JsonSerializerOptions _options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     private LateAmendmentResponseWithdrawalUseCase CreateSut()
     {
         _extSiteOptions.Setup(x => x.Value).Returns(new ExternalApplicantSiteOptions { BaseUrl = "https://external/" });
         _clock.Setup(c => c.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.UtcNow));
+        _withdrawApplicationInternalUseCase.Reset();
+        _lateService.Reset();
+        _audit.Reset();
+
         return new LateAmendmentResponseWithdrawalUseCase(
             _lateService.Object,
             _externalAccounts.Object,
             _notifications.Object,
             _configuredAreas.Object,
             _clock.Object,
-            new RequestContext(Guid.NewGuid().ToString(), new RequestUserModel(UserFactory.CreateUnauthenticatedUser())),
+            _requestContext,
             _audit.Object,
             _extSiteOptions.Object,
+            new OptionsWrapper<InternalUserSiteOptions>(_internalUserSiteOptions),
             new NullLogger<LateAmendmentResponseWithdrawalUseCase>(),
             _flaRepo.Object,
-            _internalUserAccounts.Object);
+            _internalUserAccounts.Object,
+            _withdrawApplicationInternalUseCase.Object);
     }
 
     [Theory, AutoMoqData]
@@ -60,6 +77,8 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
         ApplicantsUserAccountModel applicant,
         InternalUserAccountModel internalUser)
     {
+        var sut = CreateSut();
+        
         // arrange single item list
         model.CreatedById = applicant.UserAccountId;
         model.WoodlandOfficerReviewLastUpdatedById = internalUser.UserAccountId;
@@ -89,7 +108,7 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
         _flaRepo.Setup(r => r.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(transactionMock.Object);
         transactionMock.Setup(t => t.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var sut = CreateSut();
+
 
         // act
         var count = await sut.SendLateAmendmentResponseRemindersAsync(CancellationToken.None);
@@ -113,6 +132,8 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
         LateAmendmentResponseWithdrawalModel model,
         ApplicantsUserAccountModel applicant)
     {
+        var sut = CreateSut();
+
         model.CreatedById = applicant.UserAccountId;
         _lateService.Setup(s => s.GetLateAmendmentResponseForReminderApplicationsAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IList<LateAmendmentResponseWithdrawalModel>>(new List<LateAmendmentResponseWithdrawalModel>{ model }));
@@ -134,7 +155,6 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
         _flaRepo.Setup(r => r.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(transactionMock.Object);
         transactionMock.Setup(t => t.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var sut = CreateSut();
         var count = await sut.SendLateAmendmentResponseRemindersAsync(CancellationToken.None);
 
         Assert.Equal(0, count);
@@ -142,56 +162,12 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
         transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Theory, AutoMoqData]
-    public async Task NotifyApplicantAsync_ReturnsFailure_WhenApplicantLookupFails(
-        LateAmendmentResponseWithdrawalModel model)
-    {
-        _externalAccounts.Setup(s => s.RetrieveUserAccountByIdAsync(model.CreatedById, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<ApplicantsUserAccountModel>("not found"));
-
-        var sut = CreateSut();
-        var result = await sut.NotifyApplicantAsync(model, CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-    }
-
-    [Theory, AutoMoqData]
-    public async Task NotifyApplicantAsync_SendsNotification_Success(
-        LateAmendmentResponseWithdrawalModel model,
-        ApplicantsUserAccountModel applicant)
-    {
-        model.CreatedById = applicant.UserAccountId;
-        _externalAccounts.Setup(s => s.RetrieveUserAccountByIdAsync(model.CreatedById, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(applicant));
-
-        _notifications.Setup(n => n.SendNotificationAsync(
-                It.IsAny<AmendmentsSentToApplicantDataModel>(),
-                NotificationType.ReminderForApplicantToRespondToAmendments,
-                It.IsAny<NotificationRecipient>(),
-                null,
-                null,
-                null,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success(Guid.NewGuid()));
-
-        var sut = CreateSut();
-        var result = await sut.NotifyApplicantAsync(model, CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        _notifications.Verify(n => n.SendNotificationAsync(
-            It.IsAny<AmendmentsSentToApplicantDataModel>(),
-            NotificationType.ReminderForApplicantToRespondToAmendments,
-            It.IsAny<NotificationRecipient>(),
-            null,
-            null,
-            null,
-            It.IsAny<CancellationToken>()), Times.Once);
-    }
-
     // New tests for withdrawal
     [Fact]
     public async Task WithdrawLateAmendmentApplicationsAsync_AllSuccessful()
     {
+        var sut = CreateSut();
+
         var apps = new List<LateAmendmentResponseWithdrawalModel>
         {
             new() { ApplicationId = Guid.NewGuid(), AmendmentReviewId = Guid.NewGuid() },
@@ -201,71 +177,113 @@ public class LateAmendmentResponseWithdrawalUseCaseTests
         _lateService.Setup(s => s.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<IList<LateAmendmentResponseWithdrawalModel>>(apps));
 
-        var withdrawService = new Mock<IWithdrawFellingLicenceService>();
-        withdrawService.Setup(w => w.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<Guid>>(new List<Guid>()));
+        _withdrawApplicationInternalUseCase
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<WithdrawalReason>(), It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
 
-        _flaRepo.Setup(r => r.SetAmendmentReviewCompletedAsync(It.IsAny<Guid>(), true, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
-
-        var transactionMock = new Mock<IDbContextTransaction>();
-        _flaRepo.Setup(r => r.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(transactionMock.Object);
-        transactionMock.Setup(t => t.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-
-        var sut = CreateSut();
-        var count = await sut.WithdrawLateAmendmentApplicationsAsync(withdrawService.Object, CancellationToken.None);
+        var count = await sut.WithdrawLateAmendmentApplicationsAsync(CancellationToken.None);
 
         Assert.Equal(apps.Count, count);
-        withdrawService.Verify(w => w.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Exactly(apps.Count));
-        _flaRepo.Verify(r => r.SetAmendmentReviewCompletedAsync(It.IsAny<Guid>(), true, It.IsAny<CancellationToken>()), Times.Exactly(apps.Count));
-        transactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Exactly(apps.Count));
+
+        _lateService.Verify(x => x.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _lateService.VerifyNoOtherCalls();
+
+        foreach (var app in apps)
+        {
+            var expectedLink = $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{app.ApplicationId}";
+            _withdrawApplicationInternalUseCase
+                .Verify(x => x.WithdrawApplicationAsync(app.ApplicationId, WithdrawalReason.ExceededAmendmentsResponseDeadline, expectedLink, It.IsAny<CancellationToken>()),
+                    Times.Once);
+        }
+        _withdrawApplicationInternalUseCase.VerifyNoOtherCalls();
+
+        _audit.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WithdrawLateAmendmentApplicationsAsync_MixOfSuccessAndFailure(
+        string error)
+    {
+        var sut = CreateSut();
+
+        var apps = new List<LateAmendmentResponseWithdrawalModel>
+        {
+            new() { ApplicationId = Guid.NewGuid(), AmendmentReviewId = Guid.NewGuid() },
+            new() { ApplicationId = Guid.NewGuid(), AmendmentReviewId = Guid.NewGuid() }
+        };
+
+        _lateService.Setup(s => s.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<IList<LateAmendmentResponseWithdrawalModel>>(apps));
+
+        _withdrawApplicationInternalUseCase
+            .SetupSequence(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<WithdrawalReason>(), It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success)
+            .ReturnsAsync(Result.Failure(error));
+
+        var count = await sut.WithdrawLateAmendmentApplicationsAsync(CancellationToken.None);
+
+        Assert.Equal(1, count);
+
+        _lateService.Verify(x => x.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _lateService.VerifyNoOtherCalls();
+
+        foreach (var app in apps)
+        {
+            var expectedLink = $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{app.ApplicationId}";
+            _withdrawApplicationInternalUseCase
+                .Verify(x => x.WithdrawApplicationAsync(app.ApplicationId, WithdrawalReason.ExceededAmendmentsResponseDeadline, expectedLink, It.IsAny<CancellationToken>()),
+                    Times.Once);
+        }
+        _withdrawApplicationInternalUseCase.VerifyNoOtherCalls();
+
+        _audit.VerifyNoOtherCalls();
+    }
+
+
+    [Theory, AutoMoqData]
+    public async Task WithdrawLateAmendmentApplicationsAsync_FailsToRetrieveApplications(
+        string error)
+    {
+        var sut = CreateSut();
+
+        _lateService.Setup(s => s.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<IList<LateAmendmentResponseWithdrawalModel>>(error));
+
+        var count = await sut.WithdrawLateAmendmentApplicationsAsync(CancellationToken.None);
+
+        Assert.Equal(0, count);
+
+        _audit.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.LateAmendmentResponseNotificationFailure
+                && x.ActorType == _requestContext.ActorType
+                && x.UserId == null
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == null
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    ApplicationId = (Guid?)null,
+                    ResponseDeadline = (DateTime?)null
+                }, _options)),
+            CancellationToken.None), Times.Once);
+        _audit.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task WithdrawLateAmendmentApplicationsAsync_WithdrawFailure_RollsBack()
+    public async Task WithdrawLateAmendmentApplicationsAsync_NoApplicationsFound()
     {
-        var app = new LateAmendmentResponseWithdrawalModel { ApplicationId = Guid.NewGuid(), AmendmentReviewId = Guid.NewGuid() };
-        _lateService.Setup(s => s.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<LateAmendmentResponseWithdrawalModel>>(new List<LateAmendmentResponseWithdrawalModel>{ app }));
-
-        var withdrawService = new Mock<IWithdrawFellingLicenceService>();
-        withdrawService.Setup(w => w.WithdrawApplication(app.ApplicationId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Failure<IList<Guid>>("withdraw error"));
-
-        var transactionMock = new Mock<IDbContextTransaction>();
-        _flaRepo.Setup(r => r.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(transactionMock.Object);
-        transactionMock.Setup(t => t.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-
         var sut = CreateSut();
-        var count = await sut.WithdrawLateAmendmentApplicationsAsync(withdrawService.Object, CancellationToken.None);
+
+        _lateService.Setup(s => s.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success<IList<LateAmendmentResponseWithdrawalModel>>(new List<LateAmendmentResponseWithdrawalModel>()));
+
+        var count = await sut.WithdrawLateAmendmentApplicationsAsync(CancellationToken.None);
 
         Assert.Equal(0, count);
-        _flaRepo.Verify(r => r.SetAmendmentReviewCompletedAsync(It.IsAny<Guid>(), true, It.IsAny<CancellationToken>()), Times.Never);
-        transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
 
-    [Fact]
-    public async Task WithdrawLateAmendmentApplicationsAsync_ReviewCompleteFailure_RollsBack()
-    {
-        var app = new LateAmendmentResponseWithdrawalModel { ApplicationId = Guid.NewGuid(), AmendmentReviewId = Guid.NewGuid() };
-        _lateService.Setup(s => s.GetLateAmendmentResponseForWithdrawalAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<LateAmendmentResponseWithdrawalModel>>(new List<LateAmendmentResponseWithdrawalModel>{ app }));
-
-        var withdrawService = new Mock<IWithdrawFellingLicenceService>();
-        withdrawService.Setup(w => w.WithdrawApplication(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result.Success<IList<Guid>>(new List<Guid>()));
-
-        _flaRepo.Setup(r => r.SetAmendmentReviewCompletedAsync(app.AmendmentReviewId, true, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(UnitResult.Failure(UserDbErrorReason.General));
-
-        var transactionMock = new Mock<IDbContextTransaction>();
-        _flaRepo.Setup(r => r.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(transactionMock.Object);
-        transactionMock.Setup(t => t.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-
-        var sut = CreateSut();
-        var count = await sut.WithdrawLateAmendmentApplicationsAsync(withdrawService.Object, CancellationToken.None);
-
-        Assert.Equal(0, count);
-        transactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _audit.VerifyNoOtherCalls();
     }
 }

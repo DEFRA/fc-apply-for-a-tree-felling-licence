@@ -310,6 +310,7 @@ public static class ModelMapping
                     RestockingDensity = pr.RestockingDensity,
                     Area = pr.Area,
                     NumberOfTrees = pr.NumberOfTrees,
+                    PercentOpenSpace = pr.PercentOpenSpace,
                     PercentageOfRestockArea = pr.PercentageOfRestockArea,
                     PercentageOfFellingArea = pr.PercentageOfFellingArea,
                     Id = pr.Id,

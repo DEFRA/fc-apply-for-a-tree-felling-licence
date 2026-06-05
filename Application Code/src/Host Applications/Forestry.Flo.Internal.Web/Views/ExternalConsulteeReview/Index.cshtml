@@ -5,6 +5,9 @@
 @{
     ViewData["Title"] = "Have your say on a felling application";
 }
+
+<partial name="Partials/_ConfirmationMessageDisplay"/>
+
 <div class="govuk-grid-column-two-thirds width-limit-override" id="summary-container">
 
     <h1 class="govuk-heading-l">@ViewData["Title"] @Model.ApplicationSummary.ApplicationReference</h1>

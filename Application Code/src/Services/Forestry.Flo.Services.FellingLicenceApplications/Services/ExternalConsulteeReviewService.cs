@@ -2,6 +2,8 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.ExternalConsultee;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
@@ -126,12 +128,20 @@ public class ExternalConsulteeReviewService : IExternalConsulteeReviewService
             .Select(x => x.AssignedUserId)
             .Distinct();
 
+        var isWithApplicant = FellingLicenceStatusConstants.SubmitStatuses.Contains(
+            application.Value.GetCurrentStatus());
+
         var notificationModel = new ConsulteeCommentNotificationModel
         {
             AdminHub = application.Value.AdministrativeRegion,
             ApplicationReference = application.Value.ApplicationReference,
             AssignedFcStaff = assignedStaff.ToArray(),
-            PropertyName = application.Value.SubmittedFlaPropertyDetail.Name
+            PropertyName = isWithApplicant
+                ? null
+                : application.Value.SubmittedFlaPropertyDetail!.Name,
+            LinkedPropertyProfileId = isWithApplicant
+                ? application.Value.LinkedPropertyProfile!.PropertyProfileId
+                : null
         };
 
         return Result.Success(notificationModel);
