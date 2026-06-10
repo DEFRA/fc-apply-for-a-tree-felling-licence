@@ -1,10 +1,12 @@
 ﻿using AutoFixture;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Services;
+using Forestry.Flo.HostApplicationsCommon.Services;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Infrastructure;
+using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
@@ -17,6 +19,7 @@ using Forestry.Flo.Services.FileStorage.Configuration;
 using Forestry.Flo.Services.FileStorage.ResultModels;
 using Forestry.Flo.Services.FileStorage.Services;
 using Forestry.Flo.Services.Gis.Interfaces;
+using Forestry.Flo.Services.Gis.Models.Esri.Responses.Layers;
 using Forestry.Flo.Services.Gis.Models.Internal;
 using Forestry.Flo.Services.Gis.Models.Internal.MapObjects;
 using Forestry.Flo.Services.InternalUsers.Services;
@@ -28,12 +31,10 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using System.Text.Json;
-using Forestry.Flo.HostApplicationsCommon.Services;
 using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccountModel;
 using InternalUserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using WoodlandOwnerModel = Forestry.Flo.Services.Applicants.Models.WoodlandOwnerModel;
-using Forestry.Flo.Services.Common.Models;
 
 namespace Forestry.Flo.External.Web.Tests.Services
 {
@@ -63,6 +64,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
 
         private readonly ExternalApplicant _externalUser;
         private readonly Mock<IUnitOfWork> _unitOfWOrkMock;
+
+        private static readonly LocalAuthority _defaultLA = new() { Name = "Local authority name" };
 
         private static readonly DocumentVisibilityOptions DocumentVisibilityOptions = new()
         {
@@ -160,6 +163,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
             var sut = CreateSut();
 
             fla.LinkedPropertyProfile!.ProposedFellingDetails = new List<ProposedFellingDetail>();
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             foreach (var comp in fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!)
             {
@@ -269,6 +273,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
             // setup
             
             var sut = CreateSut();
+
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             foreach (var felling in fla.LinkedPropertyProfile!.ProposedFellingDetails!)
             {
@@ -390,6 +396,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
             // setup
             var sut = CreateSut();
 
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
+
             var compartment1 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
             var compartment2 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Skip(1).First();
 
@@ -476,6 +484,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
             var sut = CreateSut();
 
             fla.IsForTenYearLicence = true;
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             var compartment1 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.First();
             var compartment2 = fla.SubmittedFlaPropertyDetail!.SubmittedFlaPropertyCompartments!.Skip(1).First();
@@ -561,6 +570,8 @@ namespace Forestry.Flo.External.Web.Tests.Services
         {
             // setup
             var sut = CreateSut();
+
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             foreach (var compartment in fla.SubmittedFlaPropertyDetail.SubmittedFlaPropertyCompartments)
             {
@@ -670,6 +681,7 @@ namespace Forestry.Flo.External.Web.Tests.Services
             var sut = CreateSut();
 
             fla.LinkedPropertyProfile!.ProposedFellingDetails = new List<ProposedFellingDetail>();
+            fla.CentrePoint = JsonSerializer.Serialize(new Point());
 
             foreach (var felling in fla.LinkedPropertyProfile!.ProposedFellingDetails)
             {
@@ -847,6 +859,9 @@ namespace Forestry.Flo.External.Web.Tests.Services
             _clock.Setup(s => s.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.UtcNow));
             _mockGetFcAreas.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync("Bullers Hill\nKennford\nExeter\nEX6 7XR\nPhone: 0300 067 4960\nEmail: adminhub.bullershill@forestrycommission.gov.uk");
+
+            _foresterAccessMock.Setup(x => x.GetLocalAuthorityAsync(It.IsAny<Point>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Success(_defaultLA));
 
             return new GeneratePdfApplicationUseCase(
                 _GeneratePdfApplicationAuditServiceMock.Object,

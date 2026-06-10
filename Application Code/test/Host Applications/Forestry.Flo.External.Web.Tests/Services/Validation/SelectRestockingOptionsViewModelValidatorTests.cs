@@ -34,5 +34,16 @@ namespace Forestry.Flo.External.Web.Tests.Services.Validation
 
             result.ShouldHaveValidationErrorFor(x => x.RestockingOptions);
         }
+
+        [Theory, AutoMoqData]
+        public void ShouldReturnError_WhenValidateSelectRestockingOptionsViewModel_GivenCreateOpenGroundCombinedWithOtherOptions(SelectRestockingOptionsViewModel model)
+        {
+            model.RestockingOptions = new List<TypeOfProposal>
+                { TypeOfProposal.CreateDesignedOpenGround, TypeOfProposal.RestockWithIndividualTrees };
+
+            var result = _sut.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(x => x.RestockingOptions);
+        }
     }
 }

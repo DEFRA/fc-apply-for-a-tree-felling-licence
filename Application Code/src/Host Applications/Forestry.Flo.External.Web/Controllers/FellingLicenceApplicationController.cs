@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Forestry.Flo.External.Web.Services.Interfaces;
 using FellingLicenceStatusConstants = Forestry.Flo.External.Web.Models.FellingLicenceStatusConstants;
 
 namespace Forestry.Flo.External.Web.Controllers;
@@ -275,7 +276,17 @@ public partial class FellingLicenceApplicationController(
 
     [HttpGet]
     [EditingAllowed]
-    public async Task<IActionResult> SelectCompartments(Guid applicationId, bool returnToApplicationSummary, bool isForRestockingCompartmentSelection, FellingOperationType fellingOperationType, string? fellingCompartmentName, Guid? fellingCompartmentId, Guid? proposedFellingDetailsId, bool? returnToPlayback, CancellationToken cancellationToken)
+    public async Task<IActionResult> SelectCompartments(
+        Guid applicationId, 
+        bool returnToApplicationSummary, 
+        bool isForRestockingCompartmentSelection, 
+        FellingOperationType fellingOperationType, 
+        string? fellingCompartmentName, 
+        Guid? fellingCompartmentId, 
+        Guid? proposedFellingDetailsId, 
+        bool? returnToPlayback, 
+        bool? fromCompartmentCreation,
+        CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
 
@@ -294,6 +305,12 @@ public partial class FellingLicenceApplicationController(
 
         if (viewModel.Value.Compartments.Count == 0)
         {
+            // check if we got here by clicking Back on the compartment creation method option, in which case go *back* not forwards
+            if (fromCompartmentCreation is true)
+            {
+                return RedirectToAction("TreeHealthCheck", new { applicationId });
+            }
+
             return RedirectToAction(nameof(CompartmentController.CreateDetails), "Compartment",
                 new
                 {
@@ -2081,80 +2098,78 @@ public partial class FellingLicenceApplicationController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> ConfirmWithdrawFellingLicenceApplicationAsync(Guid applicationId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ConfirmWithdrawFellingLicenceApplicationAsync(
+        Guid applicationId,
+        [FromServices] IWithdrawApplicationsUseCase useCase,
+        CancellationToken cancellationToken)
     {
         var user = new ExternalApplicant(User);
 
-        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
+        var result = await useCase.GetConfirmWithdrawalViewModelAsync(applicationId, user, cancellationToken);
 
-        if (result.HasNoValue || 
-            FellingLicenceStatusConstants.WithdrawalStatuses.Contains(result.Value.ApplicationSummary.Status) is false)
-        {
-            this.AddErrorMessage($"Application cannot be withdrawn in the current state of {result.Value.ApplicationSummary.Status.GetDisplayNameByActorType(ActorType.ExternalApplicant)}");
-            return RedirectToAction(nameof(ApplicationTaskList), new {applicationId});
-        }
-
-        var application = result.Value;
-
-        var model = new ConfirmWithdrawFellingLicenceApplicationModel
-        {
-            ApplicationId = application.ApplicationId,
-            ApplicationReference = application.ApplicationSummary.ApplicationReference,
-            TaskName = "Withdraw"
-        };
-
-        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = application.WoodlandOwnerId;
-        ViewData["IgnoreFeedback"] = true;
-
-        SetTaskBreadcrumbs(model);
-
-        return View(model);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> WithdrawFellingLicenceApplication(WithdrawFellingLicenceApplicationModel withdrawFellingLicenceApplicationModel, CancellationToken cancellationToken)
-    {
-        var user = new ExternalApplicant(User);
-
-        string linkToApplication = Url.AbsoluteAction(nameof(ApplicationTaskList), "FellingLicenceApplication", new { applicationId = withdrawFellingLicenceApplicationModel.ApplicationId })!;
-
-        var result = await createFellingLicenceApplicationUseCase.WithdrawFellingLicenceApplicationAsync(withdrawFellingLicenceApplicationModel.ApplicationId, user, linkToApplication!, cancellationToken);
         if (result.IsFailure)
         {
-            this.AddErrorMessage("Something went wrong, try again.");
-
-            return RedirectToAction(nameof(ApplicationTaskList), new { applicationId = withdrawFellingLicenceApplicationModel.ApplicationId });
-        }
-        
-        return RedirectToAction(nameof(WithdrawnConfirmation), new { applicationId = withdrawFellingLicenceApplicationModel.ApplicationId });
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> WithdrawnConfirmation(Guid applicationId, CancellationToken cancellationToken)
-    {
-        var user = new ExternalApplicant(User);
-
-        var result = await createFellingLicenceApplicationUseCase.RetrieveFellingLicenceApplication(user, applicationId, cancellationToken);
-        if (result.HasNoValue || result.Value.ApplicationSummary.Status != FellingLicenceStatus.Withdrawn)
-        {
-            this.AddErrorMessage("Something went wrong, try again.");
-
+            this.AddErrorMessage(result.Error);
             return RedirectToAction(nameof(ApplicationTaskList), new { applicationId });
         }
 
-        var application = result.Value;
-        var model = new WithdrawnConfirmationViewModel
+        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = result.Value.ApplicationSummary.WoodlandOwnerId!.Value;
+        ViewData["IgnoreFeedback"] = true;
+
+        SetTaskBreadcrumbs(result.Value);
+
+        return View(result.Value);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ConfirmWithdrawFellingLicenceApplicationAsync(
+        ConfirmWithdrawFellingLicenceApplicationViewModel model,
+        [FromServices] IWithdrawApplicationsUseCase viewModelUseCase,
+        [FromServices] IWithdrawApplicationExternalUseCase withdrawUseCase,
+        [FromServices] IValidator<ConfirmWithdrawFellingLicenceApplicationViewModel> validator,
+        CancellationToken cancellationToken)
+    {
+        var user = new ExternalApplicant(User);
+
+        ValidateModel(model, validator);
+
+        if (!ModelState.IsValid)
         {
-            ApplicationId = application.ApplicationId,
-            ApplicationReference = application.ApplicationSummary.ApplicationReference,
-            TaskName = "Withdrawn"
-        };
+            var reloadModel = await viewModelUseCase.GetConfirmWithdrawalViewModelAsync(model.ApplicationId, user, cancellationToken);
 
-        ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = application.WoodlandOwnerId;
+            if (reloadModel.IsFailure)
+            {
+                this.AddErrorMessage(reloadModel.Error);
+                return RedirectToAction(nameof(ApplicationTaskList), new { applicationId = model.ApplicationId });
+            }
 
-        SetTaskBreadcrumbs(model);
+            reloadModel.Value.WithdrawalReasonOptions = model.WithdrawalReasonOptions;
+            reloadModel.Value.WithdrawalReasonsOtherDetails = model.WithdrawalReasonsOtherDetails;
 
-        return View(model);
+            ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] = reloadModel.Value.ApplicationSummary.WoodlandOwnerId!.Value;
+            ViewData["IgnoreFeedback"] = true;
+
+            SetTaskBreadcrumbs(reloadModel.Value);
+
+            return View(reloadModel.Value);
+        }
+
+
+        string linkToApplication = Url.AbsoluteAction(nameof(ApplicationTaskList), "FellingLicenceApplication", new { applicationId = model.ApplicationId })!;
+
+        var reasons = model.WithdrawalReasonOptions.Where(x => x.Value)
+            .Select(x => x.Key).ToList();
+        var result = await withdrawUseCase.WithdrawApplicationAsync(model.ApplicationId, user,  reasons, model.WithdrawalReasonsOtherDetails, linkToApplication!, cancellationToken);
+        if (result.IsFailure)
+        {
+            this.AddErrorMessage("Something went wrong, try again.");
+        }
+        else
+        {
+            this.AddConfirmationMessage("This application has successfully been withdrawn.");
+        }
+        
+        return RedirectToAction(nameof(ApplicationTaskList), new { applicationId = model.ApplicationId });
     }
 
     [HttpGet]

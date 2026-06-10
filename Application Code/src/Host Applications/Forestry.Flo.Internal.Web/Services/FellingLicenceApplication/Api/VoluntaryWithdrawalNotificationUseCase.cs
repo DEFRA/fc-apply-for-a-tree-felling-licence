@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
@@ -11,6 +12,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Forestry.Flo.Services.PropertyProfiles.Services;
 using Microsoft.Extensions.Options;
 using NodaTime;
 
@@ -26,6 +28,7 @@ public class VoluntaryWithdrawalNotificationUseCase : IVoluntaryWithdrawalNotifi
     private readonly VoluntaryWithdrawalNotificationOptions _notificationOptions;
     private readonly ISendNotifications _sendNotifications;
     private readonly ILogger<VoluntaryWithdrawalNotificationUseCase> _logger;
+    private readonly IGetPropertyProfiles _getPropertyProfilesService;
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
     private readonly IClock _clock;
     private readonly RequestContext _requestContext;
@@ -46,6 +49,7 @@ public class VoluntaryWithdrawalNotificationUseCase : IVoluntaryWithdrawalNotifi
     /// <param name="auditService">An auditing service.</param>
     /// <param name="externalApplicantSiteOptions">Configuration options for the external applicant interface.</param>
     /// <param name="woodlandOwnersService">A service to retrieve woodland owner details.</param>
+    /// <param name="getPropertyProfilesService">A service to retrieve property profiles.</param>
     /// <param name="getConfiguredFcAreasService">A service to retrieve admin hub details.</param>
     public VoluntaryWithdrawalNotificationUseCase(
         IClock clock,
@@ -58,10 +62,12 @@ public class VoluntaryWithdrawalNotificationUseCase : IVoluntaryWithdrawalNotifi
         IAuditService<VoluntaryWithdrawalNotificationUseCase> auditService,
         IOptions<ExternalApplicantSiteOptions> externalApplicantSiteOptions,
         IRetrieveWoodlandOwners woodlandOwnersService,
+        IGetPropertyProfiles getPropertyProfilesService,
         IGetConfiguredFcAreas getConfiguredFcAreasService)
     {
         _voluntaryWithdrawalNotificationService = Guard.Against.Null(voluntaryWithdrawalNotificationService);
         _logger = logger;
+        _getPropertyProfilesService = Guard.Against.Null(getPropertyProfilesService);
         _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
         _notificationOptions = Guard.Against.Null(notificationOptions).Value;
         _clock = Guard.Against.Null(clock);
@@ -73,15 +79,8 @@ public class VoluntaryWithdrawalNotificationUseCase : IVoluntaryWithdrawalNotifi
         _woodlandOwnersService = Guard.Against.Null(woodlandOwnersService);
     }
 
-	/// <summary>
-	/// Automated notification to an Applicant if an FLA is at "with applicant" status for more than 14 days, voluntarily requesting for the FLA to be withdrawn. 
-	/// </summary>
-	/// <param name="viewFLABaseURL">The base URL for viewing an application summary on the internal app.</param>
-	/// <param name="cancellationToken">A cancellation token.</param>
-	/// <remarks>This method is automatically executed from an API controller.</remarks>
-
-	// ReSharper disable once InconsistentNaming
-	public async Task SendNotificationForWithdrawalAsync(string viewFLABaseURL, CancellationToken cancellationToken)
+	/// <inheritdoc/>
+	public async Task SendNotificationForWithdrawalAsync(CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to extend final action date for applications that have exceeded this date, are still in review and have not been previously extended");
 
@@ -146,12 +145,26 @@ public class VoluntaryWithdrawalNotificationUseCase : IVoluntaryWithdrawalNotifi
                 .TryGetAdminHubAddress(application.AdministrativeRegion, cancellationToken)
                 .ConfigureAwait(false);
 
+        var property = await _getPropertyProfilesService
+            .GetPropertyByIdAsync(application.LinkedPropertyProfileId, UserAccessModel.SystemUserAccessModel, cancellationToken)
+            .ConfigureAwait(false);
+        if (property.IsFailure)
+        {
+            _logger.LogError("Could not retrieve property {PropertyProfileId} for application {ApplicationId}",
+                application.LinkedPropertyProfileId, application.ApplicationId);
+        }
+
+        var propertyName = property.IsSuccess
+            ? property.Value.Name
+            : null;
+
         var applicantNotificationModel = new InformApplicantOfApplicationVoluntaryWithdrawOptionDataModel
 		{
             ApplicationReference = application.ApplicationReference,
-            PropertyName = application.PropertyName,
+            PropertyName = propertyName,
             DaysInWithApplicantStatus = currentDate.Subtract(application.WithApplicantDate).Days,
             WithApplicantDateTime = DateTimeDisplay.GetDateDisplayString(application.WithApplicantDate),
+            ResubmissionDeadline = DateTimeDisplay.GetDateDisplayString(application.WithApplicantDate.Add(_notificationOptions.ThresholdAutomaticWithdrawal)),
             Name = createdByUser.FullName,
             ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.ApplicationId}",
             WithdrawApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ConfirmWithdrawFellingLicenceApplication?applicationId={application.ApplicationId}",

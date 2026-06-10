@@ -231,21 +231,30 @@ define(["require",
 
                 const downloadShapefile = HTMLHelper.getElementById('Download-SHP');
                 if (downloadShapefile) {
-                    downloadShapefile.addEventListener('click', (evt) => {
-                        const jsonData = _this.getJsonData();
-                        const options = {
-                            folder: 'shapefile',
-                            types: {
-                                polygon: 'polygons',
-                            }
-                        };
-                        const zipData = shpwrite.zip(jsonData, options);
-                        const blob = new Blob([zipData], { type: "application/zip" });
-                        const a = document.createElement("a");
-                        a.href = URL.createObjectURL(blob);
-                        a.download = "shapefile.zip";
-                        a.click();
-                        URL.revokeObjectURL(a.href);
+                    downloadShapefile.addEventListener("click", async (evt) => {
+                        try {
+                            const jsonData = _this.getJsonData();
+
+
+                            const options = {
+                                outputType: "blob",
+                                types: {
+                                    polygon: "polygons"
+                                }
+                            };
+
+                            const zipBlob = await shpwrite.zip(jsonData, options);
+
+
+                            const a = document.createElement("a");
+                            a.href = URL.createObjectURL(zipBlob);
+                            a.download = "shapefile.zip";
+                            a.click();
+                            URL.revokeObjectURL(a.href);
+                        }
+                        catch (err) {
+                            alert("Failed to generate shapefile ZIP.");
+                        }
                     });
                 }
             }

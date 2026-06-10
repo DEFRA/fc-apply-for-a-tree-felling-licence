@@ -16,7 +16,7 @@ external-web-app:
 
   ingressRoute:
     app:
-      hostname: "private-beta.tree-felling.forestrycommission.gov.uk"
+      hostname: "apply-for-a-tree-felling-licence.service.gov.uk"
 
   config:
     secret_key_ref_name: live-flo-all-secrets
@@ -36,7 +36,7 @@ external-web-app:
       clientId: 
         secret_key: onelogin.client_id
       callbackPath: "/signin-oidc"
-      environment: "Integration"
+      environment: "Production"
       signingKeys:
         - privateKeyPem:
             secret_key: onelogin.private_key
@@ -95,12 +95,12 @@ external-web-app:
     siteAnalytics:
       googleAnalytics:
         enabled: true
-        trackingId: "G-KY5CXV9G4M"
+        trackingId: "G-PTW17V2054"
       microsoftClarity:
         enabled: true
-        trackingId: "pcrkb95e7y"
+        trackingId: "wflfbqgsjh"
     internalUserSite:
-      baseUrl: "https://private-beta-internal.tree-felling.forestrycommission.gov.uk/"
+      baseUrl: "https://internal.apply-for-a-tree-felling-licence.service.gov.uk/" 
     GovUkNotifyOptions:
       enabled: true
       ApiKey:
@@ -146,6 +146,9 @@ external-web-app:
         AmendmentsSentToApplicant: "c58ae4f9-0b5c-4f4c-a0e2-e73217ecdc47"
         ReminderForApplicantToRespondToAmendments: "5be54614-71d8-48db-b820-1f77afdd5c08"
         InformFcStaffOfApplicationApprovedInError: "4c0b40de-420e-40d7-80c8-5fe6832d302e"
+        ExternalConsulteeCommentConfirmation: "69fed162-5f46-4533-a792-51dbc3d5b629"
+        InformApplicantOfApplicationReopened: "2212d923-0642-4302-ba31-a13ebb5ae8f8"
+        InformApplicantOfApplicationReferenceChange: "728d6773-500b-40e5-8bab-5c1ec8012585"
     FcAgency:
       enabled: true
       PermittedEmailDomainsForFcAgent:
@@ -284,7 +287,7 @@ external-web-app:
             BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
             BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
             TextOverrides:
-              Copyright: "© Crown copyright and database rights 2021"
+              Copyright: "© Crown copyright and database rights 2026"
               FellingTitle: "Felling"
               RestockingTitle: "Restocking"
           JobStatusService:
@@ -312,11 +315,11 @@ external-web-app:
           Password: 
             secret_key: esri.PublicRegister.GenerateTokenService.Password
         Boundaries:
-          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/1"
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION/FeatureServer/1"
         Compartments:
-          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/0"
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION/FeatureServer/0"
         Comments:
-          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/2"
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION/FeatureServer/2"
         LookUps:
           Status:
             InitialProposal: "01"
@@ -334,7 +337,7 @@ internal-web-app:
 
   ingressRoute:
     app:
-      hostname: "private-beta-internal.tree-felling.forestrycommission.gov.uk"
+      hostname: "internal.apply-for-a-tree-felling-licence.service.gov.uk"
 
   config:
     secret_key_ref_name: live-flo-all-secrets
@@ -353,7 +356,7 @@ internal-web-app:
       clientId: 
         secret_key: onelogin.client_id
       callbackPath: "/signin-oidc"
-      environment: "Integration"
+      environment: "Production"
       signingKeys:
         - privateKeyPem:
             secret_key: onelogin.private_key
@@ -389,7 +392,9 @@ internal-web-app:
     userInvite:
       inviteLinkExpiryDays: 28
     externalApplicantSite:
-      baseUrl: "https://private-beta.tree-felling.forestrycommission.gov.uk/"
+      baseUrl: "https://apply-for-a-tree-felling-licence.service.gov.uk/"
+    internalUserSite:
+      baseUrl: "https://internal.apply-for-a-tree-felling-licence.service.gov.uk/" 
     woodlandOfficerReview:
       useDevPublicRegister: false
       publicRegisterApplicationUrl: "https://experience.arcgis.com/experience/d7b0fd8800164bc3af7e50983517d191/page/Page-1"
@@ -426,7 +431,18 @@ internal-web-app:
           path: /api/PublicRegisterComments/PullNewComments
           enabled: true
           schedule: "0 0 * * *"
+        send-late-amendment-response-reminders:
+          name: send-late-amendment-response-reminders
+          path: /api/amendmentresponse/sendlateamendmentresponsereminders
+          enabled: true
+          schedule: "0 0 * * *"
+        withdraw-late-amendment-applications:
+          name: withdraw-late-amendment-applications
+          path: /api/amendmentresponse/withdrawlateamendmentapplications
+          enabled: true
+          schedule: "0 0 * * *"
     publicRegisterExpiry:
+      decisionPublicRegisterPeriod: 28
       thresholdBeforePublicRegisterPeriodEnd: "14.00:00:00"
     voluntaryWithdrawApplication:
       thresholdAfterWithApplicantStatusDate: "21.00:00:00"
@@ -434,6 +450,7 @@ internal-web-app:
     applicationExtension:
       thresholdBeforeFinalActionDate: "14.00:00:00"
       extensionLength: "90.00:00:00"
+      deemedAcceptanceTimeSpan: "14.00:00:00"
     pdfGeneratorApi:
       baseUrl: "http://live-flo-pdf-generation-service:8080/api/v1/generate-pdf"
       templateName: "FellingLicence.html"
@@ -470,10 +487,10 @@ internal-web-app:
     siteAnalytics:
       googleAnalytics:
         enabled: true
-        trackingId: "G-LQMY6K9G46"
+        trackingId: "G-FJ51VEZ8P2"
       microsoftClarity:
         enabled: true
-        trackingId: "pcroui0u2v"
+        trackingId: "wflgm8kazn"
     GovUkNotifyOptions:
       enabled: true
       ApiKey: 
@@ -519,6 +536,9 @@ internal-web-app:
         AmendmentsSentToApplicant: "c58ae4f9-0b5c-4f4c-a0e2-e73217ecdc47"
         ReminderForApplicantToRespondToAmendments: "5be54614-71d8-48db-b820-1f77afdd5c08"
         InformFcStaffOfApplicationApprovedInError: "4c0b40de-420e-40d7-80c8-5fe6832d302e"
+        ExternalConsulteeCommentConfirmation: "69fed162-5f46-4533-a792-51dbc3d5b629"
+        InformApplicantOfApplicationReopened: "2212d923-0642-4302-ba31-a13ebb5ae8f8"
+        InformApplicantOfApplicationReferenceChange: "728d6773-500b-40e5-8bab-5c1ec8012585"
     PermittedRegisteredUser:
       enabled: true
       PermittedEmailDomainsForRegisteredUser:
@@ -637,7 +657,7 @@ internal-web-app:
             BaseMap: "https://utility.arcgis.com/usrsvcs/servers/00b35f155103434fa2ed9ac67876102f/rest/services/BaseMap_OS_VML_MasterMap/MapServer"
             BaseMapID: "BaseMap_OS_VML_MasterMap_6625"
             TextOverrides:
-              Copyright: "© Crown copyright and database rights 2021"
+              Copyright: "© Crown copyright and database rights 2026"
               FellingTitle: "Felling"
               RestockingTitle: "Restocking"
           JobStatusService:
@@ -665,11 +685,11 @@ internal-web-app:
           Password: 
             secret_key: esri.PublicRegister.GenerateTokenService.Password
         Boundaries:
-          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/1"
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION/FeatureServer/1"
         Compartments:
-          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/0"
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION/FeatureServer/0"
         Comments:
-          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION_TEST/FeatureServer/2"
+          Path: "rest/services/Secure_FSE/EDIT_FS_E_SECURE_FLOv2_INTEGRATION/FeatureServer/2"
         LookUps:
           Status:
             InitialProposal: "01"

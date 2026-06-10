@@ -181,8 +181,12 @@ spec:
               value: {{ .Values.config.govUkOneLoginOptions.nonceCookieName }}
             {{- end }}
             {{- if .Values.config.govUkOneLoginOptions.vectorsOfTrust }}
-            - name: GovUkOneLoginOptions__VectorsOfTrust__0
-              value: {{ index .Values.config.govUkOneLoginOptions.vectorsOfTrust 0 | quote }}
+            {{- with .Values.config.govUkOneLoginOptions }}
+            {{- range $i, $vector := .vectorsOfTrust }}
+            - name: GovUkOneLoginOptions__VectorsOfTrust__{{ $i }}
+              value: "{{ $vector }}"
+            {{- end }}
+            {{- end }}
             {{- end }}
             {{- if .Values.config.govUkOneLoginOptions.signingKeys }}
             {{- range $i, $key := .Values.config.govUkOneLoginOptions.signingKeys }}
@@ -523,6 +527,12 @@ spec:
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ReminderForApplicantToRespondToAmendments }}
             - name: GovUkNotifyOptions__TemplateIds__InformFcStaffOfApplicationApprovedInError
               value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformFcStaffOfApplicationApprovedInError }}
+            - name: GovUkNotifyOptions__TemplateIds__ExternalConsulteeCommentConfirmation
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.ExternalConsulteeCommentConfirmation }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationReopened
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationReopened }}
+            - name: GovUkNotifyOptions__TemplateIds__InformApplicantOfApplicationReferenceChange
+              value: {{ .Values.config.GovUkNotifyOptions.TemplateIds.InformApplicantOfApplicationReferenceChange }}
             {{- end }}
             # ------------------- ESRI Config start -------------------
             {{- if .Values.config.esriConfig.enabled }}
@@ -782,7 +792,7 @@ spec:
             # ------------------- ESRI PublicRegister - Comments -------------------
             {{- with .Comments }}
               {{- if .Path }}
-            - name: EsriConfig__PublicRegister__Comments_Path
+            - name: EsriConfig__PublicRegister__Comments__Path
               value: {{ .Path | quote }}
               {{- end }}
             {{- end }}

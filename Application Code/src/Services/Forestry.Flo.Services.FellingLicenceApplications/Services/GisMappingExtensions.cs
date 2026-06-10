@@ -36,6 +36,10 @@ public static class GisMappingExtensions
 
         internalCompartmentDetails.ShapeGeometry = compartmentPolygon!;
 
+        internalCompartmentDetails.CompartmentLabel = subCompartmentName != null
+            ? $"{compartmentNumber} - {subCompartmentName}"
+            : compartmentNumber;
+
         return internalCompartmentDetails;
     }
 }

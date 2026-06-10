@@ -17,7 +17,7 @@ public class PublicRegisterExpiryControllerTests
         var cancellationToken = CancellationToken.None;
         mockUseCase
             .Setup(x => x.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(
-                It.IsAny<string>(), cancellationToken))
+                cancellationToken))
             .Returns(Task.CompletedTask)
             .Verifiable();
 
@@ -27,7 +27,7 @@ public class PublicRegisterExpiryControllerTests
 
         // Assert
         mockUseCase.Verify(x => x.RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(
-            It.IsAny<string>(), cancellationToken), Times.Once);
+            cancellationToken), Times.Once);
         Assert.IsType<OkResult>(result);
     }
 
@@ -41,7 +41,7 @@ public class PublicRegisterExpiryControllerTests
         var cancellationToken = CancellationToken.None;
         mockUseCase
             .Setup(x => x.ExecuteAsync(
-                It.IsAny<string>(), cancellationToken))
+                cancellationToken))
             .Returns(Task.CompletedTask)
             .Verifiable();
 
@@ -51,7 +51,7 @@ public class PublicRegisterExpiryControllerTests
 
         // Assert
         mockUseCase.Verify(x => x.ExecuteAsync(
-            It.IsAny<string>(), cancellationToken), Times.Once);
+            cancellationToken), Times.Once);
         Assert.IsType<OkResult>(result);
     }
 }

@@ -11,4 +11,8 @@ public class LandInformationSearchCompartmentAttributeModel<T>
     [JsonProperty("case_reference", NullValueHandling = NullValueHandling.Ignore)]
     [MaxLength(50)]
     public string CaseReference { get; set; } = null!;
+
+    [JsonProperty("compartment_label", NullValueHandling = NullValueHandling.Ignore)]
+    [MaxLength(50)]
+    public string CompartmentLabel { get; set; } = null!;
 }

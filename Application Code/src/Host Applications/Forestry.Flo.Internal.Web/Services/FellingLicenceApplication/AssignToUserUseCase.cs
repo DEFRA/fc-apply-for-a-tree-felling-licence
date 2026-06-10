@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Models.UserAccount;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
@@ -18,6 +19,8 @@ using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Forestry.Flo.Services.PropertyProfiles.Services;
+using Microsoft.Extensions.Options;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 
@@ -28,6 +31,8 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
     private readonly ISendNotifications _notificationsService;
     private readonly IGetFellingLicenceApplicationForInternalUsers _getFellingLicenceApplicationService;
     private readonly IUpdateFellingLicenceApplication _updateFellingLicenceApplicationService;
+    private readonly IGetPropertyProfiles _getPropertyProfilesService;
+    private readonly ExternalApplicantSiteOptions _externalApplicantSiteOptions;
     private readonly ILogger<AssignToUserUseCase> _logger;
 
     public AssignToUserUseCase(
@@ -43,6 +48,8 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         IUpdateFellingLicenceApplication updateFellingLicenceApplicationService,
         IAgentAuthorityService agentAuthorityService,
         IWoodlandOfficerReviewSubStatusService woodlandOfficerReviewSubStatusService,
+        IGetPropertyProfiles getPropertyProfilesService,
+        IOptions<ExternalApplicantSiteOptions> externalApplicantSiteOptions,
         ILogger<AssignToUserUseCase> logger)
         : base(internalUserAccountService, 
             externalUserAccountService,
@@ -57,6 +64,8 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         _notificationsService = Guard.Against.Null(notificationsService);
         _getFellingLicenceApplicationService = Guard.Against.Null(getFellingLicenceApplicationService);
         _updateFellingLicenceApplicationService = Guard.Against.Null(updateFellingLicenceApplicationService);
+        _getPropertyProfilesService = Guard.Against.Null(getPropertyProfilesService);
+        _externalApplicantSiteOptions = Guard.Against.Null(externalApplicantSiteOptions.Value);
         _logger = logger;
     }
 
@@ -230,7 +239,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
             if (submitted != null)
             {
                 var submittedByAccount = 
-                    await GetSubmittingUserAsync(submitted.CreatedById!.Value, cancellationToken).ConfigureAwait(false);
+                    await GetExternalUserAccountAsync(submitted.CreatedById!.Value, cancellationToken).ConfigureAwait(false);
 
                 if (submittedByAccount.IsFailure)
                 {
@@ -274,16 +283,36 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
             return assignResult.ConvertFailure();
         }
 
-        Maybe<bool> sendNotificationOutcome = Maybe<bool>.None;
-        
+        var propertyName = assignResult.Value.PropertyName;
+        if (string.IsNullOrWhiteSpace(propertyName) &&
+            assignResult.Value.LinkedPropertyProfileId.HasValue)
+        {
+            var property = await _getPropertyProfilesService
+                .GetPropertyByIdAsync(assignResult.Value.LinkedPropertyProfileId.Value, userAccessModel, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (property.IsFailure)
+            {
+                _logger.LogError("Failed to retrieve property details for property {PropertyProfileId} of application {ApplicationId}, error: {Error}",
+                    assignResult.Value.LinkedPropertyProfileId.Value, applicationId, property.Error);
+            }
+
+            if (property.IsSuccess)
+            {
+                propertyName = property.Value.Name;
+            }
+        }
+
+        Maybe<bool> sendNotificationsOutcome = Maybe<bool>.None;
+
+        var adminHubFooter = await GetAdminHubAddressDetailsAsync(adminHubName, cancellationToken);
+
         // if this is a new assignment, notify the user
         if (!assignResult.Value.ApplicationAlreadyAssignedToThisUser)
         {
             var recipient = new NotificationRecipient(
                 assignToUserAccount.Value.Email,
                 assignToUserAccount.Value.FullName(false));
-
-            var adminHubFooter = await GetAdminHubAddressDetailsAsync(adminHubName, cancellationToken);
 
             var notificationModel = new UserAssignedToApplicationDataModel
             {
@@ -294,7 +323,8 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
                 SenderName = performingUser.FullName,
                 SenderEmail = performingUser.EmailAddress,
                 AdminHubFooter = adminHubFooter,
-                ApplicationId = applicationId
+                ApplicationId = applicationId,
+                PropertyName = propertyName
             };
 
             var sendNotificationResult = await _notificationsService.SendNotificationAsync(
@@ -311,7 +341,56 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
                     assignToUserId, applicationId, sendNotificationResult.Error);
             }
 
-            sendNotificationOutcome = Maybe.From(sendNotificationResult.IsSuccess);
+            sendNotificationsOutcome = Maybe.From(sendNotificationResult.IsSuccess);
+        }
+
+        // if the application reference has changed, notify the applicant
+        if (assignResult.Value.OriginalApplicationReference != assignResult.Value.UpdatedApplicationReference)
+        {
+            var authorAccount =
+                await GetExternalUserAccountAsync(assignResult.Value.ApplicationAuthorId, cancellationToken)
+                    .ConfigureAwait(false);
+
+            if (authorAccount.IsFailure)
+            {
+                _logger.LogError("Could not retrieve details of application author with id {AuthorId} for application with id {ApplicationId}",
+                    assignResult.Value.ApplicationAuthorId, applicationId);
+            }
+            else
+            {
+                var recipient = new NotificationRecipient(authorAccount.Value.Email, authorAccount.Value.FullName);
+                
+                var recipientLinkToApplication = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}";
+
+                var notificationModel = new InformApplicantOfApplicationReferenceChangeDataModel
+                {
+                    Name = recipient.Name!,
+                    OldApplicationReference = assignResult.Value.OriginalApplicationReference,
+                    ApplicationReference = assignResult.Value.UpdatedApplicationReference,
+                    ViewApplicationURL = recipientLinkToApplication,
+                    AdminHubFooter = adminHubFooter,
+                    ApplicationId = applicationId
+                };
+
+                var sendNotificationResult = await _notificationsService.SendNotificationAsync(
+                    notificationModel,
+                    NotificationType.InformApplicantOfApplicationReferenceChange,
+                    recipient,
+                    cancellationToken: cancellationToken);
+
+                if (sendNotificationResult.IsFailure)
+                {
+                    _logger.LogError("Could not send notification of application reference change for application with id {ApplicationId} to applicant with id {ApplicantId}: {Error}",
+                        applicationId, assignResult.Value.ApplicationAuthorId, sendNotificationResult.Error);
+
+                    sendNotificationsOutcome = Maybe.From(false);
+                }
+                else if (sendNotificationsOutcome.HasNoValue)
+                {
+                    sendNotificationsOutcome = Maybe.From(true);
+                }
+            }
+
         }
 
 
@@ -325,7 +404,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
                 AssignedStaffMemberId = assignToUserId,
                 AssignedUserRole = selectedRole,
                 UnassignedStaffMemberId = assignResult.Value.IdOfUnassignedUser.HasValue ? (Guid?)assignResult.Value.IdOfUnassignedUser.Value : null,
-                NotificationSent = sendNotificationOutcome.HasValue ? (bool?)sendNotificationOutcome.Value : null,
+                NotificationSent = sendNotificationsOutcome.HasValue ? (bool?)sendNotificationsOutcome.Value : null,
                 AreaCodeRequiredUpdate = assignResult.Value.UpdatedApplicationReference != assignResult.Value.OriginalApplicationReference,
                 OriginalApplicationReference = assignResult.Value.OriginalApplicationReference,
                 AreaCode = selectedFcAreaCostCode,
@@ -418,7 +497,7 @@ public class AssignToUserUseCase : FellingLicenceApplicationUseCaseBase, IAssign
         _logger.LogDebug("Attempting to retrieve the user with Id; {SubmittedById} who submitted the application with Id: {ApplicationId}.",
             submittedById, flaId);
 
-        var submittingUserResult = await GetSubmittingUserAsync((Guid)submittedById!, cancellationToken);
+        var submittingUserResult = await GetExternalUserAccountAsync((Guid)submittedById!, cancellationToken);
         if (submittingUserResult.IsFailure)
         {
             _logger.LogError("Unable to retireve the details of the external user who submitted the application, application id: {ApplicationId}, external user: {createdById} , error {Error}", flaId, flaId, submittingUserResult.Error);

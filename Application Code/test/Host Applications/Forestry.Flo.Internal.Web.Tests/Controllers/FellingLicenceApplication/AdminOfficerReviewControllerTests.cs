@@ -290,6 +290,7 @@ public class AdminOfficerReviewControllerTests
     public async Task AgentAuthorityFormCheck_Post_Redirects_WhenUseCaseFailure()
     {
         var model = _fixture.Create<AgentAuthorityFormCheckModel>();
+        model.CheckPassed = true;
         _agentAuthorityFormCheckValidatorMock.Setup(x => x.Validate(model)).Returns(new FluentValidation.Results.ValidationResult());
         _agentAuthorityFormCheckUseCaseMock.Setup(x => x.CompleteAgentAuthorityCheckAsync(
             model.ApplicationId, It.IsAny<Guid>(), true, null, It.IsAny<CancellationToken>()))

@@ -13,14 +13,12 @@ namespace Forestry.Flo.Internal.Web.Controllers.Api;
 [RequiresValidApiKey]
 public class ApplicationExtensionController : ControllerBase
 {
-    private string GetFellingLicenceUrlLink() => Url.AbsoluteAction("ApplicationSummary", "FellingLicenceApplication")!;
-
     [Route("ExtendApplications")]
     public async Task<IActionResult> ExtendApplicationFinalActionDates(
         [FromServices] IExtendApplicationsUseCase extendApplications,
         CancellationToken cancellationToken)
     {
-        await extendApplications.ExtendApplicationFinalActionDatesAsync(GetFellingLicenceUrlLink(), cancellationToken);
+        await extendApplications.ExtendApplicationFinalActionDatesAsync(cancellationToken);
         return Ok();
     }
 }

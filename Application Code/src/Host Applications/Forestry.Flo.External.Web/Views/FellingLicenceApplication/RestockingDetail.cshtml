@@ -45,6 +45,7 @@
             <input type="hidden" asp-for="PercentageOfRestockArea" />
             <input type="hidden" asp-for="PercentageOfFellingArea" />
             <input type="hidden" asp-for="FellingOperationArea"/>
+            <input type="hidden" asp-for="TotalRestockingOperationsArea"/>
 
             <fieldset class="govuk-fieldset" id="restocking-detail-fields">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--l">
@@ -68,9 +69,14 @@
                             <br/>
                             So far, you have allocated @($"{Model.TotalRestockingOperationsArea:0.00}") hectares across your restock operations@(Model.Area is > 0 ? ", including this one" : string.Empty).
                         </p>
-                        <p>
+                        <p condition="@(restockAreaRemaining > 0)">
                             You have @($"{restockAreaRemaining:0.00}") hectares remaining to allocate.
                             <br/>
+                            All restock operations together must cover at least @($"{Model.FellingOperationArea:0.00}") hectares.
+                        </p>
+                        <p condition="@(restockAreaRemaining <= 0)">
+                            You have allocated sufficient hectares to restocking.
+                            <br />
                             All restock operations together must cover at least @($"{Model.FellingOperationArea:0.00}") hectares.
                         </p>
 

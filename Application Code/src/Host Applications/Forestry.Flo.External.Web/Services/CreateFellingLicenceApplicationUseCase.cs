@@ -2,7 +2,6 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Controllers;
 using Forestry.Flo.External.Web.Infrastructure;
-using Forestry.Flo.External.Web.Models.AgentAuthorityForm;
 using Forestry.Flo.External.Web.Models.Compartment;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.EnvironmentalImpactAssessment;
@@ -44,6 +43,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NodaTime;
 using Forestry.Flo.External.Web.Models.FellingLicenceApplication.TreeHealth;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Services.ConditionsBuilder.Models;
 using Forestry.Flo.Services.ConditionsBuilder.Services;
 using AssignedUserRole = Forestry.Flo.Services.FellingLicenceApplications.Entities.AssignedUserRole;
@@ -72,7 +72,6 @@ public class CreateFellingLicenceApplicationUseCase(
     RequestContext requestContext,
     IActivityFeedItemProvider activityFeedService,
     IOptions<FellingLicenceApplicationOptions> fellingLicenceApplicationOptions,
-    IWithdrawFellingLicenceService withdrawFellingLicenceService,
     IDeleteFellingLicenceService deleteFellingLicenceService,
     IWoodlandOwnerRepository woodlandOwnerRepository,
     IRetrieveWoodlandOwners retrieveWoodlandOwnersService,
@@ -82,7 +81,6 @@ public class CreateFellingLicenceApplicationUseCase(
     IBus busControl,
     IForesterServices foresterServices,
     IApplicationReferenceHelper applicationHelper,
-    IPublicRegister publicRegisterService,
     IOptions<EiaOptions> eiaOptions,
     IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
     IOptions<InternalUserSiteOptions> internalUserSiteOptions,
@@ -123,9 +121,6 @@ public class CreateFellingLicenceApplicationUseCase(
     private readonly ICompartmentRepository _compartmentRepository = Guard.Against.Null(compartmentRepository);
     private readonly IActivityFeedItemProvider _activityFeedService = Guard.Against.Null(activityFeedService);
 
-    private readonly IWithdrawFellingLicenceService _withdrawFellingLicenceService =
-        Guard.Against.Null(withdrawFellingLicenceService);
-
     private readonly IWoodlandOwnerRepository _woodlandOwnerRepository = Guard.Against.Null(woodlandOwnerRepository);
 
     private readonly IDeleteFellingLicenceService _deleteFellingLicenceService =
@@ -133,7 +128,6 @@ public class CreateFellingLicenceApplicationUseCase(
 
     private readonly IForesterServices _foresterServices = Guard.Against.Null(foresterServices);
     private readonly IApplicationReferenceHelper _applicationReferenceHelper = Guard.Against.Null(applicationHelper);
-    private readonly IPublicRegister _publicRegisterService = Guard.Against.Null(publicRegisterService);
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
 
     private readonly ICalculateConditions _calculateConditionsService = Guard.Against.Null(calculateConditionsService);
@@ -221,22 +215,42 @@ public class CreateFellingLicenceApplicationUseCase(
 
                 var result = filteredApplications.Select(a =>
                 {
-                    var match = propertyProfilesDictionary.TryGetValue(a.LinkedPropertyProfile!.PropertyProfileId,
-                        out var profile);
+                    var status = GetApplicationStatus(a.StatusHistories);
 
-                    return new FellingLicenceApplicationSummary(a.Id, a.ApplicationReference,
+                    string? propertyName;
+                    string? woodlandName;
+
+                    if (FellingLicenceStatusConstants.SubmitStatuses.Contains(status))
+                    {
+                        var match = propertyProfilesDictionary.TryGetValue(a.LinkedPropertyProfile!.PropertyProfileId,
+                            out var profile);
+
+                        propertyName = match ? profile!.Name : null;
+                        woodlandName = match ? profile!.NameOfWood : null;
+                    }
+                    else
+                    {
+                        propertyName = a.SubmittedFlaPropertyDetail!.Name;
+                        woodlandName = a.SubmittedFlaPropertyDetail!.NameOfWood;
+                    }
+
+                    var submittedDate = a.StatusHistories
+                        .Where(x => x.Status == FellingLicenceStatus.Submitted)
+                        .OrderByDescending(x => x.Created)
+                        .FirstOrDefault()?.Created;
+
+                    return new FellingLicenceApplicationSummary(
+                        a.Id, 
+                        a.ApplicationReference,
                         GetApplicationStatus(a.StatusHistories),
-                        match
-                            ? profile!.Name
-                            : null,
+                        propertyName,
                         a.LinkedPropertyProfile?.PropertyProfileId ?? Guid.Empty,
-                        match
-                            ? profile!.NameOfWood
-                            : null,
+                        woodlandName,
                         a.WoodlandOwnerId,
                         woodlandOwnerNameAndAgencyDetails.Value.WoodlandOwnerName,
                         woodlandOwnerNameAndAgencyDetails.Value.AgencyName,
-                        a.ApprovedInError?.PreviousReference);
+                        a.ApprovedInError?.PreviousReference,
+                        submittedDate);
                 });
 
                 return Result.Success(result);
@@ -1379,6 +1393,28 @@ public class CreateFellingLicenceApplicationUseCase(
             return Maybe<FellingLicenceApplicationModel>.None;
         }
 
+        var authorAccountIsFc = await GetIfApplicantAccountIsFcAsync(application.Value.CreatedById, cancellationToken);
+        if (authorAccountIsFc.IsFailure)
+        {
+            _logger.LogWarning("Unable to determine if author of application was an FC user, error : {Error}", currentReview.Error);
+            return Maybe<FellingLicenceApplicationModel>.None;
+        }
+
+        string? withdrawnByName = null;
+        if (application.Value.GetCurrentStatus() == FellingLicenceStatus.Withdrawn && application.Value.WithdrawnByUserId.HasValue)
+        {
+            // get the name of the withdrawn by user
+            var withdrawnByUser = await retrieveUserAccountsService
+                .RetrieveUserAccountByIdAsync(application.Value.WithdrawnByUserId.Value, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (withdrawnByUser.IsSuccess)
+            {
+                withdrawnByName = withdrawnByUser.Value.FullName;
+            }
+
+        }
+
         var applicationModel = new FellingLicenceApplicationModel
         {
             ApplicationId = application.Value.Id,
@@ -1388,6 +1424,13 @@ public class CreateFellingLicenceApplicationUseCase(
                            activityFeedItems.Value.Any(),
             ApplicationSummary = applicationSummary.Value,
             IsCBWApplication = application.Value.IsCBWApplication(),
+            
+            WithdrawalReasons = application.Value.WithdrawalReasons,
+            WithdrawalReasonOtherDetails = application.Value.WithdrawalReasonOtherDetails,
+            WithdrawalDateTime = application.Value.StatusHistories.OrderByDescending(x => x.Created)
+                .FirstOrDefault(x => x.Status == FellingLicenceStatus.Withdrawn)?.Created,
+            WithdrawnByName = withdrawnByName,
+            
             AgentAuthorityForm = new Models.FellingLicenceApplication.AgentAuthorityFormModel
             {
                 ApplicationId = application.Value.Id,
@@ -1463,7 +1506,8 @@ public class CreateFellingLicenceApplicationUseCase(
                     DocumentPurpose.ExternalLisConstraintReport),
                 SelectCompartmentStep = application.Value.FellingLicenceApplicationStepStatus.SelectCompartmentsStatus,
                 ExternalLisAccessedTimestamp = application.Value.ExternalLisAccessedTimestamp,
-                NotRunningExternalLisReport = application.Value.NotRunningExternalLisReport
+                NotRunningExternalLisReport = application.Value.NotRunningExternalLisReport,
+                ExternalLisReportRun = application.Value.FellingLicenceApplicationStepStatus.ConstraintCheckStatus
             },
             EnvironmentalImpactAssessment = new EnvironmentalImpactAssessmentViewModel
             {
@@ -1489,7 +1533,7 @@ public class CreateFellingLicenceApplicationUseCase(
                 IsForTenYearLicence = application.Value.IsForTenYearLicence,
                 WoodlandManagementPlanReference = application.Value.WoodlandManagementPlanReference,
                 StepComplete = application.Value.FellingLicenceApplicationStepStatus.TenYearLicenceStepStatus,
-                StepRequiredForApplication = user.IsFcUser
+                StepRequiredForApplication = user.IsFcUser && authorAccountIsFc.Value
             },
             PawsAndIawp = new PawsDesignationsViewModel
             {
@@ -2432,49 +2476,84 @@ public class CreateFellingLicenceApplicationUseCase(
     /// </summary>
     /// <param name="user">The user to get the application against</param>
     /// <param name="applicationId">The application Id to find</param>
-    /// <param name="referenceNumber">The value to update with</param>
-    /// <param name="cancellationToken">The cancelation token</param>
+    /// <param name="newAreaCode">The new area code value to update the application with</param>
+    /// <param name="newAdminRegion">The new administrative region to update the application with</param>
+    /// <param name="cancellationToken">The cancellation token</param>
     /// <returns>The result</returns>
-    public async Task<Result<Guid, UserDbErrorReason>> UpdateApplicationReferenceAysnc(
+    private async Task<Result<string, UserDbErrorReason>> UpdateApplicationReferenceAsync(
         ExternalApplicant user,
         Guid applicationId,
-        string referenceNumber,
+        string newAreaCode,
+        string? newAdminRegion,
         CancellationToken cancellationToken)
     {
         var applicationResult = await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
 
         if (applicationResult.IsFailure)
         {
-            return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.NotFound);
+            return Result.Failure<string, UserDbErrorReason>(UserDbErrorReason.NotFound);
         }
 
         var application = applicationResult.Value;
-
-        application.ApplicationReference = referenceNumber;
+        
+        application.ApplicationReference = _applicationReferenceHelper.UpdateReferenceNumber(application.ApplicationReference, newAreaCode);
+        application.AreaCode = newAreaCode;
+        application.AdministrativeRegion = newAdminRegion;
 
         _fellingLicenceApplicationRepository.Update(application);
 
-        return await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken)
-            .Map(() => application.Id)
-            .Tap(async appId =>
+        var saveResult = await _fellingLicenceApplicationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+        if (saveResult.IsFailure)
+        {
+            await _auditService.PublishAuditEventAsync(new AuditEvent(
+                    AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
+                    new
+                    {
+                        application.WoodlandOwnerId,
+                        Section = "Application Reference",
+                        Error = saveResult.Error.GetDescription()
+                    }),
+                cancellationToken);
+            _logger.LogError(
+                "Failed to update the application reference with error {ErrorReason} for application id: {ApplicationId}",
+                saveResult.Error.GetDescription(), application.Id);
+
+            return Result.Failure<string, UserDbErrorReason>(saveResult.Error);
+        }
+        
+        await _auditService.PublishAuditEventAsync(new AuditEvent(
+            AuditEvents.UpdateFellingLicenceApplication, applicationId, user.UserAccountId, _requestContext,
+            new { application.WoodlandOwnerId, Section = "Application Reference" }), cancellationToken);
+
+        return Result.Success<string, UserDbErrorReason>(application.ApplicationReference);
+    }
+
+    private async Task<string?> GetAdministrativeRegionForAreaCostCodeAsync(string? areaCostCode, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(areaCostCode))
+        {
+            _logger.LogWarning("Unable to get Administrative region name for unknown area cost code");
+            return null;
+        }
+
+        var (isSuccess, _, value, error) = await _getConfiguredFcAreasService.GetAllAsync(cancellationToken);
+
+        if (isSuccess)
+        {
+            var adminHubName = value?.FirstOrDefault(x => x.AreaCostCode == areaCostCode)?.AdminHubName;
+            if (!string.IsNullOrEmpty(adminHubName))
             {
-                await _auditService.PublishAuditEventAsync(new AuditEvent(
-                    AuditEvents.UpdateFellingLicenceApplication, appId, user.UserAccountId, _requestContext,
-                    new { application.WoodlandOwnerId, Section = "Application Reference" }), cancellationToken);
-            })
-            .OnFailure(async r =>
-            {
-                await _auditService.PublishAuditEventAsync(new AuditEvent(
-                        AuditEvents.UpdateFellingLicenceApplicationFailure, null, user.UserAccountId, _requestContext,
-                        new
-                        {
-                            application.WoodlandOwnerId, Section = "Application Reference", Error = r.GetDescription()
-                        }),
-                    cancellationToken);
-                _logger.LogError(
-                    "Failed to update the application reference with error {ErrorReason} for application id: {ApplicationId}",
-                    r.GetDescription(), application.Id);
-            });
+                return adminHubName;
+            }
+            _logger.LogWarning("Configured FC Areas were retrieved, but no Administrative region name was found for the provided area cost code {AreaCostCode}", areaCostCode);
+        }
+        else
+        {
+            _logger.LogWarning("Unable to get Administrative region name for the provided area cost code of {AreaCostCode}, error was {Error}", areaCostCode, error);
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -2532,14 +2611,19 @@ public class CreateFellingLicenceApplicationUseCase(
             return Result.Failure<Guid, UserDbErrorReason>(UserDbErrorReason.NotFound);
         }
 
-        restockingDetail.RestockingSpecies = restockingDetailModel.Species.Values.Select(s => new RestockingSpecies
-        {
-            Species = s.Species,
-            Percentage = s.Percentage,
-            ProposedRestockingDetailsId = restockingDetail.Id,
-            Id = s.Id
-        }).ToList();
+        restockingDetail.RestockingSpecies = restockingDetailModel.Species.Values
+            .Where(x => x.Species != SpeciesModel.OpenSpace)
+            .Select(s => new RestockingSpecies
+            {
+                Species = s.Species,
+                Percentage = s.Percentage,
+                ProposedRestockingDetailsId = restockingDetail.Id,
+                Id = s.Id
+            }).ToList();
 
+        restockingDetail.PercentOpenSpace = restockingDetailModel.Species.TryGetValue(SpeciesModel.OpenSpace, out var openSpace)
+            ? openSpace.Percentage
+            : null;
         restockingDetail.RestockingProposal = restockingDetailModel.RestockingProposal;
         restockingDetail.Area = restockingDetailModel.Area;
         restockingDetail.RestockingDensity = restockingDetailModel.RestockingDensity;
@@ -2975,24 +3059,34 @@ public class CreateFellingLicenceApplicationUseCase(
             }
 
             var reference = updateResult.Value.ApplicationReference;
+            var adminHubName = updateResult.Value.AdminHubName;
 
-            var adminHubFooter = string.IsNullOrWhiteSpace(updateResult.Value.AdminHubName)
-                ? string.Empty
-                : await _getConfiguredFcAreasService
-                    .TryGetAdminHubAddress(updateResult.Value.AdminHubName, cancellationToken)
-                    .ConfigureAwait(false);
-
+            // Get the area code from the compartment's GIS data in order to display the submitted application reference on screen and in emails
+            // and put the right admin hub in the submission email footer, in case the async lookup for this hasn't completed yet
             var woodlandDetails =
                 await _foresterServices.GetWoodlandOfficerAsync(
                     submittedFlaPropertyCompartments.Select(p => p.GISData).ToList()!, cancellationToken);
 
             if (!woodlandDetails.IsFailure)
             {
-                reference = _applicationReferenceHelper.UpdateReferenceNumber(updateResult.Value.ApplicationReference,
-                    woodlandDetails.Value.Code!);
-                await UpdateApplicationReferenceAysnc(user, applicationId, reference, cancellationToken);
+                var newAreaCode = woodlandDetails.Value?.Code;
+                adminHubName = await GetAdministrativeRegionForAreaCostCodeAsync(newAreaCode, cancellationToken);
+                
+                var updateRefResult = await UpdateApplicationReferenceAsync(user, applicationId, newAreaCode, adminHubName, cancellationToken);
+
+                if (updateRefResult.IsSuccess)
+                {
+                    reference = updateRefResult.Value;
+                }
             }
 
+            var submittedDate = _clock.GetCurrentInstant().ToDateTimeUtc();
+
+            var adminHubFooter = string.IsNullOrWhiteSpace(adminHubName)
+                ? string.Empty
+                : await _getConfiguredFcAreasService
+                    .TryGetAdminHubAddress(adminHubName, cancellationToken)
+                    .ConfigureAwait(false);
 
             var submissionConfirmationModel = new ApplicationSubmissionConfirmationDataModel
             {
@@ -3001,7 +3095,8 @@ public class CreateFellingLicenceApplicationUseCase(
                 PropertyName = submittedFlaPropertyDetail.Name,
                 ViewApplicationURL = linkToApplication,
                 AdminHubFooter = adminHubFooter,
-                ApplicationId = applicationId
+                ApplicationId = applicationId,
+                SubmittedDate = DateTimeDisplay.GetDateDisplayString(submittedDate)
             };
 
             // TODO this should be in a service not the repo
@@ -3064,12 +3159,13 @@ public class CreateFellingLicenceApplicationUseCase(
 
                         var notificationModel = new ApplicationResubmittedDataModel
                         {
-                            ApplicationReference = updateResult.Value.ApplicationReference,
+                            ApplicationReference = reference,
                             Name = recipient.Name!,
                             PropertyName = submittedFlaPropertyDetail.Name,
                             ViewApplicationURL = internalSiteApplicationLink,
                             AdminHubFooter = adminHubFooter,
-                            ApplicationId = applicationId
+                            ApplicationId = applicationId,
+                            SubmittedDate = DateTimeDisplay.GetDateDisplayString(submittedDate)
                         };
 
                         var sendNotificationResult = await _sendNotifications.SendNotificationAsync(
@@ -3167,333 +3263,6 @@ public class CreateFellingLicenceApplicationUseCase(
         {
             _logger.LogError(ex, "Felling licence application failure, application id: {FellingLicenceApplicationId}",
                 applicationId);
-        }
-    }
-
-
-    /// <summary>
-    /// Withdraws a felling licence application for the specified application ID.
-    /// </summary>
-    /// <param name="applicationId">The unique identifier of the felling licence application to withdraw.</param>
-    /// <param name="user">The external applicant requesting the withdrawal.</param>
-    /// <param name="linkToApplication">A URL link to the application for reference in notifications.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>A <see cref="Result"/> indicating the success or failure of the withdrawal operation.</returns>
-    public async Task<Result> WithdrawFellingLicenceApplicationAsync(
-        Guid applicationId,
-        ExternalApplicant user,
-        string linkToApplication,
-        CancellationToken cancellationToken)
-    {
-        var userAccessModel = await GetUserAccessModelAsync(user, cancellationToken);
-        if (userAccessModel.IsFailure)
-        {
-            _logger.LogError(
-                "Could not Withdraw the Felling Licence Application with ID {ApplicationId} when requested by user with ID {UserAccountId}, user access to this application was denied",
-                applicationId,
-                user.UserAccountId);
-            return Result.Failure(
-                $"Attempt to access Felling Licence Application with id: {applicationId} by user with Id of {user.UserAccountId} resulted in access being denied");
-        }
-
-        await using var transaction = await _fellingLicenceApplicationRepository.BeginTransactionAsync(cancellationToken);
-
-        try
-        {
-            var resultWithdrawal =
-                await _withdrawFellingLicenceService.WithdrawApplication(
-                    applicationId,
-                    userAccessModel.Value,
-                    cancellationToken);
-            if (resultWithdrawal.IsFailure)
-
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                await _auditService.PublishAuditEventAsync(
-                    new AuditEvent(
-                        AuditEvents.WithdrawFellingLicenceApplicationFailure,
-                        applicationId,
-                        user.UserAccountId,
-                        _requestContext,
-                        new
-                        {
-                            user.WoodlandOwnerId,
-                            Section = "Withdraw FLA",
-                            resultWithdrawal.Error
-                        }), cancellationToken);
-                _logger.LogError(
-                    "Could not withdraw the Felling Licence Application with ID {ApplicationId} when requested by user with ID {UserAccountId}",
-                    applicationId,
-                    user.UserAccountId);
-                return Result.Failure($"Could not withdraw the {nameof(FellingLicenceApplication)}");
-            }
-
-            var (_, isFailure, fellingLicenceApplication) =
-                await GetFellingLicenceApplicationAsync(applicationId, user, cancellationToken);
-
-            if (isFailure || fellingLicenceApplication.LinkedPropertyProfile is null)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                await _auditService.PublishAuditEventAsync(
-                    new AuditEvent(
-                        AuditEvents.FellingLicenceApplicationWithdrawFailure,
-                        applicationId,
-                        user.UserAccountId,
-                        _requestContext,
-                        new
-                        {
-                            WoodlandOwner = user.WoodlandOwnerId,
-                            Error = $"Failed to get {nameof(FellingLicenceApplication)} with ID {applicationId}"
-                        }), cancellationToken);
-
-                _logger.LogError(
-                    "Failed to get Felling Licence Application with ID {ApplicationId}",
-                    applicationId);
-
-                return Result.Failure($"Failed to get {nameof(FellingLicenceApplication)}");
-            }
-
-            if (fellingLicenceApplication.PublicRegister.ShouldApplicationBeRemovedFromConsultationPublicRegister())
-            {
-                var publicRegisterRemovalResult = await _publicRegisterService.RemoveCaseFromConsultationRegisterAsync(
-                    fellingLicenceApplication.PublicRegister!.EsriId!.Value,
-                    fellingLicenceApplication.ApplicationReference,
-                    _clock.GetCurrentInstant().ToDateTimeUtc(),
-                    cancellationToken);
-
-                if (publicRegisterRemovalResult.IsFailure)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    await _auditService.PublishAuditEventAsync(
-                        new AuditEvent(
-                            AuditEvents.WithdrawFellingLicenceApplicationFailure,
-                            applicationId,
-                            user.UserAccountId,
-                            _requestContext,
-                            new
-                            {
-                                user.WoodlandOwnerId,
-                                Section = "Withdraw FLA",
-                                publicRegisterRemovalResult.Error
-                            }), cancellationToken);
-                    _logger.LogError(
-                        "Could not remove the Felling Licence Application with ID {ApplicationId} from the public register when requested by user with ID {UserAccountId}",
-                        applicationId,
-                        user.UserAccountId);
-                    return Result.Failure(
-                        $"Could not remove the {nameof(FellingLicenceApplication)} from the public register");
-                }
-
-                var timestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
-
-                var updateResult = await withdrawFellingLicenceService.UpdatePublicRegisterEntityToRemovedAsync(
-                    applicationId,
-                    user.UserAccountId,
-                    timestamp,
-                    cancellationToken);
-
-                if (updateResult.IsFailure)
-                {
-                    await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-                    await _auditService.PublishAuditEventAsync(
-                        new AuditEvent(
-                            AuditEvents.WithdrawFellingLicenceApplicationFailure,
-                            applicationId,
-                            user.UserAccountId,
-                            _requestContext,
-                            new
-                            {
-                                WoodlandOwner = user.WoodlandOwnerId,
-                                Section = "Withdraw FLA",
-                                updateResult.Error
-                            }), cancellationToken);
-                    _logger.LogError(
-                        "Could not update the public register data for Felling Licence Application with ID {ApplicationId} requested by user with ID {UserAccountId}",
-                        applicationId,
-                        user.UserAccountId);
-                    return Result.Failure(
-                        $"Could not update the {nameof(FellingLicenceApplication)} public register data");
-                }
-            }
-
-            await transaction.CommitAsync(cancellationToken);
-
-            await _auditService.PublishAuditEventAsync(
-                new AuditEvent(
-                    AuditEvents.WithdrawFellingLicenceApplication,
-                    applicationId,
-                    user.UserAccountId,
-                    _requestContext,
-                    new
-                    {
-                        WoodlandOwner = user.WoodlandOwnerId
-                    }), cancellationToken);
-
-            if (resultWithdrawal.Value.Count > 0)
-            {
-                var resultRemovedOfficers = await _withdrawFellingLicenceService.RemoveAssignedWoodlandOfficerAsync(
-                    applicationId,
-                    resultWithdrawal.Value,
-                    cancellationToken);
-                if (resultRemovedOfficers.IsFailure)
-                {
-                    _logger.LogError(
-                        "Could not remove the assignment of all the users linked to the Felling Licence Application with ID {ApplicationId} when requested by user with ID {UserAccountId}",
-                        applicationId,
-                        user.UserAccountId);
-                }
-            }
-
-            var propertyResult = await GetPropertyProfileByIdAsync(
-                    fellingLicenceApplication.LinkedPropertyProfile.PropertyProfileId, user, cancellationToken)
-                .ConfigureAwait(false);
-            if (propertyResult.IsFailure)
-            {
-                await _auditService.PublishAuditEventAsync(
-                    new AuditEvent(
-                        AuditEvents.FellingLicenceApplicationWithdrawFailure,
-                        applicationId,
-                        user.UserAccountId,
-                        _requestContext,
-                        new
-                        {
-                            WoodlandOwner = user.WoodlandOwnerId,
-                            Error =
-                                $"Failed to get {nameof(PropertyProfile)} with ID {fellingLicenceApplication.LinkedPropertyProfile.PropertyProfileId}"
-                        }), cancellationToken);
-
-                _logger.LogError(
-                    "Failed to get Property Profile with ID {PropertyProfileId}",
-                    fellingLicenceApplication.LinkedPropertyProfile.PropertyProfileId);
-
-                return Result.Failure($"Failed to get {nameof(PropertyProfile)}");
-            }
-
-            var adminHubFooter = string.IsNullOrWhiteSpace(fellingLicenceApplication.AdministrativeRegion)
-                ? string.Empty
-                : await _getConfiguredFcAreasService
-                    .TryGetAdminHubAddress(fellingLicenceApplication.AdministrativeRegion, cancellationToken)
-                    .ConfigureAwait(false);
-
-            var applicationWithdrawnModel = new ApplicationWithdrawnConfirmationDataModel
-            {
-                ApplicationReference = fellingLicenceApplication.ApplicationReference,
-                PropertyName = propertyResult.Value.Name,
-                Name = user.FullName!,
-                ViewApplicationURL = linkToApplication,
-                AdminHubFooter = adminHubFooter,
-                ApplicationId = applicationId
-            };
-
-            var woodlandOwner =
-                await _woodlandOwnerRepository.GetAsync(
-                    fellingLicenceApplication.WoodlandOwnerId,
-                    cancellationToken);
-
-            var notificationResult = await _sendNotifications.SendNotificationAsync(
-                applicationWithdrawnModel,
-                NotificationType.ApplicationWithdrawnConfirmation,
-                new NotificationRecipient(
-                    user.EmailAddress!,
-                    user.FullName),
-                copyToRecipients: GetWoodlandOwnerCopyToRecipient(user.EmailAddress,
-                    woodlandOwner.IsSuccess ? woodlandOwner.Value : null),
-                cancellationToken: cancellationToken);
-
-            if (notificationResult.IsSuccess)
-            {
-                await _auditService.PublishAuditEventAsync(
-                    new AuditEvent(
-                        AuditEvents.FellingLicenceApplicationWithdrawNotificationSent,
-                        fellingLicenceApplication.Id,
-                        user.UserAccountId!.Value,
-                        _requestContext,
-                        new
-                        {
-                            RecipientId = user.UserAccountId!.Value,
-                            RecipientName = user.FullName,
-                            RecipientEmail = user.EmailAddress,
-                            RecipientRole = AssignedUserRole.Author,
-                        }),
-                    cancellationToken);
-            }
-            else
-            {
-                await _auditService.PublishAuditEventAsync(
-                    new AuditEvent(
-                        AuditEvents.FellingLicenceApplicationWithdrawNotificationSentFailed,
-                        fellingLicenceApplication.Id,
-                        user.UserAccountId!.Value,
-                        _requestContext,
-                        new
-                        {
-                            RecipientId = user.UserAccountId!.Value,
-                            RecipientName = user.FullName,
-                            RecipientEmail = user.EmailAddress,
-                            RecipientRole = AssignedUserRole.Author,
-                            ErrorDetails = notificationResult.Error
-                        }),
-                    cancellationToken);
-            }
-
-            // Notify FC (internal) users already assigned to the application to inform them of the withdrawal
-            var internalUsers =
-                await _internalUserAccountRepository.GetUsersWithIdsInAsync(resultWithdrawal.Value, cancellationToken);
-            if (internalUsers.IsSuccess)
-            {
-                foreach (var internalUser in internalUsers.Value)
-                {
-                    var recipient = new NotificationRecipient(
-                        internalUser.Email,
-                        internalUser.FullName(false));
-
-                    var internalSiteApplicationLink =
-                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
-
-                    var notificationModel = new ApplicationWithdrawnConfirmationDataModel
-                    {
-                        ApplicationReference = fellingLicenceApplication.ApplicationReference,
-                        Name = recipient.Name!,
-                        PropertyName = propertyResult.Value.Name,
-                        ViewApplicationURL = internalSiteApplicationLink,
-                        AdminHubFooter = adminHubFooter,
-                        ApplicationId = applicationId
-                    };
-
-                    var sendNotificationResult = await _sendNotifications.SendNotificationAsync(
-                        notificationModel,
-                        NotificationType.ApplicationWithdrawn,
-                        recipient,
-                        senderName: user.FullName,
-                        cancellationToken: cancellationToken);
-
-                    if (sendNotificationResult.IsFailure)
-                    {
-                        _logger.LogError(
-                            "Could not send notification for withdrawal of {ApplicationId} back to internal user (Id {InternalUserId}): {Error}",
-                            internalUser.Id, 
-                            applicationId, 
-                            sendNotificationResult.Error);
-                    }
-                }
-            }
-
-            await _auditService.PublishAuditEventAsync(new AuditEvent(
-                AuditEvents.FellingLicenceApplicationWithdrawComplete, applicationId, user.UserAccountId,
-                _requestContext,
-                new { WoodlandOwner = user.WoodlandOwnerId }), cancellationToken);
-
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while processing application id {ApplicationId}", applicationId);
-            await _auditService.PublishAuditEventAsync(new AuditEvent(
-                AuditEvents.WithdrawFellingLicenceApplicationFailure, applicationId, user.UserAccountId,
-                _requestContext,
-                new { WoodlandOwner = user.WoodlandOwnerId, Error = ex.Message }), cancellationToken);
-            return Result.Failure(
-                $"Withdrawal failure, application id: {applicationId}, error: {ex.Message}");
         }
     }
 
@@ -3633,6 +3402,26 @@ public class CreateFellingLicenceApplicationUseCase(
                 "Could not retrieve property profile for application");
         }
 
+        FellingLicenceApplicationSummaryPropertyDetails propertyDetails;
+        if (FellingLicenceStatusConstants.SubmitStatuses.Contains(application.Value.ApplicationSummary.Status))
+        {
+            propertyDetails = new FellingLicenceApplicationSummaryPropertyDetails(property.Value);
+        }
+        else
+        {
+            var submittedProperty = await GetFellingLicenceApplicationServiceForExternalUsers.GetExistingSubmittedFlaPropertyDetailAsync(
+                applicationId, userAccessModel.Value, cancellationToken);
+
+            if (submittedProperty.IsFailure || submittedProperty.Value.HasNoValue)
+            {
+                _logger.LogError("Failed to retrieve submitted property snapshot for application with id {ApplicationId}", applicationId);
+                return Result.Failure<FellingLicenceApplicationSummaryViewModel>(
+                    "Could not retrieve submitted property snapshot for application");
+            }
+
+            propertyDetails = new FellingLicenceApplicationSummaryPropertyDetails(submittedProperty.Value.Value);
+        }
+        
         var fellingAndRestocking = await GetFellingAndRestockingDetailsPlaybackViewModel(
                 applicationId, user, cancellationToken)
             .ConfigureAwait(false);
@@ -3666,7 +3455,7 @@ public class CreateFellingLicenceApplicationUseCase(
         }
 
         result.WoodlandOwner = woodlandOwner.Value;
-        result.PropertyProfile = property.Value;
+        result.PropertyProfile = propertyDetails;
         result.Agency = agency.HasValue ? agency.Value : null;
         result.FellingAndRestocking = fellingAndRestocking.Value;
         result.PawsCompartmentDesignations = pawsDesignationsModels.Value;
@@ -3871,7 +3660,9 @@ public class CreateFellingLicenceApplicationUseCase(
             PropertyProfileCompartmentId = x.PropertyProfileCompartmentId,
             PropertyProfileCompartmentName = propertyProfile.Compartments.SingleOrDefault(p => p.Id == x.PropertyProfileCompartmentId)?.CompartmentNumber ?? "Unknown compartment",
             ProportionBeforeFelling = x.ProportionBeforeFelling,
-            ProportionAfterFelling = x.ProportionAfterFelling
+            ProportionAfterFelling = x.ProportionAfterFelling,
+            IsRestoringCompartment = x.IsRestoringCompartment,
+            RestorationDetails = x.RestorationDetails
         }).ToList();
 
         return Result.Success(results);

@@ -13,18 +13,17 @@ using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
 using Microsoft.Extensions.Options;
-using Microsoft.Graph;
 using Newtonsoft.Json;
-using System;
-using Forestry.Flo.Services.FellingLicenceApplications.Services.WoodlandOfficerReviewSubstatuses;
 using ProposedFellingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedFellingDetailModel;
 using ProposedRestockingDetailModel = Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerReview.ProposedRestockingDetailModel;
 using SubmittedFlaPropertyCompartment = Forestry.Flo.Internal.Web.Models.WoodlandOfficerReview.SubmittedFlaPropertyCompartment;
@@ -823,11 +822,14 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
 
         var confirmedRestockingDetailsModel = PrepareRestockingDetailForSaveAsync(model);
 
+        var allSpecies = model.Species;
+        allSpecies.Remove(SpeciesModel.OpenSpace);
+
         var saveResult = await _updateConfirmedFellingAndRestockingDetailsService.SaveChangesToConfirmedRestockingDetailsAsync(
             model.ApplicationId,
             user.UserAccountId!.Value,
             confirmedRestockingDetailsModel,
-            model.Species,
+            allSpecies,
             cancellationToken);
 
         if (saveResult.IsFailure)
@@ -931,7 +933,9 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 NumberOfTrees = restockingDetails.NumberOfTrees,
                 PercentageEstablishedByCoppiceOrNaturalRegen = restockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen,
                 RestockingProposal = restockingDetails.RestockingProposal ?? TypeOfProposal.None,
-                ConfirmedRestockingSpecies = restockingDetails.ConfirmedRestockingSpecies.Select(s => new ConfirmedRestockingSpecies
+                ConfirmedRestockingSpecies = restockingDetails.ConfirmedRestockingSpecies
+                    .Where(s => s.Species != SpeciesModel.OpenSpace)
+                    .Select(s => new ConfirmedRestockingSpecies
                 {
                     ConfirmedRestockingDetailsId = restockingDetails.ConfirmedRestockingDetailsId,
                     Species = s.Species ?? string.Empty,
@@ -990,12 +994,13 @@ public class ConfirmedFellingAndRestockingDetailsUseCase(
                 });
             }
 
-            foreach (var felling in compartment.ConfirmedFellingDetails.Where(x => x.ConfirmedRestockingDetails.Any()))
+            foreach (var felling in compartment.ConfirmedFellingDetails
+                         .Where(x => x.OperationType.HasValue && x.OperationType.Value.AllowedRestockingForFellingType(false).Length > 0))
             {
                 var fellingArea = felling.AreaToBeFelled ?? 0;
                 var restockArea = felling.ConfirmedRestockingDetails.Sum(x => x.RestockArea ?? 0);
 
-                if (Math.Abs(Math.Round(restockArea, 2) - Math.Round(fellingArea, 2)) > 0.1)
+                if (Math.Round(Math.Abs(Math.Round(restockArea, 2) - Math.Round(fellingArea, 2)), 2) >= 0.01)
                 {
                     warnings.Add(new ConfirmedFellingAndRestockingWarning
                     {

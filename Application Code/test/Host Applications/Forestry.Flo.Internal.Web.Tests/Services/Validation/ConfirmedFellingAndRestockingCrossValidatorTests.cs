@@ -429,6 +429,51 @@ public class ConfirmedFellingAndRestockingCrossValidatorTests
     }
 
     [Theory, AutoData]
+    public async Task WithCreateDesignedOpenGroundCombinedWithOtherRestockingTypeInFellingCompartment([CombinatorialValues] FellingOperationType fellingOperationType)
+    {
+        if (fellingOperationType is FellingOperationType.None or FellingOperationType.Thinning)
+        {
+            return; // Skip operation types not covered by this test
+        }
+
+        // Arrange
+        var compartmentId = Fixture.Create<Guid>();
+        var felling1 = CreateValidFellingWithRestocking(compartmentId, fellingOperationType);
+
+
+        var restockingOp = Fixture.Build<ConfirmedRestockingDetailViewModel>()
+            .With(x => x.RestockingProposal, TypeOfProposal.CreateDesignedOpenGround)
+            .With(x => x.ConfirmedFellingDetailsId, felling1.ConfirmedFellingDetailsId)
+            .With(x => x.RestockingCompartmentId, compartmentId)
+            .Create();
+        felling1.ConfirmedRestockingDetails = [.. felling1.ConfirmedRestockingDetails, restockingOp];
+
+        var cpt = Fixture.Build<CompartmentConfirmedFellingRestockingDetailsModel>()
+            .With(x => x.ConfirmedFellingDetails, [felling1])
+            .With(x => x.SubmittedFlaPropertyCompartmentId, compartmentId)
+            .Create();
+
+        var testData = Fixture.Build<ConfirmedFellingRestockingDetailsModel>()
+            .With(x => x.Compartments, [cpt])
+            .Create();
+
+        var validator = new ConfirmedFellingAndRestockingCrossValidator();
+
+        // Act
+
+        var results = await validator.ValidateAsync(testData);
+
+        // Assert
+
+        Assert.False(results.IsValid);
+        Assert.Single(results.Errors);
+
+        Assert.Contains(results.Errors, x =>
+            x.FormattedMessagePlaceholderValues["PropertyName"].ToString() == $"amend-link-restocking-{restockingOp.ConfirmedRestockingDetailsId}"
+            && x.ErrorMessage == $"{TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()} restocking cannot be combined with any other restocking proposal for the {felling1.OperationType.GetDisplayName()} felling operation in compartment {cpt.CompartmentName}");
+    }
+
+    [Theory, AutoData]
     public async Task WithAllAltCompartmentRestockingInFellingCompartment([CombinatorialValues] FellingOperationType fellingOperationType)
     {
         if (fellingOperationType is FellingOperationType.None or FellingOperationType.Thinning)
@@ -717,7 +762,8 @@ public class ConfirmedFellingAndRestockingCrossValidatorTests
         Guid compartmentId,
         FellingOperationType operation = FellingOperationType.ClearFelling)
     {
-        var validRestockingTypes = operation.AllowedRestockingForFellingType(false);
+        var validRestockingTypes = operation.AllowedRestockingForFellingType(false)
+            .Where(x => x != TypeOfProposal.CreateDesignedOpenGround);
 
         var restockingModels = new List<ConfirmedRestockingDetailViewModel>();
 

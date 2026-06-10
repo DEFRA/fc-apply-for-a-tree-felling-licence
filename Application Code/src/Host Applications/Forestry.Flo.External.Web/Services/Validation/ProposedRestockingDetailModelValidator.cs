@@ -52,7 +52,7 @@ public class ProposedRestockingDetailModelValidator : AbstractValidator<Proposed
 
         RuleFor(m => m.Species)
             .Must(m => m.Sum(x => x.Value.Percentage) == 100)
-            .WithMessage("Enter restocking species percentages that add up to 100")
+            .WithMessage("Enter restocking area percentages that add up to 100")
             .When(m => m.RestockingProposal != TypeOfProposal.None 
                        && m.RestockingProposal != TypeOfProposal.DoNotIntendToRestock
                        && m.RestockingProposal != TypeOfProposal.CreateDesignedOpenGround
@@ -60,7 +60,7 @@ public class ProposedRestockingDetailModelValidator : AbstractValidator<Proposed
                        && m.Species.All(s => s.Value.Percentage is >0.0 and <=100.0));
 
         RuleFor(m => m.Species)
-            .Must(m => m.Count > 0)
+            .Must(m => m.Any(x => x.Value.IsOpenSpace == false))
             .WithMessage("Select at least one species to restock")
             .When(m => m.RestockingProposal != TypeOfProposal.None 
                        && m.RestockingProposal != TypeOfProposal.DoNotIntendToRestock

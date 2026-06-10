@@ -349,7 +349,8 @@ public partial class ExternalConsulteeInviteUseCaseTests
             && m.SenderName == username
             && m.CommentsEndDate == DateTimeDisplay.GetDateDisplayString(endDate)
             && m.ViewApplicationURL == model.ExternalAccessLink
-            && m.AdminHubFooter == adminHubAddress),
+            && m.AdminHubFooter == adminHubAddress
+            && m.PropertyName == application.SubmittedFlaPropertyDetail.Name),
             notificationType,
             It.Is<NotificationRecipient>(r => r.Address == model.Email && r.Name == model.ConsulteeName),
             null,
@@ -485,7 +486,8 @@ public partial class ExternalConsulteeInviteUseCaseTests
             && m.SenderName == username
             && m.CommentsEndDate == DateTimeDisplay.GetDateDisplayString(endDate)
             && m.ViewApplicationURL == model.ExternalAccessLink
-            && m.AdminHubFooter == adminHubAddress),
+            && m.AdminHubFooter == adminHubAddress
+            && m.PropertyName == application.SubmittedFlaPropertyDetail.Name),
             notificationType,
             It.Is<NotificationRecipient>(r => r.Address == model.Email && r.Name == model.ConsulteeName),
             null,
@@ -653,7 +655,8 @@ public partial class ExternalConsulteeInviteUseCaseTests
                 && m.SenderName == username
                 && m.CommentsEndDate == DateTimeDisplay.GetDateDisplayString(endDate)
                 && m.ViewApplicationURL == model.ExternalAccessLink
-                && m.AdminHubFooter == adminHubAddress),
+                && m.AdminHubFooter == adminHubAddress
+                && m.PropertyName == application.SubmittedFlaPropertyDetail.Name),
             notificationType,
             It.Is<NotificationRecipient>(r => r.Address == model.Email && r.Name == model.ConsulteeName),
             null,
@@ -810,7 +813,8 @@ public partial class ExternalConsulteeInviteUseCaseTests
                 && m.SenderName == username
                 && m.CommentsEndDate == DateTimeDisplay.GetDateDisplayString(endDate)
                 && m.ViewApplicationURL == model.ExternalAccessLink
-                && m.AdminHubFooter == adminHubAddress),
+                && m.AdminHubFooter == adminHubAddress
+                && m.PropertyName == application.SubmittedFlaPropertyDetail.Name),
             notificationType,
             It.Is<NotificationRecipient>(r => r.Address == model.Email && r.Name == model.ConsulteeName),
             null,

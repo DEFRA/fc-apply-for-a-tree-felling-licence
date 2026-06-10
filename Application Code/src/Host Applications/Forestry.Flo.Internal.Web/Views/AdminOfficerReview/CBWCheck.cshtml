@@ -21,12 +21,12 @@
         </div>
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">
-                The system has identified this application may qualify for an expedited application process based on the application details provided:
+                System checks suggest this application may qualify for the expedited cricket bat willow process because the:
                 <ul>
-                    <li>There are only Cricket bat willow species in this application</li>
-                    <li>The felling operation type is felling of individual trees</li>
-                    <li>The restocking operation type is restocking of individual trees</li>
-                    <li>The estimated number of  trees to be restocked is not less than the number of trees to be felled</li>
+                    <li>tree species is cricket bat willow only</li>
+                    <li>the felling operation type is clear felling or felling of individual trees</li>
+                    <li>restocking replaces what is being felled (like-for-like)</li>
+                    <li>felling and restocking individual trees: restocking count equals felling count</li>
                 </ul>
             </p>
         </div>
@@ -36,33 +36,34 @@
         <input asp-for="ApplicationId" />
 
         <govuk-form-group asp-for="CheckPassed">
-            <fieldset class="govuk-fieldset" role="group">
+            <fieldset class="govuk-fieldset" aria-describedby="expedited-hint">
                 <legend class="govuk-fieldset__legend govuk-fieldset__legend--m no-margin-bottom">
-                    <h3 class="govuk-fieldset__heading">
-						Do compartments in this application fall into any sensitive areas
-                    </h3>
-                    <p class="govuk-body">
-                        Sensitive areas may include sites of special scientific interest (SSSI), areas of outstanding natural beauty and conservation areas. Applications that fall into sensitive areas will need to be reviewed by Woodland Officers.
+                    <h2 class="govuk-fieldset__heading">
+                        Should a Woodland Officer review this application before it is passed to an approver?
+                    </h2>
+                    <div id="expedited-hint" class="govuk-hint">
+                        Use the internal guidance to assess whether the application meets the required criteria for fast-tracked CBW approval. Applications that do not require woodland officer review can be passed to an approver.
+                    </div>
                 </legend>
                 <div class="govuk-radios" data-module="govuk-radios">
                     <div class="govuk-radios" data-module="govuk-radios">
                         <validation asp-for="CheckPassed"></validation>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" asp-for="CheckPassed" type="radio" value="true" />
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" asp-for="CheckPassed" type="radio" value="true" aria-describedby="yes-radio-hint" />
                             <label class="govuk-label govuk-radios__label" asp-for="CheckPassed">
                                 Yes
                             </label>
-                            <div class="govuk-hint govuk-radios__hint">
-                                The application will need to be reviewed by a Woodland Officer
+                            <div id="yes-radio-hint" class="govuk-hint govuk-radios__hint">
+                                The application must be reviewed by a woodland officer
                             </div>
                         </div>
                         <div class="govuk-radios__item">
-                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input check-radios" id="check-failed" asp-for="CheckPassed" type="radio" value="false" />
+                            <input condition-disabled="@(!Model.Editable(user))" class="govuk-radios__input" id="check-failed" asp-for="CheckPassed" type="radio" value="false" aria-describedby="no-radio-hint" />
                             <label class="govuk-label govuk-radios__label" for="check-failed">
                                 No
                             </label>
-                            <div class="govuk-hint govuk-radios__hint">
-                                The application can be assigned to the Approver
+                            <div id="no-radio-hint" class="govuk-hint govuk-radios__hint">
+                                This application can be assigned to an approver
                             </div>
                         </div>
                     </div>

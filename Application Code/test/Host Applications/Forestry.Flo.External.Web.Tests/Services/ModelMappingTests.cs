@@ -147,6 +147,20 @@ public class ModelMappingTests
 
         //assert
         Assert.Equal(proposedRestockingDetail.Id, result.Id);
+        
+        Assert.Equal(proposedRestockingDetail.RestockingSpecies.Count + 1, result.Species.Count);  // + 1 for the open ground
+
+        foreach (var species in proposedRestockingDetail.RestockingSpecies)
+        {
+            Assert.True(result.Species.TryGetValue(species.Species, out var matchedModel));
+            Assert.NotNull(matchedModel);
+            Assert.Equal(species.Percentage, matchedModel.Percentage);
+        }
+
+        Assert.True(result.Species.ContainsKey(SpeciesModel.OpenSpace));
+        var openSpace = result.Species.Single(x => x.Value.IsOpenSpace);
+        Assert.Equal(proposedRestockingDetail.PercentOpenSpace, openSpace.Value.Percentage);
+
         Assert.Equal(speciesList.First().Code, result.Species[speciesList.First().Code].Species);
         Assert.Equal(speciesList.First().Name, result.Species[speciesList.First().Code].SpeciesName);
         Assert.Equal(proposedRestockingDetail.Area, result.Area);

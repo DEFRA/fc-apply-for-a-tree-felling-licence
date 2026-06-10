@@ -138,6 +138,27 @@ public class FellingLicenceApplicationModel
     public bool IsCBWApplication { get; set; }
 
     /// <summary>
+    /// Gets and sets the reasons for the application being withdrawn, if relevant.
+    /// </summary>
+    public List<WithdrawalReason> WithdrawalReasons { get; set; } = new List<WithdrawalReason>();
+
+    /// <summary>
+    /// Gets and sets the additional details for the withdrawal reason "Other", if this reason is selected for the application withdrawal.
+    /// </summary>
+    public string? WithdrawalReasonOtherDetails { get; set; }
+
+    /// <summary>
+    /// Gets and sets the date and time when the application was withdrawn, if the application is withdrawn.
+    /// </summary>
+    public DateTime? WithdrawalDateTime { get; set; }
+
+    /// <summary>
+    /// Gets and sets the name of the user that withdrew the application, if it has been withdrawn and it was triggered
+    /// by a user and not the system.
+    /// </summary>
+    public string? WithdrawnByName { get; set; }
+
+    /// <summary>
     /// Gets the total number of trees being restocked across all restocking operations where the number is specified (which
     /// will be where the restocking operation is "restock with individual trees", or "plant an alternative area with individual trees").
     /// </summary>

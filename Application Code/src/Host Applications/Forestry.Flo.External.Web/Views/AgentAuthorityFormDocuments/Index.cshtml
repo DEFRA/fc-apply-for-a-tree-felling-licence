@@ -8,7 +8,7 @@
     ViewData.ShowBackLink();
 }
 
-<div class="govuk-grid-column-two-thirds">
+<div class="govuk-grid-column-two-thirds govuk-body">
 
     <partial name="Partials/_AgentAuthorityForm" model="Model" />
 
@@ -16,6 +16,8 @@
         <button class="govuk-button" type="submit" data-module="govuk-button">
             Add new agent authority form
         </button>
+        <br/>
+        <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManagedClientSummary" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId" asp-route-agencyId="@Model.AgencyId">Back to manage client details</a>
     </form>
 
 </div>

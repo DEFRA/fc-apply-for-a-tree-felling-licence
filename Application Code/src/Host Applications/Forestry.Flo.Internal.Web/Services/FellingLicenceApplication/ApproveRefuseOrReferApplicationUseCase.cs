@@ -1,4 +1,5 @@
-﻿using Ardalis.GuardClauses;
+﻿using System.Diagnostics;
+using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
@@ -46,6 +47,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     IGetConfiguredFcAreas getConfiguredFcAreasService,
     IGetWoodlandOfficerReviewService getWoodlandOfficerReviewService,
     IOptions<WoodlandOfficerReviewOptions> woodlandOfficerReviewOptions,
+    IOptions<PublicRegisterExpiryOptions> publicRegisterExpiryOptions,
     IForesterServices agolServices) : IApproveRefuseOrReferApplicationUseCase
 {
     private readonly WoodlandOfficerReviewOptions _woodlandOfficerReviewOptions = Guard.Against.Null(woodlandOfficerReviewOptions.Value);
@@ -67,6 +69,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     private readonly IForesterServices _agolServices = Guard.Against.Null(agolServices);
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
     private readonly IGetWoodlandOfficerReviewService _getWoodlandOfficerReviewService = Guard.Against.Null(getWoodlandOfficerReviewService);
+    private readonly PublicRegisterExpiryOptions _publicRegisterExpiryOptions = Guard.Against.Null(publicRegisterExpiryOptions).Value;
 
     /// <summary>
     /// Approves, refuses or refers an application that has been sent for approval.
@@ -139,10 +142,18 @@ public class ApproveRefuseOrReferApplicationUseCase(
             requestedStatus,
             cancellationToken);
 
+        var statusReason = requestedStatus switch
+        {
+            FellingLicenceStatus.Refused => approverReview.Value.ApplicationRefusedReason,
+            FellingLicenceStatus.ReferredToLocalAuthority => approverReview.Value.ReferToLocalAuthorityReason,
+            _ => null
+        };
+
         _logger.LogDebug("Sending notification for status update of application with id {ApplicationId} to {RequestedStatus} to applicant", applicationId, requestedStatus);
         var applicantNotificationResult = await SendApplicantNotificationAsync(
             application,
             requestedStatus,
+            statusReason,
             cancellationToken);
 
         var nonBlockingFailures = new List<FinaliseFellingLicenceApplicationProcessOutcomes>();
@@ -276,6 +287,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
             return SendToDecisionPublicRegisterOutcome.Failure;
         }
 
+        var dprPeriod = _publicRegisterExpiryOptions.DecisionPublicRegisterPeriod;
+
         var publishModel = new AddToDecisionPublicRegisterModel
         {
             ExistingEsriId = getPublishModel.Value.ExistingEsriId,
@@ -287,6 +300,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
             LocalAuthority = getPublishModel.Value.LocalAuthority,
             AdminRegion = getPublishModel.Value.AdminRegion,
             PublicRegisterStart = now,
+            Period = dprPeriod,
             TotalArea = getPublishModel.Value.TotalArea,
             Compartments = getPublishModel.Value.Compartments,
             CaseApprovalDate = now,
@@ -304,9 +318,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
 
             return SendToDecisionPublicRegisterOutcome.Failure;
         }
-
-        //todo this will need to come from the approver's recommendation, or the configured default duration etc.
-        var expiresAt = now.AddDays(28);
+        
+        var expiresAt = now.AddDays(dprPeriod);
         
         var saveDetailsResult = await _updateFellingLicenceService.AddDecisionPublicRegisterDetailsAsync(
             application.Id,
@@ -349,6 +362,7 @@ public class ApproveRefuseOrReferApplicationUseCase(
     private async Task<Result> SendApplicantNotificationAsync(
         Flo.Services.FellingLicenceApplications.Entities.FellingLicenceApplication application,
         FellingLicenceStatus requestedStatus,
+        string? statusReasonDetails,
         CancellationToken cancellationToken)
     {
         var (_, applicantFailure, applicantUser) = await 
@@ -419,6 +433,10 @@ public class ApproveRefuseOrReferApplicationUseCase(
                 .TryGetAdminHubAddress(application.AdministrativeRegion, cancellationToken)
                 .ConfigureAwait(false);
 
+        var submittedDate = application.StatusHistories
+            .Where(x => x.Status == FellingLicenceStatus.Submitted)
+            .MaxBy(x => x.Created)?.Created;
+
         switch (requestedStatus)
         {
             case FellingLicenceStatus.Approved:
@@ -452,7 +470,11 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     ApproverEmail = approverEmail,
                     ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}",
                     AdminHubFooter = adminHubFooter,
-                    ApplicationId = application.Id
+                    ApplicationId = application.Id,
+                    ApproverDecisionCaseNote = statusReasonDetails,
+                    SubmittedDate = submittedDate.HasValue
+                        ? DateTimeDisplay.GetDateDisplayString(submittedDate)
+                        : null
                 };
 
                 return await _notificationsService.SendNotificationAsync(
@@ -464,13 +486,11 @@ public class ApproveRefuseOrReferApplicationUseCase(
             }
             case FellingLicenceStatus.ReferredToLocalAuthority:
             {
-                var submittedDate = application.StatusHistories
-                    .Where(x => x.Status == FellingLicenceStatus.Submitted)
-                    .MaxBy(x => x.Created)?.Created;
+                
 
                 var localAuthorityName = await GetLocalAuthorityForFellingLicenceApplicationAsync(application, cancellationToken);
 
-                    var referredToLocalAuthorityModel = new InformApplicantOfApplicationReferredToLocalAuthorityDataModel
+                var referredToLocalAuthorityModel = new InformApplicantOfApplicationReferredToLocalAuthorityDataModel
                 {
                     ApplicationReference = application.ApplicationReference,
                     Name = applicantUser.FullName,
@@ -482,7 +502,8 @@ public class ApproveRefuseOrReferApplicationUseCase(
                     ViewApplicationURL = $"{_options.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.Id}",
                     LocalAuthorityName = localAuthorityName,
                     AdminHubFooter = adminHubFooter,
-                    ApplicationId = application.Id
+                    ApplicationId = application.Id,
+                    ReasonsForReferral = statusReasonDetails
                 };
 
                 return await _notificationsService.SendNotificationAsync(

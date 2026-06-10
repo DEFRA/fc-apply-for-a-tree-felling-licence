@@ -35,4 +35,9 @@ public class ApplicationSubmissionConfirmationDataModel : IApplicationNotificati
     /// Gets and sets the name & address of the admin hub that the application is managed by.
     /// </summary>
     public string AdminHubFooter { get; set; }
+
+    /// <summary>
+    /// Gets and sets a formatted date string of when the application was submitted.
+    /// </summary>
+    public string? SubmittedDate { get; set; }
 }

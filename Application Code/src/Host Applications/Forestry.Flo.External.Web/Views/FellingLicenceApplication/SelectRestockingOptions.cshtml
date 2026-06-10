@@ -166,23 +166,6 @@
                             </div>
                         }
 
-                        if (Model.IsCreateOpenSpaceAllowed)
-                        {
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsCreateOpenSpaceSelected" aria-describedby="open-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCreateOpenSpaceSelected))">
-                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCreateOpenSpaceSelected))">
-                                    <b>@TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()</b>
-                                </label>
-                                <div class="govuk-hint govuk-checkboxes__hint" id="open-hint">
-                                    @TypeOfProposal.CreateDesignedOpenGround.GetDescription()
-                                </div>
-
-                                @{
-                                    firstOptionOutput = true;
-                                }
-                            </div>
-                        }
-
                         if (Model.IsIndividualTreesAllowed)
                         {
                             <div class="govuk-checkboxes__item">
@@ -226,6 +209,24 @@
                                 </label>
                                 <div class="govuk-hint govuk-checkboxes__hint" id="replant-hint">
                                     @TypeOfProposal.ReplantTheFelledArea.GetDescription()
+                                </div>
+
+                                @{
+                                    firstOptionOutput = true;
+                                }
+                            </div>
+                        }
+
+                        if (Model.IsCreateOpenSpaceAllowed)
+                        {
+                            <div class="govuk-checkboxes__divider">or</div>
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" type="checkbox" asp-for="@Model.IsCreateOpenSpaceSelected" aria-describedby="open-hint" id="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCreateOpenSpaceSelected))">
+                                <label class="govuk-label govuk-checkboxes__label" for="@(firstOptionOutput == false ? nameof(Model.RestockingOptions) : nameof(Model.IsCreateOpenSpaceSelected))">
+                                    <b>@TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()</b>
+                                </label>
+                                <div class="govuk-hint govuk-checkboxes__hint" id="open-hint">
+                                    @TypeOfProposal.CreateDesignedOpenGround.GetDescription()
                                 </div>
 
                                 @{

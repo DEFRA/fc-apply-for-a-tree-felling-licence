@@ -4,7 +4,7 @@ using Forestry.Flo.Services.FellingLicenceApplications.Models.WoodlandOfficerRev
 namespace Forestry.Flo.Services.FellingLicenceApplications.Entities;
 
 /// <summary>
-/// Woodland Officer Review entity class.
+/// Approver data entry entity class.
 /// </summary>
 public class ApproverReview
 {
@@ -19,6 +19,9 @@ public class ApproverReview
     /// </summary>
     public Guid FellingLicenceApplicationId { get; set; }
 
+    /// <summary>
+    /// Gets and sets a navigation property to the felling licence application.
+    /// </summary>
     public FellingLicenceApplication FellingLicenceApplication { get; set; }
 
     /// <summary>
@@ -33,24 +36,65 @@ public class ApproverReview
     [Required]
     public Guid LastUpdatedById { get; set; }
 
+
+    /// <summary>
+    /// Gets and sets the status the approver has selected for the felling licence application.
+    /// </summary>
     public FellingLicenceStatus RequestedStatus { get; set; } = FellingLicenceStatus.SentForApproval;
 
+    /// <summary>
+    /// Gets and sets a value indicating whether the application has been checked.
+    /// </summary>
     public bool CheckedApplication { get; set; }
 
+    /// <summary>
+    /// Gets and sets a value indicating whether the documentation has been checked.
+    /// </summary>
     public bool CheckedDocumentation { get; set; }
 
+    /// <summary>
+    /// Gets and sets a value indicating whether the case notes have been checked.
+    /// </summary>
     public bool CheckedCaseNotes { get; set; }
 
+    /// <summary>
+    /// Gets and sets a value indicating whether the Woodland Officer review has been checked.
+    /// </summary>
     public bool CheckedWOReview { get; set; }
 
+    /// <summary>
+    /// Gets and sets a value indicating whether the applicant has been informed of the decision.
+    /// </summary>
     public bool InformedApplicant { get; set; }
 
+    /// <summary>
+    /// Gets and sets the approved licence duration.
+    /// </summary>
     public RecommendedLicenceDuration? ApprovedLicenceDuration { get; set; }
 
+    /// <summary>
+    /// Gets and sets the reason for changing the duration of the licence from that recommended by the Woodland Officer.
+    /// </summary>
     public string? DurationChangeReason { get; set; }
 
+    /// <summary>
+    /// Gets and sets a value indicating whether the application should be published in the public register.
+    /// </summary>
     public bool? PublicRegisterPublish { get; set; }
 
+    /// <summary>
+    /// Gets and sets the reason for exemption from the public register, if applicable.
+    /// </summary>
     public string? PublicRegisterExemptionReason { get; set; }
+
+    /// <summary>
+    /// Gets and sets the reason for referring the application to the local authority, if applicable.
+    /// </summary>
+    public string? ReferToLocalAuthorityReason { get; set; }
+
+    /// <summary>
+    /// Gets and sets the reason for refusing the application, if applicable.
+    /// </summary>
+    public string? ApplicationRefusedReason { get; set; }
 
 }

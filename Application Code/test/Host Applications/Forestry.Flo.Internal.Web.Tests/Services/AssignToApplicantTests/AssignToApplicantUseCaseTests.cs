@@ -12,6 +12,7 @@ using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Tests.Common;
 using Moq;
 using System.Text.Json;
+using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using NodaTime;
 using InternalUserAccount = Forestry.Flo.Services.InternalUsers.Entities.UserAccount.UserAccount;
@@ -357,6 +358,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var userPrincipal =
             UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: performingUserId);
         var user = new InternalUser(userPrincipal);
+        var returnedDateTime = DateTime.Today.ToUniversalTime();
 
         var amendmentSections = new Dictionary<FellingLicenceApplicationSection, bool>
         {
@@ -370,6 +372,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
 
         var sut = CreateSut();
 
+        MockClock.Setup(x => x.GetCurrentInstant())
+            .Returns(Instant.FromDateTimeUtc(returnedDateTime));
         MockRetrieveUserAccountsService
             .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(userAccessModel));
@@ -425,7 +429,10 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 && t.CaseNoteContent == caseNote
                 && t.AdminHubFooter == AdminHubFooter
                 && t.ViewApplicationURL.EndsWith(applicationId.ToString())
-                && t.Name == applicantAccount.FullName),
+                && t.Name == applicantAccount.FullName
+                && t.ReturnToApplicantDate == DateTimeDisplay.GetDateDisplayString(returnedDateTime)
+                && t.ResubmissionDeadline == DateTimeDisplay.GetDateDisplayString(returnedDateTime.Add(VoluntaryWithdrawalNotificationOptions.ThresholdAutomaticWithdrawal))
+                ),
             NotificationType.InformApplicantOfReturnedApplication,
             It.Is<NotificationRecipient>(r => r.Name == applicantAccount.FullName && r.Address == applicantAccount.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -467,6 +474,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var userPrincipal =
             UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: performingUserId);
         var user = new InternalUser(userPrincipal);
+        var returnedDateTime = DateTime.Today.ToUniversalTime();
 
         var amendmentSections = new Dictionary<FellingLicenceApplicationSection, bool>
         {
@@ -503,6 +511,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<PublicRegisterPeriodEndModel>.None);
+        MockClock.Setup(x => x.GetCurrentInstant())
+            .Returns(Instant.FromDateTimeUtc(returnedDateTime));
 
         var result = await sut.AssignApplicationToApplicantAsync(
             applicationId,
@@ -538,7 +548,9 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 && t.CaseNoteContent == caseNote
                 && t.AdminHubFooter == AdminHubFooter
                 && t.ViewApplicationURL.EndsWith(applicationId.ToString())
-                && t.Name == applicantAccount.FullName),
+                && t.Name == applicantAccount.FullName
+                && t.ReturnToApplicantDate == DateTimeDisplay.GetDateDisplayString(returnedDateTime)
+                && t.ResubmissionDeadline == DateTimeDisplay.GetDateDisplayString(returnedDateTime.Add(VoluntaryWithdrawalNotificationOptions.ThresholdAutomaticWithdrawal))),
             NotificationType.InformApplicantOfReturnedApplication,
             It.Is<NotificationRecipient>(r => r.Name == applicantAccount.FullName && r.Address == applicantAccount.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -583,6 +595,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var userPrincipal =
             UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: performingUserId);
         var user = new InternalUser(userPrincipal);
+        var returnedDateTime = DateTime.Today.ToUniversalTime();
 
         var amendmentSections = new Dictionary<FellingLicenceApplicationSection, bool>
         {
@@ -624,6 +637,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<PublicRegisterPeriodEndModel>.None);
+        MockClock.Setup(x => x.GetCurrentInstant())
+            .Returns(Instant.FromDateTimeUtc(returnedDateTime));
 
         var result = await sut.AssignApplicationToApplicantAsync(
             applicationId,
@@ -659,7 +674,9 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 && t.CaseNoteContent == caseNote
                 && t.AdminHubFooter == AdminHubFooter
                 && t.ViewApplicationURL.EndsWith(applicationId.ToString())
-                && t.Name == applicantAccount.FullName),
+                && t.Name == applicantAccount.FullName
+                && t.ReturnToApplicantDate == DateTimeDisplay.GetDateDisplayString(returnedDateTime)
+                && t.ResubmissionDeadline == DateTimeDisplay.GetDateDisplayString(returnedDateTime.Add(VoluntaryWithdrawalNotificationOptions.ThresholdAutomaticWithdrawal))),
             NotificationType.InformApplicantOfReturnedApplication,
             It.Is<NotificationRecipient>(r => r.Name == applicantAccount.FullName && r.Address == applicantAccount.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -713,6 +730,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var userPrincipal =
             UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: performingUserId);
         var user = new InternalUser(userPrincipal);
+        var returnedDateTime = DateTime.Today.ToUniversalTime();
 
         var amendmentSections = new Dictionary<FellingLicenceApplicationSection, bool>
         {
@@ -756,6 +774,8 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         MockGetFellingLicenceApplication
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<PublicRegisterPeriodEndModel>.None);
+        MockClock.Setup(x => x.GetCurrentInstant())
+            .Returns(Instant.FromDateTimeUtc(returnedDateTime));
 
         var result = await sut.AssignApplicationToApplicantAsync(
             applicationId,
@@ -794,7 +814,9 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 && t.CaseNoteContent == caseNote
                 && t.AdminHubFooter == AdminHubFooter
                 && t.ViewApplicationURL.EndsWith(applicationId.ToString())
-                && t.Name == applicantAccount.FullName),
+                && t.Name == applicantAccount.FullName
+                && t.ReturnToApplicantDate == DateTimeDisplay.GetDateDisplayString(returnedDateTime)
+                && t.ResubmissionDeadline == DateTimeDisplay.GetDateDisplayString(returnedDateTime.Add(VoluntaryWithdrawalNotificationOptions.ThresholdAutomaticWithdrawal))),
             NotificationType.InformApplicantOfReturnedApplication,
             It.Is<NotificationRecipient>(r => r.Name == applicantAccount.FullName && r.Address == applicantAccount.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -845,6 +867,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var userPrincipal =
             UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: performingUserId);
         var user = new InternalUser(userPrincipal);
+        var returnedDateTime = DateTime.Today.ToUniversalTime();
 
         var amendmentSections = new Dictionary<FellingLicenceApplicationSection, bool>
         {
@@ -900,11 +923,11 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<PublicRegisterPeriodEndModel>.From(prEndModel));
 
-        MockClock.Setup(x => x.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.UtcNow));
-        
         MockPublicRegister
             .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success);
+        MockClock.Setup(x => x.GetCurrentInstant())
+            .Returns(Instant.FromDateTimeUtc(returnedDateTime));
 
         UpdateFellingLicenceApplication
             .Setup(x => x.SetRemovalDateOnConsultationPublicRegisterEntryAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
@@ -950,7 +973,9 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 && t.CaseNoteContent == caseNote
                 && t.AdminHubFooter == AdminHubFooter
                 && t.ViewApplicationURL.EndsWith(applicationId.ToString())
-                && t.Name == applicantAccount.FullName),
+                && t.Name == applicantAccount.FullName
+                && t.ReturnToApplicantDate == DateTimeDisplay.GetDateDisplayString(returnedDateTime)
+                && t.ResubmissionDeadline == DateTimeDisplay.GetDateDisplayString(returnedDateTime.Add(VoluntaryWithdrawalNotificationOptions.ThresholdAutomaticWithdrawal))),
             NotificationType.InformApplicantOfReturnedApplication,
             It.Is<NotificationRecipient>(r => r.Name == applicantAccount.FullName && r.Address == applicantAccount.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -978,7 +1003,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             It.IsAny<CancellationToken>()), Times.Once);
         MockAuditService.VerifyNoOtherCalls();
 
-        MockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        MockClock.Verify(x => x.GetCurrentInstant(), Times.Exactly(2));
 
         MockPublicRegister.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
             publicRegister.EsriId!.Value,
@@ -1010,6 +1035,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
         var userPrincipal =
             UserFactory.CreateInternalUserIdentityProviderClaimsPrincipal(localAccountId: performingUserId);
         var user = new InternalUser(userPrincipal);
+        var returnedDateTime = DateTime.Today.ToUniversalTime();
 
         var amendmentSections = new Dictionary<FellingLicenceApplicationSection, bool>
         {
@@ -1073,11 +1099,12 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             .Setup(x => x.RetrievePublicRegisterForRemoval(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Maybe<PublicRegisterPeriodEndModel>.From(prEndModel));
 
-        MockClock.Setup(x => x.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.UtcNow));
-
         MockPublicRegister
             .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure("error"));
+
+        MockClock.Setup(x => x.GetCurrentInstant())
+            .Returns(Instant.FromDateTimeUtc(returnedDateTime));
 
         var result = await sut.AssignApplicationToApplicantAsync(
             applicationId,
@@ -1115,7 +1142,9 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
                 && t.CaseNoteContent == caseNote
                 && t.AdminHubFooter == AdminHubFooter
                 && t.ViewApplicationURL.EndsWith(applicationId.ToString())
-                && t.Name == applicantAccount.FullName),
+                && t.Name == applicantAccount.FullName
+                && t.ReturnToApplicantDate == DateTimeDisplay.GetDateDisplayString(returnedDateTime)
+                && t.ResubmissionDeadline == DateTimeDisplay.GetDateDisplayString(returnedDateTime.Add(VoluntaryWithdrawalNotificationOptions.ThresholdAutomaticWithdrawal))),
             NotificationType.InformApplicantOfReturnedApplication,
             It.Is<NotificationRecipient>(r => r.Name == applicantAccount.FullName && r.Address == applicantAccount.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -1165,7 +1194,7 @@ public class AssignToApplicantUseCaseTests : AssignToApplicantUseCaseTestsBase
             It.IsAny<CancellationToken>()), Times.Once);
         MockAuditService.VerifyNoOtherCalls();
 
-        MockClock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        MockClock.Verify(x => x.GetCurrentInstant(), Times.Exactly(2));
 
         MockPublicRegister.Verify(x => x.RemoveCaseFromConsultationRegisterAsync(
             publicRegister.EsriId!.Value,

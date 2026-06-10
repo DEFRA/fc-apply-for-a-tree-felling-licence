@@ -83,9 +83,9 @@ public class LateAmendmentResponseWithdrawalService : ILateAmendmentResponseWith
     {
         var now = _clock.GetCurrentInstant().ToDateTimeUtc();
 
-        var applications = await _repository.GetApplicationsForLateAmendmentWithdrawalAsync(
-            now,
-            cancellationToken);
+        var applications = await _repository
+            .GetApplicationsForLateAmendmentWithdrawalAsync(now, cancellationToken)
+            .ConfigureAwait(false);
 
         var resultModels = new List<LateAmendmentResponseWithdrawalModel>();
 

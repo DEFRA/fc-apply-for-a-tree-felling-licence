@@ -24,6 +24,40 @@
     <h1 class="govuk-heading-l" Condition="!Model.Application.FlaTermsAndConditionsViewModel.AllowEditing">
         Application summary
     </h1>
+    
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Your application</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Reference
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.Application.ApplicationSummary.ApplicationReference
+                    </dd>
+                </div>
+                <div condition="!Model.Application.FlaTermsAndConditionsViewModel.AllowEditing" class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Submitted date
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @DateTimeDisplay.GetDateTimeDisplayString(Model.Application.ApplicationSummary.SubmittedDate)
+                    </dd>
+                </div>
+                <div condition="!string.IsNullOrWhiteSpace(Model.Application.ApplicationSummary.PreviousReference)" class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Previous reference
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.Application.ApplicationSummary.PreviousReference
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
 
     @if (Model.Agency != null)
     {
@@ -747,6 +781,33 @@
                             <a class="govuk-link" href="@Url.Action("PawsCheck", new { applicationId = Model.Application.ApplicationId, compartmentDesignationsId = paws.Id, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden"> the proportion of native tree species making up compartment @paws.PropertyProfileCompartmentName</span></a>
                         </dd>
                     </div>
+                    
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Are you restoring this compartment?
+                        </dt>
+                        <dd class="govuk-summary-list__value">
+                            @(paws.IsRestoringCompartment is true ? "Yes" : "No")
+                        </dd>
+                        <dd class="govuk-summary-list__actions" condition="@Model.FellingAndRestocking.AllowEditing">
+                            <a class="govuk-link" href="@Url.Action("PawsCheck", new { applicationId = Model.Application.ApplicationId, compartmentDesignationsId = paws.Id, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden"> if you are restoring compartment @paws.PropertyProfileCompartmentName</span></a>
+                        </dd>
+                    </div>
+                    
+                    @if (paws.IsRestoringCompartment is true)
+                    {
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Why is this compartment being restored?
+                            </dt>
+                            <dd class="govuk-summary-list__value">
+                                @paws.RestorationDetails
+                            </dd>
+                            <dd class="govuk-summary-list__actions" condition="@Model.FellingAndRestocking.AllowEditing">
+                                <a class="govuk-link" href="@Url.Action("PawsCheck", new { applicationId = Model.Application.ApplicationId, compartmentDesignationsId = paws.Id, returnToApplicationSummary = true })">Change<span class="govuk-visually-hidden"> the restoring details for compartment @paws.PropertyProfileCompartmentName</span></a>
+                            </dd>
+                        </div> 
+                    }
                 </dl>
             }
         </div>

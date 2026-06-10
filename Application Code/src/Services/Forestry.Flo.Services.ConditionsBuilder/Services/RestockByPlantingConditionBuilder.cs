@@ -40,4 +40,7 @@ public class RestockByPlantingConditionBuilder : ConditionBuilderBase, IBuildCon
 
     /// <inheritdoc />
     protected override bool MustMatchOnNaturalRegenPercentage => false;
+
+    /// <inheritdoc />
+    protected override bool MustMatchOnRestockArea => false;
 }

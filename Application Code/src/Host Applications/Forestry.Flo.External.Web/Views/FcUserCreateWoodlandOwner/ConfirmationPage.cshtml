@@ -31,11 +31,11 @@
                     <div class="govuk-summary-list__row">
                         <dt class="govuk-summary-list__key">Address</dt>
                         <dd class="govuk-summary-list__value">
-                            @Model.ContactAddress.Line1 <br>
-                            @Model.ContactAddress.Line2 <br>
-                            @Model.ContactAddress.Line3 <br>
-                            @Model.ContactAddress.Line4 <br>
-                            @Model.ContactAddress.PostalCode
+                            @Model.ContactAddress?.Line1 <br>
+                            @Model.ContactAddress?.Line2 <br>
+                            @Model.ContactAddress?.Line3 <br>
+                            @Model.ContactAddress?.Line4 <br>
+                            @Model.ContactAddress?.PostalCode
                         </dd>
                     </div>
                 </dl>

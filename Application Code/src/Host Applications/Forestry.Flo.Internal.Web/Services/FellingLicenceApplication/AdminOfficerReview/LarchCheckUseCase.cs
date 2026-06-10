@@ -108,15 +108,22 @@ public class LarchCheckUseCase(
             return activityFeedItems.ConvertFailure<LarchCheckModel>();
         }
 
+        var fadExtensionDate = applicationSummary.Value.FadLarchExtension(_larchOptions);
+        if (fadExtensionDate.IsFailure)
+        {
+            logger.LogError("Unable to calculate FAD extension for larch for application {ApplicationId}", applicationId);
+            return Result.Failure<LarchCheckModel>("Unable to calculate FAD extension for larch");
+        }
+
         var model = new LarchCheckModel
         {
             ApplicationId = applicationId,
             FellingLicenceApplicationSummary = applicationSummary.Value,
             AllSpecies = allSpecies.Value,
-            ExtendedFAD = applicationSummary.Value.FadLarchExtension(_larchOptions),
+            ExtendedFAD = fadExtensionDate.Value,
             FlyoverPeriod = FlyoverPeriodToString(_larchOptions),
             MoratoriumPeriod = MoratoriumDatesToString(_larchOptions),
-            InMoratorium = InMoratorium(applicationSummary.Value.DateReceived, _larchOptions),
+            InMoratorium = InMoratorium(applicationSummary.Value.LatestSubmissionDate ?? applicationSummary.Value.DateReceived, _larchOptions),
             Disabled = !editable,
             ActivityFeedItems = activityFeedItems.Value,
             FormLevelCaseNote = new FormLevelCaseNote()

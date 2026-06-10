@@ -103,8 +103,16 @@ public static class ModelMapping
 
     private static Dictionary<string, SpeciesModel> MapFellingSpecies(ProposedFellingDetail s) =>
         (s.FellingSpecies ?? new List<FellingSpecies>()).ToDictionary(d => d.Species, d => Mapper.Map<SpeciesModel>(d));
-    private static Dictionary<string, SpeciesModel> MapRestockingSpecies(ProposedRestockingDetail s) =>
-        (s.RestockingSpecies ?? new List<RestockingSpecies>()).ToDictionary(d => d.Species, d => Mapper.Map<SpeciesModel>(d));
+
+    private static Dictionary<string, SpeciesModel> MapRestockingSpecies(ProposedRestockingDetail s)
+    {
+        var species = (s.RestockingSpecies ?? new List<RestockingSpecies>())
+            .ToDictionary(d => d.Species, d => Mapper.Map<SpeciesModel>(d));
+
+        species.Add(SpeciesModel.OpenSpace, SpeciesModel.OpenSpaceSpecies(s.PercentOpenSpace));
+
+        return species;
+    }
 
     /// <summary>
     /// Maps a Property profile UI model to a Property Profile entity

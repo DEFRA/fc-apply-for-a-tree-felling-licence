@@ -45,8 +45,6 @@ public static class AuditEvents
     public const string SubmitFellingLicenceApplicationFailure = "Submit Felling Licence Application Failure";
     public const string ResubmitFellingLicenceApplication = "Resubmit Felling Licence Application";
     public const string ResubmitFellingLicenceApplicationFailure = "Resubmit Felling Licence Application Failure";
-    public const string WithdrawFellingLicenceApplication = "Withdraw Felling Licence Application";
-    public const string WithdrawFellingLicenceApplicationFailure = "Withdraw Felling Licence Application Failure";
     public const string DeleteDraftFellingLicenceApplication = "Delete  draft Felling Licence Application";
     public const string DeleteDraftFellingLicenceApplicationFailure = "Delete draft Felling Licence Application Failure";
 
@@ -88,6 +86,8 @@ public static class AuditEvents
 
     public const string RevertApplicationFromWithdrawnSuccess = "Revert Application From Withdrawn Success";
     public const string RevertApplicationFromWithdrawnFailure = "Revert Application From Withdrawn Failure";
+    public const string RevertApplicationFromWithdrawnNotificationSent = "Revert Application From Withdrawn Notification Sent";
+    public const string RevertApplicationFromWithdrawnNotificationFailure = "Revert Application From Withdrawn Notification Failure";
 
     //LIS Constraint Report audit events
     public const string LISConstraintReportConsumedOk = "LIS Constraint Report Consumed Ok";
@@ -179,6 +179,10 @@ public static class AuditEvents
     //FC User creating a new Agency Owner
     public const string FcUserCreateAgencyEvent = "FC User Created Agency";
     public const string FcUserCreateAgencyFailureEvent = "FC User Created Agency Failure";
+
+    //FC User updating an existing Agency Owner
+    public const string FcUserUpdateAgencyEvent = "FC User Updated Agency";
+    public const string FcUserUpdateAgencyFailureEvent = "FC User Updated Agency Failure";
 
     //CSV Data Import
     public const string ImportDataFromCsv = "Import Data From CSV";
@@ -340,8 +344,6 @@ public static class AuditEvents
             SubmitFellingLicenceApplicationFailure => SourceEntityType.FellingLicenceApplication,
             ResubmitFellingLicenceApplication => SourceEntityType.FellingLicenceApplication,
             ResubmitFellingLicenceApplicationFailure => SourceEntityType.FellingLicenceApplication,
-            WithdrawFellingLicenceApplication => SourceEntityType.FellingLicenceApplication,
-            WithdrawFellingLicenceApplicationFailure => SourceEntityType.FellingLicenceApplication,
             DeleteDraftFellingLicenceApplication => SourceEntityType.FellingLicenceApplication,
             DeleteDraftFellingLicenceApplicationFailure => SourceEntityType.FellingLicenceApplication,
 
@@ -448,10 +450,12 @@ public static class AuditEvents
             SetAgentAuthorityStatus => SourceEntityType.AgentAuthority,
             SetAgentAuthorityStatusFailure => SourceEntityType.AgentAuthority,
 
-            FcAgentUserCreateWoodlandOwnerEvent => SourceEntityType.FcUser,
-            FcAgentUserCreateWoodlandOwnerFailureEvent => SourceEntityType.FcUser,
-            FcUserCreateAgencyEvent => SourceEntityType.FcUser,
-            FcUserCreateAgencyFailureEvent => SourceEntityType.FcUser,
+            FcAgentUserCreateWoodlandOwnerEvent => SourceEntityType.WoodlandOwner,
+            FcAgentUserCreateWoodlandOwnerFailureEvent => SourceEntityType.WoodlandOwner,
+            FcUserCreateAgencyEvent => SourceEntityType.Agency,
+            FcUserCreateAgencyFailureEvent => SourceEntityType.Agency,
+            FcUserUpdateAgencyEvent => SourceEntityType.Agency,
+            FcUserUpdateAgencyFailureEvent => SourceEntityType.Agency,
 
             ImportDataFromCsv => SourceEntityType.WoodlandOwner,
             ImportDataFromCsvFailure => SourceEntityType.WoodlandOwner,
@@ -491,6 +495,8 @@ public static class AuditEvents
 
             RevertApplicationFromWithdrawnSuccess => SourceEntityType.FellingLicenceApplication,
             RevertApplicationFromWithdrawnFailure => SourceEntityType.FellingLicenceApplication,
+            RevertApplicationFromWithdrawnNotificationSent => SourceEntityType.FellingLicenceApplication,
+            RevertApplicationFromWithdrawnNotificationFailure => SourceEntityType.FellingLicenceApplication,
 
             ApplicantUploadEiaDocumentsSuccess => SourceEntityType.FellingLicenceApplication,
             ApplicantUploadEiaDocumentsFailure => SourceEntityType.FellingLicenceApplication,

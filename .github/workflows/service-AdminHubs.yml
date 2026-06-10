@@ -1,13 +1,13 @@
 name: service-AdminHubs
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Services/Forestry.Flo.Services.AdminHubs/**"
       - "Application Code/test/Services/Forestry.Flo.Services.AdminHubs.Tests/**"
       - ".github/workflows/**"
   push:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Services/Forestry.Flo.Services.AdminHubs/**"
       - "Application Code/test/Services/Forestry.Flo.Services.AdminHubs.Tests/**"

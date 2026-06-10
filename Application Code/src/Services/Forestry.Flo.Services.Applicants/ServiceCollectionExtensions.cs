@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserAccountRepository, UserAccountRepository>();
         services.AddScoped<IWoodlandOwnerRepository, WoodlandOwnerRepository>();
         services.AddScoped<IAgencyRepository, AgencyRepository>();
+        services.AddScoped<IApplicantRepository, ApplicantRepository>();
         services.AddScoped<IInvitedUserValidator, InvitedUserValidator>();
         services.AddScoped<ISignInApplicant, SignInApplicantWithEf>();
         services.AddScoped<IAgentAuthorityService, AgentAuthorityService>();
@@ -36,7 +37,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRetrieveWoodlandOwners, RetrieveWoodlandOwnersService>();
         services.AddScoped<IAmendUserAccounts, AmendUserAccountsService>();
         services.AddScoped<IAccountRegistrationService, AccountRegistrationService>();
-        services.AddScoped<IRetrieveAgencies, RetrieveAgenciesService>();
         services.AddScoped<IAgencyCreationService, AgencyCreationService>();
         return services;
     }

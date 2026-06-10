@@ -1,254 +1,302 @@
-﻿@model Forestry.Flo.External.Web.Models.FcUser.FcUserHomePageViewModel
+﻿@using System.Diagnostics
+@using Forestry.Flo.Services.Applicants.Entities
+@using Forestry.Flo.Services.Common.Extensions
+@model Forestry.Flo.External.Web.Models.FcUser.FcUserHomePageViewModel
 
 @{
-    ViewData["Title"] = "FC user dashboard";
+    ViewData["Title"] = "Help users apply for a tree felling licence";
 }
 
 <partial name="Partials/_ConfirmationMessageDisplay" />
 
-<div class="govuk-grid-column-two-thirds">
-
-    <h1 class="govuk-heading-xl">FC user dashboard</h1>
+<div class="govuk-grid-column-full">
     
-    <p class="govuk-body">View list of Woodland Owners and Agencies, grouped by whether managed by FC or not.</p>
-
-    <a type="button" class="govuk-button govuk-button--secondary" asp-controller="FcUserCreateAgency" asp-action="AgentTypeSelection" data-module="govuk-button">
-        Create a new managed agency
-    </a>
+    <div class="govuk-grid-row govuk-grid-column-two-thirds">
+        <h1 class="govuk-heading-l">@ViewData["Title"]</h1>
     
-    <a type="button" class="govuk-button govuk-button--secondary" asp-controller="FcUserCreateWoodlandOwner" asp-action="ContactDetails" asp-route-reset="@true" data-module="govuk-button">
-        Create a new managed woodland owner
-    </a>
+        <p class="govuk-body">
+            You can support woodland owners, agents and agencies by managing their information,
+            properties or details and tree felling licence applications. This includes assisted
+            digital support, processing paper applications, and creating felling applications
+            required as part of a woodland management plan.
+        </p>
 
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
-    
-    <div class="govuk-!-padding-bottom-2"></div>
+        <div class="govuk-!-margin-top-8">
+            <label class="govuk-label govuk-label--s" asp-for="SearchAndSortModel.SearchTerm" aria-describedby="search-hint">Search for a woodland owner, agent or agency</label>
+            <div id="search-hint" class="govuk-hint">
+                Search by terms including name and email address.
+            </div>
+            <form method="post" asp-action="Search">
+                <input type="hidden" asp-for="SearchAndSortModel.PageSize" />
+                <input type="hidden" asp-for="SearchAndSortModel.PageNumber" />
+                <input type="hidden" asp-for="SearchAndSortModel.SortAscending" />
+                <input type="hidden" asp-for="SearchAndSortModel.SortColumn" />
 
-    <h2 class="govuk-heading-l">
-        Woodland Owners
-    </h2>
-    
-    <h3 class="govuk-heading-s">
-        Managed By FC
-    </h3>
+                <div class="search-input-container">
+                    <input class="govuk-input" asp-for="SearchAndSortModel.SearchTerm" />
+                    <button type="submit"
+                            id="searchButton"
+                            data-module="govuk-button"
+                            class="govuk-button">
+                        Search
+                    </button>
+                </div>
+                <p class="govuk-body" condition="@(string.IsNullOrWhiteSpace(Model.SearchAndSortModel.SearchTerm))">Showing <b>all</b> @Model.TotalApplicants records</p>
+                <p class="govuk-body" condition="@(!string.IsNullOrWhiteSpace(Model.SearchAndSortModel.SearchTerm))">
+                    Showing <b>@Model.TotalApplicants</b> results for <b>'@Model.SearchAndSortModel.SearchTerm'</b> |
+                    <a class="govuk-link govuk-link--no-visited-state" href="@Url.Action("Index", new { sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = 1, pageSize = Model.SearchAndSortModel.PageSize })">
+                        Clear search
+                    </a>
+                </p>
+            </form>
+        </div>
+    </div>
 
-    @if (Model.AllWoodlandOwnersManagedByFc.Any())
-    {
-        <table class="govuk-table" id="fc-managed-woodlandowners-list-table" data-module="moj-sortable-table">
-            <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="ascending">Organisation/Contact name</th>
-                <th scope="col" class="govuk-table__header">Contact Email</th>
-                    <th scope="col" class="govuk-table__header" aria-sort="ascending">Agent/Agency name</th>
-                <th scope="col" class="govuk-table__header">Agent/Agency Contact</th>
-                <th scope="col" class="govuk-table__header">Actions</th>
-            </tr>
-            </thead>
-            <tbody class="govuk-table__body" data-module="moj-sortable-table">
-            @foreach (var fcManagedWoodlandOwner in Model.AllWoodlandOwnersManagedByFc)
+    @* Add sorting support to table headers using column/dir and pagination using page *@
+    @{
+        string currentSortColumn = Context.Request.Query["sortColumn"];
+        bool? currentSortDirection = null;
+        if (bool.TryParse(Context.Request.Query["sortAscending"], out var currentSortDirectionParsed))
+        {
+            currentSortDirection = currentSortDirectionParsed;
+        }
+        if (string.IsNullOrWhiteSpace(currentSortColumn))
+        {
+            currentSortColumn = "Name";
+        }
+        if (currentSortDirection.HasNoValue())
+        {
+            currentSortDirection = true;
+        }
+        Func<string, string> getSortUrl = (column) => {
+            var direction = (currentSortColumn == column && currentSortDirection is true) ? "false" : "true";
+            var query = Context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
+            query["sortColumn"] = column;
+            query["sortAscending"] = direction;
+            var queryString = string.Join("&", query.Select(x => $"{x.Key}={x.Value}"));
+            return $"?{queryString}";
+        };
+        Func<string, string> getSortArrow = (column) => {
+            if (currentSortColumn == column)
+                return currentSortDirection is true ? "▲" : "▼";
+            return "⇵";
+        };
+        Func<int, string> getPageUrl = (page) => {
+            var queryString = new List<string>();
+            foreach (var queryKey in Context.Request.Query.Where(x => !x.Key.Equals("pageNumber", StringComparison.OrdinalIgnoreCase)))
             {
-                <tr data-id="@fcManagedWoodlandOwner.Id" class="govuk-table__row">
-
-                    @if (fcManagedWoodlandOwner.IsOrganisation)
-                    {
-                        <td class="govuk-table__cell" data-order="@fcManagedWoodlandOwner.OrganisationName">@fcManagedWoodlandOwner.OrganisationName</td>
-                    }
-                    else
-                    {
-                        <td class="govuk-table__cell" data-order="@fcManagedWoodlandOwner.ContactName">@fcManagedWoodlandOwner.ContactName</td>
-                    }
-                    <td class="govuk-table__cell" data-order="@fcManagedWoodlandOwner.ContactEmail">@fcManagedWoodlandOwner.ContactEmail</td>
-
-                    <td class="govuk-table__cell" data-order="@fcManagedWoodlandOwner.AgencyContactName">@fcManagedWoodlandOwner.AgencyName</td>
-
-                    <td class="govuk-table__cell" data-order="@fcManagedWoodlandOwner.AgencyContactName">@fcManagedWoodlandOwner.AgencyContactName</td>
-
-                    <td class="govuk-table__cell">
-                        <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-WoodlandOwnerId="@fcManagedWoodlandOwner.Id">
-                            View owner<span class="govuk-visually-hidden">&nbsp;@fcManagedWoodlandOwner.ContactName</span>
-                        </a>
-                        <br/>
-                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="List" asp-route-woodlandOwnerId="@fcManagedWoodlandOwner.Id">
-                            View properties<span class="govuk-visually-hidden">&nbsp;for @fcManagedWoodlandOwner.ContactName</span>
-                        </a>
-                        @if (fcManagedWoodlandOwner.AgencyId.HasValue)
-                        {
-                            <br/>
-                            <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@fcManagedWoodlandOwner.AgencyId">
-                                View agency<span class="govuk-visually-hidden">&nbsp;@(fcManagedWoodlandOwner.AgencyName ?? @fcManagedWoodlandOwner.AgencyContactName)</span>
-                            </a>
-                        }
-                    </td>
-                </tr>
+                foreach (var queryValue in queryKey.Value)
+                {
+                    queryString.Add($"{queryKey.Key}={queryValue}");
+                }
             }
-            </tbody>
-        </table>
+            queryString.Add($"pageNumber={page}");
+            return $"?{string.Join("&", queryString)}";
+        };
     }
-    else
-    {
-        <p class="govuk-body">None found</p>
-    }
-    
-    <div class="govuk-!-padding-bottom-2"></div>
 
-
-    <h3 class="govuk-heading-s">
-        Not Managed
-    </h3>
-
-    @if (Model.AllExternalWoodlandOwners.Any())
-    {
-        <table class="govuk-table" id="external-woodlandowners-list-table" data-module="moj-sortable-table">
-            <thead class="govuk-table__head">
+    <table class="govuk-table" id="applicant-list-table">
+        <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">
+                    <a class="sort-header" href="@getSortUrl("Name")">Name @getSortArrow("Name")</a>
+            </th>
+            
+            <th scope="col" class="govuk-table__header">
+                <a class="sort-header" href="@getSortUrl("Email")">Email @getSortArrow("Email")</a>
+            </th>
+            
+            <th scope="col" class="govuk-table__header">
+                <a class="sort-header" href="@getSortUrl("ManagedBy")">Managed by @getSortArrow("ManagedBy")</a>
+            </th>
+            
+            <th scope="col" class="govuk-table__header">
+                <a class="sort-header" href="@getSortUrl("Type")">Type @getSortArrow("Type")</a>
+            </th>
+            
+            <th scope="col" class="govuk-table__header">
+                Actions
+            </th>
+        </tr>
+        </thead>
+        
+        <tbody class="govuk-table__body">
+        
+        @foreach (var applicant in Model.Applicants)
+        {
             <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="ascending">Organisation/Contact Name</th>
-                <th scope="col" class="govuk-table__header">Contact Email</th>
-                    <th scope="col" class="govuk-table__header" aria-sort="ascending">Agent/Agency Name</th>
-                <th scope="col" class="govuk-table__header">Agent/Agency Contact</th>
-                <th scope="col" class="govuk-table__header">Actions</th>
-            </tr>
-            </thead>
-            <tbody class="govuk-table__body" data-module="moj-sortable-table">
-            @foreach (var externalWoodlandOwner in Model.AllExternalWoodlandOwners)
-            {
-                <tr data-id="@externalWoodlandOwner.Id" class="govuk-table__row">
-
-                    @if (externalWoodlandOwner.IsOrganisation)
+                <td class="govuk-table__cell">@applicant.Name</td>
+                <td class="govuk-table__cell long-link">@applicant.Email</td>
+                <td class="govuk-table__cell">@applicant.ManagedBy</td>
+                <td class="govuk-table__cell">@applicant.Type.GetDisplayName()</td>
+                <td class="govuk-table__cell">
+                    @if (applicant.Type is ApplicantType.WoodlandOwnerIndividual or ApplicantType.WoodlandOwnerOrganisation)
                     {
-                        <td class="govuk-table__cell" data-order="@externalWoodlandOwner.OrganisationName">@externalWoodlandOwner.OrganisationName</td>
-                    }
-                    else
-                    {
-                        <td class="govuk-table__cell" data-order="@externalWoodlandOwner.ContactName">@externalWoodlandOwner.ContactName</td>
-                    }
 
-                    <td class="govuk-table__cell" data-order="@externalWoodlandOwner.ContactEmail">@externalWoodlandOwner.ContactEmail</td>
-
-                    <td class="govuk-table__cell" data-order="@externalWoodlandOwner.AgencyContactName">@externalWoodlandOwner.AgencyName</td>
-
-                    <td class="govuk-table__cell" data-order="@externalWoodlandOwner.AgencyContactName">@externalWoodlandOwner.AgencyContactName</td>
-
-                    <td class="govuk-table__cell">
-                        <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-WoodlandOwnerId="@externalWoodlandOwner.Id">
-                            View owner<span class="govuk-visually-hidden">&nbsp;@externalWoodlandOwner.ContactName</span>
+                        <a class="govuk-link" asp-controller="Home" asp-action="WoodlandOwner" asp-route-WoodlandOwnerId="@applicant.Id">
+                            View applications<span class="govuk-visually-hidden">&nbsp;for @applicant.Name</span>
                         </a>
+
                         <br />
-                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="List" asp-route-woodlandOwnerId="@externalWoodlandOwner.Id">
-                            View properties<span class="govuk-visually-hidden">&nbsp;for @externalWoodlandOwner.ContactName</span>
+                        <a class="govuk-link" asp-controller="PropertyProfile" asp-action="List" asp-route-woodlandOwnerId="@applicant.Id">
+                            View properties<span class="govuk-visually-hidden">&nbsp;for @applicant.Name</span>
                         </a>
-                            @if (externalWoodlandOwner.AgencyId.HasValue)
-                        {
-                            <br/>
-                                <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@externalWoodlandOwner.AgencyId">
-                                    View agency<span class="govuk-visually-hidden">&nbsp;@(externalWoodlandOwner.AgencyName ?? @externalWoodlandOwner.AgencyContactName)</span>
+
+                        <br />
+                        <a class="govuk-link" asp-controller="WoodlandOwner" asp-action="ManageWoodlandOwnerDetails" asp-route-id="@applicant.Id">
+                            View owner<span class="govuk-visually-hidden">&nbsp; @applicant.Name</span>
+                        </a>
+
+                    }
+                    else
+                    {
+                        <a class="govuk-link" asp-controller="FcUserCreateAgency" asp-action="FcEditExistingAgency" asp-route-agencyId="@applicant.Id">
+                            View agency<span class="govuk-visually-hidden">&nbsp; @applicant.Name</span>
+                        </a>
+
+                        <br />
+                        <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@applicant.Id">
+                            View managed owners<span class="govuk-visually-hidden">&nbsp;for @applicant.Name</span>
+                        </a>
+                    }
+                </td>
+            </tr>
+
+        }
+
+        </tbody>
+
+    </table>
+    <div class="govuk-grid-row govuk-grid-column-two-thirds">
+        <nav class="govuk-pagination" aria-label="Pagination">
+            @{
+                var minPageShown = Math.Max(2, Model.SearchAndSortModel.PageNumber - 1);
+                var maxPageShown = Math.Min(Model.SearchAndSortModel.PageNumber + 1, Model.TotalPages - 1);
+            }
+
+            @if (Model.HasPreviousPage)
+            {
+                <div class="govuk-pagination__prev">
+                    <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = Model.SearchAndSortModel.PageNumber - 1, pageSize = Model.SearchAndSortModel.PageSize })" rel="prev">
+                        <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" aria-hidden="true" focusable="false" viewBox="0 0 15 13">
+                            <path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"></path>
+                        </svg>
+                        <span class="govuk-pagination__link-title">
+                            Previous<span class="govuk-visually-hidden"> page</span>
+                        </span>
+                    </a>
+                </div>
+            }
+
+            <ul class="govuk-pagination__list">
+
+                @if (Model.SearchAndSortModel.PageNumber != 1)
+                {
+                    <li class="govuk-pagination__item">
+                        <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = 1, pageSize = Model.SearchAndSortModel.PageSize })" aria-label="Page 1">
+                            1
+                        </a>
+                    </li>
+                }
+                else
+                {
+                    <li class="govuk-pagination__item govuk-pagination__item--current">
+                        <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = 1, pageSize = Model.SearchAndSortModel.PageSize })" aria-label="Page 1" aria-current="page">
+                            1
+                        </a>
+                    </li>
+                }
+                
+                @if (minPageShown > 2)
+                {
+                    <li class="govuk-pagination__item govuk-pagination__item--ellipsis">
+                        &ctdot;
+                    </li>
+                }
+                
+                @for (int i = minPageShown; i <= maxPageShown; i++)
+                {
+                    if (Model.SearchAndSortModel.PageNumber != i)
+                    {
+                        <li class="govuk-pagination__item">
+                            <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = i, pageSize = Model.SearchAndSortModel.PageSize })" aria-label="Page @i">
+                                @i
                             </a>
-                        }
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <p class="govuk-body">None found</p>
-    }
-    
-    <div class="govuk-!-padding-bottom-2"></div>
-
-    <h2 class="govuk-heading-l">
-        Agencies
-    </h2>
-   
-    <h3 class="govuk-heading-s">
-        Managed
-    </h3>
-
-    @if (Model.AllAgenciesManagedByFc.Any())
-    {
-        <table class="govuk-table" id="fc-managed-agencies-list-table" data-module="moj-sortable-table">
-            <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="ascending">Contact/Organisation name</th>
-                <th scope="col" class="govuk-table__header">Contact Email</th>
-                <th scope="col" class="govuk-table__header">Actions</th>
-            </tr>
-            </thead>
-            <tbody class="govuk-table__body" data-module="moj-sortable-table">
-            @foreach (var externalAgency in Model.AllAgenciesManagedByFc)
-            {
-                <tr data-id="@externalAgency.Id" class="govuk-table__row">
-
-                    @if (!string.IsNullOrEmpty(externalAgency.OrganisationName))
-                    {
-                        <td class="govuk-table__cell" data-order="@externalAgency.OrganisationName">@externalAgency.OrganisationName</td>
+                        </li>
                     }
                     else
                     {
-                        <td class="govuk-table__cell" data-order="@externalAgency.ContactName">@externalAgency.ContactName</td>
+                        <li class="govuk-pagination__item govuk-pagination__item--current">
+                            <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = i, pageSize = Model.SearchAndSortModel.PageSize })" aria-label="Page @i" aria-current="page">
+                                @i
+                            </a>
+                        </li>
                     }
+                }
+                
+                @if (maxPageShown < Model.TotalPages - 1)
+                {
+                    <li class="govuk-pagination__item govuk-pagination__item--ellipsis">
+                        &ctdot;
+                    </li>
+                }
 
-                    <td class="govuk-table__cell" data-order="@externalAgency.ContactEmail">@externalAgency.ContactEmail</td>
-
-                    <td class="govuk-table__cell">
-                        <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@externalAgency.Id">
-                            View agency<span class="govuk-visually-hidden">&nbsp;@externalAgency.ContactName</span>
+                @if (Model.SearchAndSortModel.PageNumber != Model.TotalPages)
+                {
+                    <li class="govuk-pagination__item">
+                        <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = Model.TotalPages, pageSize = Model.SearchAndSortModel.PageSize })" aria-label="Page @Model.TotalPages">
+                            @Model.TotalPages
                         </a>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <p class="govuk-body">None found</p>
-    }
-    
-    <div class="govuk-!-padding-bottom-2"></div>
+                    </li>
+                }
+                else if (Model.SearchAndSortModel.PageNumber != 1)
+                {
+                    <li class="govuk-pagination__item govuk-pagination__item--current">
+                        <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = Model.TotalPages, pageSize = Model.SearchAndSortModel.PageSize })" aria-label="Page @Model.TotalPages" aria-current="page">
+                            @Model.TotalPages
+                        </a>
+                    </li>
+                }
 
-    <h3 class="govuk-heading-s">
-        Not Managed
-    </h3>
-
-    @if (Model.AllExternalAgencies.Any())
-    {
-        <table class="govuk-table" id="external-agencies-list-table" data-module="moj-sortable-table">
-            <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header" aria-sort="ascending">Contact/Organisation name</th>
-                <th scope="col" class="govuk-table__header">Contact Email</th>
-                <th scope="col" class="govuk-table__header">Actions</th>
-            </tr>
-            </thead>
-            <tbody class="govuk-table__body" data-module="moj-sortable-table">
-            @foreach (var externalAgency in Model.AllExternalAgencies)
+            </ul>
+            
+            @if (Model.HasNextPage)
             {
-                <tr data-id="@externalAgency.Id" class="govuk-table__row">
-
-                    @if (!string.IsNullOrEmpty(externalAgency.OrganisationName))
-                    {
-                        <td class="govuk-table__cell" data-order="@externalAgency.OrganisationName">@externalAgency.OrganisationName</td>
-                    }
-                    else
-                    {
-                        <td class="govuk-table__cell" data-order="@externalAgency.ContactName">@externalAgency.ContactName</td>
-                    }
-
-                    <td class="govuk-table__cell" data-order="@externalAgency.ContactEmail">@externalAgency.ContactEmail</td>
-
-                    <td class="govuk-table__cell">
-                        <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@externalAgency.Id">
-                            View agency<span class="govuk-visually-hidden">&nbsp;@externalAgency.ContactName</span>
-                        </a>
-                    </td>
-                </tr>
+                <div class="govuk-pagination__next">
+                    <a class="govuk-link govuk-pagination__link" href="@Url.Action("Index", new { searchTerm = Model.SearchAndSortModel.SearchTerm, sortColumn = Model.SearchAndSortModel.SortColumn, sortAscending = Model.SearchAndSortModel.SortAscending, pageNumber = Model.SearchAndSortModel.PageNumber + 1, pageSize = Model.SearchAndSortModel.PageSize })" rel="next">
+                        <span class="govuk-pagination__link-title">
+                            Next<span class="govuk-visually-hidden"> page</span>
+                        </span>
+                        <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" aria-hidden="true" focusable="false" viewBox="0 0 15 13">
+                            <path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7266z"></path>
+                        </svg>
+                    </a>
+                </div>
             }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <p class="govuk-body">None found</p>
-    }
+
+        </nav>
+    </div>
+
+    <div class="govuk-grid-row govuk-grid-column-two-thirds">
+        <div class="govuk-button-group govuk-!-margin-top-6">
+            <a type="button" class="govuk-button govuk-button--secondary" asp-controller="FcUserCreateAgency" asp-action="AgentTypeSelection" asp-route-clearModel="true" data-module="govuk-button">
+                Create a new FC managed agency
+            </a>
+    
+            <a type="button" class="govuk-button govuk-button--secondary" asp-controller="FcUserCreateWoodlandOwner" asp-action="ContactDetails" asp-route-reset="@true" data-module="govuk-button">
+                Create a new FC managed owner
+            </a>
+    
+            <p class="govuk-body">
+                Please ensure you have checked that an applicant is not already in the system
+                before creating a new FC managed applicant.
+            </p>
+        </div>
+    </div>
+
+
 </div>
+
+@section Css{
+    <link rel="stylesheet" href="~/css/applicant-list.css" aria-busyasp-append-version="true"/>
+}

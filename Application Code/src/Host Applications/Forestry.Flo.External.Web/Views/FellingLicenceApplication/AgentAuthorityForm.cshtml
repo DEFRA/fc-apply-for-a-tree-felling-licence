@@ -4,8 +4,13 @@
 @{
     ViewData["Title"] = "Agent Authority Forms";
     var applicationId = Context.Request.Query["ApplicationId"];
-    var returnToApplicationSummary = Context.Request.Query["returnToApplicationSummary"];
-    var fromDataImport = Context.Request.Query["fromDataImport"];
+
+    var returnToApplicationSummaryStr = Context.Request.Query["returnToApplicationSummary"] ;
+    bool.TryParse(returnToApplicationSummaryStr, out var returnToApplicationSummary);
+
+    var fromDataImportStr = Context.Request.Query["fromDataImport"];
+    bool.TryParse(fromDataImportStr, out var fromDataImport);
+
     ViewData.ShowBackLink();
     var aafStepStatus = Model.DoesNotHaveAnyAuthorityForms ? false : ViewData["AafStepStatus"] ?? false;   
 }
@@ -15,7 +20,7 @@
     <partial name="Partials/_AgentAuthorityForm" model="Model" />
 
     <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
-       href="/@($"AgentAuthorityFormDocuments/{Model.AgentAuthorityId}/AddAgentAuthorityFormFiles?applicationId={applicationId}&returnToApplicationSummary={returnToApplicationSummary}")">
+       href="/@($"AgentAuthorityFormDocuments/{Model.AgentAuthorityId}/AddAgentAuthorityFormFiles?applicationId={applicationId}&returnToApplicationSummary={returnToApplicationSummary}&fromDataImport={fromDataImport}")">
         Add new agent authority form
     </a>
 

@@ -2,16 +2,19 @@
 using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Forestry.Flo.Services.PropertyProfiles.Services;
 using Microsoft.Extensions.Options;
 
 namespace Forestry.Flo.External.Web.Services;
@@ -21,6 +24,7 @@ public class AssignWoodlandOfficerAsyncUseCase
     private readonly IAuditService<AssignWoodlandOfficerAsyncUseCase> _auditService;
     private readonly IGetFellingLicenceApplicationForExternalUsers _getFellingLicenceApplicationService;
     private readonly ISendNotifications _sendNotifications;
+    private readonly IGetPropertyProfiles _getPropertyProfiles;
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreas;
     private readonly ILogger<AssignWoodlandOfficerAsyncUseCase> _logger;
     private readonly RequestContext _requestContext;
@@ -34,6 +38,7 @@ public class AssignWoodlandOfficerAsyncUseCase
         IGetFellingLicenceApplicationForExternalUsers getFellingLicenceApplicationService,
         ISendNotifications sendNotifications,
         IGetConfiguredFcAreas getConfiguredFcAreas,
+        IGetPropertyProfiles getPropertyProfiles,
         ILogger<AssignWoodlandOfficerAsyncUseCase> logger,
         IOptions<InternalUserSiteOptions> internalUserSiteOptions)
     {
@@ -42,6 +47,7 @@ public class AssignWoodlandOfficerAsyncUseCase
         _submitFellingLicenceService = submitFellingLicenceService ?? throw new ArgumentNullException(nameof(submitFellingLicenceService));
         _getFellingLicenceApplicationService = getFellingLicenceApplicationService ?? throw new ArgumentNullException(nameof(getFellingLicenceApplicationService));
         _sendNotifications = sendNotifications ?? throw new ArgumentNullException(nameof(sendNotifications));
+        _getPropertyProfiles = Guard.Against.Null(getPropertyProfiles);
         _getConfiguredFcAreas = Guard.Against.Null(getConfiguredFcAreas);
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _internalUserSiteOptions = internalUserSiteOptions?.Value ?? throw new ArgumentNullException(nameof(internalUserSiteOptions));
@@ -85,6 +91,20 @@ public class AssignWoodlandOfficerAsyncUseCase
         var internalUrl =
             $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{message.ApplicationId}";
 
+        var currentState = application.GetCurrentStatus();
+        var propertyName = application.SubmittedFlaPropertyDetail?.Name;
+        if (FellingLicenceStatusConstants.SubmitStatuses.Contains(currentState))
+        {
+            var property = await _getPropertyProfiles
+                .GetPropertyByIdAsync(application.LinkedPropertyProfile!.PropertyProfileId, userAccModel, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (property.IsSuccess)
+            {
+                propertyName = property.Value.Name;
+            }
+        }
+
         var (isSuccess, _, autoAssignRecord) = await _submitFellingLicenceService.AutoAssignWoodlandOfficerAsync(
             message.ApplicationId,
             message.UserId,
@@ -96,6 +116,7 @@ public class AssignWoodlandOfficerAsyncUseCase
                 autoAssignRecord,
                 application,
                 message.LinkToApplication,
+                propertyName,
                 message.UserId,
                 cancellationToken);
 
@@ -106,6 +127,7 @@ public class AssignWoodlandOfficerAsyncUseCase
         AutoAssignWoRecord autoAssignRecord,
         FellingLicenceApplication fellingLicenceApplication,
         string linkToApplication,
+        string? propertyName,
         Guid performingUserId,
         CancellationToken cancellationToken)
     {
@@ -123,7 +145,8 @@ public class AssignWoodlandOfficerAsyncUseCase
             Name = autoAssignRecipient.Name!,
             ViewApplicationURL = linkToApplication,
             AdminHubFooter = adminHubFooter,
-            ApplicationId = fellingLicenceApplication.Id
+            ApplicationId = fellingLicenceApplication.Id,
+            PropertyName = propertyName
         };
 
         var sendNotificationAssigneeResult = await _sendNotifications.SendNotificationAsync(

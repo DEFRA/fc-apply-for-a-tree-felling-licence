@@ -8,7 +8,7 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Entities
         [Display(Name = "Select a value")]
         None = 0, 
         [Display(Name = "Create designed open ground")]
-        [Description("Create permanent open space within the bounds of an existing woodland, for example to create rides, glades, tracks or forest roads.  Open space must be appropriately scaled to the size of the woodland and provide benefits by improving its' structural diversity and overall condition, and by creating additional woodland habitats.")]
+        [Description("Create permanent open space within the bounds of an existing woodland. When this is selected, it should be the only restocking option for your selected felling operation.")]
         CreateDesignedOpenGround,
         [Display(Name = "Do not intend to restock")]
         [Description("Do not intend to restock")]

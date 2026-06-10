@@ -160,6 +160,7 @@ public class ConditionsUseCaseSaveConditionsTests
             _getConfiguredFcAreas.Object,
             new Mock<IClock>().Object,
             new OptionsWrapper<ExternalApplicantSiteOptions>(new ExternalApplicantSiteOptions()),
+            new OptionsWrapper<ConditionsOptions>(new ConditionsOptions()),
             _woodlandOfficerReviewSubStatusService.Object,
             new NullLogger<ConditionsUseCase>());
     }

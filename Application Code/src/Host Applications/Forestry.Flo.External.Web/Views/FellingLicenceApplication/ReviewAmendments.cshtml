@@ -249,7 +249,7 @@
                 </div>
             </fieldset>
             
-            <fieldset class="govuk-fieldset" condition="@(!Model.IsEditable)">
+            <fieldset class="govuk-fieldset" condition="@(Model.ResponseReceivedDate.HasValue)">
                 <legend class="govuk-heading-m">
                     You have provided a response to these proposed amendments
                 </legend>

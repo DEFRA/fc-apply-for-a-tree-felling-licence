@@ -251,30 +251,36 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
     /// <inheritdoc />
     public async Task<Result<AssignToUserResponse>> AssignToInternalUserAsync(AssignToUserRequest request, CancellationToken cancellationToken)
     {
-        var originalReference = await _fellingLicenceApplicationInternalRepository
-            .GetApplicationReferenceAsync(request.ApplicationId, cancellationToken)
+        var timestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
+        await using var transaction = await _fellingLicenceApplicationInternalRepository.BeginTransactionAsync(cancellationToken);
+
+        var application = await _fellingLicenceApplicationInternalRepository
+            .GetAsync(request.ApplicationId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (originalReference.IsFailure)
+        if (application.HasNoValue)
         {
-            _logger.LogError("Could not retrieve application reference for application with id {ApplicationId}", request.ApplicationId);
-            return originalReference.ConvertFailure<AssignToUserResponse>();
+            _logger.LogError("Could not retrieve application with id {ApplicationId}", request.ApplicationId);
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Failure<AssignToUserResponse>("Could not retrieve the application specified in the request");
         }
+
+        var originalReference = application.Value.ApplicationReference;
+        var currentStatus = application.Value.GetCurrentStatus();
 
         // check if we need to update the state of the application to Operations Admin Officer Review
         if (request.AssignedRole == AssignedUserRole.AdminOfficer)
         {
-            // get the current status of the application - if Submitted then add new status code
-            var statuses = await _fellingLicenceApplicationInternalRepository
-                .GetStatusHistoryForApplicationAsync(request.ApplicationId, cancellationToken)
-                .ConfigureAwait(false);
-            var currentStatus = statuses.MaxBy(x => x.Created)?.Status;
-
             if (currentStatus is FellingLicenceStatus.Submitted)
             {
-                await _fellingLicenceApplicationInternalRepository.AddStatusHistory(
-                        request.PerformingUserId, request.ApplicationId, FellingLicenceStatus.AdminOfficerReview, cancellationToken)
-                    .ConfigureAwait(false);
+                application.Value.StatusHistories.Add(new StatusHistory
+                {
+                    CreatedById = request.PerformingUserId,
+                    Created = timestamp,
+                    Status = FellingLicenceStatus.AdminOfficerReview,
+                    FellingLicenceApplication = application.Value
+                });
+                currentStatus = FellingLicenceStatus.AdminOfficerReview;
             }
         }
 
@@ -283,15 +289,7 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
         {
             var adminHubName = await GetAdministrativeRegionForAreaCostCodeAsync(request.FcAreaCostCode, cancellationToken);
 
-            var updateAreaCodeResult = await _fellingLicenceApplicationInternalRepository
-                .UpdateAreaCodeAsync(request.ApplicationId, request.FcAreaCostCode, adminHubName, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (updateAreaCodeResult.IsFailure)
-            {
-                _logger.LogError("Could not update Area Code for application being assigned to Admin Officer/Woodland Officer role");
-                return Result.Failure<AssignToUserResponse>("Could not assign user to application");
-            }
+            application.Value.UpdateAreaCode(request.FcAreaCostCode, adminHubName);
         }
 
         // add returned to applicant case note
@@ -311,33 +309,65 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
             if (addCaseNoteResult.IsFailure)
             {
                 _logger.LogError("Could not add case note for comment on assigning user");
+                await transaction.RollbackAsync(cancellationToken);
                 return addCaseNoteResult.ConvertFailure<AssignToUserResponse>();
             }
         }
 
-        var timestamp = _clock.GetCurrentInstant().ToDateTimeUtc();
+        var existingRoleAssignment = application.Value.AssigneeHistories
+            .SingleOrDefault(x => x.Role == request.AssignedRole && x.TimestampUnassigned.HasNoValue());
 
-        // now assign the new role to the application
-        var assignResult = await _fellingLicenceApplicationInternalRepository.AssignFellingLicenceApplicationToStaffMemberAsync(
-            request.ApplicationId,
-            request.AssignToUserId,
-            request.AssignedRole,
-            timestamp,
-            cancellationToken)
-            .ConfigureAwait(false);
-
-        var updatedReference = await _fellingLicenceApplicationInternalRepository
-            .GetApplicationReferenceAsync(request.ApplicationId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (updatedReference.IsFailure)
+        var alreadyAssigned = existingRoleAssignment?.AssignedUserId == request.AssignToUserId;
+        Guid? unassignedUser = null;
+        
+        if (!alreadyAssigned)
         {
-            _logger.LogError("Could not retrieve application reference for application with id {ApplicationId}", request.ApplicationId);
-            return updatedReference.ConvertFailure<AssignToUserResponse>();
+            unassignedUser = existingRoleAssignment?.AssignedUserId;
+
+            application.Value.AssigneeHistories.Add(new AssigneeHistory
+            {
+                Role = request.AssignedRole,
+                AssignedUserId = request.AssignToUserId,
+                FellingLicenceApplication = application.Value,
+                TimestampAssigned = timestamp
+            });
+
+            if (existingRoleAssignment is not null)
+            {
+                existingRoleAssignment.TimestampUnassigned = timestamp;
+            }
         }
 
-        return Result.Success(new AssignToUserResponse(
-            updatedReference.Value, originalReference.Value, assignResult.UserAlreadyAssigned, assignResult.UserUnassigned));
+        var saveResult = await _fellingLicenceApplicationInternalRepository.UnitOfWork
+            .SaveEntitiesAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (saveResult.IsFailure)
+        {
+            _logger.LogError("Failed to assign user to application {ApplicationId}, error: {Error}", request.ApplicationId, saveResult.Error);
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<AssignToUserResponse>("Failed to assign user to application");
+        }
+
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        var linkedPropertyProfileId = FellingLicenceStatusConstants.SubmitStatuses.Contains(currentStatus) 
+            ? application.Value.LinkedPropertyProfile?.PropertyProfileId
+            : null;
+        var propertyName = FellingLicenceStatusConstants.SubmitStatuses.Contains(currentStatus)
+            ? null
+            : application.Value.SubmittedFlaPropertyDetail!.Name;
+
+        var response = new AssignToUserResponse(
+            application.Value.ApplicationReference,
+            originalReference,
+            alreadyAssigned,
+            unassignedUser,
+            linkedPropertyProfileId,
+            propertyName,
+            application.Value.CreatedById);
+
+        return Result.Success(response);
     }
 
     /// <inheritdoc />
@@ -475,7 +505,7 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
     }
 
     /// <inheritdoc />
-    public async Task<Result> TryRevertApplicationFromWithdrawnAsync(
+    public async Task<Result<ReopenApplicationResultModel>> TryRevertApplicationFromWithdrawnAsync(
         Guid performingUserId,
         Guid applicationId,
         CancellationToken cancellationToken)
@@ -484,21 +514,21 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
         if (fellingLicenceFound is false)
         {
             _logger.LogWarning("Could not find application in repository with id {ApplicationId}", applicationId);
-            return Result.Failure("Unable to retrieve felling licence application");
+            return Result.Failure<ReopenApplicationResultModel>("Unable to retrieve felling licence application");
         }
 
         var currentStatus = fellingLicence.GetCurrentStatus();
         if (currentStatus is not FellingLicenceStatus.Withdrawn)
         {
             _logger.LogWarning("Application with id {ApplicationId} is in state {CurrentStatus} so cannot be reverted from withdrawn", applicationId, currentStatus);
-            return Result.Failure($"Application is currently in state {currentStatus} and so cannot be reverted from withdrawn");
+            return Result.Failure<ReopenApplicationResultModel>($"Application is currently in state {currentStatus} and so cannot be reverted from withdrawn");
         }
 
         var (hasPreviousStatus, previousStatus) = fellingLicence.GetNthStatus(1);
         if (hasPreviousStatus is false)
         {
             _logger.LogWarning("Application with id {ApplicationId} does not have a previous status to revert to", applicationId);
-            return Result.Failure("Application does not have a previous status to revert to");
+            return Result.Failure<ReopenApplicationResultModel>("Application does not have a previous status to revert to");
         }
 
         if (previousStatus is FellingLicenceStatus.ReturnedToApplicant)
@@ -511,6 +541,16 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
             };
         }
 
+        // get last submitted date - do this before adding the new "reverted" status history in case the previous status was also submitted,
+        // we want the date of the last time it was submitted before it was withdrawn
+        var submittedDate = fellingLicence.StatusHistories
+            .OrderByDescending(x => x.Created)
+            .FirstOrDefault(x => x.Status == FellingLicenceStatus.Submitted)?.Created ?? DateTime.UtcNow;
+
+        fellingLicence.WithdrawalReasons = [];
+        fellingLicence.WithdrawalReasonOtherDetails = null;
+        fellingLicence.WithdrawnByUserId = null;
+
         // revert the application to the state it was in before it was withdrawn
         await AddStatusHistoryAsync(
             performingUserId, 
@@ -521,9 +561,29 @@ public class UpdateFellingLicenceApplicationService : IUpdateFellingLicenceAppli
         _logger.LogDebug("Reverting application with id {ApplicationId} from withdrawn to previous status of {PreviousStatus}", applicationId, previousStatus);
 
         var saveResult = await _fellingLicenceApplicationInternalRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+        var propertyName = FellingLicenceStatusConstants.SubmitStatuses.Contains(previousStatus)
+            ? null
+            : fellingLicence.SubmittedFlaPropertyDetail!.Name;
+        Guid? linkedPropertyProfileId = FellingLicenceStatusConstants.SubmitStatuses.Contains(previousStatus)
+            ? fellingLicence.LinkedPropertyProfile!.PropertyProfileId
+            : null;
+
+
+        var result = new ReopenApplicationResultModel
+        {
+            ApplicationId = fellingLicence.Id,
+            ApplicationReference = fellingLicence.ApplicationReference,
+            AuthorId = fellingLicence.CreatedById,
+            AdminHubName = fellingLicence.AdministrativeRegion,
+            SubmittedDate = submittedDate,
+            PropertyName = propertyName,
+            LinkedPropertyProfileId = linkedPropertyProfileId
+        };
+
         return saveResult.IsSuccess
-            ? Result.Success()
-            : Result.Failure(saveResult.Error.GetDescription());
+            ? Result.Success(result)
+            : Result.Failure<ReopenApplicationResultModel>(saveResult.Error.GetDescription());
     }
 
     public async Task<Result> SetApplicationApproverAndExpiryDateAsync(

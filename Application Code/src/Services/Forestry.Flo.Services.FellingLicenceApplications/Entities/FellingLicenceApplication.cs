@@ -228,7 +228,7 @@ public class FellingLicenceApplication
     public List<string> TreeHealthIssues { get; set; } = [];
 
     /// <summary>
-    /// Gets and sets a flag indicating whether this application has other tree health issues outside of
+    /// Gets and sets a flag indicating whether this application has other tree health issues outside
     /// the configured list.
     /// </summary>
     public bool? TreeHealthIssueOther { get; set; }
@@ -242,4 +242,21 @@ public class FellingLicenceApplication
     /// Gets or sets a value indicating if any compartments are being converted into priority open habitats.
     /// </summary>
     public bool? IsPriorityOpenHabitat { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of reasons for withdrawal specified when the application was withdrawn.
+    /// </summary>
+    public List<WithdrawalReason> WithdrawalReasons { get; set; } = [];
+
+    /// <summary>
+    /// Gets and sets the other withdrawal reason details for this application, if the user selected 'Other'
+    /// as a reason for withdrawal and provided additional details.
+    /// </summary>
+    public string? WithdrawalReasonOtherDetails { get; set; }
+
+    /// <summary>
+    /// Gets and sets the user account id of the user that withdrew the application, if the application was withdrawn
+    /// and it was done by a user.
+    /// </summary>
+    public Guid? WithdrawnByUserId { get; set; }
 }

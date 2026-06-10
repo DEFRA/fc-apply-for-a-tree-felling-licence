@@ -16,7 +16,7 @@ public class RestockingDetailViewModel : CompartmentConfirmedFellingRestockingDe
     /// <summary>
     /// Gets or sets the percentage of open space within the restocked area.
     /// </summary>
-    public int? PercentOpenSpace { get; set; }
+    public double? PercentOpenSpace { get; set; }
 
     /// <summary>
     /// Gets or sets the restock area as a percentage of compartment size.

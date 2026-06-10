@@ -5,6 +5,7 @@ using CSharpFunctionalExtensions;
 using Forestry.Flo.External.Web.Infrastructure;
 using Forestry.Flo.External.Web.Services;
 using Forestry.Flo.External.Web.Services.MassTransit.Messages;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
 using Forestry.Flo.Services.Common.Extensions;
@@ -13,8 +14,11 @@ using Forestry.Flo.Services.Common.User;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Forestry.Flo.Services.PropertyProfiles.Entities;
+using Forestry.Flo.Services.PropertyProfiles.Services;
 using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -30,6 +34,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
     private readonly Mock<IUpdateCentrePoint> _updateCentrePointMock;
     private readonly Mock<IOptions<InternalUserSiteOptions>> _optionsMock;
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreasMock;
+    private readonly Mock<IGetPropertyProfiles> _getPropertyProfilesMock;
 
     private readonly Fixture _fixtureInstance;
 
@@ -44,6 +49,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
         _updateCentrePointMock = new Mock<IUpdateCentrePoint>();
         _optionsMock = new Mock<IOptions<InternalUserSiteOptions>>();
         _getConfiguredFcAreasMock = new();
+        _getPropertyProfilesMock = new Mock<IGetPropertyProfiles>();
         _fixtureInstance = new Fixture();
     }
 
@@ -55,9 +61,10 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
     private const string BaseUrl = "testUrl";
 
     [Theory, AutoMoqData]
-    public async Task ReturnsSuccess_WhenOfficerCorrectlySetAndNotificationSuccessful(
+    public async Task ReturnsSuccess_WhenOfficerCorrectlySetAndNotificationSuccessful_AsDraftState(
         FellingLicenceApplication application,
-        AutoAssignWoRecord autoAssignWoRecord)
+        AutoAssignWoRecord autoAssignWoRecord,
+        PropertyProfile property)
     {
         var testUrl = $"{BaseUrl}FellingLicenceApplication/ApplicationSummary/{application.Id}";
 
@@ -68,6 +75,16 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
             false,
             null,
             application.Id);
+
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today.ToUniversalTime(),
+                Status = FellingLicenceStatus.Draft,
+                FellingLicenceApplication = application
+            }
+        ];
 
         var sut = CreateSut();
 
@@ -91,6 +108,10 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
             It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
+        _getPropertyProfilesMock.Setup(x =>
+                x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(property));
+
         var result = await sut.AssignWoodlandOfficerAsync(message, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -105,6 +126,9 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
             ),
             It.IsAny<CancellationToken>()));
 
+        _getPropertyProfilesMock.Verify(x => x.GetPropertyByIdAsync(application.LinkedPropertyProfile.PropertyProfileId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
+        _getPropertyProfilesMock.VerifyNoOtherCalls();
+
         _auditMock.Verify(v => v.PublishAuditEventAsync(
             It.Is<AuditEvent>(x =>
                 x.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember
@@ -117,6 +141,115 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
                     NotificationSent = true
                 }, _options)),
             CancellationToken.None), Times.Once);
+
+        var assignedUser = $"{autoAssignWoRecord.AssignedUserFirstName} {autoAssignWoRecord.AssignedUserLastName}".Trim().Replace("  ", " ");
+        _notificationsMock
+            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m =>
+                m.AdminHubFooter == AdminHubAddress
+                && m.ApplicationReference == application.ApplicationReference
+                && m.AssignedRole == AssignedUserRole.WoodlandOfficer.GetDisplayName()
+                && m.Name == assignedUser
+                && m.ApplicationId == application.Id
+                && m.PropertyName == property.Name),
+                NotificationType.UserAssignedToApplication,
+                It.Is<NotificationRecipient>(r => r.Name == assignedUser && r.Address == autoAssignWoRecord.AssignedUserEmail),
+                null,
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task ReturnsSuccess_WhenOfficerCorrectlySetAndNotificationSuccessful_AsSubmittedState(
+        FellingLicenceApplication application,
+        AutoAssignWoRecord autoAssignWoRecord)
+    {
+        var testUrl = $"{BaseUrl}FellingLicenceApplication/ApplicationSummary/{application.Id}";
+
+        var message = new AssignWoodlandOfficerMessage(
+            testUrl,
+            application.WoodlandOwnerId,
+            application.CreatedById,
+            false,
+            null,
+            application.Id);
+
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today.ToUniversalTime(),
+                Status = FellingLicenceStatus.Submitted,
+                FellingLicenceApplication = application
+            }
+        ];
+
+        var sut = CreateSut();
+
+        _getFellingLicenceService.Setup(s => s.GetApplicationByIdAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(application);
+
+        _submitFellingLicenceService.Setup(s => s.AutoAssignWoodlandOfficerAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(autoAssignWoRecord);
+
+        _notificationsMock.Setup(s => s.SendNotificationAsync(
+            It.IsAny<UserAssignedToApplicationDataModel>(),
+            Flo.Services.Notifications.Entities.NotificationType.UserAssignedToApplication,
+            It.IsAny<NotificationRecipient>(),
+            It.IsAny<NotificationRecipient[]?>(),
+            It.IsAny<NotificationAttachment[]?>(),
+            It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        var result = await sut.AssignWoodlandOfficerAsync(message, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _getFellingLicenceService.Verify(v => v.GetApplicationByIdAsync(
+            application.Id,
+            It.Is<UserAccessModel>(x => x.IsFcUser == message.IsFcUser &&
+                                        x.AgencyId == message.AgencyId &&
+                                        x.UserAccountId == message.UserId
+                                        && x.WoodlandOwnerIds!.Contains(message.WoodlandOwnerId)
+                                        && x.WoodlandOwnerIds.Count == 1
+            ),
+            It.IsAny<CancellationToken>()));
+
+        _getPropertyProfilesMock.VerifyNoOtherCalls();
+
+        _auditMock.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    AssignedUserRole = AssignedUserRole.WoodlandOfficer.GetDisplayName()!,
+                    AssignedStaffMemberId = autoAssignWoRecord.AssignedUserId,
+                    UnassignedStaffMemberId = autoAssignWoRecord.UnassignedUserId,
+                    NotificationSent = true
+                }, _options)),
+            CancellationToken.None), Times.Once);
+
+        var assignedUser = $"{autoAssignWoRecord.AssignedUserFirstName} {autoAssignWoRecord.AssignedUserLastName}".Trim().Replace("  ", " ");
+        _notificationsMock
+            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m =>
+                m.AdminHubFooter == AdminHubAddress
+                && m.ApplicationReference == application.ApplicationReference
+                && m.AssignedRole == AssignedUserRole.WoodlandOfficer.GetDisplayName()
+                && m.Name == assignedUser
+                && m.ApplicationId == application.Id
+                && m.PropertyName == application.SubmittedFlaPropertyDetail.Name),
+                NotificationType.UserAssignedToApplication,
+                It.Is<NotificationRecipient>(r => r.Name == assignedUser && r.Address == autoAssignWoRecord.AssignedUserEmail),
+                null,
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory, AutoMoqData]
@@ -125,6 +258,16 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
         AutoAssignWoRecord autoAssignWoRecord)
     {
         var testUrl = $"{BaseUrl}FellingLicenceApplication/ApplicationSummary/{application.Id}";
+
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today.ToUniversalTime(),
+                Status = FellingLicenceStatus.Submitted,
+                FellingLicenceApplication = application
+            }
+        ];
 
         var message = new AssignWoodlandOfficerMessage(
             testUrl,
@@ -252,6 +395,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
         _updateCentrePointMock.Reset();
         _auditMock.Reset();
         _getConfiguredFcAreasMock.Reset();
+        _getPropertyProfilesMock.Reset();
 
         _getConfiguredFcAreasMock.Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(AdminHubAddress);
@@ -263,6 +407,7 @@ public class AssignWoodlandOfficerAsyncUseCaseTests
             _getFellingLicenceService.Object,
             _notificationsMock.Object,
             _getConfiguredFcAreasMock.Object,
+            _getPropertyProfilesMock.Object,
             new NullLogger<AssignWoodlandOfficerAsyncUseCase>(),
             _optionsMock.Object);
     }

@@ -162,7 +162,10 @@ public class AssignFellingLicenceApplicationController : Controller
             var model = reloadModel.Value;
 
             model.ExternalApplicantId = assignBackToApplicantModel.ExternalApplicantId;
-            model.ReturnToApplicantComment = model.ReturnToApplicantComment;
+            model.ReturnToApplicantComment = assignBackToApplicantModel.ReturnToApplicantComment;
+            model.SectionsToReview = assignBackToApplicantModel.SectionsToReview;
+            model.CompartmentIdentifiersToReview = assignBackToApplicantModel.CompartmentIdentifiersToReview;
+
             SetBreadcrumbs(model, "Assign FLA Back to Applicant", assignBackToApplicantModel.ReturnUrl);
             return View(model);
         }

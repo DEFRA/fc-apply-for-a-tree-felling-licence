@@ -1,0 +1,1792 @@
+﻿using AutoFixture;
+using CSharpFunctionalExtensions;
+using Forestry.Flo.External.Web.Infrastructure;
+using Forestry.Flo.External.Web.Services;
+using Forestry.Flo.HostApplicationsCommon.Services;
+using Forestry.Flo.Services.Applicants.Models;
+using Forestry.Flo.Services.Applicants.Services;
+using Forestry.Flo.Services.Common;
+using Forestry.Flo.Services.Common.Auditing;
+using Forestry.Flo.Services.Common.Models;
+using Forestry.Flo.Services.Common.User;
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
+using Forestry.Flo.Services.FellingLicenceApplications.Services;
+using Forestry.Flo.Services.Gis.Interfaces;
+using Forestry.Flo.Services.InternalUsers.Services;
+using Forestry.Flo.Services.Notifications.Models;
+using Forestry.Flo.Services.Notifications.Services;
+using Forestry.Flo.Services.PropertyProfiles.Entities;
+using Forestry.Flo.Services.PropertyProfiles.Services;
+using Forestry.Flo.Tests.Common;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using NodaTime;
+using System.Security.Claims;
+using System.Text.Json;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
+using Forestry.Flo.Services.Common.Extensions;
+using Forestry.Flo.Services.Notifications.Entities;
+
+namespace Forestry.Flo.External.Web.Tests.Services;
+
+public class WithdrawApplicationExternalUseCaseTests
+{
+    private readonly Mock<IGetFellingLicenceApplicationForExternalUsers> _getFellingLicenceApplicationServiceForExternalUsers = new();
+    private readonly Mock<IFellingLicenceApplicationExternalRepository> _fellingLicenceApplicationExternalRepository = new();
+    private readonly Mock<IWithdrawFellingLicenceService> _withdrawFellingLicenceService = new();
+    private readonly Mock<IAuditService<WithdrawApplicationUseCaseBase>> _auditService = new();
+    private readonly Mock<IClock> _clock = new();
+    private readonly Mock<IPublicRegister> _publicRegisterService = new();
+    private readonly Mock<IGetPropertyProfiles> _getPropertyProfilesService = new();
+    private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreasService = new();
+    private readonly Mock<IRetrieveWoodlandOwners> _woodlandOwnerService = new();
+    private readonly Mock<IRetrieveUserAccountsService> _retrieveExternalAccountsService = new();
+    private readonly Mock<IUserAccountService> _internalUserAccountService = new();
+    private readonly Mock<ISendNotifications> _sendNotifications = new();
+    private InternalUserSiteOptions _internalUserSiteOptions;
+    private readonly RequestContext _requestContext = new("test", new RequestUserModel(new ClaimsPrincipal()));
+    private readonly DateTime _now = DateTime.UtcNow;
+    private readonly ExternalApplicant _externalApplicant;
+    private static readonly IFixture Fixture = new Fixture();
+    private readonly Mock<IDbContextTransaction> _dbContextTransaction = new();
+
+    private readonly UserAccessModel _userAccess;
+
+    private readonly JsonSerializerOptions _options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public WithdrawApplicationExternalUseCaseTests()
+    {
+        Fixture.CustomiseFixtureForFellingLicenceApplications();
+        var user = UserFactory.CreateExternalApplicantIdentityProviderClaimsPrincipal(
+            Fixture.Create<string>(),
+            Fixture.Create<string>(),
+            Fixture.Create<Guid>(),
+            Fixture.Create<Guid>(),
+            agencyId: Fixture.Create<Guid>(),
+            woodlandOwnerName: Fixture.Create<string>(),
+            isFcUser: false);
+
+        _externalApplicant = new ExternalApplicant(user);
+
+        _userAccess = new UserAccessModel
+        {
+            IsFcUser = false,
+            UserAccountId = _externalApplicant.UserAccountId.Value
+        };
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenUnableToLoadUserAccess(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication)
+    {
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<UserAccessModel>("error"));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+        _dbContextTransaction.VerifyNoOtherCalls();
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+        _auditService.VerifyNoOtherCalls();
+        _clock.VerifyNoOtherCalls();
+        _publicRegisterService.VerifyNoOtherCalls();
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenUnableToWithdrawApplication(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        string error)
+    {
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<List<Guid>>(error));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+        
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()), 
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        _dbContextTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+        
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()), 
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawFailure
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        Section = "Withdraw FLA",
+                        Error = error
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+        _clock.VerifyNoOtherCalls();
+        _publicRegisterService.VerifyNoOtherCalls();
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenUnableToRetrieveApplication(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        List<Guid> assignedInternalUsers,
+        string error)
+    {
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignedInternalUsers));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<FellingLicenceApplication>(error));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        _dbContextTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawFailure
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        Section = "Withdraw FLA",
+                        Error = $"Application {applicationId} could not be retrieved"
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+        _clock.VerifyNoOtherCalls();
+        _publicRegisterService.VerifyNoOtherCalls();
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenApplicationHasNoLinkedPropertyProfile(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        List<Guid> assignedInternalUsers,
+        FellingLicenceApplication application)
+    {
+        application.LinkedPropertyProfile = null;
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignedInternalUsers));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        _dbContextTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawFailure
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        Section = "Withdraw FLA",
+                        Error = $"Application {applicationId} has no linked property profile"
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+        _clock.VerifyNoOtherCalls();
+        _publicRegisterService.VerifyNoOtherCalls();
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenApplicationRemovalFromPublicRegisterFails(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        List<Guid> assignedInternalUsers,
+        FellingLicenceApplication application,
+        string error)
+    {
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignedInternalUsers));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(error));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        _dbContextTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawFailure
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        WoodlandOwnerId = application.WoodlandOwnerId,
+                        Section = "Withdraw FLA",
+                        Error = error
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+        
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+        
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenApplicationUpdatePublicRegisterRecordFails(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        List<Guid> assignedInternalUsers,
+        FellingLicenceApplication application,
+        string error)
+    {
+        TestUtils.SetProtectedProperty(application, nameof(FellingLicenceApplication.Id), applicationId);
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignedInternalUsers));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(error));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        _dbContextTransaction.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService
+            .Verify(x => x.UpdatePublicRegisterEntityToRemovedAsync(applicationId, _userAccess.UserAccountId, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawFailure
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        WoodlandOwnerId = application.WoodlandOwnerId,
+                        Section = "Withdraw FLA",
+                        Error = error
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenCannotLoadApplicantToSendNotificationInSubmittableState(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        List<Guid> assignedInternalUsers,
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        string adminHubFooter,
+        WoodlandOwnerModel woodlandOwnerModel,
+        string error)
+    {
+        TestUtils.SetProtectedProperty(application, nameof(FellingLicenceApplication.Id), applicationId);
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today,
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus
+                    .ReturnedToApplicant // returned so it needs to look up property name on property profile
+            },
+            new StatusHistory
+            {
+                Created = DateTime.Today.AddSeconds(1),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.Withdrawn  // application entity is loaded after withdrawn status is applied in service
+            }
+        ];
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccountByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<UserAccountModel>(error));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignedInternalUsers));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _getConfiguredFcAreasService
+            .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHubFooter);
+
+        _woodlandOwnerService
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(woodlandOwnerModel));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccountByIdAsync(_userAccess.UserAccountId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        // withdraw completes and we only failed notifications, so transaction is committed not rolled back
+        _dbContextTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService
+            .Verify(x => x.UpdatePublicRegisterEntityToRemovedAsync(applicationId, _userAccess.UserAccountId, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawNotificationSentFailed
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        RecipientId = _userAccess.UserAccountId,
+                        Error = error
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawComplete
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    WoodlandOwner = application.WoodlandOwnerId
+                }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+        
+        _getPropertyProfilesService
+            .Verify(x => x.GetPropertyByIdAsync(application.LinkedPropertyProfile!.PropertyProfileId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+        
+        _getConfiguredFcAreasService
+            .Verify(x => x.TryGetAdminHubAddress(application.AdministrativeRegion, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+        
+        _woodlandOwnerService
+            .Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenFailsToSendApplicantNotificationInSubmittableStateAndHasNoInternalUsers(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        string adminHubFooter,
+        WoodlandOwnerModel woodlandOwnerModel,
+        UserAccountModel applicantModel,
+        string error)
+    {
+        TestUtils.SetProtectedProperty(application, nameof(FellingLicenceApplication.Id), applicationId);
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today,
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus
+                    .ReturnedToApplicant // returned so it needs to look up property name on property profile
+            },
+            new StatusHistory
+            {
+                Created = DateTime.Today.AddSeconds(1),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.Withdrawn  // application entity is loaded after withdrawn status is applied in service
+            }
+        ];
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccountByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicantModel));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<Guid>()));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _getConfiguredFcAreasService
+            .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHubFooter);
+
+        _woodlandOwnerService
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(woodlandOwnerModel));
+
+        _sendNotifications
+            .Setup(x => x.SendNotificationAsync(It.IsAny<ApplicationWithdrawnConfirmationDataModel>(),
+                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
+                It.IsAny<NotificationAttachment[]>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<Guid>(error));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccountByIdAsync(_userAccess.UserAccountId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        // withdraw completes and we only failed notifications, so transaction is committed not rolled back
+        _dbContextTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService
+            .Verify(x => x.UpdatePublicRegisterEntityToRemovedAsync(applicationId, _userAccess.UserAccountId, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawNotificationSentFailed
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        RecipientId = _userAccess.UserAccountId,
+                        RecipientName = applicantModel.FullName,
+                        RecipientEmail = applicantModel.Email,
+                        RecipientRole = AssignedUserRole.Applicant,
+                        Error = error
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawComplete
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    WoodlandOwner = application.WoodlandOwnerId
+                }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+
+        _getPropertyProfilesService
+            .Verify(x => x.GetPropertyByIdAsync(application.LinkedPropertyProfile!.PropertyProfileId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+
+        _getConfiguredFcAreasService
+            .Verify(x => x.TryGetAdminHubAddress(application.AdministrativeRegion, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+
+        _woodlandOwnerService
+            .Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+
+        var reasonStrings = withdrawalReasons.Where(x => x != WithdrawalReason.Other).Select(x => x.GetDisplayName()).ToList();
+        if (withdrawalReasons.Contains(WithdrawalReason.Other) && !string.IsNullOrWhiteSpace(withdrawalReasonOtherDetails))
+        {
+            reasonStrings.Add($"Other - {withdrawalReasonOtherDetails}");
+        }
+
+        _sendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<ApplicationWithdrawnConfirmationDataModel>(m =>
+                m.ApplicationReference == application.ApplicationReference
+                && m.PropertyName == propertyProfile.Name
+                && m.Name == applicantModel.FullName
+                && m.ViewApplicationURL == linkToApplication
+                && m.AdminHubFooter == adminHubFooter
+                && m.ApplicationId == applicationId 
+                && string.Join(", ", m.ReasonForWithdrawal) == string.Join(", ", reasonStrings)),
+                NotificationType.ApplicationWithdrawnConfirmation,
+                It.Is<NotificationRecipient>(r => r.Name == applicantModel.FullName && r.Address == applicantModel.Email),
+                It.Is<NotificationRecipient[]>(cc => cc.Single().Name == woodlandOwnerModel.ContactName && cc.Single().Address == woodlandOwnerModel.ContactEmail),
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenSuccessfullySendsApplicantNotificationInSubmittableStateAndHasNoInternalUsers(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        string adminHubFooter,
+        WoodlandOwnerModel woodlandOwnerModel,
+        UserAccountModel applicantModel,
+        string error)
+    {
+        TestUtils.SetProtectedProperty(application, nameof(FellingLicenceApplication.Id), applicationId);
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today,
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus
+                    .ReturnedToApplicant // returned so it needs to look up property name on property profile
+            },
+            new StatusHistory
+            {
+                Created = DateTime.Today.AddSeconds(1),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.Withdrawn  // application entity is loaded after withdrawn status is applied in service
+            }
+        ];
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccountByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicantModel));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<Guid>()));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _getConfiguredFcAreasService
+            .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHubFooter);
+
+        _woodlandOwnerService
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(woodlandOwnerModel));
+
+        _sendNotifications
+            .Setup(x => x.SendNotificationAsync(It.IsAny<ApplicationWithdrawnConfirmationDataModel>(),
+                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
+                It.IsAny<NotificationAttachment[]>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccountByIdAsync(_userAccess.UserAccountId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        // withdraw completes and we only failed notifications, so transaction is committed not rolled back
+        _dbContextTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService
+            .Verify(x => x.UpdatePublicRegisterEntityToRemovedAsync(applicationId, _userAccess.UserAccountId, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawNotificationSent
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        RecipientId = _userAccess.UserAccountId,
+                        RecipientName = applicantModel.FullName,
+                        RecipientEmail = applicantModel.Email,
+                        RecipientRole = AssignedUserRole.Applicant
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawComplete
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    WoodlandOwner = application.WoodlandOwnerId
+                }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+
+        _getPropertyProfilesService
+            .Verify(x => x.GetPropertyByIdAsync(application.LinkedPropertyProfile!.PropertyProfileId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+
+        _getConfiguredFcAreasService
+            .Verify(x => x.TryGetAdminHubAddress(application.AdministrativeRegion, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+
+        _woodlandOwnerService
+            .Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+
+        var reasonStrings = withdrawalReasons.Where(x => x != WithdrawalReason.Other).Select(x => x.GetDisplayName()).ToList();
+        if (withdrawalReasons.Contains(WithdrawalReason.Other) && !string.IsNullOrWhiteSpace(withdrawalReasonOtherDetails))
+        {
+            reasonStrings.Add($"Other - {withdrawalReasonOtherDetails}");
+        }
+
+        _sendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<ApplicationWithdrawnConfirmationDataModel>(m =>
+                m.ApplicationReference == application.ApplicationReference
+                && m.PropertyName == propertyProfile.Name
+                && m.Name == applicantModel.FullName
+                && m.ViewApplicationURL == linkToApplication
+                && m.AdminHubFooter == adminHubFooter
+                && m.ApplicationId == applicationId
+                && string.Join(", ", m.ReasonForWithdrawal) == string.Join(", ", reasonStrings)),
+                NotificationType.ApplicationWithdrawnConfirmation,
+                It.Is<NotificationRecipient>(r => r.Name == applicantModel.FullName && r.Address == applicantModel.Email),
+                It.Is<NotificationRecipient[]>(cc => cc.Single().Name == woodlandOwnerModel.ContactName && cc.Single().Address == woodlandOwnerModel.ContactEmail),
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenSuccessfullySendsApplicantNotificationInInternalStateAndHasNoInternalUsers(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        FellingLicenceApplication application,
+        string adminHubFooter,
+        WoodlandOwnerModel woodlandOwnerModel,
+        UserAccountModel applicantModel,
+        string error)
+    {
+        TestUtils.SetProtectedProperty(application, nameof(FellingLicenceApplication.Id), applicationId);
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today,
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus
+                    .WoodlandOfficerReview// internal state so it uses the property name on the snapshot
+            },
+            new StatusHistory
+            {
+                Created = DateTime.Today.AddSeconds(1),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.Withdrawn  // application entity is loaded after withdrawn status is applied in service
+            }
+        ];
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccountByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicantModel));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<Guid>()));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _getConfiguredFcAreasService
+            .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHubFooter);
+
+        _woodlandOwnerService
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(woodlandOwnerModel));
+
+        _sendNotifications
+            .Setup(x => x.SendNotificationAsync(It.IsAny<ApplicationWithdrawnConfirmationDataModel>(),
+                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
+                It.IsAny<NotificationAttachment[]>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccountByIdAsync(_userAccess.UserAccountId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        // withdraw completes and we only failed notifications, so transaction is committed not rolled back
+        _dbContextTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService
+            .Verify(x => x.UpdatePublicRegisterEntityToRemovedAsync(applicationId, _userAccess.UserAccountId, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawNotificationSent
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        RecipientId = _userAccess.UserAccountId,
+                        RecipientName = applicantModel.FullName,
+                        RecipientEmail = applicantModel.Email,
+                        RecipientRole = AssignedUserRole.Applicant
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawComplete
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    WoodlandOwner = application.WoodlandOwnerId
+                }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+
+        _getConfiguredFcAreasService
+            .Verify(x => x.TryGetAdminHubAddress(application.AdministrativeRegion, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+
+        _woodlandOwnerService
+            .Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        _internalUserAccountService.VerifyNoOtherCalls();
+
+        var reasonStrings = withdrawalReasons.Where(x => x != WithdrawalReason.Other).Select(x => x.GetDisplayName()).ToList();
+        if (withdrawalReasons.Contains(WithdrawalReason.Other) && !string.IsNullOrWhiteSpace(withdrawalReasonOtherDetails))
+        {
+            reasonStrings.Add($"Other - {withdrawalReasonOtherDetails}");
+        }
+
+        _sendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<ApplicationWithdrawnConfirmationDataModel>(m =>
+                m.ApplicationReference == application.ApplicationReference
+                && m.PropertyName == application.SubmittedFlaPropertyDetail.Name
+                && m.Name == applicantModel.FullName
+                && m.ViewApplicationURL == linkToApplication
+                && m.AdminHubFooter == adminHubFooter
+                && m.ApplicationId == applicationId
+                && string.Join(", ", m.ReasonForWithdrawal) == string.Join(", ", reasonStrings)),
+                NotificationType.ApplicationWithdrawnConfirmation,
+                It.Is<NotificationRecipient>(r => r.Name == applicantModel.FullName && r.Address == applicantModel.Email),
+                It.Is<NotificationRecipient[]>(cc => cc.Single().Name == woodlandOwnerModel.ContactName && cc.Single().Address == woodlandOwnerModel.ContactEmail),
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+
+    [Theory, AutoMoqData]
+    public async Task WhenFailsToRetrieveAssignedInternalUserDetailsToSendNotification(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        string adminHubFooter,
+        WoodlandOwnerModel woodlandOwnerModel,
+        UserAccountModel applicantModel,
+        Guid assignedInternalUserId,
+        string error)
+    {
+        TestUtils.SetProtectedProperty(application, nameof(FellingLicenceApplication.Id), applicationId);
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today,
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus
+                    .ReturnedToApplicant // returned so it needs to look up property name on property profile
+            },
+            new StatusHistory
+            {
+                Created = DateTime.Today.AddSeconds(1),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.Withdrawn  // application entity is loaded after withdrawn status is applied in service
+            }
+        ];
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccountByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicantModel));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<Guid>{assignedInternalUserId}));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _getConfiguredFcAreasService
+            .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHubFooter);
+
+        _woodlandOwnerService
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(woodlandOwnerModel));
+
+        _sendNotifications
+            .Setup(x => x.SendNotificationAsync(It.IsAny<ApplicationWithdrawnConfirmationDataModel>(),
+                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
+                It.IsAny<NotificationAttachment[]>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        _internalUserAccountService
+            .Setup(x => x.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<List<Forestry.Flo.Services.InternalUsers.Models.UserAccountModel>>(error));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccountByIdAsync(_userAccess.UserAccountId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        // withdraw completes and we only failed notifications, so transaction is committed not rolled back
+        _dbContextTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService
+            .Verify(x => x.UpdatePublicRegisterEntityToRemovedAsync(applicationId, _userAccess.UserAccountId, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawNotificationSent
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        RecipientId = _userAccess.UserAccountId,
+                        RecipientName = applicantModel.FullName,
+                        RecipientEmail = applicantModel.Email,
+                        RecipientRole = AssignedUserRole.Applicant
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawComplete
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    WoodlandOwner = application.WoodlandOwnerId
+                }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+
+        _getPropertyProfilesService
+            .Verify(x => x.GetPropertyByIdAsync(application.LinkedPropertyProfile!.PropertyProfileId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+
+        _getConfiguredFcAreasService
+            .Verify(x => x.TryGetAdminHubAddress(application.AdministrativeRegion, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+
+        _woodlandOwnerService
+            .Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _woodlandOwnerService.VerifyNoOtherCalls();
+        
+        _internalUserAccountService
+            .Verify(x => x.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(l => l.Single() == assignedInternalUserId), It.IsAny<CancellationToken>()),
+                Times.Once);
+        _internalUserAccountService.VerifyNoOtherCalls();
+
+        var reasonStrings = withdrawalReasons.Where(x => x != WithdrawalReason.Other).Select(x => x.GetDisplayName()).ToList();
+        if (withdrawalReasons.Contains(WithdrawalReason.Other) && !string.IsNullOrWhiteSpace(withdrawalReasonOtherDetails))
+        {
+            reasonStrings.Add($"Other - {withdrawalReasonOtherDetails}");
+        }
+
+        _sendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<ApplicationWithdrawnConfirmationDataModel>(m =>
+                m.ApplicationReference == application.ApplicationReference
+                && m.PropertyName == propertyProfile.Name
+                && m.Name == applicantModel.FullName
+                && m.ViewApplicationURL == linkToApplication
+                && m.AdminHubFooter == adminHubFooter
+                && m.ApplicationId == applicationId
+                && string.Join(", ", m.ReasonForWithdrawal) == string.Join(", ", reasonStrings)),
+                NotificationType.ApplicationWithdrawnConfirmation,
+                It.Is<NotificationRecipient>(r => r.Name == applicantModel.FullName && r.Address == applicantModel.Email),
+                It.Is<NotificationRecipient[]>(cc => cc.Single().Name == woodlandOwnerModel.ContactName && cc.Single().Address == woodlandOwnerModel.ContactEmail),
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenSuccessfullySendsAllNotifications(
+        Guid applicationId,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonOtherDetails,
+        string linkToApplication,
+        FellingLicenceApplication application,
+        PropertyProfile propertyProfile,
+        string adminHubFooter,
+        WoodlandOwnerModel woodlandOwnerModel,
+        UserAccountModel applicantModel,
+        Guid assignedInternalUserId,
+        Forestry.Flo.Services.InternalUsers.Models.UserAccountModel assignedInternalUser)
+    {
+        TestUtils.SetProtectedProperty(application, nameof(FellingLicenceApplication.Id), applicationId);
+        application.PublicRegister.ConsultationPublicRegisterRemovedTimestamp = null;
+        application.StatusHistories =
+        [
+            new StatusHistory
+            {
+                Created = DateTime.Today,
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus
+                    .ReturnedToApplicant // returned so it needs to look up property name on property profile
+            },
+            new StatusHistory
+            {
+                Created = DateTime.Today.AddSeconds(1),
+                FellingLicenceApplication = application,
+                Status = FellingLicenceStatus.Withdrawn  // application entity is loaded after withdrawn status is applied in service
+            }
+        ];
+
+        var sut = CreateSut();
+
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccessAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(_userAccess));
+        _retrieveExternalAccountsService
+            .Setup(x => x.RetrieveUserAccountByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(applicantModel));
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.WithdrawApplicationAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<List<WithdrawalReason>>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<Guid> { assignedInternalUserId }));
+
+        _fellingLicenceApplicationExternalRepository
+            .Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_dbContextTransaction.Object);
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _publicRegisterService
+            .Setup(x => x.RemoveCaseFromConsultationRegisterAsync(It.IsAny<int>(), It.IsAny<string>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _withdrawFellingLicenceService
+            .Setup(x => x.UpdatePublicRegisterEntityToRemovedAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),
+                It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success);
+
+        _getPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(propertyProfile));
+
+        _getConfiguredFcAreasService
+            .Setup(x => x.TryGetAdminHubAddress(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(adminHubFooter);
+
+        _woodlandOwnerService
+            .Setup(x => x.RetrieveWoodlandOwnerByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(woodlandOwnerModel));
+
+        _sendNotifications
+            .Setup(x => x.SendNotificationAsync(It.IsAny<ApplicationWithdrawnConfirmationDataModel>(),
+                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]>(),
+                It.IsAny<NotificationAttachment[]>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        _internalUserAccountService
+            .Setup(x => x.RetrieveUserAccountsByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<Flo.Services.InternalUsers.Models.UserAccountModel>{assignedInternalUser}));
+
+        var result = await sut.WithdrawApplicationAsync(applicationId, _externalApplicant, withdrawalReasons, withdrawalReasonOtherDetails, linkToApplication, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccessAsync(_externalApplicant.UserAccountId!.Value, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService
+            .Verify(x => x.RetrieveUserAccountByIdAsync(_userAccess.UserAccountId, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _retrieveExternalAccountsService.VerifyNoOtherCalls();
+
+        _getFellingLicenceApplicationServiceForExternalUsers
+            .Verify(x => x.GetApplicationByIdAsync(applicationId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getFellingLicenceApplicationServiceForExternalUsers.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepository
+            .Verify(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        _fellingLicenceApplicationExternalRepository.VerifyNoOtherCalls();
+
+        // withdraw completes and we only failed notifications, so transaction is committed not rolled back
+        _dbContextTransaction.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once());
+        _dbContextTransaction.Verify(x => x.DisposeAsync(), Times.Once);
+        _dbContextTransaction.VerifyNoOtherCalls();
+
+        _withdrawFellingLicenceService
+            .Verify(x => x.WithdrawApplicationAsync(applicationId, _userAccess, withdrawalReasons, withdrawalReasonOtherDetails, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService
+            .Verify(x => x.UpdatePublicRegisterEntityToRemovedAsync(applicationId, _userAccess.UserAccountId, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _withdrawFellingLicenceService.VerifyNoOtherCalls();
+
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawNotificationSent
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                    JsonSerializer.Serialize(new
+                    {
+                        RecipientId = _userAccess.UserAccountId,
+                        RecipientName = applicantModel.FullName,
+                        RecipientEmail = applicantModel.Email,
+                        RecipientRole = AssignedUserRole.Applicant
+                    }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.FellingLicenceApplicationWithdrawComplete
+                && x.ActorType == ActorType.ExternalApplicant
+                && x.UserId == _userAccess.UserAccountId
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _options) ==
+                JsonSerializer.Serialize(new
+                {
+                    WoodlandOwner = application.WoodlandOwnerId
+                }, _options)),
+            CancellationToken.None), Times.Once);
+        _auditService.VerifyNoOtherCalls();
+
+        _clock.Verify(x => x.GetCurrentInstant(), Times.Once);
+        _clock.VerifyNoOtherCalls();
+
+        _publicRegisterService
+            .Verify(x => x.RemoveCaseFromConsultationRegisterAsync(application.PublicRegister.EsriId!.Value, application.ApplicationReference, _now, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _publicRegisterService.VerifyNoOtherCalls();
+
+        _getPropertyProfilesService
+            .Verify(x => x.GetPropertyByIdAsync(application.LinkedPropertyProfile!.PropertyProfileId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getPropertyProfilesService.VerifyNoOtherCalls();
+
+        _getConfiguredFcAreasService
+            .Verify(x => x.TryGetAdminHubAddress(application.AdministrativeRegion, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _getConfiguredFcAreasService.VerifyNoOtherCalls();
+
+        _woodlandOwnerService
+            .Verify(x => x.RetrieveWoodlandOwnerByIdAsync(application.WoodlandOwnerId, _userAccess, It.IsAny<CancellationToken>()),
+                Times.Once);
+        _woodlandOwnerService.VerifyNoOtherCalls();
+
+        _internalUserAccountService
+            .Verify(x => x.RetrieveUserAccountsByIdsAsync(It.Is<List<Guid>>(l => l.Single() == assignedInternalUserId), It.IsAny<CancellationToken>()),
+                Times.Once);
+        _internalUserAccountService.VerifyNoOtherCalls();
+
+        var reasonStrings = withdrawalReasons.Where(x => x != WithdrawalReason.Other).Select(x => x.GetDisplayName()).ToList();
+        if (withdrawalReasons.Contains(WithdrawalReason.Other) && !string.IsNullOrWhiteSpace(withdrawalReasonOtherDetails))
+        {
+            reasonStrings.Add($"Other - {withdrawalReasonOtherDetails}");
+        }
+
+        _sendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<ApplicationWithdrawnConfirmationDataModel>(m =>
+                m.ApplicationReference == application.ApplicationReference
+                && m.PropertyName == propertyProfile.Name
+                && m.Name == applicantModel.FullName
+                && m.ViewApplicationURL == linkToApplication
+                && m.AdminHubFooter == adminHubFooter
+                && m.ApplicationId == applicationId
+                && string.Join(", ", m.ReasonForWithdrawal) == string.Join(", ", reasonStrings)),
+                NotificationType.ApplicationWithdrawnConfirmation,
+                It.Is<NotificationRecipient>(r => r.Name == applicantModel.FullName && r.Address == applicantModel.Email),
+                It.Is<NotificationRecipient[]>(cc => cc.Single().Name == woodlandOwnerModel.ContactName && cc.Single().Address == woodlandOwnerModel.ContactEmail),
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
+
+        var internalLinkToApplication = $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{applicationId}";
+        _sendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<ApplicationWithdrawnConfirmationDataModel>(m =>
+                    m.ApplicationReference == application.ApplicationReference
+                    && m.PropertyName == propertyProfile.Name
+                    && m.Name == assignedInternalUser.FullName
+                    && m.ViewApplicationURL == internalLinkToApplication
+                    && m.AdminHubFooter == adminHubFooter
+                    && m.ApplicationId == applicationId
+                    && string.Join(", ", m.ReasonForWithdrawal) == string.Join(", ", reasonStrings)),
+                NotificationType.ApplicationWithdrawn,
+                It.Is<NotificationRecipient>(r => r.Name == assignedInternalUser.FullName && r.Address == assignedInternalUser.Email),
+                null,
+                null,
+                null,
+                It.IsAny<CancellationToken>()), Times.Once);
+
+        _sendNotifications.VerifyNoOtherCalls();
+    }
+
+    private WithdrawApplicationExternalUseCase CreateSut()
+    {
+        _getFellingLicenceApplicationServiceForExternalUsers.Reset();
+        _fellingLicenceApplicationExternalRepository.Reset();
+        _withdrawFellingLicenceService.Reset();
+        _auditService.Reset();
+        _clock.Reset();
+        _publicRegisterService.Reset();
+        _getPropertyProfilesService.Reset();
+        _getConfiguredFcAreasService.Reset();
+        _woodlandOwnerService.Reset();
+        _retrieveExternalAccountsService.Reset();
+        _internalUserAccountService.Reset();
+        _sendNotifications.Reset();
+        _internalUserSiteOptions = new InternalUserSiteOptions
+        {
+            BaseUrl = "https://localhost"
+        };
+
+        _clock.Setup(x => x.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(_now));
+
+        _dbContextTransaction.Reset();
+
+        return new WithdrawApplicationExternalUseCase(
+            _getFellingLicenceApplicationServiceForExternalUsers.Object,
+            _fellingLicenceApplicationExternalRepository.Object,
+            _withdrawFellingLicenceService.Object,
+            _auditService.Object,
+            _clock.Object,
+            _publicRegisterService.Object,
+            _getPropertyProfilesService.Object,
+            _getConfiguredFcAreasService.Object,
+            _woodlandOwnerService.Object,
+            _retrieveExternalAccountsService.Object,
+            _internalUserAccountService.Object,
+            _sendNotifications.Object,
+            new OptionsWrapper<InternalUserSiteOptions>(_internalUserSiteOptions),
+            _requestContext,
+            new NullLogger<WithdrawApplicationUseCaseBase>());
+    }
+
+
+
+}

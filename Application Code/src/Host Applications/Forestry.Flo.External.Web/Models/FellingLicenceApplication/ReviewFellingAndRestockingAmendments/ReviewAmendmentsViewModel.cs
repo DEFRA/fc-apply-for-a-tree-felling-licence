@@ -57,7 +57,7 @@ public class ReviewAmendmentsViewModel
     /// </summary>
     public string? AmendmentsReason { get; set; }
 
-    public bool IsEditable => ResponseReceivedDate.HasNoValue();
+    public bool IsEditable => ResponseReceivedDate.HasNoValue() && AmendmentReviewCompleted is not true;
 
     /// <summary>
     /// Gets or sets a value indicating whether the amendment review has been completed.

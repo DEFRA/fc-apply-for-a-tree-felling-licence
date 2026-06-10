@@ -101,7 +101,7 @@
                         Continue
                     </button>
 
-                    <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" title="Abandon changes and go to the agent authority forms page">Cancel</a>
+                    <a class="govuk-link" asp-controller="Home" asp-action="AgentUser" asp-route-agencyId="@Model.AgencyId" title="Abandon changes and go to the agent authority forms page">Cancel</a>
                 </div>
             </div>
         </fieldset>

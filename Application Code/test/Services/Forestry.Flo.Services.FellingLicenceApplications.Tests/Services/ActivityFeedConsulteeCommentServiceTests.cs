@@ -105,6 +105,48 @@ public class ActivityFeedConsulteeCommentServiceTests
         _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
     }
 
+    [Theory, AutoMoqData]
+    public async Task ShouldReturnExpectedItemsWithoutAttachments_AsExternalUser(
+        Guid applicationId,
+        List<ConsulteeComment> comments)
+    {
+        var sut = CreateSut();
+
+        comments.ForEach(x => x.DocumentIds = []);
+
+        _fellingLicenceApplicationRepository
+            .Setup(x => x.GetConsulteeCommentsAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(comments);
+
+        var input = new ActivityFeedItemProviderModel
+        {
+            FellingLicenceId = applicationId,
+            ItemTypes = [ActivityFeedItemType.ConsulteeComment]
+        };
+
+        var result = await sut.RetrieveActivityFeedItemsAsync(input, ActorType.ExternalApplicant, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        Assert.Equal(comments.Count, result.Value.Count);
+
+        foreach (var comment in comments)
+        {
+            Assert.Contains(result.Value, x =>
+                x.ActivityFeedItemType == ActivityFeedItemType.ConsulteeComment
+                && x.VisibleToApplicant == true
+                && x.VisibleToConsultee == true
+                && x.CreatedTimestamp == comment.CreatedTimestamp
+                && x.Text == comment.Comment
+                && x.Source == comment.AuthorName
+                && x.Attachments.Count == 0);
+        }
+
+        _fellingLicenceApplicationRepository.Verify(x => x.GetConsulteeCommentsAsync(applicationId, null, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.Verify(x => x.GetApplicationDocumentsAsync(applicationId, It.IsAny<CancellationToken>()), Times.Once);
+        _fellingLicenceApplicationRepository.VerifyNoOtherCalls();
+    }
+
     [Fact]
     public void ShouldSupportCorrectItemTypes()
     {

@@ -266,7 +266,7 @@ public abstract class FellingLicenceApplicationUseCaseBase
         return Maybe<DocumentModel>.From(documentModel);
     }
 
-    protected async Task<Result<ExternalUserAccountModel>> GetSubmittingUserAsync(
+    protected async Task<Result<ExternalUserAccountModel>> GetExternalUserAccountAsync(
         Guid externalUserId,
         CancellationToken cancellationToken)
     {

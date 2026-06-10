@@ -1,6 +1,5 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
-using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.Common.Models;
 using Forestry.Flo.Services.Common.Services;
 using Forestry.Flo.Services.Common.User;
@@ -10,11 +9,20 @@ using Microsoft.Extensions.Logging;
 
 namespace Forestry.Flo.Services.FellingLicenceApplications.Services;
 
+/// <summary>
+/// Implementation of <see cref="IActivityFeedService"/> that retrieves consultee comments as
+/// <see cref="ActivityFeedItemModel"/> instances.
+/// </summary>
 public class ActivityFeedConsulteeCommentService : IActivityFeedService
 {
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationRepository;
     private readonly ILogger<ActivityFeedConsulteeCommentService> _logger;
 
+    /// <summary>
+    /// Creates a new instance of <see cref="ActivityFeedConsulteeCommentService"/>.
+    /// </summary>
+    /// <param name="fellingLicenceApplicationRepository">A repository class to retrieve consultee comments.</param>
+    /// <param name="logger">A logging instance.</param>
     public ActivityFeedConsulteeCommentService(
         IFellingLicenceApplicationInternalRepository fellingLicenceApplicationRepository,
         ILogger<ActivityFeedConsulteeCommentService> logger)
@@ -23,6 +31,7 @@ public class ActivityFeedConsulteeCommentService : IActivityFeedService
         _logger = logger;
     }
 
+    /// <inheritdoc/>
     public async Task<Result<IList<ActivityFeedItemModel>>> RetrieveActivityFeedItemsAsync(
         ActivityFeedItemProviderModel providerModel,
         ActorType requestingActorType,
@@ -42,6 +51,10 @@ public class ActivityFeedConsulteeCommentService : IActivityFeedService
 
         foreach (var consulteeComment in comments)
         {
+            var source = requestingActorType == ActorType.ExternalApplicant
+                ? consulteeComment.AuthorName
+                : $"{consulteeComment.AuthorName} ({consulteeComment.AuthorContactEmail})";
+
             activityFeedItems.Add(new ActivityFeedItemModel
             {
                 ActivityFeedItemType = ActivityFeedItemType.ConsulteeComment,
@@ -51,7 +64,7 @@ public class ActivityFeedConsulteeCommentService : IActivityFeedService
                 VisibleToConsultee = true,
                 VisibleToApplicant = true,
                 Text = consulteeComment.Comment,
-                Source = $"{consulteeComment.AuthorName} ({consulteeComment.AuthorContactEmail})",
+                Source = source,
                 Attachments = GetAttachments(consulteeComment.DocumentIds, documents)
             });
         }

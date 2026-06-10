@@ -80,13 +80,19 @@ public class AgentAuthorityFormDocumentsController : Controller
     /// </summary>
     /// <param name="agentAuthorityId">The id of the agent authority to which this form for 'removal' belongs.</param>
     /// <param name="agentAuthorityFormId">The id of the agent authority form to 'remove'.</param>
+    /// <param name="fromDataImport">Specific to the application flow. Identifies if the user is in the post-data import flow.</param>
     /// <param name="useCase">Use-case service to execute</param>
+    /// <param name="applicationId">Specific to the application flow. The identifier for the application the user is working on.</param>
+    /// <param name="returnToApplicationSummary">Specific to the application flow.  Identifies if the user entered the AAF pages from the application summary page.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns></returns>
     [HttpPost]
     public async Task<IActionResult> RemoveCurrentAgentAuthorityForm(
         Guid agentAuthorityId,
         Guid agentAuthorityFormId,
+        Guid? applicationId,
+        bool? returnToApplicationSummary,
+        bool? fromDataImport,
         [FromServices] RemoveAgentAuthorityFormDocumentUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -106,6 +112,19 @@ public class AgentAuthorityFormDocumentsController : Controller
         {
             return Redirect(Request.Headers.Referer);
         }
+
+        if (applicationId.HasValue)
+        {
+            return RedirectToAction(nameof(FellingLicenceApplicationController.AgentAuthorityForm),
+                "FellingLicenceApplication", new
+                {
+                    agentAuthorityId,
+                    applicationId,
+                    returnToApplicationSummary,
+                    fromDataImport
+                });
+        }
+
         return RedirectToAction(nameof(Index), "AgentAuthorityFormDocuments", new { agentAuthorityId});
     }
 
@@ -147,6 +166,7 @@ public class AgentAuthorityFormDocumentsController : Controller
         [FromServices] AddAgentAuthorityFormDocumentFilesUseCase useCase,
         [FromForm] Guid? applicationId,
         [FromForm] bool returnToApplicationSummary,
+        [FromForm] bool fromDataImport,
         [FromForm] bool noJsFlag,
         CancellationToken cancellationToken)
     {
@@ -176,11 +196,13 @@ public class AgentAuthorityFormDocumentsController : Controller
             }
         }
 
+        this.AddConfirmationMessage("Agent authority form successfully uploaded");
+
         var returnUrl = Url.Action
         (
-            nameof(Index),
-            "AgentAuthorityFormDocuments",
-            new { agentAuthorityId },
+            nameof(WoodlandOwnerController.ManagedClientSummary),
+            "WoodlandOwner",
+            new { woodlandOwnerId = addFilesResult.Value.WoodlandOwnerId, agencyId = addFilesResult.Value.AgencyId },
             ControllerContext.HttpContext.Request.Scheme
         );
         if (applicationId is not null)
@@ -189,7 +211,7 @@ public class AgentAuthorityFormDocumentsController : Controller
             (
                 "AgentAuthorityForm",
                 "FellingLicenceApplication",
-                new { agentAuthorityId, applicationId, returnToApplicationSummary },
+                new { agentAuthorityId, applicationId, returnToApplicationSummary, fromDataImport },
                 ControllerContext.HttpContext.Request.Scheme
             );
         }

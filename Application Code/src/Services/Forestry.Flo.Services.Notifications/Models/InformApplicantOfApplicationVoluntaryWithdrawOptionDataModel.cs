@@ -49,4 +49,10 @@ public class InformApplicantOfApplicationVoluntaryWithdrawOptionDataModel : IApp
     /// Gets and sets the application id.
     /// </summary>
     public required Guid ApplicationId { get; set; }
+
+    /// <summary>
+    /// Gets and sets a formatted string of the resubmission deadline date for the application, calculated as
+    /// the With Applicant Date + the Voluntary Withdrawal Threshold time period.
+    /// </summary>
+    public string? ResubmissionDeadline { get; set; }
 }

@@ -1,9 +1,6 @@
 ﻿
 using Forestry.Flo.Internal.Web.Infrastructure;
-using Forestry.Flo.Internal.Web.Infrastructure.Display;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
-using Forestry.Flo.Services.FellingLicenceApplications.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Controllers.Api;
@@ -16,18 +13,15 @@ namespace Forestry.Flo.Internal.Web.Controllers.Api;
 [RequiresValidApiKey]
 public class VoluntaryWithdrawNotificationController : ControllerBase
 {
-    private string GetFellingLicenceUrlLink() => Url.AbsoluteAction("ApplicationSummary", "FellingLicenceApplication")!;
-
     [Route("VoluntaryWithdrawalNotificationFla")]
     public async Task<IActionResult> SendVoluntaryWithdrawalNotificatons(
         [FromServices] IVoluntaryWithdrawalNotificationUseCase sendNotificationForWithdrawnApplications,
         [FromServices] IAutomaticWithdrawalNotificationUseCase automaticWithdrawalNotificationUseCase,
-        [FromServices] IWithdrawFellingLicenceService _withdrawFellingLicenceService,
         CancellationToken cancellationToken)
     {
-        await automaticWithdrawalNotificationUseCase.ProcessApplicationsAsync(GetFellingLicenceUrlLink(), _withdrawFellingLicenceService, cancellationToken);
+        await automaticWithdrawalNotificationUseCase.ProcessApplicationsAsync(cancellationToken);
 
-        await sendNotificationForWithdrawnApplications.SendNotificationForWithdrawalAsync(GetFellingLicenceUrlLink(), cancellationToken);
+        await sendNotificationForWithdrawnApplications.SendNotificationForWithdrawalAsync(cancellationToken);
 
         return Ok();
     }

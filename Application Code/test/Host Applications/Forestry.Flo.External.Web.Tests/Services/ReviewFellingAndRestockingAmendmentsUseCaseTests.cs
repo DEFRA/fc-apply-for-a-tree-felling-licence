@@ -21,6 +21,7 @@ using Forestry.Flo.Tests.Common;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 
 namespace Forestry.Flo.External.Web.Tests.Services;
 

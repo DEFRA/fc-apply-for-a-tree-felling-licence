@@ -46,6 +46,10 @@ public class ConditionsUseCaseSendToApplicantTests
     private readonly Guid RequestContextUserId = Guid.NewGuid();
     private readonly Instant Now = new Instant();
     private readonly string _baseUri = "https://locahost:7900/";
+    private readonly ConditionsOptions _conditionsOptions = new ConditionsOptions
+    {
+        ConditionsDeemedAcceptanceTimeSpan = TimeSpan.FromDays(14)
+    };
 
     private readonly JsonSerializerOptions _serializerOptions = new()
     {
@@ -280,6 +284,7 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.SenderEmail == user.EmailAddress
                  && m.AdminHubFooter == adminHubFooter
                  && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
+                 && m.DeemedAcceptanceDate == DateTimeDisplay.GetDateDisplayString(Now.ToDateTimeUtc().Add(_conditionsOptions.ConditionsDeemedAcceptanceTimeSpan))
                  //&& m.SenderName == user.FullName
                  ),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
@@ -376,6 +381,7 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.SenderEmail == user.EmailAddress
                  && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
                  && m.SenderName == user.FullName
+                 && m.DeemedAcceptanceDate == DateTimeDisplay.GetDateDisplayString(Now.ToDateTimeUtc().Add(_conditionsOptions.ConditionsDeemedAcceptanceTimeSpan))
                  && m.AdminHubFooter == adminHubFooter),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -471,6 +477,7 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.SenderEmail == user.EmailAddress
                  && m.SenderName == user.FullName
                  && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
+                 && m.DeemedAcceptanceDate == DateTimeDisplay.GetDateDisplayString(Now.ToDateTimeUtc().Add(_conditionsOptions.ConditionsDeemedAcceptanceTimeSpan))
                  && m.AdminHubFooter == adminHubFooter),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -571,6 +578,7 @@ public class ConditionsUseCaseSendToApplicantTests
                  && m.SenderEmail == user.EmailAddress
                  && m.SenderName == user.FullName
                  && m.SupersedesPreviousNotification == applicationDetails.ConditionsNotificationAlreadySent
+                 && m.DeemedAcceptanceDate == DateTimeDisplay.GetDateDisplayString(Now.ToDateTimeUtc().Add(_conditionsOptions.ConditionsDeemedAcceptanceTimeSpan))
                  && m.AdminHubFooter == adminHubFooter),
             NotificationType.ConditionsToApplicant, It.Is<NotificationRecipient>(r => r.Name == account.FullName(true) && r.Address == account.Email),
             null, null, null, It.IsAny<CancellationToken>()), Times.Once);
@@ -615,6 +623,7 @@ public class ConditionsUseCaseSendToApplicantTests
         _agentAuthorityService.Reset();
         _woodlandOwnersService.Reset();
         _getConfiguredFcAreas.Reset();
+        _notificationsService.Reset();
 
         return new ConditionsUseCase(
             new Mock<IUserAccountService>().Object,
@@ -632,6 +641,7 @@ public class ConditionsUseCaseSendToApplicantTests
             _getConfiguredFcAreas.Object,
             clock.Object,
             new OptionsWrapper<ExternalApplicantSiteOptions>(new ExternalApplicantSiteOptions{BaseUrl = _baseUri}),
+            new OptionsWrapper<ConditionsOptions>(_conditionsOptions),
             _woodlandOfficerReviewSubStatusService.Object,
             new NullLogger<ConditionsUseCase>());
     }

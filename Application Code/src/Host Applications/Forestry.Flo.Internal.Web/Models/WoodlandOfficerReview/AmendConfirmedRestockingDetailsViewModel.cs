@@ -58,6 +58,9 @@ public class AmendConfirmedRestockingDetailsViewModel : WoodlandOfficerReviewMod
             };
         }
 
+        result[SpeciesModel.OpenSpace] =
+            SpeciesModel.OpenSpaceSpecies(ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace);
+
         return result;
     }
 }
