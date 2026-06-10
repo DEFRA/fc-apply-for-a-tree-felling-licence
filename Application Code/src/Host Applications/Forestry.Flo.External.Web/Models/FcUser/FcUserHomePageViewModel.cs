@@ -1,4 +1,4 @@
-﻿using Forestry.Flo.Services.Applicants.Models;
+﻿using Forestry.Flo.Services.Applicants.Entities;
 
 namespace Forestry.Flo.External.Web.Models.FcUser;
 
@@ -8,23 +8,64 @@ namespace Forestry.Flo.External.Web.Models.FcUser;
 public class FcUserHomePageViewModel
 {
     /// <summary>
-    /// The list of all Woodland Owners managed by FC, having no connected external users
+    /// Gets the list of all applicants in the system that match the current search term, sorted
+    /// and paginated according to the specified parameters.
     /// </summary>
-    public IReadOnlyList<WoodlandOwnerFcModel> AllWoodlandOwnersManagedByFc { get; set; } = new List<WoodlandOwnerFcModel>();
+    public IReadOnlyList<Applicant> Applicants { get; set; } = new List<Applicant>();
 
     /// <summary>
-    /// The list of all External Woodland Owners not managed by FC, but by non-fc external users
+    /// Gets the count of all applicants in the system that match the current search term.
     /// </summary>
-    public IReadOnlyList<WoodlandOwnerFcModel> AllExternalWoodlandOwners { get; set; } = new List<WoodlandOwnerFcModel>();
+    public int TotalApplicants { get; set; }
 
     /// <summary>
-    /// The list of all Agencies managed by FC, having no connected external users
+    /// Gets the total number of pages of applicants that match the current search term, sorting and paging options.
     /// </summary>
-
-    public IReadOnlyList<AgencyFcModel> AllAgenciesManagedByFc { get; set; } = new List<AgencyFcModel>();
+    public int TotalPages => (int)Math.Ceiling((double)TotalApplicants / SearchAndSortModel.PageSize);
 
     /// <summary>
-    /// The list of all External Agencies not managed by FC, but by non-fc external users
+    /// Gets a flag indicating whether there is a previous page of applicants to navigate back to based on the current
+    /// page number in the search and sort model.
     /// </summary>
-    public IReadOnlyList<AgencyFcModel> AllExternalAgencies { get; set; } = new List<AgencyFcModel>();
+    public bool HasPreviousPage => SearchAndSortModel.PageNumber > 1;
+
+    /// <summary>
+    /// Gets a flag indicating whether there is a next page of applicants to navigate back to based on the current
+    /// page number in the search and sort model.
+    /// </summary>
+    public bool HasNextPage => SearchAndSortModel.PageNumber < TotalPages;
+
+    public FcUserHomePageSearchAndSortModel SearchAndSortModel { get; set; } = new FcUserHomePageSearchAndSortModel();
+}
+
+/// <summary>
+/// A model class representing the current search and sort parameters to apply when filtering the
+/// list of applicants to display on the FC User homepage.
+/// </summary>
+public class FcUserHomePageSearchAndSortModel
+{
+    /// <summary>
+    /// Gets and sets the current search term to filter applicants by on the homepage.
+    /// </summary>
+    public string? SearchTerm { get; set; } = null;
+
+    /// <summary>
+    /// Gets and sets the current page of data to display on the homepage.
+    /// </summary>
+    public int PageNumber { get; set; } = 1;
+
+    /// <summary>
+    /// Gets and sets the current size of pages of data to display on the homepage.
+    /// </summary>
+    public int PageSize { get; set; } = 10;
+
+    /// <summary>
+    /// Gets and sets the name of the column to sort applicants by on the homepage.
+    /// </summary>
+    public string SortColumn { get; set; } = nameof(Applicant.Name);
+
+    /// <summary>
+    /// Gets and sets a flag to indicate whether to sort applicants in ascending order on the homepage.
+    /// </summary>
+    public bool SortAscending { get; set; } = true;
 }

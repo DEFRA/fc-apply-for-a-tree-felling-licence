@@ -10,8 +10,14 @@ namespace Forestry.Flo.Services.FellingLicenceApplications.Models;
 /// <param name="ApplicationAlreadyAssignedToThisUser">A flag indicating whether the application was already assigned
 /// <param name="IdOfUnassignedUser">The id of any user that was unassigned for the role and replaced with the new user.</param>
 /// for the selected role to the selected user.</param>
+/// <param name="LinkedPropertyProfileId">The id of the linked property profile, if the application is with the applicant.</param>
+/// <param name="PropertyName">The name of the property from the property snapshot, if the application is with FC.</param>
+/// <param name="ApplicationAuthorId">The user account ID of the user that originally created the application.</param>
 public record AssignToUserResponse(
     string UpdatedApplicationReference,
     string OriginalApplicationReference,
     bool ApplicationAlreadyAssignedToThisUser,
-    Maybe<Guid> IdOfUnassignedUser);
+    Guid? IdOfUnassignedUser,
+    Guid? LinkedPropertyProfileId,
+    string? PropertyName,
+    Guid ApplicationAuthorId);

@@ -25,4 +25,9 @@ public class ConditionsBuilderOptions
     /// Gets and sets the conditions options for CBW applications.
     /// </summary>
     public ConditionOptions CBWOptions { get; set; }
+
+    /// <summary>
+    /// Gets and sets the conditions options for condition Create Designed Open Ground.
+    /// </summary>
+    public ConditionOptions CreateDesignedOpenGroundOptions { get; set; }
 }

@@ -14,6 +14,8 @@
         agencyId = Model.WoodlandOwnerId
     }));
     ViewData.ShowBackLink();
+
+    var enableInviteAnotherUser = false;  // FLOV2-3012
 }
 
 <partial name="Partials/_ConfirmationMessageDisplay"/>
@@ -46,13 +48,13 @@
         }
     </User-Is-In-Role-Multiple>
 
-    <user-is-in-role role-name="WoodlandOwnerAdministrator">
+    <user-is-in-role role-name="WoodlandOwnerAdministrator" condition="@enableInviteAnotherUser">
         <br/>
-        <a class="govuk-link" asp-controller="Account" asp-action="InviteUserToOrganisation">
+        <a class="govuk-link" asp-controller="Account" asp-action="InviteUserToOrganisation" asp-route-woodlandOwnerId="@Model.WoodlandOwnerId">
             Invite another user to your organisation
         </a>
     </user-is-in-role>
-    <user-is-in-role role-name="WoodlandOwnerAdministrator">
+    <user-is-in-role role-name="WoodlandOwnerAdministrator" condition="@enableInviteAnotherUser">
         <br/>
         <a class="govuk-link" asp-controller="AccountAdministration" asp-action="WoodlandOwnerList">
             Manage user accounts associated with <b>@(Model.WoodlandOwnerDetails.OrganisationName ?? Model.WoodlandOwnerDetails.ContactName)</b>

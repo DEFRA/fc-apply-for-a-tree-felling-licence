@@ -44,7 +44,8 @@ public partial class AccountController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> RegisterAccountType([FromQuery] string? token, 
+    public async Task<IActionResult> RegisterAccountType(
+        [FromQuery] string? token, 
         [FromServices] RegisterUserAccountUseCase useCase,
         CancellationToken cancellationToken)
     {
@@ -59,7 +60,7 @@ public partial class AccountController : Controller
         if (user.HasRegisteredLocalAccount)
         {
             var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-            model = GetUserAccountModel(existingAccount, "Account Type");
+            model = GetUserAccountModel(existingAccount, "Account Type", user);
             return View(model);
         }
 
@@ -97,7 +98,7 @@ public partial class AccountController : Controller
             }
         }
 
-        model = new UserAccountModel { PageIsDisabled = disableSignUp };
+        model = new UserAccountModel { PageIsDisabled = disableSignUp, AccountEmailAddress = user.EmailAddress! };
         SetBreadcrumbs(model, "Account Type");
         return View(model);
     }
@@ -131,7 +132,7 @@ public partial class AccountController : Controller
     {
         var user = new ExternalApplicant(User);
         var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-        var model = GetUserAccountModel(existingAccount, "Name");
+        var model = GetUserAccountModel(existingAccount, "Name", user);
 
         return View(model);
     }
@@ -166,7 +167,7 @@ public partial class AccountController : Controller
     {
         var user = new ExternalApplicant(User);
         var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-        var model = GetUserAccountModel(existingAccount, "Contact Details");
+        var model = GetUserAccountModel(existingAccount, "Contact Details", user);
 
         return View(model);
     }
@@ -299,12 +300,13 @@ public partial class AccountController : Controller
 
         var model = new UserAccountSummaryModel
         {
+            AccountEmailAddress = existingAccount.Value.Email,
             AccountTypeReadOnly = accountTypeReadOnly,
             OrganisationDetailsReadOnly = existingAccount.Value.AccountType != AccountTypeExternal.AgentAdministrator
                 && existingAccount.Value.AccountType != AccountTypeExternal.WoodlandOwnerAdministrator
         };
 
-        var accountModel = GetUserAccountModel(existingAccount, "Summary");
+        var accountModel = GetUserAccountModel(existingAccount, "Summary", user);
         model.Status = accountModel.Status;
         model.PersonName = accountModel.PersonName;
         model.PersonContactsDetails = accountModel.PersonContactsDetails;
@@ -340,7 +342,7 @@ public partial class AccountController : Controller
     {
         var user = new ExternalApplicant(User);
         var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-        var model = GetUserAccountModel(existingAccount, "Terms and conditions");
+        var model = GetUserAccountModel(existingAccount, "Terms and conditions", user);
         SetBreadcrumbs(model, "Terms and conditions");
 
         return View(model);
@@ -370,7 +372,7 @@ public partial class AccountController : Controller
         if (!ModelState.IsValid)
         {
             var existingAccount = await useCase.RetrieveExistingAccountAsync(user, cancellationToken);
-            var reloadModel = GetUserAccountModel(existingAccount, "Terms and conditions");
+            var reloadModel = GetUserAccountModel(existingAccount, "Terms and conditions", user);
             reloadModel.AcceptsTermsAndConditions = model.AcceptsTermsAndConditions;
             SetBreadcrumbs(reloadModel, "Terms and conditions");
             return View(reloadModel);
@@ -481,56 +483,62 @@ public partial class AccountController : Controller
     [HttpGet]
     [UserIsInRole(roleName = AccountTypeExternal.WoodlandOwnerAdministrator)]
     public async Task<IActionResult> InviteUserToOrganisation(
+        Guid woodlandOwnerId,
         [FromServices] InviteWoodlandOwnerToOrganisationUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var user = new ExternalApplicant(User);
-        var woodlandOwnerResult = await useCase.RetrieveUserWoodlandOwnerOrganisationAsync(user, cancellationToken);
-        if (woodlandOwnerResult.IsFailure)
-        {
-            this.AddErrorMessage(woodlandOwnerResult.Error);
-            //TODO: Set the action
-            return RedirectToAction(nameof(HomeController.WoodlandOwner), "Home");
-        }
+        return RedirectToAction("WoodlandOwner", "Home", new { woodlandOwnerId });  // FLOV2-3012 disable this functionality
 
-        var model = new OrganisationWoodlandOwnerUserModel
-        {
-            WoodlandOwnerId = woodlandOwnerResult.Value.Id,
-            WoodlandOwnerName = woodlandOwnerResult.Value.Name
-        };
-        SetBreadcrumbs(model, "Invite another user");
-        return View(model);
+        //var user = new ExternalApplicant(User);
+        //var woodlandOwnerResult = await useCase.RetrieveUserWoodlandOwnerOrganisationAsync(user, cancellationToken);
+        //if (woodlandOwnerResult.IsFailure)
+        //{
+        //    this.AddErrorMessage(woodlandOwnerResult.Error);
+        //    //TODO: Set the action
+        //    return RedirectToAction(nameof(HomeController.WoodlandOwner), "Home");
+        //}
+
+        //var model = new OrganisationWoodlandOwnerUserModel
+        //{
+        //    WoodlandOwnerId = woodlandOwnerResult.Value.Id,
+        //    WoodlandOwnerName = woodlandOwnerResult.Value.Name
+        //};
+        //SetBreadcrumbs(model, "Invite another user");
+        //return View(model);
     }
     
     // GET account/InviteAgentToOrganisation
     [HttpGet]
     [UserIsInRole(roleName = AccountTypeExternal.AgentAdministrator)]
     public async Task<IActionResult> InviteAgentToOrganisation(
+        Guid agencyId,
         [FromServices] InviteAgentToOrganisationUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var user = new ExternalApplicant(User);
+        return RedirectToAction("AgentUser", "Home", new {agencyId});  // FLOV2-3012 disable this functionality
 
-        if (user.IsFcUser)
-        {
-            this.AddErrorMessage("Forestry Commission users should sign up to the Internal site which will automatically create their external applicant site account.");
-            return RedirectToAction(nameof(HomeController.AgentUser), "Home");
-        }
+        //var user = new ExternalApplicant(User);
 
-        var agencyResult = await useCase.RetrieveUserAgencyAsync(user, cancellationToken);
-        if (agencyResult.IsFailure)
-        {
-            this.AddErrorMessage(agencyResult.Error);
-            return RedirectToAction(nameof(HomeController.AgentUser), "Home");
-        }
+        //if (user.IsFcUser)
+        //{
+        //    this.AddErrorMessage("Forestry Commission users should sign up to the Internal site which will automatically create their external applicant site account.");
+        //    return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+        //}
 
-        var model = new AgencyUserModel
-        {
-            AgencyId = agencyResult.Value.Id,
-            AgencyName = agencyResult.Value.Name
-        };
-        SetBreadcrumbs(model, "Invite Agent To Organisation");
-        return View(model);
+        //var agencyResult = await useCase.RetrieveUserAgencyAsync(user, cancellationToken);
+        //if (agencyResult.IsFailure)
+        //{
+        //    this.AddErrorMessage(agencyResult.Error);
+        //    return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+        //}
+
+        //var model = new AgencyUserModel
+        //{
+        //    AgencyId = agencyResult.Value.Id,
+        //    AgencyName = agencyResult.Value.Name
+        //};
+        //SetBreadcrumbs(model, "Invite Agent To Organisation");
+        //return View(model);
     }
 
     // POST account/InviteUserToOrganisation
@@ -624,11 +632,11 @@ public partial class AccountController : Controller
         }
     }
 
-    private UserAccountModel GetUserAccountModel(Maybe<UserAccount> existingAccount, string pageName)
+    private UserAccountModel GetUserAccountModel(Maybe<UserAccount> existingAccount, string pageName, ExternalApplicant user)
     {
         if (existingAccount.HasNoValue)
         {
-            var model = new UserAccountModel();
+            var model = new UserAccountModel { AccountEmailAddress = user.EmailAddress! };
             SetBreadcrumbs(model, pageName);
             return model;
         }
@@ -637,6 +645,7 @@ public partial class AccountController : Controller
 
         var result = new UserAccountModel
         {
+            AccountEmailAddress = existingAccount.Value.Email,
             AcceptsTermsAndConditions = new AccountTermsAndConditionsModel
             {
                 AcceptsTermsAndConditions = existingAccount.Value?.DateAcceptedTermsAndConditions.HasValue ?? false,

@@ -1,13 +1,13 @@
 name: service-FellingLicenceApplications
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Services/Forestry.Flo.Services.FellingLicenceApplications/**"
       - "Application Code/test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/**"
       - ".github/workflows/**"
   push:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Services/Forestry.Flo.Services.FellingLicenceApplications/**"
       - "Application Code/test/Services/Forestry.Flo.Services.FellingLicenceApplications.Tests/**"

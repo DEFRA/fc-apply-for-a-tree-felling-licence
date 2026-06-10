@@ -55,7 +55,7 @@ public class RestockingOperationDetails
     /// <summary>
     /// Gets and sets the percent of the restocking compartment being left to open space.
     /// </summary>
-    public int PercentOpenSpace { get; set; }
+    public double? PercentOpenSpace { get; set; }
 
     /// <summary>
     /// Gets and sets the density of the restocking.

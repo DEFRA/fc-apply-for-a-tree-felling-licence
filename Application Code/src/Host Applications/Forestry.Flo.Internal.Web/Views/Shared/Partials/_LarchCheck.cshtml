@@ -4,6 +4,7 @@
 }
 @using Forestry.Flo.Internal.Web.Models.FellingLicenceApplication
 @using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
 @model Forestry.Flo.Internal.Web.Models.FellingLicenceApplication.LarchCheckModel
 <style>
 	.no-border-left {
@@ -55,16 +56,17 @@
                 </span>
             }
             @{
-                var submissionDate = Model.FellingLicenceApplicationSummary.DateReceived.Value;
-                if (Model.InMoratorium)
-                {
-                    <text>Identified submission date: @submissionDate.ToString("dd/MM/yyyy") - <b>this falls into the @Model.MoratoriumPeriod Moratorium date range,</b></text>
-                }
-
-                if (Model.FellingLicenceApplicationSummary.FinalActionDate.HasValue && Model.FellingLicenceApplicationSummary.FinalActionDate.Value < Model.ExtendedFAD)
-                {
-                    <text><b> the new final action date (FAD) will be: @Model.ExtendedFAD.ToString("dd/MM/yyyy")</b></text>
-                }
+                var submissionDate = Model.FellingLicenceApplicationSummary.LatestSubmissionDate
+                                     ?? Model.FellingLicenceApplicationSummary.DateReceived;
+                
+                var willExtendFAD = Model.FellingLicenceApplicationSummary.FinalActionDate.HasValue 
+                                    && Model.FellingLicenceApplicationSummary.FinalActionDate.Value < Model.ExtendedFAD;
+                
+                <text>
+                    Identified submission date: @submissionDate?.ToString("dd/MM/yyyy") - 
+                    <b condition="@Model.InMoratorium">this falls into the @Model.MoratoriumPeriod Moratorium date range, </b>
+                    <b condition="@willExtendFAD">the new final action date (FAD) will be: @Model.ExtendedFAD.ToString("dd/MM/yyyy")</b>
+                </text>
             }
         </p>
     </div>
@@ -169,7 +171,7 @@
                         Confirm whether the application's submission date falls within the moratorium period
                     </h3>
                     <div id="moratorium-hint" class="govuk-hint no-margin-bottom">
-                        The system has identified submission date: @submissionDate.ToString("dd/MM/yyyy") -
+                        The system has identified submission date: @submissionDate?.ToString("dd/MM/yyyy") -
                         @{
                             var moratoriumText = Model.InMoratorium
                                 ? $"this falls into the {Model.MoratoriumPeriod} Moratorium date range"

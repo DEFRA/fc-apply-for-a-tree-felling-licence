@@ -72,4 +72,13 @@ public class ProposedRestockingSource
     /// </remarks>
     [Name("percentageestablishedbycoppiceornaturalregen")]
     public double? PercentageEstablishedByCoppiceOrNaturalRegen { get; set; }
+
+    /// <summary>
+    /// Gets and sets the percentage of open space within the restocked area for this proposed restocking operation.
+    /// </summary>
+    /// <remarks>
+    /// Represents open space left amongst replanting. Not applicable if the restocking proposal is <see cref="TypeOfProposal.CreateDesignedOpenGround"/>.
+    /// </remarks>
+    [Name("percentageopenspace")]
+    public double? PercentageOpenSpace { get; set; }
 }

@@ -789,6 +789,7 @@ public class UpdateFellingLicenceApplicationForExternalUsersService : IUpdateFel
                         SubmittedFlaPropertyCompartmentId = restockSubmittedFlaPropertyCompartment?.Id ?? submittedFlaPropertyCompartment.Id,
                         PercentageOfRestockArea = proposedRestockingDetail.PercentageOfRestockArea,
                         PercentageOfFellingArea = proposedRestockingDetail.PercentageOfFellingArea,
+                        PercentOpenSpace = proposedRestockingDetail.PercentOpenSpace,
                         RestockingDensity = proposedRestockingDetail.RestockingDensity,
                         NumberOfTrees = proposedRestockingDetail.NumberOfTrees,
                         PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestockingDetail.PercentageEstablishedByCoppiceOrNaturalRegen,

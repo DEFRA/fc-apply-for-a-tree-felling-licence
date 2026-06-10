@@ -120,7 +120,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
         }
         model.FellingLicenceApplicationSummary = summary.Value;
 
-        var creator = await GetSubmittingUserAsync(application.Value.CreatedById, cancellationToken);
+        var creator = await GetExternalUserAccountAsync(application.Value.CreatedById, cancellationToken);
         if (creator.IsFailure)
         {
             _logger.LogError("Unable to retrieve the details of the external user who submitted the application, application id: {ApplicationId}, external user: {createdById} , error {Error}", application.Value.Id, application.Value.CreatedById, creator.Error);
@@ -509,23 +509,18 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
         var approvedInError = await _approvedInErrorService.GetApprovedInErrorAsync(application.Id, cancellationToken);
         
         string? previousReference = null;
-        string? approvedInErrorReasons = null;
+        var reasons = new List<string>();
 
         if (approvedInError.HasValue)
         {
             previousReference = approvedInError.Value.PreviousReference;
             
-            var reasons = new List<string>();
             if (approvedInError.Value.ReasonExpiryDate)
                 reasons.Add("the expiry date was incorrect");
             if (approvedInError.Value.ReasonSupplementaryPoints)
                 reasons.Add("the supplementary points were incorrect");
             if (approvedInError.Value.ReasonOther)
-                reasons.Add("other reasons");
-            
-            approvedInErrorReasons = reasons.Any() 
-                ? string.Join(", ", reasons)
-                : "administrative reasons";
+                reasons.Add($"other {(string.IsNullOrWhiteSpace(approvedInError.Value.ReasonOtherText) ? "administrative reasons" : $"- {approvedInError.Value.ReasonOtherText}")}");
         }
 
         // Find the latest approval date from StatusHistory
@@ -544,7 +539,7 @@ public class ApprovedInErrorUseCase : FellingLicenceApplicationUseCaseBase, IApp
         {
             ApplicationReference = previousReference,
             NewApplicationReference = application.ApplicationReference,
-            ApprovedInErrorReasons = approvedInErrorReasons,
+            ApprovedInErrorReasons = reasons,
             Name = applicantUser.FullName,
             PropertyName = application.SubmittedFlaPropertyDetail?.Name,
             ApproverName = approverName,

@@ -45,7 +45,8 @@ public class ConfirmedRestockingDetail
     /// <summary>
     /// Gets and sets the percentage of open space.
     /// </summary>
-    public int? PercentOpenSpace { get; set; }
+    [Column(TypeName = "decimal(5,2)")]
+    public double? PercentOpenSpace { get; set; }
 
     /// <summary>
     /// Gets and sets the percentage of natural regeneration.

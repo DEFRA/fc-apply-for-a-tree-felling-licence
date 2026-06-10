@@ -435,6 +435,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
                         SubmittedFlaPropertyCompartmentId = restockCompartment?.Id ?? compartment.Id,
                         PercentageOfRestockArea = proposedRestock.PercentageOfRestockArea,
                         PercentageOfFellingArea = proposedRestock.PercentageOfFellingArea,
+                        PercentOpenSpace = proposedRestock.PercentOpenSpace,
                         RestockingDensity = proposedRestock.RestockingDensity,
                         NumberOfTrees = proposedRestock.NumberOfTrees,
                         PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestock.PercentageEstablishedByCoppiceOrNaturalRegen,
@@ -714,7 +715,8 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
             }
 
             foreach (var species in speciesModel
-                         .Where(species => dbConfirmedRestock.ConfirmedRestockingSpecies.Any(x => x.Species == species.Key) is false))
+                         .Where(species => 
+                             dbConfirmedRestock.ConfirmedRestockingSpecies.Any(x => x.Species == species.Key) is false))
             {
                 dbConfirmedRestock.ConfirmedRestockingSpecies.Add(new ConfirmedRestockingSpecies
                 {
@@ -953,6 +955,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
         AddIfChanged(nameof(proposed.Area), proposed.Area, confirmed.Area);
         AddIfChanged(nameof(proposed.PercentageOfRestockArea), proposed.PercentageOfRestockArea, confirmed.PercentageOfRestockArea);
         AddIfChanged(nameof(proposed.PercentageOfFellingArea), proposed.PercentageOfFellingArea, confirmed.PercentageOfFellingArea);
+        AddIfChanged(nameof(proposed.PercentOpenSpace), proposed.PercentOpenSpace, confirmed.PercentOpenSpace);
         AddIfChanged(nameof(proposed.RestockingDensity), proposed.RestockingDensity, confirmed.RestockingDensity);
         AddIfChanged(nameof(proposed.NumberOfTrees), proposed.NumberOfTrees, confirmed.NumberOfTrees);
         AddIfChanged(nameof(proposed.PercentageEstablishedByCoppiceOrNaturalRegen), proposed.PercentageEstablishedByCoppiceOrNaturalRegen, confirmed.PercentageEstablishedByCoppiceOrNaturalRegen);
@@ -1201,6 +1204,7 @@ public class UpdateConfirmedFellingAndRestockingDetailsService(
                     SubmittedFlaPropertyCompartmentId = restockCompartment?.Id ?? compartment.Id,
                     PercentageOfRestockArea = proposedRestock.PercentageOfRestockArea,
                     PercentageOfFellingArea = proposedRestock.PercentageOfFellingArea,
+                    PercentOpenSpace = proposedRestock.PercentOpenSpace,
                     RestockingDensity = proposedRestock.RestockingDensity,
                     NumberOfTrees = proposedRestock.NumberOfTrees,
                     PercentageEstablishedByCoppiceOrNaturalRegen = proposedRestock.PercentageEstablishedByCoppiceOrNaturalRegen,

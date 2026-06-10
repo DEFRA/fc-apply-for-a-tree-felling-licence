@@ -1,13 +1,13 @@
 name: service-InternalUsers
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Services/Forestry.Flo.Services.InternalUsers/**"
       - "Application Code/test/Services/Forestry.Flo.Services.InternalUsers.Tests/**"
       - ".github/workflows/**"
   push:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Services/Forestry.Flo.Services.InternalUsers/**"
       - "Application Code/test/Services/Forestry.Flo.Services.InternalUsers.Tests/**"

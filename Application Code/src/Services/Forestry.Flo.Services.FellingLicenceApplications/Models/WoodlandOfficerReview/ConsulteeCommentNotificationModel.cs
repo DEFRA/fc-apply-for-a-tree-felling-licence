@@ -23,9 +23,17 @@ public class ConsulteeCommentNotificationModel
     public string AdminHub { get; set; }
 
     /// <summary>
-    /// Gets and sets the name of the property that this application relates to.
+    /// Gets and sets the name of the property that this application relates to.  This will be populated
+    /// if the application is currently with FC; otherwise <see cref="LinkedPropertyProfileId"/> will
+    /// be populated instead.
     /// </summary>
-    public string PropertyName { get; set; }
+    public string? PropertyName { get; set; }
+
+    /// <summary>
+    /// Gets and sets the ID of the linked property profile that this application relates to.  This will be populated
+    /// if the application is currently with the applicant; otherwise <see cref="PropertyName"/> will be populated instead.
+    /// </summary>
+    public Guid? LinkedPropertyProfileId { get; set; }
 
     /// <summary>
     /// Gets and sets the IDs of any FC staff assigned to the application, to send

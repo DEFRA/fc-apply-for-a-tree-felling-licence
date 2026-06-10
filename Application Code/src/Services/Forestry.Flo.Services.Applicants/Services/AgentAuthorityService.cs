@@ -426,6 +426,8 @@ public class AgentAuthorityService: IAgentAuthorityService, IAgentAuthorityInter
             var responseModel = new AgentAuthorityFormResponseModel
             {
                 Id = newAaf.Id,
+                WoodlandOwnerId = agentAuthority.Value.WoodlandOwner.Id,
+                AgencyId = agentAuthority.Value.Agency.Id,
                 ValidFromDate = newAaf.ValidFromDate,
                 AafDocuments = newAaf.AafDocuments.Select(x => new AafDocumentResponseModel
                 {

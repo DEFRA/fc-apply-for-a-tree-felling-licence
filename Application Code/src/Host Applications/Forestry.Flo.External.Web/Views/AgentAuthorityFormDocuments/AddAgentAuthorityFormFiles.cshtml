@@ -10,6 +10,7 @@
     var maxNumberDocs = (Settings?.Value ?? new UserFileUploadOptions()).MaxNumberDocuments;
     var applicationId = Context.Request.Query["ApplicationId"];
     var returnToApplicationSummary = Context.Request.Query["ReturnToApplicationSummary"];
+    var fromDataImport = Context.Request.Query["fromDataImport"];
 
     ViewData.ShowBackLink();
 }
@@ -180,8 +181,10 @@
                     for (var i = 0; i < selectedFiles.length; i++) {
                         formData.append('agentAuthorityDocumentFiles', selectedFiles[i]);
                     }
+
                     formData.append('applicationId', '@applicationId');
                     formData.append('returnToApplicationSummary', '@returnToApplicationSummary');
+                    formData.append('fromDataImport', '@fromDataImport');
                     $.ajax({
                         url: '@Url.Action("AttachAgentAuthorityFiles", "AgentAuthorityFormDocuments", new {agentAuthorityId=Model.AgentAuthorityId})',
                         type: 'POST',

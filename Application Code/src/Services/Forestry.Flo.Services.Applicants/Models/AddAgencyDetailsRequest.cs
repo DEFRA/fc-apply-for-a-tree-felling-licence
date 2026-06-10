@@ -10,5 +10,5 @@ public class AddAgencyDetailsRequest
     /// <summary>
     /// Gets and sets the details of the agency to be entered into the system.
     /// </summary>
-    public AgencyModel agencyModel { get; set; }
+    public AgencyModel AgencyModel { get; set; }
 }

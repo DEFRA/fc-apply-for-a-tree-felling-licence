@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
@@ -12,6 +13,7 @@ using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Forestry.Flo.Services.PropertyProfiles.Services;
 using Microsoft.Extensions.Options;
 using NodaTime;
 
@@ -28,12 +30,14 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
     private readonly ApplicationExtensionOptions _extensionOptions;
     private readonly ISendNotifications _sendNotifications;
     private readonly ILogger<ExtendApplicationsUseCase> _logger;
+    private readonly InternalUserSiteOptions _internalUserSiteOptions;
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
     private readonly IClock _clock;
     private readonly RequestContext _requestContext;
     private readonly IAuditService<ExtendApplicationsUseCase> _auditService;
     private readonly ExternalApplicantSiteOptions _externalApplicantSiteOptions;
     private readonly IRetrieveWoodlandOwners _woodlandOwnersService;
+    private readonly IGetPropertyProfiles _getPropertyProfiles;
 
     public ExtendApplicationsUseCase(
         IClock clock,
@@ -46,11 +50,14 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
         RequestContext requestContext,
         IAuditService<ExtendApplicationsUseCase> auditService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IGetPropertyProfiles getPropertyProfiles,
         IOptions<ExternalApplicantSiteOptions> externalApplicantSiteOptions,
+        IOptions<InternalUserSiteOptions> internalUserSiteOptions,
         IRetrieveWoodlandOwners woodlandOwnersService)
     {
         _applicationExtensionService = Guard.Against.Null(applicationExtensionService);
         _logger = logger;
+        _internalUserSiteOptions = Guard.Against.Null(internalUserSiteOptions).Value;
         _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
         _extensionOptions = Guard.Against.Null(extensionOptions).Value;
         _clock = Guard.Against.Null(clock);
@@ -61,6 +68,7 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
         _auditService = Guard.Against.Null(auditService);
         _externalApplicantSiteOptions = Guard.Against.Null(externalApplicantSiteOptions).Value;
         _woodlandOwnersService = Guard.Against.Null(woodlandOwnersService);
+        _getPropertyProfiles = Guard.Against.Null(getPropertyProfiles);
     }
 
     /// <summary>
@@ -71,7 +79,7 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
     /// <remarks>This method is automatically executed from an API controller.</remarks>
 
     // ReSharper disable once InconsistentNaming
-    public async Task ExtendApplicationFinalActionDatesAsync(string viewFLABaseURL, CancellationToken cancellationToken)
+    public async Task ExtendApplicationFinalActionDatesAsync(CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting to extend final action date for applications that have exceeded this date, are still in review and have not been previously extended");
 
@@ -90,14 +98,29 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
         foreach (var application in relevantApplications)
         {
+            string? propertyName = application.PropertyName;
+            if (application.LinkedPropertyProfileId.HasValue && string.IsNullOrWhiteSpace(propertyName))
+            {
+                var property = await _getPropertyProfiles
+                    .GetPropertyByIdAsync(application.LinkedPropertyProfileId.Value, UserAccessModel.SystemUserAccessModel, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (property.IsSuccess)
+                {
+                    propertyName = property.Value.Name;
+                }
+            }
+
             await InformApplicantOfExtensionAsync(
                 application,
+                currentDate, 
+                propertyName,
                 cancellationToken);
 
             var notificationsSent = await InformFcStaffMembersOfDeadlineExceededAsync(
                 application,
-                viewFLABaseURL,
                 currentDate,
+                propertyName,
                 cancellationToken);
 
             await
@@ -120,6 +143,8 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
 
     private async Task InformApplicantOfExtensionAsync(
         ApplicationExtensionModel application,
+        DateTime currentDate,
+        string? propertyName,
         CancellationToken cancellationToken)
     {
         await _auditService.PublishAuditEventAsync(new AuditEvent(
@@ -153,6 +178,9 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
                 .TryGetAdminHubAddress(application.AdminHubName, cancellationToken)
                 .ConfigureAwait(false);
 
+        var priorFad = application.FinalActionDate.Subtract(application.ExtensionLength ?? TimeSpan.Zero);
+        var deemedAcceptanceDate = currentDate.Add(_extensionOptions.DeemedAcceptanceTimeSpan);
+
         var applicantNotificationModel = new InformApplicantOfApplicationExtensionDataModel
         {
             ApplicationReference = application.ApplicationReference,
@@ -161,7 +189,10 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
             Name = createdByUser.FullName,
             ViewApplicationURL = $"{_externalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={application.ApplicationId}",
             AdminHubFooter = adminHubFooter,
-            ApplicationId = application.ApplicationId
+            ApplicationId = application.ApplicationId,
+            CurrentDecisionDeadline = DateTimeDisplay.GetDateDisplayString(priorFad),
+            DeemedAcceptanceDate = DateTimeDisplay.GetDateDisplayString(deemedAcceptanceDate),
+            PropertyName = propertyName
         };
 
         var applicantRecipient =
@@ -187,8 +218,8 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
     // ReSharper disable once InconsistentNaming
     private async Task<int> InformFcStaffMembersOfDeadlineExceededAsync(
         ApplicationExtensionModel application,
-        string viewFLABaseURL,
         DateTime currentDate,
+        string? propertyName,
         CancellationToken cancellationToken)
     {
         var (_, fcStaffUserFailure, assignedUsers, error) = await _internalAccountService.RetrieveUserAccountsByIdsAsync(
@@ -217,10 +248,11 @@ public class ExtendApplicationsUseCase : IExtendApplicationsUseCase
                 ExtensionLength = application.ExtensionLength?.Days,
                 FinalActionDate = DateTimeDisplay.GetDateDisplayString(application.FinalActionDate),
                 Name = assignedUser.FullName,
-                ViewApplicationURL = $"{viewFLABaseURL}/{application.ApplicationId}",
+                ViewApplicationURL = $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{application.ApplicationId}",
                 DaysUntilFinalActionDate = (currentDate - application.FinalActionDate).Days,
                 AdminHubFooter = adminHubFooter,
-                ApplicationId = application.ApplicationId
+                ApplicationId = application.ApplicationId,
+                PropertyName = propertyName
             };
 
             var fcRecipient = new NotificationRecipient(assignedUser.Email, fcNotificationModel.Name);

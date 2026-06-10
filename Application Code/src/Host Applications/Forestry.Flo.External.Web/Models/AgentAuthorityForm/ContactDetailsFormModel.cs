@@ -9,6 +9,11 @@ namespace Forestry.Flo.External.Web.Models.AgentAuthorityForm;
 public class ContactDetailsFormModel : PageWithBreadcrumbsViewModel
 {
     /// <summary>
+    /// Gets and sets the id of the agency the new client is being added to.
+    /// </summary>
+    public Guid AgencyId { get; set; }
+
+    /// <summary>
     /// Gets and sets the contact name of the applicant/organisation to act on behalf of.
     /// </summary>
     [Required(ErrorMessage = "Contact name must be provided")]

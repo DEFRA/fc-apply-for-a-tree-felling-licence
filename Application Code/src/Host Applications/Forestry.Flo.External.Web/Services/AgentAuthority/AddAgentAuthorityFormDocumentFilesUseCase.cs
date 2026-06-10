@@ -50,7 +50,7 @@ public class AddAgentAuthorityFormDocumentFilesUseCase
     /// <param name="agentAuthorityDocumentFiles">The files to be added.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>Returns a <see cref="Result"/> indicating success or failure of this action.</returns>
-    public async Task<Result> AddAgentAuthorityFormDocumentFilesAsync(
+    public async Task<Result<AgentAuthorityFormResponseModel>> AddAgentAuthorityFormDocumentFilesAsync(
         ExternalApplicant user,
         Guid agentAuthorityId,
         FormFileCollection agentAuthorityDocumentFiles,
@@ -85,7 +85,7 @@ public class AddAgentAuthorityFormDocumentFilesUseCase
                 ),
                 cancellationToken);
 
-            return Result.Failure("Unable to successfully validate the files for upload");
+            return Result.Failure<AgentAuthorityFormResponseModel>("Unable to successfully validate the files for upload");
         }
 
         var request = new AddAgentAuthorityFormRequest
@@ -120,7 +120,7 @@ public class AddAgentAuthorityFormDocumentFilesUseCase
                 ),
                 cancellationToken);
 
-            return Result.Failure($"Could not add new agent authority form document files, error: {addAgentAuthorityFormFiles.Error}");
+            return Result.Failure<AgentAuthorityFormResponseModel>($"Could not add new agent authority form document files, error: {addAgentAuthorityFormFiles.Error}");
         }
 
         await _audit.PublishAuditEventAsync(
@@ -142,7 +142,7 @@ public class AddAgentAuthorityFormDocumentFilesUseCase
             ),
             cancellationToken);
 
-        return Result.Success();
+        return Result.Success(addAgentAuthorityFormFiles.Value);
     }
 
     private Result ValidateFiles(

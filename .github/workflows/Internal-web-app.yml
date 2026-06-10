@@ -2,7 +2,7 @@ name: Internal-web-app
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Host Applications/Forestry.Flo.Internal.Web/**"
       - "Application Code/test/Host Applications/Forestry.Flo.Internal.Web.Tests/**"
@@ -10,7 +10,7 @@ on:
       - "Application Code/test/Services/**"
       - ".github/workflows/**"
   push:
-    branches: [ "main" ]
+    branches: [ "main", "release-branch*" ]
     paths:
       - "Application Code/src/Host Applications/Forestry.Flo.Internal.Web/**"
       - "Application Code/test/Host Applications/Forestry.Flo.Internal.Web.Tests/**"

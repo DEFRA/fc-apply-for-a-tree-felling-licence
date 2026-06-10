@@ -6,7 +6,7 @@
         updateDisableExempt();
         updateDisableConditionalReason();
         handleApprovedLicenceDurationChange();
-        updateDecisionConditionals();
+        handleReadyForDecisionChange();
     });
 
     $("input[name='ApproverReview.PublicRegisterPublish']").on("change", function () {
@@ -21,7 +21,21 @@
         handleApprovedLicenceDurationChange();
     });
 
-    $('input[name="Decision"]').on('change', updateDecisionConditionals);
+    $('#decision-yes').change(function () {
+        handleReadyForDecisionChange();
+    })
+
+    $('#decision-no').change(function () {
+        handleReadyForDecisionChange();
+    })
+
+    function handleReadyForDecisionChange() {
+        var readyForDecisionYes = $('#decision-yes').is(':checked');
+        var readyForDecisionNo = $('#decision-no').is(':checked');
+
+        showOrHideElement('#conditional-decision-yes', readyForDecisionYes);
+        showOrHideElement('#conditional-decision-no', readyForDecisionNo);
+    }
 
     function handleApprovedLicenceDurationChange() {
         var selectedText = $('#ApproverReview_ApprovedLicenceDuration').find("option:selected").text();
@@ -56,27 +70,6 @@
             $(conditionalReasonFieldset).prop('disabled', false);
         } else {
             $(conditionalReasonFieldset).prop('disabled', true);
-        }
-    }
-
-    function updateDecisionConditionals() {
-        var $yes = $('#decision-yes');
-        var $no = $('#decision-no');
-        var yesChecked = $yes.prop('checked');
-        var noChecked = $no.prop('checked');
-
-        if (yesChecked) {
-            showOrHideElement($('#Decision'), true);
-            showOrHideElement($('#conditional-decision-no'), false);
-            showOrHideElement($('#conditional-decision-empty'), false);
-        } else if (noChecked) {
-            showOrHideElement($('#Decision'), false);
-            showOrHideElement($('#conditional-decision-no'), true);
-            showOrHideElement($('#conditional-decision-empty'), false);
-        } else {
-            showOrHideElement($('#Decision'), false);
-            showOrHideElement($('#conditional-decision-no'), false);
-            showOrHideElement($('#conditional-decision-empty'), true);
         }
     }
 });

@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using Forestry.Flo.Services.Applicants.Entities;
 using Forestry.Flo.Services.Applicants.Entities.Agent;
 using Forestry.Flo.Services.Applicants.Entities.AgentAuthority;
 using Forestry.Flo.Services.Applicants.Entities.UserAccount;
@@ -20,6 +21,7 @@ public class ApplicantsContext : DbContext, IUnitOfWork
     public DbSet<WoodlandOwner> WoodlandOwners { get; set; }
     public DbSet<AgentAuthority> AgentAuthorities { get; set; }
     public DbSet<Agency> Agencies { get; set; }
+    public DbSet<Applicant> Applicants { get; set; }
 
     public ApplicantsContext()
     {
@@ -62,6 +64,8 @@ public class ApplicantsContext : DbContext, IUnitOfWork
         modelBuilder.Entity<AgentAuthority>().ToTable("AgentAuthority");
         modelBuilder.Entity<AgentAuthorityForm>().ToTable("AgentAuthorityForm");
         modelBuilder.Entity<AafDocument>().ToTable("AafDocument");
+
+        modelBuilder.Entity<Applicant>().ToView("Applicants");
 
         modelBuilder.Entity<UserAccount>().HasIndex(p => p.IdentityProviderId).IsUnique();
         modelBuilder.Entity<UserAccount>().HasIndex(p => p.Email).IsUnique();
@@ -158,6 +162,11 @@ public class ApplicantsContext : DbContext, IUnitOfWork
             .HasForeignKey(p => p.AgentAuthorityFormId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Applicant>()
+            .Property(x => x.Id)
+            .HasColumnType("uuid");
     }
     
     public async Task<UnitResult<UserDbErrorReason>> SaveEntitiesAsync(CancellationToken cancellationToken = default)

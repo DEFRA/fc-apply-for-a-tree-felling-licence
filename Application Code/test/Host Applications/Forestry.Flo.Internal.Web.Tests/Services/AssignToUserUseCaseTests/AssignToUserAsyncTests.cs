@@ -12,6 +12,8 @@ using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Tests.Common;
 using Moq;
 using System.Text.Json;
+using Forestry.Flo.Services.Applicants.Services;
+using Forestry.Flo.Services.PropertyProfiles.Entities;
 
 namespace Forestry.Flo.Internal.Web.Tests.Services.AssignToUserUseCaseTests;
 
@@ -160,6 +162,8 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
         MockSendNotifications.VerifyNoOtherCalls();
 
+        MockPropertyProfilesService.VerifyNoOtherCalls();
+
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                 y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMemberFailure
                 && y.SourceEntityId == applicationId
@@ -219,6 +223,8 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
             .Verify(x => x.GetApplicationStatusHistory(applicationId, It.Is<UserAccessModel>(u => u.IsFcUser), It.IsAny<CancellationToken>()),
                 Times.Once);
         MockGetFellingLicenceApplication.VerifyNoOtherCalls();
+
+        MockPropertyProfilesService.VerifyNoOtherCalls();
 
         MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(submittedById, It.IsAny<CancellationToken>()), Times.Once);
         MockExternalUserAccountService.VerifyNoOtherCalls();
@@ -294,6 +300,8 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         MockExternalUserAccountService.VerifyNoOtherCalls();
         MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
         MockSendNotifications.VerifyNoOtherCalls();
+
+        MockPropertyProfilesService.VerifyNoOtherCalls();
 
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                 y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMemberFailure
@@ -375,6 +383,8 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
         MockSendNotifications.VerifyNoOtherCalls();
 
+        MockPropertyProfilesService.VerifyNoOtherCalls();
+
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                 y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMemberFailure
                 && y.SourceEntityId == applicationId
@@ -393,7 +403,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
     }
 
     [Theory, AutoMoqData]
-    public async Task WhenApplicationIsAlreadyAssignedToThisUser(
+    public async Task WhenApplicationIsAlreadyAssignedToThisUser_ReferenceNotChanged(
         Guid applicationId,
         Guid assignToUserId,
         Guid submittedById,
@@ -404,7 +414,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         string caseNote,
         string adminHubName,
         string originalReference,
-        string updatedReference)
+        Guid applicationAuthorId)
     {
         var sut = CreateSut();
         var selectedRole = AssignedUserRole.FieldManager;
@@ -415,7 +425,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         var submittedEntry = new StatusHistoryModel(DateTime.Today, submittedById, FellingLicenceStatus.Submitted);
 
         var assignToUserResponse =
-            new AssignToUserResponse(updatedReference, originalReference, true, Maybe<Guid>.None);
+            new AssignToUserResponse(originalReference, originalReference, true, null, null, "property", applicationAuthorId);
 
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -456,7 +466,10 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
                 && r.FcAreaCostCode == fcAreaCode
                 && r.PerformingUserId == _testUser.UserAccountId), It.IsAny<CancellationToken>()), Times.Once);
         MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
+
         MockSendNotifications.VerifyNoOtherCalls();
+
+        MockPropertyProfilesService.VerifyNoOtherCalls();
 
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                 y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember
@@ -471,17 +484,17 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
                         AssignedUserRole = selectedRole,
                         UnassignedStaffMemberId = (Guid?)null,
                         NotificationSent = (bool?)null,
-                        AreaCodeRequiredUpdate = true,
+                        AreaCodeRequiredUpdate = false,
                         OriginalApplicationReference = originalReference,
                         AreaCode = fcAreaCode,
-                        CurrentApplicationReference = updatedReference
+                        CurrentApplicationReference = originalReference
                     }, _options)),
             It.IsAny<CancellationToken>()), Times.Once);
         MockAuditService.VerifyNoOtherCalls();
     }
 
     [Theory, AutoMoqData]
-    public async Task WhenNotificationFailsToSend(
+    public async Task WhenApplicationIsAlreadyAssignedToThisUser_ReferenceChanged(
         Guid applicationId,
         Guid assignToUserId,
         Guid submittedById,
@@ -493,7 +506,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         string adminHubName,
         string originalReference,
         string updatedReference,
-        Guid oldAssignedUserId)
+        Guid applicationAuthorId)
     {
         var sut = CreateSut();
         var selectedRole = AssignedUserRole.FieldManager;
@@ -504,7 +517,117 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         var submittedEntry = new StatusHistoryModel(DateTime.Today, submittedById, FellingLicenceStatus.Submitted);
 
         var assignToUserResponse =
-            new AssignToUserResponse(updatedReference, originalReference, false, Maybe<Guid>.From(oldAssignedUserId));
+            new AssignToUserResponse(updatedReference, originalReference, true, null, null, "property", applicationAuthorId);
+
+        MockInternalUserAccountService
+            .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<UserAccount>.From(assignToUserAccount));
+        MockGetFellingLicenceApplication.Setup(x =>
+                x.GetApplicationStatusHistory(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<StatusHistoryModel> { submittedEntry }));
+        MockExternalUserAccountService
+            .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submittedByAccount));
+        MockUpdateFellingLicenceApplication
+            .Setup(x => x.AssignToInternalUserAsync(It.IsAny<AssignToUserRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignToUserResponse));
+
+        var result = await sut.AssignToUserAsync(applicationId, assignToUserId, selectedRole, fcAreaCode, _testUser,
+            linkToApplication, caseNote, adminHubName, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        MockInternalUserAccountService.Verify(x => x.GetUserAccountAsync(assignToUserId, It.IsAny<CancellationToken>()), Times.Once);
+        MockInternalUserAccountService.VerifyNoOtherCalls();
+
+        MockGetFellingLicenceApplication
+            .Verify(x => x.GetApplicationStatusHistory(applicationId, It.Is<UserAccessModel>(u => u.IsFcUser), It.IsAny<CancellationToken>()),
+                Times.Once);
+        MockGetFellingLicenceApplication.VerifyNoOtherCalls();
+
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(submittedById, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.VerifyNoOtherCalls();
+
+        MockUpdateFellingLicenceApplication
+            .Verify(x => x.AssignToInternalUserAsync(It.Is<AssignToUserRequest>(r =>
+                r.ApplicationId == applicationId
+                && r.AssignToUserId == assignToUserId
+                && r.AssignedRole == selectedRole
+                && r.CaseNoteContent == caseNote
+                && r.FcAreaCostCode == fcAreaCode
+                && r.PerformingUserId == _testUser.UserAccountId), It.IsAny<CancellationToken>()), Times.Once);
+        MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
+        
+        
+        MockSendNotifications.Verify(x => x.SendNotificationAsync(
+            It.Is<InformApplicantOfApplicationReferenceChangeDataModel>(m =>
+                m.Name == submittedByAccount.FullName(true)
+                && m.AdminHubFooter == AdminHubAddress
+                && m.ViewApplicationURL == $"{ExternalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}"
+                && m.ApplicationReference == updatedReference
+                && m.OldApplicationReference == originalReference
+                && m.ApplicationId == applicationId),
+            NotificationType.InformApplicantOfApplicationReferenceChange,
+            It.Is<NotificationRecipient>(r => r.Name == submittedByAccount.FullName(true) && r.Address == submittedByAccount.Email),
+            null,
+            null,
+            null,
+            It.IsAny<CancellationToken>()), Times.Once);
+        MockSendNotifications.VerifyNoOtherCalls();
+
+        MockPropertyProfilesService.VerifyNoOtherCalls();
+
+        MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
+                y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember
+                && y.SourceEntityId == applicationId
+                && y.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && y.UserId == _testUser.UserAccountId
+                && JsonSerializer.Serialize(y.AuditData, _options) ==
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        AssignedStaffMemberId = assignToUserId,
+                        AssignedUserRole = selectedRole,
+                        UnassignedStaffMemberId = (Guid?)null,
+                        NotificationSent = (bool?)true,
+                        AreaCodeRequiredUpdate = true,
+                        OriginalApplicationReference = originalReference,
+                        AreaCode = fcAreaCode,
+                        CurrentApplicationReference = updatedReference
+                    }, _options)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        MockAuditService.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenNotificationFailsToSend_WithFc(
+        Guid applicationId,
+        Guid assignToUserId,
+        Guid submittedById,
+        UserAccount assignToUserAccount,
+        Flo.Services.Applicants.Entities.UserAccount.UserAccount submittedByAccount,
+        string fcAreaCode,
+        string linkToApplication,
+        string caseNote,
+        string adminHubName,
+        string originalReference,
+        string updatedReference,
+        string propertyName,
+        Guid oldAssignedUserId,
+        Guid applicationAuthorId)
+    {
+        var sut = CreateSut();
+        var selectedRole = AssignedUserRole.FieldManager;
+
+        assignToUserAccount.CanApproveApplications = true;
+        TestUtils.SetProtectedProperty(assignToUserAccount, "Id", assignToUserId);
+
+        var submittedEntry = new StatusHistoryModel(DateTime.Today, submittedById, FellingLicenceStatus.Submitted);
+
+        var assignToUserResponse =
+            new AssignToUserResponse(updatedReference, originalReference, false, oldAssignedUserId, null, propertyName, applicationAuthorId);
 
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -521,7 +644,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
             .ReturnsAsync(Result.Success(assignToUserResponse));
         MockSendNotifications
             .Setup(x => x.SendNotificationAsync(It.IsAny<UserAssignedToApplicationDataModel>(),
-                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
+                NotificationType.UserAssignedToApplication, It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
                 It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Failure<Guid>("error"));
@@ -540,6 +663,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         MockGetFellingLicenceApplication.VerifyNoOtherCalls();
 
         MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(submittedById, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
         MockExternalUserAccountService.VerifyNoOtherCalls();
 
         MockUpdateFellingLicenceApplication
@@ -552,11 +676,27 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
                 && r.PerformingUserId == _testUser.UserAccountId), It.IsAny<CancellationToken>()), Times.Once);
         MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
 
+        MockSendNotifications.Verify(x => x.SendNotificationAsync(
+            It.Is<InformApplicantOfApplicationReferenceChangeDataModel>(m =>
+                m.Name == submittedByAccount.FullName(true)
+                && m.AdminHubFooter == AdminHubAddress
+                && m.ViewApplicationURL == $"{ExternalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}"
+                && m.ApplicationReference == updatedReference
+                && m.OldApplicationReference == originalReference
+                && m.ApplicationId == applicationId),
+            NotificationType.InformApplicantOfApplicationReferenceChange,
+            It.Is<NotificationRecipient>(r => r.Name == submittedByAccount.FullName(true) && r.Address == submittedByAccount.Email),
+            null,
+            null,
+            null,
+            It.IsAny<CancellationToken>()), Times.Once);
         MockSendNotifications
-            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m => m.AssignedRole == selectedRole.GetDisplayName() && m.ApplicationReference == updatedReference && m.Name == assignToUserAccount.FullName(false) && m.ViewApplicationURL == linkToApplication && m.AdminHubFooter == AdminHubAddress),
+            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m => m.AssignedRole == selectedRole.GetDisplayName() && m.ApplicationReference == updatedReference && m.Name == assignToUserAccount.FullName(false) && m.ViewApplicationURL == linkToApplication && m.AdminHubFooter == AdminHubAddress && m.PropertyName == propertyName),
                 NotificationType.UserAssignedToApplication, It.Is<NotificationRecipient>(r => r.Address == assignToUserAccount.Email && r.Name == assignToUserAccount.FullName(false)),
                 null, null, _testUser.FullName, It.IsAny<CancellationToken>()), Times.Once);
         MockSendNotifications.VerifyNoOtherCalls();
+
+        MockPropertyProfilesService.VerifyNoOtherCalls();
 
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                 y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember
@@ -581,7 +721,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
     }
 
     [Theory, AutoMoqData]
-    public async Task WhenNotificationSends(
+    public async Task WhenNotificationFailsToSend_WithApplicant(
         Guid applicationId,
         Guid assignToUserId,
         Guid submittedById,
@@ -593,7 +733,10 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         string adminHubName,
         string originalReference,
         string updatedReference,
-        Guid oldAssignedUserId)
+        Guid linkedPropertyProfile,
+        PropertyProfile property,
+        Guid oldAssignedUserId,
+        Guid applicationAuthorId)
     {
         var sut = CreateSut();
         var selectedRole = AssignedUserRole.FieldManager;
@@ -604,7 +747,132 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         var submittedEntry = new StatusHistoryModel(DateTime.Today, submittedById, FellingLicenceStatus.Submitted);
 
         var assignToUserResponse =
-            new AssignToUserResponse(updatedReference, originalReference, false, Maybe<Guid>.From(oldAssignedUserId));
+            new AssignToUserResponse(updatedReference, originalReference, false, oldAssignedUserId, linkedPropertyProfile, null, applicationAuthorId);
+
+        MockInternalUserAccountService
+            .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<UserAccount>.From(assignToUserAccount));
+        MockGetFellingLicenceApplication.Setup(x =>
+                x.GetApplicationStatusHistory(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<StatusHistoryModel> { submittedEntry }));
+        MockExternalUserAccountService
+            .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submittedByAccount));
+        MockUpdateFellingLicenceApplication
+            .Setup(x => x.AssignToInternalUserAsync(It.IsAny<AssignToUserRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignToUserResponse));
+        MockSendNotifications
+            .Setup(x => x.SendNotificationAsync(It.IsAny<UserAssignedToApplicationDataModel>(),
+                NotificationType.UserAssignedToApplication, It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
+                It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<Guid>("error"));
+        MockPropertyProfilesService
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(property));
+
+        var result = await sut.AssignToUserAsync(applicationId, assignToUserId, selectedRole, fcAreaCode, _testUser,
+            linkToApplication, caseNote, adminHubName, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        MockInternalUserAccountService.Verify(x => x.GetUserAccountAsync(assignToUserId, It.IsAny<CancellationToken>()), Times.Once);
+        MockInternalUserAccountService.VerifyNoOtherCalls();
+
+        MockGetFellingLicenceApplication
+            .Verify(x => x.GetApplicationStatusHistory(applicationId, It.Is<UserAccessModel>(u => u.IsFcUser), It.IsAny<CancellationToken>()),
+                Times.Once);
+        MockGetFellingLicenceApplication.VerifyNoOtherCalls();
+
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(submittedById, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.VerifyNoOtherCalls();
+
+        MockUpdateFellingLicenceApplication
+            .Verify(x => x.AssignToInternalUserAsync(It.Is<AssignToUserRequest>(r =>
+                r.ApplicationId == applicationId
+                && r.AssignToUserId == assignToUserId
+                && r.AssignedRole == selectedRole
+                && r.CaseNoteContent == caseNote
+                && r.FcAreaCostCode == fcAreaCode
+                && r.PerformingUserId == _testUser.UserAccountId), It.IsAny<CancellationToken>()), Times.Once);
+        MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
+
+        MockSendNotifications.Verify(x => x.SendNotificationAsync(
+            It.Is<InformApplicantOfApplicationReferenceChangeDataModel>(m =>
+                m.Name == submittedByAccount.FullName(true)
+                && m.AdminHubFooter == AdminHubAddress
+                && m.ViewApplicationURL == $"{ExternalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}"
+                && m.ApplicationReference == updatedReference
+                && m.OldApplicationReference == originalReference
+                && m.ApplicationId == applicationId),
+            NotificationType.InformApplicantOfApplicationReferenceChange,
+            It.Is<NotificationRecipient>(r => r.Name == submittedByAccount.FullName(true) && r.Address == submittedByAccount.Email),
+            null,
+            null,
+            null,
+            It.IsAny<CancellationToken>()), Times.Once);
+        MockSendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m => m.AssignedRole == selectedRole.GetDisplayName() && m.ApplicationReference == updatedReference && m.Name == assignToUserAccount.FullName(false) && m.ViewApplicationURL == linkToApplication && m.AdminHubFooter == AdminHubAddress && m.PropertyName == property.Name),
+                NotificationType.UserAssignedToApplication, It.Is<NotificationRecipient>(r => r.Address == assignToUserAccount.Email && r.Name == assignToUserAccount.FullName(false)),
+                null, null, _testUser.FullName, It.IsAny<CancellationToken>()), Times.Once);
+        MockSendNotifications.VerifyNoOtherCalls();
+
+        MockPropertyProfilesService
+            .Verify(x => x.GetPropertyByIdAsync(linkedPropertyProfile, It.Is<UserAccessModel>(u => u.IsFcUser == true && u.UserAccountId == _testUser.UserAccountId.Value), It.IsAny<CancellationToken>()), Times.Once);
+        MockPropertyProfilesService.VerifyNoOtherCalls();
+
+        MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
+                y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember
+                && y.SourceEntityId == applicationId
+                && y.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && y.UserId == _testUser.UserAccountId
+                && JsonSerializer.Serialize(y.AuditData, _options) ==
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        AssignedStaffMemberId = assignToUserId,
+                        AssignedUserRole = selectedRole,
+                        UnassignedStaffMemberId = oldAssignedUserId,
+                        NotificationSent = false,
+                        AreaCodeRequiredUpdate = true,
+                        OriginalApplicationReference = originalReference,
+                        AreaCode = fcAreaCode,
+                        CurrentApplicationReference = updatedReference
+                    }, _options)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        MockAuditService.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenNotificationSends_WithFc(
+        Guid applicationId,
+        Guid assignToUserId,
+        Guid submittedById,
+        UserAccount assignToUserAccount,
+        Flo.Services.Applicants.Entities.UserAccount.UserAccount submittedByAccount,
+        string fcAreaCode,
+        string linkToApplication,
+        string caseNote,
+        string adminHubName,
+        string originalReference,
+        string updatedReference,
+        string propertyName,
+        Guid oldAssignedUserId,
+        Guid applicationAuthorId)
+    {
+        var sut = CreateSut();
+        var selectedRole = AssignedUserRole.FieldManager;
+
+        assignToUserAccount.CanApproveApplications = true;
+        TestUtils.SetProtectedProperty(assignToUserAccount, "Id", assignToUserId);
+
+        var submittedEntry = new StatusHistoryModel(DateTime.Today, submittedById, FellingLicenceStatus.Submitted);
+
+        var assignToUserResponse =
+            new AssignToUserResponse(updatedReference, originalReference, false, oldAssignedUserId, null, propertyName, applicationAuthorId);
 
         MockInternalUserAccountService
             .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -640,6 +908,7 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
         MockGetFellingLicenceApplication.VerifyNoOtherCalls();
 
         MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(submittedById, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
         MockExternalUserAccountService.VerifyNoOtherCalls();
 
         MockUpdateFellingLicenceApplication
@@ -652,11 +921,152 @@ public class AssignToUserAsyncTests : AssignToUserUseCaseTestsBase
                 && r.PerformingUserId == _testUser.UserAccountId), It.IsAny<CancellationToken>()), Times.Once);
         MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
 
+        MockSendNotifications.Verify(x => x.SendNotificationAsync(
+            It.Is<InformApplicantOfApplicationReferenceChangeDataModel>(m =>
+                m.Name == submittedByAccount.FullName(true)
+                && m.AdminHubFooter == AdminHubAddress
+                && m.ViewApplicationURL == $"{ExternalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}"
+                && m.ApplicationReference == updatedReference
+                && m.OldApplicationReference == originalReference
+                && m.ApplicationId == applicationId),
+            NotificationType.InformApplicantOfApplicationReferenceChange,
+            It.Is<NotificationRecipient>(r => r.Name == submittedByAccount.FullName(true) && r.Address == submittedByAccount.Email),
+            null,
+            null,
+            null,
+            It.IsAny<CancellationToken>()), Times.Once);
         MockSendNotifications
-            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m => m.AssignedRole == selectedRole.GetDisplayName() && m.ApplicationReference == updatedReference && m.Name == assignToUserAccount.FullName(false) && m.ViewApplicationURL == linkToApplication && m.AdminHubFooter == AdminHubAddress),
+            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m => m.AssignedRole == selectedRole.GetDisplayName() && m.ApplicationReference == updatedReference && m.Name == assignToUserAccount.FullName(false) && m.ViewApplicationURL == linkToApplication && m.AdminHubFooter == AdminHubAddress && m.PropertyName == propertyName),
                 NotificationType.UserAssignedToApplication, It.Is<NotificationRecipient>(r => r.Address == assignToUserAccount.Email && r.Name == assignToUserAccount.FullName(false)),
                 null, null, _testUser.FullName, It.IsAny<CancellationToken>()), Times.Once);
         MockSendNotifications.VerifyNoOtherCalls();
+        MockPropertyProfilesService.VerifyNoOtherCalls();
+
+        MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
+                y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember
+                && y.SourceEntityId == applicationId
+                && y.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && y.UserId == _testUser.UserAccountId
+                && JsonSerializer.Serialize(y.AuditData, _options) ==
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        AssignedStaffMemberId = assignToUserId,
+                        AssignedUserRole = selectedRole,
+                        UnassignedStaffMemberId = oldAssignedUserId,
+                        NotificationSent = true,
+                        AreaCodeRequiredUpdate = true,
+                        OriginalApplicationReference = originalReference,
+                        AreaCode = fcAreaCode,
+                        CurrentApplicationReference = updatedReference
+                    }, _options)),
+            It.IsAny<CancellationToken>()), Times.Once);
+        MockAuditService.VerifyNoOtherCalls();
+    }
+
+    [Theory, AutoMoqData]
+    public async Task WhenNotificationSends_WithApplicant(
+        Guid applicationId,
+        Guid assignToUserId,
+        Guid submittedById,
+        UserAccount assignToUserAccount,
+        Flo.Services.Applicants.Entities.UserAccount.UserAccount submittedByAccount,
+        string fcAreaCode,
+        string linkToApplication,
+        string caseNote,
+        string adminHubName,
+        string originalReference,
+        string updatedReference,
+        Guid linkedPropertyProfileId,
+        PropertyProfile property,
+        Guid oldAssignedUserId,
+        Guid applicationAuthorId)
+    {
+        var sut = CreateSut();
+        var selectedRole = AssignedUserRole.FieldManager;
+
+        assignToUserAccount.CanApproveApplications = true;
+        TestUtils.SetProtectedProperty(assignToUserAccount, "Id", assignToUserId);
+
+        var submittedEntry = new StatusHistoryModel(DateTime.Today, submittedById, FellingLicenceStatus.Submitted);
+
+        var assignToUserResponse =
+            new AssignToUserResponse(updatedReference, originalReference, false, oldAssignedUserId, linkedPropertyProfileId, null, applicationAuthorId);
+
+        MockInternalUserAccountService
+            .Setup(x => x.GetUserAccountAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Maybe<UserAccount>.From(assignToUserAccount));
+        MockGetFellingLicenceApplication.Setup(x =>
+                x.GetApplicationStatusHistory(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new List<StatusHistoryModel> { submittedEntry }));
+        MockExternalUserAccountService
+            .Setup(x => x.RetrieveUserAccountEntityByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(submittedByAccount));
+        MockUpdateFellingLicenceApplication
+            .Setup(x => x.AssignToInternalUserAsync(It.IsAny<AssignToUserRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(assignToUserResponse));
+        MockSendNotifications
+            .Setup(x => x.SendNotificationAsync(It.IsAny<UserAssignedToApplicationDataModel>(),
+                It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(),
+                It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(Guid.NewGuid()));
+
+        MockPropertyProfilesService.Setup(x =>
+                x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(property));
+
+        var result = await sut.AssignToUserAsync(applicationId, assignToUserId, selectedRole, fcAreaCode, _testUser,
+            linkToApplication, caseNote, adminHubName, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        MockInternalUserAccountService.Verify(x => x.GetUserAccountAsync(assignToUserId, It.IsAny<CancellationToken>()), Times.Once);
+        MockInternalUserAccountService.VerifyNoOtherCalls();
+
+        MockGetFellingLicenceApplication
+            .Verify(x => x.GetApplicationStatusHistory(applicationId, It.Is<UserAccessModel>(u => u.IsFcUser), It.IsAny<CancellationToken>()),
+                Times.Once);
+        MockGetFellingLicenceApplication.VerifyNoOtherCalls();
+
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(submittedById, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.Verify(x => x.RetrieveUserAccountEntityByIdAsync(applicationAuthorId, It.IsAny<CancellationToken>()), Times.Once);
+        MockExternalUserAccountService.VerifyNoOtherCalls();
+
+        MockUpdateFellingLicenceApplication
+            .Verify(x => x.AssignToInternalUserAsync(It.Is<AssignToUserRequest>(r =>
+                r.ApplicationId == applicationId
+                && r.AssignToUserId == assignToUserId
+                && r.AssignedRole == selectedRole
+                && r.CaseNoteContent == caseNote
+                && r.FcAreaCostCode == fcAreaCode
+                && r.PerformingUserId == _testUser.UserAccountId), It.IsAny<CancellationToken>()), Times.Once);
+        MockUpdateFellingLicenceApplication.VerifyNoOtherCalls();
+
+        MockSendNotifications.Verify(x => x.SendNotificationAsync(
+            It.Is<InformApplicantOfApplicationReferenceChangeDataModel>(m =>
+                m.Name == submittedByAccount.FullName(true)
+                && m.AdminHubFooter == AdminHubAddress
+                && m.ViewApplicationURL == $"{ExternalApplicantSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationTaskList?applicationId={applicationId}"
+                && m.ApplicationReference == updatedReference
+                && m.OldApplicationReference == originalReference
+                && m.ApplicationId == applicationId),
+            NotificationType.InformApplicantOfApplicationReferenceChange,
+            It.Is<NotificationRecipient>(r => r.Name == submittedByAccount.FullName(true) && r.Address == submittedByAccount.Email),
+            null,
+            null,
+            null,
+            It.IsAny<CancellationToken>()), Times.Once);
+        MockSendNotifications
+            .Verify(x => x.SendNotificationAsync(It.Is<UserAssignedToApplicationDataModel>(m => m.AssignedRole == selectedRole.GetDisplayName() && m.ApplicationReference == updatedReference && m.Name == assignToUserAccount.FullName(false) && m.ViewApplicationURL == linkToApplication && m.AdminHubFooter == AdminHubAddress && m.PropertyName == property.Name),
+                NotificationType.UserAssignedToApplication, It.Is<NotificationRecipient>(r => r.Address == assignToUserAccount.Email && r.Name == assignToUserAccount.FullName(false)),
+                null, null, _testUser.FullName, It.IsAny<CancellationToken>()), Times.Once);
+        MockSendNotifications.VerifyNoOtherCalls();
+
+        MockPropertyProfilesService
+            .Verify(x => x.GetPropertyByIdAsync(linkedPropertyProfileId, It.Is<UserAccessModel>(u => u.IsFcUser == true && u.UserAccountId == _testUser.UserAccountId.Value), It.IsAny<CancellationToken>()), Times.Once);
+        MockPropertyProfilesService.VerifyNoOtherCalls();
 
         MockAuditService.Verify(x => x.PublishAuditEventAsync(It.Is<AuditEvent>(y =>
                 y.EventName == AuditEvents.AssignFellingLicenceApplicationToStaffMember

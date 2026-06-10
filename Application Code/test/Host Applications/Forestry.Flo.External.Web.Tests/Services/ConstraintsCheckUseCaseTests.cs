@@ -322,6 +322,7 @@ public class ConstraintsCheckUseCaseTests
     {
         application.NotRunningExternalLisReport = true;
         application.FellingLicenceApplicationStepStatus.ConstraintCheckStatus = false;
+        var existingAccessedTime = application.ExternalLisAccessedTimestamp!.Value;
 
         var sut = CreateSut();
 
@@ -365,6 +366,61 @@ public class ConstraintsCheckUseCaseTests
 
         Assert.False(application.NotRunningExternalLisReport);
         Assert.True(application.FellingLicenceApplicationStepStatus.ConstraintCheckStatus);
+        Assert.Equal(existingAccessedTime, application.ExternalLisAccessedTimestamp);
+    }
+
+    [Theory, AutoMoqData]
+    public async Task RecordReceivedLisReport_WhenSuccessful_NoLisAccessedTimestampYet(
+        Guid applicationId,
+        FellingLicenceApplication application)
+    {
+        application.NotRunningExternalLisReport = true;
+        application.FellingLicenceApplicationStepStatus.ConstraintCheckStatus = false;
+        application.ExternalLisAccessedTimestamp = null;
+
+        var sut = CreateSut();
+
+        _retrieveFellingLicenceApplicationMock
+            .Setup(x => x.GetApplicationByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(application));
+
+        _unitOfWorkMock.Setup(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UnitResult.Success<UserDbErrorReason>());
+
+        var result = await sut.RecordReceivedLisReportAsync(applicationId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _retrieveFellingLicenceApplicationMock.Verify(x => x.GetApplicationByIdAsync(applicationId, It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()), Times.Once);
+        _retrieveFellingLicenceApplicationMock.VerifyNoOtherCalls();
+
+        _fellingLicenceApplicationExternalRepositoryMock.Verify(x => x.Update(application), Times.Once);
+        _fellingLicenceApplicationExternalRepositoryMock.VerifyGet(x => x.UnitOfWork, Times.Once);
+
+        _unitOfWorkMock.Verify(x => x.SaveEntitiesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+        _unitOfWorkMock.VerifyNoOtherCalls();
+        _fellingLicenceApplicationExternalRepositoryMock.VerifyNoOtherCalls();
+
+        _auditMock.Verify(v => v.PublishAuditEventAsync(
+            It.Is<AuditEvent>(x =>
+                x.EventName == AuditEvents.UpdateFellingLicenceApplication
+                && x.UserId == null
+                && x.SourceEntityType == SourceEntityType.FellingLicenceApplication
+                && x.SourceEntityId == applicationId
+                && JsonSerializer.Serialize(x.AuditData, _serializerOptions) ==
+                JsonSerializer.Serialize(new
+                {
+                    application.WoodlandOwnerId,
+                    Section = "Constraint Details"
+                }, _serializerOptions)),
+            CancellationToken.None), Times.Once);
+        _auditMock.VerifyNoOtherCalls();
+
+        Assert.False(application.NotRunningExternalLisReport);
+        Assert.True(application.FellingLicenceApplicationStepStatus.ConstraintCheckStatus);
+        Assert.Equal(_fixedTimeClock.GetCurrentInstant().ToDateTimeUtc(), application.ExternalLisAccessedTimestamp.Value);
     }
 
     private ExternalApplicant GetExternalApplicant(Guid? userId = null)

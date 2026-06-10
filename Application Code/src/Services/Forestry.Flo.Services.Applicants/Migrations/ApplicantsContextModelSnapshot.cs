@@ -168,6 +168,47 @@ namespace Forestry.Flo.Services.Applicants.Migrations
                     b.ToTable("AgentAuthorityForm", "Applicants");
                 });
 
+            modelBuilder.Entity("Forestry.Flo.Services.Applicants.Entities.Applicant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContactName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsOrganisation")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ManagedByContactName")
+                        .HasColumnType("text");
+
+                    b.Property<bool?>("ManagedByIsOrganisation")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ManagedByOrganisationName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OrganisationName")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("Applicants", "Applicants");
+                });
+
             modelBuilder.Entity("Forestry.Flo.Services.Applicants.Entities.UserAccount.UserAccount", b =>
                 {
                     b.Property<Guid>("Id")

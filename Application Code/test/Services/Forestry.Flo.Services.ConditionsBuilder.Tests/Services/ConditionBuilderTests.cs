@@ -22,7 +22,7 @@ public class ConditionBuilderTests
     public static IEnumerable<object[]> ApplicableConditionBuilderTestData()
     {
         yield return new object[] { RestockingProposalType.None, null };
-        yield return new object[] { RestockingProposalType.CreateDesignedOpenGround, null };
+        yield return new object[] { RestockingProposalType.CreateDesignedOpenGround, typeof(CreateDesignedOpenGroundConditionBuilder) };
         yield return new object[] { RestockingProposalType.DoNotIntendToRestock, null };
         yield return new object[] { RestockingProposalType.PlantAnAlternativeArea, typeof(RestockByPlantingConditionBuilder) };
         yield return new object[] { RestockingProposalType.NaturalColonisation, null };
@@ -39,7 +39,7 @@ public class ConditionBuilderTests
         RestockingProposalType compartmentRestockingType,
         Type expectedConditionBuilderType)
     {
-        var (replantCondition, regenCondition, coppiceCondition) = GetConditionBuilders();
+        var (replantCondition, regenCondition, coppiceCondition, createDesignedOpenGroundCondition) = GetConditionBuilders();
 
         var compartment = Fixture.Create<RestockingOperationDetails>();
         compartment.RestockingProposalType = compartmentRestockingType;
@@ -52,13 +52,16 @@ public class ConditionBuilderTests
 
         var isCoppiceCondition = coppiceCondition.AppliesToOperation(compartment);
         Assert.Equal(expectedConditionBuilderType == typeof(CoppiceRegrowthConditionBuilder), isCoppiceCondition);
+
+        var isCreateDesignedOpenGroundCondition = createDesignedOpenGroundCondition.AppliesToOperation(compartment);
+        Assert.Equal(expectedConditionBuilderType == typeof(CreateDesignedOpenGroundConditionBuilder), isCreateDesignedOpenGroundCondition);
     }
 
     [Theory, AutoData]
     public void ReturnsFailureIfAttemptToCalculateConditionWithInvalidCompartment(
         RestockingOperationDetails compartment)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         compartment.RestockingProposalType = RestockingProposalType.NaturalColonisation;
 
@@ -77,7 +80,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -101,7 +104,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -127,7 +130,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -152,7 +155,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -177,7 +180,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -202,7 +205,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -227,7 +230,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (_, regenCondition, _) = GetConditionBuilders();
+        var (_, regenCondition, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -254,7 +257,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (_, _, coppiceCondition) = GetConditionBuilders();
+        var (_, _, coppiceCondition, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -281,7 +284,7 @@ public class ConditionBuilderTests
         string subCompartmentName1,
         string subCompartmentName2)
     {
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var (compartment1, compartment2) = GetTestCompartments(baseCompartment, compartmentId1, compartmentId2,
             compartmentNumber1, compartmentNumber2, subCompartmentName1, subCompartmentName2);
@@ -303,8 +306,9 @@ public class ConditionBuilderTests
         RestockingOperationDetails compartment)
     {
         compartment.RestockingProposalType = RestockingProposalType.ReplantTheFelledArea;
+        compartment.PercentNaturalRegeneration = 100;
 
-        var (replantCondition, _, _) = GetConditionBuilders();
+        var (replantCondition, _, _, _) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
@@ -312,8 +316,13 @@ public class ConditionBuilderTests
             .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
         var expectedSpeciesText = string.Join(", ", speciesList);
+        expectedSpeciesText += $" and {compartment.PercentOpenSpace:0.00}% open space";
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
+
+        var regen = compartment.RestockingProposalType == RestockingProposalType.RestockWithCoppiceRegrowth
+            ? $"{compartment.PercentNaturalRegeneration:0.00}% coppice regrowth"
+            : $"{compartment.PercentNaturalRegeneration:0.00}% natural regeneration";
 
         var result = replantCondition.CalculateCondition(new List<RestockingOperationDetails> { compartment });
 
@@ -325,6 +334,8 @@ public class ConditionBuilderTests
         Assert.Equal($"{compartment.PercentNaturalRegeneration:0.00}% natural regeneration", result.Value.Single().ConditionsText[3]);
         Assert.Equal(_options.ReplantingOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
         Assert.Equal(_options.ReplantingOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
+        Assert.Equal($"{compartment.RestockingDensity} stools per Ha", result.Value.Single().ConditionsText[6]);
+        Assert.Equal($"{compartment.TotalRestockingArea:0.00}", result.Value.Single().ConditionsText[7]);
     }
 
     [Theory, AutoData]
@@ -334,7 +345,7 @@ public class ConditionBuilderTests
         compartment.RestockingProposalType = RestockingProposalType.RestockByNaturalRegeneration;
         compartment.PercentNaturalRegeneration = 80;
 
-        var (_, regenCondition, _) = GetConditionBuilders();
+        var (_, regenCondition, _, _) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
@@ -342,6 +353,7 @@ public class ConditionBuilderTests
             .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
         var expectedSpeciesText = string.Join(", ", speciesList);
+        expectedSpeciesText += $" and {compartment.PercentOpenSpace:0.00}% open space";
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -365,7 +377,7 @@ public class ConditionBuilderTests
         compartment.RestockingProposalType = RestockingProposalType.RestockByNaturalRegeneration;
         compartment.PercentNaturalRegeneration = 8.5;
 
-        var (_, regenCondition, _) = GetConditionBuilders();
+        var (_, regenCondition, _, _) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
@@ -373,6 +385,7 @@ public class ConditionBuilderTests
             .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
         var expectedSpeciesText = string.Join(", ", speciesList);
+        expectedSpeciesText += $" and {compartment.PercentOpenSpace:0.00}% open space";
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -396,7 +409,7 @@ public class ConditionBuilderTests
         compartment.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
         compartment.PercentNaturalRegeneration = 80;
 
-        var (_, _, coppiceCondition) = GetConditionBuilders();
+        var (_, _, coppiceCondition, _) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
@@ -404,6 +417,7 @@ public class ConditionBuilderTests
             .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
         var expectedSpeciesText = string.Join(", ", speciesList);
+        expectedSpeciesText += $" and {compartment.PercentOpenSpace:0.00}% open space";
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -428,7 +442,7 @@ public class ConditionBuilderTests
         compartment.RestockingProposalType = RestockingProposalType.RestockByNaturalRegeneration;
         compartment.PercentNaturalRegeneration = 100;
 
-        var (_, regenCondition, _) = GetConditionBuilders();
+        var (_, regenCondition, _, _) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
@@ -436,6 +450,7 @@ public class ConditionBuilderTests
             .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
         var expectedSpeciesText = string.Join(", ", speciesList);
+        expectedSpeciesText += $" and {compartment.PercentOpenSpace:0.00}% open space";
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -450,7 +465,8 @@ public class ConditionBuilderTests
         Assert.Equal(_options.NaturalRegenOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
         Assert.Equal(_options.NaturalRegenOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
         Assert.Equal($"{compartment.RestockingDensity.ToString()} stools per Ha", result.Value.Single().ConditionsText[6]);
-        Assert.Equal(7, result.Value.Single().ConditionsText.Length);  // the planting alongside text should not be included for 100% regen
+        Assert.Equal($"{compartment.TotalRestockingArea:0.00}", result.Value.Single().ConditionsText[7]);
+        Assert.Equal(8, result.Value.Single().ConditionsText.Length);  // the planting alongside text should not be included for 100% regen
     }
 
     [Theory, AutoData]
@@ -460,7 +476,7 @@ public class ConditionBuilderTests
         compartment.RestockingProposalType = RestockingProposalType.RestockWithCoppiceRegrowth;
         compartment.PercentNaturalRegeneration = 100;
 
-        var (_, _, coppiceCondition) = GetConditionBuilders();
+        var (_, _, coppiceCondition, _) = GetConditionBuilders();
 
         var speciesList = compartment
             .RestockingSpecies
@@ -468,6 +484,7 @@ public class ConditionBuilderTests
             .Select(x => $"{x.Percentage:0.00}% {x.SpeciesName}")
             .ToList();
         var expectedSpeciesText = string.Join(", ", speciesList);
+        expectedSpeciesText += $" and {compartment.PercentOpenSpace:0.00}% open space";
         var expectedCompartmentName =
             $"compartment {compartment.RestockingCompartmentNumber}";
 
@@ -482,10 +499,11 @@ public class ConditionBuilderTests
         Assert.Equal(_options.NaturalRegenOptions.ConditionText[4], result.Value.Single().ConditionsText[4]);
         Assert.Equal(_options.NaturalRegenOptions.ConditionText[5], result.Value.Single().ConditionsText[5]);
         Assert.Equal($"{compartment.RestockingDensity.ToString()} stools per Ha", result.Value.Single().ConditionsText[6]);
-        Assert.Equal(7, result.Value.Single().ConditionsText.Length);  // the planting alongside text should not be included for 100% regen
+        Assert.Equal($"{compartment.TotalRestockingArea:0.00}", result.Value.Single().ConditionsText[7]);
+        Assert.Equal(8, result.Value.Single().ConditionsText.Length);  // the planting alongside text should not be included for 100% regen
     }
 
-    private (IBuildCondition ReplantCondition, IBuildCondition RegenCondition, IBuildCondition CoppiceCondition) GetConditionBuilders()
+    private (IBuildCondition ReplantCondition, IBuildCondition RegenCondition, IBuildCondition CoppiceCondition, IBuildCondition CreateDesignedOpenGroundCondition) GetConditionBuilders()
     {
         _options = Fixture.Create<ConditionsBuilderOptions>();
 
@@ -498,12 +516,14 @@ public class ConditionBuilderTests
             "{0}",
             Fixture.Create<string>(),
             ConditionOptions.LessThan100PercentRegenerationParameter,
-            ConditionOptions.DensityCoppiceParameter
+            ConditionOptions.DensityCoppiceParameter,
+            ConditionOptions.AreaParameter
         };
 
         _options.ReplantingOptions.ConditionText = text.ToArray();
         _options.NaturalRegenOptions.ConditionText = text.ToArray();
         _options.CoppiceRegrowthOptions.ConditionText = text.ToArray();
+        _options.CreateDesignedOpenGroundOptions.ConditionText = text.ToArray();
 
         var replantCondition = new RestockByPlantingConditionBuilder(
             new OptionsWrapper<ConditionsBuilderOptions>(_options),
@@ -517,7 +537,11 @@ public class ConditionBuilderTests
                        new OptionsWrapper<ConditionsBuilderOptions>(_options),
                                   new NullLogger<CoppiceRegrowthConditionBuilder>());
 
-        return (replantCondition, regenCondition, coppiceCondition);
+        var createOpenGroundCondition = new CreateDesignedOpenGroundConditionBuilder(
+            new OptionsWrapper<ConditionsBuilderOptions>(_options),
+            new NullLogger<CreateDesignedOpenGroundConditionBuilder>());
+
+        return (replantCondition, regenCondition, coppiceCondition, createOpenGroundCondition);
     }
 
     private (RestockingOperationDetails compartment1, RestockingOperationDetails compartment2) GetTestCompartments(

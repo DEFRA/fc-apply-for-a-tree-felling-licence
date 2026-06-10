@@ -11,9 +11,10 @@
     var user = new ExternalApplicant(User);
     var selectedWoodlandOwnerId = ViewData[ViewDataKeyNameConstants.SelectedWoodlandOwnerId] as Guid? ?? null;
     var ignoreFeedback = ViewData["IgnoreFeedback"] as bool? ?? false;
-    var isAgent = user.AccountType is AccountTypeExternal.Agent or AccountTypeExternal.AgentAdministrator or AccountTypeExternal.FcUser;
+    var isAgent = user.AccountType is AccountTypeExternal.Agent or AccountTypeExternal.AgentAdministrator;
+    var isFcUser = user.IsFcUser;
     var agencyId = user.AgencyId;
-    var homeLabel = isAgent ? "Clients" : "Applications";
+    var homeLabel = isAgent ? "Clients" : isFcUser ? "Home" : "Applications";
 
     string GetNavStyle(string[] controllers, string[]? actions = null)
     {
@@ -159,7 +160,7 @@
                                     @homeLabel
                                 </a>
                             </li>
-                            @if (!isAgent)
+                            @if (!isAgent && !isFcUser)
                             {
                                 <li condition="user.HasCompletedAccountRegistration" class="@GetNavStyle(["propertyprofile", "compartment"])" id="site-nav-properties">
                                     <a class="govuk-service-navigation__link"

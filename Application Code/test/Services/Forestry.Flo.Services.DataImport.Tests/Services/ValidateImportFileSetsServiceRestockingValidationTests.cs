@@ -1,11 +1,13 @@
 ﻿using AutoFixture;
 using AutoFixture.Xunit2;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Forestry.Flo.Services.DataImport.Models;
 using Xunit;
 
 namespace Forestry.Flo.Services.DataImport.Tests.Services;
@@ -38,6 +40,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
             x.Flov2CompartmentName = null;
             x.AreaToBeRestocked = area;
             x.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+            x.PercentageOpenSpace = 0;
             x.RestockingDensity = FixtureInstance.Create<double>();
         });
 
@@ -67,6 +70,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
             x.Flov2CompartmentName = cpt.CompartmentName;
             x.AreaToBeRestocked = 1;
             x.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+            x.PercentageOpenSpace = 0;
             x.RestockingDensity = FixtureInstance.Create<double>();
         });
 
@@ -99,6 +103,33 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
     }
 
     [Theory, AutoData]
+    public async Task WhenRestockingDetailsHasCreateDesignedOpenGroundCombinedWithOtherRestocking(Guid woodlandOwnerId)
+    {
+        ImportFileSetContents input;
+
+        do
+        {
+            input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 3);
+        } while (input.ProposedRestockingSourceRecords.Count < 2);
+        
+
+        input.ProposedRestockingSourceRecords.First().RestockingProposal = TypeOfProposal.CreateDesignedOpenGround;
+
+        var fellingCpt = Properties.Single(x => x.Name == input.ApplicationSourceRecords.Single().Flov2PropertyName)
+            .CompartmentIds.Single(x => x.CompartmentName == input.ProposedFellingSourceRecords.Single().Flov2CompartmentName);
+        input.ProposedRestockingSourceRecords.First().AreaToBeRestocked = fellingCpt.Area.Value;
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Single(result.Error);
+
+        Assert.Equal($"{TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()} restocking cannot be combined with other restocking options for the same felling operation within the Proposed Restocking records source", result.Error.Single().ErrorMessage);
+    }
+
+    [Theory, AutoData]
     public async Task WhenRestockingOperationIsInvalidForFellingType(Guid woodlandOwnerId)
     {
         var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 3);
@@ -124,6 +155,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
             restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
         }
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -148,6 +180,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.RestockingProposal = TypeOfProposal.PlantAnAlternativeArea;
         restockingToAlter.Flov2CompartmentName = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
         restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
 
         var sut = CreateSut();
@@ -174,6 +207,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.NumberOfTrees = 10;  // in case was not required on original type
         restockingToAlter.Flov2CompartmentName = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -198,6 +232,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.RestockingProposal = TypeOfProposal.PlantAnAlternativeArea;
         restockingToAlter.Flov2CompartmentName = FixtureInstance.Create<string>();
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
         restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
 
         var sut = CreateSut();
@@ -224,6 +259,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.NumberOfTrees = 10;  // in case was not required on original type
         restockingToAlter.Flov2CompartmentName = FixtureInstance.Create<string>();
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -252,6 +288,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.Flov2CompartmentName = fellingToAlter.Flov2CompartmentName;
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
         restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
 
         var sut = CreateSut();
@@ -281,6 +318,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.Flov2CompartmentName = fellingToAlter.Flov2CompartmentName;
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -311,6 +349,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.NumberOfTrees = 10;  // in case was not required on original type
         restockingToAlter.AreaToBeRestocked = cpt.Area!.Value + 1; // make it larger than the compartment area
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -342,6 +381,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.NumberOfTrees = 10;  // in case was not required on original type
         restockingToAlter.AreaToBeRestocked = cpt.Area!.Value + 1; // make it larger than the compartment area
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -406,6 +446,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.RestockingDensity = null;
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -435,6 +476,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.Flov2CompartmentName = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -465,6 +507,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.Flov2CompartmentName = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -495,6 +538,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.Flov2CompartmentName = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -525,6 +569,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.Flov2CompartmentName = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -552,6 +597,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.RestockingProposal = TypeOfProposal.RestockWithIndividualTrees;
         restockingToAlter.NumberOfTrees = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
 
         var sut = CreateSut();
@@ -582,6 +628,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         restockingToAlter.AreaToBeRestocked = fellingCpt.Area!.Value; // ensure area is valid for the compartment
         restockingToAlter.Flov2CompartmentName = null;
         restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},100";  // in case original was create designed open ground
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -631,6 +678,8 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
             restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
         }
 
+        restockingToAlter.PercentageOpenSpace = 0;
+
         var sut = CreateSut();
 
         var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
@@ -639,7 +688,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         Assert.Equal(2, result.Error.Count);
 
         Assert.Contains(result.Error, x => x.ErrorMessage == $"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid species codes for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}");
-        Assert.Contains(result.Error, x => x.ErrorMessage == $"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}");
+        Assert.Contains(result.Error, x => x.ErrorMessage == $"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}");
     }
 
     [Theory, AutoData]
@@ -654,6 +703,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
             restockingToAlter.RestockingProposal = TypeOfProposal.ReplantTheFelledArea;
             restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
             restockingToAlter.SpeciesAndPercentages = $"{SpeciesCodes.RandomElement()},50,{SpeciesCodes.RandomElement()},50";  // in case original was create designed open ground
+            restockingToAlter.PercentageOpenSpace = 0;
         }
         var species = restockingToAlter.SpeciesAndPercentages.Split(',').ToList();
         species[0] = FixtureInstance.Create<string>();
@@ -683,6 +733,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         }
 
         restockingToAlter.SpeciesAndPercentages = SpeciesCodes.RandomElement();
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -691,7 +742,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         Assert.True(result.IsFailure);
         Assert.Single(result.Error);
 
-        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
     }
 
     [Theory, AutoData]
@@ -711,6 +762,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         var species2 = SpeciesCodes.Where(x => x != species1).RandomElement();
 
         restockingToAlter.SpeciesAndPercentages = $"{species1},{species2}";
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -719,7 +771,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         Assert.True(result.IsFailure);
         Assert.Single(result.Error);
 
-        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
     }
 
     [Theory, AutoData]
@@ -739,6 +791,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         var species2 = SpeciesCodes.Where(x => x != species1).RandomElement();
 
         restockingToAlter.SpeciesAndPercentages = $"{species1},33,{species2},33,{species1},34";
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -767,6 +820,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         var species = restockingToAlter.SpeciesAndPercentages.Split(',').ToList();
         species[1] = FixtureInstance.Create<string>();
         restockingToAlter.SpeciesAndPercentages = string.Join(',', species);
+        restockingToAlter.PercentageOpenSpace = 0;
 
         var sut = CreateSut();
 
@@ -775,10 +829,11 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         Assert.True(result.IsFailure);
         Assert.Single(result.Error);
 
-        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
     }
 
-    [Theory, AutoData] public async Task WhenRestockingSpeciesPercentagesDoNotTotal100(Guid woodlandOwnerId)
+    [Theory, AutoData] 
+    public async Task WhenRestockingSpeciesPercentagesDoNotTotal100(Guid woodlandOwnerId)
     {
         var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);
 
@@ -796,6 +851,7 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         var species = restockingToAlter.SpeciesAndPercentages.Split(',').ToList();
         species[1] = (int.Parse(species[1]) + 1).ToString();
         restockingToAlter.SpeciesAndPercentages = string.Join(',', species);
+        restockingToAlter.PercentageOpenSpace = 10;
 
         var sut = CreateSut();
 
@@ -804,6 +860,92 @@ public class ValidateImportFileSetsServiceRestockingValidationTests : Applicatio
         Assert.True(result.IsFailure);
         Assert.Single(result.Error);
 
-        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+    }
+
+    [Theory, AutoData]
+    public async Task WhenOpenSpacePercentageNotProvided(Guid woodlandOwnerId)
+    {
+        var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);
+
+        var restockingToAlter = input.ProposedRestockingSourceRecords!.Single();
+
+        if (restockingToAlter.RestockingProposal == TypeOfProposal.CreateDesignedOpenGround)  // ignored for designed open ground
+        {
+            var randomSpecies1 = SpeciesCodes.RandomElement();
+            var randomSpecies2 = SpeciesCodes.Where(x => x != randomSpecies1).RandomElement();
+            restockingToAlter.RestockingProposal = TypeOfProposal.ReplantTheFelledArea;
+            restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
+            restockingToAlter.SpeciesAndPercentages = $"{randomSpecies1},50,{randomSpecies2},50";  // in case original was create designed open ground
+        }
+
+        restockingToAlter.PercentageOpenSpace = null;
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Single(result.Error);
+
+        Assert.Equal($"Percentage of open space must be provided for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Single().ErrorMessage);
+    }
+
+    [Theory, AutoData]
+    public async Task WhenOpenSpacePercentageIsLessThanZero(Guid woodlandOwnerId)
+    {
+        var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);
+
+        var restockingToAlter = input.ProposedRestockingSourceRecords!.Single();
+
+        if (restockingToAlter.RestockingProposal == TypeOfProposal.CreateDesignedOpenGround)  // ignored for designed open ground
+        {
+            var randomSpecies1 = SpeciesCodes.RandomElement();
+            var randomSpecies2 = SpeciesCodes.Where(x => x != randomSpecies1).RandomElement();
+            restockingToAlter.RestockingProposal = TypeOfProposal.ReplantTheFelledArea;
+            restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
+            restockingToAlter.SpeciesAndPercentages = $"{randomSpecies1},50,{randomSpecies2},50";  // in case original was create designed open ground
+        }
+
+        restockingToAlter.PercentageOpenSpace = -10;
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(2, result.Error.Count);
+
+        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.First().ErrorMessage);
+        Assert.Equal($"Percentage of open space must be greater than or equal to 0 and less than 100 for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Last().ErrorMessage);
+    }
+
+    [Theory, AutoData]
+    public async Task WhenOpenSpacePercentageIsGreaterThan100(Guid woodlandOwnerId)
+    {
+        var input = GenerateValidImportSets(applicationsCount: 1, fellingPerApplication: 1, restockingPerFelling: 1);
+
+        var restockingToAlter = input.ProposedRestockingSourceRecords!.Single();
+
+        if (restockingToAlter.RestockingProposal == TypeOfProposal.CreateDesignedOpenGround)  // ignored for designed open ground
+        {
+            var randomSpecies1 = SpeciesCodes.RandomElement();
+            var randomSpecies2 = SpeciesCodes.Where(x => x != randomSpecies1).RandomElement();
+            restockingToAlter.RestockingProposal = TypeOfProposal.ReplantTheFelledArea;
+            restockingToAlter.RestockingDensity = FixtureInstance.Create<double>();
+            restockingToAlter.SpeciesAndPercentages = $"{randomSpecies1},50,{randomSpecies2},50";  // in case original was create designed open ground
+        }
+
+        restockingToAlter.PercentageOpenSpace = 110;
+
+        var sut = CreateSut();
+
+        var result = await sut.ValidateImportFileSetAsync(woodlandOwnerId, Properties, input, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(2, result.Error.Count);
+
+        Assert.Equal($"Species and percentages {restockingToAlter.SpeciesAndPercentages} contains invalid percentage or percentages combined with percentage of open space don't total 100% for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.First().ErrorMessage);
+        Assert.Equal($"Percentage of open space must be greater than or equal to 0 and less than 100 for proposed restocking {restockingToAlter.RestockingProposal} with proposed felling id {restockingToAlter.ProposedFellingId}", result.Error.Last().ErrorMessage);
     }
 }

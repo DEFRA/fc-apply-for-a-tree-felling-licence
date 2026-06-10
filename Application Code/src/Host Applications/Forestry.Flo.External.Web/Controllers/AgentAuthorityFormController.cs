@@ -25,7 +25,7 @@ public class AgentAuthorityFormController : Controller
         if (models.IsFailure)
         {
             this.AddErrorMessage("Could not retrieve Agent Authority Forms, please try again");
-            return RedirectToAction(nameof(HomeController.AgentUser), "Home");
+            return RedirectToAction(nameof(HomeController.AgentUser), "Home", new { agencyId });
         }
 
         var viewModel = new AgentAuthorityFormsViewModel
@@ -64,7 +64,8 @@ public class AgentAuthorityFormController : Controller
         var viewModel = new ContactDetailsFormModel
         {
             Breadcrumbs = AddFormBreadcrumbs,
-            FromSummary = fromSummary
+            FromSummary = fromSummary,
+            AgencyId = agencyId
         };
 
         if (!reset && hasValue)
@@ -112,7 +113,8 @@ public class AgentAuthorityFormController : Controller
                 : agentAuthorityModel.OrganisationAddress,
             OrganisationName = model.IsOrganisation is false
                 ? null
-                : agentAuthorityModel.OrganisationName
+                : agentAuthorityModel.OrganisationName,
+            AgencyId = model.AgencyId
         };
 
         StoreAgentAuthorityFormModel(agentAuthorityModel);
@@ -136,7 +138,8 @@ public class AgentAuthorityFormController : Controller
         {
             Breadcrumbs = AddFormBreadcrumbs,
             OrganisationAddress = agentAuthorityModel.OrganisationAddress ?? agentAuthorityModel.ContactAddress,
-            OrganisationName = (agentAuthorityModel.OrganisationName ?? null)!
+            OrganisationName = (agentAuthorityModel.OrganisationName ?? null)!,
+            AgencyId = agentAuthorityModel.AgencyId
         };
 
         StoreAgentAuthorityFormModel(agentAuthorityModel);

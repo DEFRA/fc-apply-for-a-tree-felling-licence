@@ -10,7 +10,7 @@ public class NewConfirmedRestockingDetailViewModel
     public Guid ConfirmedFellingDetailsId { get; set; }
     public double? RestockArea { get; set; }
 
-    public int? PercentOpenSpace { get; set; }
+    public double? PercentOpenSpace { get; set; }
 
     /// <summary>
     /// Gets or sets the restock area as a percentage of compartment size.

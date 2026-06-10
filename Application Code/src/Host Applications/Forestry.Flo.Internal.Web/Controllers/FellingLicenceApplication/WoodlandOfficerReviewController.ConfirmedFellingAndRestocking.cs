@@ -6,6 +6,7 @@ using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Internal.Web.Services.Validation;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
+using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Forestry.Flo.Internal.Web.Controllers.FellingLicenceApplication;
@@ -652,6 +653,7 @@ public partial class WoodlandOfficerReviewController
                     },
                 Breadcrumbs = confirmedFellingRestockingDetailsModel.Breadcrumbs
             };
+            
             return View(model);
         }
     }
@@ -701,7 +703,8 @@ public partial class WoodlandOfficerReviewController
         }
 
         var speciesList = model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.ConfirmedRestockingSpecies.ToList();
-        foreach (var species in model.Species.Where(species => speciesList.All(x => x.Species != species.Key)))
+        foreach (var species in model.Species
+                     .Where(species => speciesList.All(x => x.Species != species.Key)))
         {
             speciesList.Add(new ConfirmedRestockingSpeciesModel
             {
@@ -748,6 +751,10 @@ public partial class WoodlandOfficerReviewController
         }
 
         var userToSave = new InternalUser(User);
+
+        model.Species.TryGetValue(SpeciesModel.OpenSpace, out var openSpace);
+        model.ConfirmedFellingRestockingDetails.ConfirmedRestockingDetails.PercentOpenSpace = openSpace?.Percentage;
+
         var result = await useCase.SaveConfirmedRestockingDetailsAsync(
             model,
             userToSave,

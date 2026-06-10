@@ -34,88 +34,57 @@ public class WithdrawFellingLicenceService(
     private readonly ILogger<WithdrawFellingLicenceService> _logger = Guard.Against.Null(logger);
 
     /// <inheritdoc />
-    public async Task<Result<IList<Guid>>> WithdrawApplication(
+    public async Task<Result<List<Guid>>> WithdrawApplicationAsync(
         Guid applicationId,
         UserAccessModel userAccessModel,
+        List<WithdrawalReason> withdrawalReasons,
+        string? withdrawalReasonsOtherDetails,
         CancellationToken cancellationToken)
     {
         var applicationResult =
             await _getFellingLicenceApplicationForExternalUsersService.GetApplicationByIdAsync(
                 applicationId,
                 userAccessModel,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
 
         if (applicationResult.IsFailure || applicationResult.Value.LinkedPropertyProfile is null)
         {
-            _logger.LogError("Failed to get felling application with id {applicationId}, (error if present is {error})",
-                applicationId, applicationResult.Error);
-            return Result.Failure<IList<Guid>>($"Failed to get {nameof(FellingLicenceApplication)}");
+            _logger.LogError("Failed to get felling application with id {applicationId}, (error: {error})",
+                applicationId, applicationResult.IsFailure ? applicationResult.Error : "Application has no linked property profile");
+            return Result.Failure<List<Guid>>($"Failed to retrieve felling licence application");
         }
 
         var applicationStatus = applicationResult.Value.GetCurrentStatus();
 
-        if (applicationStatus is FellingLicenceStatus.Withdrawn)
+        if (!FellingLicenceStatusConstants.WithdrawalStatuses.Contains(applicationStatus))
         {
-            _logger.LogError("{EntityName} with ID {applicationId} is already withdrawn",
-                nameof(FellingLicenceApplication), applicationId);
-            return Result.Failure<IList<Guid>>($"{nameof(FellingLicenceApplication)} is already withdrawn");
+            _logger.LogError("{EntityName} with ID {applicationId} cannot be withdrawn as it's in status {CurrentStatus}",
+                nameof(FellingLicenceApplication), applicationId, applicationStatus);
+            return Result.Failure<List<Guid>>($"Application cannot be withdrawn as it is in status {applicationStatus}");
         }
 
-        if (FellingLicenceStatusConstants.WithdrawalStatuses.Contains(applicationStatus) is false)
-        {
-            _logger.LogError(
-                "{EntityName} with ID {applicationId} cannot be withdrawn due to its status of {Status}",
-                nameof(FellingLicenceApplication),
-                applicationId,
-                applicationStatus.GetDisplayNameByActorType(ActorType.InternalUser));
-            return Result.Failure<IList<Guid>>(
-                $"{nameof(FellingLicenceApplication)} cannot be withdrawn due to its status");
-        }
-
-        await _fellingLicenceApplicationExternalRepository.AddStatusHistory(userAccessModel.UserAccountId,
-            applicationId,
-            FellingLicenceStatus.Withdrawn,
-            cancellationToken);
-
-        IList<Guid> internalUsersAssigned = applicationResult.Value.AssigneeHistories
+        var assignedUsers = applicationResult.Value.AssigneeHistories
             .Where(x =>
                 x.TimestampUnassigned is null &&
                 x.Role is not (AssignedUserRole.Author or AssignedUserRole.Applicant))
             .Select(x => x.AssignedUserId).ToList();
-        return Result.Success(internalUsersAssigned);
-    }
 
-    public async Task<Result> RemoveAssignedWoodlandOfficerAsync(
-        Guid applicationId,
-        IList<Guid> internalUsers,
-        CancellationToken cancellationToken)
-    {
-        var unassignedAll = true;
-        internalUsers = internalUsers
-            .Distinct()
-            .ToList();
+        var updateResult = await _fellingLicenceApplicationExternalRepository.WithdrawApplicationAsync(
+            applicationId,
+            userAccessModel.IsSystemUser ? null : userAccessModel.UserAccountId,
+            _clock.GetCurrentInstant().ToDateTimeUtc(),
+            withdrawalReasons,
+            withdrawalReasonsOtherDetails,
+            cancellationToken).ConfigureAwait(false);
 
-        foreach (var userId in internalUsers)
+        if (updateResult.IsFailure)
         {
-            var result = await _fellingLicenceApplicationInternalRepository
-                .RemoveAssignedFellingLicenceApplicationStaffMemberAsync(
-                    applicationId,
-                    userId,
-                    _clock.GetCurrentInstant().ToDateTimeUtc(),
-                    cancellationToken);
-            if (result.IsFailure)
-            {
-                _logger.LogError(
-                    "Could not remove the assignment of the internal user with user ID {UserId} from the application with ID {ApplicationId}",
-                    userId, applicationId);
-
-                unassignedAll = false;
-            }
+            _logger.LogError("Unable to update application {ApplicationId} to withdrawn, error: {Error}",
+                applicationId, updateResult.Error);
+            return Result.Failure<List<Guid>>($"Unable to withdraw application {applicationId}");
         }
 
-        return unassignedAll != true
-            ? Result.Failure("Could not remove the assignment of at least one of the internal users!")
-            : Result.Success();
+        return Result.Success(assignedUsers);
     }
 
     /// <inheritdoc />

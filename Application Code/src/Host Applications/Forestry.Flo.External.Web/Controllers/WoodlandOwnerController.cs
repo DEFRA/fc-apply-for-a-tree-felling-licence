@@ -35,8 +35,8 @@ public class WoodlandOwnerController : Controller
 
     [HttpGet]
     public async Task<IActionResult> ManagedClientSummary(
-        Guid woodlandOwnerId,
-        Guid? agencyId,
+        [FromQuery] Guid woodlandOwnerId,
+        [FromQuery] Guid? agencyId,
         [FromServices] ManageWoodlandOwnerDetailsUseCase useCase,
         [FromServices] ManagePropertyProfileUseCase propertyProfileUseCase,
         [FromServices] AgentAuthorityFormUseCase agentAuthorityFormUseCase,
@@ -198,7 +198,7 @@ public class WoodlandOwnerController : Controller
 
         if (user.AccountType is AccountTypeExternal.Agent or AccountTypeExternal.AgentAdministrator)
         {
-            return RedirectToAction(nameof(ManagedClientSummary), "WoodlandOwner", new { woodlandOwnerId = model.Id });
+            return RedirectToAction(nameof(ManagedClientSummary), "WoodlandOwner", new { woodlandOwnerId = model.Id, agencyId = user.AgencyId });
         }
 
         if (user.IsFcUser && model.FromManageClientAgencyId.HasValue)

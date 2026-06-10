@@ -172,7 +172,7 @@ public class CompartmentConfirmedFellingRestockingDetailsModelValidatorRestockin
         {
             foreach (var confirmedRestockingDetails in confirmedFellingDetail.ConfirmedRestockingDetails)
             {
-                confirmedRestockingDetails.ConfirmedRestockingSpecies[0].Percentage += confirmedRestockingDetails.PercentOpenSpace;
+                confirmedRestockingDetails.ConfirmedRestockingSpecies[0].Percentage += (int)Math.Round(confirmedRestockingDetails.PercentOpenSpace ?? 0);
                 confirmedRestockingDetails.PercentOpenSpace = null;
 
                 var result = _sut.TestValidate(model);

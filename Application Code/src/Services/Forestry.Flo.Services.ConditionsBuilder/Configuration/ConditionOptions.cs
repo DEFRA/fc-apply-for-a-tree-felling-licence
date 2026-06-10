@@ -12,6 +12,7 @@ public class ConditionOptions
     public const string RegenerationParameter = "{REGEN}";
     public const string LessThan100PercentRegenerationParameter = "{LESSTHAN100PERCENTREGEN}";
     public const string RestockingNumberParameter = "{RESTOCKINGNUMBER}";
+    public const string AreaParameter = "{AREA}";
 
     /// <summary>
     /// Gets and sets the lines of text that make up the particular condition output.

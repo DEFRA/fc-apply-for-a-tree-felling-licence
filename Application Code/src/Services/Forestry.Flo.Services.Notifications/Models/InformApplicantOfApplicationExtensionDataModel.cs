@@ -39,4 +39,21 @@ public class InformApplicantOfApplicationExtensionDataModel : IApplicationNotifi
     /// Gets and sets the application id.
     /// </summary>
     public required Guid ApplicationId { get; set; }
+
+    /// <summary>
+    /// Gets and sets the property name of the application.
+    /// </summary>
+    public string? PropertyName { get; set; }
+
+    /// <summary>
+    /// Gets and sets a formatted string representing what the final action date was before the extension was applied.
+    /// </summary>
+    public string? CurrentDecisionDeadline { get; set; }
+
+    /// <summary>
+    /// Gets and sets a formatted string representing the date that the extension is deemed to have been accepted by
+    /// the applicant, which is calculated as the current date plus the deemed acceptance timespan configured in the
+    /// system.
+    /// </summary>
+    public string? DeemedAcceptanceDate { get; set; }
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure.Fakes;
 using Forestry.Flo.Internal.Web.Services;
 using Forestry.Flo.Internal.Web.Services.AccountAdministration;
@@ -6,8 +7,8 @@ using Forestry.Flo.Internal.Web.Services.AdminHub;
 using Forestry.Flo.Internal.Web.Services.ExternalConsulteeReview;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.AdminOfficerReview;
-using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
+using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.ApproverReview;
 using Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.WoodlandOfficerReview;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Internal.Web.Services.MassTransit.Consumers;
@@ -30,17 +31,19 @@ using Forestry.Flo.Services.Notifications;
 using Forestry.Flo.Services.PropertyProfiles;
 using GovUk.OneLogin.AspNetCore;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IO;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Forestry.Flo.Internal.Web.Infrastructure;
 
@@ -189,14 +192,20 @@ public static class ServiceCollectionExtensions
                 options.Events.OnTokenValidated = context =>
                 {
                     var token = context.ProtocolMessage.State;
+                    var oidcToken = context.Properties?.GetTokenValue("id_token");
 
-                    var newIdentity = new System.Security.Claims.ClaimsIdentity([
-                        new System.Security.Claims.Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
+                    var newIdentity = new ClaimsIdentity([
+                        new Claim(FloClaimTypes.AuthenticationProvider, nameof(AuthenticationProvider.OneLogin))
                     ]);
 
                     if (!string.IsNullOrEmpty(token))
                     {
-                        newIdentity.AddClaim(new System.Security.Claims.Claim("token", context.ProtocolMessage.State));
+                        newIdentity.AddClaim(new Claim("token", context.ProtocolMessage.State));
+                    }
+
+                    if (!string.IsNullOrEmpty(oidcToken))
+                    {
+                        newIdentity.AddClaim(new Claim(FloClaimTypes.AuthenticationIdTokenHint, oidcToken));
                     }
 
                     context.Principal!.AddIdentity(newIdentity);
@@ -222,6 +231,17 @@ public static class ServiceCollectionExtensions
                         context.Response.Redirect("/Home/Error");
                         context.HandleResponse();
                     }
+                };
+
+                options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+                {
+                    var idToken = context.HttpContext.User.Claims.FirstOrDefault(x => x.Type == FloClaimTypes.AuthenticationIdTokenHint)?.Value;
+                    if (!string.IsNullOrEmpty(idToken))
+                    {
+                        context.ProtocolMessage.IdTokenHint = idToken;
+                    }
+
+                    return Task.CompletedTask;
                 };
             });
 
@@ -365,7 +385,9 @@ public static class ServiceCollectionExtensions
         services.Configure<VoluntaryWithdrawalNotificationOptions>(configuration.GetSection("VoluntaryWithdrawApplication"));
         services.Configure<LarchOptions>(configuration.GetSection("LarchOptions"));
         services.AddOptions<EiaOptions>().BindConfiguration(EiaOptions.ConfigurationKey);
+        services.AddOptions<ConditionsOptions>().BindConfiguration(ConditionsOptions.ConfigurationKey);
         services.AddOptions<ReviewAmendmentsOptions>().BindConfiguration(ReviewAmendmentsOptions.ConfigurationKey);
+        services.AddOptions<InternalUserSiteOptions>().BindConfiguration(InternalUserSiteOptions.ConfigurationKey);
 
         services.AddScoped<IRegisterUserAccountUseCase, RegisterUserAccountUseCase>();
         services.AddScoped<IExternalConsulteeInviteUseCase, ExternalConsulteeInviteUseCase>();
@@ -415,5 +437,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAdminOfficerTreeHealthCheckUseCase, AdminOfficerTreeHealthCheckUseCase>();
         services.AddScoped<IWoodlandOfficerTreeHealthCheckUseCase, WoodlandOfficerTreeHealthCheckUseCase>();
         services.AddScoped<PriorityOpenHabitatUseCase>();
+        services.AddScoped<IWithdrawApplicationInternalUseCase, WithdrawApplicationInternalUseCase>();
     }
 }

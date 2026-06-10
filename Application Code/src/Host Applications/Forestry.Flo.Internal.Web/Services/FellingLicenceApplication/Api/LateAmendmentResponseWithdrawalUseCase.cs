@@ -1,11 +1,12 @@
 using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Applicants.Services;
 using Forestry.Flo.Services.Common;
 using Forestry.Flo.Services.Common.Auditing;
-using Forestry.Flo.Services.Common.Models; // added for UserAccessModel
+using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Repositories;
 using Forestry.Flo.Services.FellingLicenceApplications.Services;
@@ -32,6 +33,8 @@ public class LateAmendmentResponseWithdrawalUseCase : ILateAmendmentResponseWith
     private readonly ILogger<LateAmendmentResponseWithdrawalUseCase> _logger;
     private readonly IFellingLicenceApplicationInternalRepository _fellingLicenceApplicationRepository;
     private readonly IUserAccountService _internalUserAccountService;
+    private readonly IWithdrawApplicationInternalUseCase _withdrawApplicationInternalUseCase;
+    private readonly InternalUserSiteOptions _internalUserSiteOptions;
 
     public LateAmendmentResponseWithdrawalUseCase(
         ILateAmendmentResponseWithdrawalService lateAmendmentService,
@@ -42,9 +45,11 @@ public class LateAmendmentResponseWithdrawalUseCase : ILateAmendmentResponseWith
         RequestContext requestContext,
         IAuditService<LateAmendmentResponseWithdrawalUseCase> auditService,
         IOptions<ExternalApplicantSiteOptions> externalApplicantSiteOptions,
+        IOptions<InternalUserSiteOptions> internalUserSiteOptions,
         ILogger<LateAmendmentResponseWithdrawalUseCase> logger,
         IFellingLicenceApplicationInternalRepository fellingLicenceApplicationRepository,
-        IUserAccountService internalUserAccountService)
+        IUserAccountService internalUserAccountService, 
+        IWithdrawApplicationInternalUseCase withdrawApplicationInternalUseCase)
     {
         _lateAmendmentService = Guard.Against.Null(lateAmendmentService);
         _externalAccountService = Guard.Against.Null(externalAccountService);
@@ -54,9 +59,11 @@ public class LateAmendmentResponseWithdrawalUseCase : ILateAmendmentResponseWith
         _requestContext = Guard.Against.Null(requestContext);
         _auditService = Guard.Against.Null(auditService);
         _externalApplicantSiteOptions = Guard.Against.Null(externalApplicantSiteOptions).Value;
+        _internalUserSiteOptions = Guard.Against.Null(internalUserSiteOptions).Value;
         _logger = Guard.Against.Null(logger);
         _fellingLicenceApplicationRepository = Guard.Against.Null(fellingLicenceApplicationRepository);
         _internalUserAccountService = Guard.Against.Null(internalUserAccountService);
+        _withdrawApplicationInternalUseCase = Guard.Against.Null(withdrawApplicationInternalUseCase);
     }
 
     /// <summary>
@@ -122,14 +129,8 @@ public class LateAmendmentResponseWithdrawalUseCase : ILateAmendmentResponseWith
         return successCount;
     }
 
-    /// <summary>
-    /// Withdraws applications whose amendment response deadlines have passed and remain WithApplicant / ReturnedToApplicant.
-    /// </summary>
-    /// <param name="withdrawFellingLicenceService">Withdrawal service.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Count of successfully withdrawn applications.</returns>
+    /// <inheritdoc/>
     public async Task<int> WithdrawLateAmendmentApplicationsAsync(
-        IWithdrawFellingLicenceService withdrawFellingLicenceService,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Attempting withdrawal of late amendment applications");
@@ -144,79 +145,33 @@ public class LateAmendmentResponseWithdrawalUseCase : ILateAmendmentResponseWith
 
         var applications = result.Value;
         var successCount = 0;
-        var userAccess = new UserAccessModel { IsFcUser = true };
-        var currentDate = _clock.GetCurrentInstant().ToDateTimeUtc();
 
-        foreach (var app in applications)
+        _logger.LogDebug("{Count} applications found that need to be withdrawn for not responding to amendments", applications.Count);
+
+        foreach (var application in applications)
         {
-            await using var transaction = await _fellingLicenceApplicationRepository.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-            try
+            var linkToApplication = $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{application.ApplicationId}";
+            var withdrawApplicationResult = await _withdrawApplicationInternalUseCase.WithdrawApplicationAsync(
+                    application.ApplicationId, WithdrawalReason.ExceededAmendmentsResponseDeadline, linkToApplication,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (withdrawApplicationResult.IsFailure)
             {
-                var withdrawalResult = await withdrawFellingLicenceService.WithdrawApplication(app.ApplicationId, userAccess, cancellationToken).ConfigureAwait(false);
-                if (withdrawalResult.IsFailure)
-                {
-                    _logger.LogError("Unable to withdraw application {ApplicationId} (Late amendment). Error: {Error}", app.ApplicationId, withdrawalResult.Error);
-                    await _auditService.PublishAuditEventAsync(new AuditEvent(
-                            AuditEvents.WithdrawFellingLicenceApplicationFailure,
-                            app.ApplicationId,
-                            null,
-                            _requestContext,
-                            new { Section = "Late Amendment Withdrawal", withdrawalResult.Error }),
-                        cancellationToken);
-                    await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-                    continue;
-                }
-
-                // Mark the active amendment review as completed
-                var reviewCompleteResult = await _fellingLicenceApplicationRepository.SetAmendmentReviewCompletedAsync(
-                    app.AmendmentReviewId,
-                    true,
-                    cancellationToken);
-                if (reviewCompleteResult.IsFailure)
-                {
-                    _logger.LogError("Failed to set amendment review {ReviewId} completed for application {ApplicationId}. Error: {Error}", app.AmendmentReviewId, app.ApplicationId, reviewCompleteResult.Error);
-                    await _auditService.PublishAuditEventAsync(new AuditEvent(
-                            AuditEvents.WithdrawFellingLicenceApplicationFailure,
-                            app.ApplicationId,
-                            null,
-                            _requestContext,
-                            new { Section = "Late Amendment Withdrawal - Complete Review", reviewCompleteResult.Error }),
-                        cancellationToken);
-                    await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-                    continue;
-                }
-
-                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-
-                await _auditService.PublishAuditEventAsync(new AuditEvent(
-                        AuditEvents.WithdrawFellingLicenceApplication,
-                        app.ApplicationId,
-                        null,
-                        _requestContext,
-                        new { app.ApplicationId, WithdrawalDate = currentDate.Date }),
-                    cancellationToken);
-
-                successCount++;
+                _logger.LogError("Failed to withdraw application {ApplicationId}, error: {Error}",
+                    application.ApplicationId, withdrawApplicationResult.Error);
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Exception withdrawing late amendment application {ApplicationId}", app.ApplicationId);
-                await _auditService.PublishAuditEventAsync(new AuditEvent(
-                        AuditEvents.WithdrawFellingLicenceApplicationFailure,
-                        app.ApplicationId,
-                        null,
-                        _requestContext,
-                        new { Section = "Late Amendment Withdrawal", Error = ex.Message }),
-                    cancellationToken);
-                await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                successCount++;
             }
         }
 
-        _logger.LogInformation("Withdrawn {SuccessCount} late amendment application(s)", successCount);
+        _logger.LogDebug("Successfully withdrew {Count} applications", successCount);
         return successCount;
     }
 
-    public async Task<Result> NotifyApplicantAsync(
+    private async Task<Result> NotifyApplicantAsync(
         LateAmendmentResponseWithdrawalModel app,
         CancellationToken cancellationToken)
     {

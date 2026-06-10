@@ -19,7 +19,7 @@
             <th scope="col" class="govuk-table__header">Compartment</th>
             <th scope="col" class="govuk-table__header">Type</th>
             <th scope="col" class="govuk-table__header">Area (Ha)</th>
-                <th scope="col" class="govuk-table__header">Est. Vol (m<sup>3</sup>)</th>
+            <th scope="col" class="govuk-table__header">Est. Vol (m<sup>3</sup>)</th>
             <th scope="col" class="govuk-table__header">No. trees</th>
             <th scope="col" class="govuk-table__header">Tree marking</th>
             <th scope="col" class="govuk-table__header">TPO</th>
@@ -80,15 +80,15 @@
             <thead class="govuk-table__head">
             <tr class="govuk-table__row">
                 <th scope="col" class="govuk-table__header">Felling</th>
-                <th scope="col" class="govuk-table__header">Compartment</th>
+                <th scope="col" class="govuk-table__header">Restocking in compartment</th>
                 <th scope="col" class="govuk-table__header">Type</th>
                 <th scope="col" class="govuk-table__header">Area (Ha)</th>
+                <th scope="col" class="govuk-table__header">% of cpt area</th>
+                <th scope="col" class="govuk-table__header">% of felling area</th>
                 <th scope="col" class="govuk-table__header">Density (stems per Ha)</th>
                 <th scope="col" class="govuk-table__header">No. trees</th>
-                <th scope="col" class="govuk-table__header">% of restock area</th>
-                <th scope="col" class="govuk-table__header">Species</th>
-                <th scope="col" class="govuk-table__header">% of restock species</th>
-                <th scope="col" class="govuk-table__header">% established by coppice/natural regen</th>
+                <th scope="col" class="govuk-table__header">Species & percentages</th>
+                <th scope="col" class="govuk-table__header">% established by coppice or natural regen</th>
             </tr>
             </thead>
             <tbody class="govuk-table__body">
@@ -97,31 +97,25 @@
                 @foreach (var restockingDetails in felling.RestockingDetail.OrderByNameNumericOrAlpha())
                 {
                     string outputSpecies = string.Empty;
-                    string outputPercentage = string.Empty;
                     @foreach (var speciesDetails in restockingDetails.Species)
                     {
-                        outputSpecies += treeSpeciesValues.FirstOrDefault(x => x.Code == speciesDetails.Value.Species)?.Name ?? speciesDetails.Value.Species;
-                        outputPercentage += speciesDetails.Value.Percentage;
-                        if (speciesDetails.Key != restockingDetails.Species.Last().Key)
-                        {
-                            outputSpecies += "<br />";
-                            outputPercentage += "<br />";
-                        }
+                        outputSpecies += $"{treeSpeciesValues.FirstOrDefault(x => x.Code == speciesDetails.Value.Species)?.Name ?? speciesDetails.Value.Species} - {speciesDetails.Value.Percentage}%";
+                        outputSpecies += "<br />";
                     }
+
+                    outputSpecies += $"Area to be left as open space - {restockingDetails.PercentOpenSpace}%";
 
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@felling.Felling</td>
                         <td class="govuk-table__cell">@restockingDetails.RestockingCompartmentName</td>
                         <td class="govuk-table__cell">@restockingDetails.RestockingProposal.GetDisplayName()</td>
-                        <td class="govuk-table__cell">@restockingDetails.Area</td>
+                        <td class="govuk-table__cell">@(restockingDetails.Area)ha</td>
+                        <td class="govuk-table__cell">@restockingDetails.PercentageOfRestockArea</td>
+                        <td class="govuk-table__cell">@restockingDetails.PercentageOfFellingArea</td>
                         <td class="govuk-table__cell">@restockingDetails.RestockingDensity</td>
                         <td class="govuk-table__cell">@restockingDetails.NumberOfTrees</td>
-                        <td class="govuk-table__cell">@restockingDetails.PercentageOfRestockArea</td>
                         <td class="govuk-table__cell">
                             @Html.Raw(outputSpecies)
-                        </td>
-                        <td class="govuk-table__cell">
-                            @Html.Raw(outputPercentage)
                         </td>
                         <td class="govuk-table__cell">@restockingDetails.PercentageEstablishedByCoppiceOrNaturalRegen</td>
                     </tr>

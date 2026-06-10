@@ -90,7 +90,7 @@ namespace Forestry.Flo.Services.Gis.Models.Esri.RequestObjects.Json.PublicRegist
         /// The Length of time in days to be on the register
         /// </summary>
         [JsonProperty("period", NullValueHandling = NullValueHandling.Ignore)]
-        public int? TimeOnTheConsultationRegister { get; set; }
+        public int? TimeOnThePublicRegister { get; set; }
 
         /// <summary>
         /// The date the case should be removed from the consultation register

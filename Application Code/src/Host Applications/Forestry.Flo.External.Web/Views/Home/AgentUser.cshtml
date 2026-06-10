@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = "Your managed clients";
     var breadcrumbs = new BreadcrumbsModel { Breadcrumbs = new List<BreadCrumb>(0), CurrentPage = "Home" };
+
+    var enableInviteAnotherUser = false;  // FLOV2-3012
 }
 
 <partial name="Partials/_ConfirmationMessageDisplay" />
@@ -22,9 +24,9 @@
         </a>
     </user-is-in-role-multiple>
 
-    <user-is-in-role role-name="AgentAdministrator">
+    <user-is-in-role role-name="AgentAdministrator" condition="@enableInviteAnotherUser">
         <br />
-        <form asp-action="InviteAgentToOrganisation" asp-controller="Account" method="Get">
+        <form asp-action="InviteAgentToOrganisation" asp-controller="Account" method="Get" asp-route-agencyId="@Model.AgencyId">
             <button class="govuk-button govuk-button--secondary" data-module="govuk-button">
                 Invite another user to your organisation
             </button>

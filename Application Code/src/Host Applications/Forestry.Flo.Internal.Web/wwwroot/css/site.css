@@ -275,7 +275,7 @@ td.width-limited {
     gap: 10px;
 }
 
-.width-limit-override *:not(.govuk-date-input__input), .govuk-form-group {
+.width-limit-override *:not(.govuk-date-input__input, .govuk-checkboxes__label, .govuk-radios__label), .govuk-form-group {
     max-width: 650px !important;
 }
 

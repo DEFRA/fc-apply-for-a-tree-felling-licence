@@ -1,36 +1,93 @@
-﻿@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ConfirmWithdrawFellingLicenceApplicationModel
+﻿@using Forestry.Flo.Services.Common
+@using Forestry.Flo.Services.Common.Extensions
+@using Forestry.Flo.Services.FellingLicenceApplications.Entities
+@model Forestry.Flo.External.Web.Models.FellingLicenceApplication.ConfirmWithdrawFellingLicenceApplicationViewModel
 @{
-    ViewData["Title"] = "Confirm Felling Licence Application Withdrawal";
+    ViewData["Title"] = "Why do you want to withdraw this application?";
+
+    var firstReason = true;
 }
+
+<partial name="Partials/_ConfirmationMessageDisplay" />
+<partial name="Partials/_UserGuideDisplay" />
+<partial name="_ApplicationSummaryNotes" model="@Model.ApplicationSummary" />
 
 <div class="govuk-grid-column-two-thirds">
     
-    <h1 class="govuk-heading-l">
-        Are you sure you want to withdraw this application?
-    </h1>
-    
-    <p class="govuk-body">
-        Your reference number is
-        <strong>@Model.ApplicationReference</strong>
-    </p>
-
-    <div class="govuk-warning-text">
-        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-        <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive govuk-visually-hidden">Information</span>
-            Please note that whilst the application will no longer be editable or able to be submitted, you will still be able to modify and re-use the woodland information in any future applications.
-        </strong>
-    </div>
-
-    <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.ApplicationId" class="govuk-link">Return to your application</a>
 
     <div class="govuk-!-margin-top-6">
 
-        <form method="POST" asp-action="WithdrawFellingLicenceApplication">
+        <form method="POST">
             @Html.HiddenFor(x => x.ApplicationId)
-            <button data-prevent-double-click="true" type="submit" class="govuk-button" data-module="govuk-button">
-                Withdraw application
-            </button>
+            
+            <govuk-form-group asp-for="WithdrawalReasonOptions">
+                <fieldset class="govuk-fieldset" aria-describedby="withdrawal-reasons-hint">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                        @ViewData["Title"]
+                    </legend>
+                    <div id="withdrawal-reasons-hint" class="govuk-hint">
+                        Select the reasons you want to withdraw your application. Select all that apply.
+                    </div>
+                    <validation asp-for="WithdrawalReasonOptions"></validation>
+                    <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                        
+                        @foreach (var reasonKey in Model.WithdrawalReasonOptions.Keys.OrderBy(x => x).Where(x => x != WithdrawalReason.Other))
+                        {
+                            <div class="govuk-checkboxes__item">
+                                
+                                @if (firstReason)
+                                { 
+                                    firstReason = false;
+
+                                    <input typ="checkbox" class="govuk-checkboxes__input" id="WithdrawalReasonOptions" asp-for="WithdrawalReasonOptions[reasonKey]" aria-describedby="@($"{reasonKey}-hint")" />
+                                    <label class="govuk-label govuk-checkboxes__label" for="WithdrawalReasonOptions">
+                                        @reasonKey.GetDisplayName()
+                                    </label>
+
+                                }
+                                else
+                                {
+                                    <input typ="checkbox" class="govuk-checkboxes__input" id="@($"{reasonKey}_check")" asp-for="WithdrawalReasonOptions[reasonKey]" aria-describedby="@($"{reasonKey}-hint")" />
+                                    <label class="govuk-label govuk-checkboxes__label" for="@($"{reasonKey}_check")">
+                                        @reasonKey.GetDisplayName()
+                                    </label>
+                                }
+                                <div id="@($"{reasonKey}-hint")" class="govuk-hint govuk-checkboxes__hint">
+                                    @reasonKey.GetDescription()
+                                </div>
+                            </div>
+                        }
+                        
+                        @if (Model.WithdrawalReasonOptions.ContainsKey(WithdrawalReason.Other))
+                        {
+                            <div class="govuk-checkboxes__item">
+                                <input typ="checkbox" class="govuk-checkboxes__input" id="@($"{WithdrawalReason.Other}_check")" asp-for="WithdrawalReasonOptions[WithdrawalReason.Other]" aria-describedby="@($"{WithdrawalReason.Other}-hint")" data-aria-controls="reason-other" />
+                                <label class="govuk-label govuk-checkboxes__label" for="@($"{WithdrawalReason.Other}_check")">
+                                    @WithdrawalReason.Other.GetDisplayName()
+                                </label>
+                                <div id="@($"{WithdrawalReason.Other}-hint")" class="govuk-hint govuk-checkboxes__hint">
+                                    @WithdrawalReason.Other.GetDescription()
+                                </div>
+                                <div class="govuk-checkboxes__conditional govuk-checkboxes__conditional--hidden" id="reason-other">
+                                    <govuk-form-group asp-for="WithdrawalReasonsOtherDetails">
+                                        <label class="govuk-label" asp-for="WithdrawalReasonsOtherDetails">Any other reasons you wish to withdraw this application</label>
+                                        <validation asp-for="WithdrawalReasonsOtherDetails"></validation>
+                                        <textarea class="govuk-textarea" asp-for="WithdrawalReasonsOtherDetails" rows="3"></textarea>
+                                    </govuk-form-group>
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+                </fieldset>
+            </govuk-form-group>
+            
+            <div class="govuk-button-group">
+                <button data-prevent-double-click="true" type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">
+                    Confirm withdrawal of this application
+                </button>
+                <a asp-action="ApplicationTaskList" asp-route-applicationId="@Model.ApplicationId" class="govuk-link">Return to your application</a>
+            </div>
         </form>
 
     </div>

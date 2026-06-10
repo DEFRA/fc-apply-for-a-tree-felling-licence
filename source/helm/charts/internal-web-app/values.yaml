@@ -125,6 +125,7 @@ config:
     nonceCookieName:
     # The vectors of trust for GOV.UK One Login authentication.
     vectorsOfTrust:
+      - "Cl"
   authenticationOptions:
     # The identity provider to use for authentication (eg., OneLogin, Azure)
     provider:
@@ -186,6 +187,8 @@ config:
     # -- API Key for the cron job endpoints
     apiKey:
   publicRegisterExpiry:
+    # -- the default DPR period, in days
+    decisionPublicRegisterPeriod:
     # -- Threshold before public register period expiry to notify assigned users
     thresholdBeforePublicRegisterPeriodEnd:
   voluntaryWithdrawApplication:
@@ -198,6 +201,8 @@ config:
     thresholdBeforeFinalActionDate:
     # -- The length of an automatic application extension
     extensionLength:
+    # -- The length of time before the extension is deemed to be accepted
+    deemedAcceptanceTimeSpan:
   pdfGeneratorApi:
     # -- the Url for the Pdf Generator service
     baseUrl: 
@@ -270,6 +275,9 @@ config:
       eiaContactEmail:
       # -- The contact phone for EIA queries, included in notifications
       eiaContactPhone:
+  internalUserSite:
+      # -- The base URL for the internal user site
+      baseUrl:
   GovUkNotifyOptions:
     enabled: false
     ApiKey:
@@ -353,6 +361,12 @@ config:
       ReminderForApplicantToRespondToAmendments:
       # -- Inform internal users of application approved in error process started
       InformFcStaffOfApplicationApprovedInError:
+      # -- Confirm to consultees when a comment is received
+      ExternalConsulteeCommentConfirmation:
+      # -- Notification to applicant when an application is reopened
+      InformApplicantOfApplicationReopened:
+      # -- Notification to applicant when an application reference number has changed
+      InformApplicantOfApplicationReferenceChange:
   # -- Allowed Email Domains for Internal Users
   PermittedRegisteredUser:
     enabled: false

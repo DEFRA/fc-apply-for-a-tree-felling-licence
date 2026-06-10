@@ -1,5 +1,6 @@
 ﻿using Ardalis.GuardClauses;
 using CSharpFunctionalExtensions;
+using Forestry.Flo.HostApplicationsCommon.Infrastructure;
 using Forestry.Flo.Internal.Web.Infrastructure;
 using Forestry.Flo.Internal.Web.Services.Interfaces;
 using Forestry.Flo.Services.Common;
@@ -12,6 +13,7 @@ using Forestry.Flo.Services.InternalUsers.Services;
 using Forestry.Flo.Services.Notifications.Entities;
 using Forestry.Flo.Services.Notifications.Models;
 using Forestry.Flo.Services.Notifications.Services;
+using Microsoft.Extensions.Options;
 using NodaTime;
 
 namespace Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api;
@@ -27,6 +29,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
     private readonly IUpdateFellingLicenceApplication _updateFellingLicenceApplicationService;
     private readonly IPublicRegister _publicRegister;
     private readonly ILogger<PublicRegisterExpiryUseCase> _logger;
+    private readonly InternalUserSiteOptions _internalUserSiteOptions;
     private readonly IGetConfiguredFcAreas _getConfiguredFcAreasService;
     private readonly IClock _clock;
     private readonly RequestContext _requestContext;
@@ -44,6 +47,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
     /// <param name="requestContext">The context of the request.</param>
     /// <param name="auditService">A service to audit outcomes.</param>
     /// <param name="getConfiguredFcAreasService">A service to get admin hub details.</param>
+    /// <param name="internalUserSiteOptions"></param>
     /// <param name="clock">A service to get the current date and time.</param>
     public PublicRegisterExpiryUseCase(
         IGetFellingLicenceApplicationForInternalUsers getFellingLicenceApplicationService,
@@ -55,11 +59,13 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
         RequestContext requestContext,
         IAuditService<PublicRegisterExpiryUseCase> auditService,
         IGetConfiguredFcAreas getConfiguredFcAreasService,
+        IOptions<InternalUserSiteOptions> internalUserSiteOptions,
         IClock clock)
     {
         _updateFellingLicenceApplicationService = Guard.Against.Null(updateFellingLicenceApplicationService);
         _publicRegister = publicRegister;
         _logger = logger;
+        _internalUserSiteOptions = Guard.Against.Null(internalUserSiteOptions).Value;
         _getConfiguredFcAreasService = Guard.Against.Null(getConfiguredFcAreasService);
         _clock = Guard.Against.Null(clock);
         _internalAccountService = Guard.Against.Null(internalAccountService);
@@ -74,9 +80,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
     /// </summary>
     /// <param name="viewApplicationBaseUrl">The base URL for viewing an application summary on the internal app.</param>
     /// <param name="cancellationToken">A cancellation Token</param>
-    public async Task RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(
-        string viewApplicationBaseUrl,
-        CancellationToken cancellationToken)
+    public async Task RemoveExpiredApplicationsFromConsultationPublicRegisterAsync(CancellationToken cancellationToken)
     {
         var relevantApplications = await _getFellingLicenceApplicationService.
             RetrieveApplicationsHavingExpiredOnTheConsultationPublicRegisterAsync(cancellationToken);
@@ -120,7 +124,6 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
                         relevantApplication,
                         retrievedUsers,
                         timestamp,
-                        viewApplicationBaseUrl,
                         cancellationToken);
                 }
                 else
@@ -142,7 +145,6 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
         PublicRegisterPeriodEndModel modelData,
         List<UserAccountModel>? retrievedUsers,
         DateTime timestamp,
-        string viewApplicationBaseUrl,
         CancellationToken cancellationToken)
     {
         Result? updateFlaResult = null;
@@ -176,7 +178,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
                              "from the Consultation Public Register, Error was {Error}",
                 modelData.ApplicationReference, gisResult.Error);
 
-            await SendNotificationsAsync(modelData, retrievedUsers, viewApplicationBaseUrl, cancellationToken);
+            await SendNotificationsAsync(modelData, retrievedUsers, cancellationToken);
         }
 
         await AuditResultAsync(gisResult, updateFlaResult, modelData, cancellationToken);
@@ -185,7 +187,6 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
     private async Task SendNotificationsAsync(
         PublicRegisterPeriodEndModel dataModel,
         List<UserAccountModel>? retrievedUsers,
-        string viewApplicationBaseUrl,
         CancellationToken cancellationToken)
     {
         var notificationsSent = 0;
@@ -222,7 +223,7 @@ public class PublicRegisterExpiryUseCase : IPublicRegisterExpiryUseCase
                         DateTimeDisplay.GetDateDisplayString(
                             dataModel.PublicRegister!.ConsultationPublicRegisterExpiryTimestamp!.Value),
                     ViewApplicationURL =
-                        $"{viewApplicationBaseUrl}/{dataModel.PublicRegister!.FellingLicenceApplicationId}",
+                        $"{_internalUserSiteOptions.BaseUrl}FellingLicenceApplication/ApplicationSummary/{dataModel.PublicRegister!.FellingLicenceApplicationId}",
                     PropertyName = dataModel.PropertyName,
                     AdminHubFooter = adminHubFooter,
                     PublishDate = DateTimeDisplay.GetDateDisplayString(

@@ -17,6 +17,8 @@ using Microsoft.Extensions.Options;
 using Moq;
 using NodaTime;
 using System.Text.Json;
+using Forestry.Flo.Services.PropertyProfiles.Entities;
+using Forestry.Flo.Services.PropertyProfiles.Services;
 using ExternalAccountModel = Forestry.Flo.Services.Applicants.Models.UserAccountModel;
 using VoluntaryWithdrawalNotificationOptions = Forestry.Flo.Internal.Web.Infrastructure.VoluntaryWithdrawalNotificationOptions;
 using VoluntaryWithdrawalNotificationUseCase = Forestry.Flo.Internal.Web.Services.FellingLicenceApplication.Api.VoluntaryWithdrawalNotificationUseCase;
@@ -33,10 +35,12 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
     private readonly Mock<IOptions<ExternalApplicantSiteOptions>> _externalSiteOptionsMock;
     private readonly Mock<IAuditService<VoluntaryWithdrawalNotificationUseCase>> _auditMock;
     private readonly Mock<IRetrieveWoodlandOwners> _woodlandOwnerServiceMock;
+    private readonly Mock<IGetPropertyProfiles> _getPropertyProfilesServiceMock;
     private readonly Mock<IGetConfiguredFcAreas> _getConfiguredFcAreasServiceMock;
 
     private readonly string _requestContextCorrelationId = Guid.NewGuid().ToString();
-    private readonly TimeSpan _threshold;
+    private readonly TimeSpan _thresholdForReminder;
+    private readonly TimeSpan _thresholdForWithdrawal;
     private const string ExternalUrl = "externalUrl";
     private const string AdminHubFooter = "admin hub address";
 
@@ -51,8 +55,10 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
         _auditMock = new Mock<IAuditService<VoluntaryWithdrawalNotificationUseCase>>();
         _woodlandOwnerServiceMock = new Mock<IRetrieveWoodlandOwners>();
         _getConfiguredFcAreasServiceMock = new Mock<IGetConfiguredFcAreas>();
+        _getPropertyProfilesServiceMock = new();
 
-        _threshold = new TimeSpan(14, 0, 0, 0);
+        _thresholdForReminder = new TimeSpan(14, 0, 0, 0);
+        _thresholdForWithdrawal = new TimeSpan(28, 0, 0, 0);
     }
 
     private readonly JsonSerializerOptions _options = new()
@@ -64,7 +70,8 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
     public async Task ApplicantNotified_WhenNoFailures(
         List<VoluntaryWithdrawalNotificationModel> voluntaryWithdrawalNotificationModels,
         ExternalAccountModel applicant,
-        WoodlandOwnerModel woodlandOwner)
+        WoodlandOwnerModel woodlandOwner,
+        PropertyProfile property)
     {
         var sut = CreateSut();
 
@@ -93,12 +100,18 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
             .Setup(x => x.SendNotificationAsync(It.IsAny<object>(), It.IsAny<NotificationType>(), It.IsAny<NotificationRecipient>(), It.IsAny<NotificationRecipient[]?>(), It.IsAny<NotificationAttachment[]?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success(Guid.NewGuid()));
 
-        await sut.SendNotificationForWithdrawalAsync("baseUrl", CancellationToken.None);
+        _getPropertyProfilesServiceMock
+            .Setup(x => x.GetPropertyByIdAsync(It.IsAny<Guid>(), It.IsAny<UserAccessModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(property));
 
-        _withdrawalNotificationApplicationsMock.Verify(v => v.GetApplicationsAfterThresholdForWithdrawalAsync(_threshold, CancellationToken.None), Times.Once);
+        await sut.SendNotificationForWithdrawalAsync(CancellationToken.None);
+
+        _withdrawalNotificationApplicationsMock.Verify(v => v.GetApplicationsAfterThresholdForWithdrawalAsync(_thresholdForReminder, CancellationToken.None), Times.Once);
 
         foreach (var notificationModel in voluntaryWithdrawalNotificationModels)
         {
+            _getPropertyProfilesServiceMock.Verify(x => x.GetPropertyByIdAsync(notificationModel.LinkedPropertyProfileId, It.Is<UserAccessModel>(u => u.IsSystemUser), It.IsAny<CancellationToken>()), Times.Once);
+
             _auditMock.Verify(s =>
                 s.PublishAuditEventAsync(It.Is<AuditEvent>(
                         e => e.EventName == AuditEvents.ApplicationVoluntaryWithdrawalNotification
@@ -113,9 +126,10 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
 
             _notificationsMock.Verify(v => v.SendNotificationAsync(It.Is<InformApplicantOfApplicationVoluntaryWithdrawOptionDataModel>(n => 
                     n.ApplicationReference == notificationModel.ApplicationReference
-                    && n.PropertyName == notificationModel.PropertyName
+                    && n.PropertyName == property.Name
                     && n.DaysInWithApplicantStatus == currentDate.Subtract(notificationModel.WithApplicantDate).Days
                     && n.WithApplicantDateTime == DateTimeDisplay.GetDateDisplayString(notificationModel.WithApplicantDate)
+                    && n.ResubmissionDeadline == DateTimeDisplay.GetDateDisplayString(notificationModel.WithApplicantDate.Add(_thresholdForWithdrawal))
                     && n.AdminHubFooter == AdminHubFooter
                     && n.Name == applicant.FullName
                         .Trim()
@@ -137,8 +151,9 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
         _notificationsMock.Reset();
         _woodlandOwnerServiceMock.Reset();
         _getConfiguredFcAreasServiceMock.Reset();
+        _getPropertyProfilesServiceMock.Reset();
 
-        _settingsMock.Setup(x => x.Value).Returns(new VoluntaryWithdrawalNotificationOptions {ThresholdAfterWithApplicantStatusDate = _threshold });
+        _settingsMock.Setup(x => x.Value).Returns(new VoluntaryWithdrawalNotificationOptions {ThresholdAfterWithApplicantStatusDate = _thresholdForReminder, ThresholdAutomaticWithdrawal = _thresholdForWithdrawal});
         _externalSiteOptionsMock.Setup(s => s.Value).Returns(new ExternalApplicantSiteOptions{BaseUrl = ExternalUrl});
         _clockMock.Setup(s => s.GetCurrentInstant()).Returns(Instant.FromDateTimeUtc(DateTime.UtcNow));
         _getConfiguredFcAreasServiceMock
@@ -158,6 +173,7 @@ public class VoluntaryWithdrawalNotificationUseCaseTests
             _auditMock.Object,
             _externalSiteOptionsMock.Object,
             _woodlandOwnerServiceMock.Object,
+            _getPropertyProfilesServiceMock.Object,
             _getConfiguredFcAreasServiceMock.Object);
     }
 }

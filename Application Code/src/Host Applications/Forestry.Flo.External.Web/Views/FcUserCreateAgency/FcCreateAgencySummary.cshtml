@@ -1,4 +1,5 @@
 ﻿@using Forestry.Flo.External.Web.Infrastructure
+@using Forestry.Flo.Services.Common.Extensions
 @model Forestry.Flo.External.Web.Models.Agency.FcUserAgencyCreationModel
 @{
     ViewData["Title"] = "Confirm agency details";
@@ -10,6 +11,29 @@
         @ViewData["Title"]
     </h1>
     
+    <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Agency Type</h2>
+            <ul class="govuk-summary-card__actions">
+                <li class="govuk-summary-card__action">
+                    <a class="govuk-link" asp-action="AgentTypeSelection" asp-route-clearModel="false">Change</a>
+                </li>
+            </ul>
+        </div>
+        <div class="govuk-summary-card__content">
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">
+                        Agency type
+                    </dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.OrganisationStatus
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
     <div class="govuk-summary-card">
 
         <div class="govuk-summary-card__title-wrapper">
@@ -55,20 +79,20 @@
                     </dt>
                     <dd class="govuk-summary-list__value">
                         @Model.Address?.Line1<br/>
-                        @if (string.IsNullOrWhiteSpace(Model.Address.Line2) is false)
+                        @if (string.IsNullOrWhiteSpace(Model.Address?.Line2) is false)
                         {
                             @Model.Address.Line2
 
                             <br/>
                         }
-                        @Model?.Address?.Line3<br/>
-                        @if (string.IsNullOrWhiteSpace(Model.Address.Line4) is false)
+                        @Model.Address?.Line3<br/>
+                        @if (string.IsNullOrWhiteSpace(Model.Address?.Line4) is false)
                         {
                             @Model.Address.Line4
 
                             <br/>
                         }
-                        @Model.Address.PostalCode
+                        @Model.Address?.PostalCode
                     </dd>
                 </div>
             </dl>

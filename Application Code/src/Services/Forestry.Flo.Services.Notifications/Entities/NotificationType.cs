@@ -42,5 +42,8 @@ public enum NotificationType
     InformApplicantOfAIENewLicenceRequired,
     InformApplicantOfAIENewLicenceApproved,
     InformFcStaffOfConsulteeCommentReceived,
-    ExternalConsulteeInviteReminder
+    ExternalConsulteeInviteReminder,
+    ExternalConsulteeCommentConfirmation,
+    InformApplicantOfApplicationReopened,
+    InformApplicantOfApplicationReferenceChange
 }

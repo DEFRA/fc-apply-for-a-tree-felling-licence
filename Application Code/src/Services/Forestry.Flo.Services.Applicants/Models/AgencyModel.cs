@@ -28,6 +28,11 @@ public class AgencyModel
     public string? OrganisationName { get; set; }
 
     /// <summary>
+    /// Gets and sets a flag indicating whether this agency represents an organisation.
+    /// </summary>
+    public bool IsOrganisation { get; set; }
+
+    /// <summary>
     /// Gets and Sets the agency id of the agency.
     /// </summary>
     public Guid? AgencyId { get; set; }

@@ -2,7 +2,13 @@
 @using Forestry.Flo.Services.Common
 @model Forestry.Flo.External.Web.Models.AgentAuthorityForm.AgentAuthorityFormDocumentModel
 
-    <partial name="Partials/_ConfirmationMessageDisplay" />
+@{
+    var applicationId = Context.Request.Query["ApplicationId"];
+    var returnToApplicationSummary = Context.Request.Query["returnToApplicationSummary"];
+    var fromDataImport = Context.Request.Query["fromDataImport"];
+}
+
+<partial name="Partials/_ConfirmationMessageDisplay" />
     <partial name="Partials/_UserGuideDisplay" />
     
     <h1 class="govuk-heading-xl">Agent authority forms for @Model.WoodlandOwnerOrOrganisationName</h1>
@@ -10,7 +16,7 @@
     <div condition="@(Model.HasCurrentAuthorityForm is false)" class="govuk-warning-text">
         <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
         <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive">Warning</span>
+            <span class="govuk-warning-text__assistive govuk-visually-hidden">Warning</span>
             There are no current authority forms for this Woodland owner.
         </strong>
     </div>
@@ -19,9 +25,12 @@
     {
         <h2 class="govuk-heading-l">Current authority form</h2>
 
-    <form method="post" asp-controller="AgentAuthorityFormDocuments" 
-        asp-action="RemoveCurrentAgentAuthorityForm" id="documentListForm">
-        <input type="hidden" name="agentAuthorityFormId" value="@Model.CurrentAuthorityForm.Id" />
+        <form method="post" asp-controller="AgentAuthorityFormDocuments" asp-action="RemoveCurrentAgentAuthorityForm" id="documentListForm">
+            <input type="hidden" name="agentAuthorityFormId" value="@Model.CurrentAuthorityForm.Id" />
+            <input type="hidden" name="applicationId" value="@applicationId"/>
+            <input type="hidden" name="returnToApplicationSummary" value="@returnToApplicationSummary"/>
+            <input type="hidden" name="fromDataImport" value="@fromDataImport" />
+
             @Html.HiddenFor(m => m.AgentAuthorityId)
             <table class="govuk-table" id="agent-authorities-list-table">
                 <thead class="govuk-table__head">

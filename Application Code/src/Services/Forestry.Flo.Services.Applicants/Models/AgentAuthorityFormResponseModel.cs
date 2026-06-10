@@ -11,6 +11,16 @@ public class AgentAuthorityFormResponseModel
     public Guid Id { get; set; }
 
     /// <summary>
+    /// Gets and sets the id of the woodland owner the agent authority form is associated with.
+    /// </summary>
+    public Guid WoodlandOwnerId { get; set; }
+
+    /// <summary>
+    /// Gets and sets the id of the agency the agent authority form is associated with.
+    /// </summary>
+    public Guid AgencyId { get; set; }
+
+    /// <summary>
     /// Gets and sets the valid from date of the agent authority form.
     /// </summary>
     public DateTime ValidFromDate { get; set; }

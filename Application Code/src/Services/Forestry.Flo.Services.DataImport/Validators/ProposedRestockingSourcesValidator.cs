@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Forestry.Flo.Services.Common.Extensions;
 using Forestry.Flo.Services.FellingLicenceApplications.DataImports.Models;
 using Forestry.Flo.Services.FellingLicenceApplications.Entities;
 using Forestry.Flo.Services.FellingLicenceApplications.Extensions;
@@ -16,6 +17,10 @@ public class ProposedRestockingSourcesValidator : AbstractValidator<IEnumerable<
         RuleFor(s => s)
             .Must(IsDistinctAlternativeCompartmentOperationForFelling)
             .WithMessage("There are repeated restocking operation types for the same restocking compartment and felling operation within the Proposed Restocking records source");
+
+        RuleFor(s => s)
+            .Must(DoesNotCombineCreateDesignedOpenGroundWithOtherRestockingOptions)
+            .WithMessage($"{TypeOfProposal.CreateDesignedOpenGround.GetDisplayName()} restocking cannot be combined with other restocking options for the same felling operation within the Proposed Restocking records source");
 
         bool IsDistinctSameCompartmentOperationForFelling(IEnumerable<ProposedRestockingSource> elements)
         {
@@ -46,6 +51,19 @@ public class ProposedRestockingSourcesValidator : AbstractValidator<IEnumerable<
                 }
             }
 
+            return true;
+        }
+
+        bool DoesNotCombineCreateDesignedOpenGroundWithOtherRestockingOptions(IEnumerable<ProposedRestockingSource> elements)
+        {
+            var groupedByFelling = elements.GroupBy(e => e.ProposedFellingId);
+            foreach (var group in groupedByFelling)
+            {
+                if (group.Any(e => e.RestockingProposal == TypeOfProposal.CreateDesignedOpenGround) && group.Count() > 1)
+                {
+                    return false; // Create Designed Open Ground is combined with other restocking options for the same felling operation
+                }
+            }
             return true;
         }
 

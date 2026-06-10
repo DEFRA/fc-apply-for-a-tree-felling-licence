@@ -375,5 +375,20 @@ public static class EntityExtensions
 
         return allSpeciesCbw && allFellingTypesCbw && allRestockingTypesCbw && allTreeCountsMatching;
     }
+
+    public static void UpdateAreaCode(this FellingLicenceApplication application, string newAreaCode, string? adminHubName)
+    {
+        var segments = application.ApplicationReference.Split('/');
+        if (segments.Length < 3)
+        {
+            throw new ArgumentException("Invalid application reference format");
+        }
+        segments[0] = newAreaCode;
+        var applicationReferenceWithNewAreaCode = string.Join("/", segments);
+
+        application.ApplicationReference = applicationReferenceWithNewAreaCode;
+        application.AreaCode = newAreaCode;
+        application.AdministrativeRegion = adminHubName;
+    }
 }
 
